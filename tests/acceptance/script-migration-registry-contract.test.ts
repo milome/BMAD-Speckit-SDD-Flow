@@ -79,6 +79,24 @@ function getEntry(wave: any, entryId: string): any {
   return wave.entries.find((entry: any) => entry.entryId === entryId);
 }
 
+function findEntryById(registry: any, entryId: string): any {
+  for (const wave of registry.waves ?? []) {
+    const entry = (wave.entries ?? []).find((candidate: any) => candidate.entryId === entryId);
+    if (entry) return entry;
+  }
+  throw new Error(`fixture entry not found: ${entryId}`);
+}
+
+function forcePassed(entry: any): void {
+  entry.migrationStatus = 'validated';
+  entry.validationStatus = 'passed';
+  if (!Array.isArray(entry.evidenceRefs) || entry.evidenceRefs.length === 0) {
+    entry.evidenceRefs = [
+      'repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json',
+    ];
+  }
+}
+
 describe('script migration registry contract', () => {
   it('keeps the registry at the top-level source repository governance path', () => {
     expect(fs.existsSync(REGISTRY_PATH)).toBe(true);
@@ -115,25 +133,32 @@ describe('script migration registry contract', () => {
     expect(registryEntry.deletionAllowed).toBe(false);
 
     const mainAgentEntry = getEntry(mainAgentWave, 'main-agent-orchestration');
-    expect(mainAgentWave.status).toBe('validated');
+    expect(mainAgentWave.status).toBe('blocked');
     expect(mainAgentEntry.originalPath).toBe('scripts/main-agent-orchestration.ts');
     expect(mainAgentEntry.migrationStrategy).toBe('package_runtime_module');
-    expect(mainAgentEntry.migrationStatus).toBe('validated');
-    expect(mainAgentEntry.validationStatus).toBe('passed');
+    expect(mainAgentEntry.migrationStatus).toBe('blocked');
+    expect(mainAgentEntry.validationStatus).toBe('blocked');
     expect(mainAgentEntry.oldPathDisposition).toBe('retained_source_dev_only');
     expect(mainAgentEntry.deletionAllowed).toBe(false);
     expect(mainAgentEntry.deletionApprovalRef).toBeNull();
+    expect(mainAgentEntry.migrationBlockers).toContain(
+      'compiled_orchestration_fallback:packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs'
+    );
 
     const wave2Entry = getEntry(mainAgentWave2, 'main-agent-orchestration');
     expect(mainAgentWave2.refinesWaveId).toBe('main-agent-migration-wave-1');
+    expect(mainAgentWave2.status).toBe('blocked');
     expect(wave2Entry.originalPath).toBe('scripts/main-agent-orchestration.ts');
     expect(wave2Entry.originalClassBeforeMigration).toBe(
       'package_runtime_source_authority_incomplete'
     );
     expect(wave2Entry.migrationStrategy).toBe('package_runtime_module');
+    expect(wave2Entry.migrationStatus).toBe('blocked');
+    expect(wave2Entry.validationStatus).toBe('partial');
     expect(wave2Entry.oldPathDisposition).toBe('retained_source_dev_only');
     expect(wave2Entry.deletionAllowed).toBe(false);
     expect(wave2Entry.deletionApprovalRef).toBeNull();
+    expect(wave2Entry.migrationBlockers).toContain('package_runtime_source_authority_incomplete');
     expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/src/main-agent/index.js');
     expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/dist/main-agent/index.js');
   });
@@ -214,6 +239,119 @@ describe('script migration registry contract', () => {
     const result = runValidator(['--check-pack-exclusion', '--pack-list-fixture', fixturePath]);
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}\n${result.stderr}`).toContain('repo-governance');
+  });
+
+  it('rejects validated package runtime entries backed only by report-shell actions', () => {
+    const registry = readRegistry();
+    const entry = findEntryById(registry, 'analytics-sft-extract-ts');
+    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js'];
+    forcePassed(entry);
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+
+    const result = runValidator(['--registry', fixturePath]);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('report-only package runtime action');
+  });
+
+  it('rejects validated durable helper entries backed only by descriptor shells', () => {
+    const registry = readRegistry();
+    const entry = findEntryById(registry, 'architecture-confirmation-hash-recipe-ts');
+    entry.targetPaths = [
+      'packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js',
+    ];
+    forcePassed(entry);
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+
+    const result = runValidator(['--registry', fixturePath]);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('descriptor-only durable helper');
+  });
+
+  it('rejects validated package runtime entries backed by compiled orchestration fallback', () => {
+    const registry = readRegistry();
+    registry.waves.push({
+      waveId: 'fixture-compiled-fallback',
+      refinesWaveId: 'main-agent-source-authority-wave-2',
+      title: 'Fixture compiled fallback rejection',
+      contractPath: 'docs/plans/fixture.md',
+      status: 'validated',
+      startedAt: '2026-06-19T00:00:00+08:00',
+      completedAt: '2026-06-19T00:01:00+08:00',
+      entries: [
+        {
+          entryId: 'main-agent-orchestration-compiled-fallback-fixture',
+          originalPath: 'scripts/main-agent-orchestration.ts',
+          originalPathStatus: 'retained',
+          originalClassBeforeMigration: 'consumer_runtime_reachable',
+          migrationStrategy: 'package_runtime_module',
+          migrationStatus: 'validated',
+          targetPaths: ['packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs'],
+          publicCommandsBeforeMigration: ['source repository scripts/main-agent-orchestration.ts'],
+          publicCommandsAfterMigration: ['bmad-speckit main-agent run-loop'],
+          callerSwitchStatus: 'switched',
+          validationStatus: 'passed',
+          evidenceRefs: [
+            'repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json',
+          ],
+          oldPathDisposition: 'retained_validated_consumer_runtime_reachable',
+          deletionAllowed: false,
+          deletionApprovalRef: null,
+        },
+      ],
+    });
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+
+    const result = runValidator(['--registry', fixturePath]);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('compiled orchestration fallback');
+  });
+
+  it('rejects validated public CLI migrations without a package source equivalent', () => {
+    const registry = readRegistry();
+    const entry = findEntryById(registry, 'eval-questions');
+    entry.targetPaths = ['packages/bmad-speckit/bin/bmad-speckit.js'];
+    forcePassed(entry);
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+
+    const result = runValidator(['--registry', fixturePath]);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('package source equivalent');
+  });
+
+  it('rejects CJS targets masquerading as package source parity equivalents', () => {
+    const registry = readRegistry();
+    const entry = findEntryById(registry, 'main-agent-release-gate');
+    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/helpers/write-runtime-context.cjs'];
+    forcePassed(entry);
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+
+    const result = runValidator(['--registry', fixturePath]);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('CJS target cannot satisfy package source parity');
+  });
+
+  it('rejects validated script migrations whose package source equivalent is too small', () => {
+    const registry = readRegistry();
+    const entry = findEntryById(registry, 'main-agent-release-gate');
+    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/actions/release-gate.js'];
+    forcePassed(entry);
+    const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
+    writeYaml(fixturePath, registry);
+
+    const result = runValidator(['--registry', fixturePath]);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('package source parity size delta');
   });
 
   it('rejects deletionAllowed without an approval reference in a temp registry fixture', () => {

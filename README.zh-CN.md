@@ -125,7 +125,6 @@ Intent -> Manifest Contract -> AI-TDD-RED -> Bounded Execution -> Evidence Chain
 ```bash
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check
@@ -150,7 +149,7 @@ $bmads
 ```bash
 npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -330,9 +329,8 @@ Manifest 是 AI-TDD 契约的事实源。它更接近 contract-as-code，而不�
 ```bash
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
-npx --no-install bmad-speckit --help
 npx --no-install bmad-speckit version
+npx --no-install bmad-speckit --help
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -385,7 +383,6 @@ npx.cmd --no-install bmad-speckit bmads
 
 ```bash
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check

@@ -6,7 +6,7 @@ import {
   writeExecutionRuntimeModeSelection,
   writeNativeGoalInvocationReceipt,
   validateNativeGoalInvocationReceipt,
-} from '../../packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
@@ -105,6 +105,8 @@ describe('Main Agent host runtime mode contract', () => {
         packetId: 'implement-current',
         host: 'codex',
         goalExecutionPath: compiled.compiledPromptRef.goalExecutionPath!,
+        command: 'codex',
+        args: ['/goal Execute implement-current by following goal_execution.md'],
         stdoutRef: 'stdout.log',
         stderrRef: 'stderr.log',
         exitCode: 0,

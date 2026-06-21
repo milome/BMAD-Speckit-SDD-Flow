@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
-const RUNTIME_ROOT = path.join(PACKAGE_ROOT, 'src', 'main-agent', 'runtime');
+const RUNTIME_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent', 'runtime');
 const TYPE_SCRIPT_RUNNER_PATTERN = new RegExp(`\\b${['t', 's', 'x'].join('')}\\b`);
 const TS_NODE_PATTERN = new RegExp(['t', 's', '-', 'n', 'o', 'd', 'e'].join(''));
 
@@ -157,6 +157,11 @@ describe('main-agent wave 3.11 runtime modules', () => {
         attemptId: 'attempt-1',
         host: 'codex',
         goalExecutionPath: compiledPromptRef.goalExecutionPath,
+        goalCommandTextHash: compiledPromptRef.goalExecutionHash,
+        command: 'codex',
+        args: ['exec', '--json', '/goal fixture'],
+        taskReportPath: path.join(root, '_bmad-output', 'runtime', 'governance', 'task-reports', 'packet-1.json'),
+        nativeGoalCommandUsed: true,
         stdoutRef: 'stdout.log',
         stderrRef: 'stderr.log',
         exitCode: 0,

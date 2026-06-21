@@ -1,0 +1,200 @@
+[
+  {
+    "originalPath": "scripts/prompt-routing-hints.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_prompt_routing_hints_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/query-validate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_query_validate_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_query_validate_ts_flag_data_path",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_query_validate_ts_env_scoring_data_path",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/real-development-tick-worker.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_no_args",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_flag_name_only",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_framework_root",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_session_dir",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_dir",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_timeout_ms",
+        "expectedStderr": "Missing BMAD_REAL_DEV_SESSION_DIR/BMAD_REAL_DEV_TICK/BMAD_REAL_DEV_TICK_DIR\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-event-reducer.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_requirement_record_event_reducer_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-shared-core.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_reviewer_shared_core_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-confirmed-final-required-commands.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_run_confirmed_final_required_commands_js_flag_json",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-confirmed-trace-slice.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"--trace TRACE-### is required\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"--trace TRACE-### is required\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"--trace TRACE-### is required\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_trace",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Missing value for --trace\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_evidence_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_mode",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_run_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode, attemptId, runId, evidenceDir\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-runtime-dashboard-forever.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_data_path",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_host",
+        "expectedStderr": "Error: getaddrinfo ENOTFOUND source-derived-runtime_dashboard_host\n    at <runtime-stack-frame>\n  errno: -3008,\n  code: 'ENOTFOUND',\n  syscall: 'getaddrinfo',\n  hostname: 'source-derived-runtime_dashboard_host'\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_launch_mode",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_port",
+        "expectedStderr": "RangeError [ERR_SOCKET_BAD_PORT]: options.port should be >= 0 and < 65536. Received type number (NaN).\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n  code: 'ERR_SOCKET_BAD_PORT'\n}\n"
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_root",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-dashboard-server-state.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_runtime_dashboard_server_state_cjs_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

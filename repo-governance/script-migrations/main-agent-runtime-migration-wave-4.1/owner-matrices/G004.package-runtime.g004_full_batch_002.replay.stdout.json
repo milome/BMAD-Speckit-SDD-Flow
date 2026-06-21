@@ -1,0 +1,244 @@
+[
+  {
+    "originalPath": "scripts/check-sprint-ready.ps1",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_check_sprint_ready_ps1_no_args",
+        "expectedStdout": "SPRINT_READY: True\nSPRINT_STATUS_PATH: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\implementation-artifacts\\sprint-status.yaml\nMESSAGE: Sprint status valid.\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.sh",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_check_sprint_ready_sh_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/dashboard-generate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_dashboard_generate_ts_no_args",
+        "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_datapath",
+        "expectedStdout": "暂无数据，请先完成至少一轮 Dev Story\n"
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_epic",
+        "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_output",
+        "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_story",
+        "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_strategy",
+        "expectedStdout": "# 项目健康度仪表盘\n\n## 总分：93 分\n\n## Governance History Summary\n\n- Worsening Gates: none\n\n## 四维雷达图\n\n| 维度 | 分数 |\n|------|------|\n| 代码质量 | 92 |\n| 功能性 | 95 |\n| 安全性 | 94 |\n| 测试覆盖 | 91 |\n\n## 短板 Top 3\n\n- E15.S2 implement: 93.1 分\n\n## 高迭代 Top 3\n\n各 stage 均为一次通过\n\n## Journey Contract Gaps\n\n未发现 Journey contract 漏洞\n\n## Governance Executor Routing\n\n暂无治理 rerun executor routing 记录\n\n## Governance Latest Raw Event\n\n暂无 governance raw event 摘要\n\n## Governance Routing Mode Distribution\n\n暂无治理 routing mode 分布记录\n\n## Governance Signal Hotspots\n\n暂无治理 signal hotspot 记录\n\n## Governance Gate Failure Trend\n\n- implementation-readiness: flat；失败 3/3；latest blocked @ <iso-timestamp>\n\n## Veto 触发统计\n\nVeto 触发：0 次\n\n## 趋势\n\n最近 5 run：升\n"
+      },
+      {
+        "scenarioId": "g004_dashboard_generate_ts_flag_windowhours",
+        "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_e2e_dual_host_journey_runner_ts_no_args",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_no_args",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_cwd",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_action",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_evidencebundleid",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_hosts",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_mode",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_project",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_project_root",
+        "expectedStdout": "{\n  \"reportFile\": \"<fixture-root>\\\\project-root\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": false\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_record_id",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": false\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_report_path",
+        "expectedStdout": "{\n  \"reportFile\": \"<fixture-root>\\\\report-path.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_requirement_set_id",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": false\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_run_id",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_runid",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_smoke",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_story_key",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_transpile_only",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_version",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_flag_write_sprint_status",
+        "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/final-closeout-evidence-runner.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_evidence_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_help",
+        "expectedStdout": "Usage: final-closeout-evidence-runner --requirement-record <json> --source-document <md> [--run-id <id>] [--attempt-id <id>] [--evidence-dir <dir>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_mode",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_project",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_record_closeout_receipt",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_run_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_source_document",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_strict_proof_only",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_final_closeout_evidence_runner_ts_flag_transpile_only",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-execution-result-ingestor.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_governance_execution_result_ingestor_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_governance_execution_result_ingestor_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-hook-types.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_governance_hook_types_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_governance_packet_dispatch_worker_ts_no_args",
+        "expectedStdout": "[]"
+      },
+      {
+        "scenarioId": "g004_governance_packet_dispatch_worker_ts_env_bmad_disable_embedded_governance_clis",
+        "expectedStdout": "[]"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-provider-adapter.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_governance_provider_adapter_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

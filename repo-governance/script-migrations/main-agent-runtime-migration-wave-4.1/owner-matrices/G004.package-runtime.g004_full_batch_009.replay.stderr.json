@@ -1,0 +1,158 @@
+[
+  {
+    "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_run_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_trace_040_evidence_packet_generator_ts_flag_template",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/update-runtime-audit-index.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_update_runtime_audit_index_ts_no_args",
+        "expectedStderr": "update-runtime-audit-index: usage --projectRoot <path> --reportPath <audit-report-path>\n"
+      },
+      {
+        "scenarioId": "g004_update_runtime_audit_index_ts_flag_projectroot",
+        "expectedStderr": "update-runtime-audit-index: usage --projectRoot <path> --reportPath <audit-report-path>\n"
+      },
+      {
+        "scenarioId": "g004_update_runtime_audit_index_ts_flag_reportpath",
+        "expectedStderr": "update-runtime-audit-index: usage --projectRoot <path> --reportPath <audit-report-path>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/user-story-mapping.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_user_story_mapping_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/validate-consumer-governance.ps1",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_agent",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_cursor_host",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_force",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_validate_consumer_governance_ps1_flag_no_save",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_verify_cursor_audit_granularity_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_verify_cursor_audit_granularity_ts_flag_audit_granularity",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_verify_cursor_audit_granularity_ts_env_bmad_platform",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-hooks-no-ts-node.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_cjs_no_args",
+        "expectedStderr": "Error: Directory import 'D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\scoring\\policy' is not supported resolving ES modules imported from D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\write-runtime-policy-snapshot-and-recovery-context.ts\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n  code: 'ERR_UNSUPPORTED_DIR_IMPORT',\n  url: 'file:///D:/Dev/BMAD-Speckit-SDD-Flow/packages/scoring/policy'\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"requirement record flow invalid or missing: <missing>\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_cwd",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\\\_bmad-output\\\\runtime\\\\requirement-records; nextRequiredAction=contract_authoring_required\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\\\_bmad-output\\\\runtime\\\\requirement-records; nextRequiredAction=contract_authoring_required\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_record_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\\\_bmad-output\\\\runtime\\\\requirement-records\\\\index-repair-projection.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_requirement_set_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\\\_bmad-output\\\\runtime\\\\requirement-records\\\\index-repair-projection.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_flag_run_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\\\_bmad-output\\\\runtime\\\\requirement-records\\\\index-repair-projection.json\"\n}\n"
+      }
+    ]
+  }
+]

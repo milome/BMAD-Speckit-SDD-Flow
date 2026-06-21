@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T05:44:39.863Z",
+  "artifactSuffix": "g004_analytics_cluster_rework",
+  "timeoutMs": 10000,
+  "coverageDecision": "blocked_until_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 0,
+  "matrixRowCount": 0,
+  "fullCoverageStillRequired": true,
+  "rows": []
+}

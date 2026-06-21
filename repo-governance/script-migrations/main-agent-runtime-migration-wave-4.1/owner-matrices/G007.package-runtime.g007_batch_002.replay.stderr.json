@@ -1,0 +1,112 @@
+[
+  {
+    "originalPath": "scripts/controlled-ingest-atomic-committer.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_controlled_ingest_atomic_committer_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/e2e-verify-paths.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_e2e_verify_paths_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ensure-runtime-dashboard-server.cjs",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_no_args",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_flag_open",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_env_runtime_dashboard_host",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      },
+      {
+        "scenarioId": "g007_ensure_runtime_dashboard_server_cjs_env_runtime_dashboard_port",
+        "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/evidence-provenance.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_evidence_provenance_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/execution-discipline-profiles.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_execution_discipline_profiles_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/execution-intent-schema.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_execution_intent_schema_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/execution-strategy-selection.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_execution_strategy_selection_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/facilitator-registry.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_facilitator_registry_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/facilitator-runtime-definition.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_facilitator_runtime_definition_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/generate-codex-agents-from-claude.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_generate_codex_agents_from_claude_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g007_generate_codex_agents_from_claude_js_flag_check",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

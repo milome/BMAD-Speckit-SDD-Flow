@@ -1,0 +1,1476 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G007",
+  "generatedAt": "2026-06-20T10:54:29.382Z",
+  "artifactSuffix": "g007_batch_004",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 74,
+  "selectedRowCount": 10,
+  "matrixRowCount": 10,
+  "scenarioCount": 10,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/i18n/language-policy.ts",
+      "entryId": "i18n-language-policy-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/language-policy.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/language-policy.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_language_policy_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/language-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/language-policy.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/language-policy.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_language_policy_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_language_policy_ts_no_args-original-Wqbve0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_language_policy_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_language_policy_ts_no_args-package-MGjG08",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/language-policy.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/language-policy.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 54,
+                "anchor": "scripts/i18n/language-policy.ts:54",
+                "text": "export function resolveLanguagePolicy(input: ResolveLanguagePolicyInput): LanguagePolicy {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/language-policy.ts",
+                "to": "scripts/i18n/language-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy.ts",
+                "to": "scripts/i18n/language-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/language-policy.js",
+                "to": "scripts/i18n/language-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/language-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/load-manifest.ts",
+      "entryId": "load-manifest",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/load-manifest.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/load-manifest.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/load-manifest.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_load_manifest_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/load-manifest.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/load-manifest.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/load-manifest.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/load-manifest.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_load_manifest_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_load_manifest_ts_no_args-original-jErpZp",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_load_manifest_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_load_manifest_ts_no_args-package-w5b8kj",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/load-manifest.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/load-manifest.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 9,
+                "anchor": "scripts/i18n/load-manifest.ts:9",
+                "text": "export function getDefaultManifestRoot(): string {"
+              },
+              {
+                "line": 19,
+                "anchor": "scripts/i18n/load-manifest.ts:19",
+                "text": "export function loadManifest("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/load-manifest.ts",
+                "to": "scripts/i18n/load-manifest.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/load-manifest.ts",
+                "to": "scripts/i18n/load-manifest.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/load-manifest.js",
+                "to": "scripts/i18n/load-manifest.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/load-manifest.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/materialize-facilitator-definition.ts",
+      "entryId": "i18n-materialize-facilitator-definition-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/materialize-facilitator-definition.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_materialize_facilitator_definition_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/materialize-facilitator-definition.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/materialize-facilitator-definition.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_materialize_facilitator_definition_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_materialize_facilitator_definition_ts_no_args-original-cVnwXL",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_materialize_facilitator_definition_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_materialize_facilitator_definition_ts_no_args-package-w5yvxI",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/materialize-facilitator-definition.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/materialize-facilitator-definition.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/i18n/materialize-facilitator-definition.ts:1",
+                "text": "export {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/materialize-facilitator-definition.ts",
+                "to": "scripts/i18n/materialize-facilitator-definition.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.ts",
+                "to": "scripts/i18n/materialize-facilitator-definition.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.js",
+                "to": "scripts/i18n/materialize-facilitator-definition.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/materialize-facilitator-definition.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/party-mode-runtime-assets.ts",
+      "entryId": "party-mode-runtime-assets",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/party-mode-runtime-assets.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_party_mode_runtime_assets_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/party-mode-runtime-assets.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/party-mode-runtime-assets.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_party_mode_runtime_assets_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_party_mode_runtime_assets_ts_no_args-original-sXr7z3",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_party_mode_runtime_assets_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_party_mode_runtime_assets_ts_no_args-package-zXzpoI",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/party-mode-runtime-assets.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/party-mode-runtime-assets.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 66,
+                "anchor": "scripts/i18n/party-mode-runtime-assets.ts:66",
+                "text": "export function resolveCanonicalPartyModeAsset("
+              },
+              {
+                "line": 78,
+                "anchor": "scripts/i18n/party-mode-runtime-assets.ts:78",
+                "text": "export function resolveCursorPartyModeAsset("
+              },
+              {
+                "line": 90,
+                "anchor": "scripts/i18n/party-mode-runtime-assets.ts:90",
+                "text": "export function resolveFacilitatorSourceAsset("
+              },
+              {
+                "line": 102,
+                "anchor": "scripts/i18n/party-mode-runtime-assets.ts:102",
+                "text": "export function resolvePartyModeSpeakerProfile("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/party-mode-runtime-assets.ts",
+                "to": "scripts/i18n/party-mode-runtime-assets.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.ts",
+                "to": "scripts/i18n/party-mode-runtime-assets.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.js",
+                "to": "scripts/i18n/party-mode-runtime-assets.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/party-mode-runtime-assets.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/placeholder-types.ts",
+      "entryId": "i18n-placeholder-types-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/placeholder-types.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/placeholder-types.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/placeholder-types.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_placeholder_types_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/placeholder-types.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/placeholder-types.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/placeholder-types.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/placeholder-types.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_placeholder_types_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_placeholder_types_ts_no_args-original-aDsU1e",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_placeholder_types_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_placeholder_types_ts_no_args-package-ZvlWal",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/placeholder-types.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/placeholder-types.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/i18n/placeholder-types.ts:1",
+                "text": "export type PlaceholderType ="
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/placeholder-types.ts",
+                "to": "scripts/i18n/placeholder-types.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/placeholder-types.ts",
+                "to": "scripts/i18n/placeholder-types.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/placeholder-types.js",
+                "to": "scripts/i18n/placeholder-types.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/placeholder-types.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/protected-token-check.ts",
+      "entryId": "i18n-protected-token-check-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/protected-token-check.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/protected-token-check.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/protected-token-check.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_protected_token_check_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/protected-token-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/protected-token-check.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/protected-token-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/protected-token-check.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_protected_token_check_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_protected_token_check_ts_no_args-original-dBskhw",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_protected_token_check_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_protected_token_check_ts_no_args-package-xaE5dv",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/protected-token-check.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/protected-token-check.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 14,
+                "anchor": "scripts/i18n/protected-token-check.ts:14",
+                "text": "export function collectProtectedTokens(manifest: ProtectedTokenManifest): string[] {"
+              },
+              {
+                "line": 28,
+                "anchor": "scripts/i18n/protected-token-check.ts:28",
+                "text": "export function assertProtectedTokensPreserved("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/protected-token-check.ts",
+                "to": "scripts/i18n/protected-token-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/protected-token-check.ts",
+                "to": "scripts/i18n/protected-token-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/protected-token-check.js",
+                "to": "scripts/i18n/protected-token-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/protected-token-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/render-field-view.ts",
+      "entryId": "i18n-render-field-view-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-field-view.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/render-field-view.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/render-field-view.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_render_field_view_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/render-field-view.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/render-field-view.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-field-view.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/render-field-view.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_render_field_view_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_render_field_view_ts_no_args-original-gtQl8z",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_render_field_view_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_render_field_view_ts_no_args-package-JhKyqh",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/render-field-view.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/render-field-view.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 176,
+                "anchor": "scripts/i18n/render-field-view.ts:176",
+                "text": "export function renderFieldView(input: RenderFieldViewInput): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/render-field-view.ts",
+                "to": "scripts/i18n/render-field-view.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-field-view.ts",
+                "to": "scripts/i18n/render-field-view.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/render-field-view.js",
+                "to": "scripts/i18n/render-field-view.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/render-field-view.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-for-session-cli.ts",
+      "entryId": "i18n-resolve-for-session-cli-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/resolve-for-session-cli.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_resolve_for_session_cli_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/resolve-for-session-cli.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/resolve-for-session-cli.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_resolve_for_session_cli_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_resolve_for_session_cli_ts_no_args-original-G8IuiP",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_resolve_for_session_cli_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_resolve_for_session_cli_ts_no_args-package-hfb1Ie",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/resolve-for-session-cli.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/resolve-for-session-cli.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 30,
+                "anchor": "scripts/i18n/resolve-for-session-cli.ts:30",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 36,
+                "anchor": "scripts/i18n/resolve-for-session-cli.ts:36",
+                "text": "process.stderr.write('[resolve-for-session-cli] invalid JSON stdin\\n');"
+              },
+              {
+                "line": 85,
+                "anchor": "scripts/i18n/resolve-for-session-cli.ts:85",
+                "text": "console.log(JSON.stringify(out));"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/i18n/resolve-for-session-cli.ts:95",
+                "text": "if (require.main === module && isDirectResolveForSessionCli(process.argv[1])) {"
+              },
+              {
+                "line": 97,
+                "anchor": "scripts/i18n/resolve-for-session-cli.ts:97",
+                "text": "process.stderr.write(`${e && (e as Error).message ? (e as Error).message : e}\\n`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/resolve-for-session-cli.ts",
+                "to": "scripts/i18n/resolve-for-session-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.ts",
+                "to": "scripts/i18n/resolve-for-session-cli.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.js",
+                "to": "scripts/i18n/resolve-for-session-cli.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/resolve-for-session-cli.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-for-session.ts",
+      "entryId": "i18n-resolve-for-session-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/resolve-for-session.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_resolve_for_session_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/resolve-for-session.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/resolve-for-session.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_resolve_for_session_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_resolve_for_session_ts_no_args-original-lu6TY4",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_resolve_for_session_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_resolve_for_session_ts_no_args-package-4Pmlys",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/resolve-for-session.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/resolve-for-session.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 8,
+                "anchor": "scripts/i18n/resolve-for-session.ts:8",
+                "text": "export function resolveLanguagePolicyForSession("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/resolve-for-session.ts",
+                "to": "scripts/i18n/resolve-for-session.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session.ts",
+                "to": "scripts/i18n/resolve-for-session.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session.js",
+                "to": "scripts/i18n/resolve-for-session.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/resolve-for-session.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-localized-markdown-path.ts",
+      "entryId": "i18n-resolve-localized-markdown-path-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/resolve-localized-markdown-path.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_i18n_resolve_localized_markdown_path_ts_no_args",
+          "originalEntryPoint": "scripts/i18n/resolve-localized-markdown-path.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/i18n/resolve-localized-markdown-path.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_i18n_resolve_localized_markdown_path_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_i18n_resolve_localized_markdown_path_ts_no_args-original-v2p2fW",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_i18n_resolve_localized_markdown_path_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_i18n_resolve_localized_markdown_path_ts_no_args-package-eeauQ9",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/i18n/resolve-localized-markdown-path.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/i18n/resolve-localized-markdown-path.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 25,
+                "anchor": "scripts/i18n/resolve-localized-markdown-path.ts:25",
+                "text": "export function resolveLocalizedMarkdownPath("
+              },
+              {
+                "line": 50,
+                "anchor": "scripts/i18n/resolve-localized-markdown-path.ts:50",
+                "text": "export function deriveLocalizedMarkdownPaths(basePath: string): {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/i18n/resolve-localized-markdown-path.ts",
+                "to": "scripts/i18n/resolve-localized-markdown-path.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.ts",
+                "to": "scripts/i18n/resolve-localized-markdown-path.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.js",
+                "to": "scripts/i18n/resolve-localized-markdown-path.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/i18n/resolve-localized-markdown-path.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

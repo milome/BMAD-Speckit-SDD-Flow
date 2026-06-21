@@ -1,0 +1,152 @@
+[
+  {
+    "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+    "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+    "scenarioId": "g004_adaptive_intake_proof_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ai-tdd-contract-gate.ts",
+    "scenarioId": "g004_ai_tdd_contract_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/analytics-sft-extract.ts",
+    "scenarioId": "g004_analytics_sft_extract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/assert-implementation-entry.ts",
+    "scenarioId": "g004_assert_implementation_entry_ts_no_args",
+    "expectedStderr": "assert-implementation-entry: NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+  },
+  {
+    "originalPath": "scripts/audit-stage-routing.ts",
+    "scenarioId": "g004_audit_stage_routing_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/auditor-post-actions.ts",
+    "scenarioId": "g004_auditor_post_actions_ts_no_args",
+    "expectedStderr": "auditor-post-actions: usage --projectRoot <path> --reportPath <audit-report-path> [--stage <stage>]\n"
+  },
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "scenarioId": "g004_auditor_spec_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/bmad-config.ts",
+    "scenarioId": "g004_bmad_config_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/bmad-runtime-worker.ts",
+    "scenarioId": "g004_bmad_runtime_worker_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.ps1",
+    "scenarioId": "g004_check_sprint_ready_ps1_no_args",
+    "expectedStderr": "check-sprint-ready.ps1: D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\check-sprint-ready.ps1:11\nLine |\n  11 |  & $canonical @args\n     |               ~~~~~\n     | A parameter cannot be found that matches parameter name '-cwd'.\n"
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.sh",
+    "scenarioId": "g004_check_sprint_ready_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/dashboard-generate.ts",
+    "scenarioId": "g004_dashboard_generate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+    "scenarioId": "g004_e2e_dual_host_journey_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+    "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/final-closeout-evidence-runner.ts",
+    "scenarioId": "g004_final_closeout_evidence_runner_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/governance-execution-result-ingestor.ts",
+    "scenarioId": "g004_governance_execution_result_ingestor_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\governance-execution-result-ingestor.ts:276\n  const payload = JSON.parse(payloadArg) as\n                       ^\nSyntaxError: No number after minus sign in JSON at position 1 (line 1 column 2)\n    at JSON.parse (<anonymous>)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\governance-execution-result-ingestor.ts:276:24)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\governance-execution-result-ingestor.ts:294:1)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n"
+  },
+  {
+    "originalPath": "scripts/governance-hook-types.ts",
+    "scenarioId": "g004_governance_hook_types_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+    "scenarioId": "g004_governance_packet_dispatch_worker_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-provider-adapter.ts",
+    "scenarioId": "g004_governance_provider_adapter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-runtime-queue.ts",
+    "scenarioId": "g004_governance_runtime_queue_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-stage-event-emitter.ts",
+    "scenarioId": "g004_governance_stage_event_emitter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+    "scenarioId": "g004_i18n_print_resolved_audit_prompt_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+    "scenarioId": "g004_i18n_render_audit_block_cli_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\load-manifest.ts:25\n    throw new Error(`Manifest not found: ${filePath}`);\n          ^\nError: Manifest not found: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\i18n\\manifests\\--cwd.yaml\n    at loadManifest (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\load-manifest.ts:25:11)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\render-audit-block-cli.ts:43:32)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\render-audit-block-cli.ts:61:1)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n"
+  },
+  {
+    "originalPath": "scripts/i18n/render-template.ts",
+    "scenarioId": "g004_i18n_render_template_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ingest-architecture-confirmation.ts",
+    "scenarioId": "g004_ingest_architecture_confirmation_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, requirementRecord, confirmedBy\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/ingest-implementation-evidence.ts",
+    "scenarioId": "g004_ingest_implementation_evidence_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: evidence, requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+    "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing --requirement-record\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+    "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+    "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_no_args",
+    "expectedStderr": ""
+  }
+]

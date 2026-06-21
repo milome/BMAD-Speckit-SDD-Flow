@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T05:44:39.863Z",
+  "artifactSuffix": "g004_analytics_cluster_rework",
+  "timeoutMs": 10000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G004.package-runtime.g004_analytics_cluster_rework.behavior-matrix.json",
+  "matrixHash": "sha256:b38c033e96d9a19e5d117d74798b5cb00983b847f3508a694d7acf8ebbbf1003",
+  "scenarioCount": 0,
+  "passedScenarioCount": 0,
+  "failedScenarioCount": 0,
+  "replayRows": []
+}

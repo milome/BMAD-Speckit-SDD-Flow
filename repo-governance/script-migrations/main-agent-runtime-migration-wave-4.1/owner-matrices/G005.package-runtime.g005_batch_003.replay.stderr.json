@@ -1,0 +1,69 @@
+[
+  {
+    "originalPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_main_agent_bmad_help_five_layer_matrix_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_enablerealprapi",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_evidencebundleid",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_projectroot",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_provider",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_prtopologypath",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_record_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_reportpath",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_requirement_set_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_runid",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g005_main_agent_host_matrix_pr_orchestrator_ts_flag_storykey",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/setup.ps1",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g005_setup_ps1_no_args",
+        "expectedStderr": "Write-Error: scripts/setup.ps1:<line>\nLine |\n  99 |      Write-Error 'Must specify -Target <path>'\n     |      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n     | Must specify -Target <path>\n"
+      }
+    ]
+  }
+]

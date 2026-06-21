@@ -1,0 +1,38 @@
+[
+  {
+    "originalPath": "scripts/update-specify-passed.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_update_specify_passed_ts_no_args",
+        "expectedStdout": "Story state updated:\n{\n  \"version\": \"2.0\",\n  \"epic\": \"E001\",\n  \"story\": \"S001\",\n  \"story_slug\": \"email-validator\",\n  \"layer\": 4,\n  \"stage\": \"specify_passed\",\n  \"audit_status\": \"pass\",\n  \"artifacts\": {\n    \"spec\": \"specs/epic-E001-e001/story-S001-email-validator/spec-E001-S001.md\",\n    \"audit\": \"specs/epic-E001-e001/story-S001-email-validator/AUDIT_spec-E001-S001.md\"\n  },\n  \"scores\": {\n    \"spec\": {\n      \"rating\": \"A\",\n      \"dimensions\": {\n        \"需求完整性\": 95,\n        \"可测试性\": 92,\n        \"一致性\": 90,\n        \"可追溯性\": 93\n      }\n    }\n  },\n  \"git_control\": {\n    \"commit_allowed\": false\n  },\n  \"runtime\": {\n    \"last_action\": \"specify_audit_passed\"\n  }\n}\n\n--- Current State ---\n{\n  version: '2.0',\n  epic: 'E001',\n  story: 'S001',\n  story_slug: 'email-validator',\n  layer: 4,\n  stage: 'specify_passed',\n  audit_status: 'pass',\n  artifacts: {\n    spec: 'specs/epic-E001-e001/story-S001-email-validator/spec-E001-S001.md',\n    audit: 'specs/epic-E001-e001/story-S001-email-validator/AUDIT_spec-E001-S001.md'\n  },\n  scores: { spec: { rating: 'A', dimensions: [Object] } },\n  git_control: { commit_allowed: false },\n  runtime: { last_action: 'specify_audit_passed' }\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-agent-files.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_verify_agent_files_ts_no_args",
+        "expectedStdout": "=== Agent 文件完整性验证 ===\n\n【检查 1】Layer 4 执行体:\n✅ bmad-master: .claude/agents/bmad-master.md\n✅ bmad-story-create: .claude/agents/bmad-story-create.md\n✅ bmad-story-audit: .claude/agents/bmad-story-audit.md\n✅ bmad-layer4-speckit-specify: .claude/agents/layers/bmad-layer4-speckit-specify.md\n✅ bmad-layer4-speckit-plan: .claude/agents/layers/bmad-layer4-speckit-plan.md\n   ✅ Prerequisites 包含 specify_passed\n✅ bmad-layer4-speckit-gaps: .claude/agents/layers/bmad-layer4-speckit-gaps.md\n   ✅ Prerequisites 包含 plan_passed\n✅ bmad-layer4-speckit-tasks: .claude/agents/layers/bmad-layer4-speckit-tasks.md\n   ✅ Prerequisites 包含 gaps_passed\n✅ bmad-layer4-speckit-implement: .claude/agents/layers/bmad-layer4-speckit-implement.md\n   ✅ Prerequisites 包含 tasks_passed\n\n【检查 1.5】Speckit 顶层 alias:\n✅ speckit-specify: .claude/agents/speckit-specify.md\n✅ speckit-plan: .claude/agents/speckit-plan.md\n✅ speckit-gaps: .claude/agents/speckit-gaps.md\n✅ speckit-tasks: .claude/agents/speckit-tasks.md\n\n【检查 2】Auditor 执行体:\n✅ auditor-spec: .claude/agents/auditors/auditor-spec.md\n✅ auditor-plan: .claude/agents/auditors/auditor-plan.md\n✅ auditor-gaps: .claude/agents/auditors/auditor-gaps.md\n✅ auditor-tasks: .claude/agents/auditors/auditor-tasks.md\n✅ auditor-implement: .claude/agents/auditors/auditor-implement.md\n✅ auditor-document: .claude/agents/auditors/auditor-document.md\n✅ auditor-bugfix: .claude/agents/auditors/auditor-bugfix.md\n\n=== 验证结果: ✅ 全部通过 ===\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-story-mode.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_verify_story_mode_ts_no_args",
+        "expectedStdout": "========================================\nBMAD Story Mode 工作流程验证\n========================================\n\n配置模式: full\n子代理工具: mcp_task\n子代理类型: generalPurpose\n\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-registry.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_write_runtime_registry_js_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

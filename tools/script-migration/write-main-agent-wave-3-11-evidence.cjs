@@ -49,7 +49,7 @@ const EXPECTED_ENTRIES = [
     semantic: 'package_runtime_module',
     strategy: 'package_runtime_module',
     targetPaths: [
-      'packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js',
+      'packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts',
       'packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js',
     ],
   },
@@ -59,7 +59,7 @@ const EXPECTED_ENTRIES = [
     semantic: 'package_runtime_module',
     strategy: 'package_runtime_module',
     targetPaths: [
-      'packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js',
+      'packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts',
       'packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js',
     ],
   },
@@ -513,39 +513,63 @@ function gitStatusByPath() {
   return byPath;
 }
 
+function registryStatusFor(entry) {
+  if (entry.strategy === 'repo_internal_reclassify') {
+    return {
+      migrationStatus: 'validated',
+      validationStatus: 'passed',
+      registryEvidenceResult: 'passed',
+      extraFields: {},
+    };
+  }
+  return {
+    migrationStatus: 'blocked',
+    validationStatus: 'partial',
+    registryEvidenceResult: 'partial',
+    extraFields: {
+      implementationState: 'blocked_pending_strict_package_source_parity_evidence',
+      migrationBlockers: ['missing_strict_package_source_parity_evidence'],
+      parityEvidenceStatus: 'missing_strict_package_source_parity_evidence',
+    },
+  };
+}
+
 function updateRegistryText(existingText, startedAt, completedAt) {
   const parsed = yaml.load(existingText);
   const previousWave = (parsed.waves || []).find((wave) => wave.waveId === REFINES_WAVE_ID);
   if (!previousWave) throw new Error(`Registry missing ${REFINES_WAVE_ID}`);
+  const entryRows = EXPECTED_ENTRIES.map((entry) => {
+    const metadata = registryMetadata(entry);
+    const status = registryStatusFor(entry);
+    return {
+      entryId: entry.entryId,
+      refinesWaveId: REFINES_WAVE_ID,
+      originalPath: entry.originalPath,
+      originalPathStatus: metadata.originalPathStatus,
+      originalClassBeforeMigration: metadata.originalClassBeforeMigration,
+      migrationStrategy: entry.strategy,
+      migrationStatus: status.migrationStatus,
+      targetPaths: entry.targetPaths,
+      publicCommandsBeforeMigration: metadata.publicCommandsBeforeMigration,
+      publicCommandsAfterMigration: metadata.publicCommandsAfterMigration,
+      callerSwitchStatus: metadata.callerSwitchStatus,
+      validationStatus: status.validationStatus,
+      evidenceRefs: [REGISTRY_EVIDENCE_PATH],
+      oldPathDisposition: metadata.oldPathDisposition,
+      deletionAllowed: false,
+      deletionApprovalRef: null,
+      ...status.extraFields,
+    };
+  });
   const wave = {
     waveId: WAVE_ID,
     title: WAVE_TITLE,
     contractPath: CONTRACT_PATH,
     refinesWaveId: REFINES_WAVE_ID,
-    status: 'validated',
+    status: entryRows.every((entry) => entry.validationStatus === 'passed') ? 'validated' : 'blocked',
     startedAt,
-    completedAt,
-    entries: EXPECTED_ENTRIES.map((entry) => {
-      const metadata = registryMetadata(entry);
-      return {
-        entryId: entry.entryId,
-        refinesWaveId: REFINES_WAVE_ID,
-        originalPath: entry.originalPath,
-        originalPathStatus: metadata.originalPathStatus,
-        originalClassBeforeMigration: metadata.originalClassBeforeMigration,
-        migrationStrategy: entry.strategy,
-        migrationStatus: 'validated',
-        targetPaths: entry.targetPaths,
-        publicCommandsBeforeMigration: metadata.publicCommandsBeforeMigration,
-        publicCommandsAfterMigration: metadata.publicCommandsAfterMigration,
-        callerSwitchStatus: metadata.callerSwitchStatus,
-        validationStatus: 'passed',
-        evidenceRefs: [REGISTRY_EVIDENCE_PATH],
-        oldPathDisposition: metadata.oldPathDisposition,
-        deletionAllowed: false,
-        deletionApprovalRef: null,
-      };
-    }),
+    completedAt: entryRows.every((entry) => entry.validationStatus === 'passed') ? completedAt : null,
+    entries: entryRows,
   };
   const waveBlock = renderYamlListItem(wave, 2);
   const waveStartPattern = /^  - waveId: ['"]?main-agent-runtime-migration-wave-3\.11['"]?\r?\n/gmu;
@@ -661,16 +685,19 @@ function buildRegistryEvidence(validatedAt) {
   return {
     waveId: WAVE_ID,
     validatedAt,
-    entries: EXPECTED_ENTRIES.map((entry) => ({
-      entryId: entry.entryId,
-      originalPath: entry.originalPath,
-      targetPaths: entry.targetPaths,
-      commands: [],
-      installMatrixEvidence: {
-        status: 'not_required_for_pre_evidence_registry_schema',
-      },
-      result: 'passed',
-    })),
+    entries: EXPECTED_ENTRIES.map((entry) => {
+      const status = registryStatusFor(entry);
+      return {
+        entryId: entry.entryId,
+        originalPath: entry.originalPath,
+        targetPaths: entry.targetPaths,
+        commands: [],
+        installMatrixEvidence: {
+          status: 'not_required_for_pre_evidence_registry_schema',
+        },
+        result: status.registryEvidenceResult,
+      };
+    }),
   };
 }
 

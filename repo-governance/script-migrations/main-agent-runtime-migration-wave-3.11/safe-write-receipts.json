@@ -1,6 +1,6 @@
 {
   "waveId": "main-agent-runtime-migration-wave-3.11",
-  "generatedAt": "2026-06-06T02:31:24.982Z",
+  "generatedAt": "2026-06-21T05:48:40.603Z",
   "receipts": [
     {
       "targetPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
@@ -5661,12 +5661,557 @@
       "byteLength": 60318,
       "startedAt": "2026-06-06T02:31:24.977Z",
       "completedAt": "2026-06-06T02:31:24.982Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+      "sha256": "sha256:7b5e104a6eb04affe274c064a95f34f5f17185af03b3a86fdc9af4b25545ca68",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+      "operation": "closure_audit_write",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/.audit-report.json.draft.20260621T054300634Z.43364.930ab6ce",
+      "backupPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json.bak.20260621T054300634Z.43364.930ab6ce",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:7b5e104a6eb04affe274c064a95f34f5f17185af03b3a86fdc9af4b25545ca68",
+      "promotedSha256": "sha256:7b5e104a6eb04affe274c064a95f34f5f17185af03b3a86fdc9af4b25545ca68",
+      "postWriteSha256": "sha256:7b5e104a6eb04affe274c064a95f34f5f17185af03b3a86fdc9af4b25545ca68",
+      "byteLength": 286768,
+      "startedAt": "2026-06-21T05:43:00.634Z",
+      "completedAt": "2026-06-21T05:43:00.641Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json",
+      "sha256": "sha256:40e625ba54df7da25f88b970d579c9912bfa4d375fb8a903e2b96093babd0020",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json",
+      "operation": "source_inventory_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.source-inventory.json.draft.20260621T054300734Z.19960.f4007cd4",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json.bak.20260621T054300734Z.19960.f4007cd4",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:40e625ba54df7da25f88b970d579c9912bfa4d375fb8a903e2b96093babd0020",
+      "promotedSha256": "sha256:40e625ba54df7da25f88b970d579c9912bfa4d375fb8a903e2b96093babd0020",
+      "postWriteSha256": "sha256:40e625ba54df7da25f88b970d579c9912bfa4d375fb8a903e2b96093babd0020",
+      "byteLength": 6889,
+      "startedAt": "2026-06-21T05:43:00.734Z",
+      "completedAt": "2026-06-21T05:43:00.737Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json",
+      "sha256": "sha256:fa3a20c9b96aa14232f189eb1d5ade4b29fceef610691b78f93bdcff2b203727",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json",
+      "operation": "no_migration_internal_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.no-migration-internal.json.draft.20260621T054300737Z.19960.767880e7",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json.bak.20260621T054300737Z.19960.767880e7",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:fa3a20c9b96aa14232f189eb1d5ade4b29fceef610691b78f93bdcff2b203727",
+      "promotedSha256": "sha256:fa3a20c9b96aa14232f189eb1d5ade4b29fceef610691b78f93bdcff2b203727",
+      "postWriteSha256": "sha256:fa3a20c9b96aa14232f189eb1d5ade4b29fceef610691b78f93bdcff2b203727",
+      "byteLength": 842,
+      "startedAt": "2026-06-21T05:43:00.737Z",
+      "completedAt": "2026-06-21T05:43:00.740Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json",
+      "sha256": "sha256:491eb061a17c8b8ac54d0ada6e22f6ca2402efaae8e5c1eb2b06bcca47038128",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json",
+      "operation": "classification_evidence_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.classification-evidence.json.draft.20260621T054300740Z.19960.f2531aa5",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json.bak.20260621T054300740Z.19960.f2531aa5",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "refinesWaveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "auditReportPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "registryPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:491eb061a17c8b8ac54d0ada6e22f6ca2402efaae8e5c1eb2b06bcca47038128",
+      "promotedSha256": "sha256:491eb061a17c8b8ac54d0ada6e22f6ca2402efaae8e5c1eb2b06bcca47038128",
+      "postWriteSha256": "sha256:491eb061a17c8b8ac54d0ada6e22f6ca2402efaae8e5c1eb2b06bcca47038128",
+      "byteLength": 7741,
+      "startedAt": "2026-06-21T05:43:00.740Z",
+      "completedAt": "2026-06-21T05:43:00.742Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json",
+      "sha256": "sha256:8d6461ea21c0afd95bdec87ed428e80cbb6073ca10b3f43d5cdad7594d69b8f9",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json",
+      "operation": "registry_evidence_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.registry-evidence.json.draft.20260621T054300742Z.19960.35011cc9",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json.bak.20260621T054300742Z.19960.35011cc9",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "validatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:8d6461ea21c0afd95bdec87ed428e80cbb6073ca10b3f43d5cdad7594d69b8f9",
+      "promotedSha256": "sha256:8d6461ea21c0afd95bdec87ed428e80cbb6073ca10b3f43d5cdad7594d69b8f9",
+      "postWriteSha256": "sha256:8d6461ea21c0afd95bdec87ed428e80cbb6073ca10b3f43d5cdad7594d69b8f9",
+      "byteLength": 5754,
+      "startedAt": "2026-06-21T05:43:00.742Z",
+      "completedAt": "2026-06-21T05:43:00.744Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migration-registry.yaml",
+      "sha256": "sha256:98eb19712c6e43cf5ace20a6b1bc59cd4b8f1d1968fd60235720083add8cee19",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migration-registry.yaml",
+      "operation": "registry_wave_3_11_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/.script-migration-registry.yaml.draft.20260621T054300769Z.19960.67af154f",
+      "backupPath": "repo-governance/script-migration-registry.yaml.bak.20260621T054300769Z.19960.67af154f",
+      "requiredChecks": [],
+      "draftSha256": "sha256:98eb19712c6e43cf5ace20a6b1bc59cd4b8f1d1968fd60235720083add8cee19",
+      "promotedSha256": "sha256:98eb19712c6e43cf5ace20a6b1bc59cd4b8f1d1968fd60235720083add8cee19",
+      "postWriteSha256": "sha256:98eb19712c6e43cf5ace20a6b1bc59cd4b8f1d1968fd60235720083add8cee19",
+      "byteLength": 362900,
+      "startedAt": "2026-06-21T05:43:00.769Z",
+      "completedAt": "2026-06-21T05:43:00.773Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/preflight.json",
+      "sha256": "sha256:aec966865a171351450ade5961f6202b8067d19e00cc4585d55ea2cbe4b48e68",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/preflight.json",
+      "operation": "preflight_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.preflight.json.draft.20260621T054301328Z.19960.c7f808b3",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/preflight.json.bak.20260621T054301328Z.19960.c7f808b3",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "startedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "completedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "gitStatusShortHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourceInventoryHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "commands",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:aec966865a171351450ade5961f6202b8067d19e00cc4585d55ea2cbe4b48e68",
+      "promotedSha256": "sha256:aec966865a171351450ade5961f6202b8067d19e00cc4585d55ea2cbe4b48e68",
+      "postWriteSha256": "sha256:aec966865a171351450ade5961f6202b8067d19e00cc4585d55ea2cbe4b48e68",
+      "byteLength": 5476,
+      "startedAt": "2026-06-21T05:43:01.328Z",
+      "completedAt": "2026-06-21T05:43:01.332Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+      "sha256": "sha256:5df4868a12d2b5a89950ae070c74db8c14508fb09228626bd17a96a213e5916a",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json",
+      "operation": "closure_audit_write",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/.audit-report.json.draft.20260621T054826187Z.43052.4819e373",
+      "backupPath": "repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json.bak.20260621T054826187Z.43052.4819e373",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:5df4868a12d2b5a89950ae070c74db8c14508fb09228626bd17a96a213e5916a",
+      "promotedSha256": "sha256:5df4868a12d2b5a89950ae070c74db8c14508fb09228626bd17a96a213e5916a",
+      "postWriteSha256": "sha256:5df4868a12d2b5a89950ae070c74db8c14508fb09228626bd17a96a213e5916a",
+      "byteLength": 286805,
+      "startedAt": "2026-06-21T05:48:26.187Z",
+      "completedAt": "2026-06-21T05:48:26.192Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json",
+      "sha256": "sha256:eebff7fe53ac7b7bb01eae754cb1d431bd4411c126b336ddb47ede6c25ec95b8",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json",
+      "operation": "source_inventory_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.source-inventory.json.draft.20260621T054826273Z.43680.a256be77",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/source-inventory.json.bak.20260621T054826273Z.43680.a256be77",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:eebff7fe53ac7b7bb01eae754cb1d431bd4411c126b336ddb47ede6c25ec95b8",
+      "promotedSha256": "sha256:eebff7fe53ac7b7bb01eae754cb1d431bd4411c126b336ddb47ede6c25ec95b8",
+      "postWriteSha256": "sha256:eebff7fe53ac7b7bb01eae754cb1d431bd4411c126b336ddb47ede6c25ec95b8",
+      "byteLength": 6889,
+      "startedAt": "2026-06-21T05:48:26.272Z",
+      "completedAt": "2026-06-21T05:48:26.275Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json",
+      "sha256": "sha256:1345be854eb701374cfa9a95b0c01354253bc94747b5a45345ccc881daadb1ed",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json",
+      "operation": "no_migration_internal_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.no-migration-internal.json.draft.20260621T054826275Z.43680.d7845d32",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json.bak.20260621T054826275Z.43680.d7845d32",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:1345be854eb701374cfa9a95b0c01354253bc94747b5a45345ccc881daadb1ed",
+      "promotedSha256": "sha256:1345be854eb701374cfa9a95b0c01354253bc94747b5a45345ccc881daadb1ed",
+      "postWriteSha256": "sha256:1345be854eb701374cfa9a95b0c01354253bc94747b5a45345ccc881daadb1ed",
+      "byteLength": 842,
+      "startedAt": "2026-06-21T05:48:26.275Z",
+      "completedAt": "2026-06-21T05:48:26.277Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json",
+      "sha256": "sha256:7469e832e83a15b6bc1bc0f56c0561ba02860610a02de37bde2aafe107e36055",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json",
+      "operation": "classification_evidence_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.classification-evidence.json.draft.20260621T054826277Z.43680.7077f508",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json.bak.20260621T054826277Z.43680.7077f508",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "refinesWaveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "auditReportPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "registryPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:7469e832e83a15b6bc1bc0f56c0561ba02860610a02de37bde2aafe107e36055",
+      "promotedSha256": "sha256:7469e832e83a15b6bc1bc0f56c0561ba02860610a02de37bde2aafe107e36055",
+      "postWriteSha256": "sha256:7469e832e83a15b6bc1bc0f56c0561ba02860610a02de37bde2aafe107e36055",
+      "byteLength": 7741,
+      "startedAt": "2026-06-21T05:48:26.277Z",
+      "completedAt": "2026-06-21T05:48:26.278Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json",
+      "sha256": "sha256:6c5172cf8761570cb048e3044bafc6a4e43c76633788c47931437d4a971c6ab4",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json",
+      "operation": "registry_evidence_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.registry-evidence.json.draft.20260621T054826279Z.43680.31ad29a7",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json.bak.20260621T054826279Z.43680.31ad29a7",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "validatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:6c5172cf8761570cb048e3044bafc6a4e43c76633788c47931437d4a971c6ab4",
+      "promotedSha256": "sha256:6c5172cf8761570cb048e3044bafc6a4e43c76633788c47931437d4a971c6ab4",
+      "postWriteSha256": "sha256:6c5172cf8761570cb048e3044bafc6a4e43c76633788c47931437d4a971c6ab4",
+      "byteLength": 5765,
+      "startedAt": "2026-06-21T05:48:26.279Z",
+      "completedAt": "2026-06-21T05:48:26.281Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migration-registry.yaml",
+      "sha256": "sha256:bd5c33103773801a160eda784759b2ebbdcc76a5dac63282a5ad1243fb3f8205",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migration-registry.yaml",
+      "operation": "registry_wave_3_11_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/.script-migration-registry.yaml.draft.20260621T054826308Z.43680.891c0c68",
+      "backupPath": "repo-governance/script-migration-registry.yaml.bak.20260621T054826308Z.43680.891c0c68",
+      "requiredChecks": [],
+      "draftSha256": "sha256:bd5c33103773801a160eda784759b2ebbdcc76a5dac63282a5ad1243fb3f8205",
+      "promotedSha256": "sha256:bd5c33103773801a160eda784759b2ebbdcc76a5dac63282a5ad1243fb3f8205",
+      "postWriteSha256": "sha256:bd5c33103773801a160eda784759b2ebbdcc76a5dac63282a5ad1243fb3f8205",
+      "byteLength": 365615,
+      "startedAt": "2026-06-21T05:48:26.308Z",
+      "completedAt": "2026-06-21T05:48:26.314Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/preflight.json",
+      "sha256": "sha256:d1c3ec3e5942f2d1685bfbb927ff3e1a36a3d3412a3c154f96b16089c8a0e1d2",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/preflight.json",
+      "operation": "preflight_pre_evidence",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.preflight.json.draft.20260621T054826896Z.43680.be737068",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/preflight.json.bak.20260621T054826896Z.43680.be737068",
+      "requiredChecks": [
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "startedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "completedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "gitStatusShortHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourceInventoryHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "commands",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:d1c3ec3e5942f2d1685bfbb927ff3e1a36a3d3412a3c154f96b16089c8a0e1d2",
+      "promotedSha256": "sha256:d1c3ec3e5942f2d1685bfbb927ff3e1a36a3d3412a3c154f96b16089c8a0e1d2",
+      "postWriteSha256": "sha256:d1c3ec3e5942f2d1685bfbb927ff3e1a36a3d3412a3c154f96b16089c8a0e1d2",
+      "byteLength": 5478,
+      "startedAt": "2026-06-21T05:48:26.896Z",
+      "completedAt": "2026-06-21T05:48:26.897Z"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/summary.md",
+      "sha256": "sha256:030045dddb9fa17409a6883fe9f0b7dd7edc928c79db895556b6f880ee4bf9e9",
+      "status": "passed",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/summary.md",
+      "operation": "summary_receipt_refresh_after_ts_source_authority",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/.summary.md.draft.20260621T054840600Z.20592.81b75053",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/summary.md.bak.20260621T054840600Z.20592.81b75053",
+      "requiredChecks": [],
+      "draftSha256": "sha256:030045dddb9fa17409a6883fe9f0b7dd7edc928c79db895556b6f880ee4bf9e9",
+      "promotedSha256": "sha256:030045dddb9fa17409a6883fe9f0b7dd7edc928c79db895556b6f880ee4bf9e9",
+      "postWriteSha256": "sha256:030045dddb9fa17409a6883fe9f0b7dd7edc928c79db895556b6f880ee4bf9e9",
+      "byteLength": 8536,
+      "startedAt": "2026-06-21T05:48:40.599Z",
+      "completedAt": "2026-06-21T05:48:40.603Z"
     }
   ],
   "selfVerification": {
     "hashKind": "canonical_json_without_selfVerification",
-    "payloadSha256": "sha256:c94282d0367c8e0985f57032722ab081f61dc2301ddc09c54bf9549bb266693d",
-    "computedAt": "2026-06-06T02:31:24.989Z",
+    "payloadSha256": "sha256:76f96cb0a1eead4bed3f2066451c9f782e2f9ceb86bfff905561da1bcbb2cddd",
+    "computedAt": "2026-06-21T05:48:40.608Z",
     "status": "passed"
   }
 }

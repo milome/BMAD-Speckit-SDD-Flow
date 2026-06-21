@@ -1,0 +1,410 @@
+{
+  "schemaVersion": "goal-contract-source-coverage-receipt/v1",
+  "sourcePlanPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json",
+  "sourcePlanHash": "sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31",
+  "sourceBytes": 735064,
+  "sourceLines": 22288,
+  "goalContractPath": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+  "goalContractHash": "sha256:48e5968f0f9cc59bd1d8ce78e688c2c38d243c09a1be844d9281a03365b74f37",
+  "sourceObligations": [
+    {
+      "id": "SRC001",
+      "kind": "conversation_requirement",
+      "source": "User request: wave4.1 full-scope complete equivalent no-fallback migration goal contract with all 240 scripts requiring packageImplementationSet, task-local behaviorEquivalenceMatrix first generation in G003 through G008, behaviorEquivalenceMatrix replay, strict byte and LOC size-delta gates, 240-path no-fallback scan, automatic /goal rework until strict acceptance passes, and anti-shortcut hard gates for owner assignment, scenario coverage, expected-output provenance, first-generation proof, anti-padding, G009 aggregation, dynamic fallback, settled equivalence, and acceptance result coverage",
+      "goalTaskRefs": [
+        "G001-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC001-ACC038"
+      ],
+      "commandRefs": [
+        "CMD001-CMD022"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC002",
+      "kind": "full_inventory_scope",
+      "source": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/source-inventory.json; sha256:897c403b25e2bf78b9bb1498a550294e4b990b71125b095b85ef7eb752a44c31",
+      "goalTaskRefs": [
+        "G001",
+        "G003-G009",
+        "G012",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC001",
+        "ACC002",
+        "ACC016",
+        "ACC017",
+        "ACC021",
+        "ACC022",
+        "ACC023",
+        "ACC025",
+        "ACC026",
+        "ACC027",
+        "ACC028",
+        "ACC030",
+        "ACC031",
+        "ACC032",
+        "ACC033",
+        "ACC034",
+        "ACC035",
+        "ACC036",
+        "ACC037",
+        "ACC038"
+      ],
+      "commandRefs": [
+        "CMD002",
+        "CMD003",
+        "CMD004",
+        "CMD008",
+        "CMD013",
+        "CMD017-CMD022"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC003",
+      "kind": "queue_scope",
+      "source": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/migration-queue.json; sha256:3b3ccf1b1a88d9f7dd559413e4bcb502d0cdf7305b308b64e2b12f26ac42ddb5",
+      "goalTaskRefs": [
+        "G001",
+        "G003-G012",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC001-ACC038"
+      ],
+      "commandRefs": [
+        "CMD002",
+        "CMD003",
+        "CMD013",
+        "CMD017-CMD022"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC004",
+      "kind": "parity_baseline",
+      "source": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.0-rebaseline/package-source-parity-baseline.json; sha256:9d69564dc665ba50eb40fab76a955a8880602963dd57667f6b8d308074629dee",
+      "goalTaskRefs": [
+        "G001",
+        "G004-G010",
+        "G013-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC003-ACC016",
+        "ACC021-ACC038"
+      ],
+      "commandRefs": [
+        "CMD002",
+        "CMD008",
+        "CMD013",
+        "CMD017-CMD022"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC005",
+      "kind": "registry_state",
+      "source": "repo-governance/script-migration-registry.yaml; sha256:9c86cac253049e18b4c126994817c6786f7d115800884eac0348e4d18ad8cf33",
+      "goalTaskRefs": [
+        "G001",
+        "G012",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC011",
+        "ACC017-ACC038"
+      ],
+      "commandRefs": [
+        "CMD007",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC006",
+      "kind": "no_fallback_policy",
+      "source": "No root script dispatch across all 240 source inventory original paths, no dynamic script path construction, no package.json script indirection, no tsx, no ts-node, no compiled fallback, no descriptor-only helper, no report-only action",
+      "goalTaskRefs": [
+        "G002-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC003-ACC038"
+      ],
+      "commandRefs": [
+        "CMD003",
+        "CMD008",
+        "CMD013"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC007",
+      "kind": "strict_acceptance_policy",
+      "source": "Every acceptance row requires task-local behaviorEquivalenceMatrix first-generation proof, behaviorEquivalenceMatrix replay proof, packageImplementationSet, byte and LOC size-delta proof, deterministic owner proof, scenario coverage proof, expected output provenance, semantic size proof, dynamic no-fallback proof, source seam, receipt field, CLI output, registry, package build, install matrix, encoding proof, and automatic rework closure",
+      "goalTaskRefs": [
+        "G002-G015"
+      ],
+      "acceptanceRefs": [
+        "ACC003-ACC038"
+      ],
+      "commandRefs": [
+        "CMD004-CMD022"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json"
+      ]
+    },
+    {
+      "id": "SRC008",
+      "kind": "user_strict_addendum",
+      "source": "All 240 scripts/** rows must have non-empty packageImplementationSet, original/package bytes and LOC ratios, strict threshold decision, task-local behaviorEquivalenceMatrix first-generation proof in G003 through G008, behaviorEquivalenceMatrix replay proof, deterministic owner assignment, full scenario coverage, original expected-output provenance, first-generation artifact hashes, anti-padding semantic size proof, G009 audit-only hash-preserving aggregation, dynamic fallback scan, settled row equivalence proof, 240-path no-fallback scan, exact acceptance result coverage, and automatic goal rework until compliant; G009 may only audit, replay, aggregate, and report pre-existing matrix scenarios",
+      "goalTaskRefs": [
+        "G001",
+        "G002",
+        "G003-G009",
+        "G014",
+        "G015"
+      ],
+      "acceptanceRefs": [
+        "ACC022-ACC038"
+      ],
+      "commandRefs": [
+        "CMD003",
+        "CMD004",
+        "CMD008",
+        "CMD013",
+        "CMD014",
+        "CMD017-CMD022"
+      ],
+      "evidenceRefs": [
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json"
+      ]
+    }
+  ],
+  "unmappedSourceObligations": [],
+  "orphanGeneratedRefs": [],
+  "blockingReasons": [],
+  "decision": "pass",
+  "generatedAt": "2026-06-19T22:22:50.813Z",
+  "contractHash": "sha256:48e5968f0f9cc59bd1d8ce78e688c2c38d243c09a1be844d9281a03365b74f37",
+  "strictHardening": {
+    "originalPathUniverseRows": 240,
+    "backlogRows": 206,
+    "settledRows": 34,
+    "acceptanceRange": "ACC001-ACC038",
+    "acc028PlusRange": "ACC028-ACC038",
+    "commandRange": "CMD001-CMD022",
+    "cmd003FailClosed": true,
+    "cmd003StrictCompletionGatePreviewRequired": true,
+    "cmd013FailClosed": true,
+    "ownerScopeCommands": [
+      "CMD017",
+      "CMD018",
+      "CMD019",
+      "CMD020",
+      "CMD021",
+      "CMD022"
+    ],
+    "ownerScopeCommandsBeforeCmd013": true,
+    "commandExecutionOrder": "document_order_not_numeric_sort",
+    "packageImplementationSetRequiredRows": 240,
+    "all240RowsHaveValidPackageImplementationSetRequired": true,
+    "packageImplementationPathsMustExist": true,
+    "binOnlyPackageImplementationRequiresSourcePair": false,
+    "invalidPackageImplementationPathCountRequired": 0,
+    "behaviorEquivalenceMatrixRequiredRows": 240,
+    "behaviorEquivalenceScenarioRequiredFields": [
+      "scenarioId",
+      "originalEntryPoint",
+      "originalEntryCommand",
+      "packageEntryPoint",
+      "packageEntryCommand",
+      "argumentCombination",
+      "args",
+      "env",
+      "fixtures",
+      "expectedStdout",
+      "expectedStderr",
+      "expectedExitCode",
+      "expectedFileArtifacts",
+      "expectedErrorPaths",
+      "expectedOutputProvenance",
+      "scenarioCoverageProof"
+    ],
+    "behaviorEquivalenceScenarioSemanticValuesRequired": true,
+    "behaviorEquivalenceMatrixScenarioFieldGapCountRequired": 0,
+    "behaviorEquivalenceMatrixScenarioCoverageGapCountRequired": 0,
+    "behaviorReplayProofShapeRequired": true,
+    "behaviorEquivalenceMatrixFirstGenerationOwners": [
+      "G003",
+      "G004",
+      "G005",
+      "G006",
+      "G007",
+      "G008"
+    ],
+    "g009FirstGenerationForbidden": true,
+    "g009Scope": "audit_replay_aggregate_report_only",
+    "matrixOwnerCompletionTimingGapCountRequired": 0,
+    "fullScenarioCoverageRequired": true,
+    "scenarioCoverageGapCountRequired": 0,
+    "expectedOutputSourcesAllowed": [
+      "original_replay",
+      "source_derived_original"
+    ],
+    "expectedOutputProvenanceGapCountRequired": 0,
+    "packageObservedExpectedOutputCountRequired": 0,
+    "rawAndSemanticSizeDeltaRequired": true,
+    "sizeDeltaThresholdShapeGapCountRequired": 0,
+    "zeroSizeMetricCountRequired": 0,
+    "semanticZeroSizeMetricCountRequired": 0,
+    "sizeDeltaViolationCountRequired": 0,
+    "semanticSizeDeltaViolationCountRequired": 0,
+    "sizeDeltaComputationMismatchCountRequired": 0,
+    "semanticSizeComputationMismatchCountRequired": 0,
+    "semanticSizePaddingViolationCountRequired": 0,
+    "noFallbackScanOriginalPathCountRequired": 240,
+    "dynamicFallbackHitCountRequired": 0,
+    "settledEquivalenceBypassCountRequired": 0,
+    "acceptanceResultsCountRequired": 38,
+    "acceptanceResultCoverageGapCountRequired": 0,
+    "receiptFields": [
+      "goalContractHash",
+      "contractHash",
+      "docsReviewRounds",
+      "multiViewAudit",
+      "structuralValidation",
+      "strictHardening",
+      "strictAddendum",
+      "antiShortcutAddendum",
+      "largeDocumentWriter.finalHash",
+      "largeDocumentWriter.validationHash",
+      "strictHardening.behaviorEquivalenceScenarioRequiredFields",
+      "strictHardening.behaviorEquivalenceScenarioSemanticValuesRequired",
+      "strictHardening.expectedOutputProvenanceGapCountRequired",
+      "strictHardening.sizeDeltaComputationMismatchCountRequired",
+      "strictHardening.semanticSizeComputationMismatchCountRequired",
+      "strictHardening.acceptanceResultsCountRequired",
+      "strictHardening.packageImplementationSourcePathRequired",
+      "strictHardening.binOnlyPackageImplementationForbiddenForAllRows",
+      "strictHardening.scenarioPackageEntryPointMustExist",
+      "strictHardening.scenarioPackageEntryPointMustBeSourcePath",
+      "strictHardening.scenarioPackageEntryPointMustBelongToPackageImplementationSet",
+      "strictHardening.scenarioPackageEntryCommandForbidsAnyRootScriptsPath",
+      "strictHardening.g009AggregationProofGapCountRequired",
+      "strictHardening.g009AggregationHashMismatchCountRequired",
+      "strictHardening.noFallbackScanRootsRequired",
+      "strictHardening.sourceAuthorityPathsRequired",
+      "strictHardening.runtimeReplayPathsRequired",
+      "strictHardening.distOutputPathsRequired",
+      "strictHardening.sourceAuthorityPathGapCountRequired",
+      "strictHardening.runtimeReplayPathGapCountRequired",
+      "strictHardening.packageImplementationSetAllowsOnlyPackageSrc",
+      "strictHardening.packageBinPathForbiddenInPackageImplementationSet",
+      "strictHardening.typeScriptOriginalRequiresPackageTsSourceAuthority",
+      "strictHardening.consumerRuntimeReplayRequiresPackageDist",
+      "strictHardening.scenarioPackageEntryCommandForbidsPackageSrcRuntime",
+      "strictHardening.scenarioPackageEntryCommandMustReferenceRuntimeReplayPath"
+    ],
+    "packageImplementationSourcePathRequired": true,
+    "binOnlyPackageImplementationForbiddenForAllRows": true,
+    "scenarioPackageEntryPointMustExist": true,
+    "scenarioPackageEntryPointMustBeSourcePath": true,
+    "scenarioPackageEntryPointMustBelongToPackageImplementationSet": true,
+    "scenarioPackageEntryCommandForbidsAnyRootScriptsPath": true,
+    "g009AggregationProofGapCountRequired": 0,
+    "g009AggregationHashMismatchCountRequired": 0,
+    "noFallbackScanRootsRequired": [
+      "packages/bmad-speckit/src",
+      "packages/bmad-speckit/dist",
+      "packages/bmad-speckit/bin",
+      "packages/bmad-speckit/scripts",
+      "packages/bmad-speckit/package.json",
+      "_bmad/codex",
+      ".codex",
+      ".cursor",
+      ".claude",
+      "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/install-matrix"
+    ],
+    "sourceAuthorityPathsRequired": true,
+    "runtimeReplayPathsRequired": true,
+    "distOutputPathsRequired": true,
+    "sourceAuthorityPathGapCountRequired": 0,
+    "runtimeReplayPathGapCountRequired": 0,
+    "packageImplementationSetAllowsOnlyPackageSrc": true,
+    "packageImplementationSetForbidsBinDistReceiptTest": true,
+    "packageBinPathForbiddenInPackageImplementationSet": true,
+    "typeScriptOriginalRequiresPackageTsSourceAuthority": true,
+    "consumerRuntimeReplayRequiresPackageDist": true,
+    "scenarioPackageEntryCommandForbidsPackageSrcRuntime": true,
+    "scenarioPackageEntryCommandMustReferenceRuntimeReplayPath": true
+  },
+  "structuralValidation": {
+    "ok": true,
+    "target": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+    "contractHash": "sha256:48e5968f0f9cc59bd1d8ce78e688c2c38d243c09a1be844d9281a03365b74f37",
+    "taskCount": 15,
+    "taskRange": "G001-G015",
+    "acceptanceChecklistCount": 38,
+    "acceptanceChecklistRange": "ACC001-ACC038",
+    "traceAcceptanceCount": 38,
+    "commandCount": 22,
+    "commandRange": "CMD001-CMD022",
+    "sourceCoverageRowCount": 8,
+    "mustIdCount": 118,
+    "duplicateMustDefinitionCount": 14,
+    "allAcceptanceChecklistIdsPresent": true,
+    "allTraceAcceptanceIdsPresent": true,
+    "allCommandIdsPresent": true,
+    "ownerCommandsBeforeFinalValidator": true,
+    "commandExecutionOrderIsDocumentOrder": true,
+    "missingRequiredFragments": [],
+    "validatedAt": "2026-06-20T05:08:16.320Z"
+  },
+  "updatedAt": "2026-06-20T05:08:16.320Z",
+  "strictAddendum": {
+    "requiresSourceAuthorityPaths": true,
+    "requiresRuntimeReplayPaths": true,
+    "requiresDistOutputPaths": true,
+    "sourceAuthorityPathGapCountRequired": 0,
+    "runtimeReplayPathGapCountRequired": 0,
+    "packageImplementationSetAllowsOnlyPackageSrc": true,
+    "packageBinPathForbiddenInPackageImplementationSet": true,
+    "typeScriptOriginalRequiresPackageTsSourceAuthority": true,
+    "consumerRuntimeReplayRequiresPackageDist": true,
+    "scenarioPackageEntryCommandForbidsPackageSrcRuntime": true,
+    "scenarioPackageEntryCommandMustReferenceRuntimeReplayPath": true
+  },
+  "antiShortcutAddendum": {
+    "requiresSourceAuthorityPaths": true,
+    "requiresRuntimeReplayPaths": true,
+    "requiresDistOutputPaths": true,
+    "sourceAuthorityPathGapCountRequired": 0,
+    "runtimeReplayPathGapCountRequired": 0,
+    "packageImplementationSetAllowsOnlyPackageSrc": true,
+    "packageBinPathForbiddenInPackageImplementationSet": true,
+    "typeScriptOriginalRequiresPackageTsSourceAuthority": true,
+    "consumerRuntimeReplayRequiresPackageDist": true,
+    "scenarioPackageEntryCommandForbidsPackageSrcRuntime": true,
+    "scenarioPackageEntryCommandMustReferenceRuntimeReplayPath": true
+  }
+}

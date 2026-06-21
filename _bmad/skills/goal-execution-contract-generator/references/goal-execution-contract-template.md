@@ -68,7 +68,7 @@ Fail closed when any required section, field, task ID, acceptance ID, evidence c
 - Do not mark an acceptance item complete without evidence that directly proves that item.
 - Run the regression tests associated with every changed file and keep fresh passing evidence before claiming completion.
 - Do not claim completion from generated prompts, generated goal documents, audit receipts, stdout, exit code, dashboards, score records, audit prose alone.
-- Do not weaken the declared machine-readable authority.
+- Do not weaken the declared authority model, machine-readable source bindings, or machine-readable evidence indexes.
 - Do not hardcode absolute skill install paths into generated templates, profile files, compiler output, tests.
 
 ## Authority Model

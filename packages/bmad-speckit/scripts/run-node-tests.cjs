@@ -49,6 +49,11 @@ function applyFilters(testFiles, filters, cwd) {
 }
 
 const filters = process.argv.slice(2).filter((arg) => String(arg).trim() !== '');
+const stateMutatingTestNames = new Set([
+  'main-agent-build-dist.test.js',
+  'main-agent-full-orchestration-no-regression.test.js',
+  'pack-bmad-mirror.test.js',
+]);
 let testFiles = [];
 
 try {
@@ -76,17 +81,32 @@ if (filters.length > 0 && testFiles.length === 0) {
 const childEnv = { ...process.env };
 delete childEnv.NODE_TEST_CONTEXT;
 
-const result = spawnSync(process.execPath, ['--test', ...testFiles], {
-  stdio: 'inherit',
-  env: childEnv,
-});
+function runTestFiles(files, extraArgs = []) {
+  if (files.length === 0) return 0;
+  const result = spawnSync(process.execPath, ['--test', ...extraArgs, ...files], {
+    stdio: 'inherit',
+    env: childEnv,
+  });
 
-if (typeof result.status === 'number') {
-  process.exit(result.status);
+  if (typeof result.status === 'number') return result.status;
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return 1;
 }
 
-if (result.error) {
-  throw result.error;
+function isStateMutatingTest(testFile) {
+  return stateMutatingTestNames.has(basename(testFile));
 }
 
-process.exit(1);
+const stableTestFiles = testFiles.filter((testFile) => !isStateMutatingTest(testFile));
+const stateMutatingTestFiles = testFiles.filter(isStateMutatingTest);
+
+let status = runTestFiles(stableTestFiles);
+if (status === 0) {
+  status = runTestFiles(stateMutatingTestFiles, ['--test-concurrency=1']);
+}
+
+process.exit(status);

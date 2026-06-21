@@ -1,0 +1,126 @@
+[
+  {
+    "originalPath": "scripts/start-runtime-dashboard-server.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background",
+        "expectedStdout": "{\n  \"pid\": <pid>,\n  \"host\": \"127.0.0.1\",\n  \"port\": 64047,\n  \"url\": \"http://127.0.0.1:<port>\",\n  \"health_url\": \"http://127.0.0.1:<port>/health\",\n  \"started_at\": \"<iso-timestamp>\",\n  \"root\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"data_path\": null,\n  \"mode\": \"reused\",\n  \"state_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/subagent-evidence-envelope.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_envelope",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_project_root",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_report_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_subagent_evidence_envelope_ts_flag_schema_out",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/supervised-worker-runtime.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_supervised_worker_runtime_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/test-locks.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_test_locks_ts_no_args",
+        "expectedStdout": "Testing locks...\n\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/test-story-flow.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_test_story_flow_ts_no_args",
+        "expectedStdout": "=== BMAD Story Assistant Test Flow ===\n\nStage 1: Create Story\n---------------------\n✗ Story creation failed: Story E999-S001 already exists\n  Existing story state: completed\n\nCurrent state: completed\n\nStage 2: Story Audit\n---------------------\n✓ Story audit started\n✓ Story audit passed\n\nStage 3: Dev Story\n---------------------\n✓ Dev Story started\n✓ Dev Story complete\n\nStage 4: Post Audit\n---------------------\n✓ Post audit started\n✓ Post audit passed\n✓ Story completed\n\n=== Final State ===\n{\n  \"version\": \"2.0\",\n  \"epic\": \"E999\",\n  \"story\": \"S001\",\n  \"story_slug\": \"test-epic\",\n  \"layer\": 4,\n  \"stage\": \"completed\",\n  \"audit_status\": \"pending\",\n  \"artifacts\": {},\n  \"scores\": {},\n  \"git_control\": {\n    \"commit_allowed\": false\n  },\n  \"runtime\": {\n    \"last_action\": \"story_created\"\n  },\n  \"auditReportPath\": \"_bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S001-test-story/AUDIT_implement-E999-S001.md\",\n  \"completedAt\": \"<iso-timestamp>\"\n}\n\n=== Active Stories ===\nFound 3 active stories\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_verify_score_auto_scoped_bundle_cjs_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-skill-architecture.sh",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_verify_skill_architecture_sh_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-speckit-mirror-sync.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
+        "expectedStdout": "Speckit .specify mirror is in sync (51 files checked)\n"
+      }
+    ]
+  }
+]

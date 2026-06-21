@@ -1,0 +1,809 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T08:35:24.626Z",
+  "artifactSuffix": "g004_full_batch_006a1",
+  "timeoutMs": 10000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 5,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/main-agent-quality-gate.ts",
+      "entryId": "main-agent-quality-gate",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-quality-gate.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 5,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 1,
+        "errorPathCount": 4,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 5,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 1,
+        "coveredErrorPathCount": 4,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--codexProofPath",
+          "--evidenceBundleId",
+          "--runId",
+          "--storyKey"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--codexProofPath <source-derived-safe-value>",
+          "--evidenceBundleId <source-derived-safe-value>",
+          "--runId <source-derived-safe-value>",
+          "--storyKey <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--codexProofPath <source-derived-safe-value>",
+          "--evidenceBundleId <source-derived-safe-value>",
+          "--runId <source-derived-safe-value>",
+          "--storyKey <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 5,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_codexproofpath",
+          "flag_evidencebundleid",
+          "flag_runid",
+          "flag_storykey"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+          "originalEntryPoint": "scripts/main-agent-quality-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_quality_gate_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_no_args-original-4EGsuH",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_quality_gate_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_no_args-package-2A4niN",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"quality-gate-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"quality-gate-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"e302a1a6e0cdb2007281469cfd3325d1c8a36e065bc7174702ce687e62897d5e\"\n  },\n  \"critical_failures\": 0,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    }\n  ]\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-quality-gate.ts:no_args",
+            "originalReplayArtifactHash": "sha256:14c5cb3d8e2a6bfdb34ecb9fa657367ee00d563e8acfb9396800b871c782d2e9",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-quality-gate.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 283,
+                "anchor": "scripts/main-agent-quality-gate.ts:283",
+                "text": "function main(argv = process.argv.slice(2)): number {"
+              },
+              {
+                "line": 322,
+                "anchor": "scripts/main-agent-quality-gate.ts:322",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              },
+              {
+                "line": 324,
+                "anchor": "scripts/main-agent-quality-gate.ts:324",
+                "text": "console.error('[main-agent-quality-gate] BLOCKED: quality thresholds failed');"
+              },
+              {
+                "line": 326,
+                "anchor": "scripts/main-agent-quality-gate.ts:326",
+                "text": "console.error(`- ${check.id}: ${check.summary}`);"
+              },
+              {
+                "line": 333,
+                "anchor": "scripts/main-agent-quality-gate.ts:333",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+                "to": "scripts/main-agent-quality-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-quality-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--codexProofPath",
+              "--evidenceBundleId",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_codexproofpath",
+              "flag_evidencebundleid",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_quality_gate_ts_flag_codexproofpath",
+          "originalEntryPoint": "scripts/main-agent-quality-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts --codexProofPath <fixture-root>/codexproofpath.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js --codexProofPath <fixture-root>/codexproofpath.json",
+          "argumentCombination": "--codexProofPath <source-derived-safe-value>",
+          "args": [
+            "--codexProofPath",
+            "<fixture-root>/codexproofpath.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_codexproofpath_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_codexproofpath-original-2WF5FG",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_codexproofpath_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_codexproofpath-package-ika3q4",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"quality-gate-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"quality-gate-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"1c9c2a1c3ba61cf3e9d9c1a2e5deb0b9c12be80df474dac0b7740ce7649a752f\"\n  },\n  \"critical_failures\": 1,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    },\n    {\n      \"id\": \"codex-run-scoped-proof\",\n      \"passed\": false,\n      \"summary\": \"run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\"\n    }\n  ]\n}\n",
+          "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "codexproofpath.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "[main-agent-quality-gate] BLOCKED: quality thresholds failed"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-quality-gate.ts:flag_codexproofpath",
+            "originalReplayArtifactHash": "sha256:fa0e9271e1a23b1f4b27ccfb18f91aab95f881024fa07537080fe547ac6db317",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-quality-gate.ts:flag_codexproofpath",
+            "sourceLineAnchors": [
+              {
+                "line": 283,
+                "anchor": "scripts/main-agent-quality-gate.ts:283",
+                "text": "function main(argv = process.argv.slice(2)): number {"
+              },
+              {
+                "line": 322,
+                "anchor": "scripts/main-agent-quality-gate.ts:322",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              },
+              {
+                "line": 324,
+                "anchor": "scripts/main-agent-quality-gate.ts:324",
+                "text": "console.error('[main-agent-quality-gate] BLOCKED: quality thresholds failed');"
+              },
+              {
+                "line": 326,
+                "anchor": "scripts/main-agent-quality-gate.ts:326",
+                "text": "console.error(`- ${check.id}: ${check.summary}`);"
+              },
+              {
+                "line": 333,
+                "anchor": "scripts/main-agent-quality-gate.ts:333",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+                "to": "scripts/main-agent-quality-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-quality-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--codexProofPath",
+              "--evidenceBundleId",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_codexproofpath",
+              "flag_evidencebundleid",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_quality_gate_ts_flag_evidencebundleid",
+          "originalEntryPoint": "scripts/main-agent-quality-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts --evidenceBundleId source-derived-evidencebundleid",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js --evidenceBundleId source-derived-evidencebundleid",
+          "argumentCombination": "--evidenceBundleId <source-derived-safe-value>",
+          "args": [
+            "--evidenceBundleId",
+            "source-derived-evidencebundleid"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_evidencebundleid_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_evidencebundleid-original-Y699tn",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_evidencebundleid_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_evidencebundleid-package-Rdv8Q5",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"quality-gate-<run-id>\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"source-derived-evidencebundleid\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"1c9c2a1c3ba61cf3e9d9c1a2e5deb0b9c12be80df474dac0b7740ce7649a752f\"\n  },\n  \"critical_failures\": 1,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    },\n    {\n      \"id\": \"codex-run-scoped-proof\",\n      \"passed\": false,\n      \"summary\": \"run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\"\n    }\n  ]\n}\n",
+          "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "[main-agent-quality-gate] BLOCKED: quality thresholds failed"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-quality-gate.ts:flag_evidencebundleid",
+            "originalReplayArtifactHash": "sha256:23ba62814e78f6ff84dea8d6976a2d8e8a491f5b5e79d07d62279f492c0658ae",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-quality-gate.ts:flag_evidencebundleid",
+            "sourceLineAnchors": [
+              {
+                "line": 283,
+                "anchor": "scripts/main-agent-quality-gate.ts:283",
+                "text": "function main(argv = process.argv.slice(2)): number {"
+              },
+              {
+                "line": 322,
+                "anchor": "scripts/main-agent-quality-gate.ts:322",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              },
+              {
+                "line": 324,
+                "anchor": "scripts/main-agent-quality-gate.ts:324",
+                "text": "console.error('[main-agent-quality-gate] BLOCKED: quality thresholds failed');"
+              },
+              {
+                "line": 326,
+                "anchor": "scripts/main-agent-quality-gate.ts:326",
+                "text": "console.error(`- ${check.id}: ${check.summary}`);"
+              },
+              {
+                "line": 333,
+                "anchor": "scripts/main-agent-quality-gate.ts:333",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+                "to": "scripts/main-agent-quality-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-quality-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--codexProofPath",
+              "--evidenceBundleId",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_codexproofpath",
+              "flag_evidencebundleid",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_quality_gate_ts_flag_runid",
+          "originalEntryPoint": "scripts/main-agent-quality-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts --runId source-derived-runid",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js --runId source-derived-runid",
+          "argumentCombination": "--runId <source-derived-safe-value>",
+          "args": [
+            "--runId",
+            "source-derived-runid"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_runid_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_runid-original-kbQDvk",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_runid_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_runid-package-q8AQ0j",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"source-derived-runid\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"source-derived-runid:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"1c9c2a1c3ba61cf3e9d9c1a2e5deb0b9c12be80df474dac0b7740ce7649a752f\"\n  },\n  \"critical_failures\": 1,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    },\n    {\n      \"id\": \"codex-run-scoped-proof\",\n      \"passed\": false,\n      \"summary\": \"run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\"\n    }\n  ]\n}\n",
+          "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "[main-agent-quality-gate] BLOCKED: quality thresholds failed"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-quality-gate.ts:flag_runid",
+            "originalReplayArtifactHash": "sha256:3605239da067d091386a7b32a5082ef13e1d54edf807067920546290e9e1c47a",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-quality-gate.ts:flag_runid",
+            "sourceLineAnchors": [
+              {
+                "line": 283,
+                "anchor": "scripts/main-agent-quality-gate.ts:283",
+                "text": "function main(argv = process.argv.slice(2)): number {"
+              },
+              {
+                "line": 322,
+                "anchor": "scripts/main-agent-quality-gate.ts:322",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              },
+              {
+                "line": 324,
+                "anchor": "scripts/main-agent-quality-gate.ts:324",
+                "text": "console.error('[main-agent-quality-gate] BLOCKED: quality thresholds failed');"
+              },
+              {
+                "line": 326,
+                "anchor": "scripts/main-agent-quality-gate.ts:326",
+                "text": "console.error(`- ${check.id}: ${check.summary}`);"
+              },
+              {
+                "line": 333,
+                "anchor": "scripts/main-agent-quality-gate.ts:333",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+                "to": "scripts/main-agent-quality-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-quality-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--codexProofPath",
+              "--evidenceBundleId",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_codexproofpath",
+              "flag_evidencebundleid",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_quality_gate_ts_flag_storykey",
+          "originalEntryPoint": "scripts/main-agent-quality-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts --storyKey source-derived-storykey",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js --storyKey source-derived-storykey",
+          "argumentCombination": "--storyKey <source-derived-safe-value>",
+          "args": [
+            "--storyKey",
+            "source-derived-storykey"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_storykey_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_storykey-original-3eey0A",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_quality_gate_ts_flag_storykey_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_quality_gate_ts_flag_storykey-package-18zkRP",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"quality-gate-<run-id>\",\n    \"storyKey\": \"source-derived-storykey\",\n    \"evidenceBundleId\": \"quality-gate-<run-id>:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"1c9c2a1c3ba61cf3e9d9c1a2e5deb0b9c12be80df474dac0b7740ce7649a752f\"\n  },\n  \"critical_failures\": 1,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    },\n    {\n      \"id\": \"codex-run-scoped-proof\",\n      \"passed\": false,\n      \"summary\": \"run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\"\n    }\n  ]\n}\n",
+          "expectedStderr": "[main-agent-quality-gate] BLOCKED: quality thresholds failed\n- codex-run-scoped-proof: run-scoped Codex proof requires --runId, --storyKey, --evidenceBundleId, and --codexProofPath\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "[main-agent-quality-gate] BLOCKED: quality thresholds failed"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-quality-gate.ts:flag_storykey",
+            "originalReplayArtifactHash": "sha256:94e87e0ad631190a7b1c8bb7c8382e7663c8da753d067c7b16641fbe464d5b55",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-quality-gate.ts:flag_storykey",
+            "sourceLineAnchors": [
+              {
+                "line": 283,
+                "anchor": "scripts/main-agent-quality-gate.ts:283",
+                "text": "function main(argv = process.argv.slice(2)): number {"
+              },
+              {
+                "line": 322,
+                "anchor": "scripts/main-agent-quality-gate.ts:322",
+                "text": "process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);"
+              },
+              {
+                "line": 324,
+                "anchor": "scripts/main-agent-quality-gate.ts:324",
+                "text": "console.error('[main-agent-quality-gate] BLOCKED: quality thresholds failed');"
+              },
+              {
+                "line": 326,
+                "anchor": "scripts/main-agent-quality-gate.ts:326",
+                "text": "console.error(`- ${check.id}: ${check.summary}`);"
+              },
+              {
+                "line": 333,
+                "anchor": "scripts/main-agent-quality-gate.ts:333",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+                "to": "scripts/main-agent-quality-gate.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+                "to": "scripts/main-agent-quality-gate.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-quality-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--codexProofPath",
+              "--evidenceBundleId",
+              "--runId",
+              "--storyKey"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--codexProofPath <source-derived-safe-value>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_codexproofpath",
+              "flag_evidencebundleid",
+              "flag_runid",
+              "flag_storykey"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "originalPath": "scripts/ralph-method/progress-format.ts",
+    "scenarioId": "g008_ralph_method_progress_format_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/schema.ts",
+    "scenarioId": "g008_ralph_method_schema_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/speckit-implement.ts",
+    "scenarioId": "g008_ralph_method_speckit_implement_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/types.ts",
+    "scenarioId": "g008_ralph_method_types_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-pass-consistency.ts",
+    "scenarioId": "g008_ralph_method_verify_pass_consistency_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+    "scenarioId": "g008_ralph_method_verify_ralph_compliance_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/verify-tdd-trace.ts",
+    "scenarioId": "g008_ralph_method_verify_tdd_trace_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/write-tracking-files.ts",
+    "scenarioId": "g008_ralph_method_write_tracking_files_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/README.md",
+    "scenarioId": "g008_readme_md_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\README.md:1\n# scripts\n^\n\nSyntaxError: Invalid or unexpected token\n    at wrapSafe (node:internal/modules/cjs/loader:1637:18)\n    at Module._compile (node:internal/modules/cjs/loader:1679:20)\n    at Object..js (node:internal/modules/cjs/loader:1838:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.22.1\n"
+  },
+  {
+    "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
+    "scenarioId": "g008_render_upstream_bmad_help_baseline_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-contract.ts",
+    "scenarioId": "g008_reviewer_contract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-registry.ts",
+    "scenarioId": "g008_reviewer_registry_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-rollout-gate.ts",
+    "scenarioId": "g008_reviewer_rollout_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-runtime-definition.ts",
+    "scenarioId": "g008_reviewer_runtime_definition_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/reviewer-schema.ts",
+    "scenarioId": "g008_reviewer_schema_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/run-ci-release-gate-fixture.js",
+    "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/run-fresh-regression-matrix.ts",
+    "scenarioId": "g008_run_fresh_regression_matrix_ts_no_args",
+    "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\nTarget exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\n"
+  },
+  {
+    "originalPath": "scripts/runtime-context.ts",
+    "scenarioId": "g008_runtime_context_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/scores-summary.ts",
+    "scenarioId": "g008_scores_summary_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/start-dashboard.ts",
+    "scenarioId": "g008_start_dashboard_ts_no_args",
+    "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\n"
+  },
+  {
+    "originalPath": "scripts/start-runtime-dashboard-server.cjs",
+    "scenarioId": "g008_start_runtime_dashboard_server_cjs_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/subagent-evidence-envelope.ts",
+    "scenarioId": "g008_subagent_evidence_envelope_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/supervised-worker-runtime.ts",
+    "scenarioId": "g008_supervised_worker_runtime_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/test-locks.ts",
+    "scenarioId": "g008_test_locks_ts_no_args",
+    "expectedStderr": "RangeError: Maximum call stack size exceeded\n    at Object.normalize (node:path:365:12)\n    at join (node:path:613:18)\n    at getLockPath (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:201:14)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:205:16)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n"
+  },
+  {
+    "originalPath": "scripts/test-story-flow.ts",
+    "scenarioId": "g008_test_story_flow_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+    "scenarioId": "g008_verify_score_auto_scoped_bundle_cjs_no_args",
+    "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\nTypeError: fetch failed\n    at node:internal/deps/undici/undici:14902:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\verify-score-auto-scoped-bundle.cjs:73:20)\n"
+  },
+  {
+    "originalPath": "scripts/verify-skill-architecture.sh",
+    "scenarioId": "g008_verify_skill_architecture_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/verify-speckit-mirror-sync.js",
+    "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
+    "expectedStderr": ""
+  }
+]

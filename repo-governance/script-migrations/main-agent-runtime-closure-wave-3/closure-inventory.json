@@ -85,9 +85,9 @@
   "changedScriptsBaseline": {
     "baselineCommit": "335f2c402010f2f912488d61575b5ce0c090513a",
     "expectedCountFromPriorMatrix": 140,
-    "actualCountFromCommand": 140,
+    "actualCountFromCommand": 142,
     "nameStatusCommand": "git diff --name-status 335f2c402010f2f912488d61575b5ce0c090513a..HEAD -- scripts",
-    "countStatus": "matches_prior_matrix"
+    "countStatus": "baseline_drift"
   },
   "closureEntries": [
     {
@@ -15085,6 +15085,17 @@
         "package/runtime export and install-mode execution proof"
       ],
       "stopCondition": "classification_ambiguity_requires_user_decision"
+    },
+    {
+      "scriptPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+      "blockingReason": "repo-internal CI governance fixture changed after Wave 3 baseline; represented by Wave 4.1 settled revalidation with package source-authority and dist replay proof before release.",
+      "requiredEvidence": [
+        "Wave 4.1 migration ledger row with non-empty packageImplementationSet",
+        "behaviorEquivalenceMatrix and behaviorEquivalenceReplayProof for all fixture entry scenarios",
+        "package source-authority/dist canonical hash and strict size parity",
+        "240-row no-fallback scan over package source, dist, bin, scripts, command surfaces, and install matrix"
+      ],
+      "stopCondition": "wave_4_1_settled_revalidation_passes_before_release"
     },
     {
       "scriptPath": "scripts/eval-question-generate.ts",

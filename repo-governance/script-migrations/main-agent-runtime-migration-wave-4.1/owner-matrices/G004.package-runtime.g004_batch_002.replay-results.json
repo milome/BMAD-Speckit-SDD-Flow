@@ -1,0 +1,1155 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T05:47:17.263Z",
+  "artifactSuffix": "g004_batch_002",
+  "timeoutMs": 10000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G004.package-runtime.g004_batch_002.behavior-matrix.json",
+  "matrixHash": "sha256:a7c1116392b153a8624cefb834162f455ebd71ae1afd1120639e23e9cabd2245",
+  "scenarioCount": 30,
+  "passedScenarioCount": 21,
+  "failedScenarioCount": 9,
+  "replayRows": [
+    {
+      "originalPath": "scripts/main-agent-audit-review-gate.ts",
+      "entryId": "main-agent-audit-review-gate",
+      "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-audit-review-gate.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-audit-review-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+      "entryId": "main-agent-bmad-artifact-hardcut",
+      "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-artifact-hardcut.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-artifact-hardcut.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 27,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 27,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-bmad-artifact-hardcut.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-artifact-hardcut.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 27,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+      "entryId": "main-agent-chaos-scenarios",
+      "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-chaos-scenarios.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-chaos-scenarios.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 2585,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 2585,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-chaos-scenarios.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-chaos-scenarios.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 2585,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+      "entryId": "main-agent-codex-worker-adapter",
+      "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 58,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 58,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-codex-worker-adapter.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 58,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+      "entryId": "main-agent-compiled-prompt-runner",
+      "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-compiled-prompt-runner.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+      "entryId": "main-agent-control-plane-isolation-check",
+      "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-control-plane-isolation-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-control-plane-isolation-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-control-plane-isolation-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-control-plane-isolation-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-data-governance-gate.ts",
+      "entryId": "main-agent-data-governance-gate",
+      "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-data-governance-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-data-governance-gate.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-data-governance-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-data-governance-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+      "entryId": "main-agent-dataset-release-gate",
+      "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dataset-release-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-dataset-release-gate.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-dataset-release-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dataset-release-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-decision-field-check.ts",
+      "entryId": "main-agent-decision-field-check",
+      "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-decision-field-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-decision-field-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-decision-field-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-decision-field-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "entryId": "main-agent-delivery-closeout-gate",
+      "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-delivery-closeout-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "entryId": "main-agent-delivery-evidence-run",
+      "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": true
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 528,
+        "stderrBytes": 1678,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-delivery-evidence-run.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+        "stdoutMatches": false,
+        "stderrMatches": false,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 528,
+        "stderrBytes": 1678,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+      "entryId": "main-agent-delivery-truth-gate",
+      "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 3202,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 1,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 3192,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 1,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-delivery-truth-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.ts",
+        "stdoutMatches": false,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": false,
+        "errorPathsMatch": true,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 3192,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+      "entryId": "main-agent-development-journey-matrix",
+      "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-development-journey-matrix.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-development-journey-matrix.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 2029,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 1883,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1677,
+        "expectedFileArtifactCount": 11,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-development-journey-matrix.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-development-journey-matrix.ts",
+        "stdoutMatches": false,
+        "stderrMatches": false,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": false,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1677,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "entryId": "main-agent-dual-host-pr-orchestrator",
+      "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 2127,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 2127,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts",
+        "stdoutMatches": false,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": false,
+        "exitCode": 0,
+        "stdoutBytes": 2127,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+      "entryId": "main-agent-entryflow-traceability-check",
+      "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-entryflow-traceability-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+      "entryId": "main-agent-execution-closure-gate",
+      "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-execution-closure-gate.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-execution-closure-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-functional-resume-check.ts",
+      "entryId": "main-agent-functional-resume-check",
+      "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-functional-resume-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-functional-resume-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-functional-resume-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-functional-resume-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-governed-data-products.ts",
+      "entryId": "main-agent-governed-data-products",
+      "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-governed-data-products.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-governed-data-products.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-governed-data-products.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-governed-data-products.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+      "entryId": "main-agent-implementation-readiness-gate",
+      "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-implementation-readiness-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+      "entryId": "main-agent-production-loop-ready-check",
+      "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-production-loop-ready-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-quality-gate.ts",
+      "entryId": "main-agent-quality-gate",
+      "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 1175,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1415,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-quality-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+        "stdoutMatches": false,
+        "stderrMatches": false,
+        "exitCodeMatches": false,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1415,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-release-gate.ts",
+      "entryId": "main-agent-release-gate",
+      "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-release-gate.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": true
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": true
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-release-gate.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "timedOut": true
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "entryId": "main-agent-runtime-policy-snapshot-check",
+      "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+      "entryId": "main-agent-scoring-gates-check",
+      "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-scoring-gates-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-scoring-gates-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-soak-runner.ts",
+      "entryId": "main-agent-soak-runner",
+      "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-soak-runner.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": true
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": true
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-soak-runner.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "timedOut": true
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+      "entryId": "main-agent-trace-status-policy-check",
+      "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.js",
+      "originalReplay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-trace-status-policy-check.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 2,
+        "stdoutBytes": 0,
+        "stderrBytes": 73,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/main-agent-unified-ingress.ts",
+      "entryId": "main-agent-unified-ingress",
+      "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-unified-ingress.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1079,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1284,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+        "originalEntryPoint": "scripts/main-agent-unified-ingress.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts",
+        "stdoutMatches": true,
+        "stderrMatches": false,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 1284,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+      "entryId": "mcp-consumer-install-consumer-mcp-ps1",
+      "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/mcp/consumer/install-consumer-mcp.ps1",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/mcp/consumer/install-consumer-mcp.ps1",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 304,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 438,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+        "originalEntryPoint": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/mcp/consumer/install-consumer-mcp.ps1",
+        "stdoutMatches": false,
+        "stderrMatches": false,
+        "exitCodeMatches": false,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 438,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
+      "entryId": "mcp-consumer-install-consumer-mcp-sh",
+      "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/mcp/consumer/install-consumer-mcp.sh",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/mcp/consumer/install-consumer-mcp.sh",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 105,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 105,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+        "originalEntryPoint": "scripts/mcp/consumer/install-consumer-mcp.sh",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/mcp/consumer/install-consumer-mcp.sh",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 105,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+      "entryId": "mcp-consumer-verify-consumer-mcp-ps1",
+      "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/mcp/consumer/verify-consumer-mcp.ps1",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/mcp/consumer/verify-consumer-mcp.ps1",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 584,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 584,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+        "originalEntryPoint": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/mcp/consumer/verify-consumer-mcp.ps1",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 584,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    }
+  ]
+}

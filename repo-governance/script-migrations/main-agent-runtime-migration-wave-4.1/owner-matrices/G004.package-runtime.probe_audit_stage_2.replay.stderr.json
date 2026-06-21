@@ -1,0 +1,11 @@
+[
+  {
+    "originalPath": "scripts/audit-stage-routing.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_audit_stage_routing_ts_cwd",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

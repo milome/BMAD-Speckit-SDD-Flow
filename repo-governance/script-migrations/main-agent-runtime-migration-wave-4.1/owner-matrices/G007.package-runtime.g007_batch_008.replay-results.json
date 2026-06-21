@@ -1,0 +1,216 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G007",
+  "generatedAt": "2026-06-20T11:25:13.111Z",
+  "artifactSuffix": "g007_batch_008",
+  "timeoutMs": 30000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G007.package-runtime.g007_batch_008.behavior-matrix.json",
+  "matrixHash": "sha256:c963f2eb8cfb21f0877cf89475ee09db515cd89a9d371b513b3b8ae9dfef91db",
+  "matrixRowCount": 4,
+  "scenarioCount": 4,
+  "passedScenarioCount": 4,
+  "failedScenarioCount": 0,
+  "replayRows": [
+    {
+      "originalPath": "scripts/update-specify-passed.ts",
+      "entryId": "update-specify-passed-ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/update-specify-passed.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_update_specify_passed_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 1200,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 1200,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_update_specify_passed_ts_no_args",
+            "originalEntryPoint": "scripts/update-specify-passed.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/update-specify-passed.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 1200,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:be81c02c7f88339e7fab163aad53f645684f658654baae3662cd3ab15755a834",
+            "normalizedReplayStdoutHash": "sha256:be81c02c7f88339e7fab163aad53f645684f658654baae3662cd3ab15755a834",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-agent-files.ts",
+      "entryId": "verify-agent-files",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-agent-files.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_verify_agent_files_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 1562,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 1562,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_verify_agent_files_ts_no_args",
+            "originalEntryPoint": "scripts/verify-agent-files.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-agent-files.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 0,
+            "stdoutBytes": 1562,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:b6d07e718ca9e862ebfeec3ad55404a8397ae4a2f4f5af2ede241aa16a9168f1",
+            "normalizedReplayStdoutHash": "sha256:b6d07e718ca9e862ebfeec3ad55404a8397ae4a2f4f5af2ede241aa16a9168f1",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-story-mode.ts",
+      "entryId": "verify-story-mode-ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-story-mode.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_verify_story_mode_ts_no_args",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 196,
+            "stderrBytes": 100,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 196,
+            "stderrBytes": 100,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_verify_story_mode_ts_no_args",
+            "originalEntryPoint": "scripts/verify-story-mode.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-story-mode.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 196,
+            "stderrBytes": 100,
+            "normalizedExpectedStdoutHash": "sha256:908f08c9670b92975205d67195b2d72a041fa5dece55d2a96ea88fbd20272947",
+            "normalizedReplayStdoutHash": "sha256:908f08c9670b92975205d67195b2d72a041fa5dece55d2a96ea88fbd20272947",
+            "normalizedExpectedStderrHash": "sha256:49fe903aa8861525c315fb3843856427b9766fcea01b577044c2c42273fc5796",
+            "normalizedReplayStderrHash": "sha256:49fe903aa8861525c315fb3843856427b9766fcea01b577044c2c42273fc5796",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/write-runtime-registry.js",
+      "entryId": "write-runtime-registry-js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g007_write_runtime_registry_js_no_args",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 43,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 43,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g007_write_runtime_registry_js_no_args",
+            "originalEntryPoint": "scripts/write-runtime-registry.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 43,
+            "normalizedExpectedStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStdoutHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedExpectedStderrHash": "sha256:b779a268c86157860d8b76431d57e2c26891e8897809df9fb24458cb6381e950",
+            "normalizedReplayStderrHash": "sha256:b779a268c86157860d8b76431d57e2c26891e8897809df9fb24458cb6381e950",
+            "stdoutFirstDiff": null,
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    }
+  ]
+}

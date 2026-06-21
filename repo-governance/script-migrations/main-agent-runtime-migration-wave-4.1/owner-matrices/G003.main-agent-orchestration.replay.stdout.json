@@ -1,0 +1,127 @@
+[
+  {
+    "scenarioId": "g003_inspect",
+    "action": "inspect",
+    "stdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n"
+  },
+  {
+    "scenarioId": "g003_dispatch_plan",
+    "action": "dispatch-plan",
+    "stdout": "null\n"
+  },
+  {
+    "scenarioId": "g003_run_loop",
+    "action": "run-loop",
+    "stdout": "{\n  \"runId\": \"main-agent-run-loop-1782030880468\",\n  \"status\": \"blocked\",\n  \"steps\": [\n    {\n      \"step\": \"inspect.initial\",\n      \"status\": \"fail\",\n      \"summary\": \"NO_ACTIVE_REQUIREMENT: contract_authoring_required\"\n    }\n  ],\n  \"dispatchInstruction\": null,\n  \"taskReport\": null,\n  \"finalSurface\": {\n    \"source\": \"no_active_requirement\",\n    \"sessionId\": null,\n    \"orchestrationStatePath\": null,\n    \"orchestrationState\": null,\n    \"pendingPacketStatus\": \"none\",\n    \"pendingPacket\": null,\n    \"fourSignal\": null,\n    \"latestGate\": null,\n    \"gatesLoop\": null,\n    \"closeout\": null,\n    \"drift\": null,\n    \"diagnostics\": [\n      {\n        \"category\": \"active_requirement\",\n        \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n        \"sourceChecked\": [\n          \"_bmad-output/runtime/requirement-records/index.json\"\n        ],\n        \"repairAction\": \"contract_authoring_required\",\n        \"automaticRepairAvailable\": false,\n        \"nextCommand\": \"bmads\",\n        \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n      }\n    ],\n    \"mainAgentCanContinue\": false,\n    \"continueDecision\": \"blocked\",\n    \"mainAgentNextAction\": \"contract_authoring_required\",\n    \"mainAgentReady\": false,\n    \"mainAgentStageSummary\": {\n      \"schemaVersion\": \"main-agent-stage-summary/v1\",\n      \"recordId\": null,\n      \"requirementSetId\": null,\n      \"currentMentalModel\": null,\n      \"currentMentalModelStatus\": \"no_active_requirement\",\n      \"currentStageOrdinal\": null,\n      \"totalStages\": 6,\n      \"nextAction\": \"contract_authoring_required\",\n      \"nextMentalModel\": \"requirement_confirmation\",\n      \"ready\": false,\n      \"blocked\": true,\n      \"blockingReasons\": [\n        \"no_active_requirement\",\n        \"contract_authoring_required\"\n      ],\n      \"lastEventType\": null,\n      \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n    }\n  },\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n"
+  },
+  {
+    "scenarioId": "g003_claim",
+    "action": "claim",
+    "stdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n"
+  },
+  {
+    "scenarioId": "g003_dispatch",
+    "action": "dispatch",
+    "stdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n"
+  },
+  {
+    "scenarioId": "g003_complete",
+    "action": "complete",
+    "stdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n"
+  },
+  {
+    "scenarioId": "g003_invalidate",
+    "action": "invalidate",
+    "stdout": "{\n  \"source\": \"no_active_requirement\",\n  \"sessionId\": null,\n  \"orchestrationStatePath\": null,\n  \"orchestrationState\": null,\n  \"pendingPacketStatus\": \"none\",\n  \"pendingPacket\": null,\n  \"fourSignal\": null,\n  \"latestGate\": null,\n  \"gatesLoop\": null,\n  \"closeout\": null,\n  \"drift\": null,\n  \"diagnostics\": [\n    {\n      \"category\": \"active_requirement\",\n      \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n      \"sourceChecked\": [\n        \"_bmad-output/runtime/requirement-records/index.json\"\n      ],\n      \"repairAction\": \"contract_authoring_required\",\n      \"automaticRepairAvailable\": false,\n      \"nextCommand\": \"bmads\",\n      \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n    }\n  ],\n  \"mainAgentCanContinue\": false,\n  \"continueDecision\": \"blocked\",\n  \"mainAgentNextAction\": \"contract_authoring_required\",\n  \"mainAgentReady\": false,\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n"
+  },
+  {
+    "scenarioId": "g003_route_intake",
+    "action": "route-intake",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_adaptive_intake",
+    "action": "adaptive-intake",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_confirm_scope",
+    "action": "confirm-scope",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_confirmation_ingest",
+    "action": "confirmation-ingest",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_confirm_closeout_acceptance",
+    "action": "confirm-closeout-acceptance",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_closeout_acceptance_ingest",
+    "action": "closeout-acceptance-ingest",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_route_confirmation_drift",
+    "action": "route-confirmation-drift",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_confirmation_drift_route",
+    "action": "confirmation-drift-route",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_repair_confirmation_bookkeeping",
+    "action": "repair-confirmation-bookkeeping",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_confirmation_bookkeeping_repair",
+    "action": "confirmation-bookkeeping-repair",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_pre_confirmation_drilldown",
+    "action": "pre-confirmation-drilldown",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_pre_confirmation_drilldown",
+    "action": "pre_confirmation_drilldown",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_author_confirmation_ready_source",
+    "action": "author-confirmation-ready-source",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_author_confirmation_ready_source",
+    "action": "author_confirmation_ready_source",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_authoring_repair",
+    "action": "authoring-repair",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_authoring_repair",
+    "action": "authoring_repair",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_post_close_defect_intake",
+    "action": "post-close-defect-intake",
+    "stdout": ""
+  },
+  {
+    "scenarioId": "g003_controlled_readiness_audit",
+    "action": "controlled-readiness-audit",
+    "stdout": ""
+  }
+]

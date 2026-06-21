@@ -1,0 +1,11 @@
+[
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_auditor_spec_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

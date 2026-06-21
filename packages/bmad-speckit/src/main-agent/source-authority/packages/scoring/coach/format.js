@@ -1,0 +1,74 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.formatToMarkdown = formatToMarkdown;
+const sanitize_iteration_1 = require("../utils/sanitize-iteration");
+/**
+ * Format CoachDiagnosisReport to Markdown.
+ * @param {import('./types').CoachDiagnosisReport} report - Diagnosis report
+ * @returns {string} Markdown string
+ */
+function formatToMarkdown(report) {
+    const counts = report.phase_iteration_counts;
+    const phaseLines = Object.entries(report.phase_scores)
+        .map(([stage, score]) => {
+        if (counts != null && stage in counts) {
+            const iter = (0, sanitize_iteration_1.sanitizeIterationCount)(counts[stage]);
+            return `- ${stage}: ${score} pts, remediation iterations: ${iter}`;
+        }
+        return `- ${stage}: ${score}`;
+    })
+        .join('\n');
+    const weakAreaLines = report.weak_areas.length > 0 ? report.weak_areas.map((x) => `- ${x}`).join('\n') : '- (none)';
+    const recommendationLines = report.recommendations.length > 0
+        ? report.recommendations.map((x) => `- ${x}`).join('\n')
+        : '- (none)';
+    const journeyHintLines = report.journey_contract_hints != null && report.journey_contract_hints.length > 0
+        ? report.journey_contract_hints
+            .map((item) => `- ${item.label}: ${item.count} occurrence(s); affected stages ${item.affected_stages.join('、') || '-'}; stories ${item.epic_stories.join('、') || '-'}; action ${item.recommendation}`)
+            .join('\n')
+        : undefined;
+    const iterationSection = counts != null
+        ? (() => {
+            const entries = Object.entries(counts).map(([s, v]) => [s, (0, sanitize_iteration_1.sanitizeIterationCount)(v)]);
+            const allZero = entries.every(([, v]) => v === 0);
+            const desc = 'Count of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.';
+            const body = allZero
+                ? 'All 0 (passed on first try)'
+                : entries.map(([s, v]) => `- ${s}: ${v} round(s)`).join('\n');
+            return ['', '## Remediation iterations per stage', '', desc, '', body];
+        })()
+        : [];
+    const evolutionSection = report.stage_evolution_traces != null && Object.keys(report.stage_evolution_traces).length > 0
+        ? [
+            '',
+            '## Score evolution (Story 9.4)',
+            '',
+            ...Object.entries(report.stage_evolution_traces).map(([stage, trace]) => `- ${stage}: ${trace}`),
+        ]
+        : [];
+    return [
+        '# AI Coach Diagnosis',
+        '',
+        '## Summary',
+        report.summary,
+        '',
+        '## Phase Scores',
+        phaseLines,
+        '',
+        '`phase_score` uses tiered deduction from remediation iteration counts.',
+        ...iterationSection,
+        ...evolutionSection,
+        ...(journeyHintLines != null
+            ? ['', '## Journey Contract Remediation', '', journeyHintLines]
+            : []),
+        '',
+        '## Weak Areas',
+        weakAreaLines,
+        '',
+        '## Recommendations',
+        recommendationLines,
+        '',
+        '## Iteration Passed',
+        report.iteration_passed ? 'true' : 'false',
+    ].join('\n');
+}

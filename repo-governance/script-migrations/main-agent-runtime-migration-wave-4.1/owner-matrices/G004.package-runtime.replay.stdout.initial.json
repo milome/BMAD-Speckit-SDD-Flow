@@ -1,0 +1,457 @@
+[
+  {
+    "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+    "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+    "expectedStdout": "{\n  \"skipped\": true,\n  \"reason\": \"adaptive intake candidate not provided\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+    "scenarioId": "g004_adaptive_intake_proof_gate_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"adaptive_intake_proof_gate\",\n  \"critical_failures\": 1,\n  \"checks\": [\n    {\n      \"id\": \"orphan-task-zero\",\n      \"passed\": true,\n      \"summary\": \"orphan-task=0\"\n    },\n    {\n      \"id\": \"three-flow-coverage\",\n      \"passed\": false,\n      \"summary\": \"missing flows: story, bugfix, standalone_tasks\"\n    },\n    {\n      \"id\": \"queue-sync-dependency-proof\",\n      \"passed\": true,\n      \"summary\": \"all active mappings have applied queue-sync artifacts\"\n    }\n  ],\n  \"orphanTaskCount\": 0,\n  \"coveredFlows\": []\n}\n"
+  },
+  {
+    "originalPath": "scripts/ai-tdd-contract-gate.ts",
+    "scenarioId": "g004_ai_tdd_contract_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/analytics-sft-extract.ts",
+    "scenarioId": "g004_analytics_sft_extract_ts_no_args",
+    "expectedStdout": "extractSftDataset: wrote 0 entries to D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\scoring\\sft-dataset.jsonl\n"
+  },
+  {
+    "originalPath": "scripts/assert-implementation-entry.ts",
+    "scenarioId": "g004_assert_implementation_entry_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/audit-stage-routing.ts",
+    "scenarioId": "g004_audit_stage_routing_ts_no_args",
+    "expectedStdout": "🔍 开始审计 Stage Routing 逻辑...\n\n✅ 完成 17 项检查\n   通过: 4\n   失败: 11\n   警告: 2\n\n📝 审计报告已保存到: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\routing-audit-report.md\n\n❌ 发现以下问题：\n   - Stage Routing 章节存在性: 未找到 Stage Routing 章节\n   - 路由规则: null/new → story_create/bmad-story-create: 未找到路由规则: null/new → story_create/bmad-story-create\n   - 路由规则: story_created → story_audit/bmad-story-audit: 未找到路由规则: story_created → story_audit/bmad-story-audit\n   - 路由规则: story_audit_passed → specify: 未找到路由规则: story_audit_passed → specify\n   - 路由规则: plan_passed → gaps: 未找到路由规则: plan_passed → gaps\n   - 路由规则: gaps_passed → tasks: 未找到路由规则: gaps_passed → tasks\n   - 路由规则: tasks_passed → Story Type Detection: 未找到路由规则: tasks_passed → Story Type Detection\n   - 路由规则: implement_passed → commit_gate: 未找到路由规则: implement_passed → commit_gate\n   - 路由规则: document_audit_passed → commit_gate: 未找到路由规则: document_audit_passed → commit_gate\n   - Story Type Detection 逻辑: 未找到 Story Type Detection 逻辑\n   - Epic-Level Routing 支持: 未找到 Epic-Level Routing 章节\n\n⚠️ 发现以下警告：\n   - Auto-Continue 逻辑: 找到 Auto-Continue 逻辑 (第 133 行). enabled检查: true, action映射: false\n   - 三层审计结构引用: 未找到三层审计结构引用 (可能继承自通用协议)\n\n📊 JSON 结果:\n{\n  \"timestamp\": \"2026-06-20T04:58:40.760Z\",\n  \"fileAudited\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\.claude\\\\agents\\\\bmad-master.md\",\n  \"summary\": {\n    \"totalChecks\": 17,\n    \"passed\": 4,\n    \"failed\": 11,\n    \"warnings\": 2\n  },\n  \"results\": [\n    {\n      \"check\": \"Stage Routing 章节存在性\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Stage Routing 章节\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"路由规则: null/new → story_create/bmad-story-create\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: null/new → story_create/bmad-story-create\"\n    },\n    {\n      \"check\": \"路由规则: story_created → story_audit/bmad-story-audit\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: story_created → story_audit/bmad-story-audit\"\n    },\n    {\n      \"check\": \"路由规则: story_audit_passed → specify\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: story_audit_passed → specify\"\n    },\n    {\n      \"check\": \"路由规则: specify_passed → plan\",\n      \"status\": \"PASS\",\n      \"details\": \"找到路由规则 (第 197 行)\",\n      \"lineNumber\": 197\n    },\n    {\n      \"check\": \"路由规则: plan_passed → gaps\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: plan_passed → gaps\",\n      \"lineNumber\": 199\n    },\n    {\n      \"check\": \"路由规则: gaps_passed → tasks\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: gaps_passed → tasks\"\n    },\n    {\n      \"check\": \"路由规则: tasks_passed → Story Type Detection\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: tasks_passed → Story Type Detection\",\n      \"lineNumber\": 201\n    },\n    {\n      \"check\": \"路由规则: implement_passed → commit_gate\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: implement_passed → commit_gate\"\n    },\n    {\n      \"check\": \"路由规则: document_audit_passed → commit_gate\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: document_audit_passed → commit_gate\"\n    },\n    {\n      \"check\": \"Story Type Detection 逻辑\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Story Type Detection 逻辑\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"Epic-Level Routing 支持\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Epic-Level Routing 章节\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"Auto-Continue 逻辑\",\n      \"status\": \"WARNING\",\n      \"details\": \"找到 Auto-Continue 逻辑 (第 133 行). enabled检查: true, action映射: false\",\n      \"lineNumber\": 133\n    },\n    {\n      \"check\": \"输出格式要求\",\n      \"status\": \"PASS\",\n      \"details\": \"找到输出格式要求 (allowed_action, follow_up, state_patch 等)\"\n    },\n    {\n      \"check\": \"三层审计结构引用\",\n      \"status\": \"WARNING\",\n      \"details\": \"未找到三层审计结构引用 (可能继承自通用协议)\"\n    },\n    {\n      \"check\": \"Auditor 文件存在性\",\n      \"status\": \"PASS\",\n      \"details\": \"所有 6 个 Auditor 文件均存在\"\n    },\n    {\n      \"check\": \"Layer 4 Agent Prerequisites 一致性\",\n      \"status\": \"PASS\",\n      \"details\": \"所有 4 个 Layer 4 Agent Prerequisites 与路由一致\"\n    }\n  ],\n  \"routingRules\": [\n    {\n      \"stage\": \"null/new\",\n      \"routeTo\": \"story_create/bmad-story-create\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"story_created\",\n      \"routeTo\": \"story_audit/bmad-story-audit\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"story_audit_passed\",\n      \"routeTo\": \"specify\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"specify_passed\",\n      \"routeTo\": \"plan\",\n      \"found\": true,\n      \"lineNumber\": 197\n    },\n    {\n      \"stage\": \"plan_passed\",\n      \"routeTo\": \"gaps\",\n      \"found\": false,\n      \"lineNumber\": 199\n    },\n    {\n      \"stage\": \"gaps_passed\",\n      \"routeTo\": \"tasks\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"tasks_passed\",\n      \"routeTo\": \"Story Type Detection\",\n      \"found\": false,\n      \"lineNumber\": 201\n    },\n    {\n      \"stage\": \"implement_passed\",\n      \"routeTo\": \"commit_gate\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"document_audit_passed\",\n      \"routeTo\": \"commit_gate\",\n      \"found\": false\n    }\n  ],\n  \"storyTypeDetection\": {\n    \"found\": false,\n    \"lineNumber\": 0,\n    \"details\": \"code_flow: false, document_flow: false\"\n  },\n  \"epicLevelRouting\": {\n    \"found\": false,\n    \"lineNumber\": 0,\n    \"details\": \"章节: false, epic模式: false\"\n  },\n  \"autoContinueLogic\": {\n    \"found\": false,\n    \"lineNumber\": 133,\n    \"details\": \"auto_continue: true, enabled检查: true, action映射: false\"\n  }\n}\n"
+  },
+  {
+    "originalPath": "scripts/auditor-post-actions.ts",
+    "scenarioId": "g004_auditor_post_actions_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "scenarioId": "g004_auditor_spec_ts_no_args",
+    "expectedStdout": "Audit complete: FAIL\nReport written to: --cwd\n"
+  },
+  {
+    "originalPath": "scripts/bmad-config.ts",
+    "scenarioId": "g004_bmad_config_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/bmad-runtime-worker.ts",
+    "scenarioId": "g004_bmad_runtime_worker_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.ps1",
+    "scenarioId": "g004_check_sprint_ready_ps1_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.sh",
+    "scenarioId": "g004_check_sprint_ready_sh_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/dashboard-generate.ts",
+    "scenarioId": "g004_dashboard_generate_ts_no_args",
+    "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+  },
+  {
+    "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+    "scenarioId": "g004_e2e_dual_host_journey_runner_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+    "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/final-closeout-evidence-runner.ts",
+    "scenarioId": "g004_final_closeout_evidence_runner_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-execution-result-ingestor.ts",
+    "scenarioId": "g004_governance_execution_result_ingestor_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-hook-types.ts",
+    "scenarioId": "g004_governance_hook_types_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+    "scenarioId": "g004_governance_packet_dispatch_worker_ts_no_args",
+    "expectedStdout": "[]"
+  },
+  {
+    "originalPath": "scripts/governance-provider-adapter.ts",
+    "scenarioId": "g004_governance_provider_adapter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-runtime-queue.ts",
+    "scenarioId": "g004_governance_runtime_queue_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-stage-event-emitter.ts",
+    "scenarioId": "g004_governance_stage_event_emitter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+    "scenarioId": "g004_i18n_print_resolved_audit_prompt_ts_no_args",
+    "expectedStdout": "{\n  \"locale\": \"zh\",\n  \"projectRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"resolvedPath\": \".\\\\--cwd\\\\<fixture-root>.md\",\n  \"usedFallback\": false,\n  \"variant\": \"default\",\n  \"exists\": false\n}\n"
+  },
+  {
+    "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+    "scenarioId": "g004_i18n_render_audit_block_cli_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/render-template.ts",
+    "scenarioId": "g004_i18n_render_template_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/ingest-architecture-confirmation.ts",
+    "scenarioId": "g004_ingest_architecture_confirmation_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/ingest-implementation-evidence.ts",
+    "scenarioId": "g004_ingest_implementation_evidence_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+    "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+    "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+    "expectedStdout": "{\n  \"generatedAt\": \"2026-06-20T04:59:35.518Z\",\n  \"repoRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"summary\": {\n    \"passed\": 1,\n    \"warned\": 1,\n    \"failed\": 6\n  },\n  \"results\": [\n    {\n      \"name\": \"host-binary:claude\",\n      \"status\": \"pass\",\n      \"details\": {\n        \"command\": \"claude\"\n      }\n    },\n    {\n      \"name\": \"host-binary:cursor\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"command\": \"cursor\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-cli-print\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"type\\\":\\\"result\\\",\\\"subtype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1163,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"6563231b-bb8c-437f-9ecf-20576ad07f3a\\\",\\\"total_cost_usd\\\":0,\\\"usage\\\":{\\\"input_tokens\\\":0,\\\"cache_creation_input_tokens\\\":0,\\\"cache_read_input_tokens\\\":0,\\\"output_tokens\\\":0,\\\"server_tool_use\\\":{\\\"web_search_requests\\\":0,\\\"web_fetch_requests\\\":0},\\\"service_tier\\\":\\\"standard\\\",\\\"cache_creation\\\":{\\\"ephemeral_1h_input_tokens\\\":0,\\\"ephemeral_5m_input_tokens\\\":0},\\\"inference_geo\\\":\\\"\\\",\\\"iterations\\\":[],\\\"speed\\\":\\\"standard\\\"},\\\"modelUsage\\\":{},\\\"permission_denials\\\":[],\\\"terminal_reason\\\":\\\"completed\\\",\\\"fast_mode_state\\\":\\\"off\\\",\\\"uuid\\\":\\\"8da61231-8a5f-4ced-b72e-389bdcff107b\\\"}\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-terminal-agent\",\n      \"status\": \"warn\",\n      \"details\": {\n        \"status\": null,\n        \"stdout\": \"\",\n        \"stderr\": \"\",\n        \"error\": \"Error: spawnSync cursor.cmd EINVAL\"\n      }\n    },\n    {\n      \"name\": \"live-smoke:claude-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-story\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:cursor-hook-bugfix\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"{\\\"systemMessage\\\":\\\"[emit-runtime-policy FAILED]\\\\nnode:internal/modules/cjs/loader:1386\\\\r\\\\n  throw err;\\\\r\\\\n  ^\\\\r\\\\n\\\\r\\\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\\\r\\\\nRequire stack:\\\\r\\\\n- D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs\\\\r\\\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\\\r\\\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\\\r\\\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\\\r\\\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\\\r\\\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\\\r\\\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\\\r\\\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\\\r\\\\n    at require (node:internal/modules/helpers:147:16)\\\\r\\\\n    at Object.<anonymous> (D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs:33557:35)\\\\r\\\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\\\r\\\\n  code: 'MODULE_NOT_FOUND',\\\\r\\\\n  requireStack: [\\\\r\\\\n    'D:\\\\\\\\\\\\\\\\Dev\\\\\\\\\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\\\\\\\\\packages\\\\\\\\\\\\\\\\runtime-emit\\\\\\\\\\\\\\\\dist\\\\\\\\\\\\\\\\emit-runtime-policy.cjs'\\\\r\\\\n  ]\\\\r\\\\n}\\\\r\\\\n\\\\r\\\\nNode.js v22.22.1\\\\r\\\\n\\\"}\",\n        \"stderr\": \"[emit-runtime-policy FAILED]\\nnode:internal/modules/cjs/loader:1386\\r\\n  throw err;\\r\\n  ^\\r\\n\\r\\nError: Cannot find module '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'\\r\\nRequire stack:\\r\\n- D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs\\r\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\\r\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\\r\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\\r\\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\\r\\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\\r\\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\\r\\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\\r\\n    at require (node:internal/modules/helpers:147:16)\\r\\n    at Object.<anonymous> (D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\packages\\\\runtime-emit\\\\dist\\\\emit-runtime-policy.cjs:33557:35)\\r\\n    at Module._compile (node:internal/modules/cjs/loader:1705:14) {\\r\\n  code: 'MODULE_NOT_FOUND',\\r\\n  requireStack: [\\r\\n    'D:\\\\\\\\Dev\\\\\\\\BMAD-Speckit-SDD-Flow\\\\\\\\packages\\\\\\\\runtime-emit\\\\\\\\dist\\\\\\\\emit-runtime-policy.cjs'\\r\\n  ]\\r\\n}\\r\\n\\r\\nNode.js v22.22.1\",\n        \"error\": null,\n        \"stateDirExists\": false,\n        \"packetDirExists\": false\n      }\n    },\n    {\n      \"name\": \"live-smoke:main-agent-orchestration-script\",\n      \"status\": \"fail\",\n      \"details\": {\n        \"status\": 1,\n        \"stdout\": \"> bmad-speckit-sdd-flow@2.0.2 main-agent-orchestration\\n> npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts --cwd C:\\\\Users\\\\milome\\\\AppData\\\\Local\\\\Temp\\\\main-agent-live-smoke-story-cPwSpx --action dispatch-plan\\n\\nnull\",\n        \"stderr\": \"\",\n        \"error\": null\n      }\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+    "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-audit-review-gate.ts",
+    "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+    "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+    "expectedStdout": "bmad_artifact_hardcut=pass\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+    "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"main_agent_chaos_recovery\",\n  \"recoveryRate\": 1,\n  \"scenarios\": [\n    {\n      \"id\": \"pending_packet_loss\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"deleted packet artifact:D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"detected missing packet file\",\n        \"recreated packet artifact:D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"re-materialized dispatch packet\"\n      ]\n    },\n    {\n      \"id\": \"closeout_failure\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"completed\",\n        \"closeoutApproved\": true,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"blocked sprint update before closeout approval\",\n        \"closeout approved after rerun\"\n      ]\n    },\n    {\n      \"id\": \"rerun_gate_pending\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"pass\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"rerun gate pending converted to remediation dispatch\",\n        \"rerun gate pass ingested\"\n      ]\n    },\n    {\n      \"id\": \"session_recovery\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"session state dropped\",\n        \"session recovered from state artifacts\"\n      ]\n    },\n    {\n      \"id\": \"host_switching\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"claude\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"no-hooks ingress selected without changing control plane\",\n        \"host switched while preserving continue semantics\"\n      ]\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+    "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+    "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+    "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-data-governance-gate.ts",
+    "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+    "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-decision-field-check.ts",
+    "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+    "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+    "expectedStdout": "{\n  \"report_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 2,\n  \"blocked_sprint_status_update\": true\n}\n{\n  \"reportType\": \"main_agent_delivery_truth_gate\",\n  \"generatedAt\": \"2026-06-20T05:00:13.929Z\",\n  \"completionAllowed\": false,\n  \"deliveryStatus\": \"partial\",\n  \"completionLanguage\": \"partial_only\",\n  \"missingEvidence\": [],\n  \"failedEvidence\": [\n    \"release-gate: critical_failures=2, blocked_sprint_status_update=true, completion_intent=missing\",\n    \"multi-host-host-matrix: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true\",\n    \"authorized-sprint-status-write: storyKey=S-release, status=done, authorized=true, strongAudit=true\",\n    \"same-run-evidence-provenance: provenance mismatch: releaseGate,sprintAudit\"\n  ],\n  \"evidencePaths\": {\n    \"releaseGate\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n    \"hostMatrix\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\multi-host-pr-orchestration-report.json\",\n    \"prTopology\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\pr\\\\pr_topology.json\",\n    \"sprintAudit\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\governance\\\\sprint-status-update-audit.json\",\n    \"qualityGate\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-quality-gate-report.json\"\n  },\n  \"checks\": [\n    {\n      \"id\": \"release-gate\",\n      \"passed\": false,\n      \"summary\": \"critical_failures=2, blocked_sprint_status_update=true, completion_intent=missing\"\n    },\n    {\n      \"id\": \"multi-host-host-matrix\",\n      \"passed\": false,\n      \"summary\": \"mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true\"\n    },\n    {\n      \"id\": \"pr-topology-closed\",\n      \"passed\": true,\n      \"summary\": \"all_affected_stories_passed=true, nodes=claude-node:merged,codex-node:closed_not_needed\"\n    },\n    {\n      \"id\": \"authorized-sprint-status-write\",\n      \"passed\": false,\n      \"summary\": \"storyKey=S-release, status=done, authorized=true, strongAudit=true\"\n    },\n    {\n      \"id\": \"quality-gate\",\n      \"passed\": true,\n      \"summary\": \"critical_failures=0\"\n    },\n    {\n      \"id\": \"same-run-evidence-provenance\",\n      \"passed\": false,\n      \"summary\": \"provenance mismatch: releaseGate,sprintAudit\"\n    },\n    {\n      \"id\": \"test-dev-seams-disabled\",\n      \"passed\": true,\n      \"summary\": \"test/dev seams disabled\"\n    }\n  ]\n}\n{\n  \"reportType\": \"main_agent_delivery_evidence_run\",\n  \"provider\": \"mock\",\n  \"evidence_provenance\": {\n    \"runId\": \"release-gate-1781931597435-a0ab2652\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"release-gate-1781931597435-a0ab2652:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\"\n  },\n  \"steps\": [\n    {\n      \"id\": \"release-gate\",\n      \"exitCode\": 1\n    },\n    {\n      \"id\": \"delivery-truth-gate\",\n      \"exitCode\": 1\n    }\n  ],\n  \"completionAllowed\": false\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"main_agent_delivery_truth_gate\",\n  \"generatedAt\": \"2026-06-20T05:00:14.854Z\",\n  \"completionAllowed\": false,\n  \"deliveryStatus\": \"blocked\",\n  \"completionLanguage\": \"blocked_only\",\n  \"missingEvidence\": [\n    \"releaseGate: <fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n    \"hostMatrix: <fixture-root>\\\\_bmad-output\\\\runtime\\\\e2e\\\\multi-host-pr-orchestration-report.json\",\n    \"prTopology: <fixture-root>\\\\_bmad-output\\\\runtime\\\\pr\\\\pr_topology.json\",\n    \"sprintAudit: <fixture-root>\\\\_bmad-output\\\\runtime\\\\governance\\\\sprint-status-update-audit.json\",\n    \"qualityGate: <fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-quality-gate-report.json\"\n  ],\n  \"failedEvidence\": [\n    \"release-gate: missing\",\n    \"multi-host-host-matrix: missing\",\n    \"pr-topology-closed: missing\",\n    \"authorized-sprint-status-write: missing\",\n    \"quality-gate: missing\",\n    \"same-run-evidence-provenance: missing evidence_provenance on all delivery artifacts\"\n  ],\n  \"evidencePaths\": {\n    \"releaseGate\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n    \"hostMatrix\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\e2e\\\\multi-host-pr-orchestration-report.json\",\n    \"prTopology\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\pr\\\\pr_topology.json\",\n    \"sprintAudit\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\governance\\\\sprint-status-update-audit.json\",\n    \"qualityGate\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-quality-gate-report.json\"\n  },\n  \"checks\": [\n    {\n      \"id\": \"release-gate\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"multi-host-host-matrix\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"pr-topology-closed\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"authorized-sprint-status-write\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"quality-gate\",\n      \"passed\": false,\n      \"summary\": \"missing\"\n    },\n    {\n      \"id\": \"same-run-evidence-provenance\",\n      \"passed\": false,\n      \"summary\": \"missing evidence_provenance on all delivery artifacts\"\n    },\n    {\n      \"id\": \"test-dev-seams-disabled\",\n      \"passed\": true,\n      \"summary\": \"test/dev seams disabled\"\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+    "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\journey-matrix\\\\host-matrix\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportPath\": \"<fixture-root>\\\\_bmad-output\\\\runtime\\\\e2e\\\\development-journey-matrix.json\",\n  \"reportType\": \"main_agent_development_journey_matrix\",\n  \"generatedAt\": \"2026-06-20T05:00:22.250Z\",\n  \"projectRoot\": \"<fixture-root>\",\n  \"steps\": [\n    {\n      \"id\": \"bmad-help-five-layer-main-agent\",\n      \"sequence\": \"BH1-L1-L5\",\n      \"passed\": false,\n      \"evidence\": \"layer_1:passed,layer_2:passed,layer_3:passed,layer_4:passed,layer_5:passed\"\n    },\n    {\n      \"id\": \"ingress-cursor\",\n      \"sequence\": \"S3c-S3e\",\n      \"passed\": false,\n      \"evidence\": \"hooks_enabled/hook_ingress/main-agent-run-loop-1781931617884\"\n    },\n    {\n      \"id\": \"ingress-claude\",\n      \"sequence\": \"S3c-S3e\",\n      \"passed\": false,\n      \"evidence\": \"hooks_enabled/hook_ingress/main-agent-run-loop-1781931617896\"\n    },\n    {\n      \"id\": \"ingress-codex\",\n      \"sequence\": \"S3c-S3e\",\n      \"passed\": false,\n      \"evidence\": \"no_hooks/cli_ingress/main-agent-run-loop-1781931617906\"\n    },\n    {\n      \"id\": \"multi-host-host-matrix\",\n      \"sequence\": \"S31-S32\",\n      \"passed\": true,\n      \"evidence\": \"mock/true/{\\\"cursor\\\":true,\\\"claude\\\":true,\\\"codex\\\":true}\"\n    },\n    {\n      \"id\": \"pr-topology\",\n      \"sequence\": \"S37-S38\",\n      \"passed\": true,\n      \"evidence\": \"claude-node:merged,codex-node:closed_not_needed\"\n    },\n    {\n      \"id\": \"delivery-truth-live\",\n      \"sequence\": \"R1-R10/S39-S43\",\n      \"passed\": false,\n      \"evidence\": \"not synthesized; run main-agent:delivery-truth-gate with real evidence bundle for completion verdict\"\n    }\n  ],\n  \"allPassed\": false\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+    "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-pr-journey.json\",\n  \"finalPassed\": true\n}\n{\n  \"reportType\": \"main_agent_host_matrix_pr_orchestration\",\n  \"evidence_provenance\": {\n    \"runId\": \"host-matrix-pr-1781931634871-8bc1352b\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"host-matrix-pr-1781931634871-8bc1352b:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n  },\n  \"provider\": \"mock\",\n  \"journeyMode\": \"mock\",\n  \"journeyE2EPassed\": true,\n  \"hostsPassed\": {\n    \"claude\": true,\n    \"codex\": true\n  },\n  \"hostMatrix\": {\n    \"matrixType\": \"main_agent_multi_host_matrix\",\n    \"requiredHosts\": [\n      \"cursor\",\n      \"claude\",\n      \"codex\"\n    ],\n    \"hostsPassed\": {\n      \"cursor\": true,\n      \"claude\": true,\n      \"codex\": true\n    },\n    \"allRequiredHostsPassed\": true,\n    \"legacyDualHostPassed\": true\n  },\n  \"prTopology\": {\n    \"version\": 1,\n    \"batch_id\": \"host-matrix-pr-batch\",\n    \"evidence_provenance\": {\n      \"runId\": \"host-matrix-pr-1781931634871-8bc1352b\",\n      \"storyKey\": \"S-release-gate\",\n      \"evidenceBundleId\": \"host-matrix-pr-1781931634871-8bc1352b:bundle\",\n      \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n      \"gateReportHash\": \"0a6bde5c2505777d91a44913a30a042ff46571ab8089f8245a7468628b6640bb\"\n    },\n    \"required_nodes\": [\n      {\n        \"node_id\": \"claude-node\",\n        \"target_pr\": \"PR-CLAUDE\",\n        \"depends_on\": [],\n        \"state\": \"merged\"\n      },\n      {\n        \"node_id\": \"codex-node\",\n        \"target_pr\": \"PR-CODEX\",\n        \"depends_on\": [\n          \"claude-node\"\n        ],\n        \"state\": \"closed_not_needed\"\n      }\n    ],\n    \"all_affected_stories_passed\": true\n  },\n  \"providerPreflight\": [\n    {\n      \"id\": \"mock-provider\",\n      \"passed\": true,\n      \"detail\": \"deterministic local provider\"\n    }\n  ],\n  \"githubPrApi\": {\n    \"attempted\": false,\n    \"passed\": true,\n    \"steps\": [],\n    \"prUrl\": null\n  },\n  \"finalPassed\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+    "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+    "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-functional-resume-check.ts",
+    "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-governed-data-products.ts",
+    "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+    "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+    "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-quality-gate.ts",
+    "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"main_agent_quality_gate\",\n  \"thresholdsPath\": \"_bmad/_config/main-agent-quality-gate.thresholds.json\",\n  \"evidence_provenance\": {\n    \"runId\": \"quality-gate-1781931649930-57de93eb\",\n    \"storyKey\": \"S-release-gate\",\n    \"evidenceBundleId\": \"quality-gate-1781931649930-57de93eb:bundle\",\n    \"contractHash\": \"498a9a928ed28ca02e3f18050be427ccca2a96fa42f9f1343d983741f89a80fc\",\n    \"gateReportHash\": \"e302a1a6e0cdb2007281469cfd3325d1c8a36e065bc7174702ce687e62897d5e\"\n  },\n  \"critical_failures\": 0,\n  \"checks\": [\n    {\n      \"id\": \"threshold-version\",\n      \"passed\": true,\n      \"summary\": \"threshold version=1, gateId=main-agent-quality-gate\"\n    },\n    {\n      \"id\": \"missing-key-paths\",\n      \"passed\": true,\n      \"summary\": \"all required key paths exist\"\n    },\n    {\n      \"id\": \"acceptance-coverage\",\n      \"passed\": true,\n      \"summary\": \"all required acceptance tests exist\"\n    },\n    {\n      \"id\": \"codex-parity-proof-artifacts\",\n      \"passed\": true,\n      \"summary\": \"all required Codex proof artifacts exist\"\n    },\n    {\n      \"id\": \"todo-stub-markers\",\n      \"passed\": true,\n      \"summary\": \"no forbidden TODO stub markers found\"\n    }\n  ]\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-release-gate.ts",
+    "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+    "expectedStdout": "{\n  \"report_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 4,\n  \"blocked_sprint_status_update\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+    "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+    "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-soak-runner.ts",
+    "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+    "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-unified-ingress.ts",
+    "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+    "expectedStdout": "Consumer MCP server entry prepared: D:\\Dev\\BMAD-Speckit-SDD-Flow\\.runtime-mcp\\server\\dist\\index.cjs\nConsumer MCP layout generated at: D:\\Dev\\BMAD-Speckit-SDD-Flow\nProject MCP config: D:\\Dev\\BMAD-Speckit-SDD-Flow\\.mcp.json\nServer entry: D:\\Dev\\BMAD-Speckit-SDD-Flow\\.runtime-mcp\\server\\dist\\index.cjs\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+    "expectedStdout": "{\"ok\":true,\"mode\":\"smoke\",\"projectRoot\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\"configPath\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\.runtime-mcp\\\\server\\\\config\\\\server.config.json\",\"configExists\":true,\"runtimeContextPath\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\context\\\\project.json\",\"runtimeContextExists\":true,\"serverConfig\":{\"name\":\"bmad-runtime\",\"transport\":\"stdio\",\"projectRoot\":\".\",\"bmadRoot\":\"_bmad\",\"outputRoot\":\"_bmad-output\",\"logDir\":\"logs\",\"tmpDir\":\"tmp\",\"features\":{\"readRuntimeContext\":true,\"readPolicies\":true,\"readScoringArtifacts\":true,\"emitSessionHints\":true}}}\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_sh_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/model-governance-hint-resolver.ts",
+    "scenarioId": "g004_model_governance_hint_resolver_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-dispatch-contract.ts",
+    "scenarioId": "g004_orchestration_dispatch_contract_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-governance-contract.ts",
+    "scenarioId": "g004_orchestration_governance_contract_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-state.ts",
+    "scenarioId": "g004_orchestration_state_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/parse-and-write-score.ts",
+    "scenarioId": "g004_parse_and_write_score_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/per-must-closure-evidence-index.ts",
+    "scenarioId": "g004_per_must_closure_evidence_index_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+    "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/reconfirmation-runtime.ts",
+    "scenarioId": "g004_reconfirmation_runtime_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+    "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_no_args",
+    "expectedStdout": "{\n  \"ok\": true,\n  \"eventId\": \"trace_runtime_closure_recorded:2026-06-20T05:02:35.038Z:bb2d3027c818\",\n  \"eventHash\": \"sha256:20df75d9534e87b657d21191f38f46d4507f8309c76a3fe9a84fdb8f9102bb6d\",\n  \"receiptPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-INSPECT-READINESS-BASELINE-SELF-HEALING/events/receipts/trace_runtime_closure_recorded_2026-06-20T05_02_35.038Z_bb2d3027c818.json\",\n  \"afterRecordHash\": \"sha256:cf63b272b3e8c231b3d79d3397b36bdd2b107ff6fd97df8e4c707e3f8fd5453d\",\n  \"closedIds\": 26\n}\n"
+  },
+  {
+    "originalPath": "scripts/requirement-record-control-store.ts",
+    "scenarioId": "g004_requirement_record_control_store_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+    "scenarioId": "g004_requirement_record_live_schema_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/requirement-record-schema-evolution.ts",
+    "scenarioId": "g004_requirement_record_schema_evolution_ts_no_args",
+    "expectedStdout": "{\n  \"ok\": true,\n  \"policy\": {\n    \"schemaVersion\": \"requirement-record-schema-evolution/v1\",\n    \"upcasterRegistry\": [\n      \"requirement-record/v1\"\n    ],\n    \"migrationEventTypes\": [\n      \"control_commit_recovery_recorded\",\n      \"closeout_attempt_invalidated\"\n    ],\n    \"compatibilityMatrix\": [\n      \"control-event-envelope/v1 -> requirement-record/v1\"\n    ],\n    \"snapshotOnlyBackfillAllowed\": false,\n    \"eventLogRewriteAllowed\": false\n  }\n}\n"
+  },
+  {
+    "originalPath": "scripts/resolve-active-requirement.ts",
+    "scenarioId": "g004_resolve_active_requirement_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance-registry.ts",
+    "scenarioId": "g004_runtime_governance_registry_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance-template-schema.ts",
+    "scenarioId": "g004_runtime_governance_template_schema_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance.ts",
+    "scenarioId": "g004_runtime_governance_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/runtime-scoring-data-path.ts",
+    "scenarioId": "g004_runtime_scoring_data_path_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/sft-extract.ts",
+    "scenarioId": "g004_sft_extract_ts_no_args",
+    "expectedStdout": "共提取 0 条，覆盖 0 个 Story；跳过 7 条（原因：无 §1/§4 且审计报告解析失败: 4; 无 source_path: 3）\n"
+  },
+  {
+    "originalPath": "scripts/six-model-runtime-decision.ts",
+    "scenarioId": "g004_six_model_runtime_decision_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/skill-orchestration-audit.ts",
+    "scenarioId": "g004_skill_orchestration_audit_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/strict-closeout-proof-gate.ts",
+    "scenarioId": "g004_strict_closeout_proof_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/target-artifact-realization-gate.ts",
+    "scenarioId": "g004_target_artifact_realization_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+    "scenarioId": "g004_trace_040_evidence_packet_generator_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/update-runtime-audit-index.ts",
+    "scenarioId": "g004_update_runtime_audit_index_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/user-story-mapping.ts",
+    "scenarioId": "g004_user_story_mapping_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/validate-consumer-governance.ps1",
+    "scenarioId": "g004_validate_consumer_governance_ps1_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+    "scenarioId": "g004_verify_cursor_audit_granularity_ts_no_args",
+    "expectedStdout": "========================================\nCursor Audit Granularity Verification\n========================================\nMode: full\nTool: mcp_task\nSubagent Type: generalPurpose\n\nStage Routing Matrix:\n- story_create: AUDIT (validation=null)\n- story_audit: AUDIT (validation=null)\n- specify: AUDIT (validation=null)\n- plan: AUDIT (validation=null)\n- gaps: AUDIT (validation=null)\n- tasks: AUDIT (validation=null)\n- implement: AUDIT (validation=null)\n- post_audit: AUDIT (validation=null)\n- epic_create: SKIP (validation=null)\n- epic_complete: SKIP (validation=null)\n\n✅ Cursor audit granularity verification passed\n"
+  },
+  {
+    "originalPath": "scripts/verify-hooks-no-ts-node.js",
+    "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
+    "expectedStdout": "\u001b[0m\n=== BMAD Hooks ts-node 依赖验证 ===\n\u001b[0m\nFound 20 hook files\n\n\u001b[32m✓ _bmad\\runtime\\hooks\\build-runtime-error-message.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\deferred-gap-governance.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-packet-hard-closeout.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-rerun-queue.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-runner-summary-format.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-runner-summary-presenter.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\governance-stage-event-emitter.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\hook-load-messages.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-current-session.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-read-current-session.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-session-event.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-session-runtime.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\party-mode-turn-lock.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\post-tool-use-core.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\pre-continue-check.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\run-emit-runtime-policy.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-dashboard-auto-start.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-policy-inject-core.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\runtime-step-state.cjs\u001b[0m\n\u001b[32m✓ _bmad\\runtime\\hooks\\should-skip-runtime-policy.cjs\u001b[0m\n\n\u001b[0m=== 总结 ===\u001b[0m\nTotal files: 20\n\u001b[32mPassed: 20\u001b[0m\n\u001b[32mFailed: 0\u001b[0m\n\u001b[32m\n✓ 所有 hooks 通过 ts-node 依赖验证！\n\u001b[0m\n"
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+    "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_cjs_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+    "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_no_args",
+    "expectedStdout": ""
+  }
+]

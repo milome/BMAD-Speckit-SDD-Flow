@@ -142,6 +142,14 @@ const POST_WAVE_ALLOWED_SCRIPT_CHANGES = new Map([
       reason: 'post-wave root helper migrated into package runtime before release',
     },
   ],
+  [
+    'scripts/generate-codex-agents-from-claude.js',
+    {
+      allowedStatuses: new Set(['M']),
+      replacementPath: 'packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js',
+      reason: 'post-wave helper is covered by the Wave 3.12 migration registry and evidence ledger',
+    },
+  ],
 ]);
 
 const POST_WAVE_ALLOWED_WORKTREE_DELETIONS = new Map([

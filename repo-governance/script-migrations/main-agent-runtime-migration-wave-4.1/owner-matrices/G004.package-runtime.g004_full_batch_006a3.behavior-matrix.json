@@ -1,0 +1,832 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T08:44:53.685Z",
+  "artifactSuffix": "g004_full_batch_006a3",
+  "timeoutMs": 10000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "scenarioCount": 5,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "entryId": "main-agent-runtime-policy-snapshot-check",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-runtime-policy-snapshot-check.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 5,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 1,
+        "errorPathCount": 4,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 5,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 1,
+        "coveredErrorPathCount": 4,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--help",
+          "--json",
+          "--report-path",
+          "--requirement-record"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--help <present>",
+          "--json <present>",
+          "--report-path <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--help <present>",
+          "--json <present>",
+          "--report-path <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 5,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_help",
+          "flag_json",
+          "flag_report_path",
+          "flag_requirement_record"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+          "originalEntryPoint": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_no_args-original-TdLvy9",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_no_args-package-F3H7i8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-runtime-policy-snapshot-check.ts:no_args",
+            "originalReplayArtifactHash": "sha256:dc1ef94b69bf123bc9cd9297c9220ef19dbe91b1c3841a5661cba0e975f77dfc",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-runtime-policy-snapshot-check.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 315,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:315",
+                "text": "export function mainRuntimePolicySnapshotCheck(argv: string[]): number {"
+              },
+              {
+                "line": 318,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:318",
+                "text": "console.log("
+              },
+              {
+                "line": 339,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:339",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:347",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:349",
+                "text": "process.exitCode = mainRuntimePolicySnapshotCheck(process.argv.slice(2));"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:351",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-runtime-policy-snapshot-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--report-path",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_report_path",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_help",
+          "originalEntryPoint": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts --help",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js --help",
+          "argumentCombination": "--help <present>",
+          "args": [
+            "--help"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_help_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_help-original-zpP87P",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_help_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_help-package-70C1wC",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Usage: main-agent-runtime-policy-snapshot-check --requirement-record <json> [--report-path <json>] [--json]\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_help",
+            "originalReplayArtifactHash": "sha256:2e09adb080ef8b40bb04b6aeb0d1f69a6998ca1fc5204ddec9442d1aa1377844",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_help",
+            "sourceLineAnchors": [
+              {
+                "line": 315,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:315",
+                "text": "export function mainRuntimePolicySnapshotCheck(argv: string[]): number {"
+              },
+              {
+                "line": 318,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:318",
+                "text": "console.log("
+              },
+              {
+                "line": 339,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:339",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:347",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:349",
+                "text": "process.exitCode = mainRuntimePolicySnapshotCheck(process.argv.slice(2));"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:351",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-runtime-policy-snapshot-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--report-path",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_report_path",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_json",
+          "originalEntryPoint": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts --json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js --json",
+          "argumentCombination": "--json <present>",
+          "args": [
+            "--json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_json_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_json-original-haVFWY",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_json_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_json-package-9PVw8I",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_json",
+            "originalReplayArtifactHash": "sha256:dc1ef94b69bf123bc9cd9297c9220ef19dbe91b1c3841a5661cba0e975f77dfc",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_json",
+            "sourceLineAnchors": [
+              {
+                "line": 315,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:315",
+                "text": "export function mainRuntimePolicySnapshotCheck(argv: string[]): number {"
+              },
+              {
+                "line": 318,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:318",
+                "text": "console.log("
+              },
+              {
+                "line": 339,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:339",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:347",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:349",
+                "text": "process.exitCode = mainRuntimePolicySnapshotCheck(process.argv.slice(2));"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:351",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-runtime-policy-snapshot-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--report-path",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_report_path",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path",
+          "originalEntryPoint": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts --report-path <fixture-root>/report-path.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js --report-path <fixture-root>/report-path.json",
+          "argumentCombination": "--report-path <source-derived-safe-value>",
+          "args": [
+            "--report-path",
+            "<fixture-root>/report-path.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path-original-euYL4s",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path-package-XiWSYQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "report-path.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_report_path",
+            "originalReplayArtifactHash": "sha256:f210a7d86ae54f5565f7ceb52b19234d00926e5f6cf4a55e2e79d4f55f0ae023",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_report_path",
+            "sourceLineAnchors": [
+              {
+                "line": 315,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:315",
+                "text": "export function mainRuntimePolicySnapshotCheck(argv: string[]): number {"
+              },
+              {
+                "line": 318,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:318",
+                "text": "console.log("
+              },
+              {
+                "line": 339,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:339",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:347",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:349",
+                "text": "process.exitCode = mainRuntimePolicySnapshotCheck(process.argv.slice(2));"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:351",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-runtime-policy-snapshot-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--report-path",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_report_path",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record",
+          "originalEntryPoint": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts --requirement-record source-derived-requirement-record",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js --requirement-record source-derived-requirement-record",
+          "argumentCombination": "--requirement-record <source-derived-safe-value>",
+          "args": [
+            "--requirement-record",
+            "source-derived-requirement-record"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record_original_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record-original-3okW3D",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record_package_fixture_root",
+              "path": "<tmp>/g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record-package-sW1gX8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_requirement_record",
+            "originalReplayArtifactHash": "sha256:91a4ff824fd228bfbb3cf096125d74dbe9a65b6cf4f15b7c68852683397c2ec3",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/main-agent-runtime-policy-snapshot-check.ts:flag_requirement_record",
+            "sourceLineAnchors": [
+              {
+                "line": 315,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:315",
+                "text": "export function mainRuntimePolicySnapshotCheck(argv: string[]): number {"
+              },
+              {
+                "line": 318,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:318",
+                "text": "console.log("
+              },
+              {
+                "line": 339,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:339",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 347,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:347",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 349,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:349",
+                "text": "process.exitCode = mainRuntimePolicySnapshotCheck(process.argv.slice(2));"
+              },
+              {
+                "line": 351,
+                "anchor": "scripts/main-agent-runtime-policy-snapshot-check.ts:351",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js",
+                "to": "scripts/main-agent-runtime-policy-snapshot-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_FULL:scripts/main-agent-runtime-policy-snapshot-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--report-path",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <present>",
+              "--json <present>",
+              "--report-path <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_report_path",
+              "flag_requirement_record"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

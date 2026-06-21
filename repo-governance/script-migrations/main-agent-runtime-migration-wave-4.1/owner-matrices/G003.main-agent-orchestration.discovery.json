@@ -1,0 +1,2331 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-g003-discovery/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G003",
+  "entryId": "main-agent-orchestration",
+  "originalPath": "scripts/main-agent-orchestration.ts",
+  "status": "discovery_only_not_completion_evidence",
+  "completionEvidenceAllowed": false,
+  "ledgerMutationAllowed": false,
+  "packageImplementationSetAllowed": false,
+  "behaviorEquivalenceMatrixAllowed": false,
+  "source": {
+    "path": "scripts/main-agent-orchestration.ts",
+    "sha256": "sha256:fddd80c76a5540a04c071715e4391605492aef5a7a6105c4168e18fd41034095",
+    "bytes": 428767,
+    "loc": 11935
+  },
+  "discovered": {
+    "entryPoints": [
+      {
+        "line": 8706,
+        "anchor": "scripts/main-agent-orchestration.ts:8706",
+        "text": "function parseArgs(argv: string[]): Record<string, string | undefined> {"
+      },
+      {
+        "line": 11593,
+        "anchor": "scripts/main-agent-orchestration.ts:11593",
+        "text": "export function mainMainAgentOrchestration(argv: string[]): number {"
+      },
+      {
+        "line": 11594,
+        "anchor": "scripts/main-agent-orchestration.ts:11594",
+        "text": "const args = parseArgs(argv);"
+      },
+      {
+        "line": 11872,
+        "anchor": "scripts/main-agent-orchestration.ts:11872",
+        "text": "export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<number> {"
+      },
+      {
+        "line": 11873,
+        "anchor": "scripts/main-agent-orchestration.ts:11873",
+        "text": "const args = parseArgs(argv);"
+      },
+      {
+        "line": 11909,
+        "anchor": "scripts/main-agent-orchestration.ts:11909",
+        "text": "return mainMainAgentOrchestration(argv);"
+      },
+      {
+        "line": 11925,
+        "anchor": "scripts/main-agent-orchestration.ts:11925",
+        "text": "function isDirectMainAgentOrchestrationCli(): boolean {"
+      },
+      {
+        "line": 11930,
+        "anchor": "scripts/main-agent-orchestration.ts:11930",
+        "text": "if (require.main === module && isDirectMainAgentOrchestrationCli()) {"
+      },
+      {
+        "line": 11931,
+        "anchor": "scripts/main-agent-orchestration.ts:11931",
+        "text": "void mainMainAgentOrchestrationAsync(process.argv.slice(2)).then((code) => {"
+      }
+    ],
+    "actionAliases": [
+      "adaptive-intake",
+      "audit",
+      "author_confirmation_ready_source",
+      "author-confirmation-ready-source",
+      "authoring_repair",
+      "authoring-repair",
+      "await_user",
+      "await_user_acceptance",
+      "claim",
+      "closeout-acceptance-ingest",
+      "complete",
+      "confirm-closeout-acceptance",
+      "confirm-scope",
+      "confirmation-bookkeeping-repair",
+      "confirmation-drift-route",
+      "confirmation-ingest",
+      "controlled-readiness-audit",
+      "create_expected_red_adapter_test",
+      "create_missing_acceptance_files_from_manifest",
+      "dispatch",
+      "dispatch_implement",
+      "dispatch_remediation",
+      "dispatch_review",
+      "dispatch-plan",
+      "document",
+      "enter_architecture_confirmation",
+      "implement",
+      "inspect",
+      "invalidate",
+      "post-close-defect-intake",
+      "pre_confirmation_drilldown",
+      "pre-confirmation-drilldown",
+      "prepare_architecture_confirmation",
+      "recompute_current_model_gate",
+      "record_closed",
+      "remediate",
+      "repair-confirmation-bookkeeping",
+      "rerun_gate",
+      "route-confirmation-drift",
+      "route-intake",
+      "run_closeout",
+      "run_execution_closure_gate",
+      "run_implementation_readiness_gate",
+      "run_pre_confirmation_drilldown",
+      "run-loop",
+      "step"
+    ],
+    "requiredG003Actions": [
+      {
+        "action": "inspect",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 7961,
+            "anchor": "scripts/main-agent-orchestration.ts:7961",
+            "text": "'inspect';"
+          },
+          {
+            "line": 8625,
+            "anchor": "scripts/main-agent-orchestration.ts:8625",
+            "text": "'inspect',"
+          },
+          {
+            "line": 11596,
+            "anchor": "scripts/main-agent-orchestration.ts:11596",
+            "text": "const action = normalizeText(args.action) || 'inspect';"
+          },
+          {
+            "line": 11757,
+            "anchor": "scripts/main-agent-orchestration.ts:11757",
+            "text": "case 'inspect': {"
+          },
+          {
+            "line": 11786,
+            "anchor": "scripts/main-agent-orchestration.ts:11786",
+            "text": "case 'inspect': {"
+          },
+          {
+            "line": 11875,
+            "anchor": "scripts/main-agent-orchestration.ts:11875",
+            "text": "const action = normalizeText(args.action) || 'inspect';"
+          }
+        ]
+      },
+      {
+        "action": "dispatch-plan",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8627,
+            "anchor": "scripts/main-agent-orchestration.ts:8627",
+            "text": "'dispatch-plan',"
+          },
+          {
+            "line": 11167,
+            "anchor": "scripts/main-agent-orchestration.ts:11167",
+            "text": "step: 'dispatch-plan',"
+          },
+          {
+            "line": 11179,
+            "anchor": "scripts/main-agent-orchestration.ts:11179",
+            "text": "step: 'dispatch-plan',"
+          },
+          {
+            "line": 11762,
+            "anchor": "scripts/main-agent-orchestration.ts:11762",
+            "text": "case 'dispatch-plan': {"
+          },
+          {
+            "line": 11791,
+            "anchor": "scripts/main-agent-orchestration.ts:11791",
+            "text": "case 'dispatch-plan': {"
+          }
+        ]
+      },
+      {
+        "action": "run-loop",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8628,
+            "anchor": "scripts/main-agent-orchestration.ts:8628",
+            "text": "'run-loop',"
+          },
+          {
+            "line": 11766,
+            "anchor": "scripts/main-agent-orchestration.ts:11766",
+            "text": "case 'run-loop': {"
+          },
+          {
+            "line": 11805,
+            "anchor": "scripts/main-agent-orchestration.ts:11805",
+            "text": "case 'run-loop': {"
+          },
+          {
+            "line": 11876,
+            "anchor": "scripts/main-agent-orchestration.ts:11876",
+            "text": "if (action === 'run-loop') {"
+          }
+        ]
+      },
+      {
+        "action": "claim",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8629,
+            "anchor": "scripts/main-agent-orchestration.ts:8629",
+            "text": "'claim',"
+          },
+          {
+            "line": 11192,
+            "anchor": "scripts/main-agent-orchestration.ts:11192",
+            "text": "step: 'claim',"
+          },
+          {
+            "line": 11838,
+            "anchor": "scripts/main-agent-orchestration.ts:11838",
+            "text": "case 'claim': {"
+          }
+        ]
+      },
+      {
+        "action": "dispatch",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8630,
+            "anchor": "scripts/main-agent-orchestration.ts:8630",
+            "text": "'dispatch',"
+          },
+          {
+            "line": 11204,
+            "anchor": "scripts/main-agent-orchestration.ts:11204",
+            "text": "step: 'dispatch',"
+          },
+          {
+            "line": 11848,
+            "anchor": "scripts/main-agent-orchestration.ts:11848",
+            "text": "case 'dispatch': {"
+          }
+        ]
+      },
+      {
+        "action": "complete",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 3188,
+            "anchor": "scripts/main-agent-orchestration.ts:3188",
+            "text": "coverageVerdict: 'complete',"
+          },
+          {
+            "line": 3192,
+            "anchor": "scripts/main-agent-orchestration.ts:3192",
+            "text": "completenessVerdict: 'complete',"
+          },
+          {
+            "line": 3544,
+            "anchor": "scripts/main-agent-orchestration.ts:3544",
+            "text": "coverageVerdict: 'complete',"
+          },
+          {
+            "line": 3548,
+            "anchor": "scripts/main-agent-orchestration.ts:3548",
+            "text": "completenessVerdict: 'complete',"
+          },
+          {
+            "line": 8631,
+            "anchor": "scripts/main-agent-orchestration.ts:8631",
+            "text": "'complete',"
+          },
+          {
+            "line": 11854,
+            "anchor": "scripts/main-agent-orchestration.ts:11854",
+            "text": "case 'complete': {"
+          }
+        ]
+      },
+      {
+        "action": "invalidate",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8632,
+            "anchor": "scripts/main-agent-orchestration.ts:8632",
+            "text": "'invalidate',"
+          },
+          {
+            "line": 11860,
+            "anchor": "scripts/main-agent-orchestration.ts:11860",
+            "text": "case 'invalidate': {"
+          }
+        ]
+      },
+      {
+        "action": "route-intake",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8633,
+            "anchor": "scripts/main-agent-orchestration.ts:8633",
+            "text": "'route-intake',"
+          },
+          {
+            "line": 11598,
+            "anchor": "scripts/main-agent-orchestration.ts:11598",
+            "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+          }
+        ]
+      },
+      {
+        "action": "adaptive-intake",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8634,
+            "anchor": "scripts/main-agent-orchestration.ts:8634",
+            "text": "'adaptive-intake',"
+          },
+          {
+            "line": 11598,
+            "anchor": "scripts/main-agent-orchestration.ts:11598",
+            "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+          }
+        ]
+      },
+      {
+        "action": "confirm-scope",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8635,
+            "anchor": "scripts/main-agent-orchestration.ts:8635",
+            "text": "'confirm-scope',"
+          },
+          {
+            "line": 8849,
+            "anchor": "scripts/main-agent-orchestration.ts:8849",
+            "text": "| 'confirm-scope'"
+          },
+          {
+            "line": 9085,
+            "anchor": "scripts/main-agent-orchestration.ts:9085",
+            "text": "action: 'confirm-scope',"
+          },
+          {
+            "line": 11617,
+            "anchor": "scripts/main-agent-orchestration.ts:11617",
+            "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+          }
+        ]
+      },
+      {
+        "action": "confirmation-ingest",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8636,
+            "anchor": "scripts/main-agent-orchestration.ts:8636",
+            "text": "'confirmation-ingest',"
+          },
+          {
+            "line": 11617,
+            "anchor": "scripts/main-agent-orchestration.ts:11617",
+            "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+          }
+        ]
+      },
+      {
+        "action": "confirm-closeout-acceptance",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8637,
+            "anchor": "scripts/main-agent-orchestration.ts:8637",
+            "text": "'confirm-closeout-acceptance',"
+          },
+          {
+            "line": 8850,
+            "anchor": "scripts/main-agent-orchestration.ts:8850",
+            "text": "| 'confirm-closeout-acceptance'"
+          },
+          {
+            "line": 8990,
+            "anchor": "scripts/main-agent-orchestration.ts:8990",
+            "text": "'confirm-closeout-acceptance',"
+          },
+          {
+            "line": 9025,
+            "anchor": "scripts/main-agent-orchestration.ts:9025",
+            "text": "action: 'confirm-closeout-acceptance',"
+          },
+          {
+            "line": 11632,
+            "anchor": "scripts/main-agent-orchestration.ts:11632",
+            "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+          }
+        ]
+      },
+      {
+        "action": "closeout-acceptance-ingest",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8638,
+            "anchor": "scripts/main-agent-orchestration.ts:8638",
+            "text": "'closeout-acceptance-ingest',"
+          },
+          {
+            "line": 11632,
+            "anchor": "scripts/main-agent-orchestration.ts:11632",
+            "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+          }
+        ]
+      },
+      {
+        "action": "route-confirmation-drift",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8640,
+            "anchor": "scripts/main-agent-orchestration.ts:8640",
+            "text": "'route-confirmation-drift',"
+          },
+          {
+            "line": 8852,
+            "anchor": "scripts/main-agent-orchestration.ts:8852",
+            "text": "| 'route-confirmation-drift';"
+          },
+          {
+            "line": 9236,
+            "anchor": "scripts/main-agent-orchestration.ts:9236",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 9250,
+            "anchor": "scripts/main-agent-orchestration.ts:9250",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 9263,
+            "anchor": "scripts/main-agent-orchestration.ts:9263",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 9282,
+            "anchor": "scripts/main-agent-orchestration.ts:9282",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 9303,
+            "anchor": "scripts/main-agent-orchestration.ts:9303",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 9320,
+            "anchor": "scripts/main-agent-orchestration.ts:9320",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 9341,
+            "anchor": "scripts/main-agent-orchestration.ts:9341",
+            "text": "action: 'route-confirmation-drift',"
+          },
+          {
+            "line": 11647,
+            "anchor": "scripts/main-agent-orchestration.ts:11647",
+            "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+          }
+        ]
+      },
+      {
+        "action": "confirmation-drift-route",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8641,
+            "anchor": "scripts/main-agent-orchestration.ts:8641",
+            "text": "'confirmation-drift-route',"
+          },
+          {
+            "line": 11647,
+            "anchor": "scripts/main-agent-orchestration.ts:11647",
+            "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+          }
+        ]
+      },
+      {
+        "action": "repair-confirmation-bookkeeping",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8642,
+            "anchor": "scripts/main-agent-orchestration.ts:8642",
+            "text": "'repair-confirmation-bookkeeping',"
+          },
+          {
+            "line": 8851,
+            "anchor": "scripts/main-agent-orchestration.ts:8851",
+            "text": "| 'repair-confirmation-bookkeeping'"
+          },
+          {
+            "line": 9143,
+            "anchor": "scripts/main-agent-orchestration.ts:9143",
+            "text": "action: 'repair-confirmation-bookkeeping',"
+          },
+          {
+            "line": 11663,
+            "anchor": "scripts/main-agent-orchestration.ts:11663",
+            "text": "action === 'repair-confirmation-bookkeeping' ||"
+          }
+        ]
+      },
+      {
+        "action": "confirmation-bookkeeping-repair",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8643,
+            "anchor": "scripts/main-agent-orchestration.ts:8643",
+            "text": "'confirmation-bookkeeping-repair',"
+          },
+          {
+            "line": 11664,
+            "anchor": "scripts/main-agent-orchestration.ts:11664",
+            "text": "action === 'confirmation-bookkeeping-repair'"
+          }
+        ]
+      },
+      {
+        "action": "pre-confirmation-drilldown",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8644,
+            "anchor": "scripts/main-agent-orchestration.ts:8644",
+            "text": "'pre-confirmation-drilldown',"
+          },
+          {
+            "line": 11681,
+            "anchor": "scripts/main-agent-orchestration.ts:11681",
+            "text": "action === 'pre-confirmation-drilldown' ||"
+          },
+          {
+            "line": 11702,
+            "anchor": "scripts/main-agent-orchestration.ts:11702",
+            "text": ": 'pre-confirmation-drilldown';"
+          }
+        ]
+      },
+      {
+        "action": "pre_confirmation_drilldown",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 240,
+            "anchor": "scripts/main-agent-orchestration.ts:240",
+            "text": "lane: 'pre_confirmation_drilldown';"
+          },
+          {
+            "line": 3099,
+            "anchor": "scripts/main-agent-orchestration.ts:3099",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 5497,
+            "anchor": "scripts/main-agent-orchestration.ts:5497",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 5533,
+            "anchor": "scripts/main-agent-orchestration.ts:5533",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 5875,
+            "anchor": "scripts/main-agent-orchestration.ts:5875",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 5999,
+            "anchor": "scripts/main-agent-orchestration.ts:5999",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 6150,
+            "anchor": "scripts/main-agent-orchestration.ts:6150",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 6156,
+            "anchor": "scripts/main-agent-orchestration.ts:6156",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 7504,
+            "anchor": "scripts/main-agent-orchestration.ts:7504",
+            "text": "lane: 'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 7573,
+            "anchor": "scripts/main-agent-orchestration.ts:7573",
+            "text": "? 'pre_confirmation_drilldown'"
+          },
+          {
+            "line": 8645,
+            "anchor": "scripts/main-agent-orchestration.ts:8645",
+            "text": "'pre_confirmation_drilldown',"
+          },
+          {
+            "line": 11682,
+            "anchor": "scripts/main-agent-orchestration.ts:11682",
+            "text": "action === 'pre_confirmation_drilldown' ||"
+          }
+        ]
+      },
+      {
+        "action": "author-confirmation-ready-source",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 1627,
+            "anchor": "scripts/main-agent-orchestration.ts:1627",
+            "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+          },
+          {
+            "line": 5833,
+            "anchor": "scripts/main-agent-orchestration.ts:5833",
+            "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+          },
+          {
+            "line": 5852,
+            "anchor": "scripts/main-agent-orchestration.ts:5852",
+            "text": "selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',"
+          },
+          {
+            "line": 8646,
+            "anchor": "scripts/main-agent-orchestration.ts:8646",
+            "text": "'author-confirmation-ready-source',"
+          },
+          {
+            "line": 11683,
+            "anchor": "scripts/main-agent-orchestration.ts:11683",
+            "text": "action === 'author-confirmation-ready-source' ||"
+          },
+          {
+            "line": 11699,
+            "anchor": "scripts/main-agent-orchestration.ts:11699",
+            "text": "action === 'author-confirmation-ready-source' ||"
+          },
+          {
+            "line": 11701,
+            "anchor": "scripts/main-agent-orchestration.ts:11701",
+            "text": "? 'author-confirmation-ready-source'"
+          }
+        ]
+      },
+      {
+        "action": "author_confirmation_ready_source",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8647,
+            "anchor": "scripts/main-agent-orchestration.ts:8647",
+            "text": "'author_confirmation_ready_source',"
+          },
+          {
+            "line": 11684,
+            "anchor": "scripts/main-agent-orchestration.ts:11684",
+            "text": "action === 'author_confirmation_ready_source'"
+          },
+          {
+            "line": 11700,
+            "anchor": "scripts/main-agent-orchestration.ts:11700",
+            "text": "action === 'author_confirmation_ready_source'"
+          }
+        ]
+      },
+      {
+        "action": "authoring-repair",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8648,
+            "anchor": "scripts/main-agent-orchestration.ts:8648",
+            "text": "'authoring-repair',"
+          },
+          {
+            "line": 11712,
+            "anchor": "scripts/main-agent-orchestration.ts:11712",
+            "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+          }
+        ]
+      },
+      {
+        "action": "authoring_repair",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 3482,
+            "anchor": "scripts/main-agent-orchestration.ts:3482",
+            "text": "lane: 'authoring_repair',"
+          },
+          {
+            "line": 4918,
+            "anchor": "scripts/main-agent-orchestration.ts:4918",
+            "text": "'authoring_repair'"
+          },
+          {
+            "line": 8649,
+            "anchor": "scripts/main-agent-orchestration.ts:8649",
+            "text": "'authoring_repair',"
+          },
+          {
+            "line": 11712,
+            "anchor": "scripts/main-agent-orchestration.ts:11712",
+            "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+          }
+        ]
+      },
+      {
+        "action": "post-close-defect-intake",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8639,
+            "anchor": "scripts/main-agent-orchestration.ts:8639",
+            "text": "'post-close-defect-intake',"
+          },
+          {
+            "line": 10441,
+            "anchor": "scripts/main-agent-orchestration.ts:10441",
+            "text": "action: 'post-close-defect-intake',"
+          },
+          {
+            "line": 11733,
+            "anchor": "scripts/main-agent-orchestration.ts:11733",
+            "text": "if (action === 'post-close-defect-intake') {"
+          }
+        ]
+      },
+      {
+        "action": "controlled-readiness-audit",
+        "discovered": true,
+        "sourceLineAnchors": [
+          {
+            "line": 8650,
+            "anchor": "scripts/main-agent-orchestration.ts:8650",
+            "text": "'controlled-readiness-audit',"
+          },
+          {
+            "line": 11908,
+            "anchor": "scripts/main-agent-orchestration.ts:11908",
+            "text": "if (action !== 'controlled-readiness-audit') {"
+          }
+        ]
+      }
+    ],
+    "missingRequiredActions": [],
+    "parseArgFlags": [
+      "--action",
+      "--apply",
+      "--artifact-index",
+      "--attempt-id",
+      "--codexSmoke",
+      "--codexSmokeTargetPath",
+      "--codexTimeoutMs",
+      "--confirmation-language",
+      "--confirmation-text",
+      "--confirmation-text-file",
+      "--confirmationLanguage",
+      "--confirmed-at",
+      "--confirmed-by",
+      "--critical-auditor-response",
+      "--criticalAuditorResponse",
+      "--cwd",
+      "--data-path",
+      "--dataPath",
+      "--dry-run",
+      "--dryRun",
+      "--event-log",
+      "--filesChanged",
+      "--flow",
+      "--host",
+      "--hostKind",
+      "--implementation-run-kind",
+      "--implementationRunKind",
+      "--input",
+      "--mode",
+      "--owner",
+      "--packetId",
+      "--payload",
+      "--readiness-report-path",
+      "--readinessReportPath",
+      "--record-id",
+      "--render-report",
+      "--report-path",
+      "--reportEvidence",
+      "--reportPath",
+      "--reportStatus",
+      "--requirement-record",
+      "--requirement-set-id",
+      "--run-id",
+      "--runtime-root",
+      "--scoring-run-id",
+      "--sessionId",
+      "--signal",
+      "--skip-drilldown-artifacts",
+      "--source",
+      "--stage",
+      "--taskReportPath",
+      "--update-source",
+      "--validationsRun"
+    ],
+    "envKeys": [
+      "HOME",
+      "MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT",
+      "NODE_PATH",
+      "USERPROFILE"
+    ],
+    "fileOperationAnchors": [
+      {
+        "line": 545,
+        "anchor": "scripts/main-agent-orchestration.ts:545",
+        "text": "if (seen.has(normalizedDir) || !fs.existsSync(normalizedDir)) {"
+      },
+      {
+        "line": 563,
+        "anchor": "scripts/main-agent-orchestration.ts:563",
+        "text": "if (!recordPath || !fs.existsSync(recordPath)) return null;"
+      },
+      {
+        "line": 565,
+        "anchor": "scripts/main-agent-orchestration.ts:565",
+        "text": "const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;"
+      },
+      {
+        "line": 980,
+        "anchor": "scripts/main-agent-orchestration.ts:980",
+        "text": "if (!packetPath || !fs.existsSync(packetPath)) {"
+      },
+      {
+        "line": 984,
+        "anchor": "scripts/main-agent-orchestration.ts:984",
+        "text": "return JSON.parse(fs.readFileSync(packetPath, 'utf8')) as"
+      },
+      {
+        "line": 1003,
+        "anchor": "scripts/main-agent-orchestration.ts:1003",
+        "text": "!fs.existsSync(state.pendingPacket.packetPath)"
+      },
+      {
+        "line": 1205,
+        "anchor": "scripts/main-agent-orchestration.ts:1205",
+        "text": "fs.mkdirSync(path.dirname(file), { recursive: true });"
+      },
+      {
+        "line": 1206,
+        "anchor": "scripts/main-agent-orchestration.ts:1206",
+        "text": "fs.writeFileSync(file, JSON.stringify(packet, null, 2) + '\\n', 'utf8');"
+      },
+      {
+        "line": 1225,
+        "anchor": "scripts/main-agent-orchestration.ts:1225",
+        "text": "if (recordPath && fs.existsSync(recordPath)) {"
+      },
+      {
+        "line": 1227,
+        "anchor": "scripts/main-agent-orchestration.ts:1227",
+        "text": "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, unknown>;"
+      },
+      {
+        "line": 1299,
+        "anchor": "scripts/main-agent-orchestration.ts:1299",
+        "text": "contentHash: sha256Text(fs.readFileSync(manifestPath, 'utf8')),"
+      },
+      {
+        "line": 1307,
+        "anchor": "scripts/main-agent-orchestration.ts:1307",
+        "text": "if (!filePath || !fs.existsSync(filePath)) return null;"
+      },
+      {
+        "line": 1308,
+        "anchor": "scripts/main-agent-orchestration.ts:1308",
+        "text": "const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;"
+      },
+      {
+        "line": 1332,
+        "anchor": "scripts/main-agent-orchestration.ts:1332",
+        "text": "if (!fs.existsSync(packetDir)) return null;"
+      },
+      {
+        "line": 1412,
+        "anchor": "scripts/main-agent-orchestration.ts:1412",
+        "text": "contentHash: sha256Text(fs.readFileSync(triadPath, 'utf8')),"
+      },
+      {
+        "line": 1462,
+        "anchor": "scripts/main-agent-orchestration.ts:1462",
+        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
+      },
+      {
+        "line": 1463,
+        "anchor": "scripts/main-agent-orchestration.ts:1463",
+        "text": "fs.writeFileSync(filePath, `${JSON.stringify(profile, null, 2)}\\n`, 'utf8');"
+      },
+      {
+        "line": 1491,
+        "anchor": "scripts/main-agent-orchestration.ts:1491",
+        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
+      },
+      {
+        "line": 1492,
+        "anchor": "scripts/main-agent-orchestration.ts:1492",
+        "text": "fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\\n`, 'utf8');"
+      },
+      {
+        "line": 1496,
+        "anchor": "scripts/main-agent-orchestration.ts:1496",
+        "text": "if (!fs.existsSync(filePath)) {"
+      },
+      {
+        "line": 1500,
+        "anchor": "scripts/main-agent-orchestration.ts:1500",
+        "text": "const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;"
+      },
+      {
+        "line": 1510,
+        "anchor": "scripts/main-agent-orchestration.ts:1510",
+        "text": "return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;"
+      },
+      {
+        "line": 1992,
+        "anchor": "scripts/main-agent-orchestration.ts:1992",
+        "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
+      },
+      {
+        "line": 2591,
+        "anchor": "scripts/main-agent-orchestration.ts:2591",
+        "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
+      },
+      {
+        "line": 2596,
+        "anchor": "scripts/main-agent-orchestration.ts:2596",
+        "text": "fs.writeFileSync(sourcePath, next, 'utf8');"
+      },
+      {
+        "line": 2602,
+        "anchor": "scripts/main-agent-orchestration.ts:2602",
+        "text": "fs.writeFileSync(sourcePath, next.endsWith('\\n') ? next : `${next}\\n`, 'utf8');"
+      },
+      {
+        "line": 2607,
+        "anchor": "scripts/main-agent-orchestration.ts:2607",
+        "text": "const sourceText = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, 'utf8') : '';"
+      },
+      {
+        "line": 2742,
+        "anchor": "scripts/main-agent-orchestration.ts:2742",
+        "text": "if (!fs.existsSync(receiptPath)) {"
+      },
+      {
+        "line": 2999,
+        "anchor": "scripts/main-agent-orchestration.ts:2999",
+        "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
+      },
+      {
+        "line": 4052,
+        "anchor": "scripts/main-agent-orchestration.ts:4052",
+        "text": "if (!fs.existsSync(authoringDir)) {"
+      },
+      {
+        "line": 4280,
+        "anchor": "scripts/main-agent-orchestration.ts:4280",
+        "text": "if (!fs.existsSync(input.authoringDir)) {"
+      },
+      {
+        "line": 4302,
+        "anchor": "scripts/main-agent-orchestration.ts:4302",
+        "text": "fs.mkdirSync(archiveDir, { recursive: true });"
+      },
+      {
+        "line": 4323,
+        "anchor": "scripts/main-agent-orchestration.ts:4323",
+        "text": "if (!fs.existsSync(input.authoringDir)) {"
+      },
+      {
+        "line": 4868,
+        "anchor": "scripts/main-agent-orchestration.ts:4868",
+        "text": "if (!fs.existsSync(gitignorePath)) {"
+      },
+      {
+        "line": 4871,
+        "anchor": "scripts/main-agent-orchestration.ts:4871",
+        "text": "const gitignoreText = fs.readFileSync(gitignorePath, 'utf8');"
+      },
+      {
+        "line": 4895,
+        "anchor": "scripts/main-agent-orchestration.ts:4895",
+        "text": "if (!fs.existsSync(sourcePath)) {"
+      },
+      {
+        "line": 4901,
+        "anchor": "scripts/main-agent-orchestration.ts:4901",
+        "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
+      },
+      {
+        "line": 5201,
+        "anchor": "scripts/main-agent-orchestration.ts:5201",
+        "text": "if (fs.existsSync(responsePath) && path.dirname(responsePath) !== path.dirname(sourcePath)) {"
+      },
+      {
+        "line": 5206,
+        "anchor": "scripts/main-agent-orchestration.ts:5206",
+        "text": "if (!fs.existsSync(archivedResponsePath)) {"
+      },
+      {
+        "line": 5575,
+        "anchor": "scripts/main-agent-orchestration.ts:5575",
+        "text": "if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;"
+      },
+      {
+        "line": 5577,
+        "anchor": "scripts/main-agent-orchestration.ts:5577",
+        "text": "if (fs.existsSync(scriptPath)) return scriptPath;"
+      },
+      {
+        "line": 5655,
+        "anchor": "scripts/main-agent-orchestration.ts:5655",
+        "text": "if (!fs.existsSync(absoluteDocumentPath)) {"
+      },
+      {
+        "line": 5891,
+        "anchor": "scripts/main-agent-orchestration.ts:5891",
+        "text": "confirmationHtmlPath: fs.existsSync(input.paths.confirmationHtml)"
+      },
+      {
+        "line": 5894,
+        "anchor": "scripts/main-agent-orchestration.ts:5894",
+        "text": "confirmationRenderReportPath: fs.existsSync(input.paths.confirmationRenderReport)"
+      },
+      {
+        "line": 5901,
+        "anchor": "scripts/main-agent-orchestration.ts:5901",
+        "text": "(fs.existsSync(input.paths.sourceMaterializationReceipt)"
+      },
+      {
+        "line": 6120,
+        "anchor": "scripts/main-agent-orchestration.ts:6120",
+        "text": "if (!fs.existsSync(sourcePath)) {"
+      },
+      {
+        "line": 6914,
+        "anchor": "scripts/main-agent-orchestration.ts:6914",
+        "text": "fs.mkdirSync(path.dirname(probeSource), { recursive: true });"
+      },
+      {
+        "line": 6915,
+        "anchor": "scripts/main-agent-orchestration.ts:6915",
+        "text": "fs.copyFileSync(sourcePath, probeSource);"
+      },
+      {
+        "line": 8542,
+        "anchor": "scripts/main-agent-orchestration.ts:8542",
+        "text": "fs.mkdirSync(path.dirname(file), { recursive: true });"
+      },
+      {
+        "line": 8543,
+        "anchor": "scripts/main-agent-orchestration.ts:8543",
+        "text": "fs.writeFileSync(file, JSON.stringify(writtenState, null, 2) + '\\n', 'utf8');"
+      },
+      {
+        "line": 8675,
+        "anchor": "scripts/main-agent-orchestration.ts:8675",
+        "text": "if (!receiptPath || !fs.existsSync(receiptPath)) return '';"
+      },
+      {
+        "line": 8677,
+        "anchor": "scripts/main-agent-orchestration.ts:8677",
+        "text": "const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;"
+      },
+      {
+        "line": 8970,
+        "anchor": "scripts/main-agent-orchestration.ts:8970",
+        "text": "if (!fs.existsSync(entry)) {"
+      },
+      {
+        "line": 9039,
+        "anchor": "scripts/main-agent-orchestration.ts:9039",
+        "text": "if (!fs.existsSync(entry)) {"
+      },
+      {
+        "line": 9099,
+        "anchor": "scripts/main-agent-orchestration.ts:9099",
+        "text": "if (!fs.existsSync(entry)) {"
+      },
+      {
+        "line": 9156,
+        "anchor": "scripts/main-agent-orchestration.ts:9156",
+        "text": "if (!fs.existsSync(classifierPath)) {"
+      },
+      {
+        "line": 9169,
+        "anchor": "scripts/main-agent-orchestration.ts:9169",
+        "text": "const sourceText = fs.readFileSync(sourcePath, 'utf8');"
+      },
+      {
+        "line": 9215,
+        "anchor": "scripts/main-agent-orchestration.ts:9215",
+        "text": "const record = fs.existsSync(recordPath) ? (readJsonIfExists(recordPath) ?? {}) : {};"
+      },
+      {
+        "line": 9478,
+        "anchor": "scripts/main-agent-orchestration.ts:9478",
+        "text": "const parsed = JSON.parse(fs.readFileSync(resolved, 'utf8')) as unknown;"
+      },
+      {
+        "line": 9490,
+        "anchor": "scripts/main-agent-orchestration.ts:9490",
+        "text": "if (!normalized || !fs.existsSync(normalized)) return null;"
+      },
+      {
+        "line": 9492,
+        "anchor": "scripts/main-agent-orchestration.ts:9492",
+        "text": "const parsed = JSON.parse(fs.readFileSync(path.resolve(normalized), 'utf8')) as unknown;"
+      },
+      {
+        "line": 9658,
+        "anchor": "scripts/main-agent-orchestration.ts:9658",
+        "text": "fs.mkdirSync(path.dirname(reportPath), { recursive: true });"
+      },
+      {
+        "line": 9659,
+        "anchor": "scripts/main-agent-orchestration.ts:9659",
+        "text": "fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\\n', 'utf8');"
+      },
+      {
+        "line": 10095,
+        "anchor": "scripts/main-agent-orchestration.ts:10095",
+        "text": "if (!fs.existsSync(filePath)) return [];"
+      },
+      {
+        "line": 10167,
+        "anchor": "scripts/main-agent-orchestration.ts:10167",
+        "text": "if (!fs.existsSync(snapshot.absolutePath)) {"
+      },
+      {
+        "line": 10242,
+        "anchor": "scripts/main-agent-orchestration.ts:10242",
+        "text": "hash: fs.existsSync(filePath) ? sha256File(filePath) : sha256Json(report),"
+      },
+      {
+        "line": 10322,
+        "anchor": "scripts/main-agent-orchestration.ts:10322",
+        "text": "fs.mkdirSync(input.reportDir, { recursive: true });"
+      },
+      {
+        "line": 10588,
+        "anchor": "scripts/main-agent-orchestration.ts:10588",
+        "text": "if (fs.existsSync(filePath)) return;"
+      },
+      {
+        "line": 10589,
+        "anchor": "scripts/main-agent-orchestration.ts:10589",
+        "text": "fs.mkdirSync(path.dirname(filePath), { recursive: true });"
+      },
+      {
+        "line": 10590,
+        "anchor": "scripts/main-agent-orchestration.ts:10590",
+        "text": "fs.writeFileSync("
+      },
+      {
+        "line": 10674,
+        "anchor": "scripts/main-agent-orchestration.ts:10674",
+        "text": "(candidate) => !fs.existsSync(resolveProjectPath(root, candidate))"
+      },
+      {
+        "line": 10887,
+        "anchor": "scripts/main-agent-orchestration.ts:10887",
+        "text": "const existed = fs.existsSync(absolute);"
+      },
+      {
+        "line": 10897,
+        "anchor": "scripts/main-agent-orchestration.ts:10897",
+        "text": "const existed = fs.existsSync(absolute);"
+      },
+      {
+        "line": 11608,
+        "anchor": "scripts/main-agent-orchestration.ts:11608",
+        "text": "payload || fs.readFileSync(path.resolve(root, inputPath), 'utf8')"
+      }
+    ],
+    "errorPathAnchors": [
+      {
+        "line": 1383,
+        "anchor": "scripts/main-agent-orchestration.ts:1383",
+        "text": "throw new Error(`audit_execution_profile_invalid:${validation.blockingReasons.join(',')}`);"
+      },
+      {
+        "line": 1741,
+        "anchor": "scripts/main-agent-orchestration.ts:1741",
+        "text": "throw new Error(`${label} must not be absolute: ${value}`);"
+      },
+      {
+        "line": 1744,
+        "anchor": "scripts/main-agent-orchestration.ts:1744",
+        "text": "throw new Error(`${label} must not contain path separators or traversal segments: ${value}`);"
+      },
+      {
+        "line": 1747,
+        "anchor": "scripts/main-agent-orchestration.ts:1747",
+        "text": "throw new Error("
+      },
+      {
+        "line": 3002,
+        "anchor": "scripts/main-agent-orchestration.ts:3002",
+        "text": "throw new Error("
+      },
+      {
+        "line": 4889,
+        "anchor": "scripts/main-agent-orchestration.ts:4889",
+        "text": "throw new Error('authoring-repair requires --source <source-document.md>');"
+      },
+      {
+        "line": 4892,
+        "anchor": "scripts/main-agent-orchestration.ts:4892",
+        "text": "throw new Error('authoring-repair currently requires --mode preserve-existing');"
+      },
+      {
+        "line": 4896,
+        "anchor": "scripts/main-agent-orchestration.ts:4896",
+        "text": "throw new Error(`source document not found: ${sourcePath}`);"
+      },
+      {
+        "line": 6117,
+        "anchor": "scripts/main-agent-orchestration.ts:6117",
+        "text": "throw new Error('pre-confirmation-drilldown requires --source <source-document.md>');"
+      },
+      {
+        "line": 6121,
+        "anchor": "scripts/main-agent-orchestration.ts:6121",
+        "text": "throw new Error(`source document not found: ${sourcePath}`);"
+      },
+      {
+        "line": 8170,
+        "anchor": "scripts/main-agent-orchestration.ts:8170",
+        "text": "throw new Error(`Main-agent ingestion failed: session not found (${sessionId})`);"
+      },
+      {
+        "line": 8971,
+        "anchor": "scripts/main-agent-orchestration.ts:8971",
+        "text": "throw new Error(`controlled closeout acceptance entry missing: ${entry}`);"
+      },
+      {
+        "line": 8975,
+        "anchor": "scripts/main-agent-orchestration.ts:8975",
+        "text": "throw new Error('confirm-closeout-acceptance requires --source <source-document.md>');"
+      },
+      {
+        "line": 8978,
+        "anchor": "scripts/main-agent-orchestration.ts:8978",
+        "text": "throw new Error("
+      },
+      {
+        "line": 8983,
+        "anchor": "scripts/main-agent-orchestration.ts:8983",
+        "text": "throw new Error("
+      },
+      {
+        "line": 9040,
+        "anchor": "scripts/main-agent-orchestration.ts:9040",
+        "text": "throw new Error(`controlled confirmation entry missing: ${entry}`);"
+      },
+      {
+        "line": 9044,
+        "anchor": "scripts/main-agent-orchestration.ts:9044",
+        "text": "throw new Error('confirm-scope requires --source <source-document.md>');"
+      },
+      {
+        "line": 9047,
+        "anchor": "scripts/main-agent-orchestration.ts:9047",
+        "text": "throw new Error("
+      },
+      {
+        "line": 9100,
+        "anchor": "scripts/main-agent-orchestration.ts:9100",
+        "text": "throw new Error(`controlled confirmation repair entry missing: ${entry}`);"
+      },
+      {
+        "line": 9104,
+        "anchor": "scripts/main-agent-orchestration.ts:9104",
+        "text": "throw new Error('repair-confirmation-bookkeeping requires --source <source-document.md>');"
+      },
+      {
+        "line": 9108,
+        "anchor": "scripts/main-agent-orchestration.ts:9108",
+        "text": "throw new Error('repair-confirmation-bookkeeping requires --requirement-record <path>');"
+      },
+      {
+        "line": 9157,
+        "anchor": "scripts/main-agent-orchestration.ts:9157",
+        "text": "throw new Error(`confirmation drift classifier missing: ${classifierPath}`);"
+      },
+      {
+        "line": 9172,
+        "anchor": "scripts/main-agent-orchestration.ts:9172",
+        "text": "throw new Error(`implementationConfirmation block missing: ${sourcePath}`);"
+      },
+      {
+        "line": 9192,
+        "anchor": "scripts/main-agent-orchestration.ts:9192",
+        "text": "throw new Error('route-confirmation-drift projection refresh requires render report hashes');"
+      },
+      {
+        "line": 9207,
+        "anchor": "scripts/main-agent-orchestration.ts:9207",
+        "text": "throw new Error('route-confirmation-drift requires --source <source-document.md>');"
+      },
+      {
+        "line": 9211,
+        "anchor": "scripts/main-agent-orchestration.ts:9211",
+        "text": "throw new Error('route-confirmation-drift requires --requirement-record <path>');"
+      },
+      {
+        "line": 9451,
+        "anchor": "scripts/main-agent-orchestration.ts:9451",
+        "text": "throw new Error('sessionId and packetId are required for packet lifecycle actions');"
+      },
+      {
+        "line": 9480,
+        "anchor": "scripts/main-agent-orchestration.ts:9480",
+        "text": "throw new Error(`Invalid task report shape: ${resolved}`);"
+      },
+      {
+        "line": 9483,
+        "anchor": "scripts/main-agent-orchestration.ts:9483",
+        "text": "throw new Error(`Task report packetId mismatch: expected ${packetId}, got ${parsed.packetId}`);"
+      },
+      {
+        "line": 10266,
+        "anchor": "scripts/main-agent-orchestration.ts:10266",
+        "text": "const originalConsoleError = console.error;"
+      },
+      {
+        "line": 10275,
+        "anchor": "scripts/main-agent-orchestration.ts:10275",
+        "text": "console.error = (...args: unknown[]) => {"
+      },
+      {
+        "line": 10283,
+        "anchor": "scripts/main-agent-orchestration.ts:10283",
+        "text": "console.error = originalConsoleError;"
+      },
+      {
+        "line": 10420,
+        "anchor": "scripts/main-agent-orchestration.ts:10420",
+        "text": "if (!source) throw new Error('post-close-defect-intake requires --source <source-document.md>');"
+      },
+      {
+        "line": 10422,
+        "anchor": "scripts/main-agent-orchestration.ts:10422",
+        "text": "throw new Error('post-close-defect-intake requires --requirement-record <path>');"
+      },
+      {
+        "line": 10426,
+        "anchor": "scripts/main-agent-orchestration.ts:10426",
+        "text": "if (!record) throw new Error(`requirement record missing or invalid: ${recordPath}`);"
+      },
+      {
+        "line": 11602,
+        "anchor": "scripts/main-agent-orchestration.ts:11602",
+        "text": "console.error("
+      },
+      {
+        "line": 11605,
+        "anchor": "scripts/main-agent-orchestration.ts:11605",
+        "text": "return 1;"
+      },
+      {
+        "line": 11623,
+        "anchor": "scripts/main-agent-orchestration.ts:11623",
+        "text": "console.error("
+      },
+      {
+        "line": 11628,
+        "anchor": "scripts/main-agent-orchestration.ts:11628",
+        "text": "return 1;"
+      },
+      {
+        "line": 11638,
+        "anchor": "scripts/main-agent-orchestration.ts:11638",
+        "text": "console.error("
+      },
+      {
+        "line": 11643,
+        "anchor": "scripts/main-agent-orchestration.ts:11643",
+        "text": "return 1;"
+      },
+      {
+        "line": 11653,
+        "anchor": "scripts/main-agent-orchestration.ts:11653",
+        "text": "console.error("
+      },
+      {
+        "line": 11658,
+        "anchor": "scripts/main-agent-orchestration.ts:11658",
+        "text": "return 1;"
+      },
+      {
+        "line": 11671,
+        "anchor": "scripts/main-agent-orchestration.ts:11671",
+        "text": "console.error("
+      },
+      {
+        "line": 11676,
+        "anchor": "scripts/main-agent-orchestration.ts:11676",
+        "text": "return 1;"
+      },
+      {
+        "line": 11703,
+        "anchor": "scripts/main-agent-orchestration.ts:11703",
+        "text": "console.error("
+      },
+      {
+        "line": 11708,
+        "anchor": "scripts/main-agent-orchestration.ts:11708",
+        "text": "return 1;"
+      },
+      {
+        "line": 11724,
+        "anchor": "scripts/main-agent-orchestration.ts:11724",
+        "text": "console.error("
+      },
+      {
+        "line": 11729,
+        "anchor": "scripts/main-agent-orchestration.ts:11729",
+        "text": "return 1;"
+      },
+      {
+        "line": 11739,
+        "anchor": "scripts/main-agent-orchestration.ts:11739",
+        "text": "console.error("
+      },
+      {
+        "line": 11744,
+        "anchor": "scripts/main-agent-orchestration.ts:11744",
+        "text": "return 1;"
+      },
+      {
+        "line": 11764,
+        "anchor": "scripts/main-agent-orchestration.ts:11764",
+        "text": "return 1;"
+      },
+      {
+        "line": 11769,
+        "anchor": "scripts/main-agent-orchestration.ts:11769",
+        "text": "return 1;"
+      },
+      {
+        "line": 11773,
+        "anchor": "scripts/main-agent-orchestration.ts:11773",
+        "text": "return 1;"
+      },
+      {
+        "line": 11867,
+        "anchor": "scripts/main-agent-orchestration.ts:11867",
+        "text": "console.error(`main-agent-orchestration: unsupported action=${action}`);"
+      },
+      {
+        "line": 11868,
+        "anchor": "scripts/main-agent-orchestration.ts:11868",
+        "text": "return 1;"
+      },
+      {
+        "line": 11881,
+        "anchor": "scripts/main-agent-orchestration.ts:11881",
+        "text": "return 1;"
+      },
+      {
+        "line": 11916,
+        "anchor": "scripts/main-agent-orchestration.ts:11916",
+        "text": "console.error("
+      },
+      {
+        "line": 11921,
+        "anchor": "scripts/main-agent-orchestration.ts:11921",
+        "text": "return 1;"
+      }
+    ]
+  },
+  "scenarioBlueprints": [
+    {
+      "action": "inspect",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action inspect --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 7961,
+          "anchor": "scripts/main-agent-orchestration.ts:7961",
+          "text": "'inspect';"
+        },
+        {
+          "line": 8625,
+          "anchor": "scripts/main-agent-orchestration.ts:8625",
+          "text": "'inspect',"
+        },
+        {
+          "line": 11596,
+          "anchor": "scripts/main-agent-orchestration.ts:11596",
+          "text": "const action = normalizeText(args.action) || 'inspect';"
+        },
+        {
+          "line": 11757,
+          "anchor": "scripts/main-agent-orchestration.ts:11757",
+          "text": "case 'inspect': {"
+        },
+        {
+          "line": 11786,
+          "anchor": "scripts/main-agent-orchestration.ts:11786",
+          "text": "case 'inspect': {"
+        },
+        {
+          "line": 11875,
+          "anchor": "scripts/main-agent-orchestration.ts:11875",
+          "text": "const action = normalizeText(args.action) || 'inspect';"
+        }
+      ]
+    },
+    {
+      "action": "dispatch-plan",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action dispatch-plan --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8627,
+          "anchor": "scripts/main-agent-orchestration.ts:8627",
+          "text": "'dispatch-plan',"
+        },
+        {
+          "line": 11167,
+          "anchor": "scripts/main-agent-orchestration.ts:11167",
+          "text": "step: 'dispatch-plan',"
+        },
+        {
+          "line": 11179,
+          "anchor": "scripts/main-agent-orchestration.ts:11179",
+          "text": "step: 'dispatch-plan',"
+        },
+        {
+          "line": 11762,
+          "anchor": "scripts/main-agent-orchestration.ts:11762",
+          "text": "case 'dispatch-plan': {"
+        },
+        {
+          "line": 11791,
+          "anchor": "scripts/main-agent-orchestration.ts:11791",
+          "text": "case 'dispatch-plan': {"
+        }
+      ]
+    },
+    {
+      "action": "run-loop",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action run-loop --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8628,
+          "anchor": "scripts/main-agent-orchestration.ts:8628",
+          "text": "'run-loop',"
+        },
+        {
+          "line": 11766,
+          "anchor": "scripts/main-agent-orchestration.ts:11766",
+          "text": "case 'run-loop': {"
+        },
+        {
+          "line": 11805,
+          "anchor": "scripts/main-agent-orchestration.ts:11805",
+          "text": "case 'run-loop': {"
+        },
+        {
+          "line": 11876,
+          "anchor": "scripts/main-agent-orchestration.ts:11876",
+          "text": "if (action === 'run-loop') {"
+        }
+      ]
+    },
+    {
+      "action": "claim",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action claim --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8629,
+          "anchor": "scripts/main-agent-orchestration.ts:8629",
+          "text": "'claim',"
+        },
+        {
+          "line": 11192,
+          "anchor": "scripts/main-agent-orchestration.ts:11192",
+          "text": "step: 'claim',"
+        },
+        {
+          "line": 11838,
+          "anchor": "scripts/main-agent-orchestration.ts:11838",
+          "text": "case 'claim': {"
+        }
+      ]
+    },
+    {
+      "action": "dispatch",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action dispatch --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8630,
+          "anchor": "scripts/main-agent-orchestration.ts:8630",
+          "text": "'dispatch',"
+        },
+        {
+          "line": 11204,
+          "anchor": "scripts/main-agent-orchestration.ts:11204",
+          "text": "step: 'dispatch',"
+        },
+        {
+          "line": 11848,
+          "anchor": "scripts/main-agent-orchestration.ts:11848",
+          "text": "case 'dispatch': {"
+        }
+      ]
+    },
+    {
+      "action": "complete",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action complete --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 3188,
+          "anchor": "scripts/main-agent-orchestration.ts:3188",
+          "text": "coverageVerdict: 'complete',"
+        },
+        {
+          "line": 3192,
+          "anchor": "scripts/main-agent-orchestration.ts:3192",
+          "text": "completenessVerdict: 'complete',"
+        },
+        {
+          "line": 3544,
+          "anchor": "scripts/main-agent-orchestration.ts:3544",
+          "text": "coverageVerdict: 'complete',"
+        },
+        {
+          "line": 3548,
+          "anchor": "scripts/main-agent-orchestration.ts:3548",
+          "text": "completenessVerdict: 'complete',"
+        },
+        {
+          "line": 8631,
+          "anchor": "scripts/main-agent-orchestration.ts:8631",
+          "text": "'complete',"
+        },
+        {
+          "line": 11854,
+          "anchor": "scripts/main-agent-orchestration.ts:11854",
+          "text": "case 'complete': {"
+        }
+      ]
+    },
+    {
+      "action": "invalidate",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action invalidate --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8632,
+          "anchor": "scripts/main-agent-orchestration.ts:8632",
+          "text": "'invalidate',"
+        },
+        {
+          "line": 11860,
+          "anchor": "scripts/main-agent-orchestration.ts:11860",
+          "text": "case 'invalidate': {"
+        }
+      ]
+    },
+    {
+      "action": "route-intake",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action route-intake --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8633,
+          "anchor": "scripts/main-agent-orchestration.ts:8633",
+          "text": "'route-intake',"
+        },
+        {
+          "line": 11598,
+          "anchor": "scripts/main-agent-orchestration.ts:11598",
+          "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+        }
+      ]
+    },
+    {
+      "action": "adaptive-intake",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action adaptive-intake --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8634,
+          "anchor": "scripts/main-agent-orchestration.ts:8634",
+          "text": "'adaptive-intake',"
+        },
+        {
+          "line": 11598,
+          "anchor": "scripts/main-agent-orchestration.ts:11598",
+          "text": "if (action === 'route-intake' || action === 'adaptive-intake') {"
+        }
+      ]
+    },
+    {
+      "action": "confirm-scope",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action confirm-scope --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8635,
+          "anchor": "scripts/main-agent-orchestration.ts:8635",
+          "text": "'confirm-scope',"
+        },
+        {
+          "line": 8849,
+          "anchor": "scripts/main-agent-orchestration.ts:8849",
+          "text": "| 'confirm-scope'"
+        },
+        {
+          "line": 9085,
+          "anchor": "scripts/main-agent-orchestration.ts:9085",
+          "text": "action: 'confirm-scope',"
+        },
+        {
+          "line": 11617,
+          "anchor": "scripts/main-agent-orchestration.ts:11617",
+          "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+        }
+      ]
+    },
+    {
+      "action": "confirmation-ingest",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action confirmation-ingest --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8636,
+          "anchor": "scripts/main-agent-orchestration.ts:8636",
+          "text": "'confirmation-ingest',"
+        },
+        {
+          "line": 11617,
+          "anchor": "scripts/main-agent-orchestration.ts:11617",
+          "text": "if (action === 'confirm-scope' || action === 'confirmation-ingest') {"
+        }
+      ]
+    },
+    {
+      "action": "confirm-closeout-acceptance",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action confirm-closeout-acceptance --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8637,
+          "anchor": "scripts/main-agent-orchestration.ts:8637",
+          "text": "'confirm-closeout-acceptance',"
+        },
+        {
+          "line": 8850,
+          "anchor": "scripts/main-agent-orchestration.ts:8850",
+          "text": "| 'confirm-closeout-acceptance'"
+        },
+        {
+          "line": 8990,
+          "anchor": "scripts/main-agent-orchestration.ts:8990",
+          "text": "'confirm-closeout-acceptance',"
+        },
+        {
+          "line": 9025,
+          "anchor": "scripts/main-agent-orchestration.ts:9025",
+          "text": "action: 'confirm-closeout-acceptance',"
+        },
+        {
+          "line": 11632,
+          "anchor": "scripts/main-agent-orchestration.ts:11632",
+          "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+        }
+      ]
+    },
+    {
+      "action": "closeout-acceptance-ingest",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action closeout-acceptance-ingest --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8638,
+          "anchor": "scripts/main-agent-orchestration.ts:8638",
+          "text": "'closeout-acceptance-ingest',"
+        },
+        {
+          "line": 11632,
+          "anchor": "scripts/main-agent-orchestration.ts:11632",
+          "text": "if (action === 'confirm-closeout-acceptance' || action === 'closeout-acceptance-ingest') {"
+        }
+      ]
+    },
+    {
+      "action": "route-confirmation-drift",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action route-confirmation-drift --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8640,
+          "anchor": "scripts/main-agent-orchestration.ts:8640",
+          "text": "'route-confirmation-drift',"
+        },
+        {
+          "line": 8852,
+          "anchor": "scripts/main-agent-orchestration.ts:8852",
+          "text": "| 'route-confirmation-drift';"
+        },
+        {
+          "line": 9236,
+          "anchor": "scripts/main-agent-orchestration.ts:9236",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 9250,
+          "anchor": "scripts/main-agent-orchestration.ts:9250",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 9263,
+          "anchor": "scripts/main-agent-orchestration.ts:9263",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 9282,
+          "anchor": "scripts/main-agent-orchestration.ts:9282",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 9303,
+          "anchor": "scripts/main-agent-orchestration.ts:9303",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 9320,
+          "anchor": "scripts/main-agent-orchestration.ts:9320",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 9341,
+          "anchor": "scripts/main-agent-orchestration.ts:9341",
+          "text": "action: 'route-confirmation-drift',"
+        },
+        {
+          "line": 11647,
+          "anchor": "scripts/main-agent-orchestration.ts:11647",
+          "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+        }
+      ]
+    },
+    {
+      "action": "confirmation-drift-route",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action confirmation-drift-route --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8641,
+          "anchor": "scripts/main-agent-orchestration.ts:8641",
+          "text": "'confirmation-drift-route',"
+        },
+        {
+          "line": 11647,
+          "anchor": "scripts/main-agent-orchestration.ts:11647",
+          "text": "if (action === 'route-confirmation-drift' || action === 'confirmation-drift-route') {"
+        }
+      ]
+    },
+    {
+      "action": "repair-confirmation-bookkeeping",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action repair-confirmation-bookkeeping --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8642,
+          "anchor": "scripts/main-agent-orchestration.ts:8642",
+          "text": "'repair-confirmation-bookkeeping',"
+        },
+        {
+          "line": 8851,
+          "anchor": "scripts/main-agent-orchestration.ts:8851",
+          "text": "| 'repair-confirmation-bookkeeping'"
+        },
+        {
+          "line": 9143,
+          "anchor": "scripts/main-agent-orchestration.ts:9143",
+          "text": "action: 'repair-confirmation-bookkeeping',"
+        },
+        {
+          "line": 11663,
+          "anchor": "scripts/main-agent-orchestration.ts:11663",
+          "text": "action === 'repair-confirmation-bookkeeping' ||"
+        }
+      ]
+    },
+    {
+      "action": "confirmation-bookkeeping-repair",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action confirmation-bookkeeping-repair --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8643,
+          "anchor": "scripts/main-agent-orchestration.ts:8643",
+          "text": "'confirmation-bookkeeping-repair',"
+        },
+        {
+          "line": 11664,
+          "anchor": "scripts/main-agent-orchestration.ts:11664",
+          "text": "action === 'confirmation-bookkeeping-repair'"
+        }
+      ]
+    },
+    {
+      "action": "pre-confirmation-drilldown",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action pre-confirmation-drilldown --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8644,
+          "anchor": "scripts/main-agent-orchestration.ts:8644",
+          "text": "'pre-confirmation-drilldown',"
+        },
+        {
+          "line": 11681,
+          "anchor": "scripts/main-agent-orchestration.ts:11681",
+          "text": "action === 'pre-confirmation-drilldown' ||"
+        },
+        {
+          "line": 11702,
+          "anchor": "scripts/main-agent-orchestration.ts:11702",
+          "text": ": 'pre-confirmation-drilldown';"
+        }
+      ]
+    },
+    {
+      "action": "pre_confirmation_drilldown",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action pre_confirmation_drilldown --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 240,
+          "anchor": "scripts/main-agent-orchestration.ts:240",
+          "text": "lane: 'pre_confirmation_drilldown';"
+        },
+        {
+          "line": 3099,
+          "anchor": "scripts/main-agent-orchestration.ts:3099",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 5497,
+          "anchor": "scripts/main-agent-orchestration.ts:5497",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 5533,
+          "anchor": "scripts/main-agent-orchestration.ts:5533",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 5875,
+          "anchor": "scripts/main-agent-orchestration.ts:5875",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 5999,
+          "anchor": "scripts/main-agent-orchestration.ts:5999",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 6150,
+          "anchor": "scripts/main-agent-orchestration.ts:6150",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 6156,
+          "anchor": "scripts/main-agent-orchestration.ts:6156",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 7504,
+          "anchor": "scripts/main-agent-orchestration.ts:7504",
+          "text": "lane: 'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 7573,
+          "anchor": "scripts/main-agent-orchestration.ts:7573",
+          "text": "? 'pre_confirmation_drilldown'"
+        },
+        {
+          "line": 8645,
+          "anchor": "scripts/main-agent-orchestration.ts:8645",
+          "text": "'pre_confirmation_drilldown',"
+        },
+        {
+          "line": 11682,
+          "anchor": "scripts/main-agent-orchestration.ts:11682",
+          "text": "action === 'pre_confirmation_drilldown' ||"
+        }
+      ]
+    },
+    {
+      "action": "author-confirmation-ready-source",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action author-confirmation-ready-source --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 1627,
+          "anchor": "scripts/main-agent-orchestration.ts:1627",
+          "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+        },
+        {
+          "line": 5833,
+          "anchor": "scripts/main-agent-orchestration.ts:5833",
+          "text": "selectedAuthoringLane?: 'author-confirmation-ready-source';"
+        },
+        {
+          "line": 5852,
+          "anchor": "scripts/main-agent-orchestration.ts:5852",
+          "text": "selectedAuthoringLane: input.selectedAuthoringLane ?? 'author-confirmation-ready-source',"
+        },
+        {
+          "line": 8646,
+          "anchor": "scripts/main-agent-orchestration.ts:8646",
+          "text": "'author-confirmation-ready-source',"
+        },
+        {
+          "line": 11683,
+          "anchor": "scripts/main-agent-orchestration.ts:11683",
+          "text": "action === 'author-confirmation-ready-source' ||"
+        },
+        {
+          "line": 11699,
+          "anchor": "scripts/main-agent-orchestration.ts:11699",
+          "text": "action === 'author-confirmation-ready-source' ||"
+        },
+        {
+          "line": 11701,
+          "anchor": "scripts/main-agent-orchestration.ts:11701",
+          "text": "? 'author-confirmation-ready-source'"
+        }
+      ]
+    },
+    {
+      "action": "author_confirmation_ready_source",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action author_confirmation_ready_source --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8647,
+          "anchor": "scripts/main-agent-orchestration.ts:8647",
+          "text": "'author_confirmation_ready_source',"
+        },
+        {
+          "line": 11684,
+          "anchor": "scripts/main-agent-orchestration.ts:11684",
+          "text": "action === 'author_confirmation_ready_source'"
+        },
+        {
+          "line": 11700,
+          "anchor": "scripts/main-agent-orchestration.ts:11700",
+          "text": "action === 'author_confirmation_ready_source'"
+        }
+      ]
+    },
+    {
+      "action": "authoring-repair",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action authoring-repair --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8648,
+          "anchor": "scripts/main-agent-orchestration.ts:8648",
+          "text": "'authoring-repair',"
+        },
+        {
+          "line": 11712,
+          "anchor": "scripts/main-agent-orchestration.ts:11712",
+          "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+        }
+      ]
+    },
+    {
+      "action": "authoring_repair",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action authoring_repair --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 3482,
+          "anchor": "scripts/main-agent-orchestration.ts:3482",
+          "text": "lane: 'authoring_repair',"
+        },
+        {
+          "line": 4918,
+          "anchor": "scripts/main-agent-orchestration.ts:4918",
+          "text": "'authoring_repair'"
+        },
+        {
+          "line": 8649,
+          "anchor": "scripts/main-agent-orchestration.ts:8649",
+          "text": "'authoring_repair',"
+        },
+        {
+          "line": 11712,
+          "anchor": "scripts/main-agent-orchestration.ts:11712",
+          "text": "if (action === 'authoring-repair' || action === 'authoring_repair') {"
+        }
+      ]
+    },
+    {
+      "action": "post-close-defect-intake",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action post-close-defect-intake --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8639,
+          "anchor": "scripts/main-agent-orchestration.ts:8639",
+          "text": "'post-close-defect-intake',"
+        },
+        {
+          "line": 10441,
+          "anchor": "scripts/main-agent-orchestration.ts:10441",
+          "text": "action: 'post-close-defect-intake',"
+        },
+        {
+          "line": 11733,
+          "anchor": "scripts/main-agent-orchestration.ts:11733",
+          "text": "if (action === 'post-close-defect-intake') {"
+        }
+      ]
+    },
+    {
+      "action": "controlled-readiness-audit",
+      "originalEntryPoint": "scripts/main-agent-orchestration.ts",
+      "originalEntryCommandBlueprint": "node scripts/main-agent-orchestration.ts --action controlled-readiness-audit --cwd <fixture-root>",
+      "packageEntryPointStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "packageEntryCommandStatus": "blocked_until_package_source_equivalence_is_implemented",
+      "argsStatus": "blocked_until_owner_task_replays_original",
+      "envStatus": "blocked_until_owner_task_replays_env_variants",
+      "expectedOutputStatus": "blocked_until_original_replay_or_source_derived_expected_output_is_recorded",
+      "replayStatus": "blocked_until_package_implementation_exists",
+      "sourceLineAnchors": [
+        {
+          "line": 8650,
+          "anchor": "scripts/main-agent-orchestration.ts:8650",
+          "text": "'controlled-readiness-audit',"
+        },
+        {
+          "line": 11908,
+          "anchor": "scripts/main-agent-orchestration.ts:11908",
+          "text": "if (action !== 'controlled-readiness-audit') {"
+        }
+      ]
+    }
+  ],
+  "nextRequiredWork": [
+    "Implement package source equivalents under packages/bmad-speckit/src/main-agent/**.",
+    "Replay original commands from this discovery against source-derived or original-replay expected outputs.",
+    "Write real behaviorEquivalenceMatrix rows only after package source entry points exist.",
+    "Do not use this discovery artifact as packageImplementationSet, replay proof, size proof, or no-fallback proof."
+  ]
+}

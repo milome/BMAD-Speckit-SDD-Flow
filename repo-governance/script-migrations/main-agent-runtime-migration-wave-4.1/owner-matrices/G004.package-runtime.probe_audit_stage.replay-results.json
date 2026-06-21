@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T06:49:06.341Z",
+  "artifactSuffix": "probe_audit_stage",
+  "timeoutMs": 30000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G004.package-runtime.probe_audit_stage.behavior-matrix.json",
+  "matrixHash": "sha256:5e4ef9155b2cce82789d21c52dba45b1dfaa16d867860779605b5b27c7726943",
+  "matrixRowCount": 1,
+  "scenarioCount": 1,
+  "passedScenarioCount": 0,
+  "failedScenarioCount": 1,
+  "replayRows": [
+    {
+      "originalPath": "scripts/audit-stage-routing.ts",
+      "entryId": "audit-stage-routing",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-stage-routing.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 0,
+      "failedScenarioCount": 1,
+      "scenarios": [
+        {
+          "scenarioId": "g004_audit_stage_routing_ts_cwd",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 6215,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 6215,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_audit_stage_routing_ts_cwd",
+            "originalEntryPoint": "scripts/audit-stage-routing.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-stage-routing.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 6215,
+            "stderrBytes": 0,
+            "timedOut": false
+          }
+        }
+      ]
+    }
+  ]
+}

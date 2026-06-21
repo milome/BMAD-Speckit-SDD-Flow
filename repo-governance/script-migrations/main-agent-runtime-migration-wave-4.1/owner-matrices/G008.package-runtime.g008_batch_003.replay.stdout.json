@@ -1,0 +1,96 @@
+[
+  {
+    "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args",
+        "expectedStdout": "Synced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-bug-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-bug-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-story-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-story-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-eval-analytics\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/speckit-workflow\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/speckit-workflow\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/using-git-worktrees\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/using-git-worktrees\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-standalone-tasks\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-standalone-tasks\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-standalone-tasks-doc-review\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-standalone-tasks-doc-review\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-rca-helper\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-rca-helper\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-code-reviewer-lifecycle\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-code-reviewer-lifecycle\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-party-mode\nSynced SKILL.md → SKILL.zh.md _bmad/core/skills/bmad-party-mode\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-customization-backup\nSynced SKILL.md → SKILL.zh.md _bmad/skills/git-push-monitor\nDone.\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/han-outside-fences.mjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_i18n_han_outside_fences_mjs_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_i18n_han_outside_fences_mjs_env_verbose",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_i18n_phase3_translate_skill_en_py_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_i18n_phase3_skill_en_transform_mjs_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_i18n_resolve_audit_prompt_path_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/normalize-pack-manifests.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_normalize_pack_manifests_js_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/parallel-mission-control.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_parallel_mission_control_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/parse-bmad-audit-result.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_parse_bmad_audit_result_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/party-mode-gate-check.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_party_mode_gate_check_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ralph-method/pathing.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_ralph_method_pathing_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

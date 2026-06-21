@@ -1,0 +1,3522 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G005",
+  "generatedAt": "2026-06-20T09:44:17.470Z",
+  "artifactSuffix": "g005_batch_001",
+  "timeoutMs": 10000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 12,
+  "selectedRowCount": 3,
+  "matrixRowCount": 3,
+  "scenarioCount": 18,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/architecture-drift-check.ts",
+      "entryId": "architecture-drift-check-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-drift-check.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/architecture-drift-check.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 2,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 2,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--cwd"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--cwd <fixture-root>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--cwd <fixture-root>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 2,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "cwd"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_architecture_drift_check_ts_no_args",
+          "originalEntryPoint": "scripts/architecture-drift-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/architecture-drift-check.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-drift-check.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_architecture_drift_check_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_architecture_drift_check_ts_no_args-original-TzUvjH",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_architecture_drift_check_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_architecture_drift_check_ts_no_args-package-BJugTx",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"passed\": true,\n  \"failures\": []\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/architecture-drift-check.ts:no_args",
+            "originalReplayArtifactHash": "sha256:e35251063b22440e7ca6cfe6db938e7b760e443467f0faaf19c82f0bb89d611e",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/architecture-drift-check.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 20,
+                "anchor": "scripts/architecture-drift-check.ts:20",
+                "text": "export function runArchitectureDriftCheck(root: string): { passed: boolean; failures: string[] } {"
+              },
+              {
+                "line": 38,
+                "anchor": "scripts/architecture-drift-check.ts:38",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 43,
+                "anchor": "scripts/architecture-drift-check.ts:43",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 47,
+                "anchor": "scripts/architecture-drift-check.ts:47",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 48,
+                "anchor": "scripts/architecture-drift-check.ts:48",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/architecture-drift-check.ts",
+                "to": "scripts/architecture-drift-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
+                "to": "scripts/architecture-drift-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-drift-check.js",
+                "to": "scripts/architecture-drift-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/architecture-drift-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 2,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 2,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_architecture_drift_check_ts_cwd",
+          "originalEntryPoint": "scripts/architecture-drift-check.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/architecture-drift-check.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-drift-check.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_architecture_drift_check_ts_cwd_original_fixture_root",
+              "path": "<tmp>/g005_architecture_drift_check_ts_cwd-original-04B1E2",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_architecture_drift_check_ts_cwd_package_fixture_root",
+              "path": "<tmp>/g005_architecture_drift_check_ts_cwd-package-atohny",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"passed\": true,\n  \"failures\": []\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/architecture-drift-check.ts:cwd",
+            "originalReplayArtifactHash": "sha256:e35251063b22440e7ca6cfe6db938e7b760e443467f0faaf19c82f0bb89d611e",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/architecture-drift-check.ts:cwd",
+            "sourceLineAnchors": [
+              {
+                "line": 20,
+                "anchor": "scripts/architecture-drift-check.ts:20",
+                "text": "export function runArchitectureDriftCheck(root: string): { passed: boolean; failures: string[] } {"
+              },
+              {
+                "line": 38,
+                "anchor": "scripts/architecture-drift-check.ts:38",
+                "text": "export function main(argv: string[]): number {"
+              },
+              {
+                "line": 43,
+                "anchor": "scripts/architecture-drift-check.ts:43",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 47,
+                "anchor": "scripts/architecture-drift-check.ts:47",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 48,
+                "anchor": "scripts/architecture-drift-check.ts:48",
+                "text": "process.exitCode = main(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/architecture-drift-check.ts",
+                "to": "scripts/architecture-drift-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
+                "to": "scripts/architecture-drift-check.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-drift-check.js",
+                "to": "scripts/architecture-drift-check.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/architecture-drift-check.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 2,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 2,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 2,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/coach-diagnose.ts",
+      "entryId": "coach-diagnose-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 7,
+        "envKeyCount": 3,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 7,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 7,
+        "coveredEnvKeyCount": 3,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 7,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--epic",
+          "--format",
+          "--limit",
+          "--run-id",
+          "--scenario",
+          "--story"
+        ],
+        "discoveredEnvKeys": [
+          "COACH_DISCOVERY_LIMIT",
+          "FORMAT",
+          "RUN_ID"
+        ],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--epic <source-derived-safe-value>",
+          "--format <source-derived-safe-value>",
+          "--limit <source-derived-safe-value>",
+          "--run-id <source-derived-safe-value>",
+          "--scenario <source-derived-safe-value>",
+          "--story <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--epic <source-derived-safe-value>",
+          "--format <source-derived-safe-value>",
+          "--limit <source-derived-safe-value>",
+          "--run-id <source-derived-safe-value>",
+          "--scenario <source-derived-safe-value>",
+          "--story <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [
+          "COACH_DISCOVERY_LIMIT",
+          "FORMAT",
+          "RUN_ID"
+        ],
+        "scenarioDefinitionCount": 10,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_epic",
+          "flag_format",
+          "flag_limit",
+          "flag_run_id",
+          "flag_scenario",
+          "flag_story",
+          "env_coach_discovery_limit",
+          "env_format",
+          "env_run_id"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_coach_diagnose_ts_no_args",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_no_args-original-DBspcT",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_no_args-package-mWs8oV",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "# AI Coach Diagnosis\n\n## Summary\nFallback diagnosis complete (run_id=dev-e15-s2-implement-post-audit-check). Output is based on existing score records. Role boundary: AI Code Coach + Iteration Gate Keeper; consumes existing scoring only.\n\n## Phase Scores\n- implement: 93.1 pts, remediation iterations: 0\n\n`phase_score` uses tiered deduction from remediation iteration counts.\n\n## Remediation iterations per stage\n\nCount of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.\n\nAll 0 (passed on first try)\n\n## Weak Areas\n- (none)\n\n## Recommendations\n- Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.\n- No veto this run: continue improving stability and maintainability of lower-scoring stages.\n- 只消费已有审计与 scoring 数据，不替代 Reviewer。\n\n## Iteration Passed\ntrue\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:no_args",
+            "originalReplayArtifactHash": "sha256:f7da7c54fa2fb11401348c39d67595bd6180132f7a39ce5250f7d8f9c382a8aa",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_flag_epic",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts --epic source-derived-epic",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js --epic source-derived-epic",
+          "argumentCombination": "--epic <source-derived-safe-value>",
+          "args": [
+            "--epic",
+            "source-derived-epic"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_flag_epic_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_epic-original-kPTRrO",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_flag_epic_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_epic-package-oo0vSi",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Invalid --epic value: source-derived-epic. Expected positive integer.\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Invalid --epic value: source-derived-epic. Expected positive integer."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:flag_epic",
+            "originalReplayArtifactHash": "sha256:e623682413e4054cd1491bdb83609324938d856d9d94c76f48d9f241abfa7181",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:flag_epic",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_flag_format",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts --format source-derived-format",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js --format source-derived-format",
+          "argumentCombination": "--format <source-derived-safe-value>",
+          "args": [
+            "--format",
+            "source-derived-format"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_flag_format_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_format-original-Js5aDI",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_flag_format_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_format-package-QRXbh4",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Invalid --format value: source-derived-format. Expected json or markdown.\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Invalid --format value: source-derived-format. Expected json or markdown."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:flag_format",
+            "originalReplayArtifactHash": "sha256:061d725c521524bdbffe801044e54c9c7408e94bcb5736d982663c404623ca2f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:flag_format",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_flag_limit",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts --limit source-derived-limit",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js --limit source-derived-limit",
+          "argumentCombination": "--limit <source-derived-safe-value>",
+          "args": [
+            "--limit",
+            "source-derived-limit"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_flag_limit_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_limit-original-QjxWMo",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_flag_limit_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_limit-package-gs39Z1",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "# AI Coach Diagnosis\n\n## Summary\nFallback diagnosis complete (run_id=dev-e15-s2-implement-post-audit-check). Output is based on existing score records. Role boundary: AI Code Coach + Iteration Gate Keeper; consumes existing scoring only.\n\n## Phase Scores\n- implement: 93.1 pts, remediation iterations: 0\n\n`phase_score` uses tiered deduction from remediation iteration counts.\n\n## Remediation iterations per stage\n\nCount of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.\n\nAll 0 (passed on first try)\n\n## Weak Areas\n- (none)\n\n## Recommendations\n- Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.\n- No veto this run: continue improving stability and maintainability of lower-scoring stages.\n- 只消费已有审计与 scoring 数据，不替代 Reviewer。\n\n## Iteration Passed\ntrue\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:flag_limit",
+            "originalReplayArtifactHash": "sha256:f7da7c54fa2fb11401348c39d67595bd6180132f7a39ce5250f7d8f9c382a8aa",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:flag_limit",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_flag_run_id",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts --run-id source-derived-run-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js --run-id source-derived-run-id",
+          "argumentCombination": "--run-id <source-derived-safe-value>",
+          "args": [
+            "--run-id",
+            "source-derived-run-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_flag_run_id_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_run_id-original-eeh4Op",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_flag_run_id_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_run_id-package-rg5r20",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"error\": \"run_not_found\",\n  \"run_id\": \"source-derived-run-id\"\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:flag_run_id",
+            "originalReplayArtifactHash": "sha256:1c3e2d627291415711cf7c76df45b4ee9bff936bf3358e25d40dcf4bf843b30b",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:flag_run_id",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_flag_scenario",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts --scenario source-derived-scenario",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js --scenario source-derived-scenario",
+          "argumentCombination": "--scenario <source-derived-safe-value>",
+          "args": [
+            "--scenario",
+            "source-derived-scenario"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_flag_scenario_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_scenario-original-scle2v",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_flag_scenario_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_scenario-package-mjghTN",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Invalid --scenario value: source-derived-scenario. Expected real_dev, eval_question, or all.\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Invalid --scenario value: source-derived-scenario. Expected real_dev, eval_question, or all."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:flag_scenario",
+            "originalReplayArtifactHash": "sha256:79eca49ea648d6a424c24940f0322baf732bff6b31876e4edff6fc706dcd6153",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:flag_scenario",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_flag_story",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts --story source-derived-story",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js --story source-derived-story",
+          "argumentCombination": "--story <source-derived-safe-value>",
+          "args": [
+            "--story",
+            "source-derived-story"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_flag_story_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_story-original-GdlEHa",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_flag_story_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_flag_story-package-9tTcdO",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Invalid --story value: source-derived-story. Expected X.Y (e.g. 3.3).\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Invalid --story value: source-derived-story. Expected X.Y (e.g. 3.3)."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:flag_story",
+            "originalReplayArtifactHash": "sha256:1d4a8d1bdf533cf33aba818db09592c7c251355d59f57f1d74da512ed4e4e4b7",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:flag_story",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_env_coach_discovery_limit",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+          "argumentCombination": "env COACH_DISCOVERY_LIMIT=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "COACH_DISCOVERY_LIMIT": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_env_coach_discovery_limit_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_env_coach_discovery_limit-original-DOq0SM",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_env_coach_discovery_limit_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_env_coach_discovery_limit-package-dCc5fk",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "# AI Coach Diagnosis\n\n## Summary\nFallback diagnosis complete (run_id=dev-e15-s2-implement-post-audit-check). Output is based on existing score records. Role boundary: AI Code Coach + Iteration Gate Keeper; consumes existing scoring only.\n\n## Phase Scores\n- implement: 93.1 pts, remediation iterations: 0\n\n`phase_score` uses tiered deduction from remediation iteration counts.\n\n## Remediation iterations per stage\n\nCount of failed-audit rounds; 0 = passed first time; post-pass confirmation rounds do not count.\n\nAll 0 (passed on first try)\n\n## Weak Areas\n- (none)\n\n## Recommendations\n- Fallback mode: end-to-end Skill unavailable; diagnosis uses existing scoring data only.\n- No veto this run: continue improving stability and maintainability of lower-scoring stages.\n- 只消费已有审计与 scoring 数据，不替代 Reviewer。\n\n## Iteration Passed\ntrue\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:env_coach_discovery_limit",
+            "originalReplayArtifactHash": "sha256:f7da7c54fa2fb11401348c39d67595bd6180132f7a39ce5250f7d8f9c382a8aa",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:env_coach_discovery_limit",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_env_format",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+          "argumentCombination": "env FORMAT=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "FORMAT": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_env_format_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_env_format-original-ddnnkE",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_env_format_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_env_format-package-RusbCn",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Invalid --format value: source-derived-format. Expected json or markdown.\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Invalid --format value: source-derived-format. Expected json or markdown."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:env_format",
+            "originalReplayArtifactHash": "sha256:061d725c521524bdbffe801044e54c9c7408e94bcb5736d982663c404623ca2f",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:env_format",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_coach_diagnose_ts_env_run_id",
+          "originalEntryPoint": "scripts/coach-diagnose.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/coach-diagnose.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+          "argumentCombination": "env RUN_ID=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "RUN_ID": "<source-derived-safe-value>"
+          },
+          "fixtures": [
+            {
+              "id": "g005_coach_diagnose_ts_env_run_id_original_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_env_run_id-original-fRDz1s",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_coach_diagnose_ts_env_run_id_package_fixture_root",
+              "path": "<tmp>/g005_coach_diagnose_ts_env_run_id-package-oQaSTi",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"error\": \"run_not_found\",\n  \"run_id\": \"source-derived-run_id\"\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/coach-diagnose.ts:env_run_id",
+            "originalReplayArtifactHash": "sha256:de56bebc62a4796fd09b74e474d4cff2daf16326d65cf22d8865d68d2f961ead",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/coach-diagnose.ts:env_run_id",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/coach-diagnose.ts:52",
+                "text": "async function main(): Promise<void> {"
+              },
+              {
+                "line": 53,
+                "anchor": "scripts/coach-diagnose.ts:53",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/coach-diagnose.ts:63",
+                "text": "console.error(`Invalid --format value: ${format}. Expected json or markdown.`);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/coach-diagnose.ts:69",
+                "text": "console.error("
+              },
+              {
+                "line": 84,
+                "anchor": "scripts/coach-diagnose.ts:84",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 89,
+                "anchor": "scripts/coach-diagnose.ts:89",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 95,
+                "anchor": "scripts/coach-diagnose.ts:95",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 113,
+                "anchor": "scripts/coach-diagnose.ts:113",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/coach-diagnose.ts:118",
+                "text": "console.log("
+              },
+              {
+                "line": 141,
+                "anchor": "scripts/coach-diagnose.ts:141",
+                "text": "console.error(JSON.stringify(result, null, 2));"
+              },
+              {
+                "line": 145,
+                "anchor": "scripts/coach-diagnose.ts:145",
+                "text": "console.log(formatToMarkdown(result));"
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/coach-diagnose.ts:147",
+                "text": "console.log(JSON.stringify(result, null, 2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+                "to": "scripts/coach-diagnose.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js",
+                "to": "scripts/coach-diagnose.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/coach-diagnose.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 7,
+            "envKeyCount": 3,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 7,
+            "coveredEnvKeyCount": 3,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--format",
+              "--limit",
+              "--run-id",
+              "--scenario",
+              "--story"
+            ],
+            "discoveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--epic <source-derived-safe-value>",
+              "--format <source-derived-safe-value>",
+              "--limit <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--scenario <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [
+              "COACH_DISCOVERY_LIMIT",
+              "FORMAT",
+              "RUN_ID"
+            ],
+            "scenarioDefinitionCount": 10,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_epic",
+              "flag_format",
+              "flag_limit",
+              "flag_run_id",
+              "flag_scenario",
+              "flag_story",
+              "env_coach_discovery_limit",
+              "env_format",
+              "env_run_id"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/emit-runtime-policy.ts",
+      "entryId": "emit-runtime-policy-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 6,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 3,
+        "errorPathCount": 4,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 6,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 3,
+        "coveredErrorPathCount": 4,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--cwd",
+          "--legacy-registry-bridge",
+          "--record-id",
+          "--requirement-set-id",
+          "--run-id"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--cwd <fixture-root>",
+          "--legacy-registry-bridge <source-derived-safe-value>",
+          "--record-id <source-derived-safe-value>",
+          "--requirement-set-id <source-derived-safe-value>",
+          "--run-id <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--cwd <fixture-root>",
+          "--legacy-registry-bridge <source-derived-safe-value>",
+          "--record-id <source-derived-safe-value>",
+          "--requirement-set-id <source-derived-safe-value>",
+          "--run-id <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 6,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "cwd",
+          "flag_legacy_registry_bridge",
+          "flag_record_id",
+          "flag_requirement_set_id",
+          "flag_run_id"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g005_emit_runtime_policy_ts_no_args",
+          "originalEntryPoint": "scripts/emit-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_emit_runtime_policy_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_no_args-original-7EorOi",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_emit_runtime_policy_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_no_args-package-g1PMcN",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "emit-runtime-policy: requirement record flow invalid or missing: <missing>\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "emit-runtime-policy: requirement record flow invalid or missing: <missing>"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/emit-runtime-policy.ts:no_args",
+            "originalReplayArtifactHash": "sha256:e42d3963fbb088c0baa9f361cd99bc8e8b92110b9a079d1f892b6379031aa398",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/emit-runtime-policy.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/emit-runtime-policy.ts:80",
+                "text": "export function loadPolicyContextFromRegistry("
+              },
+              {
+                "line": 672,
+                "anchor": "scripts/emit-runtime-policy.ts:672",
+                "text": "export function mainEmitRuntimePolicy(argv: string[]): number {"
+              },
+              {
+                "line": 693,
+                "anchor": "scripts/emit-runtime-policy.ts:693",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 708,
+                "anchor": "scripts/emit-runtime-policy.ts:708",
+                "text": "process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\\n`);"
+              },
+              {
+                "line": 712,
+                "anchor": "scripts/emit-runtime-policy.ts:712",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 725,
+                "anchor": "scripts/emit-runtime-policy.ts:725",
+                "text": "console.error("
+              },
+              {
+                "line": 732,
+                "anchor": "scripts/emit-runtime-policy.ts:732",
+                "text": "console.error("
+              },
+              {
+                "line": 800,
+                "anchor": "scripts/emit-runtime-policy.ts:800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 819,
+                "anchor": "scripts/emit-runtime-policy.ts:819",
+                "text": "if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 820,
+                "anchor": "scripts/emit-runtime-policy.ts:820",
+                "text": "const code = mainEmitRuntimePolicy(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+                "to": "scripts/emit-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd",
+              "--legacy-registry-bridge",
+              "--record-id",
+              "--requirement-set-id",
+              "--run-id"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_legacy_registry_bridge",
+              "flag_record_id",
+              "flag_requirement_set_id",
+              "flag_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_emit_runtime_policy_ts_cwd",
+          "originalEntryPoint": "scripts/emit-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_emit_runtime_policy_ts_cwd_original_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_cwd-original-PJic1o",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_emit_runtime_policy_ts_cwd_package_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_cwd-package-zRZNKx",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\"activeRequirement\":null,\"decision\":\"contract_authoring_required\",\"flow\":null,\"nextRequiredAction\":\"contract_authoring_required\",\"projectRoot\":\"<fixture-root>\",\"quickStart\":{\"entries\":[\"创建产品/功能需求契约\",\"创建 Bugfix 需求契约\",\"创建独立任务契约\",\"导入已有需求文档\",\"查看当前阻塞原因\"],\"message\":\"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"},\"schemaVersion\":\"runtime-policy/no-active-requirement/v1\",\"stage\":null,\"status\":\"no_active_requirement\"}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/emit-runtime-policy.ts:cwd",
+            "originalReplayArtifactHash": "sha256:c0e511f381296b517205b8839df292d0631fef4d56a05452e34e427b57a12e16",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/emit-runtime-policy.ts:cwd",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/emit-runtime-policy.ts:80",
+                "text": "export function loadPolicyContextFromRegistry("
+              },
+              {
+                "line": 672,
+                "anchor": "scripts/emit-runtime-policy.ts:672",
+                "text": "export function mainEmitRuntimePolicy(argv: string[]): number {"
+              },
+              {
+                "line": 693,
+                "anchor": "scripts/emit-runtime-policy.ts:693",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 708,
+                "anchor": "scripts/emit-runtime-policy.ts:708",
+                "text": "process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\\n`);"
+              },
+              {
+                "line": 712,
+                "anchor": "scripts/emit-runtime-policy.ts:712",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 725,
+                "anchor": "scripts/emit-runtime-policy.ts:725",
+                "text": "console.error("
+              },
+              {
+                "line": 732,
+                "anchor": "scripts/emit-runtime-policy.ts:732",
+                "text": "console.error("
+              },
+              {
+                "line": 800,
+                "anchor": "scripts/emit-runtime-policy.ts:800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 819,
+                "anchor": "scripts/emit-runtime-policy.ts:819",
+                "text": "if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 820,
+                "anchor": "scripts/emit-runtime-policy.ts:820",
+                "text": "const code = mainEmitRuntimePolicy(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+                "to": "scripts/emit-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd",
+              "--legacy-registry-bridge",
+              "--record-id",
+              "--requirement-set-id",
+              "--run-id"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_legacy_registry_bridge",
+              "flag_record_id",
+              "flag_requirement_set_id",
+              "flag_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_emit_runtime_policy_ts_flag_legacy_registry_bridge",
+          "originalEntryPoint": "scripts/emit-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts --cwd <fixture-root> --legacy-registry-bridge source-derived-legacy-registry-bridge",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js --cwd <fixture-root> --legacy-registry-bridge source-derived-legacy-registry-bridge",
+          "argumentCombination": "--cwd <fixture-root> --legacy-registry-bridge <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--legacy-registry-bridge",
+            "source-derived-legacy-registry-bridge"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_legacy_registry_bridge_original_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_legacy_registry_bridge-original-IDsqXk",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_legacy_registry_bridge_package_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_legacy_registry_bridge-package-oqFXMR",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\"activeRequirement\":null,\"decision\":\"contract_authoring_required\",\"flow\":null,\"nextRequiredAction\":\"contract_authoring_required\",\"projectRoot\":\"<fixture-root>\",\"quickStart\":{\"entries\":[\"创建产品/功能需求契约\",\"创建 Bugfix 需求契约\",\"创建独立任务契约\",\"导入已有需求文档\",\"查看当前阻塞原因\"],\"message\":\"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"},\"schemaVersion\":\"runtime-policy/no-active-requirement/v1\",\"stage\":null,\"status\":\"no_active_requirement\"}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/emit-runtime-policy.ts:flag_legacy_registry_bridge",
+            "originalReplayArtifactHash": "sha256:c0e511f381296b517205b8839df292d0631fef4d56a05452e34e427b57a12e16",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/emit-runtime-policy.ts:flag_legacy_registry_bridge",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/emit-runtime-policy.ts:80",
+                "text": "export function loadPolicyContextFromRegistry("
+              },
+              {
+                "line": 672,
+                "anchor": "scripts/emit-runtime-policy.ts:672",
+                "text": "export function mainEmitRuntimePolicy(argv: string[]): number {"
+              },
+              {
+                "line": 693,
+                "anchor": "scripts/emit-runtime-policy.ts:693",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 708,
+                "anchor": "scripts/emit-runtime-policy.ts:708",
+                "text": "process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\\n`);"
+              },
+              {
+                "line": 712,
+                "anchor": "scripts/emit-runtime-policy.ts:712",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 725,
+                "anchor": "scripts/emit-runtime-policy.ts:725",
+                "text": "console.error("
+              },
+              {
+                "line": 732,
+                "anchor": "scripts/emit-runtime-policy.ts:732",
+                "text": "console.error("
+              },
+              {
+                "line": 800,
+                "anchor": "scripts/emit-runtime-policy.ts:800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 819,
+                "anchor": "scripts/emit-runtime-policy.ts:819",
+                "text": "if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 820,
+                "anchor": "scripts/emit-runtime-policy.ts:820",
+                "text": "const code = mainEmitRuntimePolicy(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+                "to": "scripts/emit-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd",
+              "--legacy-registry-bridge",
+              "--record-id",
+              "--requirement-set-id",
+              "--run-id"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_legacy_registry_bridge",
+              "flag_record_id",
+              "flag_requirement_set_id",
+              "flag_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_emit_runtime_policy_ts_flag_record_id",
+          "originalEntryPoint": "scripts/emit-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts --cwd <fixture-root> --record-id source-derived-record-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js --cwd <fixture-root> --record-id source-derived-record-id",
+          "argumentCombination": "--cwd <fixture-root> --record-id <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--record-id",
+            "source-derived-record-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_record_id_original_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_record_id-original-3yH04L",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_record_id_package_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_record_id-package-MGfa5E",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "_bmad-output/runtime/requirement-records/index-repair-projection.json",
+              "bytes": 365,
+              "sha256": "sha256:09bf803ffbd76d7b6e925f268174db0fdfc26f0424cdbd3a53111eaea98b54cd",
+              "rawBytes": 459,
+              "rawSha256": "sha256:69d2010e1ef5d8ff4e677527c5ebf47697ce99a687b497112a7c16efe7f4d925",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/emit-runtime-policy.ts:flag_record_id",
+            "originalReplayArtifactHash": "sha256:d76ae2b48302ba837f60fa571d49e0c7155ff2a50bef04b848ad78899d113559",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/emit-runtime-policy.ts:flag_record_id",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/emit-runtime-policy.ts:80",
+                "text": "export function loadPolicyContextFromRegistry("
+              },
+              {
+                "line": 672,
+                "anchor": "scripts/emit-runtime-policy.ts:672",
+                "text": "export function mainEmitRuntimePolicy(argv: string[]): number {"
+              },
+              {
+                "line": 693,
+                "anchor": "scripts/emit-runtime-policy.ts:693",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 708,
+                "anchor": "scripts/emit-runtime-policy.ts:708",
+                "text": "process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\\n`);"
+              },
+              {
+                "line": 712,
+                "anchor": "scripts/emit-runtime-policy.ts:712",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 725,
+                "anchor": "scripts/emit-runtime-policy.ts:725",
+                "text": "console.error("
+              },
+              {
+                "line": 732,
+                "anchor": "scripts/emit-runtime-policy.ts:732",
+                "text": "console.error("
+              },
+              {
+                "line": 800,
+                "anchor": "scripts/emit-runtime-policy.ts:800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 819,
+                "anchor": "scripts/emit-runtime-policy.ts:819",
+                "text": "if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 820,
+                "anchor": "scripts/emit-runtime-policy.ts:820",
+                "text": "const code = mainEmitRuntimePolicy(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+                "to": "scripts/emit-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd",
+              "--legacy-registry-bridge",
+              "--record-id",
+              "--requirement-set-id",
+              "--run-id"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_legacy_registry_bridge",
+              "flag_record_id",
+              "flag_requirement_set_id",
+              "flag_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_emit_runtime_policy_ts_flag_requirement_set_id",
+          "originalEntryPoint": "scripts/emit-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts --cwd <fixture-root> --requirement-set-id source-derived-requirement-set-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js --cwd <fixture-root> --requirement-set-id source-derived-requirement-set-id",
+          "argumentCombination": "--cwd <fixture-root> --requirement-set-id <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--requirement-set-id",
+            "source-derived-requirement-set-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_requirement_set_id_original_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_requirement_set_id-original-HC7Nxm",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_requirement_set_id_package_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_requirement_set_id-package-XVtFB5",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "_bmad-output/runtime/requirement-records/index-repair-projection.json",
+              "bytes": 365,
+              "sha256": "sha256:09bf803ffbd76d7b6e925f268174db0fdfc26f0424cdbd3a53111eaea98b54cd",
+              "rawBytes": 468,
+              "rawSha256": "sha256:1254602cfb25c7f82b349f6028bde2a6c8cead2cc283097efce2826b8aa01477",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/emit-runtime-policy.ts:flag_requirement_set_id",
+            "originalReplayArtifactHash": "sha256:0849c0b88d7d86e8e750afa3e9cef9c2c125c1fdff7290032cbfe57357d78206",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/emit-runtime-policy.ts:flag_requirement_set_id",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/emit-runtime-policy.ts:80",
+                "text": "export function loadPolicyContextFromRegistry("
+              },
+              {
+                "line": 672,
+                "anchor": "scripts/emit-runtime-policy.ts:672",
+                "text": "export function mainEmitRuntimePolicy(argv: string[]): number {"
+              },
+              {
+                "line": 693,
+                "anchor": "scripts/emit-runtime-policy.ts:693",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 708,
+                "anchor": "scripts/emit-runtime-policy.ts:708",
+                "text": "process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\\n`);"
+              },
+              {
+                "line": 712,
+                "anchor": "scripts/emit-runtime-policy.ts:712",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 725,
+                "anchor": "scripts/emit-runtime-policy.ts:725",
+                "text": "console.error("
+              },
+              {
+                "line": 732,
+                "anchor": "scripts/emit-runtime-policy.ts:732",
+                "text": "console.error("
+              },
+              {
+                "line": 800,
+                "anchor": "scripts/emit-runtime-policy.ts:800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 819,
+                "anchor": "scripts/emit-runtime-policy.ts:819",
+                "text": "if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 820,
+                "anchor": "scripts/emit-runtime-policy.ts:820",
+                "text": "const code = mainEmitRuntimePolicy(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+                "to": "scripts/emit-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd",
+              "--legacy-registry-bridge",
+              "--record-id",
+              "--requirement-set-id",
+              "--run-id"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_legacy_registry_bridge",
+              "flag_record_id",
+              "flag_requirement_set_id",
+              "flag_run_id"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g005_emit_runtime_policy_ts_flag_run_id",
+          "originalEntryPoint": "scripts/emit-runtime-policy.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/emit-runtime-policy.ts --cwd <fixture-root> --run-id source-derived-run-id",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js --cwd <fixture-root> --run-id source-derived-run-id",
+          "argumentCombination": "--cwd <fixture-root> --run-id <source-derived-safe-value>",
+          "args": [
+            "--cwd",
+            "<fixture-root>",
+            "--run-id",
+            "source-derived-run-id"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_run_id_original_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_run_id-original-JbIh9f",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g005_emit_runtime_policy_ts_flag_run_id_package_fixture_root",
+              "path": "<tmp>/g005_emit_runtime_policy_ts_flag_run_id-package-a4fV8p",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [
+            {
+              "path": "_bmad-output/runtime/requirement-records/index-repair-projection.json",
+              "bytes": 365,
+              "sha256": "sha256:09bf803ffbd76d7b6e925f268174db0fdfc26f0424cdbd3a53111eaea98b54cd",
+              "rawBytes": 456,
+              "rawSha256": "sha256:904ba7dd4dfeae191c4537343d7abc45c5b50e5a5ec3838dfe2f780a55ef635e",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "emit-runtime-policy: blocked_missing_active_requirement: no controlled requirement-record candidates; projection=<fixture-root>\\_bmad-output\\runtime\\requirement-records\\index-repair-projection.json"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G005_ORIGINAL_REPLAY:scripts/emit-runtime-policy.ts:flag_run_id",
+            "originalReplayArtifactHash": "sha256:d0d6eba1fa7cec6d4b7588b0c396b1430d57b9ca657c369a598d46a956ff6490",
+            "sourceDerivedProofId": "G005_SOURCE_DERIVED:scripts/emit-runtime-policy.ts:flag_run_id",
+            "sourceLineAnchors": [
+              {
+                "line": 80,
+                "anchor": "scripts/emit-runtime-policy.ts:80",
+                "text": "export function loadPolicyContextFromRegistry("
+              },
+              {
+                "line": 672,
+                "anchor": "scripts/emit-runtime-policy.ts:672",
+                "text": "export function mainEmitRuntimePolicy(argv: string[]): number {"
+              },
+              {
+                "line": 693,
+                "anchor": "scripts/emit-runtime-policy.ts:693",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 708,
+                "anchor": "scripts/emit-runtime-policy.ts:708",
+                "text": "process.stdout.write(`${stableStringifyPolicy(noActiveRequirementPolicy(root))}\\n`);"
+              },
+              {
+                "line": 712,
+                "anchor": "scripts/emit-runtime-policy.ts:712",
+                "text": "console.error(`emit-runtime-policy: ${msg}`);"
+              },
+              {
+                "line": 725,
+                "anchor": "scripts/emit-runtime-policy.ts:725",
+                "text": "console.error("
+              },
+              {
+                "line": 732,
+                "anchor": "scripts/emit-runtime-policy.ts:732",
+                "text": "console.error("
+              },
+              {
+                "line": 800,
+                "anchor": "scripts/emit-runtime-policy.ts:800",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 819,
+                "anchor": "scripts/emit-runtime-policy.ts:819",
+                "text": "if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {"
+              },
+              {
+                "line": 820,
+                "anchor": "scripts/emit-runtime-policy.ts:820",
+                "text": "const code = mainEmitRuntimePolicy(process.argv.slice(2));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+                "to": "scripts/emit-runtime-policy.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js",
+                "to": "scripts/emit-runtime-policy.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G005_STATIC_FULL:scripts/emit-runtime-policy.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 6,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 6,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--cwd",
+              "--legacy-registry-bridge",
+              "--record-id",
+              "--requirement-set-id",
+              "--run-id"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--cwd <fixture-root>",
+              "--legacy-registry-bridge <source-derived-safe-value>",
+              "--record-id <source-derived-safe-value>",
+              "--requirement-set-id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 6,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "cwd",
+              "flag_legacy_registry_bridge",
+              "flag_record_id",
+              "flag_requirement_set_id",
+              "flag_run_id"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

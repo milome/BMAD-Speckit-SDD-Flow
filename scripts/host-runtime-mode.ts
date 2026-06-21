@@ -50,9 +50,16 @@ export interface NativeGoalInvocationReceipt {
   schemaVersion: 'native-goal-invocation-receipt/v1';
   host: string;
   executionRuntimeMode: 'native_goal';
+  executionSurface: 'host_native_goal' | 'main_session_native_goal_required';
   goalExecutionPath: string;
   goalExecutionHash: string;
-  invokedCommandKind: 'host_native_goal';
+  goalCommandTextHash: string;
+  invokedCommandKind: 'host_native_goal' | 'main_session_native_goal_required';
+  command: string;
+  args: string[];
+  taskReportPath: string;
+  nativeGoalCommandPrepared: boolean;
+  nativeGoalCommandUsed: boolean;
   startedAt: string;
   endedAt: string;
   exitCode: number;
@@ -256,6 +263,14 @@ export function writeNativeGoalInvocationReceipt(input: {
   packetId: string;
   host: string;
   goalExecutionPath: string;
+  goalCommandTextHash?: string;
+  invokedCommandKind?: NativeGoalInvocationReceipt['invokedCommandKind'];
+  executionSurface?: NativeGoalInvocationReceipt['executionSurface'];
+  command?: string;
+  args?: string[];
+  taskReportPath?: string;
+  nativeGoalCommandPrepared?: boolean;
+  nativeGoalCommandUsed?: boolean;
   stdoutRef: string;
   stderrRef: string;
   exitCode: number;
@@ -266,9 +281,16 @@ export function writeNativeGoalInvocationReceipt(input: {
     schemaVersion: 'native-goal-invocation-receipt/v1',
     host: input.host,
     executionRuntimeMode: 'native_goal',
+    executionSurface: input.executionSurface ?? 'host_native_goal',
     goalExecutionPath: input.goalExecutionPath,
     goalExecutionHash: sha256File(input.goalExecutionPath),
-    invokedCommandKind: 'host_native_goal',
+    goalCommandTextHash: input.goalCommandTextHash ?? 'not_available',
+    invokedCommandKind: input.invokedCommandKind ?? 'host_native_goal',
+    command: input.command ?? 'not_available',
+    args: input.args ?? [],
+    taskReportPath: input.taskReportPath ?? 'not_available',
+    nativeGoalCommandPrepared: input.nativeGoalCommandPrepared !== false,
+    nativeGoalCommandUsed: input.nativeGoalCommandUsed !== false,
     startedAt: input.startedAt ?? new Date().toISOString(),
     endedAt: input.endedAt ?? new Date().toISOString(),
     exitCode: input.exitCode,
@@ -328,6 +350,11 @@ export function validateNativeGoalInvocationReceipt(input: {
   if (receipt.invokedCommandKind !== 'host_native_goal') invalidFields.push('invokedCommandKind');
   if (receipt.goalExecutionHash !== input.goalExecutionHash)
     invalidFields.push('goalExecutionHash');
+  if (!receipt.goalCommandTextHash) invalidFields.push('goalCommandTextHash');
+  if (!receipt.command) invalidFields.push('command');
+  if (!Array.isArray(receipt.args) || receipt.args.length === 0) invalidFields.push('args');
+  if (!receipt.taskReportPath) invalidFields.push('taskReportPath');
+  if (receipt.nativeGoalCommandUsed !== true) invalidFields.push('nativeGoalCommandUsed');
   if (!receipt.stdoutRef) invalidFields.push('stdoutRef');
   if (!receipt.stderrRef) invalidFields.push('stderrRef');
   if (receipt.exitCode !== 0) invalidFields.push('exitCode');

@@ -1,6 +1,110 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
+const sourceAuthorityHelperCache = new Map();
+
+function packageRoot() {
+  return path.resolve(__dirname, '..', '..', '..');
+}
+
+function sourceAuthorityRoots() {
+  const root = packageRoot();
+  return [
+    path.join(root, 'dist', 'main-agent', 'source-authority', 'scripts'),
+    path.join(root, 'src', 'main-agent', 'source-authority', 'scripts'),
+  ];
+}
+
+function collectFiles(root) {
+  if (!fs.existsSync(root)) return [];
+  const out = [];
+  const stack = [root];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(fullPath);
+      else if (entry.isFile() && entry.name.endsWith('.js')) out.push(fullPath);
+    }
+  }
+  return out.sort();
+}
+
+function helperSourceAuthorityCandidates(helperId) {
+  const normalized = String(helperId || '').trim();
+  return [`${normalized}.js`, `main-agent-${normalized}.js`];
+}
+
+function findSourceAuthorityHelper(helperId) {
+  const cacheKey = String(helperId || '');
+  if (sourceAuthorityHelperCache.has(cacheKey)) return sourceAuthorityHelperCache.get(cacheKey);
+  const candidates = new Set(helperSourceAuthorityCandidates(cacheKey));
+  for (const root of sourceAuthorityRoots()) {
+    for (const file of collectFiles(root)) {
+      if (candidates.has(path.basename(file))) {
+        sourceAuthorityHelperCache.set(cacheKey, file);
+        return file;
+      }
+    }
+  }
+  sourceAuthorityHelperCache.set(cacheKey, null);
+  return null;
+}
+
+function loadSourceAuthorityHelper(helperId) {
+  const runtimePath = findSourceAuthorityHelper(helperId);
+  if (!runtimePath) {
+    return {
+      status: 'missing_source_authority_helper',
+      runtimePath: null,
+      exportedKeys: [],
+      usedRootScript: false,
+      usedCompiledFallback: false,
+      usedTypeScriptRunner: false,
+    };
+  }
+  try {
+    const source = fs.readFileSync(runtimePath, 'utf8');
+    return {
+      status: 'source_authority_helper_resolved_static',
+      runtimePath: path.relative(packageRoot(), runtimePath).replace(/\\/g, '/'),
+      exportedKeys: staticExportedKeys(source),
+      usedRootScript: false,
+      usedCompiledFallback: false,
+      usedTypeScriptRunner: false,
+    };
+  } catch (error) {
+    return {
+      status: 'source_authority_helper_resolve_error',
+      runtimePath: path.relative(packageRoot(), runtimePath).replace(/\\/g, '/'),
+      exportedKeys: [],
+      error: error instanceof Error ? error.message : String(error),
+      usedRootScript: false,
+      usedCompiledFallback: false,
+      usedTypeScriptRunner: false,
+    };
+  }
+}
+
+function staticExportedKeys(source) {
+  const keys = new Set();
+  const text = String(source || '');
+  for (const match of text.matchAll(/\bexports\.([A-Za-z_$][\w$]*)\s*=/gu)) {
+    keys.add(match[1]);
+  }
+  const moduleExports = text.match(/\bmodule\.exports\s*=\s*\{([\s\S]*?)\}\s*;?/u);
+  if (moduleExports) {
+    for (const match of moduleExports[1].matchAll(/\b([A-Za-z_$][\w$]*)\s*[:,]/gu)) {
+      keys.add(match[1]);
+    }
+  }
+  return [...keys].sort();
+}
+
 function createDurableHelperDescriptor({ helperId, purpose, ownedFiles = [] }) {
   return function durableHelperDescriptor(context = {}) {
     const cwd = String(context.cwd || process.cwd());
+    const sourceAuthorityRuntimeProof = loadSourceAuthorityHelper(helperId);
     return {
       schemaVersion: 'main-agent-durable-helper/v1',
       helperId,
@@ -16,6 +120,7 @@ function createDurableHelperDescriptor({ helperId, purpose, ownedFiles = [] }) {
         usedCompiledFallback: false,
         usedTypeScriptRunner: false,
       },
+      sourceAuthorityRuntimeProof,
     };
   };
 }

@@ -1,0 +1,200 @@
+[
+  {
+    "originalPath": "scripts/prompt-routing-hints.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_prompt_routing_hints_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/query-validate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_query_validate_ts_no_args",
+        "expectedStdout": "=== Story 6.3 query 层验收 ===\ndataPath: (default: getScoringDataPath())\n\nqueryByStory(3, 3): 0 records\nqueryByEpic(3): 0 records\nqueryLatest(10): 9 records\n  newest timestamp: <iso-timestamp>\n\n=== 验收完成 ===\n"
+      },
+      {
+        "scenarioId": "g007_query_validate_ts_flag_data_path",
+        "expectedStdout": "=== Story 6.3 query 层验收 ===\ndataPath: <fixture-root>\\data-path\n\nqueryByStory(3, 3): 0 records\nqueryByEpic(3): 0 records\nqueryLatest(10): 0 records\n\n=== 验收完成 ===\n"
+      },
+      {
+        "scenarioId": "g007_query_validate_ts_env_scoring_data_path",
+        "expectedStdout": "=== Story 6.3 query 层验收 ===\ndataPath: D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-scoring_data_path\n\nqueryByStory(3, 3): 0 records\nqueryByEpic(3): 0 records\nqueryLatest(10): 0 records\n\n=== 验收完成 ===\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/real-development-tick-worker.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_flag_name_only",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_framework_root",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_session_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_timeout_ms",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/requirement-record-event-reducer.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_requirement_record_event_reducer_ts_no_args",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"reducer\": \"canonical-requirement-record-reducer/v1\",\n  \"api\": \"import canonicalizeRequirementRecord from requirement-record-control-store\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-shared-core.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_reviewer_shared_core_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-confirmed-final-required-commands.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
+        "expectedStdout": "run-confirmed-final-required-commands.js is a non-executing tombstone. Use scripts/run-required-commands-from-ai-tdd-manifest.ts.\n"
+      },
+      {
+        "scenarioId": "g007_run_confirmed_final_required_commands_js_flag_json",
+        "expectedStdout": "{\n  \"ok\": false,\n  \"tombstone\": true,\n  \"legacyEvidenceOnly\": true,\n  \"notCompletionAuthority\": true,\n  \"message\": \"run-confirmed-final-required-commands.js is a non-executing tombstone. Use scripts/run-required-commands-from-ai-tdd-manifest.ts.\",\n  \"replacement\": \"scripts/run-required-commands-from-ai-tdd-manifest.ts\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-confirmed-trace-slice.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_confirmed_trace_slice_js_flag_trace",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_evidence_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_mode",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_run_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_required_commands_from_ai_tdd_manifest_ts_flag_source",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-runtime-dashboard-forever.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_no_args",
+        "expectedStdout": "{\"pid\":<pid>,\"host\":\"127.0.0.1\",\"port\":43124,\"url\":\"http://127.0.0.1:43124\",\"health_url\":\"http://127.0.0.1:43124/health\",\"root\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\"data_path\":null,\"mode\":\"started\",\"state_path\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"}\n"
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_data_path",
+        "expectedStdout": "{\"pid\":<pid>,\"host\":\"127.0.0.1\",\"port\":43124,\"url\":\"http://127.0.0.1:43124\",\"health_url\":\"http://127.0.0.1:43124/health\",\"root\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\"data_path\":\"source-derived-runtime_dashboard_data_path\",\"mode\":\"started\",\"state_path\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"}\n"
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_host",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_launch_mode",
+        "expectedStdout": "{\"pid\":<pid>,\"host\":\"127.0.0.1\",\"port\":43124,\"url\":\"http://127.0.0.1:43124\",\"health_url\":\"http://127.0.0.1:43124/health\",\"root\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\"data_path\":null,\"mode\":\"source-derived-runtime_dashboard_launch_mode\",\"state_path\":\"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"}\n"
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_port",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_run_runtime_dashboard_forever_cjs_env_runtime_dashboard_root",
+        "expectedStdout": "{\"pid\":<pid>,\"host\":\"127.0.0.1\",\"port\":43124,\"url\":\"http://127.0.0.1:43124\",\"health_url\":\"http://127.0.0.1:43124/health\",\"root\":\"source-derived-runtime_dashboard_root\",\"data_path\":null,\"mode\":\"started\",\"state_path\":\"source-derived-runtime_dashboard_root\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-dashboard-server-state.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_runtime_dashboard_server_state_cjs_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

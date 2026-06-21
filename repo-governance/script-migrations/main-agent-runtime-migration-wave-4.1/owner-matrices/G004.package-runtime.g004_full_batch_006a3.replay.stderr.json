@@ -1,0 +1,27 @@
+[
+  {
+    "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  }
+]

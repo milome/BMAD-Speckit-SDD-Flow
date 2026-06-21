@@ -39,7 +39,7 @@
 cd <consumer-root>
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -62,7 +62,6 @@ bmad-speckit-sdd-flow-<version>.tgz
 cd <consumer-root>
 npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 npx --no-install bmad-speckit check
@@ -155,7 +154,7 @@ npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --forc
 ```powershell
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init "${GITHUB_WORKSPACE}" --ai cursor-agent --modules bmm --yes --no-git
 ```
 
@@ -224,7 +223,7 @@ npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --forc
 ```powershell
 cd <consumer-root>
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 ```
 
 ### 4.1 最小复验命令列表
@@ -236,7 +235,7 @@ cd <consumer-root>
 
 # 1. 项目本地依赖和 CLI shim
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 
 # 2. 显式生成目标宿主安装面
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force

@@ -1,0 +1,38 @@
+[
+  {
+    "originalPath": "scripts/update-specify-passed.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_update_specify_passed_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-agent-files.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_verify_agent_files_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/verify-story-mode.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_verify_story_mode_ts_no_args",
+        "expectedStderr": "❌ 错误: 当前不是 story 模式，无法进行验证\n当前模式: full，期望模式: story\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/write-runtime-registry.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_write_runtime_registry_js_no_args",
+        "expectedStderr": "write-runtime-registry: targetDir required\n"
+      }
+    ]
+  }
+]

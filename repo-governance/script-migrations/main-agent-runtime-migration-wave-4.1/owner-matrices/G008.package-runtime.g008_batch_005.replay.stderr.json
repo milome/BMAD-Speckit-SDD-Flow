@@ -1,0 +1,100 @@
+[
+  {
+    "originalPath": "scripts/reviewer-contract.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_reviewer_contract_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-registry.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_reviewer_registry_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-rollout-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_reviewer_rollout_gate_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-runtime-definition.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_reviewer_runtime_definition_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/reviewer-schema.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_reviewer_schema_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-ci-release-gate-fixture.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_run_ci_release_gate_fixture_js_flag_pass",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/run-fresh-regression-matrix.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_run_fresh_regression_matrix_ts_no_args",
+        "expectedStderr": "[fresh-regression] fresh root does not exist: <fixture-root>\\fresh-regression-root-missing\n"
+      },
+      {
+        "scenarioId": "g008_run_fresh_regression_matrix_ts_env_fresh_regression_root",
+        "expectedStderr": "[fresh-regression] fresh root does not exist: D:\\Dev\\BMAD-Speckit-SDD-Flow\\source-derived-fresh_regression_root\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-context.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_runtime_context_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/scores-summary.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_scores_summary_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/start-dashboard.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_start_dashboard_ts_no_args",
+        "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\n"
+      }
+    ]
+  }
+]

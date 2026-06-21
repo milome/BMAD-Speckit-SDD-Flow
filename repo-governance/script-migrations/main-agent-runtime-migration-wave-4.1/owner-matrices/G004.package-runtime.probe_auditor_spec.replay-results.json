@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T07:04:37.611Z",
+  "artifactSuffix": "probe_auditor_spec",
+  "timeoutMs": 30000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G004.package-runtime.probe_auditor_spec.behavior-matrix.json",
+  "matrixHash": "sha256:b4fbb7f97b6451852f4844d068f0f70fdda00d3355ea3739b0d16efda75615a8",
+  "matrixRowCount": 1,
+  "scenarioCount": 1,
+  "passedScenarioCount": 1,
+  "failedScenarioCount": 0,
+  "replayRows": [
+    {
+      "originalPath": "scripts/auditor-spec.ts",
+      "entryId": "auditor-spec",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/auditor-spec.js",
+      "scenarioCount": 1,
+      "passedScenarioCount": 1,
+      "failedScenarioCount": 0,
+      "scenarios": [
+        {
+          "scenarioId": "g004_auditor_spec_ts_no_args",
+          "originalReplay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 67,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 67,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 1,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_auditor_spec_ts_no_args",
+            "originalEntryPoint": "scripts/auditor-spec.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts",
+            "stdoutMatches": true,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": true,
+            "exitCode": 1,
+            "stdoutBytes": 0,
+            "stderrBytes": 67,
+            "timedOut": false
+          }
+        }
+      ]
+    }
+  ]
+}

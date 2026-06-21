@@ -57,9 +57,12 @@ module.exports = {
     },
     {
       files: [
+        'packages/bmad-speckit/**/*.cjs',
         'packages/bmad-speckit/**/*.js',
         'packages/runtime-emit/src/**/*.js',
         'scripts/**/*.js',
+        'scripts/**/*.cjs',
+        'tools/**/*.cjs',
       ],
       parserOptions: { ecmaVersion: 2020, sourceType: 'script' },
       env: { node: true, es2020: true },

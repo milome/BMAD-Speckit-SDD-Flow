@@ -38,13 +38,12 @@ async function runWithoutCompiledFallback(argv) {
 }
 
 describe('main-agent compiled fallback boundary', () => {
-  it('does not enter compiled fallback for covered actions even when runtime state exists', async () => {
+  it('does not enter full orchestration bundle for package-native actions even when runtime state exists', async () => {
     const root = makeConsumerRoot();
     try {
       for (const action of [
         'inspect',
         'dispatch-plan',
-        'run-loop',
         'codex-worker-adapter',
         'compiled-prompt-runner',
         'implementation-readiness-gate',

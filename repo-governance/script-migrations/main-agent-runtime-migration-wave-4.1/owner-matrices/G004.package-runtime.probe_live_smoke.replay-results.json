@@ -1,0 +1,378 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T07:37:31.093Z",
+  "artifactSuffix": "probe_live_smoke",
+  "timeoutMs": 30000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G004.package-runtime.probe_live_smoke.behavior-matrix.json",
+  "matrixHash": "sha256:b4a98d62ecfb3369488fb3c3041cb6c350d8bcc2fba0a49742532a6379cdef37",
+  "matrixRowCount": 1,
+  "scenarioCount": 8,
+  "passedScenarioCount": 0,
+  "failedScenarioCount": 8,
+  "replayRows": [
+    {
+      "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+      "entryId": "live-smoke-main-agent-runtime",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js",
+      "scenarioCount": 8,
+      "passedScenarioCount": 0,
+      "failedScenarioCount": 8,
+      "scenarios": [
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:60bdc63054143b7c0ef4717f2705ad3dd967321107d3fa4eef0410f4c2732513",
+            "normalizedReplayStdoutHash": "sha256:1ffaad08a0e06ef1cdde0ccca598fcfe8a5f606ae653c2b84c0e1619e5beaea2",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1337,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1899,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_cwd",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_cwd",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:cdc4e99b0583540962c14019597fef47c28cc0590edb8fc6b1905f70fec9a53c",
+            "normalizedReplayStdoutHash": "sha256:348b0ab6b43022e366887742755aaa5f23410da15d995e41fafb0f8c7ddbfc0c",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1739,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1347,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_action",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_action",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:7abb707ee936e4ea7a435dad74560c0e303ac89679c004d4b6168f692c7b7ff5",
+            "normalizedReplayStdoutHash": "sha256:adb5c6c7f9a70bf6863c7d449e98273f2d2d85698408778fba1017ddbd27055e",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 667,
+              "expected": "type\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1443,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\"",
+              "actual": "type\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1452,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\\""
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:ba3f2b485dea2f3bcc570566307da7308e1cd91503c8197fb0ccc9e7a62d7958",
+            "normalizedReplayStdoutHash": "sha256:22f6ee09f54c7b4fc34486b5ab94517167157fe4bcdd5d47a0b54dadb21129ed",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1439,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1399,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:70d6777308fafc338944c808da049fd5f8adcb33c15444df946a97124c2c6b06",
+            "normalizedReplayStdoutHash": "sha256:2fae13a326962645ade80a71939bc72051492b1a6d6e14bbb2266d43289ac3ff",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1336,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1708,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_force",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_force",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:ae514679aefa2e9757fcff3d37c680a707a9e1b81d7e9f7b4510e9449986fda6",
+            "normalizedReplayStdoutHash": "sha256:592fc513790bc606fd73c918edf9d5ef8b7423c30305df907036c60ae6a30686",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1350,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1697,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_output_format",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_output_format",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:9f59607d45c4325bd5ebc1dcfa005a390ed6801801d7949931a4d6eab26be570",
+            "normalizedReplayStdoutHash": "sha256:3ca2d707444f6a3589e6cf88f596379f4ed71c38a94e64313a0ebb7c335ff421",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1475,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1313,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        },
+        {
+          "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode",
+          "originalReplay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "replay": {
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "expectedFileArtifactCount": 0,
+            "expectedErrorPathCount": 0,
+            "timedOut": false
+          },
+          "comparison": {
+            "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode",
+            "originalEntryPoint": "scripts/live-smoke-main-agent-runtime.ts",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+            "stdoutMatches": false,
+            "stderrMatches": true,
+            "exitCodeMatches": true,
+            "fileArtifactsMatch": true,
+            "errorPathsMatch": true,
+            "passed": false,
+            "exitCode": 0,
+            "stdoutBytes": 10856,
+            "stderrBytes": 0,
+            "normalizedExpectedStdoutHash": "sha256:7a04203aa7aff7e85f9500d55c51c5c9965b162eca59d343ac94c6eeeaf454cb",
+            "normalizedReplayStdoutHash": "sha256:b30887926438e0e05bac90f2f5db8dc122b1a21070aef5a857e4086f35382ebc",
+            "normalizedExpectedStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "normalizedReplayStderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stdoutFirstDiff": {
+              "index": 666,
+              "expected": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1315,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\",
+              "actual": "btype\\\":\\\"success\\\",\\\"is_error\\\":true,\\\"api_error_status\\\":400,\\\"duration_ms\\\":1424,\\\"duration_api_ms\\\":0,\\\"num_turns\\\":1,\\\"result\\\":\\\"Credit balance is too low\\\",\\\"stop_reason\\\":\\\"stop_sequence\\\",\\\"session_id\\\":\\\"<uuid>\\\",\\\"total_cost_usd\\"
+            },
+            "stderrFirstDiff": null,
+            "timedOut": false
+          }
+        }
+      ]
+    }
+  ]
+}

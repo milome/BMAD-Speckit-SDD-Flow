@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G004",
+  "generatedAt": "2026-06-20T05:44:39.796Z",
+  "artifactSuffix": "g004_adaptive_intake_governance_gate_rework",
+  "timeoutMs": 10000,
+  "coverageDecision": "blocked_until_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 91,
+  "selectedRowCount": 1,
+  "matrixRowCount": 1,
+  "fullCoverageStillRequired": true,
+  "rows": [
+    {
+      "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+      "entryId": "adaptive-intake-governance-gate",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/adaptive-intake-governance-gate.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+          "originalEntryPoint": "scripts/adaptive-intake-governance-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/adaptive-intake-governance-gate.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/adaptive-intake-governance-gate.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g004_adaptive_intake_governance_gate_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g004_adaptive_intake_governance_gate_ts_no_args-original-BorIru",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g004_adaptive_intake_governance_gate_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g004_adaptive_intake_governance_gate_ts_no_args-package-DZO5Ml",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"skipped\": true,\n  \"reason\": \"adaptive intake candidate not provided\"\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G004_ORIGINAL_REPLAY:scripts/adaptive-intake-governance-gate.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:c471dd9e9b1271fb6a72f365ee8426ed0f3ec7192bfc59ba13bd64a5b3a703b2",
+            "sourceDerivedProofId": "G004_SOURCE_DERIVED:scripts/adaptive-intake-governance-gate.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 366,
+                "anchor": "scripts/adaptive-intake-governance-gate.ts:366",
+                "text": "export function runAdaptiveIntakeGovernanceGate("
+              },
+              {
+                "line": 461,
+                "anchor": "scripts/adaptive-intake-governance-gate.ts:461",
+                "text": "export function mainAdaptiveIntakeGovernanceGate(argv: string[]): number {"
+              },
+              {
+                "line": 469,
+                "anchor": "scripts/adaptive-intake-governance-gate.ts:469",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 487,
+                "anchor": "scripts/adaptive-intake-governance-gate.ts:487",
+                "text": "process.stdout.write(`${JSON.stringify(result, null, 2)}\\n`);"
+              },
+              {
+                "line": 495,
+                "anchor": "scripts/adaptive-intake-governance-gate.ts:495",
+                "text": "if (require.main === module && isAdaptiveIntakeGovernanceGateEntry(process.argv[1])) {"
+              },
+              {
+                "line": 496,
+                "anchor": "scripts/adaptive-intake-governance-gate.ts:496",
+                "text": "process.exit(mainAdaptiveIntakeGovernanceGate(process.argv.slice(2)));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G004_STATIC_INITIAL:scripts/adaptive-intake-governance-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

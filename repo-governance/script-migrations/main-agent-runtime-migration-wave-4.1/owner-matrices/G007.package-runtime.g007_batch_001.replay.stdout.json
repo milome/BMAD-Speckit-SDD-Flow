@@ -1,0 +1,108 @@
+[
+  {
+    "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_architecture_confirmation_hash_recipe_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_bmad_help_five_layer_progress_marker_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-help-routing-state.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_bmad_help_routing_state_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-state-reader.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_bmad_state_reader_ts_no_args",
+        "expectedStdout": "当前 Story: E001 - S001\n当前 Stage: specify_passed\nArtifacts: {\n  \"spec\": \"specs/epic-E001-e001/story-S001-email-validator/spec-E001-S001.md\",\n  \"audit\": \"specs/epic-E001-e001/story-S001-email-validator/AUDIT_spec-E001-S001.md\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-state.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_bmad_state_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-sync-from-v6.ps1",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_bmad_sync_from_v6_ps1_no_args",
+        "expectedStdout": "BMAD-METHOD v6 Sync | Phase=1 | DryRun=False | ProjectRoot=D:\\Dev\\BMAD-Speckit-SDD-Flow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\eval-lifecycle-report-paths.yaml -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\eval-lifecycle-report-paths.yaml\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\bmad-help.csv -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help.csv\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\skill-command-mapping.yaml -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\skill-command-mapping.yaml\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\cursor\\skills\\bmad-story-assistant -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\module-help.csv -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmm-module-help.csv\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-code-review-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\create-story -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\create-story-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-planning -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-planning-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-status -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-status-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\3-solutioning\\create-epics-and-stories\\steps\\step-04-final-validation.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\step-04-final-validation.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\dev-story -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\dev-story-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\agents\\bmad-story-audit.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-audit.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\skills\\bmad-story-assistant -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill-claude\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-quick-dev-new-preview\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\tasks\\help.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\core-tasks-help.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\skills\\bmad-help -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help-skill\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-tech-writer.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-tech-writer.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-create-story.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-create-story.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-sft-extract.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-sft-extract.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-dev-story.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-dev-story.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-dev.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-dev.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-spec.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-spec.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-quick-flow-solo-dev.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-quick-flow-solo-dev.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\scoring -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\_bmad_scoring\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\adversarial-reviewer.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\adversarial-reviewer.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\critical-auditor-guide.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\critical-auditor-guide.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\README-critical-auditor.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\README-critical-auditor.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\bmad-master.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-master.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\speckit -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad_speckit\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\agent-manifest.csv -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\agent-manifest.csv\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\workflows\\party-mode -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\party-mode-workflow\n\n--- Rollback commands ---\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\eval-lifecycle-report-paths.yaml\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\eval-lifecycle-report-paths.yaml\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help.csv\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\bmad-help.csv\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\skill-command-mapping.yaml\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\skill-command-mapping.yaml\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\cursor\\skills\\bmad-story-assistant\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\cursor\\skills\\bmad-story-assistant\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmm-module-help.csv\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\module-help.csv\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\bmad-code-review\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-code-review-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\bmad-code-review\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\create-story\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\create-story-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\create-story\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-planning\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-planning-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-planning\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-status\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-status-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-status\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\step-04-final-validation.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\3-solutioning\\create-epics-and-stories\\steps\\step-04-final-validation.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\dev-story\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\dev-story-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\dev-story\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-audit.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\agents\\bmad-story-audit.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\skills\\bmad-story-assistant\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill-claude\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\skills\\bmad-story-assistant\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-quick-dev-new-preview\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\core-tasks-help.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\tasks\\help.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\skills\\bmad-help\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help-skill\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\skills\\bmad-help\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-tech-writer.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-tech-writer.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-create-story.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-create-story.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-sft-extract.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-sft-extract.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-dev-story.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-dev-story.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-dev.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-dev.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-spec.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-spec.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-quick-flow-solo-dev.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-quick-flow-solo-dev.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\scoring\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\_bmad_scoring\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\scoring\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\adversarial-reviewer.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\adversarial-reviewer.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\critical-auditor-guide.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\critical-auditor-guide.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\README-critical-auditor.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\README-critical-auditor.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-master.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\bmad-master.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\speckit\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad_speckit\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\speckit\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\agent-manifest.csv\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\agent-manifest.csv\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\workflows\\party-mode\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\party-mode-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\workflows\\party-mode\"\n---\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/bmad-sync-from-v6.sh",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_bmad_sync_from_v6_sh_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/cleanup-packed-bmad.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_cleanup_packed_bmad_js_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/continue-state-contract.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_continue_state_contract_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/control-event-log-rebaseline.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_reason",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_control_event_log_rebaseline_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

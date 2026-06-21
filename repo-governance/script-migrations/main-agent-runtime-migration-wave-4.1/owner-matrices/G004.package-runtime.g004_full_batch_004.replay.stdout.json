@@ -1,0 +1,364 @@
+[
+  {
+    "originalPath": "scripts/main-agent-audit-review-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-audit-review-gate --requirement-record <json> --attempt-id <id> [--plan <json>] [--rounds <json-array>] [--round <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_plan",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_round",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_audit_review_gate_ts_flag_rounds",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+        "expectedStdout": "bmad_artifact_hardcut=pass\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-bmad-artifact-hardcut --requirement-record <json> [--out <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_json",
+        "expectedStdout": "{\n  \"ok\": true,\n  \"decision\": \"pass\",\n  \"reportPath\": \"D:/Dev/BMAD-Speckit-SDD-Flow/_bmad-output/runtime/requirement-records/artifact-hardcut-report.json\",\n  \"reportHash\": \"sha256:<sha256>\",\n  \"blockingIssues\": []\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_out",
+        "expectedStdout": "bmad_artifact_hardcut=pass\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+        "expectedStdout": "{\n  \"reportType\": \"main_agent_chaos_recovery\",\n  \"recoveryRate\": 1,\n  \"scenarios\": [\n    {\n      \"id\": \"pending_packet_loss\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"deleted packet artifact:D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"detected missing packet file\",\n        \"recreated packet artifact:D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"re-materialized dispatch packet\"\n      ]\n    },\n    {\n      \"id\": \"closeout_failure\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"completed\",\n        \"closeoutApproved\": true,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"blocked sprint update before closeout approval\",\n        \"closeout approved after rerun\"\n      ]\n    },\n    {\n      \"id\": \"rerun_gate_pending\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"pass\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"rerun gate pending converted to remediation dispatch\",\n        \"rerun gate pass ingested\"\n      ]\n    },\n    {\n      \"id\": \"session_recovery\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"session state dropped\",\n        \"session recovered from state artifacts\"\n      ]\n    },\n    {\n      \"id\": \"host_switching\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"claude\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"no-hooks ingress selected without changing control plane\",\n        \"host switched while preserving continue semantics\"\n      ]\n    }\n  ]\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_chaos_scenarios_ts_flag_projectroot",
+        "expectedStdout": "{\n  \"reportType\": \"main_agent_chaos_recovery\",\n  \"recoveryRate\": 1,\n  \"scenarios\": [\n    {\n      \"id\": \"pending_packet_loss\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"deleted packet artifact:<fixture-root>\\\\projectroot\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"detected missing packet file\",\n        \"recreated packet artifact:<fixture-root>\\\\projectroot\\\\_bmad-output\\\\runtime\\\\chaos\\\\packet-loss.json\",\n        \"re-materialized dispatch packet\"\n      ]\n    },\n    {\n      \"id\": \"closeout_failure\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"completed\",\n        \"closeoutApproved\": true,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"blocked sprint update before closeout approval\",\n        \"closeout approved after rerun\"\n      ]\n    },\n    {\n      \"id\": \"rerun_gate_pending\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"pass\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"rerun gate pending converted to remediation dispatch\",\n        \"rerun gate pass ingested\"\n      ]\n    },\n    {\n      \"id\": \"session_recovery\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"cursor\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"session state dropped\",\n        \"session recovered from state artifacts\"\n      ]\n    },\n    {\n      \"id\": \"host_switching\",\n      \"recovered\": true,\n      \"finalState\": {\n        \"pendingPacketStatus\": \"ready_for_main_agent\",\n        \"closeoutApproved\": false,\n        \"rerunGateStatus\": \"none\",\n        \"sessionRecovered\": true,\n        \"hostMode\": \"claude\",\n        \"nextAction\": \"continue_ready\"\n      },\n      \"evidence\": [\n        \"no-hooks ingress selected without changing control plane\",\n        \"host switched while preserving continue semantics\"\n      ]\n    }\n  ]\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_cached",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_cd",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_exclude_standard",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_others",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_packetpath",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_sandbox",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_flag_smoke",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_env_codex_worker_adapter_bin",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_codex_worker_adapter_ts_env_main_agent_allow_codex_bin_override",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_execution_discipline_profile_ref",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_execution_host",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_goal_command_available",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_human_prompt_profile",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_out_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_packet_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_prompt_language",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_source_document",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_flag_task_report_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_env_home",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_env_userprofile",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-control-plane-isolation-check --requirement-record <json> [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-data-governance-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_data_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-data-governance-gate --requirement-record <json> [--data-dir <dir>] [--out-dir <dir>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_out_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_data_governance_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_eval_report",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-dataset-release-gate --requirement-record <json> [--training-run <json>] [--eval-report <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_dataset_release_gate_ts_flag_training_run",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-decision-field-check.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-decision-field-check --requirement-record <json> [--target gateChecks|contractChecks] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_decision_field_check_ts_flag_target",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_action",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_allow_existing_attempt",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_closeout_report",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_confirmation_text_file",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_entry_flow",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-delivery-closeout-gate --requirement-record <json> [--attempt-id <id>] [--allow-existing-attempt] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_language",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_mode",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_out",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_record_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_render_report",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_requirement_set_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_flag_strict",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

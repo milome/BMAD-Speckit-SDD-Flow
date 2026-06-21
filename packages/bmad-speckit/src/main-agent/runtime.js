@@ -60,13 +60,13 @@ const { requirementRecordControlStoreAction } = require('./actions/requirement-r
 const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
 const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
-const { legacyRunLoopAction, runLoopAction } = require('./actions/run-loop');
 const { runtimePolicySnapshotCheckAction } = require('./actions/runtime-policy-snapshot-check');
 const { runtimeScoringDataPathAction } = require('./actions/runtime-scoring-data-path');
 const { scoringGatesCheckAction } = require('./actions/scoring-gates-check');
 const { skillOrchestrationAuditAction } = require('./actions/skill-orchestration-audit');
 const { sixModelRuntimeDecisionAction } = require('./actions/six-model-runtime-decision');
 const { soakRunnerAction } = require('./actions/soak-runner');
+const { emitPackageOrchestration } = require('./actions/source-authority-orchestration');
 const { renderAuditBlockCliAction } = require('./actions/render-audit-block-cli');
 const { strictCloseoutProofGateAction } = require('./actions/strict-closeout-proof-gate');
 const { targetArtifactRealizationGateAction } = require('./actions/target-artifact-realization-gate');
@@ -203,6 +203,34 @@ const SUPPORTED_ACTIONS = new Set([
   ...Object.keys(PACKAGE_RUNTIME_READY_ACTIONS),
   ...Object.keys(WAVE_3_12_PACKAGE_RUNTIME_ACTIONS),
 ]);
+const ORCHESTRATION_ACTIONS = new Set([
+  'inspect',
+  'step',
+  'dispatch-plan',
+  'run-loop',
+  'claim',
+  'dispatch',
+  'complete',
+  'invalidate',
+  'route-intake',
+  'adaptive-intake',
+  'confirm-scope',
+  'confirmation-ingest',
+  'confirm-closeout-acceptance',
+  'closeout-acceptance-ingest',
+  'route-confirmation-drift',
+  'confirmation-drift-route',
+  'repair-confirmation-bookkeeping',
+  'confirmation-bookkeeping-repair',
+  'pre-confirmation-drilldown',
+  'pre_confirmation_drilldown',
+  'author-confirmation-ready-source',
+  'author_confirmation_ready_source',
+  'authoring-repair',
+  'authoring_repair',
+  'post-close-defect-intake',
+  'controlled-readiness-audit',
+]);
 
 function loadWave312PackageRuntimeAction(action) {
   const definition = WAVE_3_12_PACKAGE_RUNTIME_ACTIONS[action];
@@ -312,6 +340,18 @@ function requireRuntimeState(context) {
 }
 
 async function runMainAgentRuntime(context) {
+  if (
+    context.legacyOrchestration &&
+    ORCHESTRATION_ACTIONS.has(context.action) &&
+    (context.action === 'run-loop' || !SUPPORTED_ACTIONS.has(context.action))
+  ) {
+    return emitPackageOrchestration(context);
+  }
+
+  if (!SUPPORTED_ACTIONS.has(context.action) && ORCHESTRATION_ACTIONS.has(context.action)) {
+    return emitPackageOrchestration(context);
+  }
+
   if (!SUPPORTED_ACTIONS.has(context.action)) {
     return emitResponse(
       context,
@@ -350,10 +390,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'run-loop') {
-    if (context.legacyOrchestration) return emitLegacyResult(legacyRunLoopAction(context));
-    const runtime = requireRuntimeState(context);
-    if (!runtime.ok) return emitResponse(context, runtime.response);
-    return emitResponse(context, envelope(context, 'ok', 0, runLoopAction(context, runtime.state)));
+    return emitPackageOrchestration(context);
   }
 
   if (context.action === 'release-gate') {

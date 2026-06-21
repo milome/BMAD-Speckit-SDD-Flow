@@ -1,0 +1,3125 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G008",
+  "generatedAt": "2026-06-20T05:59:50.942Z",
+  "artifactSuffix": "g008_batch_002_settled_proof",
+  "timeoutMs": 10000,
+  "coverageDecision": "blocked_until_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 58,
+  "selectedRowCount": 28,
+  "matrixRowCount": 28,
+  "fullCoverageStillRequired": true,
+  "rows": [
+    {
+      "originalPath": "scripts/ralph-method/progress-format.ts",
+      "entryId": "ralph-method-progress-format-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/progress-format.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/progress-format.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_progress_format_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/progress-format.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/progress-format.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/progress-format.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/progress-format.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_progress_format_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_progress_format_ts_no_args-original-ckDVA3",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_progress_format_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_progress_format_ts_no_args-package-mUNecE",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/progress-format.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/progress-format.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/progress-format.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/progress-format';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/progress-format.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/schema.ts",
+      "entryId": "ralph-method-schema-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/schema.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_schema_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/schema.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/schema.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/schema.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_schema_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_schema_ts_no_args-original-BaNBgq",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_schema_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_schema_ts_no_args-package-ZnbnSh",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/schema.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/schema.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/schema.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/schema';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/schema.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/speckit-implement.ts",
+      "entryId": "ralph-method-speckit-implement-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/speckit-implement.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/speckit-implement.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_speckit_implement_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/speckit-implement.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/speckit-implement.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/speckit-implement.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/speckit-implement.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_speckit_implement_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_speckit_implement_ts_no_args-original-sQJRFl",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_speckit_implement_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_speckit_implement_ts_no_args-package-0Vg8qT",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/speckit-implement.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/speckit-implement.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/speckit-implement.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/speckit-implement';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/speckit-implement.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/types.ts",
+      "entryId": "ralph-method-types-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/types.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_types_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/types.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/types.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/types.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_types_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_types_ts_no_args-original-Rupnl8",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_types_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_types_ts_no_args-package-aqAwnh",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/types.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/types.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/types.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/types';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/types.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/verify-pass-consistency.ts",
+      "entryId": "ralph-method-verify-pass-consistency-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_verify_pass_consistency_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/verify-pass-consistency.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/verify-pass-consistency.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_verify_pass_consistency_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_verify_pass_consistency_ts_no_args-original-voLO5I",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_verify_pass_consistency_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_verify_pass_consistency_ts_no_args-package-2lovMX",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/verify-pass-consistency.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/verify-pass-consistency.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/verify-pass-consistency.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/verify-pass-consistency';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/verify-pass-consistency.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+      "entryId": "ralph-method-verify-ralph-compliance-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_verify_ralph_compliance_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/verify-ralph-compliance.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/verify-ralph-compliance.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_verify_ralph_compliance_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_verify_ralph_compliance_ts_no_args-original-QRZ2Ih",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_verify_ralph_compliance_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_verify_ralph_compliance_ts_no_args-package-6RDpnP",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/verify-ralph-compliance.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/verify-ralph-compliance.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/verify-ralph-compliance.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/verify-ralph-compliance';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/verify-ralph-compliance.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/verify-tdd-trace.ts",
+      "entryId": "ralph-method-verify-tdd-trace-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_verify_tdd_trace_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/verify-tdd-trace.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/verify-tdd-trace.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_verify_tdd_trace_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_verify_tdd_trace_ts_no_args-original-Gtqcwv",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_verify_tdd_trace_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_verify_tdd_trace_ts_no_args-package-IWjEzW",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/verify-tdd-trace.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/verify-tdd-trace.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/verify-tdd-trace.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/verify-tdd-trace';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/verify-tdd-trace.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/ralph-method/write-tracking-files.ts",
+      "entryId": "ralph-method-write-tracking-files-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/write-tracking-files.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_ralph_method_write_tracking_files_ts_no_args",
+          "originalEntryPoint": "scripts/ralph-method/write-tracking-files.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/ralph-method/write-tracking-files.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/write-tracking-files.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_ralph_method_write_tracking_files_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_ralph_method_write_tracking_files_ts_no_args-original-tloTaN",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_ralph_method_write_tracking_files_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_ralph_method_write_tracking_files_ts_no_args-package-0bgaAw",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/ralph-method/write-tracking-files.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/ralph-method/write-tracking-files.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/ralph-method/write-tracking-files.ts:1",
+                "text": "export * from '../../packages/ralph-method/src/write-tracking-files';"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/ralph-method/write-tracking-files.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/README.md",
+      "entryId": "readme-md",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/README.md"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/README.md",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_readme_md_no_args",
+          "originalEntryPoint": "scripts/README.md",
+          "originalEntryCommand": "node scripts/README.md --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/README.md",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/README.md --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_readme_md_no_args_original_fixture_root",
+              "path": "<tmp>/g008_readme_md_no_args-original-gT5CpG",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_readme_md_no_args_package_fixture_root",
+              "path": "<tmp>/g008_readme_md_no_args-package-lrkI0h",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\README.md:1\n# scripts\n^\n\nSyntaxError: Invalid or unexpected token\n    at wrapSafe (node:internal/modules/cjs/loader:1637:18)\n    at Module._compile (node:internal/modules/cjs/loader:1679:20)\n    at Object..js (node:internal/modules/cjs/loader:1838:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.22.1\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\README.md:1"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/README.md:initial-no-args",
+            "originalReplayArtifactHash": "sha256:8cb2e049c814e55682b3e395d783adcb56f1bca0bd46d901a12bf91da2562911",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/README.md:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/README.md:1",
+                "text": "# scripts"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/README.md",
+            "entryPointCount": 1,
+            "argCombinationCount": 4,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--id",
+              "--run-id",
+              "--version"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--id <source-derived-safe-value>",
+              "--run-id <source-derived-safe-value>",
+              "--version <source-derived-safe-value>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
+      "entryId": "render-upstream-bmad-help-baseline-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_render_upstream_bmad_help_baseline_js_no_args",
+          "originalEntryPoint": "scripts/render-upstream-bmad-help-baseline.js",
+          "originalEntryCommand": "node scripts/render-upstream-bmad-help-baseline.js --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_render_upstream_bmad_help_baseline_js_no_args_original_fixture_root",
+              "path": "<tmp>/g008_render_upstream_bmad_help_baseline_js_no_args-original-I0nIdK",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_render_upstream_bmad_help_baseline_js_no_args_package_fixture_root",
+              "path": "<tmp>/g008_render_upstream_bmad_help_baseline_js_no_args-package-6vM2B1",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "# bmad-help upstream-style baseline\n\nSource: BMAD-METHOD sync commit 2646672a\n\n## Upstream Behavior Notes\n- This baseline follows the upstream workflow shape: module detection, input analysis, phase/sequence routing, and optional/required next steps.\n- It intentionally does not render Project State Card, main-agent, Codex layers, gate evidence, or five-layer status.\n- Without an interactive conversation state, it lists the upstream catalog by module and preserves upstream display rules.\n\n## Upstream Catalog\nTotal catalog rows: 64\n\n### bmb (12)\n- Create Agent (CA)\n  Command: `bmad_bmb_create_agent`\n  Agent: Bond 🤖 Agent Building Expert\n  Phase: anytime; required=false\n  Description: Create a new BMAD agent with best practices and compliance\n  Outputs: bmb_creations_output_folder -> agent\n- Edit Agent (EA)\n  Command: `bmad_bmb_edit_agent`\n  Agent: Bond 🤖 Agent Building Expert\n  Phase: anytime; required=false\n  Description: Edit existing BMAD agents while maintaining compliance\n  Outputs: bmb_creations_output_folder -> agent\n- Validate Agent (VA)\n  Command: `bmad_bmb_validate_agent`\n  Agent: Bond 🤖 Agent Building Expert\n  Phase: anytime; required=false\n  Description: Validate existing BMAD agents and offer to improve deficiencies\n  Outputs: agent being validated folder -> validation report\n- Create Module Brief (PB)\n  Command: `bmad_bmb_create_module_brief`\n  Agent: Morgan 🏗️ Module Creation Master\n  Phase: anytime; required=false\n  Description: Create product brief for BMAD module development\n  Outputs: bmb_creations_output_folder -> product brief\n- Create Module (CM)\n  Command: `bmad_bmb_create_module`\n  Agent: Morgan 🏗️ Module Creation Master\n  Phase: anytime; required=false\n  Description: Create a complete BMAD module with agents, workflows, and infrastructure\n  Outputs: bmb_creations_output_folder -> module\n- Edit Module (EM)\n  Command: `bmad_bmb_edit_module`\n  Agent: Morgan 🏗️ Module Creation Master\n  Phase: anytime; required=false\n  Description: Edit existing BMAD modules while maintaining coherence\n  Outputs: bmb_creations_output_folder -> module\n- Validate Module (VM)\n  Command: `bmad_bmb_validate_module`\n  Agent: Morgan 🏗️ Module Creation Master\n  Phase: anytime; required=false\n  Description: Run compliance check on BMAD modules against best practices\n  Outputs: module being validated folder -> validation report\n- Create Workflow (CW)\n  Command: `bmad_bmb_create_workflow`\n  Agent: Wendy 🔄 Workflow Building Master\n  Phase: anytime; required=false\n  Description: Create a new BMAD workflow with proper structure and best practices\n  Outputs: bmb_creations_output_folder -> workflow\n- Edit Workflow (EW)\n  Command: `bmad_bmb_edit_workflow`\n  Agent: Wendy 🔄 Workflow Building Master\n  Phase: anytime; required=false\n  Description: Edit existing BMAD workflows while maintaining integrity\n  Outputs: bmb_creations_output_folder -> workflow\n- Validate Workflow (VW)\n  Command: `bmad_bmb_validate_workflow`\n  Agent: Wendy 🔄 Workflow Building Master\n  Phase: anytime; required=false\n  Description: Run validation check on BMAD workflows against best practices\n  Outputs: workflow being validated folder -> validation report\n- Max Parallel Validate (MV)\n  Command: `bmad_bmb_validate_max_parallel`\n  Agent: Wendy 🔄 Workflow Building Master\n  Phase: anytime; required=false\n  Description: Run validation checks in MAX-PARALLEL mode against a workflow requires a tool that supports Parallel Sub-Processes\n  Outputs: workflow being validated folder -> validation report\n- Rework Workflow (RW)\n  Command: `bmad_bmb_rework_workflow`\n  Agent: Wendy 🔄 Workflow Building Master\n  Phase: anytime; required=false\n  Description: Rework a Workflow to a V6 Compliant Version\n  Outputs: bmb_creations_output_folder -> workflow\n\n### bmm (30)\n- Brainstorm Project (BP)\n  Command: `bmad-brainstorming`\n  Agent: Mary 📊 Business Analyst\n  Phase: 1-analysis; required=false\n  Description: Expert Guided Facilitation through a single or multiple techniques\n  Outputs: planning_artifacts -> brainstorming session\n- Market Research (MR)\n  Command: `bmad-bmm-market-research`\n  Agent: Mary 📊 Business Analyst\n  Phase: 1-analysis; required=false\n  Description: Market analysis competitive landscape customer needs and trends\n  Outputs: planning_artifacts|project-knowledge -> research documents\n- Domain Research (DR)\n  Command: `bmad-bmm-domain-research`\n  Agent: Mary 📊 Business Analyst\n  Phase: 1-analysis; required=false\n  Description: Industry domain deep dive subject matter expertise and terminology\n  Outputs: planning_artifacts|project_knowledge -> research documents\n- Technical Research (TR)\n  Command: `bmad-bmm-technical-research`\n  Agent: Mary 📊 Business Analyst\n  Phase: 1-analysis; required=false\n  Description: Technical feasibility architecture options and implementation approaches\n  Outputs: planning_artifacts|project_knowledge -> research documents\n- Create Brief (CB)\n  Command: `bmad-bmm-create-product-brief`\n  Agent: Mary 📊 Business Analyst\n  Phase: 1-analysis; required=false\n  Description: A guided experience to nail down your product idea\n  Outputs: planning_artifacts -> product brief\n- Create PRD (CP)\n  Command: `bmad-bmm-create-prd`\n  Agent: John 📋 Product Manager\n  Phase: 2-planning; required=true\n  Description: Expert led facilitation to produce your Product Requirements Document\n  Outputs: planning_artifacts -> prd\n- Validate PRD (VP)\n  Command: `bmad-bmm-validate-prd`\n  Agent: John 📋 Product Manager\n  Phase: 2-planning; required=false\n  Description: Validate PRD is comprehensive lean well organized and cohesive\n  Outputs: planning_artifacts -> prd validation report\n- Edit PRD (EP)\n  Command: `bmad-bmm-edit-prd`\n  Agent: John 📋 Product Manager\n  Phase: 2-planning; required=false\n  Description: Improve and enhance an existing PRD\n  Outputs: planning_artifacts -> updated prd\n- Create UX (CU)\n  Command: `bmad-bmm-create-ux-design`\n  Agent: Sally 🎨 UX Designer\n  Phase: 2-planning; required=false\n  Description: Guidance through realizing the plan for your UX, strongly recommended if a UI is a primary piece of the proposed project\n  Outputs: planning_artifacts -> ux design\n- Create Architecture (CA)\n  Command: `bmad-bmm-create-architecture`\n  Agent: Winston 🏗️ Architect\n  Phase: 3-solutioning; required=true\n  Description: Guided Workflow to document technical decisions\n  Outputs: planning_artifacts -> architecture\n- Create Epics and Stories (CE)\n  Command: `bmad-bmm-create-epics-and-stories`\n  Agent: John 📋 Product Manager\n  Phase: 3-solutioning; required=true\n  Description: Create the Epics and Stories Listing\n  Outputs: planning_artifacts -> epics and stories\n- Check Implementation Readiness (IR)\n  Command: `bmad-bmm-check-implementation-readiness`\n  Agent: Winston 🏗️ Architect\n  Phase: 3-solutioning; required=true\n  Description: Ensure PRD UX Architecture and Epics Stories are aligned\n  Outputs: planning_artifacts -> readiness report\n- Sprint Planning (SP)\n  Command: `bmad-bmm-sprint-planning`\n  Agent: Bob 🏃 Scrum Master\n  Phase: 4-implementation; required=true\n  Description: Generate sprint plan for development tasks - this kicks off the implementation phase by producing a plan the implementation agents will follow in sequence for every story in the plan.\n  Outputs: implementation_artifacts -> sprint status\n- Sprint Status (SS)\n  Command: `bmad-bmm-sprint-status`\n  Agent: Bob 🏃 Scrum Master\n  Phase: 4-implementation; required=false\n  Description: Anytime: Summarize sprint status and route to next workflow\n  Outputs: - -> -\n- Create Story (CS)\n  Command: `bmad-bmm-create-story`\n  Agent: Bob 🏃 Scrum Master\n  Phase: 4-implementation; required=true\n  Description: Story cycle start: Prepare first found story in the sprint plan that is next, or if the command is run with a specific epic and story designation with context. Once complete, then VS then DS then CR then back to DS if needed or next CS or ER. BMAD 默认不创建 branch/worktree（solo 快速迭代）；可选 -CreateBranch、-CreateWorktree 做完整隔离。前置条件：sprint-planning 须先运行（sprint-status.yaml 缺失时需先 sprint-planning 或显式 bypass）。\n  Outputs: implementation_artifacts -> story\n- Validate Story (VS)\n  Command: `bmad-bmm-create-story`\n  Agent: Bob 🏃 Scrum Master\n  Phase: 4-implementation; required=false\n  Description: Validates story readiness and completeness before development work begins\n  Outputs: implementation_artifacts -> story validation report\n- Dev Story (DS)\n  Command: `bmad-bmm-dev-story`\n  Agent: Amelia 💻 Developer Agent\n  Phase: 4-implementation; required=true\n  Description: Story cycle: Execute story implementation tasks and tests then CR then back to DS if fixes needed. 前置条件：sprint-planning 须先运行（sprint-status.yaml 缺失时需先 sprint-planning 或提供 story 文件路径）。\n  Outputs: - -> -\n- QA Automation Test (QA)\n  Command: `bmad-bmm-qa-automate`\n  Agent: Quinn 🧪 QA Engineer\n  Phase: 4-implementation; required=false\n  Description: Generate automated API and E2E tests for implemented code using the project's existing test framework (detects existing well known in use test frameworks). Use after implementation to add test coverage. NOT for code review or story validation - use CR for that.\n  Outputs: implementation_artifacts -> test suite\n- Code Review (CR)\n  Command: `bmad-bmm-code-review`\n  Agent: Amelia 💻 Developer Agent\n  Phase: 4-implementation; required=false\n  Description: Story cycle: If issues back to DS if approved then next CS or ER if epic complete\n  Outputs: - -> -\n- Retrospective (ER)\n  Command: `bmad-bmm-retrospective`\n  Agent: Bob 🏃 Scrum Master\n  Phase: 4-implementation; required=false\n  Description: Optional at epic end: Review completed work lessons learned and next epic or if major issues consider CC\n  Outputs: implementation_artifacts -> retrospective\n- Document Project (DP)\n  Command: `bmad-bmm-document-project`\n  Agent: Mary 📊 Business Analyst\n  Phase: anytime; required=false\n  Description: Analyze an existing project to produce useful documentation\n  Outputs: project-knowledge -> *\n- Generate Project Context (GPC)\n  Command: `bmad-bmm-generate-project-context`\n  Agent: Mary 📊 Business Analyst\n  Phase: anytime; required=false\n  Description: Scan existing codebase to generate a lean LLM-optimized project-context.md containing critical implementation rules patterns and conventions for AI agents. Essential for brownfield projects and quick-flow.\n  Outputs: output_folder -> project context\n- Quick Spec (QS)\n  Command: `bmad-bmm-quick-spec`\n  Agent: Barry 🚀 Quick Flow Solo Dev\n  Phase: anytime; required=false\n  Description: Do not suggest for potentially very complex things unless requested or if the user complains that they do not want to follow the extensive planning of the bmad method. Quick one-off tasks small changes simple apps brownfield additions to well established patterns utilities without extensive planning\n  Outputs: planning_artifacts -> tech spec\n- Quick Dev (QD)\n  Command: `bmad-bmm-quick-dev`\n  Agent: Barry 🚀 Quick Flow Solo Dev\n  Phase: anytime; required=false\n  Description: Quick one-off tasks small changes simple apps utilities without extensive planning - Do not suggest for potentially very complex things unless requested or if the user complains that they do not want to follow the extensive planning of the bmad method, unless the user is already working through the implementation phase and just requests a 1 off things not already in the plan\n  Outputs: - -> -\n- Correct Course (CC)\n  Command: `bmad-bmm-correct-course`\n  Agent: Bob 🏃 Scrum Master\n  Phase: anytime; required=false\n  Description: Anytime: Navigate significant changes. May recommend start over update PRD redo architecture sprint planning or correct epics and stories\n  Outputs: planning_artifacts -> change proposal\n- Write Document (WD)\n  Load: tech-writer agent skill, then ask for WD\n  Agent: Paige 📚 Technical Writer\n  Phase: anytime; required=false\n  Description: Describe in detail what you want, and the agent will follow the documentation best practices defined in agent memory. Multi-turn conversation with subprocess for research/review.\n  Outputs: project-knowledge -> document\n- Update Standards (US)\n  Load: tech-writer agent skill, then ask for US\n  Agent: Paige 📚 Technical Writer\n  Phase: anytime; required=false\n  Description: Update agent memory documentation-standards.md with your specific preferences if you discover missing document conventions.\n  Outputs: _bmad/_memory/tech-writer-sidecar -> standards\n- Mermaid Generate (MG)\n  Load: tech-writer agent skill, then ask for MG\n  Agent: Paige 📚 Technical Writer\n  Phase: anytime; required=false\n  Description: Create a Mermaid diagram based on user description. Will suggest diagram types if not specified.\n  Outputs: planning_artifacts -> mermaid diagram\n- Validate Document (VD)\n  Load: tech-writer agent skill, then ask for VD\n  Agent: Paige 📚 Technical Writer\n  Phase: anytime; required=false\n  Description: Review the specified document against documentation standards and best practices. Returns specific actionable improvement suggestions organized by priority.\n  Outputs: planning_artifacts -> validation report\n- Explain Concept (EC)\n  Load: tech-writer agent skill, then ask for EC\n  Agent: Paige 📚 Technical Writer\n  Phase: anytime; required=false\n  Description: Create clear technical explanations with examples and diagrams for complex concepts. Breaks down into digestible sections using task-oriented approach.\n  Outputs: project_knowledge -> explanation\n\n### cis (5)\n- Innovation Strategy (IS)\n  Command: `bmad-cis-innovation-strategy`\n  Agent: Victor ⚡ Disruptive Innovation Oracle\n  Phase: anytime; required=false\n  Description: Identify disruption opportunities and architect business model innovation. Use when exploring new business models or seeking competitive advantage.\n  Outputs: output_folder -> innovation strategy\n- Problem Solving (PS)\n  Command: `bmad-cis-problem-solving`\n  Agent: Dr. Quinn 🔬 Master Problem Solver\n  Phase: anytime; required=false\n  Description: Apply systematic problem-solving methodologies to crack complex challenges. Use when stuck on difficult problems or needing structured approaches.\n  Outputs: output_folder -> problem solution\n- Design Thinking (DT)\n  Command: `bmad-cis-design-thinking`\n  Agent: Maya 🎨 Design Thinking Maestro\n  Phase: anytime; required=false\n  Description: Guide human-centered design processes using empathy-driven methodologies. Use for user-centered design challenges or improving user experience.\n  Outputs: output_folder -> design thinking\n- Brainstorming (BS)\n  Command: `bmad-cis-brainstorming`\n  Agent: Carson 🧠 Elite Brainstorming Specialist\n  Phase: anytime; required=false\n  Description: Facilitate brainstorming sessions using one or more techniques. Use early in ideation phase or when stuck generating ideas.\n  Outputs: output_folder -> brainstorming session results\n- Storytelling (ST)\n  Command: `bmad-cis-storytelling`\n  Agent: Sophia 📖 Master Storyteller\n  Phase: anytime; required=false\n  Description: Craft compelling narratives using proven story frameworks and techniques. Use when needing persuasive communication or story-driven content.\n  Outputs: output_folder -> narrative/story\n\n### core (8)\n- Brainstorming (BSP)\n  Command: `bmad-brainstorming`\n  Agent: Mary 📊 Business Analyst\n  Phase: anytime; required=false\n  Description: Generate diverse ideas through interactive techniques. Use early in ideation phase or when stuck generating ideas.\n  Outputs: {output_folder}/brainstorming/brainstorming-session-{{date}}.md -> -\n- Party Mode (PM)\n  Command: `bmad-party-mode`\n  Agent: party-mode facilitator\n  Phase: anytime; required=false\n  Description: Orchestrate multi-agent discussions. Use when you need multiple agent perspectives or want agents to collaborate.\n  Outputs: - -> -\n- bmad-help (BH)\n  Command: `bmad-help`\n  Agent: -\n  Phase: anytime; required=false\n  Description: Get unstuck by showing what workflow steps come next or answering BMad Method questions.\n  Outputs: - -> -\n- Index Docs (ID)\n  Command: `bmad-index-docs`\n  Agent: -\n  Phase: anytime; required=false\n  Description: Create lightweight index for quick LLM scanning. Use when LLM needs to understand available docs without loading everything.\n  Outputs: - -> -\n- Shard Document (SD)\n  Command: `bmad-shard-doc`\n  Agent: -\n  Phase: anytime; required=false\n  Description: Split large documents into smaller files by sections. Use when doc becomes too large (>500 lines) to manage effectively.\n  Outputs: - -> -\n- Editorial Review - Prose (EP)\n  Command: `bmad-editorial-review-prose`\n  Agent: -\n  Phase: anytime; required=false\n  Description: Review prose for clarity, tone, and communication issues. Use after drafting to polish written content.\n  Outputs: report located with target document -> three-column markdown table with suggested fixes\n- Editorial Review - Structure (ES)\n  Command: `bmad-editorial-review-structure`\n  Agent: -\n  Phase: anytime; required=false\n  Description: Propose cuts, reorganization, and simplification while preserving comprehension. Use when doc produced from multiple subprocesses or needs structural improvement.\n  Outputs: report located with target document -> -\n- Adversarial Review (General) (AR)\n  Command: `bmad-review-adversarial-general`\n  Agent: -\n  Phase: anytime; required=false\n  Description: Review content critically to find issues and weaknesses. Use for quality assurance or before finalizing deliverables. Code Review in other modules run this automatically, but its useful also for document reviews\n  Outputs: - -> -\n\n### tea (9)\n- Teach Me Testing (TMT)\n  Command: `bmad-tea-teach-me-testing`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 0-learning; required=false\n  Description: Teach testing fundamentals through 7 sessions (TEA Academy)\n  Outputs: test_artifacts -> progress file|session notes|certificate\n- Test Design (TD)\n  Command: `bmad-tea-testarch-test-design`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 3-solutioning; required=false\n  Description: Risk-based test planning\n  Outputs: test_artifacts -> test design document\n- Test Framework (TF)\n  Command: `bmad-tea-testarch-framework`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 3-solutioning; required=false\n  Description: Initialize production-ready test framework\n  Outputs: test_artifacts -> framework scaffold\n- CI Setup (CI)\n  Command: `bmad-tea-testarch-ci`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 3-solutioning; required=false\n  Description: Configure CI/CD quality pipeline\n  Outputs: test_artifacts -> ci config\n- ATDD (AT)\n  Command: `bmad-tea-testarch-atdd`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 4-implementation; required=false\n  Description: Generate failing tests (TDD red phase)\n  Outputs: test_artifacts -> atdd tests\n- Test Automation (TA)\n  Command: `bmad-tea-testarch-automate`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 4-implementation; required=false\n  Description: Expand test coverage\n  Outputs: test_artifacts -> test suite\n- Test Review (RV)\n  Command: `bmad-tea-testarch-test-review`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 4-implementation; required=false\n  Description: Quality audit (0-100 scoring)\n  Outputs: test_artifacts -> review report\n- NFR Assessment (NR)\n  Command: `bmad-tea-testarch-nfr`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 4-implementation; required=false\n  Description: Non-functional requirements\n  Outputs: test_artifacts -> nfr report\n- Traceability (TR)\n  Command: `bmad-tea-testarch-trace`\n  Agent: Murat 🧪 Master Test Architect and Quality Advisor\n  Phase: 4-implementation; required=false\n  Description: Coverage traceability and gate\n  Outputs: test_artifacts -> traceability matrix|gate decision\n\n## Upstream Workflow Guidance\n\n# Task: BMAD Help\n\n## ROUTING RULES\n\n- **Empty `phase` = anytime** — Universal tools work regardless of workflow state\n- **Numbered phases indicate sequence** — Phases like `1-discover` → `2-define` → `3-build` → `4-ship` flow in order (naming varies by module)\n- **Phase with no Required Steps** - If an entire phase has no required, true items, the entire phase is optional. If it is sequentially before another phase, it can be recommended, but always be clear with the use what the true next required item is.\n- **Stay in module** — Guide through the active module's workflow based on phase+sequence ordering\n- **Descriptions contain routing** — Read for alternate paths (e.g., \"back to previous if fixes needed\")\n- **`required=true` blocks progress** — Required workflows must complete before proceeding to later phases\n- **Artifacts reveal completion** — Search resolved output paths for `outputs` patterns, fuzzy-match found files to workflow rows\n\n## DISPLAY RULES\n\n### Command-Based Workflows\nWhen `command` field has a value:\n- Show the command as a skill name in backticks (e.g., `bmad-bmm-create-prd`)\n\n### Skill-Referenced Workflows\nWhen `workflow-file` starts with `skill:`:\n- The value is a skill reference (e.g., `skill:bmad-quick-dev-new-preview`), NOT a file path\n- Do NOT attempt to resolve or load it as a file path\n- Display using the `command` column value as a skill name in backticks (same as command-based workflows)\n\n### Agent-Based Workflows\nWhen `command` field is empty:\n- User loads agent first by invoking the agent skill (e.g., `bmad-pm`)\n- Then invokes by referencing the `code` field or describing the `name` field\n- Do NOT show a slash command — show the code value and agent load instruction instead\n\nExample presentation for empty command:\n```\nExplain Concept (EC)\nLoad: tech-writer agent skill, then ask to \"EC about [topic]\"\nAgent: Tech Writer\nDescription: Create clear technical explanations with examples...\n```\n\n## MODULE DETECTION\n\n- **Empty `module` column** → universal tools (work across all modules)\n- **Named `module`** → module-specific workflows\n\nDetect the active module from conversation context, recent workflows, or user query keywords. If ambiguous, ask the user.\n\n## INPUT ANALYSIS\n\nDetermine what was just completed:\n- Explicit completion stated by user\n- Workflow completed in current conversation\n- Artifacts found matching `outputs` patterns\n- If `index.md` exists, read it for additional context\n- If still unclear, ask: \"What workflow did you most recently complete?\"\n\n## EXECUTION\n\n1. **Load catalog** — Load `{project-root}/_bmad/_config/bmad-help.csv`\n\n2. **Resolve output locations and config** — Scan each folder under `{project-root}/_bmad/` (except `_config`) for `config.yaml`. For each workflow row, resolve its `output-location` variables against that module's config so artifact paths can be searched. Also extract `communication_language` and `project_knowledge` from each scanned module's config.\n\n3. **Ground in project knowledge** — If `project_knowledge` resolves to an existing path, read available documentation files (architecture docs, project overview, tech stack references) for grounding context. Use discovered project facts when composing any project-specific output. Never fabricate project-specific details — if documentation is unavailable, state so.\n\n4. **Detect active module** — Use MODULE DETECTION above\n\n5. **Analyze input** — Task may provide a workflow name/code, conversational phrase, or nothing. Infer what was just completed using INPUT ANALYSIS above.\n\n6. **Present recommendations** — Show next steps based on:\n   - Completed workflows detected\n   - Phase/sequence ordering (ROUTING RULES)\n   - Artifact presence\n\n   **Optional items first** — List optional workflows until a required step is reached\n   **Required items next** — List the next required workflow\n\n   For each item, apply DISPLAY RULES above and include:\n   - Workflow **name**\n   - **Command** OR **Code + Agent load instruction** (per DISPLAY RULES)\n   - **Agent** title and display name from the CSV (e.g., \"🎨 Alex (Designer)\")\n   - Brief **description**\n\n7. **Additional guidance to convey**:\n   - Present all output in `{communication_language}`\n   - Run each workflow in a **fresh context window**\n   - For **validation workflows**: recommend using a different high-quality LLM if available\n   - For conversational requests: match the user's tone while presenting clearly\n\n8. Return to the calling process after presenting recommendations.\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/render-upstream-bmad-help-baseline.js:initial-no-args",
+            "originalReplayArtifactHash": "sha256:efd7d1e3e6b8823f2a8f834e1c32141d13a6bab1b061e91ae0a7115e648e7958",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/render-upstream-bmad-help-baseline.js:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 65,
+                "anchor": "scripts/render-upstream-bmad-help-baseline.js:65",
+                "text": "function main() {"
+              },
+              {
+                "line": 92,
+                "anchor": "scripts/render-upstream-bmad-help-baseline.js:92",
+                "text": "console.log(lines.join('\\n'));"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/render-upstream-bmad-help-baseline.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 1,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_HELP_UPSTREAM_COMMIT"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/reviewer-contract.ts",
+      "entryId": "reviewer-contract",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-contract.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_reviewer_contract_ts_no_args",
+          "originalEntryPoint": "scripts/reviewer-contract.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/reviewer-contract.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-contract.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_reviewer_contract_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_reviewer_contract_ts_no_args-original-ySPMw0",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_reviewer_contract_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_reviewer_contract_ts_no_args-package-Syqdpx",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/reviewer-contract.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/reviewer-contract.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 262,
+                "anchor": "scripts/reviewer-contract.ts:262",
+                "text": "export function isReviewerProfileId(value: string): value is ReviewerProfileId {"
+              },
+              {
+                "line": 266,
+                "anchor": "scripts/reviewer-contract.ts:266",
+                "text": "export function getReviewerProfileFromDefinitionSource("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/reviewer-contract.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/reviewer-registry.ts",
+      "entryId": "reviewer-registry",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-registry.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_reviewer_registry_ts_no_args",
+          "originalEntryPoint": "scripts/reviewer-registry.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/reviewer-registry.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-registry.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_reviewer_registry_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_reviewer_registry_ts_no_args-original-FJq1NG",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_reviewer_registry_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_reviewer_registry_ts_no_args-package-cezvFi",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/reviewer-registry.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/reviewer-registry.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 369,
+                "anchor": "scripts/reviewer-registry.ts:369",
+                "text": "export function listReviewerRegistrations(): ReviewerRegistration[] {"
+              },
+              {
+                "line": 373,
+                "anchor": "scripts/reviewer-registry.ts:373",
+                "text": "export function getReviewerRegistration(profile: ReviewerProfileId): ReviewerRegistration {"
+              },
+              {
+                "line": 377,
+                "anchor": "scripts/reviewer-registry.ts:377",
+                "text": "export function isReviewerAuditEntryStage(value: string): value is RunAuditorHostStage {"
+              },
+              {
+                "line": 381,
+                "anchor": "scripts/reviewer-registry.ts:381",
+                "text": "export function getReviewerConsumerByAuditStage("
+              },
+              {
+                "line": 387,
+                "anchor": "scripts/reviewer-registry.ts:387",
+                "text": "export function buildReviewerRouteExplainability(input?: {"
+              },
+              {
+                "line": 424,
+                "anchor": "scripts/reviewer-registry.ts:424",
+                "text": "export function buildReviewerContractProjection(input?: {"
+              },
+              {
+                "line": 459,
+                "anchor": "scripts/reviewer-registry.ts:459",
+                "text": "export function mapFlowStageToReviewerAuditEntryStage("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/reviewer-registry.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/reviewer-rollout-gate.ts",
+      "entryId": "reviewer-rollout-gate",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-rollout-gate.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_reviewer_rollout_gate_ts_no_args",
+          "originalEntryPoint": "scripts/reviewer-rollout-gate.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/reviewer-rollout-gate.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-rollout-gate.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_reviewer_rollout_gate_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_reviewer_rollout_gate_ts_no_args-original-i7hV7O",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_reviewer_rollout_gate_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_reviewer_rollout_gate_ts_no_args-package-k3zEqr",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/reviewer-rollout-gate.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/reviewer-rollout-gate.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 21,
+                "anchor": "scripts/reviewer-rollout-gate.ts:21",
+                "text": "export function buildReviewerRolloutGate(input?: {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/reviewer-rollout-gate.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/reviewer-runtime-definition.ts",
+      "entryId": "reviewer-runtime-definition",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-runtime-definition.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_reviewer_runtime_definition_ts_no_args",
+          "originalEntryPoint": "scripts/reviewer-runtime-definition.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/reviewer-runtime-definition.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-runtime-definition.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_reviewer_runtime_definition_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_reviewer_runtime_definition_ts_no_args-original-eCTNmk",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_reviewer_runtime_definition_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_reviewer_runtime_definition_ts_no_args-package-OKjVFG",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/reviewer-runtime-definition.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/reviewer-runtime-definition.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 84,
+                "anchor": "scripts/reviewer-runtime-definition.ts:84",
+                "text": "export function materializeReviewerDefinition("
+              },
+              {
+                "line": 126,
+                "anchor": "scripts/reviewer-runtime-definition.ts:126",
+                "text": "export function ensureReviewerRuntimeDefinition("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/reviewer-runtime-definition.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/reviewer-schema.ts",
+      "entryId": "reviewer-schema",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-schema.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_reviewer_schema_ts_no_args",
+          "originalEntryPoint": "scripts/reviewer-schema.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/reviewer-schema.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-schema.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_reviewer_schema_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_reviewer_schema_ts_no_args-original-4Jhhon",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_reviewer_schema_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_reviewer_schema_ts_no_args-package-onqmU8",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/reviewer-schema.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/reviewer-schema.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 333,
+                "anchor": "scripts/reviewer-schema.ts:333",
+                "text": "export function buildRunAuditorHostInput("
+              },
+              {
+                "line": 345,
+                "anchor": "scripts/reviewer-schema.ts:345",
+                "text": "export function buildReviewHostCloseoutV1("
+              },
+              {
+                "line": 355,
+                "anchor": "scripts/reviewer-schema.ts:355",
+                "text": "export function buildReviewGovernanceClosureV1(): ReviewGovernanceClosureV1 {"
+              },
+              {
+                "line": 366,
+                "anchor": "scripts/reviewer-schema.ts:366",
+                "text": "export function buildReviewCloseoutEnvelopeV1(input: {"
+              },
+              {
+                "line": 493,
+                "anchor": "scripts/reviewer-schema.ts:493",
+                "text": "export function deriveReviewCloseoutEnvelopeV1("
+              },
+              {
+                "line": 527,
+                "anchor": "scripts/reviewer-schema.ts:527",
+                "text": "export function isReviewCloseoutApproved("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/reviewer-schema.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-ci-release-gate-fixture.js",
+      "entryId": "run-ci-release-gate-fixture",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
+          "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
+          "originalEntryCommand": "node scripts/run-ci-release-gate-fixture.js --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_run_ci_release_gate_fixture_js_no_args_original_fixture_root",
+              "path": "<tmp>/g008_run_ci_release_gate_fixture_js_no_args-original-2CHDOI",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_run_ci_release_gate_fixture_js_no_args_package_fixture_root",
+              "path": "<tmp>/g008_run_ci_release_gate_fixture_js_no_args-package-cSclyQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "[governance-fixture] existing mapping is usable: _bmad-output/runtime/requirement-records/index.json\n{\n  \"report_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\gates\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 0,\n  \"blocked_sprint_status_update\": false\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/run-ci-release-gate-fixture.js:initial-no-args",
+            "originalReplayArtifactHash": "sha256:f44b5a1dedbeb6073d696d7bb63405f04dd47376f3697e26aa5c1ca2d0ccd32b",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/run-ci-release-gate-fixture.js:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 8,
+                "anchor": "scripts/run-ci-release-gate-fixture.js:8",
+                "text": "if (process.argv.includes('--pass')) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/run-ci-release-gate-fixture.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 14,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--evidenceBundleId",
+              "--hostMatrixPath",
+              "--ledgerPath",
+              "--pass",
+              "--project",
+              "--prTopologyPath",
+              "--qualityGatePath",
+              "--rerunGateCommand",
+              "--runId",
+              "--singleSourceCommand",
+              "--skipSprintStatusUpdate",
+              "--storyKey",
+              "--transpile-only"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--evidenceBundleId <source-derived-safe-value>",
+              "--hostMatrixPath <source-derived-safe-value>",
+              "--ledgerPath <source-derived-safe-value>",
+              "--pass <source-derived-safe-value>",
+              "--project <source-derived-safe-value>",
+              "--prTopologyPath <source-derived-safe-value>",
+              "--qualityGatePath <source-derived-safe-value>",
+              "--rerunGateCommand <source-derived-safe-value>",
+              "--runId <source-derived-safe-value>",
+              "--singleSourceCommand <source-derived-safe-value>",
+              "--skipSprintStatusUpdate <source-derived-safe-value>",
+              "--storyKey <source-derived-safe-value>",
+              "--transpile-only <source-derived-safe-value>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/run-fresh-regression-matrix.ts",
+      "entryId": "run-fresh-regression-matrix-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-fresh-regression-matrix.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_run_fresh_regression_matrix_ts_no_args",
+          "originalEntryPoint": "scripts/run-fresh-regression-matrix.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/run-fresh-regression-matrix.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-fresh-regression-matrix.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_run_fresh_regression_matrix_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_run_fresh_regression_matrix_ts_no_args-original-JxlxEl",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_run_fresh_regression_matrix_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_run_fresh_regression_matrix_ts_no_args-package-kma4PS",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "\n> bmad-speckit-sdd-flow@0.1.0 build:scoring\n> cd packages/scoring && npm run build\n\n\n> @bmad-speckit/scoring@0.1.0 build\n> tsc --outDir dist\n\n\n> bmad-speckit-sdd-flow@0.1.0 build:runtime-emit\n> npm run build -w @bmad-speckit/runtime-emit\n\n\n> @bmad-speckit/runtime-emit@0.1.0 build\n> node build.js\n\nruntime-emit: wrote packages\\runtime-emit\\dist\\emit-runtime-policy.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\resolve-for-session.cjs\nruntime-emit: wrote packages\\runtime-emit\\dist\\render-audit-block.cjs\n\n> bmad-speckit-sdd-flow@0.1.0 test:ci:dual\n> npm run init:claude && npm run init:cursor && npm run test:speckit-mirror-sync && vitest run && npm run test:bmad-speckit && npm run test:runtime-policy-inject\n\n\n> bmad-speckit-sdd-flow@0.1.0 init:claude\n> node scripts/init-to-root.js --agent claude-code\n\nBMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression  [agent=claude-code]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\nSync _bmad\\commands -> .claude/commands\nSync _bmad\\speckit\\commands -> .claude/commands\nSync _bmad\\claude\\rules -> .claude/rules\nSync _bmad\\claude\\agents -> .claude/agents\nSync _bmad\\skills -> .claude/skills\nSync _bmad\\claude\\skills -> .claude/skills\nSync _bmad\\i18n -> .claude/i18n\nSync _bmad\\claude\\state -> .claude/state\nSync _bmad\\claude\\hooks -> .claude/hooks\nSync _bmad\\claude\\protocols -> .claude/protocols\nSync _bmad/claude/settings.json -> .claude/settings.json\nSync _bmad\\runtime\\hooks -> .claude\\hooks\nSync _bmad\\claude\\hooks\\emit-runtime-policy-cli.js -> .claude\\hooks\\emit-runtime-policy-cli.js\nSync _bmad\\claude\\hooks\\runtime-policy-inject.js -> .claude\\hooks\\runtime-policy-inject.js\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad-output\\runtime\\context\\project.json\nDone. Copied 1 dirs, 2065 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n\n> bmad-speckit-sdd-flow@0.1.0 init:cursor\n> node scripts/init-to-root.js --agent cursor\n\nBMAD-Speckit-SDD-Flow init: deploy to D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression  [agent=cursor]\nCopy _bmad -> D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\nSync _bmad\\commands -> .cursor/commands\nSync _bmad\\speckit\\commands -> .cursor/commands\nSync _bmad\\cursor\\rules -> .cursor/rules\nSync _bmad\\skills -> .cursor/skills\nSync _bmad\\cursor\\skills -> .cursor/skills\nSync _bmad\\i18n -> .cursor/i18n\nSync _bmad/_config/code-reviewer-config.yaml -> .cursor/agents/\nSync _bmad/cursor/agents/ -> .cursor/agents/\nSync _bmad\\runtime\\hooks -> .cursor\\hooks\nSync _bmad\\cursor\\hooks\\emit-runtime-policy-cli.js -> .cursor\\hooks\\emit-runtime-policy-cli.js\nSync _bmad\\cursor\\hooks\\runtime-policy-inject.js -> .cursor\\hooks\\runtime-policy-inject.js\nWrote D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad-output\\runtime\\context\\project.json\nDone. Copied 1 dirs, 2010 files.\nVerify with: _bmad/speckit/scripts/powershell/check-prerequisites.ps1\n\n> bmad-speckit-sdd-flow@0.1.0 test:speckit-mirror-sync\n> node scripts/verify-speckit-mirror-sync.js\n\nSpeckit .specify mirror is in sync (51 files checked)\n\n RUN  v4.0.18 D:/Dev/BMAD-Speckit-SDD-Flow-01-fresh-regression\n\n ✓ tests/acceptance/runtime-policy-inject-auto-trigger-boundary.test.ts (1 test) 967ms\n     ✓ quietly skips outside BMAD instead of fabricating business runtime state  966ms\n",
+          "expectedStderr": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\nTarget exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "spawn",
+              "message": "spawnSync C:\\Windows\\system32\\cmd.exe ETIMEDOUT"
+            },
+            {
+              "channel": "stderr",
+              "firstLine": "Target exists, merging: D:\\Dev\\BMAD-Speckit-SDD-Flow-01-fresh-regression\\_bmad"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/run-fresh-regression-matrix.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:6abd9c7501219ffc257578d6c408f370bb249300e07f613a2f8cad03145f48c4",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/run-fresh-regression-matrix.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 74,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:74",
+                "text": "export function shouldRunRealSftExtract(freshRoot: string): boolean {"
+              },
+              {
+                "line": 83,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:83",
+                "text": "export function resolveFreshRegressionRoot(repoRoot: string): string {"
+              },
+              {
+                "line": 97,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:97",
+                "text": "export function validateFreshRoot(freshRoot: string): { ok: true } | { ok: false; reason: string } {"
+              },
+              {
+                "line": 135,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:135",
+                "text": "export function runOptionalNpmScript("
+              },
+              {
+                "line": 161,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:161",
+                "text": "export function resolveHostMatrixGateMode("
+              },
+              {
+                "line": 179,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:179",
+                "text": "export function resolveDualHostGateMode("
+              },
+              {
+                "line": 264,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:264",
+                "text": "export function runFreshRegressionMatrixMain(): number {"
+              },
+              {
+                "line": 276,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:276",
+                "text": "console.error(`[fresh-regression] ${v.reason}: ${freshRoot}`);"
+              },
+              {
+                "line": 366,
+                "anchor": "scripts/run-fresh-regression-matrix.ts:366",
+                "text": "if (require.main === module) {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/run-fresh-regression-matrix.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 4,
+            "envKeyCount": 1,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 2,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 2,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--test",
+              "--test-concurrency"
+            ],
+            "discoveredEnvKeys": [
+              "FRESH_REGRESSION_ROOT"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--help <source-derived-safe-value>",
+              "--test <source-derived-safe-value>",
+              "--test-concurrency <source-derived-safe-value>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/runtime-context.ts",
+      "entryId": "runtime-context-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_runtime_context_ts_no_args",
+          "originalEntryPoint": "scripts/runtime-context.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/runtime-context.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_runtime_context_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_runtime_context_ts_no_args-original-qglHdj",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_runtime_context_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_runtime_context_ts_no_args-package-RhYOqK",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/runtime-context.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/runtime-context.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 77,
+                "anchor": "scripts/runtime-context.ts:77",
+                "text": "export function defaultRuntimeContextFile("
+              },
+              {
+                "line": 90,
+                "anchor": "scripts/runtime-context.ts:90",
+                "text": "export function runtimeContextPath(root: string): string {"
+              },
+              {
+                "line": 94,
+                "anchor": "scripts/runtime-context.ts:94",
+                "text": "export function projectContextPath(root: string): string {"
+              },
+              {
+                "line": 98,
+                "anchor": "scripts/runtime-context.ts:98",
+                "text": "export function epicContextPath(root: string, epicId: string): string {"
+              },
+              {
+                "line": 102,
+                "anchor": "scripts/runtime-context.ts:102",
+                "text": "export function storyContextPath(root: string, epicId: string, storyId: string): string {"
+              },
+              {
+                "line": 114,
+                "anchor": "scripts/runtime-context.ts:114",
+                "text": "export function runContextPath("
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/runtime-context.ts:133",
+                "text": "export function resolveRuntimeContextPath(root: string, explicitPath?: string): string {"
+              },
+              {
+                "line": 142,
+                "anchor": "scripts/runtime-context.ts:142",
+                "text": "export function resolveRuntimeContextWritePath(root: string, explicitPath?: string): string {"
+              },
+              {
+                "line": 150,
+                "anchor": "scripts/runtime-context.ts:150",
+                "text": "export function readRuntimeContext(root: string, explicitPath?: string): RuntimeContextFile {"
+              },
+              {
+                "line": 283,
+                "anchor": "scripts/runtime-context.ts:283",
+                "text": "export function mergeLanguagePolicyIntoProjectContext("
+              },
+              {
+                "line": 319,
+                "anchor": "scripts/runtime-context.ts:319",
+                "text": "export function writeRuntimeContext(root: string, payload: RuntimeContextFile): void {"
+              },
+              {
+                "line": 352,
+                "anchor": "scripts/runtime-context.ts:352",
+                "text": "export function detectRuntimeSourceMode("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/runtime-context.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/scores-summary.ts",
+      "entryId": "scores-summary-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/scores-summary.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_scores_summary_ts_no_args",
+          "originalEntryPoint": "scripts/scores-summary.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/scores-summary.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/scores-summary.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_scores_summary_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_scores_summary_ts_no_args-original-oE4hLb",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_scores_summary_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_scores_summary_ts_no_args-package-pZ7bRB",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "| run_id | epic | story | stage | phase_score | phase_weight | timestamp |\n|-------|------|-------|-------|-------------|--------------|-----------|\n| dev-e15-s2-implement-post-audit-check | 15 | 2 | implement | 93.1 | 0.25 | 2026-06-20T05:55:34.185Z |\n| cli-1780144685348 | - | - | implement | 0 | 0.25 | 2026-05-30T12:38:05.359Z |\n| cli-1780144619383 | - | - | implement | 0 | 0.25 | 2026-05-30T12:36:59.391Z |\n| REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER-readiness-20260527000908 | - | - | implementation_readiness | 100 | 0.2 | 2026-05-27T00:09:08.379Z |\n| REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER-readiness-20260526091245 | - | - | implementation_readiness | 100 | 0.2 | 2026-05-26T09:12:45.731Z |\n| REQ-REQ-TRACE-AI-TDD-PACKET-COMPILER-readiness-20260526091203 | - | - | implementation_readiness | 100 | 0.2 | 2026-05-26T09:12:03.538Z |\n| gov-run-epic-create-1775642460000 | - | - | epics | 100 | 0 | 2026-04-08T10:01:00.000Z |\n| gov-e7-s1-story-1775642400000 | 7 | 1 | story | 100 | 0 | 2026-04-08T10:00:00.000Z |\n| gov-e9-s2-post_impl-1775642400000 | 9 | 2 | post_impl | 100 | 0 | 2026-04-08T10:00:00.000Z |\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/scores-summary.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:7c3d2b5a35a280267d9ce678da559a084844e5442d4dbb863c9b4d35e5e5a660",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/scores-summary.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 49,
+                "anchor": "scripts/scores-summary.ts:49",
+                "text": "function main(): void {"
+              },
+              {
+                "line": 50,
+                "anchor": "scripts/scores-summary.ts:50",
+                "text": "const argv = process.argv.slice(2);"
+              },
+              {
+                "line": 56,
+                "anchor": "scripts/scores-summary.ts:56",
+                "text": "console.error('--epic and --story are mutually exclusive.');"
+              },
+              {
+                "line": 60,
+                "anchor": "scripts/scores-summary.ts:60",
+                "text": "console.error(`Invalid --epic value: ${epicArg}. Expected positive integer.`);"
+              },
+              {
+                "line": 64,
+                "anchor": "scripts/scores-summary.ts:64",
+                "text": "console.error(`Invalid --story value: ${storyArg}. Expected X.Y (e.g. 3.3).`);"
+              },
+              {
+                "line": 73,
+                "anchor": "scripts/scores-summary.ts:73",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 76,
+                "anchor": "scripts/scores-summary.ts:76",
+                "text": "console.log(formatScoresToTable(records, 'all'));"
+              },
+              {
+                "line": 86,
+                "anchor": "scripts/scores-summary.ts:86",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              },
+              {
+                "line": 88,
+                "anchor": "scripts/scores-summary.ts:88",
+                "text": "console.log(NO_PARSABLE_MESSAGE);"
+              },
+              {
+                "line": 90,
+                "anchor": "scripts/scores-summary.ts:90",
+                "text": "console.log(NO_MATCH_MESSAGE);"
+              },
+              {
+                "line": 94,
+                "anchor": "scripts/scores-summary.ts:94",
+                "text": "console.log(formatScoresToTable(records, 'epic'));"
+              },
+              {
+                "line": 106,
+                "anchor": "scripts/scores-summary.ts:106",
+                "text": "console.log(EMPTY_DATA_MESSAGE);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/scores-summary.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 3,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--epic",
+              "--story"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--epic <source-derived-safe-value>",
+              "--story <source-derived-safe-value>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/start-dashboard.ts",
+      "entryId": "start-dashboard-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-dashboard.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-dashboard.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_start_dashboard_ts_no_args",
+          "originalEntryPoint": "scripts/start-dashboard.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/start-dashboard.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-dashboard.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-dashboard.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_start_dashboard_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_start_dashboard_ts_no_args-original-wOI5VR",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_dashboard_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_start_dashboard_ts_no_args-package-ujZy3n",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "RUN_ID:7e886114-1615-40e2-8eca-6a5eafb01520\nDashboard URL: http://127.0.0.1:50433\n",
+          "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "spawn",
+              "message": "spawnSync C:\\Windows\\system32\\cmd.exe ETIMEDOUT"
+            },
+            {
+              "channel": "stderr",
+              "firstLine": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-dashboard.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:f4d520a9dce24f0a6d51357003f3251b4737064e1056e709bdd6773fccb8654d",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-dashboard.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 4,
+                "anchor": "scripts/start-dashboard.ts:4",
+                "text": "async function main() {"
+              },
+              {
+                "line": 19,
+                "anchor": "scripts/start-dashboard.ts:19",
+                "text": "console.log('Dashboard URL:', server.url);"
+              },
+              {
+                "line": 24,
+                "anchor": "scripts/start-dashboard.ts:24",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/start-dashboard.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 2,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 2,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/start-runtime-dashboard-server.cjs",
+      "entryId": "start-runtime-dashboard-server-cjs",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_no_args",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_no_args-original-CAxSNk",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_no_args-package-6A1QBV",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"pid\": 21032,\n  \"host\": \"127.0.0.1\",\n  \"port\": 54573,\n  \"url\": \"http://127.0.0.1:54573\",\n  \"health_url\": \"http://127.0.0.1:54573/health\",\n  \"started_at\": \"2026-06-20T05:55:18.598Z\",\n  \"root\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"data_path\": null,\n  \"mode\": \"reused\",\n  \"state_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:initial-no-args",
+            "originalReplayArtifactHash": "sha256:b54a3936daf973025b22e7faf630f5b12cffd42ecf075dc379cb9ad35beb9c7b",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/subagent-evidence-envelope.ts",
+      "entryId": "subagent-evidence-envelope",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_no_args",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_no_args-original-2rmSYr",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_no_args-package-z1N1vs",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:1dbdda0ff4c00309a388f3ed53fc12303ef7bb151508f46961ec97c2678ed142",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "entryId": "supervised-worker-runtime",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/supervised-worker-runtime.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_supervised_worker_runtime_ts_no_args",
+          "originalEntryPoint": "scripts/supervised-worker-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/supervised-worker-runtime.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/supervised-worker-runtime.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_supervised_worker_runtime_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_supervised_worker_runtime_ts_no_args-original-feMPuP",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_supervised_worker_runtime_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_supervised_worker_runtime_ts_no_args-package-eVptdz",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/supervised-worker-runtime.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/supervised-worker-runtime.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 42,
+                "anchor": "scripts/supervised-worker-runtime.ts:42",
+                "text": "export function appendTaskProgress(projectRoot: string, progress: TaskProgress): string {"
+              },
+              {
+                "line": 49,
+                "anchor": "scripts/supervised-worker-runtime.ts:49",
+                "text": "export function readTaskProgress("
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/supervised-worker-runtime.ts:63",
+                "text": "export function evaluateSupervisedWorker(input: {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/supervised-worker-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/test-locks.ts",
+      "entryId": "test-locks-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-locks.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_test_locks_ts_no_args",
+          "originalEntryPoint": "scripts/test-locks.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/test-locks.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-locks.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_test_locks_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_test_locks_ts_no_args-original-NhCsFJ",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_test_locks_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_test_locks_ts_no_args-package-MaKqBk",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Testing locks...\n\n",
+          "expectedStderr": "RangeError: Maximum call stack size exceeded\n    at Object.normalize (node:path:365:12)\n    at join (node:path:613:18)\n    at getLockPath (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:201:14)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:205:16)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n    at releaseLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:258:20)\n    at getLock (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\bmad-state.ts:219:5)\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "RangeError: Maximum call stack size exceeded"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/test-locks.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:441444d7ccf79763202482f0d7278875b00810ae29a03620d93a735cf42a7df5",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/test-locks.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 4,
+                "anchor": "scripts/test-locks.ts:4",
+                "text": "console.log('Testing locks...\\n');"
+              },
+              {
+                "line": 8,
+                "anchor": "scripts/test-locks.ts:8",
+                "text": "console.log('Lock E001-S001 acquired:', lock1);"
+              },
+              {
+                "line": 9,
+                "anchor": "scripts/test-locks.ts:9",
+                "text": "console.log('Lock status:', getLock('E001', 'S001'));"
+              },
+              {
+                "line": 13,
+                "anchor": "scripts/test-locks.ts:13",
+                "text": "console.log('Lock E001-S001 by agent-2:', lock2, '(should be false)');"
+              },
+              {
+                "line": 17,
+                "anchor": "scripts/test-locks.ts:17",
+                "text": "console.log('Lock E001-S002 by agent-2:', lock3, '(should be true)');"
+              },
+              {
+                "line": 19,
+                "anchor": "scripts/test-locks.ts:19",
+                "text": "console.log('\\n--- All Locks ---');"
+              },
+              {
+                "line": 20,
+                "anchor": "scripts/test-locks.ts:20",
+                "text": "console.log('E001-S001:', getLock('E001', 'S001').locked ? 'locked' : 'unlocked');"
+              },
+              {
+                "line": 21,
+                "anchor": "scripts/test-locks.ts:21",
+                "text": "console.log('E001-S002:', getLock('E001', 'S002').locked ? 'locked' : 'unlocked');"
+              },
+              {
+                "line": 26,
+                "anchor": "scripts/test-locks.ts:26",
+                "text": "console.log('\\nLocks released');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/test-locks.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/test-story-flow.ts",
+      "entryId": "test-story-flow-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-story-flow.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_test_story_flow_ts_no_args",
+          "originalEntryPoint": "scripts/test-story-flow.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/test-story-flow.ts --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-story-flow.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_test_story_flow_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_test_story_flow_ts_no_args-original-WmqTFP",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_test_story_flow_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_test_story_flow_ts_no_args-package-dZpMWc",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "=== BMAD Story Assistant Test Flow ===\n\nStage 1: Create Story\n---------------------\n✗ Story creation failed: Story E999-S001 already exists\n  Existing story state: completed\n\nCurrent state: completed\n\nStage 2: Story Audit\n---------------------\n✓ Story audit started\n✓ Story audit passed\n\nStage 3: Dev Story\n---------------------\n✓ Dev Story started\n✓ Dev Story complete\n\nStage 4: Post Audit\n---------------------\n✓ Post audit started\n✓ Post audit passed\n✓ Story completed\n\n=== Final State ===\n{\n  \"version\": \"2.0\",\n  \"epic\": \"E999\",\n  \"story\": \"S001\",\n  \"story_slug\": \"test-epic\",\n  \"layer\": 4,\n  \"stage\": \"completed\",\n  \"audit_status\": \"pending\",\n  \"artifacts\": {},\n  \"scores\": {},\n  \"git_control\": {\n    \"commit_allowed\": false\n  },\n  \"runtime\": {\n    \"last_action\": \"story_created\"\n  },\n  \"auditReportPath\": \"_bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S001-test-story/AUDIT_implement-E999-S001.md\",\n  \"completedAt\": \"2026-06-20T06:00:42.292Z\"\n}\n\n=== Active Stories ===\nFound 3 active stories\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/test-story-flow.ts:initial-no-args",
+            "originalReplayArtifactHash": "sha256:d411f92be6d826b965b8cdca6ffeac4d65d2e517facf2224d4607ebbdb3e4351",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/test-story-flow.ts:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 7,
+                "anchor": "scripts/test-story-flow.ts:7",
+                "text": "console.log('=== BMAD Story Assistant Test Flow ===\\n');"
+              },
+              {
+                "line": 10,
+                "anchor": "scripts/test-story-flow.ts:10",
+                "text": "console.log('Stage 1: Create Story');"
+              },
+              {
+                "line": 11,
+                "anchor": "scripts/test-story-flow.ts:11",
+                "text": "console.log('---------------------');"
+              },
+              {
+                "line": 14,
+                "anchor": "scripts/test-story-flow.ts:14",
+                "text": "console.log('✓ Story created:', newStory.epic + '-' + newStory.story);"
+              },
+              {
+                "line": 15,
+                "anchor": "scripts/test-story-flow.ts:15",
+                "text": "console.log('  State:', newStory.stage);"
+              },
+              {
+                "line": 17,
+                "anchor": "scripts/test-story-flow.ts:17",
+                "text": "console.log('✗ Story creation failed:', e instanceof Error ? e.message : String(e));"
+              },
+              {
+                "line": 21,
+                "anchor": "scripts/test-story-flow.ts:21",
+                "text": "console.log('  Existing story state:', existing.stage);"
+              },
+              {
+                "line": 27,
+                "anchor": "scripts/test-story-flow.ts:27",
+                "text": "console.log('\\nCurrent state:', state1?.stage || 'not found');"
+              },
+              {
+                "line": 30,
+                "anchor": "scripts/test-story-flow.ts:30",
+                "text": "console.log('\\nStage 2: Story Audit');"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/test-story-flow.ts:31",
+                "text": "console.log('---------------------');"
+              },
+              {
+                "line": 33,
+                "anchor": "scripts/test-story-flow.ts:33",
+                "text": "console.log('✓ Story audit started');"
+              },
+              {
+                "line": 40,
+                "anchor": "scripts/test-story-flow.ts:40",
+                "text": "console.log('✓ Story audit passed');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/test-story-flow.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "entryId": "verify-score-auto-scoped-bundle",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_verify_score_auto_scoped_bundle_cjs_no_args",
+          "originalEntryPoint": "scripts/verify-score-auto-scoped-bundle.cjs",
+          "originalEntryCommand": "node scripts/verify-score-auto-scoped-bundle.cjs --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_verify_score_auto_scoped_bundle_cjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_verify_score_auto_scoped_bundle_cjs_no_args-original-QNCIl6",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_verify_score_auto_scoped_bundle_cjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_verify_score_auto_scoped_bundle_cjs_no_args-package-QqHiuH",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\nTypeError: fetch failed\n    at node:internal/deps/undici/undici:14902:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\verify-score-auto-scoped-bundle.cjs:73:20)\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/verify-score-auto-scoped-bundle.cjs:initial-no-args",
+            "originalReplayArtifactHash": "sha256:58a2b2980ad4ef82f89119d708896981a50070b1b2406d004a89bc8789c7925b",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/verify-score-auto-scoped-bundle.cjs:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 7,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:7",
+                "text": "async function main() {"
+              },
+              {
+                "line": 40,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:40",
+                "text": "const originalLog = console.log;"
+              },
+              {
+                "line": 41,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:41",
+                "text": "console.log = (...args) => {"
+              },
+              {
+                "line": 58,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:58",
+                "text": "console.log = originalLog;"
+              },
+              {
+                "line": 102,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:102",
+                "text": "console.log("
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:118",
+                "text": "console.error(error && error.stack ? error.stack : error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/verify-score-auto-scoped-bundle.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-skill-architecture.sh",
+      "entryId": "verify-skill-architecture-sh",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-skill-architecture.sh"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_verify_skill_architecture_sh_no_args",
+          "originalEntryPoint": "scripts/verify-skill-architecture.sh",
+          "originalEntryCommand": "bash scripts/verify-skill-architecture.sh --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+          "packageEntryCommand": "bash packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-skill-architecture.sh --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_verify_skill_architecture_sh_no_args_original_fixture_root",
+              "path": "<tmp>/g008_verify_skill_architecture_sh_no_args-original-kbOVde",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_verify_skill_architecture_sh_no_args_package_fixture_root",
+              "path": "<tmp>/g008_verify_skill_architecture_sh_no_args-package-v1SAjA",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/verify-skill-architecture.sh:initial-no-args",
+            "originalReplayArtifactHash": "sha256:49edb214f086cf5cb874ac113cc175868da9ca6a19c5d99ab0443032e6c5bb1f",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/verify-skill-architecture.sh:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/verify-skill-architecture.sh:1",
+                "text": "#!/usr/bin/env bash"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/verify-skill-architecture.sh",
+            "entryPointCount": 1,
+            "argCombinationCount": 4,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "blocked_until_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--exclude-dir",
+              "--include",
+              "--verbose"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>",
+              "--exclude-dir <source-derived-safe-value>",
+              "--include <source-derived-safe-value>",
+              "--verbose <source-derived-safe-value>"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-speckit-mirror-sync.js",
+      "entryId": "verify-speckit-mirror-sync-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
+          "originalEntryPoint": "scripts/verify-speckit-mirror-sync.js",
+          "originalEntryCommand": "node scripts/verify-speckit-mirror-sync.js --cwd <fixture-root>",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js --cwd <fixture-root>",
+          "argumentCombination": "--cwd <fixture-root>",
+          "args": [
+            "--cwd",
+            "<fixture-root>"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_verify_speckit_mirror_sync_js_no_args_original_fixture_root",
+              "path": "<tmp>/g008_verify_speckit_mirror_sync_js_no_args-original-9ZmQXc",
+              "description": "Isolated empty fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_verify_speckit_mirror_sync_js_no_args_package_fixture_root",
+              "path": "<tmp>/g008_verify_speckit_mirror_sync_js_no_args-package-hFxbft",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Speckit .specify mirror is in sync (51 files checked)\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/verify-speckit-mirror-sync.js:initial-no-args",
+            "originalReplayArtifactHash": "sha256:33079a4b7f41cb39b6f6689833f3acb2733f5cb6e3d8f52165318620fbc53b21",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/verify-speckit-mirror-sync.js:initial-no-args",
+            "sourceLineAnchors": [
+              {
+                "line": 20,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:20",
+                "text": "console.error('Speckit .specify mirror drift detected.');"
+              },
+              {
+                "line": 23,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:23",
+                "text": "console.error(`- extra: ${issue.targetRelative}`);"
+              },
+              {
+                "line": 26,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:26",
+                "text": "console.error(`- ${issue.type}: ${issue.targetRelative} <= ${issue.sourceRelative}`);"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:31",
+                "text": "console.log(`Speckit .specify mirror is in sync (${result.plan.entries.length} files checked)`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>"
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_INITIAL:scripts/verify-speckit-mirror-sync.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "--cwd <fixture-root>"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -8,8 +8,8 @@ This summary does not prove every source repository script is directly callable 
 
 ## Migrated Or Consumer-Reachable Entries
 
-- scripts/host-runtime-mode.ts -> packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js, packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js (package_runtime_module)
-- scripts/supervised-worker-runtime.ts -> packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js, packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js (package_runtime_module)
+- scripts/host-runtime-mode.ts -> packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts, packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js (package_runtime_module)
+- scripts/supervised-worker-runtime.ts -> packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts, packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js (package_runtime_module)
 - scripts/diagnose-bmad-state.ts -> packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js, packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js (package_runtime_module)
 - scripts/parallel-mission-control.ts -> packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js, packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js (package_runtime_module)
 - scripts/bmad-state-reader.ts -> packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js, packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js (durable_helper_copy)

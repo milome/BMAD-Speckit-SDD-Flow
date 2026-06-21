@@ -1,0 +1,152 @@
+[
+  {
+    "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+    "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+    "expectedStdout": "{\n  \"skipped\": true,\n  \"reason\": \"adaptive intake candidate not provided\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+    "scenarioId": "g004_adaptive_intake_proof_gate_ts_no_args",
+    "expectedStdout": "{\n  \"reportType\": \"adaptive_intake_proof_gate\",\n  \"critical_failures\": 1,\n  \"checks\": [\n    {\n      \"id\": \"orphan-task-zero\",\n      \"passed\": true,\n      \"summary\": \"orphan-task=0\"\n    },\n    {\n      \"id\": \"three-flow-coverage\",\n      \"passed\": false,\n      \"summary\": \"missing flows: story, bugfix, standalone_tasks\"\n    },\n    {\n      \"id\": \"queue-sync-dependency-proof\",\n      \"passed\": true,\n      \"summary\": \"all active mappings have applied queue-sync artifacts\"\n    }\n  ],\n  \"orphanTaskCount\": 0,\n  \"coveredFlows\": []\n}\n"
+  },
+  {
+    "originalPath": "scripts/ai-tdd-contract-gate.ts",
+    "scenarioId": "g004_ai_tdd_contract_gate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/analytics-sft-extract.ts",
+    "scenarioId": "g004_analytics_sft_extract_ts_no_args",
+    "expectedStdout": "extractSftDataset: wrote 0 entries to D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\scoring\\sft-dataset.jsonl\n"
+  },
+  {
+    "originalPath": "scripts/assert-implementation-entry.ts",
+    "scenarioId": "g004_assert_implementation_entry_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/audit-stage-routing.ts",
+    "scenarioId": "g004_audit_stage_routing_ts_no_args",
+    "expectedStdout": "🔍 开始审计 Stage Routing 逻辑...\n\n✅ 完成 17 项检查\n   通过: 4\n   失败: 11\n   警告: 2\n\n📝 审计报告已保存到: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\routing-audit-report.md\n\n❌ 发现以下问题：\n   - Stage Routing 章节存在性: 未找到 Stage Routing 章节\n   - 路由规则: null/new → story_create/bmad-story-create: 未找到路由规则: null/new → story_create/bmad-story-create\n   - 路由规则: story_created → story_audit/bmad-story-audit: 未找到路由规则: story_created → story_audit/bmad-story-audit\n   - 路由规则: story_audit_passed → specify: 未找到路由规则: story_audit_passed → specify\n   - 路由规则: plan_passed → gaps: 未找到路由规则: plan_passed → gaps\n   - 路由规则: gaps_passed → tasks: 未找到路由规则: gaps_passed → tasks\n   - 路由规则: tasks_passed → Story Type Detection: 未找到路由规则: tasks_passed → Story Type Detection\n   - 路由规则: implement_passed → commit_gate: 未找到路由规则: implement_passed → commit_gate\n   - 路由规则: document_audit_passed → commit_gate: 未找到路由规则: document_audit_passed → commit_gate\n   - Story Type Detection 逻辑: 未找到 Story Type Detection 逻辑\n   - Epic-Level Routing 支持: 未找到 Epic-Level Routing 章节\n\n⚠️ 发现以下警告：\n   - Auto-Continue 逻辑: 找到 Auto-Continue 逻辑 (第 133 行). enabled检查: true, action映射: false\n   - 三层审计结构引用: 未找到三层审计结构引用 (可能继承自通用协议)\n\n📊 JSON 结果:\n{\n  \"timestamp\": \"2026-06-20T05:45:33.713Z\",\n  \"fileAudited\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\.claude\\\\agents\\\\bmad-master.md\",\n  \"summary\": {\n    \"totalChecks\": 17,\n    \"passed\": 4,\n    \"failed\": 11,\n    \"warnings\": 2\n  },\n  \"results\": [\n    {\n      \"check\": \"Stage Routing 章节存在性\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Stage Routing 章节\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"路由规则: null/new → story_create/bmad-story-create\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: null/new → story_create/bmad-story-create\"\n    },\n    {\n      \"check\": \"路由规则: story_created → story_audit/bmad-story-audit\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: story_created → story_audit/bmad-story-audit\"\n    },\n    {\n      \"check\": \"路由规则: story_audit_passed → specify\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: story_audit_passed → specify\"\n    },\n    {\n      \"check\": \"路由规则: specify_passed → plan\",\n      \"status\": \"PASS\",\n      \"details\": \"找到路由规则 (第 197 行)\",\n      \"lineNumber\": 197\n    },\n    {\n      \"check\": \"路由规则: plan_passed → gaps\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: plan_passed → gaps\",\n      \"lineNumber\": 199\n    },\n    {\n      \"check\": \"路由规则: gaps_passed → tasks\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: gaps_passed → tasks\"\n    },\n    {\n      \"check\": \"路由规则: tasks_passed → Story Type Detection\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: tasks_passed → Story Type Detection\",\n      \"lineNumber\": 201\n    },\n    {\n      \"check\": \"路由规则: implement_passed → commit_gate\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: implement_passed → commit_gate\"\n    },\n    {\n      \"check\": \"路由规则: document_audit_passed → commit_gate\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到路由规则: document_audit_passed → commit_gate\"\n    },\n    {\n      \"check\": \"Story Type Detection 逻辑\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Story Type Detection 逻辑\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"Epic-Level Routing 支持\",\n      \"status\": \"FAIL\",\n      \"details\": \"未找到 Epic-Level Routing 章节\",\n      \"lineNumber\": 0\n    },\n    {\n      \"check\": \"Auto-Continue 逻辑\",\n      \"status\": \"WARNING\",\n      \"details\": \"找到 Auto-Continue 逻辑 (第 133 行). enabled检查: true, action映射: false\",\n      \"lineNumber\": 133\n    },\n    {\n      \"check\": \"输出格式要求\",\n      \"status\": \"PASS\",\n      \"details\": \"找到输出格式要求 (allowed_action, follow_up, state_patch 等)\"\n    },\n    {\n      \"check\": \"三层审计结构引用\",\n      \"status\": \"WARNING\",\n      \"details\": \"未找到三层审计结构引用 (可能继承自通用协议)\"\n    },\n    {\n      \"check\": \"Auditor 文件存在性\",\n      \"status\": \"PASS\",\n      \"details\": \"所有 6 个 Auditor 文件均存在\"\n    },\n    {\n      \"check\": \"Layer 4 Agent Prerequisites 一致性\",\n      \"status\": \"PASS\",\n      \"details\": \"所有 4 个 Layer 4 Agent Prerequisites 与路由一致\"\n    }\n  ],\n  \"routingRules\": [\n    {\n      \"stage\": \"null/new\",\n      \"routeTo\": \"story_create/bmad-story-create\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"story_created\",\n      \"routeTo\": \"story_audit/bmad-story-audit\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"story_audit_passed\",\n      \"routeTo\": \"specify\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"specify_passed\",\n      \"routeTo\": \"plan\",\n      \"found\": true,\n      \"lineNumber\": 197\n    },\n    {\n      \"stage\": \"plan_passed\",\n      \"routeTo\": \"gaps\",\n      \"found\": false,\n      \"lineNumber\": 199\n    },\n    {\n      \"stage\": \"gaps_passed\",\n      \"routeTo\": \"tasks\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"tasks_passed\",\n      \"routeTo\": \"Story Type Detection\",\n      \"found\": false,\n      \"lineNumber\": 201\n    },\n    {\n      \"stage\": \"implement_passed\",\n      \"routeTo\": \"commit_gate\",\n      \"found\": false\n    },\n    {\n      \"stage\": \"document_audit_passed\",\n      \"routeTo\": \"commit_gate\",\n      \"found\": false\n    }\n  ],\n  \"storyTypeDetection\": {\n    \"found\": false,\n    \"lineNumber\": 0,\n    \"details\": \"code_flow: false, document_flow: false\"\n  },\n  \"epicLevelRouting\": {\n    \"found\": false,\n    \"lineNumber\": 0,\n    \"details\": \"章节: false, epic模式: false\"\n  },\n  \"autoContinueLogic\": {\n    \"found\": false,\n    \"lineNumber\": 133,\n    \"details\": \"auto_continue: true, enabled检查: true, action映射: false\"\n  }\n}\n"
+  },
+  {
+    "originalPath": "scripts/auditor-post-actions.ts",
+    "scenarioId": "g004_auditor_post_actions_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "scenarioId": "g004_auditor_spec_ts_no_args",
+    "expectedStdout": "Audit complete: FAIL\nReport written to: --cwd\n"
+  },
+  {
+    "originalPath": "scripts/bmad-config.ts",
+    "scenarioId": "g004_bmad_config_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/bmad-runtime-worker.ts",
+    "scenarioId": "g004_bmad_runtime_worker_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.ps1",
+    "scenarioId": "g004_check_sprint_ready_ps1_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.sh",
+    "scenarioId": "g004_check_sprint_ready_sh_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/dashboard-generate.ts",
+    "scenarioId": "g004_dashboard_generate_ts_no_args",
+    "expectedStdout": "数据不足，暂无完整 run（至少 2 stage）\n"
+  },
+  {
+    "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+    "scenarioId": "g004_e2e_dual_host_journey_runner_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+    "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_no_args",
+    "expectedStdout": "{\n  \"reportFile\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\_bmad-output\\\\runtime\\\\e2e\\\\host-matrix-journey-report.json\",\n  \"finalPassed\": true\n}\n"
+  },
+  {
+    "originalPath": "scripts/final-closeout-evidence-runner.ts",
+    "scenarioId": "g004_final_closeout_evidence_runner_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-execution-result-ingestor.ts",
+    "scenarioId": "g004_governance_execution_result_ingestor_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-hook-types.ts",
+    "scenarioId": "g004_governance_hook_types_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+    "scenarioId": "g004_governance_packet_dispatch_worker_ts_no_args",
+    "expectedStdout": "[]"
+  },
+  {
+    "originalPath": "scripts/governance-provider-adapter.ts",
+    "scenarioId": "g004_governance_provider_adapter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-runtime-queue.ts",
+    "scenarioId": "g004_governance_runtime_queue_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-stage-event-emitter.ts",
+    "scenarioId": "g004_governance_stage_event_emitter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+    "scenarioId": "g004_i18n_print_resolved_audit_prompt_ts_no_args",
+    "expectedStdout": "{\n  \"locale\": \"zh\",\n  \"projectRoot\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"resolvedPath\": \".\\\\--cwd\\\\<fixture-root>.md\",\n  \"usedFallback\": false,\n  \"variant\": \"default\",\n  \"exists\": false\n}\n"
+  },
+  {
+    "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+    "scenarioId": "g004_i18n_render_audit_block_cli_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/render-template.ts",
+    "scenarioId": "g004_i18n_render_template_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/ingest-architecture-confirmation.ts",
+    "scenarioId": "g004_ingest_architecture_confirmation_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/ingest-implementation-evidence.ts",
+    "scenarioId": "g004_ingest_implementation_evidence_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+    "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+    "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+    "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_no_args",
+    "expectedStdout": ""
+  }
+]

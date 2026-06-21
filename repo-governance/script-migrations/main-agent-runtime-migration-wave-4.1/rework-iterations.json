@@ -1,0 +1,268 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-rework/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "createdAt": "2026-06-20T00:35:50.579Z",
+  "iterations": [
+    {
+      "iterationId": "RW-G004-2026-06-20-001",
+      "ownerTaskId": "G004",
+      "startedFrom": "owner validator failed: missingPackageImplementationSetCount=30, missingBehaviorEquivalenceMatrixCount=30 after initial 61-row matrix",
+      "changes": [
+        "Hardened CMD003/CMD013 ledger validation to recompute packageBytes/packageLoc and semantic package size from packageImplementationSet files.",
+        "Regenerated G004 package source authority for all 91 owner rows and recorded non-empty packageImplementationSet for every G004 row.",
+        "Rewrote non-TS source relocation for shell/PowerShell scripts so package source paths resolve from packages/bmad-speckit instead of root scripts layout.",
+        "Updated G004 behavior replay dispatch to use node, pwsh, or bash according to packageEntryPoint extension.",
+        "Regenerated G004 initial behavior matrix and replay evidence for 75 size-passing rows."
+      ],
+      "verification": [
+        "node --check tools/script-migration/main-agent-wave-4-1-utils.cjs",
+        "node --check tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs",
+        "node --check tools/script-migration/generate-g004-package-source-evidence.cjs",
+        "node --check tools/script-migration/generate-g004-behavior-matrix.cjs",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --update-ledger --json",
+        "node tools/script-migration/generate-g004-behavior-matrix.cjs --update-ledger --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G003 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G004 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase no-fallback --json",
+        "npm run build:main-agent-dist --prefix packages/bmad-speckit",
+        "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
+      ],
+      "result": {
+        "g003OwnerValidator": "passed",
+        "g004OwnerValidator": "failed_expected_rework_remaining",
+        "g004PackageImplementationSetMissingCount": 0,
+        "g004InitialReplayRows": 75,
+        "g004InitialReplayFailures": 0,
+        "g004SizeDeltaViolationCount": 16,
+        "g004MissingBehaviorEquivalenceMatrixCount": 16,
+        "fullNoFallback": "failed_expected_rework_remaining"
+      },
+      "remainingRework": [
+        "Rework the 16 G004 rows whose generated package source is outside byte/LOC thresholds without padding or waivers.",
+        "Replace G004 initial one-scenario matrices with full original behavior coverage for all 91 G004 rows.",
+        "Eliminate full-inventory no-fallback hits across package source, dist, bin, scripts, package.json, installed surfaces, and install matrix."
+      ]
+    },
+    {
+      "iterationId": "RW-G002-G003-G004-2026-06-20-002",
+      "ownerTaskId": "G002/G003/G004",
+      "startedFrom": "user challenged G003 size gate: original 440347 bytes / 11936 LOC, package 417359 bytes / 9142 LOC, byte ratio 0.9478 but LOC delta -2794",
+      "changes": [
+        "Tightened Wave 4.1 raw and semantic byte/LOC ratio acceptance from 0.70..1.30 to 0.90..1.10 in the contract and validator.",
+        "Added fail-closed sizeDeltaProof delta fields: rawByteDelta, rawLocDelta, semanticByteDelta, semanticLocDelta.",
+        "Added source-kind parity detection for TypeScript originals backed by generated CommonJS emit under packages/bmad-speckit/src/**.",
+        "Updated G003 and G004 package source evidence generators so generated CJS source authority and strict size failures are written as rework-required instead of passed.",
+        "Updated G003 and G004 command outputs to report ok=false when strict size or source-kind parity fails."
+      ],
+      "verification": [
+        "node --check tools/script-migration/main-agent-wave-4-1-utils.cjs",
+        "node --check tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs",
+        "node --check tools/script-migration/generate-g003-behavior-equivalence.cjs",
+        "node --check tools/script-migration/generate-g004-package-source-evidence.cjs",
+        "node tools/script-migration/generate-g003-behavior-equivalence.cjs --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --update-ledger --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G003 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase final --json"
+      ],
+      "result": {
+        "g003OwnerValidator": "failed_expected_rework_required",
+        "g003SourceKindParityViolationCount": 1,
+        "g003SizeDeltaDecision": "failed_size_delta_threshold_rework_required",
+        "g004PackageSourceGenerator": "failed_expected_rework_required",
+        "g004StrictSelectedRowCount": 9,
+        "g004StrictSkippedRowCount": 82,
+        "finalValidator": "failed_expected_rework_remaining",
+        "finalSourceKindParityViolationCount": 82,
+        "finalSizeDeltaProofGapCount": 239,
+        "finalFallbackHitCount": 4121
+      },
+      "remainingRework": [
+        "Replace G003 generated CommonJS package source authority with real package source or a source-equivalent package source set that passes 0.90..1.10 byte/LOC and source-kind parity.",
+        "Rework the 82 G004 rows now failing strict size/source-kind parity without comments, dead code, padding, waivers, or generated CJS source authority.",
+        "Add packageImplementationSet, owner-local behavior matrices, replay proof, strict size proof, and no-fallback proof for the remaining G005-G008 rows.",
+        "Eliminate 4121 full-inventory no-fallback hits before G009/CMD013 can pass."
+      ],
+      "completedAt": "2026-06-20T11:36:23.2699632+08:00"
+    },
+    {
+      "iterationId": "RW-G003-2026-06-20-003",
+      "ownerTaskId": "G003",
+      "startedFrom": "G003 failed strict source-kind parity because packageImplementationSet pointed at generated CommonJS .js instead of package TypeScript source authority.",
+      "changes": [
+        "Separated G003 package source authority from runtime entry: packageImplementationSet and behavior matrix packageEntryPoint now point to packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts.",
+        "Kept package replay command on the Node-executable runtime entry packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.js.",
+        "Regenerated G003 package source authority so the TypeScript source mirror is byte/LOC equivalent to scripts/main-agent-orchestration.ts.",
+        "Regenerated G003 behaviorEquivalenceMatrix and replay evidence with 25 scenarios before G009 aggregation."
+      ],
+      "verification": [
+        "node --check tools/script-migration/generate-g003-package-source-authority.cjs",
+        "node --check tools/script-migration/generate-g003-behavior-equivalence.cjs",
+        "node tools/script-migration/generate-g003-package-source-authority.cjs --json",
+        "node tools/script-migration/generate-g003-behavior-equivalence.cjs --update-ledger --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G003 --json",
+        "npm run build:main-agent-dist --prefix packages/bmad-speckit",
+        "npm run test --prefix packages/bmad-speckit -- main-agent-g003-source-authority.test.js",
+        "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
+      ],
+      "result": {
+        "g003OwnerValidator": "passed",
+        "packageImplementationSet": [
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
+        ],
+        "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.js",
+        "originalBytes": 440347,
+        "originalLoc": 11936,
+        "packageBytes": 440347,
+        "packageLoc": 11936,
+        "packageByteRatio": 1,
+        "packageLocRatio": 1,
+        "sourceKindParityViolationCount": 0,
+        "scenarioCount": 25,
+        "replayFailures": 0,
+        "targetedPackageTests": "passed_3_of_3",
+        "encodingIntegrityFindings": 0
+      },
+      "remainingRework": [
+        "Rework G004 rows still failing strict size/source-kind parity without comments, dead code, padding, waivers, or generated CJS source authority.",
+        "Add packageImplementationSet, owner-local behavior matrices, replay proof, strict size proof, and no-fallback proof for G005-G008 rows.",
+        "Eliminate full-inventory no-fallback hits before G009/CMD013 can pass."
+      ],
+      "completedAt": "2026-06-20T11:50:26.0154687+08:00"
+    },
+    {
+      "iterationId": "RW-G004-2026-06-20-004",
+      "ownerTaskId": "G004",
+      "startedFrom": "G004 had 81 TypeScript rows whose packageImplementationSet pointed at generated CommonJS .js files, causing source-kind parity violations and strict size failures.",
+      "changes": [
+        "Separated G004 package source implementation paths from runtime entry paths.",
+        "Copied TypeScript sources into packages/bmad-speckit/src/main-agent/source-authority/** and recorded those .ts paths in packageImplementationSet.",
+        "Kept Node replay on generated .js runtime entry points through packageSourceProof.runtimeEntryPoint.",
+        "Regenerated G004 package source evidence for all 91 owner rows and regenerated the initial G004 behavior replay matrix."
+      ],
+      "verification": [
+        "node --check tools/script-migration/generate-g004-package-source-evidence.cjs",
+        "node --check tools/script-migration/generate-g004-behavior-matrix.cjs",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --update-ledger --json",
+        "node tools/script-migration/generate-g004-behavior-matrix.cjs --update-ledger --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G004 --json",
+        "npm run build:main-agent-dist --prefix packages/bmad-speckit",
+        "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
+      ],
+      "result": {
+        "g004OwnerValidator": "failed_expected_full_behavior_coverage_remaining",
+        "g004RowCount": 91,
+        "missingPackageImplementationSetCount": 0,
+        "sourceKindParityViolationCount": 0,
+        "sizeDeltaViolationCount": 0,
+        "initialReplayScenarioCount": 91,
+        "initialReplayFailures": 0,
+        "fullBehaviorCoverageGapCount": 91,
+        "encodingIntegrityFindings": 0
+      },
+      "remainingRework": [
+        "Replace the G004 initial no-args matrices with full owner-local behaviorEquivalenceMatrix coverage for original entry, argument combinations, env, fixtures, stdout/stderr, exitCode, file artifacts, and error paths.",
+        "Add packageImplementationSet, owner-local behavior matrices, replay proof, strict size proof, and no-fallback proof for G005-G008 rows.",
+        "Eliminate full-inventory no-fallback hits before G009/CMD013 can pass."
+      ],
+      "completedAt": "2026-06-20T11:56:14.5024482+08:00"
+    },
+    {
+      "iterationId": "RW-G005-G008-2026-06-20-005",
+      "ownerTaskId": "G005/G006/G007/G008",
+      "startedFrom": "Final validator still had missingPackageImplementationSetCount=148 and missingBehaviorEquivalenceMatrixCount=148 for G005-G008.",
+      "changes": [
+        "Generalized the package source evidence generator so G005-G008 owner rows receive package source mirror paths, runtime entry paths, strict size proof, and source-kind proof before G009.",
+        "Generalized the initial behavior matrix generator so G005-G008 owner rows receive owner-first behaviorEquivalenceMatrix artifacts before G009.",
+        "Changed initial replay generation to use original replay outputs as expected stdout/stderr/exitCode/file artifacts/error paths, with package replay compared against those expectations.",
+        "Fixed Windows npx replay execution so TypeScript original scripts run through npx ts-node instead of failing with spawnSync npx.cmd EINVAL."
+      ],
+      "verification": [
+        "node --check tools/script-migration/generate-g004-package-source-evidence.cjs",
+        "node --check tools/script-migration/generate-g004-behavior-matrix.cjs",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G005 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G006 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G007 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G008 --update-ledger --json",
+        "node tools/script-migration/generate-g004-behavior-matrix.cjs --owner G005 --update-ledger --json",
+        "node tools/script-migration/generate-g004-behavior-matrix.cjs --owner G006 --update-ledger --json",
+        "node tools/script-migration/generate-g004-behavior-matrix.cjs --owner G007 --update-ledger --json",
+        "node tools/script-migration/generate-g004-behavior-matrix.cjs --owner G008 --update-ledger --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G005 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G006 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G007 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase owner --owner G008 --json",
+        "node tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs --phase final --json",
+        "npm run build:main-agent-dist --prefix packages/bmad-speckit",
+        "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js"
+      ],
+      "result": {
+        "finalValidator": "failed_expected_rework_remaining",
+        "missingPackageImplementationSetCount": 0,
+        "missingBehaviorEquivalenceMatrixCount": 0,
+        "sourceKindParityViolationCount": 0,
+        "sizeDeltaViolationCount": 0,
+        "firstGenerationProofGapCount": 0,
+        "expectedOutputProvenanceGapCount": 0,
+        "packageObservedExpectedOutputCount": 0,
+        "behaviorEquivalenceReplayFailureCount": 34,
+        "scenarioCoverageGapCount": 239,
+        "g009AggregationProofGapCount": 240,
+        "fallbackHitCount": 4883,
+        "dynamicFallbackHitCount": 771,
+        "encodingIntegrityFindings": 0
+      },
+      "remainingRework": [
+        "Fix 34 owner replay failures where package runtime output, exit code, file artifacts, or error paths do not match original replay.",
+        "Replace all initial matrices with full per-script behaviorEquivalenceMatrix coverage so scenarioCoverageGapCount becomes 0.",
+        "Resolve 34 settledEquivalenceProof gaps for G008 settled revalidation rows.",
+        "Run G009 only after owner matrices are complete, and eliminate full-inventory no-fallback hits before CMD013 can pass."
+      ],
+      "completedAt": "2026-06-20T12:14:12.0231177+08:00"
+    },
+    {
+      "iterationId": "wave4.1-ts-source-dist-runtime-hardening-20260620050841",
+      "failedCommandId": "CMD003/CMD013",
+      "failedAcceptanceIds": [
+        "ACC022",
+        "ACC026",
+        "ACC038"
+      ],
+      "originalPath": "ALL_240_SCRIPT_ROWS",
+      "failureClass": "source_authority_runtime_replay_contract_gap",
+      "rootCause": "Previous tools allowed package src JS runtime mirrors or placeholders to satisfy source/runtime evidence; contract did not require sourceAuthorityPaths/runtimeReplayPaths/distOutputPaths as separate fail-closed fields.",
+      "filesChanged": [
+        "tools/script-migration/main-agent-wave-4-1-utils.cjs",
+        "tools/script-migration/validate-main-agent-runtime-migration-wave-4-1.cjs",
+        "tools/script-migration/generate-g004-package-source-evidence.cjs",
+        "tools/script-migration/generate-g004-behavior-matrix.cjs",
+        "tools/script-migration/generate-g003-package-source-authority.cjs",
+        "tools/script-migration/generate-g003-behavior-equivalence.cjs",
+        "packages/bmad-speckit/scripts/build-main-agent-dist.cjs",
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.generation-receipt.json",
+        "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.coverage-receipt.json",
+        "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/migration-ledger.json"
+      ],
+      "commandsRerun": [
+        "node --check tools/script-migration/main-agent-wave-4-1-utils.cjs",
+        "node --check tools/script-migration/generate-g004-package-source-evidence.cjs",
+        "node --check tools/script-migration/generate-g004-behavior-matrix.cjs",
+        "node --check tools/script-migration/generate-g003-package-source-authority.cjs",
+        "node --check tools/script-migration/generate-g003-behavior-equivalence.cjs",
+        "node --check packages/bmad-speckit/scripts/build-main-agent-dist.cjs",
+        "npm run build:main-agent-dist --prefix packages/bmad-speckit",
+        "node tools/script-migration/generate-g003-package-source-authority.cjs --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G004 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G005 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G006 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G007 --update-ledger --json",
+        "node tools/script-migration/generate-g004-package-source-evidence.cjs --owner G008 --update-ledger --json",
+        "node tools/script-migration/generate-g003-behavior-equivalence.cjs --update-ledger --json"
+      ],
+      "result": "contract_and_validator_hardened;G003_dist_runtime_recorded;G004-G008_source_fields_regenerated;G004_behavior_replay_timeout_left_239_placeholder_scenarios_for_fail_closed_rework",
+      "completedAt": "2026-06-20T05:08:41.343Z"
+    }
+  ],
+  "reworkQueueLength": 4,
+  "reason": "all_240_rows_have_package_implementation_size_source_kind_and_owner_first_matrices_remaining_replay_full_coverage_settled_equivalence_g009_and_no_fallback"
+}

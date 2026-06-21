@@ -1,0 +1,2263 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G007",
+  "generatedAt": "2026-06-20T10:47:52.452Z",
+  "artifactSuffix": "g007_batch_001",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 74,
+  "selectedRowCount": 10,
+  "matrixRowCount": 10,
+  "scenarioCount": 14,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
+      "entryId": "architecture-confirmation-hash-recipe-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/architecture-confirmation-hash-recipe.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_architecture_confirmation_hash_recipe_ts_no_args",
+          "originalEntryPoint": "scripts/architecture-confirmation-hash-recipe.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/architecture-confirmation-hash-recipe.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_architecture_confirmation_hash_recipe_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_architecture_confirmation_hash_recipe_ts_no_args-original-8ywf7K",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_architecture_confirmation_hash_recipe_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_architecture_confirmation_hash_recipe_ts_no_args-package-6Id3Ti",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/architecture-confirmation-hash-recipe.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/architecture-confirmation-hash-recipe.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 37,
+                "anchor": "scripts/architecture-confirmation-hash-recipe.ts:37",
+                "text": "export function stableStringify(value: unknown): string {"
+              },
+              {
+                "line": 47,
+                "anchor": "scripts/architecture-confirmation-hash-recipe.ts:47",
+                "text": "export function sha256Text(value: string): string {"
+              },
+              {
+                "line": 51,
+                "anchor": "scripts/architecture-confirmation-hash-recipe.ts:51",
+                "text": "export function normalizeArchitecturePath(value: string, repoRoot = process.cwd()): string {"
+              },
+              {
+                "line": 61,
+                "anchor": "scripts/architecture-confirmation-hash-recipe.ts:61",
+                "text": "export function resolveArchitectureConfirmationHashRecipe("
+              },
+              {
+                "line": 112,
+                "anchor": "scripts/architecture-confirmation-hash-recipe.ts:112",
+                "text": "export function architectureConfirmationHashFor("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/architecture-confirmation-hash-recipe.ts",
+                "to": "scripts/architecture-confirmation-hash-recipe.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.ts",
+                "to": "scripts/architecture-confirmation-hash-recipe.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.js",
+                "to": "scripts/architecture-confirmation-hash-recipe.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/architecture-confirmation-hash-recipe.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
+      "entryId": "bmad-help-five-layer-progress-marker-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-help-five-layer-progress-marker.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_bmad_help_five_layer_progress_marker_ts_no_args",
+          "originalEntryPoint": "scripts/bmad-help-five-layer-progress-marker.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/bmad-help-five-layer-progress-marker.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_bmad_help_five_layer_progress_marker_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_bmad_help_five_layer_progress_marker_ts_no_args-original-2FvTL4",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_bmad_help_five_layer_progress_marker_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_bmad_help_five_layer_progress_marker_ts_no_args-package-nrMC0o",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/bmad-help-five-layer-progress-marker.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/bmad-help-five-layer-progress-marker.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 124,
+                "anchor": "scripts/bmad-help-five-layer-progress-marker.ts:124",
+                "text": "export function buildLayer1PrdCompletionMarker(input: {"
+              },
+              {
+                "line": 211,
+                "anchor": "scripts/bmad-help-five-layer-progress-marker.ts:211",
+                "text": "export function validateLayer1PrdCompletionMarker(input: {"
+              },
+              {
+                "line": 234,
+                "anchor": "scripts/bmad-help-five-layer-progress-marker.ts:234",
+                "text": "export function writeLayer1PrdCompletionMarker(input: {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-help-five-layer-progress-marker.ts",
+                "to": "scripts/bmad-help-five-layer-progress-marker.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.ts",
+                "to": "scripts/bmad-help-five-layer-progress-marker.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.js",
+                "to": "scripts/bmad-help-five-layer-progress-marker.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-help-five-layer-progress-marker.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-help-routing-state.ts",
+      "entryId": "bmad-help-routing-state-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-routing-state.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-help-routing-state.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_bmad_help_routing_state_ts_no_args",
+          "originalEntryPoint": "scripts/bmad-help-routing-state.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/bmad-help-routing-state.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-routing-state.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_bmad_help_routing_state_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_bmad_help_routing_state_ts_no_args-original-HihMym",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_bmad_help_routing_state_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_bmad_help_routing_state_ts_no_args-package-yXEX7Q",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/bmad-help-routing-state.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/bmad-help-routing-state.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 986,
+                "anchor": "scripts/bmad-help-routing-state.ts:986",
+                "text": "export function resolveBmadHelpRoutingState("
+              },
+              {
+                "line": 1200,
+                "anchor": "scripts/bmad-help-routing-state.ts:1200",
+                "text": "export function resolveBmadHelpRuntimePolicy("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-help-routing-state.ts",
+                "to": "scripts/bmad-help-routing-state.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state.ts",
+                "to": "scripts/bmad-help-routing-state.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-routing-state.js",
+                "to": "scripts/bmad-help-routing-state.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-help-routing-state.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "entryId": "bmad-state-reader",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state-reader.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state-reader.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-state-reader.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_bmad_state_reader_ts_no_args",
+          "originalEntryPoint": "scripts/bmad-state-reader.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/bmad-state-reader.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state-reader.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state-reader.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_bmad_state_reader_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_bmad_state_reader_ts_no_args-original-hUf3VE",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_bmad_state_reader_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_bmad_state_reader_ts_no_args-package-RxEdMW",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "当前 Story: E001 - S001\n当前 Stage: specify_passed\nArtifacts: {\n  \"spec\": \"specs/epic-E001-e001/story-S001-email-validator/spec-E001-S001.md\",\n  \"audit\": \"specs/epic-E001-e001/story-S001-email-validator/AUDIT_spec-E001-S001.md\"\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/bmad-state-reader.ts:no_args",
+            "originalReplayArtifactHash": "sha256:1c4820aadab004ab8bcee80a4b660cc40f901558ea44afda60977b7bc4e084e4",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/bmad-state-reader.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 52,
+                "anchor": "scripts/bmad-state-reader.ts:52",
+                "text": "export function readBmadProgress(): BmadProgress | null {"
+              },
+              {
+                "line": 56,
+                "anchor": "scripts/bmad-state-reader.ts:56",
+                "text": "console.error(`[bmad-state-reader] 全局状态文件不存在: ${progressPath}`);"
+              },
+              {
+                "line": 64,
+                "anchor": "scripts/bmad-state-reader.ts:64",
+                "text": "console.error(`[bmad-state-reader] 解析全局状态文件失败:`, error);"
+              },
+              {
+                "line": 69,
+                "anchor": "scripts/bmad-state-reader.ts:69",
+                "text": "export function readStoryState(epic: string, story: string): StoryState | null {"
+              },
+              {
+                "line": 73,
+                "anchor": "scripts/bmad-state-reader.ts:73",
+                "text": "console.error(`[bmad-state-reader] Story 状态文件不存在: ${storyStatePath}`);"
+              },
+              {
+                "line": 81,
+                "anchor": "scripts/bmad-state-reader.ts:81",
+                "text": "console.error(`[bmad-state-reader] 解析 Story 状态文件失败:`, error);"
+              },
+              {
+                "line": 86,
+                "anchor": "scripts/bmad-state-reader.ts:86",
+                "text": "export function getCurrentStoryState(): { epic: string; story: string; state: StoryState } | null {"
+              },
+              {
+                "line": 90,
+                "anchor": "scripts/bmad-state-reader.ts:90",
+                "text": "console.error('[bmad-state-reader] 当前上下文未设置');"
+              },
+              {
+                "line": 98,
+                "anchor": "scripts/bmad-state-reader.ts:98",
+                "text": "console.error(`[bmad-state-reader] 无法读取当前 Story 状态: ${epic}-${story}`);"
+              },
+              {
+                "line": 105,
+                "anchor": "scripts/bmad-state-reader.ts:105",
+                "text": "export function buildPaths(epic: string, story: string, epicSlug: string, storySlug: string) {"
+              },
+              {
+                "line": 127,
+                "anchor": "scripts/bmad-state-reader.ts:127",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 130,
+                "anchor": "scripts/bmad-state-reader.ts:130",
+                "text": "console.log('当前 Story:', current.epic, '-', current.story);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-state-reader.ts",
+                "to": "scripts/bmad-state-reader.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state-reader.ts",
+                "to": "scripts/bmad-state-reader.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state-reader.js",
+                "to": "scripts/bmad-state-reader.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-state-reader.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-state.ts",
+      "entryId": "bmad-state-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-state.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_bmad_state_ts_no_args",
+          "originalEntryPoint": "scripts/bmad-state.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/bmad-state.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_bmad_state_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_bmad_state_ts_no_args-original-thzARC",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_bmad_state_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_bmad_state_ts_no_args-package-K4pTQd",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/bmad-state.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/bmad-state.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 72,
+                "anchor": "scripts/bmad-state.ts:72",
+                "text": "export function getGlobalState(): GlobalState {"
+              },
+              {
+                "line": 87,
+                "anchor": "scripts/bmad-state.ts:87",
+                "text": "export function saveGlobalState(state: GlobalState) {"
+              },
+              {
+                "line": 92,
+                "anchor": "scripts/bmad-state.ts:92",
+                "text": "export function getStoryStatePath(epic: string, story: string): string {"
+              },
+              {
+                "line": 96,
+                "anchor": "scripts/bmad-state.ts:96",
+                "text": "export function getStoryState(epic: string, story: string): StoryState | null {"
+              },
+              {
+                "line": 102,
+                "anchor": "scripts/bmad-state.ts:102",
+                "text": "export function saveStoryState(state: StoryState) {"
+              },
+              {
+                "line": 107,
+                "anchor": "scripts/bmad-state.ts:107",
+                "text": "export function createStory("
+              },
+              {
+                "line": 147,
+                "anchor": "scripts/bmad-state.ts:147",
+                "text": "export function updateStoryState("
+              },
+              {
+                "line": 169,
+                "anchor": "scripts/bmad-state.ts:169",
+                "text": "export function completeStory(epic: string, story: string) {"
+              },
+              {
+                "line": 183,
+                "anchor": "scripts/bmad-state.ts:183",
+                "text": "export function listActiveStories(): StoryRef[] {"
+              },
+              {
+                "line": 187,
+                "anchor": "scripts/bmad-state.ts:187",
+                "text": "export function getCurrentContext() {"
+              },
+              {
+                "line": 191,
+                "anchor": "scripts/bmad-state.ts:191",
+                "text": "export function setCurrentContext(epic: string, story: string) {"
+              },
+              {
+                "line": 200,
+                "anchor": "scripts/bmad-state.ts:200",
+                "text": "export function getLockPath(epic: string, story: string): string {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-state.ts",
+                "to": "scripts/bmad-state.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state.ts",
+                "to": "scripts/bmad-state.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state.js",
+                "to": "scripts/bmad-state.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-state.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-sync-from-v6.ps1",
+      "entryId": "bmad-sync-from-v6-ps1",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-sync-from-v6.ps1"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-sync-from-v6.ps1",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-sync-from-v6.ps1:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_bmad_sync_from_v6_ps1_no_args",
+          "originalEntryPoint": "scripts/bmad-sync-from-v6.ps1",
+          "originalEntryCommand": "pwsh -NoLogo -NoProfile -File scripts/bmad-sync-from-v6.ps1",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-sync-from-v6.ps1",
+          "packageEntryCommand": "pwsh -NoLogo -NoProfile -File packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-sync-from-v6.ps1",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_bmad_sync_from_v6_ps1_no_args_original_fixture_root",
+              "path": "<tmp>/g007_bmad_sync_from_v6_ps1_no_args-original-m29t9y",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_bmad_sync_from_v6_ps1_no_args_package_fixture_root",
+              "path": "<tmp>/g007_bmad_sync_from_v6_ps1_no_args-package-2XnjOa",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "BMAD-METHOD v6 Sync | Phase=1 | DryRun=False | ProjectRoot=D:\\Dev\\BMAD-Speckit-SDD-Flow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\eval-lifecycle-report-paths.yaml -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\eval-lifecycle-report-paths.yaml\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\bmad-help.csv -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help.csv\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\skill-command-mapping.yaml -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\skill-command-mapping.yaml\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\cursor\\skills\\bmad-story-assistant -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\module-help.csv -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmm-module-help.csv\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\bmad-code-review -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-code-review-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\create-story -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\create-story-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-planning -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-planning-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-status -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-status-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\3-solutioning\\create-epics-and-stories\\steps\\step-04-final-validation.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\step-04-final-validation.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\dev-story -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\dev-story-workflow\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\agents\\bmad-story-audit.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-audit.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\skills\\bmad-story-assistant -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill-claude\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-quick-dev-new-preview\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\tasks\\help.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\core-tasks-help.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\skills\\bmad-help -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help-skill\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-tech-writer.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-tech-writer.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-create-story.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-create-story.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-sft-extract.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-sft-extract.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-dev-story.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-dev-story.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-dev.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-dev.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-spec.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-spec.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-quick-flow-solo-dev.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-quick-flow-solo-dev.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\scoring -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\_bmad_scoring\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\adversarial-reviewer.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\adversarial-reviewer.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\critical-auditor-guide.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\critical-auditor-guide.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\README-critical-auditor.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\README-critical-auditor.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\bmad-master.md -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-master.md\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\speckit -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad_speckit\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\agent-manifest.csv -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\agent-manifest.csv\n  Backed up: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\workflows\\party-mode -> D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\party-mode-workflow\n\n--- Rollback commands ---\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\eval-lifecycle-report-paths.yaml\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\eval-lifecycle-report-paths.yaml\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help.csv\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\bmad-help.csv\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\skill-command-mapping.yaml\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\skill-command-mapping.yaml\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\cursor\\skills\\bmad-story-assistant\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\cursor\\skills\\bmad-story-assistant\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmm-module-help.csv\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\module-help.csv\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\bmad-code-review\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-code-review-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\bmad-code-review\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\create-story\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\create-story-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\create-story\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-planning\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-planning-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-planning\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-status\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\sprint-status-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\sprint-status\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\step-04-final-validation.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\3-solutioning\\create-epics-and-stories\\steps\\step-04-final-validation.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\dev-story\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\dev-story-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\4-implementation\\dev-story\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-audit.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\agents\\bmad-story-audit.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\skills\\bmad-story-assistant\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-story-assistant-skill-claude\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\claude\\skills\\bmad-story-assistant\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-quick-dev-new-preview\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\bmm\\workflows\\bmad-quick-flow\\bmad-quick-dev-new-preview\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\core-tasks-help.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\tasks\\help.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\skills\\bmad-help\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-help-skill\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\skills\\bmad-help\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-tech-writer.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-tech-writer.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-create-story.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-create-story.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-sft-extract.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-sft-extract.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-dev-story.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-dev-story.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-dev.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-dev.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-bmm-quick-spec.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-bmm-quick-spec.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-agent-bmm-quick-flow-solo-dev.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\commands\\bmad-agent-bmm-quick-flow-solo-dev.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\scoring\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\_bmad_scoring\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\scoring\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\adversarial-reviewer.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\adversarial-reviewer.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\critical-auditor-guide.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\critical-auditor-guide.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\README-critical-auditor.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\README-critical-auditor.md\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad-master.md\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\agents\\bmad-master.md\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\speckit\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\bmad_speckit\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\speckit\"\nCopy-Item -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\agent-manifest.csv\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\_config\\agent-manifest.csv\"\nRemove-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\workflows\\party-mode\" -ErrorAction SilentlyContinue; Copy-Item -Recurse -Force \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\bmad-sync-backups/<backup-id>\\party-mode-workflow\" \"D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\core\\workflows\\party-mode\"\n---\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/bmad-sync-from-v6.ps1:no_args",
+            "originalReplayArtifactHash": "sha256:264f5c32b9cca85e61bf33c84aa16920ddd1e7759975c93c6fcf1ad4b8580c97",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/bmad-sync-from-v6.ps1:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/bmad-sync-from-v6.ps1:1",
+                "text": "#!/usr/bin/env pwsh"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-sync-from-v6.ps1",
+                "to": "scripts/bmad-sync-from-v6.ps1"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-sync-from-v6.ps1",
+                "to": "scripts/bmad-sync-from-v6.ps1"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-sync-from-v6.ps1",
+                "to": "scripts/bmad-sync-from-v6.ps1"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-sync-from-v6.ps1",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/bmad-sync-from-v6.sh",
+      "entryId": "bmad-sync-from-v6-sh",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-sync-from-v6.sh"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-sync-from-v6.sh",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-sync-from-v6.sh:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_bmad_sync_from_v6_sh_no_args",
+          "originalEntryPoint": "scripts/bmad-sync-from-v6.sh",
+          "originalEntryCommand": "bash scripts/bmad-sync-from-v6.sh",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-sync-from-v6.sh",
+          "packageEntryCommand": "bash packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-sync-from-v6.sh",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_bmad_sync_from_v6_sh_no_args_original_fixture_root",
+              "path": "<tmp>/g007_bmad_sync_from_v6_sh_no_args-original-nVvno0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_bmad_sync_from_v6_sh_no_args_package_fixture_root",
+              "path": "<tmp>/g007_bmad_sync_from_v6_sh_no_args-package-K1cPvt",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/bmad-sync-from-v6.sh:no_args",
+            "originalReplayArtifactHash": "sha256:49edb214f086cf5cb874ac113cc175868da9ca6a19c5d99ab0443032e6c5bb1f",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/bmad-sync-from-v6.sh:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/bmad-sync-from-v6.sh:1",
+                "text": "#!/usr/bin/env bash"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/bmad-sync-from-v6.sh",
+                "to": "scripts/bmad-sync-from-v6.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-sync-from-v6.sh",
+                "to": "scripts/bmad-sync-from-v6.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-sync-from-v6.sh",
+                "to": "scripts/bmad-sync-from-v6.sh"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/bmad-sync-from-v6.sh",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/cleanup-packed-bmad.js",
+      "entryId": "cleanup-packed-bmad-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/cleanup-packed-bmad.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_cleanup_packed_bmad_js_no_args",
+          "originalEntryPoint": "scripts/cleanup-packed-bmad.js",
+          "originalEntryCommand": "node scripts/cleanup-packed-bmad.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_cleanup_packed_bmad_js_no_args_original_fixture_root",
+              "path": "<tmp>/g007_cleanup_packed_bmad_js_no_args-original-sEKCZc",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_cleanup_packed_bmad_js_no_args_package_fixture_root",
+              "path": "<tmp>/g007_cleanup_packed_bmad_js_no_args-package-SuNPJB",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/cleanup-packed-bmad.js:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/cleanup-packed-bmad.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 23,
+                "anchor": "scripts/cleanup-packed-bmad.js:23",
+                "text": "console.warn(`Warning: failed to remove ${target}: ${error.message}`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/cleanup-packed-bmad.js",
+                "to": "scripts/cleanup-packed-bmad.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+                "to": "scripts/cleanup-packed-bmad.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+                "to": "scripts/cleanup-packed-bmad.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/cleanup-packed-bmad.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/continue-state-contract.ts",
+      "entryId": "continue-state-contract-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/continue-state-contract.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/continue-state-contract.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_continue_state_contract_ts_no_args",
+          "originalEntryPoint": "scripts/continue-state-contract.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/continue-state-contract.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/continue-state-contract.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_continue_state_contract_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_continue_state_contract_ts_no_args-original-Grfi6R",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_continue_state_contract_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_continue_state_contract_ts_no_args-package-1xZF3o",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/continue-state-contract.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/continue-state-contract.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 10,
+                "anchor": "scripts/continue-state-contract.ts:10",
+                "text": "export function canMainAgentContinue(input: ContinueStateEvaluationInput): boolean {"
+              },
+              {
+                "line": 41,
+                "anchor": "scripts/continue-state-contract.ts:41",
+                "text": "export function canMainAgentContinueFromCloseout(input: ReviewerCloseoutContinueInput): boolean {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/continue-state-contract.ts",
+                "to": "scripts/continue-state-contract.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract.ts",
+                "to": "scripts/continue-state-contract.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/continue-state-contract.js",
+                "to": "scripts/continue-state-contract.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/continue-state-contract.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/control-event-log-rebaseline.ts",
+      "entryId": "control-event-log-rebaseline-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/control-event-log-rebaseline.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 5,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 1,
+        "errorPathCount": 5,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 5,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 1,
+        "coveredErrorPathCount": 5,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--help",
+          "--json",
+          "--reason",
+          "--requirement-record"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--help <source-derived-safe-value>",
+          "--json <source-derived-safe-value>",
+          "--reason <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--help <source-derived-safe-value>",
+          "--json <source-derived-safe-value>",
+          "--reason <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 5,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_help",
+          "flag_json",
+          "flag_reason",
+          "flag_requirement_record"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g007_control_event_log_rebaseline_ts_no_args",
+          "originalEntryPoint": "scripts/control-event-log-rebaseline.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/control-event-log-rebaseline.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_control_event_log_rebaseline_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_no_args-original-Wj4Puh",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_control_event_log_rebaseline_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_no_args-package-71UCRw",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/control-event-log-rebaseline.ts:no_args",
+            "originalReplayArtifactHash": "sha256:dc1ef94b69bf123bc9cd9297c9220ef19dbe91b1c3841a5661cba0e975f77dfc",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/control-event-log-rebaseline.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 72,
+                "anchor": "scripts/control-event-log-rebaseline.ts:72",
+                "text": "export function mainControlEventLogRebaseline(argv: string[]): number {"
+              },
+              {
+                "line": 75,
+                "anchor": "scripts/control-event-log-rebaseline.ts:75",
+                "text": "console.log("
+              },
+              {
+                "line": 125,
+                "anchor": "scripts/control-event-log-rebaseline.ts:125",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/control-event-log-rebaseline.ts:133",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 135,
+                "anchor": "scripts/control-event-log-rebaseline.ts:135",
+                "text": "process.exitCode = mainControlEventLogRebaseline(process.argv.slice(2));"
+              },
+              {
+                "line": 137,
+                "anchor": "scripts/control-event-log-rebaseline.ts:137",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/control-event-log-rebaseline.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--reason",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_reason",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_control_event_log_rebaseline_ts_flag_help",
+          "originalEntryPoint": "scripts/control-event-log-rebaseline.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/control-event-log-rebaseline.ts --help source-derived-help",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js --help source-derived-help",
+          "argumentCombination": "--help <source-derived-safe-value>",
+          "args": [
+            "--help",
+            "source-derived-help"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_help_original_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_help-original-gEE2ZD",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_help_package_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_help-package-o3YIRJ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/control-event-log-rebaseline.ts:flag_help",
+            "originalReplayArtifactHash": "sha256:dbf329c6981e7d9a6011f88a40d7ed86833549982a62b5af3882c2590070a31c",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/control-event-log-rebaseline.ts:flag_help",
+            "sourceLineAnchors": [
+              {
+                "line": 72,
+                "anchor": "scripts/control-event-log-rebaseline.ts:72",
+                "text": "export function mainControlEventLogRebaseline(argv: string[]): number {"
+              },
+              {
+                "line": 75,
+                "anchor": "scripts/control-event-log-rebaseline.ts:75",
+                "text": "console.log("
+              },
+              {
+                "line": 125,
+                "anchor": "scripts/control-event-log-rebaseline.ts:125",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/control-event-log-rebaseline.ts:133",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 135,
+                "anchor": "scripts/control-event-log-rebaseline.ts:135",
+                "text": "process.exitCode = mainControlEventLogRebaseline(process.argv.slice(2));"
+              },
+              {
+                "line": 137,
+                "anchor": "scripts/control-event-log-rebaseline.ts:137",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/control-event-log-rebaseline.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--reason",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_reason",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_control_event_log_rebaseline_ts_flag_json",
+          "originalEntryPoint": "scripts/control-event-log-rebaseline.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/control-event-log-rebaseline.ts --json <fixture-root>/json.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js --json <fixture-root>/json.json",
+          "argumentCombination": "--json <source-derived-safe-value>",
+          "args": [
+            "--json",
+            "<fixture-root>/json.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_json_original_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_json-original-jsSrvy",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_json_package_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_json-package-DwBujb",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "json.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/control-event-log-rebaseline.ts:flag_json",
+            "originalReplayArtifactHash": "sha256:499eadc2bf866014962308f3d32ffb12130e39e696bbec1c4a4e45ef04029ae2",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/control-event-log-rebaseline.ts:flag_json",
+            "sourceLineAnchors": [
+              {
+                "line": 72,
+                "anchor": "scripts/control-event-log-rebaseline.ts:72",
+                "text": "export function mainControlEventLogRebaseline(argv: string[]): number {"
+              },
+              {
+                "line": 75,
+                "anchor": "scripts/control-event-log-rebaseline.ts:75",
+                "text": "console.log("
+              },
+              {
+                "line": 125,
+                "anchor": "scripts/control-event-log-rebaseline.ts:125",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/control-event-log-rebaseline.ts:133",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 135,
+                "anchor": "scripts/control-event-log-rebaseline.ts:135",
+                "text": "process.exitCode = mainControlEventLogRebaseline(process.argv.slice(2));"
+              },
+              {
+                "line": 137,
+                "anchor": "scripts/control-event-log-rebaseline.ts:137",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/control-event-log-rebaseline.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--reason",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_reason",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_control_event_log_rebaseline_ts_flag_reason",
+          "originalEntryPoint": "scripts/control-event-log-rebaseline.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/control-event-log-rebaseline.ts --reason source-derived-reason",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js --reason source-derived-reason",
+          "argumentCombination": "--reason <source-derived-safe-value>",
+          "args": [
+            "--reason",
+            "source-derived-reason"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_reason_original_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_reason-original-JRlSyO",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_reason_package_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_reason-package-ta0IRE",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/control-event-log-rebaseline.ts:flag_reason",
+            "originalReplayArtifactHash": "sha256:dc1ef94b69bf123bc9cd9297c9220ef19dbe91b1c3841a5661cba0e975f77dfc",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/control-event-log-rebaseline.ts:flag_reason",
+            "sourceLineAnchors": [
+              {
+                "line": 72,
+                "anchor": "scripts/control-event-log-rebaseline.ts:72",
+                "text": "export function mainControlEventLogRebaseline(argv: string[]): number {"
+              },
+              {
+                "line": 75,
+                "anchor": "scripts/control-event-log-rebaseline.ts:75",
+                "text": "console.log("
+              },
+              {
+                "line": 125,
+                "anchor": "scripts/control-event-log-rebaseline.ts:125",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/control-event-log-rebaseline.ts:133",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 135,
+                "anchor": "scripts/control-event-log-rebaseline.ts:135",
+                "text": "process.exitCode = mainControlEventLogRebaseline(process.argv.slice(2));"
+              },
+              {
+                "line": 137,
+                "anchor": "scripts/control-event-log-rebaseline.ts:137",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/control-event-log-rebaseline.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--reason",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_reason",
+              "flag_requirement_record"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g007_control_event_log_rebaseline_ts_flag_requirement_record",
+          "originalEntryPoint": "scripts/control-event-log-rebaseline.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/control-event-log-rebaseline.ts --requirement-record source-derived-requirement-record",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js --requirement-record source-derived-requirement-record",
+          "argumentCombination": "--requirement-record <source-derived-safe-value>",
+          "args": [
+            "--requirement-record",
+            "source-derived-requirement-record"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_requirement_record_original_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_requirement_record-original-16LdM4",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g007_control_event_log_rebaseline_ts_flag_requirement_record_package_fixture_root",
+              "path": "<tmp>/g007_control_event_log_rebaseline_ts_flag_requirement_record-package-lOdI0O",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G007_ORIGINAL_REPLAY:scripts/control-event-log-rebaseline.ts:flag_requirement_record",
+            "originalReplayArtifactHash": "sha256:91a4ff824fd228bfbb3cf096125d74dbe9a65b6cf4f15b7c68852683397c2ec3",
+            "sourceDerivedProofId": "G007_SOURCE_DERIVED:scripts/control-event-log-rebaseline.ts:flag_requirement_record",
+            "sourceLineAnchors": [
+              {
+                "line": 72,
+                "anchor": "scripts/control-event-log-rebaseline.ts:72",
+                "text": "export function mainControlEventLogRebaseline(argv: string[]): number {"
+              },
+              {
+                "line": 75,
+                "anchor": "scripts/control-event-log-rebaseline.ts:75",
+                "text": "console.log("
+              },
+              {
+                "line": 125,
+                "anchor": "scripts/control-event-log-rebaseline.ts:125",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 133,
+                "anchor": "scripts/control-event-log-rebaseline.ts:133",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 135,
+                "anchor": "scripts/control-event-log-rebaseline.ts:135",
+                "text": "process.exitCode = mainControlEventLogRebaseline(process.argv.slice(2));"
+              },
+              {
+                "line": 137,
+                "anchor": "scripts/control-event-log-rebaseline.ts:137",
+                "text": "console.error("
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js",
+                "to": "scripts/control-event-log-rebaseline.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G007_STATIC_FULL:scripts/control-event-log-rebaseline.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 5,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 5,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--help",
+              "--json",
+              "--reason",
+              "--requirement-record"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--reason <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 5,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_help",
+              "flag_json",
+              "flag_reason",
+              "flag_requirement_record"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

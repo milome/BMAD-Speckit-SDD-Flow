@@ -1,0 +1,27 @@
+[
+  {
+    "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_help",
+        "expectedStdout": "Usage: main-agent-runtime-policy-snapshot-check --requirement-record <json> [--report-path <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_report_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_flag_requirement_record",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

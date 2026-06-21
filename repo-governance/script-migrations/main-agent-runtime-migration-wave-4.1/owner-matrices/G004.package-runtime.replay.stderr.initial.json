@@ -1,0 +1,457 @@
+[
+  {
+    "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+    "scenarioId": "g004_adaptive_intake_governance_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+    "scenarioId": "g004_adaptive_intake_proof_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ai-tdd-contract-gate.ts",
+    "scenarioId": "g004_ai_tdd_contract_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, mode\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/analytics-sft-extract.ts",
+    "scenarioId": "g004_analytics_sft_extract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/assert-implementation-entry.ts",
+    "scenarioId": "g004_assert_implementation_entry_ts_no_args",
+    "expectedStderr": "assert-implementation-entry: NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+  },
+  {
+    "originalPath": "scripts/audit-stage-routing.ts",
+    "scenarioId": "g004_audit_stage_routing_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/auditor-post-actions.ts",
+    "scenarioId": "g004_auditor_post_actions_ts_no_args",
+    "expectedStderr": "auditor-post-actions: usage --projectRoot <path> --reportPath <audit-report-path> [--stage <stage>]\n"
+  },
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "scenarioId": "g004_auditor_spec_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/bmad-config.ts",
+    "scenarioId": "g004_bmad_config_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/bmad-runtime-worker.ts",
+    "scenarioId": "g004_bmad_runtime_worker_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.ps1",
+    "scenarioId": "g004_check_sprint_ready_ps1_no_args",
+    "expectedStderr": "check-sprint-ready.ps1: D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\check-sprint-ready.ps1:11\nLine |\n  11 |  & $canonical @args\n     |               ~~~~~\n     | A parameter cannot be found that matches parameter name '-cwd'.\n"
+  },
+  {
+    "originalPath": "scripts/check-sprint-ready.sh",
+    "scenarioId": "g004_check_sprint_ready_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/dashboard-generate.ts",
+    "scenarioId": "g004_dashboard_generate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+    "scenarioId": "g004_e2e_dual_host_journey_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+    "scenarioId": "g004_e2e_host_matrix_journey_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/final-closeout-evidence-runner.ts",
+    "scenarioId": "g004_final_closeout_evidence_runner_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirement-record\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/governance-execution-result-ingestor.ts",
+    "scenarioId": "g004_governance_execution_result_ingestor_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\governance-execution-result-ingestor.ts:276\n  const payload = JSON.parse(payloadArg) as\n                       ^\nSyntaxError: No number after minus sign in JSON at position 1 (line 1 column 2)\n    at JSON.parse (<anonymous>)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\governance-execution-result-ingestor.ts:276:24)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\governance-execution-result-ingestor.ts:294:1)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n"
+  },
+  {
+    "originalPath": "scripts/governance-hook-types.ts",
+    "scenarioId": "g004_governance_hook_types_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+    "scenarioId": "g004_governance_packet_dispatch_worker_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-provider-adapter.ts",
+    "scenarioId": "g004_governance_provider_adapter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-runtime-queue.ts",
+    "scenarioId": "g004_governance_runtime_queue_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/governance-stage-event-emitter.ts",
+    "scenarioId": "g004_governance_stage_event_emitter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+    "scenarioId": "g004_i18n_print_resolved_audit_prompt_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+    "scenarioId": "g004_i18n_render_audit_block_cli_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\load-manifest.ts:25\n    throw new Error(`Manifest not found: ${filePath}`);\n          ^\nError: Manifest not found: D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad\\i18n\\manifests\\--cwd.yaml\n    at loadManifest (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\load-manifest.ts:25:11)\n    at main (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\render-audit-block-cli.ts:43:32)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\i18n\\render-audit-block-cli.ts:61:1)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n"
+  },
+  {
+    "originalPath": "scripts/i18n/render-template.ts",
+    "scenarioId": "g004_i18n_render_template_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/ingest-architecture-confirmation.ts",
+    "scenarioId": "g004_ingest_architecture_confirmation_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, requirementRecord, confirmedBy\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/ingest-implementation-evidence.ts",
+    "scenarioId": "g004_ingest_implementation_evidence_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: evidence, requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+    "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing --requirement-record\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+    "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+    "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-audit-review-gate.ts",
+    "scenarioId": "g004_main_agent_audit_review_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+    "scenarioId": "g004_main_agent_bmad_artifact_hardcut_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+    "scenarioId": "g004_main_agent_chaos_scenarios_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+    "scenarioId": "g004_main_agent_codex_worker_adapter_ts_no_args",
+    "expectedStderr": "main-agent-codex-worker-adapter: --packetPath is required\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+    "scenarioId": "g004_main_agent_compiled_prompt_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+    "scenarioId": "g004_main_agent_control_plane_isolation_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-data-governance-gate.ts",
+    "scenarioId": "g004_main_agent_data_governance_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+    "scenarioId": "g004_main_agent_dataset_release_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-decision-field-check.ts",
+    "scenarioId": "g004_main_agent_decision_field_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_closeout_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+    "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+    "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-1781931597435-a0ab2652, storyKey=S-release-gate, evidenceBundleId=release-gate-1781931597435-a0ab2652:bundle\n- release prerequisite failed: single-source-whitelist\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+    "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+    "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+    "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+    "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+    "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-functional-resume-check.ts",
+    "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-governed-data-products.ts",
+    "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+    "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+    "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-quality-gate.ts",
+    "scenarioId": "g004_main_agent_quality_gate_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-release-gate.ts",
+    "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+    "expectedStderr": "[main-agent-release-gate] BLOCKED\n- multi-host E2E journey failed\n- invalid evidence: multi-host-real-artifact: mode=real, journey=false, cursor=true, claude=true, codex=false, allRequiredHostsPassed=false, githubPrApi=false, prUrl=missing, provenance=matched runId=release-gate-1781931651912-1448af63, storyKey=S-release-gate, evidenceBundleId=release-gate-1781931651912-1448af63:bundle\n- invalid evidence: pr-topology-release-artifact: all_affected_stories_passed=false, nodes=claude-node:blocked,codex-node:blocked, provenance=matched runId=release-gate-1781931651912-1448af63, storyKey=S-release-gate, evidenceBundleId=release-gate-1781931651912-1448af63:bundle\n- release prerequisite failed: single-source-whitelist\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+    "scenarioId": "g004_main_agent_runtime_policy_snapshot_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+    "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-soak-runner.ts",
+    "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+    "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/main-agent-unified-ingress.ts",
+    "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+    "expectedStderr": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:136\n    throw new Error(`${fieldName} is required for requirement-scoped unified ingress output`);\n          ^\nError: recordId is required for requirement-scoped unified ingress output\n    at normalizeRecordId (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:136:11)\n    at mainAsync (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:992:20)\n    at Object.<anonymous> (D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\main-agent-unified-ingress.ts:1044:8)\n    at Module._compile (node:internal/modules/cjs/loader:1705:14)\n    at Module.m._compile (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1838:10\n    at Object.require.extensions.<computed> [as .ts] (D:\\Dev\\BMAD-Speckit-SDD-Flow\\node_modules\\ts-node\\src\\index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
+    "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_sh_no_args",
+    "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+  },
+  {
+    "originalPath": "scripts/model-governance-hint-resolver.ts",
+    "scenarioId": "g004_model_governance_hint_resolver_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-dispatch-contract.ts",
+    "scenarioId": "g004_orchestration_dispatch_contract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-governance-contract.ts",
+    "scenarioId": "g004_orchestration_governance_contract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/orchestration-state.ts",
+    "scenarioId": "g004_orchestration_state_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/parse-and-write-score.ts",
+    "scenarioId": "g004_parse_and_write_score_ts_no_args",
+    "expectedStderr": "Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <event>] [--agent <cursor|claude-code>] [--source <cursor_command|claude_agent|claude_hook>] [--triggerStage <stage>] [--skipTriggerCheck true] [--questionVersion <ver>] [--iteration-count N] [--iterationReportPaths path1,path2,...]\n  --epic, --story: 可选；用于生成 runId=dev-e{epic}-s{story}-{stage}-{ts}；未传时尝试从 reportPath 解析（E6-S3、story-6-3- 等）\n  --iteration-count: 该 stage 审计未通过（fail）次数，0 表示一次通过；执行审计循环的 Agent 在 pass 时传入当前累计值\n  --iterationReportPaths: 逗号分隔的失败轮报告路径列表（不含验证轮）；仅 scenario=real_dev 时生效，pass 时一次性解析并写入 iteration_records\n"
+  },
+  {
+    "originalPath": "scripts/per-must-closure-evidence-index.ts",
+    "scenarioId": "g004_per_must_closure_evidence_index_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: modelPacket, requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+    "scenarioId": "g004_pre_rerun_anti_false_positive_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/reconfirmation-runtime.ts",
+    "scenarioId": "g004_reconfirmation_runtime_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+    "scenarioId": "g004_record_main_agent_inspect_readiness_closure_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/requirement-record-control-store.ts",
+    "scenarioId": "g004_requirement_record_control_store_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+    "scenarioId": "g004_requirement_record_live_schema_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"EISDIR: illegal operation on a directory, read\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/requirement-record-schema-evolution.ts",
+    "scenarioId": "g004_requirement_record_schema_evolution_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/resolve-active-requirement.ts",
+    "scenarioId": "g004_resolve_active_requirement_ts_no_args",
+    "expectedStderr": "resolve-active-requirement: NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+  },
+  {
+    "originalPath": "scripts/runtime-governance-registry.ts",
+    "scenarioId": "g004_runtime_governance_registry_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance-template-schema.ts",
+    "scenarioId": "g004_runtime_governance_template_schema_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/runtime-governance.ts",
+    "scenarioId": "g004_runtime_governance_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/runtime-scoring-data-path.ts",
+    "scenarioId": "g004_runtime_scoring_data_path_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/sft-extract.ts",
+    "scenarioId": "g004_sft_extract_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/six-model-runtime-decision.ts",
+    "scenarioId": "g004_six_model_runtime_decision_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/skill-orchestration-audit.ts",
+    "scenarioId": "g004_skill_orchestration_audit_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/strict-closeout-proof-gate.ts",
+    "scenarioId": "g004_strict_closeout_proof_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/target-artifact-realization-gate.ts",
+    "scenarioId": "g004_target_artifact_realization_gate_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: source, requirementRecord, attemptId\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+    "scenarioId": "g004_trace_040_evidence_packet_generator_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required arg: template\"\n}\n"
+  },
+  {
+    "originalPath": "scripts/update-runtime-audit-index.ts",
+    "scenarioId": "g004_update_runtime_audit_index_ts_no_args",
+    "expectedStderr": "update-runtime-audit-index: usage --projectRoot <path> --reportPath <audit-report-path>\n"
+  },
+  {
+    "originalPath": "scripts/user-story-mapping.ts",
+    "scenarioId": "g004_user_story_mapping_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/validate-consumer-governance.ps1",
+    "scenarioId": "g004_validate_consumer_governance_ps1_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+    "scenarioId": "g004_verify_cursor_audit_granularity_ts_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/verify-hooks-no-ts-node.js",
+    "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
+    "expectedStderr": ""
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+    "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_cjs_no_args",
+    "expectedStderr": "Error: Directory import 'D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\scoring\\policy' is not supported resolving ES modules imported from D:\\Dev\\BMAD-Speckit-SDD-Flow\\scripts\\write-runtime-policy-snapshot-and-recovery-context.ts\n    at finalizeResolution (node:internal/modules/esm/resolve:263:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at ModuleLoader.#cachedDefaultResolve (node:internal/modules/esm/loader:731:20)\n    at ModuleLoader.#resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:767:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:790:52)\n    at ModuleLoader.#cachedResolveSync (node:internal/modules/esm/loader:750:25)\n    at ModuleLoader.getModuleJobForRequire (node:internal/modules/esm/loader:459:50)\n    at new ModuleJobSync (node:internal/modules/esm/module_job:392:34)\n    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:432:11) {\n  code: 'ERR_UNSUPPORTED_DIR_IMPORT',\n  url: 'file:///D:/Dev/BMAD-Speckit-SDD-Flow/packages/scoring/policy'\n}\n"
+  },
+  {
+    "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+    "scenarioId": "g004_write_runtime_policy_snapshot_and_recovery_context_ts_no_args",
+    "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"NO_ACTIVE_REQUIREMENT: no active requirement record found under <fixture-root>\\\\_bmad-output\\\\runtime\\\\requirement-records; nextRequiredAction=contract_authoring_required\"\n}\n"
+  }
+]

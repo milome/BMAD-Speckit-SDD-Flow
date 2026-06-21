@@ -221,6 +221,22 @@ describe('req-trace main-agent dispatch integration', () => {
       expect(invocation.argv).toContain('--out-dir');
       expect(invocation.argv).toContain('--execution-discipline-profile-ref');
       expect(invocation.argv).toEqual(expect.arrayContaining(['--goal-command-available', 'true']));
+      expect(invocation.argv).toEqual(expect.arrayContaining(['--packet-id', 'implement-test']));
+      const taskReportArgIndex = invocation.argv.indexOf('--task-report-path');
+      expect(taskReportArgIndex).toBeGreaterThanOrEqual(0);
+      expect(path.normalize(invocation.argv[taskReportArgIndex + 1])).toBe(
+        path.normalize(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'governance',
+            'task-reports',
+            'REQ-DISPATCH',
+            'implement-test.json'
+          )
+        )
+      );
       const modelPacket = JSON.parse(
         readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8')
       );

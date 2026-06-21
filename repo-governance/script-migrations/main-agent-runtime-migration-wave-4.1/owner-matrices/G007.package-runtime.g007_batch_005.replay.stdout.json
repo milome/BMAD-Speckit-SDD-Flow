@@ -1,0 +1,148 @@
+[
+  {
+    "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_i18n_sync_party_mode_mirrors_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/validate-template-manifest.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_i18n_validate_template_manifest_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/long-run-runtime-policy.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_long_run_runtime_policy_ts_no_args",
+        "expectedStdout": "{\n  \"policyVersion\": \"long-run-runtime-policy/v1\",\n  \"policyHash\": \"597a468a3d4b04e824ff85e84e1914db0f675a259484e46abab5092b11afaff0\",\n  \"requiredKeys\": [\n    \"tick_interval_ms\",\n    \"progress_probe_every_n_ticks\",\n    \"max_no_progress_ticks\",\n    \"lease_ttl_ms\",\n    \"heartbeat_interval_ms\",\n    \"heartbeat_timeout_ms\",\n    \"max_retries_by_error_class\",\n    \"cooldown_ms_by_error_class\",\n    \"degradation_policy\",\n    \"resume_policy\",\n    \"checkpoint_every_n_ticks\",\n    \"compaction_threshold_tokens\"\n  ]\n}\n"
+      },
+      {
+        "scenarioId": "g007_long_run_runtime_policy_ts_flag_json",
+        "expectedStdout": "{\n  \"version\": \"long-run-runtime-policy/v1\",\n  \"tick_interval_ms\": 30000,\n  \"progress_probe_every_n_ticks\": 4,\n  \"max_no_progress_ticks\": 8,\n  \"lease_ttl_ms\": 180000,\n  \"heartbeat_interval_ms\": 30000,\n  \"heartbeat_timeout_ms\": 120000,\n  \"max_retries_by_error_class\": {\n    \"transient_io\": 5,\n    \"gate_pending\": 12,\n    \"host_switch\": 3,\n    \"unrecoverable_contract\": 0\n  },\n  \"cooldown_ms_by_error_class\": {\n    \"transient_io\": 5000,\n    \"gate_pending\": 30000,\n    \"host_switch\": 15000,\n    \"unrecoverable_contract\": 0\n  },\n  \"degradation_policy\": {\n    \"no_progress\": \"soft_degrade_then_resume\",\n    \"lease_expired\": \"recover_stale_packet\",\n    \"unrecoverable\": \"hard_block\"\n  },\n  \"resume_policy\": {\n    \"preserve_loop_seq\": true,\n    \"preserve_retry_count\": true,\n    \"preserve_original_execution_packet_id\": true,\n    \"preserve_gates_loop\": true,\n    \"increment_resume_count\": true,\n    \"mark_resumed_from_checkpoint\": true\n  },\n  \"checkpoint_every_n_ticks\": 10,\n  \"compaction_threshold_tokens\": 120000\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/model-governance-hints-schema.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_model_governance_hints_schema_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/model-governance-policy-filter.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_model_governance_policy_filter_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/monitor-push.sh",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_monitor_push_sh_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/party-mode-runtime.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_meta_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_min_rounds",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_ratio_threshold",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_session_key",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_session_log_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_tail_window",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_all",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_audit_verdict",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_convergence_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g007_party_mode_runtime_ts_flag_write_snapshot",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/prepublish-check.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_prepublish_check_js_no_args",
+        "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n"
+      },
+      {
+        "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session",
+        "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n"
+      },
+      {
+        "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms",
+        "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n"
+      },
+      {
+        "scenarioId": "g007_prepublish_check_js_env_bmad_prepublish_silent",
+        "expectedStdout": "同步 @bmad-speckit/schema → bmad-speckit/node_modules ...\n同步 @bmad-speckit/scoring → bmad-speckit/node_modules ...\n同步 @bmad-speckit/ralph-method → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-context → bmad-speckit/node_modules ...\n同步 @bmad-speckit/runtime-emit → bmad-speckit/node_modules ...\n同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...\n同步 _bmad → packages/bmad-speckit/_bmad ...\n同步完成。\n\n  ✓ packages/schema/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/schema 存在\n  ✓ packages/scoring/ 产物就绪\n  ✓ packages/scoring extra\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/scoring 存在\n  ✓ packages/ralph-method/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/ralph-method 存在\n  ✓ packages/runtime-context/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-context 存在\n  ✓ packages/runtime-emit/ 产物就绪\n  ✓ packages/bmad-speckit/node_modules/@bmad-speckit/runtime-emit 存在\n  ✓ packages/bmad-speckit/_bmad 存在\n  ✓ packages/bmad-speckit/_bmad 含 hooks/*.cjs\n  ✓ tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof\n  ✓ packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）\n\n发布前检查全部通过 ✓\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/prompt-routing-governance.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_prompt_routing_governance_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/prompt-routing-hints-schema.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g007_prompt_routing_hints_schema_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

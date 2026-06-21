@@ -1,0 +1,639 @@
+/**
+ * Runtime Governance — unified `RuntimePolicy` for flow/stage (production).
+ *
+ * ## 文档互链
+ *
+ * - **术语**：[`docs/reference/runtime-governance-terms.md`](../docs/reference/runtime-governance-terms.md)
+ * - **母文档 policy 表**：[`docs/plans/UNIFIED_RUNTIME_2026-03-19.md`](../docs/plans/UNIFIED_RUNTIME_2026-03-19.md)
+ *
+ * `shouldAudit` / `shouldValidate` / `getStrictness` / `shouldGenerateDoc` 经 `bmad-config` 中 `callResolveRuntimePolicy()` 委托本模块。
+ */
+/* eslint-disable jsdoc/require-description, jsdoc/require-param, jsdoc/require-returns */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as yaml from 'js-yaml';
+import type { RuntimeConfig, StageName, ValidationLevel, StrictnessLevel } from './bmad-config';
+import type { AuditConvergenceConfig } from './bmad-config';
+import { loadConfig, getAuditConvergence, getStageConfig } from './bmad-config';
+import { scoringEnabledForTriggerStage } from '../packages/scoring/trigger/trigger-loader';
+import { parseRuntimePolicyTemplatesYaml } from './runtime-governance-template-schema';
+import { applyRegisteredAugmenters } from './runtime-governance-registry';
+import { deriveContextMaturity } from '../packages/runtime-context/src/context';
+import type {
+  ContextMaturity,
+  ContextMaturityEvidence,
+  RuntimeSourceMode,
+} from '../packages/runtime-context/src/types';
+
+/** 流程类型（扩展时可与 orchestrator 枚举对齐） */
+export type RuntimeFlowId = 'story' | 'bugfix' | 'standalone_tasks' | 'epic' | 'unknown';
+export type ImplementationEntryFlowId = 'story' | 'bugfix' | 'standalone_tasks';
+
+export type ImplementationReadinessStatus =
+  | 'missing'
+  | 'blocked'
+  | 'repair_in_progress'
+  | 'ready_clean'
+  | 'repair_closed'
+  | 'stale_after_semantic_change';
+
+export type ImplementationEntryDecision = 'pass' | 'block' | 'reroute';
+
+export interface ImplementationEntryEvidenceSources {
+  readinessReportPath: string | null;
+  remediationArtifactPath: string | null;
+  executionRecordPath: string | null;
+  authoritativeAuditReportPath: string | null;
+}
+
+export interface ImplementationEntryGate {
+  gateName: 'implementation-readiness';
+  requestedFlow: ImplementationEntryFlowId;
+  recommendedFlow: ImplementationEntryFlowId;
+  decision: ImplementationEntryDecision;
+  readinessStatus: ImplementationReadinessStatus;
+  blockerCodes: string[];
+  blockerSummary: string[];
+  rerouteRequired: boolean;
+  rerouteReason: string | null;
+  evidenceSources: ImplementationEntryEvidenceSources;
+  semanticFingerprint: string | null;
+  evaluatedAt: string;
+}
+
+export type BmadHelpComplexity = 'low' | 'medium' | 'high';
+
+export interface BmadHelpComplexityFactors {
+  impactSurface: 0 | 1 | 2;
+  sharedContract: 0 | 1 | 2;
+  verificationCost: 0 | 1 | 2;
+  uncertainty: 0 | 1 | 2;
+  rollbackDifficulty: 0 | 1 | 2;
+  forcedReasons?: string[];
+}
+
+export interface ImplementationReadinessEvidence {
+  documentAuditPassed?: boolean;
+  readinessReportPresent?: boolean;
+  blockerCount?: number;
+  remediationState?: 'none' | 'in_progress' | 'closed';
+  rerunGateStatus?: 'unknown' | 'pass' | 'fail';
+  staleAfterSemanticChange?: boolean;
+}
+
+export interface ResolveImplementationEntryGateInput {
+  requestedFlow: ImplementationEntryFlowId;
+  readinessStatus: ImplementationReadinessStatus;
+  complexity: BmadHelpComplexity;
+  evidenceSources: ImplementationEntryEvidenceSources;
+  semanticFingerprint?: string | null;
+  evaluatedAt?: string;
+  blockerCodes?: string[];
+  blockerSummary?: string[];
+}
+
+const DIRECT_HIGH_COMPLEXITY_REASONS = new Set([
+  'shared_contract',
+  'shared_types',
+  'schema',
+  'permission_boundary',
+  'completion_semantics',
+  'dependency_semantics',
+  'fixture_assumptions',
+  'ci',
+  'root_config',
+  'infra',
+  'data_migration',
+  'persistence_semantics',
+]);
+
+export function deriveBmadHelpContextMaturity(
+  sourceMode?: RuntimeSourceMode,
+  evidence: ContextMaturityEvidence = {}
+): ContextMaturity {
+  return deriveContextMaturity(sourceMode, evidence);
+}
+
+export function deriveBmadHelpComplexity(factors: BmadHelpComplexityFactors): {
+  score: number;
+  level: BmadHelpComplexity;
+  forcedReasons: string[];
+} {
+  const score =
+    factors.impactSurface +
+    factors.sharedContract +
+    factors.verificationCost +
+    factors.uncertainty +
+    factors.rollbackDifficulty;
+  const forcedReasons = factors.forcedReasons ?? [];
+
+  let level: BmadHelpComplexity = 'low';
+  if (score >= 7) {
+    level = 'high';
+  } else if (score >= 4) {
+    level = 'medium';
+  }
+
+  if (forcedReasons.some((reason) => DIRECT_HIGH_COMPLEXITY_REASONS.has(reason))) {
+    level = 'high';
+  } else if (forcedReasons.length > 0 && level === 'low') {
+    level = 'medium';
+  }
+
+  return { score, level, forcedReasons };
+}
+
+export function deriveImplementationReadinessStatus(
+  flow: RuntimeFlowId,
+  evidence: ImplementationReadinessEvidence = {}
+): ImplementationReadinessStatus {
+  if (evidence.staleAfterSemanticChange) {
+    return 'stale_after_semantic_change';
+  }
+
+  if (
+    (flow === 'story' || flow === 'bugfix' || flow === 'standalone_tasks') &&
+    evidence.documentAuditPassed === false
+  ) {
+    return 'blocked';
+  }
+
+  if (evidence.rerunGateStatus === 'pass' || evidence.remediationState === 'closed') {
+    return 'repair_closed';
+  }
+
+  if (evidence.remediationState === 'in_progress') {
+    return 'repair_in_progress';
+  }
+
+  if (!evidence.readinessReportPresent) {
+    return 'missing';
+  }
+
+  if ((evidence.blockerCount ?? 0) > 0) {
+    return 'blocked';
+  }
+
+  return 'ready_clean';
+}
+
+export function implementationReadinessPassed(status: ImplementationReadinessStatus): boolean {
+  return status === 'ready_clean' || status === 'repair_closed';
+}
+
+function defaultReadinessBlockerCode(status: ImplementationReadinessStatus): string {
+  switch (status) {
+    case 'missing':
+      return 'missing_readiness_evidence';
+    case 'blocked':
+      return 'readiness_blocked';
+    case 'repair_in_progress':
+      return 'readiness_repair_in_progress';
+    case 'stale_after_semantic_change':
+      return 'stale_after_semantic_change';
+    default:
+      return 'implementation_entry_blocked';
+  }
+}
+
+function defaultReadinessBlockerSummary(status: ImplementationReadinessStatus): string {
+  switch (status) {
+    case 'missing':
+      return '缺少 implementation-readiness 所需证据';
+    case 'blocked':
+      return 'implementation-readiness 当前被阻断';
+    case 'repair_in_progress':
+      return 'implementation-readiness remediation 尚未闭环';
+    case 'stale_after_semantic_change':
+      return '语义基础已变化，原 implementation-readiness 结果失效';
+    default:
+      return '当前 implementation entry 不允许继续执行';
+  }
+}
+
+export function resolveImplementationEntryGate(
+  input: ResolveImplementationEntryGateInput
+): ImplementationEntryGate {
+  const evaluatedAt = input.evaluatedAt ?? new Date().toISOString();
+  const blockerCodes = [...(input.blockerCodes ?? [])];
+  const blockerSummary = [...(input.blockerSummary ?? [])];
+
+  if (!implementationReadinessPassed(input.readinessStatus)) {
+    if (blockerCodes.length === 0) {
+      blockerCodes.push(defaultReadinessBlockerCode(input.readinessStatus));
+    }
+    if (blockerSummary.length === 0) {
+      blockerSummary.push(defaultReadinessBlockerSummary(input.readinessStatus));
+    }
+    return {
+      gateName: 'implementation-readiness',
+      requestedFlow: input.requestedFlow,
+      recommendedFlow: input.requestedFlow,
+      decision: 'block',
+      readinessStatus: input.readinessStatus,
+      blockerCodes,
+      blockerSummary,
+      rerouteRequired: false,
+      rerouteReason: null,
+      evidenceSources: input.evidenceSources,
+      semanticFingerprint: input.semanticFingerprint ?? null,
+      evaluatedAt,
+    };
+  }
+
+  if (input.requestedFlow === 'standalone_tasks' && input.complexity === 'high') {
+    if (!blockerCodes.includes('standalone_tasks_high_complexity')) {
+      blockerCodes.push('standalone_tasks_high_complexity');
+    }
+    if (
+      !blockerSummary.includes(
+        'standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story'
+      )
+    ) {
+      blockerSummary.push('standalone_tasks 在 high complexity 下不得直接实现，必须升轨到 story');
+    }
+    return {
+      gateName: 'implementation-readiness',
+      requestedFlow: input.requestedFlow,
+      recommendedFlow: 'story',
+      decision: 'reroute',
+      readinessStatus: input.readinessStatus,
+      blockerCodes,
+      blockerSummary,
+      rerouteRequired: true,
+      rerouteReason: 'standalone_tasks_high_complexity',
+      evidenceSources: input.evidenceSources,
+      semanticFingerprint: input.semanticFingerprint ?? null,
+      evaluatedAt,
+    };
+  }
+
+  return {
+    gateName: 'implementation-readiness',
+    requestedFlow: input.requestedFlow,
+    recommendedFlow: input.requestedFlow,
+    decision: 'pass',
+    readinessStatus: input.readinessStatus,
+    blockerCodes,
+    blockerSummary,
+    rerouteRequired: false,
+    rerouteReason: null,
+    evidenceSources: input.evidenceSources,
+    semanticFingerprint: input.semanticFingerprint ?? null,
+    evaluatedAt,
+  };
+}
+
+export function shouldUpgradeStandaloneTasksToStory(
+  flow: RuntimeFlowId,
+  complexity: BmadHelpComplexity
+): boolean {
+  return flow === 'standalone_tasks' && complexity === 'high';
+}
+
+/** 策略结果来源；对照测试通过 `setRuntimePolicyShadowModeForTests(true)` 产出 `shadow` */
+export type CompatibilitySource = 'legacy' | 'shadow' | 'governance';
+
+let runtimePolicyShadowModeForTests = false;
+
+/** 仅测试使用：启用 shadow compatibilitySource，不读取任何环境变量 */
+export function setRuntimePolicyShadowModeForTests(enabled: boolean): void {
+  runtimePolicyShadowModeForTests = enabled;
+}
+
+/** @internal tests only */
+export function getRuntimePolicyShadowModeForTests(): boolean {
+  return runtimePolicyShadowModeForTests;
+}
+
+export interface RuntimePolicyIdentity {
+  flow: RuntimeFlowId;
+  stage: StageName;
+  epicId?: string;
+  storyId?: string;
+  storySlug?: string;
+  runId?: string;
+  artifactRoot?: string;
+  contextSource?: string;
+}
+
+export interface RuntimePolicyControl {
+  auditRequired: boolean;
+  validationLevel: ValidationLevel;
+  strictness: StrictnessLevel;
+  generateDoc: boolean;
+  convergence: AuditConvergenceConfig;
+  mandatoryGate: boolean;
+  granularityGoverned: boolean;
+  skipAllowed: boolean;
+  scoringEnabled: boolean;
+  triggerStage: string;
+  reason: string;
+}
+
+export interface RuntimePolicyLanguage {
+  preserveMachineKeys: true;
+  preserveParserAnchors: true;
+  preserveTriggerStage: true;
+}
+
+export interface RuntimePolicy {
+  flow: RuntimeFlowId;
+  stage: StageName;
+  auditRequired: boolean;
+  validationLevel: ValidationLevel;
+  strictness: StrictnessLevel;
+  generateDoc: boolean;
+  convergence: AuditConvergenceConfig;
+  mandatoryGate: boolean;
+  granularityGoverned: boolean;
+  skipAllowed: boolean;
+  scoringEnabled: boolean;
+  triggerStage: string;
+  compatibilitySource: CompatibilitySource;
+  reason: string;
+  identity: RuntimePolicyIdentity;
+  control: RuntimePolicyControl;
+  language: RuntimePolicyLanguage;
+}
+
+/** Optional YAML paths for Vitest or alternate config roots */
+export interface GovernanceYamlPaths {
+  stageMapping?: string;
+  mandatoryGates?: string;
+  granularityStages?: string;
+  policyTemplates?: string;
+  scoringTriggerModes?: string;
+}
+
+export interface ResolveRuntimePolicyInput {
+  flow: RuntimeFlowId;
+  stage: StageName;
+  config?: RuntimeConfig;
+  epicId?: string;
+  storyId?: string;
+  storySlug?: string;
+  runId?: string;
+  artifactRoot?: string;
+  recordId?: string;
+  requirementSetId?: string;
+  contextSource?: string;
+  /** Default `real_dev` */
+  scenario?: 'real_dev' | 'eval_question';
+  /** When set, merge allowed fields from `runtime-policy-templates.yaml` after base policy */
+  templateId?: string;
+  governanceYamlPaths?: GovernanceYamlPaths;
+}
+
+function defaultConfigDir(): string {
+  return path.resolve(process.cwd(), '_bmad', '_config');
+}
+
+function resolvePath(override: string | undefined, name: string): string {
+  if (override) {
+    return path.isAbsolute(override) ? override : path.resolve(process.cwd(), override);
+  }
+  return path.join(defaultConfigDir(), name);
+}
+
+interface MandatoryGatesYaml {
+  gates: Array<{ id: string; flow: string; stage: string }>;
+}
+
+interface GranularityYaml {
+  granularity_governed_stages: string[];
+}
+
+interface StageMappingYaml {
+  runtime_flow_stage_to_trigger_stage: Record<string, Record<string, string>>;
+}
+
+function readYamlFile<T>(filePath: string): T {
+  const content = fs.readFileSync(filePath, 'utf8');
+  return yaml.load(content) as T;
+}
+
+function loadMandatoryGates(filePath: string): MandatoryGatesYaml {
+  const raw = readYamlFile<unknown>(filePath);
+  if (!raw || typeof raw !== 'object' || !Array.isArray((raw as MandatoryGatesYaml).gates)) {
+    throw new Error(`Invalid mandatory gates YAML: ${filePath}`);
+  }
+  return raw as MandatoryGatesYaml;
+}
+
+function loadGranularityStages(filePath: string): GranularityYaml {
+  const raw = readYamlFile<unknown>(filePath);
+  if (
+    !raw ||
+    typeof raw !== 'object' ||
+    !Array.isArray((raw as GranularityYaml).granularity_governed_stages)
+  ) {
+    throw new Error(`Invalid granularity stages YAML: ${filePath}`);
+  }
+  return raw as GranularityYaml;
+}
+
+function loadRuntimeStageMapping(filePath: string): StageMappingYaml {
+  const raw = readYamlFile<unknown>(filePath);
+  if (
+    !raw ||
+    typeof raw !== 'object' ||
+    !(raw as StageMappingYaml).runtime_flow_stage_to_trigger_stage ||
+    typeof (raw as StageMappingYaml).runtime_flow_stage_to_trigger_stage !== 'object'
+  ) {
+    throw new Error(`stage-mapping.yaml missing runtime_flow_stage_to_trigger_stage: ${filePath}`);
+  }
+  return raw as StageMappingYaml;
+}
+
+function readLegacyStagePolicyFields(
+  stage: StageName,
+  cfg: RuntimeConfig
+): {
+  auditRequired: boolean;
+  validationLevel: ValidationLevel;
+  strictness: StrictnessLevel;
+  generateDoc: boolean;
+} {
+  const stageConfig = getStageConfig(stage, cfg);
+  return {
+    auditRequired: stageConfig?.audit ?? true,
+    validationLevel: stageConfig?.validation ?? null,
+    strictness: stageConfig?.strictness ?? 'standard',
+    generateDoc: stageConfig?.generate_doc ?? true,
+  };
+}
+
+function findMandatoryGateRule(
+  flow: RuntimeFlowId,
+  stage: StageName,
+  mandatoryPath: string
+): { id: string } | null {
+  const doc = loadMandatoryGates(mandatoryPath);
+  const hit = doc.gates.find((g) => g.flow === flow && g.stage === stage);
+  return hit ? { id: hit.id } : null;
+}
+
+function granularityGovernedForStage(stage: StageName, granPath: string): boolean {
+  const doc = loadGranularityStages(granPath);
+  return doc.granularity_governed_stages.includes(stage);
+}
+
+function resolveTriggerStage(
+  flow: RuntimeFlowId,
+  stage: StageName,
+  mappingPath: string
+): { triggerStage: string; mappingDescriptor: string } {
+  const doc = loadRuntimeStageMapping(mappingPath);
+  const flowMap = doc.runtime_flow_stage_to_trigger_stage[flow];
+  const mapped = flowMap?.[stage];
+  if (mapped !== undefined && mapped !== '') {
+    return { triggerStage: mapped, mappingDescriptor: `${flow}/${stage}→${mapped}` };
+  }
+  const unmapped = `unmapped_${stage}`;
+  return { triggerStage: unmapped, mappingDescriptor: `${flow}/${stage}→${unmapped}` };
+}
+
+function mergeRuntimePolicyTemplate(
+  base: RuntimePolicy,
+  templateId: string,
+  templatesPath: string,
+  cfg: RuntimeConfig
+): RuntimePolicy {
+  const content = fs.readFileSync(templatesPath, 'utf8');
+  const parsed = parseRuntimePolicyTemplatesYaml(yaml.load(content) as unknown);
+  const patch = parsed.templates[templateId];
+  if (!patch) {
+    throw new Error(`Unknown runtime policy templateId: ${templateId}`);
+  }
+  const merged: RuntimePolicy = { ...base };
+  const mergedRec = merged as unknown as Record<string, unknown>;
+  for (const [k, v] of Object.entries(patch)) {
+    mergedRec[k] = v;
+  }
+  if (patch.strictness !== undefined && patch.convergence === undefined) {
+    merged.convergence = getAuditConvergence(merged.strictness, cfg);
+  }
+  merged.reason = `${base.reason} | template:${templateId}`;
+  return merged;
+}
+
+function resolveRuntimeStageForPolicy(stage: StageName): StageName {
+  if (stage === ('constitution' as StageName)) {
+    return 'specify';
+  }
+  return stage;
+}
+
+/**
+ * 解析当前 flow/stage 下的统一 policy（生产路径）。
+ */
+export function resolveRuntimePolicy(input: ResolveRuntimePolicyInput): RuntimePolicy {
+  const cfg = input.config ?? loadConfig();
+  const flow = input.flow;
+  const stage = resolveRuntimeStageForPolicy(input.stage);
+  const scenario = input.scenario ?? 'real_dev';
+  const paths = input.governanceYamlPaths ?? {};
+  const identitySummaryParts = [
+    input.epicId ? `epicId=${input.epicId}` : null,
+    input.storyId ? `storyId=${input.storyId}` : null,
+    input.storySlug ? `storySlug=${input.storySlug}` : null,
+    input.runId ? `runId=${input.runId}` : null,
+    input.artifactRoot ? `artifactRoot=${input.artifactRoot}` : null,
+    input.contextSource ? `contextSource=${input.contextSource}` : null,
+  ].filter(Boolean);
+
+  const mandatoryPath = resolvePath(paths.mandatoryGates, 'runtime-mandatory-gates.yaml');
+  const granPath = resolvePath(paths.granularityStages, 'runtime-granularity-stages.yaml');
+  const mappingPath = resolvePath(paths.stageMapping, 'stage-mapping.yaml');
+  const templatesPath = resolvePath(paths.policyTemplates, 'runtime-policy-templates.yaml');
+  const scoringModesPath = resolvePath(paths.scoringTriggerModes, 'scoring-trigger-modes.yaml');
+
+  const legacy = readLegacyStagePolicyFields(stage, cfg);
+  const { auditRequired, validationLevel, strictness, generateDoc } = legacy;
+  const convergence = getAuditConvergence(strictness, cfg);
+  const stageCfg = getStageConfig(stage, cfg);
+  const skipAllowed = stageCfg?.optional === true;
+
+  const mandatoryHit = findMandatoryGateRule(flow, stage, mandatoryPath);
+  const mandatoryGate = mandatoryHit !== null;
+  const granularityGoverned = granularityGovernedForStage(stage, granPath);
+
+  if (mandatoryGate && granularityGoverned) {
+    throw new Error(
+      `Illegal runtime governance: mandatoryGate and granularityGoverned both true for ${flow}/${stage}`
+    );
+  }
+
+  const { triggerStage, mappingDescriptor } = resolveTriggerStage(flow, stage, mappingPath);
+  const scoring = scoringEnabledForTriggerStage(triggerStage, scenario, scoringModesPath);
+
+  const mandatoryPart = mandatoryHit ? `${mandatoryPath}#${mandatoryHit.id}` : 'mandatory:none';
+  const granPart = `${granPath}:granularityGoverned=${granularityGoverned}`;
+  const legacyPart = `legacy:auditRequired=${auditRequired},validationLevel=${validationLevel},strictness=${strictness},generateDoc=${generateDoc}`;
+  const scoringPart = `scoringEnabled=${scoring.enabled}(${scoring.reason})`;
+  const identityPart =
+    identitySummaryParts.length > 0
+      ? `identity:${identitySummaryParts.join(',')}`
+      : 'identity:none';
+
+  const reason = `${legacyPart}; convergence:${strictness}; ${mandatoryPart}; ${granPart}; trigger:${mappingDescriptor}; ${scoringPart}; ${identityPart}`;
+
+  const compatibilitySource: CompatibilitySource = runtimePolicyShadowModeForTests
+    ? 'shadow'
+    : 'governance';
+
+  let policy: RuntimePolicy = {
+    flow,
+    stage,
+    auditRequired,
+    validationLevel,
+    strictness,
+    generateDoc,
+    convergence,
+    mandatoryGate,
+    granularityGoverned,
+    skipAllowed,
+    scoringEnabled: scoring.enabled,
+    triggerStage,
+    compatibilitySource,
+    reason,
+    identity: {
+      flow,
+      stage,
+      ...(input.epicId ? { epicId: input.epicId } : {}),
+      ...(input.storyId ? { storyId: input.storyId } : {}),
+      ...(input.storySlug ? { storySlug: input.storySlug } : {}),
+      ...(input.runId ? { runId: input.runId } : {}),
+      ...(input.artifactRoot ? { artifactRoot: input.artifactRoot } : {}),
+      ...(input.contextSource ? { contextSource: input.contextSource } : {}),
+    },
+    control: {
+      auditRequired,
+      validationLevel,
+      strictness,
+      generateDoc,
+      convergence,
+      mandatoryGate,
+      granularityGoverned,
+      skipAllowed,
+      scoringEnabled: scoring.enabled,
+      triggerStage,
+      reason,
+    },
+    language: {
+      preserveMachineKeys: true,
+      preserveParserAnchors: true,
+      preserveTriggerStage: true,
+    },
+  };
+
+  if (input.templateId) {
+    policy = mergeRuntimePolicyTemplate(policy, input.templateId, templatesPath, cfg);
+  }
+
+  policy = applyRegisteredAugmenters(policy, input);
+
+  return policy;
+}

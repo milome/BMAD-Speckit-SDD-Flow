@@ -1,0 +1,79 @@
+[
+  {
+    "originalPath": "scripts/main-agent-release-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_no_args",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_codexproofpath",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_enablerealprapi",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_evidencebundleid",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_ledgerpath",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 4,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_project",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_provider",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_record_id",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_requirement_set_id",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_runid",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_storykey",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_flag_transpile_only",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_env_main_agent_allow_codex_bin_override",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_env_main_agent_release_gate_codex_proof_mode",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_env_main_agent_release_gate_e2e_command",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 4,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_env_main_agent_release_gate_ledger_path",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 4,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_env_main_agent_release_gate_report_path",
+        "expectedStdout": "{\n  \"report_path\": \"source-derived-main_agent_release_gate_report_path\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_release_gate_ts_env_main_agent_release_gate_skip_quality_producer",
+        "expectedStdout": "{\n  \"report_path\": \"<fixture-root>\\\\main-agent-release-gate-report.json\",\n  \"critical_failures\": 3,\n  \"blocked_sprint_status_update\": true\n}\n"
+      }
+    ]
+  }
+]

@@ -1,0 +1,3701 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-behavior-matrix/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G008",
+  "generatedAt": "2026-06-20T11:46:55.412Z",
+  "artifactSuffix": "g008_batch_006",
+  "timeoutMs": 30000,
+  "coverageDecision": "passed_full_original_behavior_coverage",
+  "eligibleOwnerRowCount": 58,
+  "selectedRowCount": 8,
+  "matrixRowCount": 8,
+  "scenarioCount": 21,
+  "fullCoverageStillRequired": false,
+  "rows": [
+    {
+      "originalPath": "scripts/start-runtime-dashboard-server.cjs",
+      "entryId": "start-runtime-dashboard-server-cjs",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 6,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 6,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 6,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 6,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [
+          "BMAD_SESSION_RESTRICT_BACKGROUND",
+          "CURSOR_SANDBOX",
+          "RUNTIME_DASHBOARD_DATA_PATH",
+          "RUNTIME_DASHBOARD_HOST",
+          "RUNTIME_DASHBOARD_OPEN",
+          "RUNTIME_DASHBOARD_PORT"
+        ],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [
+          "BMAD_SESSION_RESTRICT_BACKGROUND",
+          "CURSOR_SANDBOX",
+          "RUNTIME_DASHBOARD_DATA_PATH",
+          "RUNTIME_DASHBOARD_HOST",
+          "RUNTIME_DASHBOARD_OPEN",
+          "RUNTIME_DASHBOARD_PORT"
+        ],
+        "scenarioDefinitionCount": 7,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "env_bmad_session_restrict_background",
+          "env_cursor_sandbox",
+          "env_runtime_dashboard_data_path",
+          "env_runtime_dashboard_host",
+          "env_runtime_dashboard_open",
+          "env_runtime_dashboard_port"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_no_args",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env BMAD_SESSION_RESTRICT_BACKGROUND=1",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "1"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_no_args-original-Wa1U6R",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_no_args-package-jaOsGh",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:no_args",
+            "originalReplayArtifactHash": "sha256:a78b6d189453c1135fb5cf69b6966c840e5e075d4e4ca3b1ed3c881b930873bf",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env BMAD_SESSION_RESTRICT_BACKGROUND=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "source-derived-bmad_session_restrict_background"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background-original-7aKvjf",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_bmad_session_restrict_background-package-d9PM0s",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "{\n  \"pid\": <pid>,\n  \"host\": \"127.0.0.1\",\n  \"port\": 64047,\n  \"url\": \"http://127.0.0.1:<port>\",\n  \"health_url\": \"http://127.0.0.1:<port>/health\",\n  \"started_at\": \"<iso-timestamp>\",\n  \"root\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\",\n  \"data_path\": null,\n  \"mode\": \"reused\",\n  \"state_path\": \"D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\outputs\\\\runtime\\\\runtime-dashboard\\\\server.json\"\n}\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:env_bmad_session_restrict_background",
+            "originalReplayArtifactHash": "sha256:a8eda79c708d052bf92d3473a5ea63928b0e9c174b5e8c6c32f54fe7f0be9aaa",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:env_bmad_session_restrict_background",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env CURSOR_SANDBOX=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "1",
+            "CURSOR_SANDBOX": "source-derived-cursor_sandbox"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox-original-ZpyGNz",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_cursor_sandbox-package-d40R4A",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:env_cursor_sandbox",
+            "originalReplayArtifactHash": "sha256:a78b6d189453c1135fb5cf69b6966c840e5e075d4e4ca3b1ed3c881b930873bf",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:env_cursor_sandbox",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env RUNTIME_DASHBOARD_DATA_PATH=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "1",
+            "RUNTIME_DASHBOARD_DATA_PATH": "source-derived-runtime_dashboard_data_path"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path-original-tcUvwr",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_data_path-package-0aYLkP",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_data_path",
+            "originalReplayArtifactHash": "sha256:a78b6d189453c1135fb5cf69b6966c840e5e075d4e4ca3b1ed3c881b930873bf",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_data_path",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env RUNTIME_DASHBOARD_HOST=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "1",
+            "RUNTIME_DASHBOARD_HOST": "source-derived-runtime_dashboard_host"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host-original-aRBLMG",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_host-package-IbqUnQ",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_host",
+            "originalReplayArtifactHash": "sha256:a78b6d189453c1135fb5cf69b6966c840e5e075d4e4ca3b1ed3c881b930873bf",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_host",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env RUNTIME_DASHBOARD_OPEN=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "1",
+            "RUNTIME_DASHBOARD_OPEN": "source-derived-runtime_dashboard_open"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open-original-KMyCxc",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_open-package-SvOw6g",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_open",
+            "originalReplayArtifactHash": "sha256:a78b6d189453c1135fb5cf69b6966c840e5e075d4e4ca3b1ed3c881b930873bf",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_open",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port",
+          "originalEntryPoint": "scripts/start-runtime-dashboard-server.cjs",
+          "originalEntryCommand": "node scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+          "argumentCombination": "env RUNTIME_DASHBOARD_PORT=<source-derived-safe-value>",
+          "args": [],
+          "env": {
+            "BMAD_SESSION_RESTRICT_BACKGROUND": "1",
+            "RUNTIME_DASHBOARD_PORT": "source-derived-runtime_dashboard_port"
+          },
+          "fixtures": [
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port_original_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port-original-Uo3AAE",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port_package_fixture_root",
+              "path": "<tmp>/g008_start_runtime_dashboard_server_cjs_env_runtime_dashboard_port-package-11rUTj",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    ... 6 lines matching cause stack trace ...\n    at <runtime-stack-frame>\n  code: 'DASHBOARD_SESSION_RESTRICTED',\n  cause: Error: background spawn restricted by session environment flag\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n}\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "Error: runtime dashboard launch blocked by current session restrictions: detached child processes are not allowed here. Retry from a normal host shell, Cursor/Claude session hook, or another unrestricted bootstrap context."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_port",
+            "originalReplayArtifactHash": "sha256:a78b6d189453c1135fb5cf69b6966c840e5e075d4e4ca3b1ed3c881b930873bf",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/start-runtime-dashboard-server.cjs:env_runtime_dashboard_port",
+            "sourceLineAnchors": [
+              {
+                "line": 214,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:214",
+                "text": "console.log(JSON.stringify(payload, null, 2));"
+              },
+              {
+                "line": 217,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:217",
+                "text": "if (require.main === module) {"
+              },
+              {
+                "line": 219,
+                "anchor": "scripts/start-runtime-dashboard-server.cjs:219",
+                "text": "console.error(error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-runtime-dashboard-server.cjs",
+                "to": "scripts/start-runtime-dashboard-server.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/start-runtime-dashboard-server.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 6,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 6,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [
+              "BMAD_SESSION_RESTRICT_BACKGROUND",
+              "CURSOR_SANDBOX",
+              "RUNTIME_DASHBOARD_DATA_PATH",
+              "RUNTIME_DASHBOARD_HOST",
+              "RUNTIME_DASHBOARD_OPEN",
+              "RUNTIME_DASHBOARD_PORT"
+            ],
+            "scenarioDefinitionCount": 7,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "env_bmad_session_restrict_background",
+              "env_cursor_sandbox",
+              "env_runtime_dashboard_data_path",
+              "env_runtime_dashboard_host",
+              "env_runtime_dashboard_open",
+              "env_runtime_dashboard_port"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/subagent-evidence-envelope.ts",
+      "entryId": "subagent-evidence-envelope",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 8,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 3,
+        "errorPathCount": 8,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 8,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 3,
+        "coveredErrorPathCount": 8,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [
+          "--envelope",
+          "--help",
+          "--json",
+          "--project-root",
+          "--report-out",
+          "--requirement-record",
+          "--schema-out"
+        ],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>",
+          "--envelope <source-derived-safe-value>",
+          "--help <source-derived-safe-value>",
+          "--json <source-derived-safe-value>",
+          "--project-root <source-derived-safe-value>",
+          "--report-out <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>",
+          "--schema-out <source-derived-safe-value>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>",
+          "--envelope <source-derived-safe-value>",
+          "--help <source-derived-safe-value>",
+          "--json <source-derived-safe-value>",
+          "--project-root <source-derived-safe-value>",
+          "--report-out <source-derived-safe-value>",
+          "--requirement-record <source-derived-safe-value>",
+          "--schema-out <source-derived-safe-value>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 8,
+        "coveredScenarioDefinitionIds": [
+          "no_args",
+          "flag_envelope",
+          "flag_help",
+          "flag_json",
+          "flag_project_root",
+          "flag_report_out",
+          "flag_requirement_record",
+          "flag_schema_out"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_no_args",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_no_args-original-RcRIdK",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_no_args-package-Smgikn",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:no_args",
+            "originalReplayArtifactHash": "sha256:1dbdda0ff4c00309a388f3ed53fc12303ef7bb151508f46961ec97c2678ed142",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_envelope",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --envelope source-derived-envelope",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --envelope source-derived-envelope",
+          "argumentCombination": "--envelope <source-derived-safe-value>",
+          "args": [
+            "--envelope",
+            "source-derived-envelope"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_envelope_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_envelope-original-NvS43i",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_envelope_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_envelope-package-ZqTTIg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_envelope",
+            "originalReplayArtifactHash": "sha256:1dbdda0ff4c00309a388f3ed53fc12303ef7bb151508f46961ec97c2678ed142",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_envelope",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_help",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --help source-derived-help",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --help source-derived-help",
+          "argumentCombination": "--help <source-derived-safe-value>",
+          "args": [
+            "--help",
+            "source-derived-help"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_help_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_help-original-NQ6DfD",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_help_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_help-package-7FWmAW",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_help",
+            "originalReplayArtifactHash": "sha256:dbf329c6981e7d9a6011f88a40d7ed86833549982a62b5af3882c2590070a31c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_help",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_json",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --json <fixture-root>/json.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --json <fixture-root>/json.json",
+          "argumentCombination": "--json <source-derived-safe-value>",
+          "args": [
+            "--json",
+            "<fixture-root>/json.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_json_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_json-original-2iCvgp",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_json_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_json-package-PaT5bg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "json.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_json",
+            "originalReplayArtifactHash": "sha256:499eadc2bf866014962308f3d32ffb12130e39e696bbec1c4a4e45ef04029ae2",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_json",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_project_root",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --project-root <fixture-root>/project-root",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --project-root <fixture-root>/project-root",
+          "argumentCombination": "--project-root <source-derived-safe-value>",
+          "args": [
+            "--project-root",
+            "<fixture-root>/project-root"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_project_root_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_project_root-original-j5eJMw",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_project_root_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_project_root-package-6tgUmv",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_project_root",
+            "originalReplayArtifactHash": "sha256:1dbdda0ff4c00309a388f3ed53fc12303ef7bb151508f46961ec97c2678ed142",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_project_root",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_report_out",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --report-out <fixture-root>/report-out.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --report-out <fixture-root>/report-out.json",
+          "argumentCombination": "--report-out <source-derived-safe-value>",
+          "args": [
+            "--report-out",
+            "<fixture-root>/report-out.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_report_out_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_report_out-original-my8DXU",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_report_out_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_report_out-package-tpOprg",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "report-out.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_report_out",
+            "originalReplayArtifactHash": "sha256:01880707c61a791f3715461c0f6253beacacfbeb2a9c13a04101e119b74d16c0",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_report_out",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_requirement_record",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --requirement-record source-derived-requirement-record",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --requirement-record source-derived-requirement-record",
+          "argumentCombination": "--requirement-record <source-derived-safe-value>",
+          "args": [
+            "--requirement-record",
+            "source-derived-requirement-record"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_requirement_record_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_requirement_record-original-TNzvyZ",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_requirement_record_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_requirement_record-package-Bczg7P",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_requirement_record",
+            "originalReplayArtifactHash": "sha256:1dbdda0ff4c00309a388f3ed53fc12303ef7bb151508f46961ec97c2678ed142",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_requirement_record",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        },
+        {
+          "scenarioId": "g008_subagent_evidence_envelope_ts_flag_schema_out",
+          "originalEntryPoint": "scripts/subagent-evidence-envelope.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/subagent-evidence-envelope.ts --schema-out <fixture-root>/schema-out.json",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js --schema-out <fixture-root>/schema-out.json",
+          "argumentCombination": "--schema-out <source-derived-safe-value>",
+          "args": [
+            "--schema-out",
+            "<fixture-root>/schema-out.json"
+          ],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_schema_out_original_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_schema_out-original-3lvkvD",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_subagent_evidence_envelope_ts_flag_schema_out_package_fixture_root",
+              "path": "<tmp>/g008_subagent_evidence_envelope_ts_flag_schema_out-package-dhuHXh",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, schema-out, report-out\"\n}\n",
+          "expectedExitCode": 2,
+          "expectedFileArtifacts": [
+            {
+              "path": "schema-out.json",
+              "bytes": 3,
+              "sha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "rawBytes": 3,
+              "rawSha256": "sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "hashPolicy": "normalized_text_replay_hash",
+              "contentEncoding": "utf8"
+            }
+          ],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "{"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/subagent-evidence-envelope.ts:flag_schema_out",
+            "originalReplayArtifactHash": "sha256:ca1a78822de4b0f42127886708711097ced8df959e6a8bb4fe6a0cce85beca2a",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/subagent-evidence-envelope.ts:flag_schema_out",
+            "sourceLineAnchors": [
+              {
+                "line": 252,
+                "anchor": "scripts/subagent-evidence-envelope.ts:252",
+                "text": "export function sha256Object(value: unknown): string {"
+              },
+              {
+                "line": 256,
+                "anchor": "scripts/subagent-evidence-envelope.ts:256",
+                "text": "export function sha256File(file: string): string {"
+              },
+              {
+                "line": 348,
+                "anchor": "scripts/subagent-evidence-envelope.ts:348",
+                "text": "export function validateSubagentEvidenceEnvelope("
+              },
+              {
+                "line": 532,
+                "anchor": "scripts/subagent-evidence-envelope.ts:532",
+                "text": "export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {"
+              },
+              {
+                "line": 595,
+                "anchor": "scripts/subagent-evidence-envelope.ts:595",
+                "text": "export function validateTaskReportLegacyBoundary("
+              },
+              {
+                "line": 620,
+                "anchor": "scripts/subagent-evidence-envelope.ts:620",
+                "text": "export function artifactRefForPath(input: {"
+              },
+              {
+                "line": 673,
+                "anchor": "scripts/subagent-evidence-envelope.ts:673",
+                "text": "export function writeSubagentEvidenceEnvelopeSchema(file: string): void {"
+              },
+              {
+                "line": 678,
+                "anchor": "scripts/subagent-evidence-envelope.ts:678",
+                "text": "export function runSubagentEvidenceEnvelopeAcceptance(argv: string[]): number {"
+              },
+              {
+                "line": 681,
+                "anchor": "scripts/subagent-evidence-envelope.ts:681",
+                "text": "console.log("
+              },
+              {
+                "line": 718,
+                "anchor": "scripts/subagent-evidence-envelope.ts:718",
+                "text": "process.stdout.write("
+              },
+              {
+                "line": 727,
+                "anchor": "scripts/subagent-evidence-envelope.ts:727",
+                "text": "require.main === module &&"
+              },
+              {
+                "line": 728,
+                "anchor": "scripts/subagent-evidence-envelope.ts:728",
+                "text": "/(^|[\\\\/])subagent-evidence-envelope(\\.[cm]?js|\\.ts)?$/iu.test(process.argv[1] ?? '')"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+                "to": "scripts/subagent-evidence-envelope.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/subagent-evidence-envelope.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 8,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 1,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 8,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 1,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [
+              "--envelope",
+              "--help",
+              "--json",
+              "--project-root",
+              "--report-out",
+              "--requirement-record",
+              "--schema-out"
+            ],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>",
+              "--envelope <source-derived-safe-value>",
+              "--help <source-derived-safe-value>",
+              "--json <source-derived-safe-value>",
+              "--project-root <source-derived-safe-value>",
+              "--report-out <source-derived-safe-value>",
+              "--requirement-record <source-derived-safe-value>",
+              "--schema-out <source-derived-safe-value>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 8,
+            "coveredScenarioDefinitionIds": [
+              "no_args",
+              "flag_envelope",
+              "flag_help",
+              "flag_json",
+              "flag_project_root",
+              "flag_report_out",
+              "flag_requirement_record",
+              "flag_schema_out"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "entryId": "supervised-worker-runtime",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/supervised-worker-runtime.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/supervised-worker-runtime.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_supervised_worker_runtime_ts_no_args",
+          "originalEntryPoint": "scripts/supervised-worker-runtime.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/supervised-worker-runtime.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/supervised-worker-runtime.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_supervised_worker_runtime_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_supervised_worker_runtime_ts_no_args-original-EqELW0",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_supervised_worker_runtime_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_supervised_worker_runtime_ts_no_args-package-7oPkyW",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/supervised-worker-runtime.ts:no_args",
+            "originalReplayArtifactHash": "sha256:83910393cbcfbdd76b53463b13d22c2eab546860019d695ce3cf59628b50705c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/supervised-worker-runtime.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 42,
+                "anchor": "scripts/supervised-worker-runtime.ts:42",
+                "text": "export function appendTaskProgress(projectRoot: string, progress: TaskProgress): string {"
+              },
+              {
+                "line": 49,
+                "anchor": "scripts/supervised-worker-runtime.ts:49",
+                "text": "export function readTaskProgress("
+              },
+              {
+                "line": 63,
+                "anchor": "scripts/supervised-worker-runtime.ts:63",
+                "text": "export function evaluateSupervisedWorker(input: {"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/supervised-worker-runtime.ts",
+                "to": "scripts/supervised-worker-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts",
+                "to": "scripts/supervised-worker-runtime.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/supervised-worker-runtime.js",
+                "to": "scripts/supervised-worker-runtime.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/supervised-worker-runtime.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/test-locks.ts",
+      "entryId": "test-locks-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-locks.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/test-locks.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_test_locks_ts_no_args",
+          "originalEntryPoint": "scripts/test-locks.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/test-locks.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-locks.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_test_locks_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_test_locks_ts_no_args-original-3uw5Uy",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_test_locks_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_test_locks_ts_no_args-package-9OHWXe",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Testing locks...\n\n",
+          "expectedStderr": "RangeError: Maximum call stack size exceeded\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "RangeError: Maximum call stack size exceeded"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/test-locks.ts:no_args",
+            "originalReplayArtifactHash": "sha256:f2c4f2181e52f373dad678eb7b57684d6c216748fbf2bf2f5a1fcd02d57d142c",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/test-locks.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 4,
+                "anchor": "scripts/test-locks.ts:4",
+                "text": "console.log('Testing locks...\\n');"
+              },
+              {
+                "line": 8,
+                "anchor": "scripts/test-locks.ts:8",
+                "text": "console.log('Lock E001-S001 acquired:', lock1);"
+              },
+              {
+                "line": 9,
+                "anchor": "scripts/test-locks.ts:9",
+                "text": "console.log('Lock status:', getLock('E001', 'S001'));"
+              },
+              {
+                "line": 13,
+                "anchor": "scripts/test-locks.ts:13",
+                "text": "console.log('Lock E001-S001 by agent-2:', lock2, '(should be false)');"
+              },
+              {
+                "line": 17,
+                "anchor": "scripts/test-locks.ts:17",
+                "text": "console.log('Lock E001-S002 by agent-2:', lock3, '(should be true)');"
+              },
+              {
+                "line": 19,
+                "anchor": "scripts/test-locks.ts:19",
+                "text": "console.log('\\n--- All Locks ---');"
+              },
+              {
+                "line": 20,
+                "anchor": "scripts/test-locks.ts:20",
+                "text": "console.log('E001-S001:', getLock('E001', 'S001').locked ? 'locked' : 'unlocked');"
+              },
+              {
+                "line": 21,
+                "anchor": "scripts/test-locks.ts:21",
+                "text": "console.log('E001-S002:', getLock('E001', 'S002').locked ? 'locked' : 'unlocked');"
+              },
+              {
+                "line": 26,
+                "anchor": "scripts/test-locks.ts:26",
+                "text": "console.log('\\nLocks released');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/test-locks.ts",
+                "to": "scripts/test-locks.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts",
+                "to": "scripts/test-locks.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-locks.js",
+                "to": "scripts/test-locks.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/test-locks.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/test-story-flow.ts",
+      "entryId": "test-story-flow-ts",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-story-flow.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/test-story-flow.ts:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_test_story_flow_ts_no_args",
+          "originalEntryPoint": "scripts/test-story-flow.ts",
+          "originalEntryCommand": "npx ts-node --project tsconfig.node.json --transpile-only scripts/test-story-flow.ts",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-story-flow.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_test_story_flow_ts_no_args_original_fixture_root",
+              "path": "<tmp>/g008_test_story_flow_ts_no_args-original-o88rZa",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_test_story_flow_ts_no_args_package_fixture_root",
+              "path": "<tmp>/g008_test_story_flow_ts_no_args-package-CyU2vn",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "=== BMAD Story Assistant Test Flow ===\n\nStage 1: Create Story\n---------------------\n✗ Story creation failed: Story E999-S001 already exists\n  Existing story state: completed\n\nCurrent state: completed\n\nStage 2: Story Audit\n---------------------\n✓ Story audit started\n✓ Story audit passed\n\nStage 3: Dev Story\n---------------------\n✓ Dev Story started\n✓ Dev Story complete\n\nStage 4: Post Audit\n---------------------\n✓ Post audit started\n✓ Post audit passed\n✓ Story completed\n\n=== Final State ===\n{\n  \"version\": \"2.0\",\n  \"epic\": \"E999\",\n  \"story\": \"S001\",\n  \"story_slug\": \"test-epic\",\n  \"layer\": 4,\n  \"stage\": \"completed\",\n  \"audit_status\": \"pending\",\n  \"artifacts\": {},\n  \"scores\": {},\n  \"git_control\": {\n    \"commit_allowed\": false\n  },\n  \"runtime\": {\n    \"last_action\": \"story_created\"\n  },\n  \"auditReportPath\": \"_bmad-output/implementation-artifacts/epic-E999-test-epic/story-E999-S001-test-story/AUDIT_implement-E999-S001.md\",\n  \"completedAt\": \"<iso-timestamp>\"\n}\n\n=== Active Stories ===\nFound 3 active stories\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/test-story-flow.ts:no_args",
+            "originalReplayArtifactHash": "sha256:b04153451e12a0bfb92d63d960cbce292df0818af0cd816c8156bc05cd2791a4",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/test-story-flow.ts:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 7,
+                "anchor": "scripts/test-story-flow.ts:7",
+                "text": "console.log('=== BMAD Story Assistant Test Flow ===\\n');"
+              },
+              {
+                "line": 10,
+                "anchor": "scripts/test-story-flow.ts:10",
+                "text": "console.log('Stage 1: Create Story');"
+              },
+              {
+                "line": 11,
+                "anchor": "scripts/test-story-flow.ts:11",
+                "text": "console.log('---------------------');"
+              },
+              {
+                "line": 14,
+                "anchor": "scripts/test-story-flow.ts:14",
+                "text": "console.log('✓ Story created:', newStory.epic + '-' + newStory.story);"
+              },
+              {
+                "line": 15,
+                "anchor": "scripts/test-story-flow.ts:15",
+                "text": "console.log('  State:', newStory.stage);"
+              },
+              {
+                "line": 17,
+                "anchor": "scripts/test-story-flow.ts:17",
+                "text": "console.log('✗ Story creation failed:', e instanceof Error ? e.message : String(e));"
+              },
+              {
+                "line": 21,
+                "anchor": "scripts/test-story-flow.ts:21",
+                "text": "console.log('  Existing story state:', existing.stage);"
+              },
+              {
+                "line": 27,
+                "anchor": "scripts/test-story-flow.ts:27",
+                "text": "console.log('\\nCurrent state:', state1?.stage || 'not found');"
+              },
+              {
+                "line": 30,
+                "anchor": "scripts/test-story-flow.ts:30",
+                "text": "console.log('\\nStage 2: Story Audit');"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/test-story-flow.ts:31",
+                "text": "console.log('---------------------');"
+              },
+              {
+                "line": 33,
+                "anchor": "scripts/test-story-flow.ts:33",
+                "text": "console.log('✓ Story audit started');"
+              },
+              {
+                "line": 40,
+                "anchor": "scripts/test-story-flow.ts:40",
+                "text": "console.log('✓ Story audit passed');"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/test-story-flow.ts",
+                "to": "scripts/test-story-flow.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts",
+                "to": "scripts/test-story-flow.ts"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-story-flow.js",
+                "to": "scripts/test-story-flow.ts"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/test-story-flow.ts",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-score-auto-scoped-bundle.cjs",
+      "entryId": "verify-score-auto-scoped-bundle",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/verify-score-auto-scoped-bundle.cjs:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_verify_score_auto_scoped_bundle_cjs_no_args",
+          "originalEntryPoint": "scripts/verify-score-auto-scoped-bundle.cjs",
+          "originalEntryCommand": "node scripts/verify-score-auto-scoped-bundle.cjs",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_verify_score_auto_scoped_bundle_cjs_no_args_original_fixture_root",
+              "path": "<tmp>/g008_verify_score_auto_scoped_bundle_cjs_no_args-original-WZG47e",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_verify_score_auto_scoped_bundle_cjs_no_args_package_fixture_root",
+              "path": "<tmp>/g008_verify_score_auto_scoped_bundle_cjs_no_args-package-VT9i0E",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated.\nWARN: implement stage effective verdict is blocked_pending_rereadiness. Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\nTypeError: fetch failed\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "WARN: implement/post_impl stage report is missing Structured Drift Signal Block; implementation verdict is not trustworthy until re-readiness evidence is regenerated."
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/verify-score-auto-scoped-bundle.cjs:no_args",
+            "originalReplayArtifactHash": "sha256:96e4a4ab50452e6a9148503a08a31831b668e2b3dde1f61bcee14a6d807d0c54",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/verify-score-auto-scoped-bundle.cjs:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 7,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:7",
+                "text": "async function main() {"
+              },
+              {
+                "line": 40,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:40",
+                "text": "const originalLog = console.log;"
+              },
+              {
+                "line": 41,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:41",
+                "text": "console.log = (...args) => {"
+              },
+              {
+                "line": 58,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:58",
+                "text": "console.log = originalLog;"
+              },
+              {
+                "line": 102,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:102",
+                "text": "console.log("
+              },
+              {
+                "line": 118,
+                "anchor": "scripts/verify-score-auto-scoped-bundle.cjs:118",
+                "text": "console.error(error && error.stack ? error.stack : error);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/verify-score-auto-scoped-bundle.cjs",
+                "to": "scripts/verify-score-auto-scoped-bundle.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+                "to": "scripts/verify-score-auto-scoped-bundle.cjs"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-score-auto-scoped-bundle.cjs",
+                "to": "scripts/verify-score-auto-scoped-bundle.cjs"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/verify-score-auto-scoped-bundle.cjs",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-skill-architecture.sh",
+      "entryId": "verify-skill-architecture-sh",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-skill-architecture.sh"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/verify-skill-architecture.sh:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 1,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 1,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_verify_skill_architecture_sh_no_args",
+          "originalEntryPoint": "scripts/verify-skill-architecture.sh",
+          "originalEntryCommand": "bash scripts/verify-skill-architecture.sh",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+          "packageEntryCommand": "bash packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_verify_skill_architecture_sh_no_args_original_fixture_root",
+              "path": "<tmp>/g008_verify_skill_architecture_sh_no_args-original-rt8Cek",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_verify_skill_architecture_sh_no_args_package_fixture_root",
+              "path": "<tmp>/g008_verify_skill_architecture_sh_no_args-package-ywzPSe",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "",
+          "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
+          "expectedExitCode": 1,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [
+            {
+              "channel": "stderr",
+              "firstLine": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory"
+            }
+          ],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/verify-skill-architecture.sh:no_args",
+            "originalReplayArtifactHash": "sha256:49edb214f086cf5cb874ac113cc175868da9ca6a19c5d99ab0443032e6c5bb1f",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/verify-skill-architecture.sh:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 1,
+                "anchor": "scripts/verify-skill-architecture.sh:1",
+                "text": "#!/usr/bin/env bash"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/verify-skill-architecture.sh",
+                "to": "scripts/verify-skill-architecture.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+                "to": "scripts/verify-skill-architecture.sh"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-skill-architecture.sh",
+                "to": "scripts/verify-skill-architecture.sh"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/verify-skill-architecture.sh",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 1,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 1,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "originalPath": "scripts/verify-speckit-mirror-sync.js",
+      "entryId": "verify-speckit-mirror-sync-js",
+      "packageImplementationSet": [
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+      ],
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+      "scenarioCoverageProof": {
+        "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/verify-speckit-mirror-sync.js:aggregate",
+        "entryPointCount": 1,
+        "argCombinationCount": 1,
+        "envKeyCount": 0,
+        "fixtureCount": 1,
+        "fileArtifactCount": 0,
+        "errorPathCount": 0,
+        "coveredEntryPointCount": 1,
+        "coveredArgCombinationCount": 1,
+        "coveredEnvKeyCount": 0,
+        "coveredFixtureCount": 1,
+        "coveredFileArtifactCount": 0,
+        "coveredErrorPathCount": 0,
+        "coverageDecision": "passed_full_original_behavior_coverage",
+        "discoveredFlags": [],
+        "discoveredEnvKeys": [],
+        "requiredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredArgumentCombinations": [
+          "<no-args>"
+        ],
+        "coveredEnvKeys": [],
+        "scenarioDefinitionCount": 1,
+        "coveredScenarioDefinitionIds": [
+          "no_args"
+        ]
+      },
+      "behaviorEquivalenceMatrix": [
+        {
+          "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
+          "originalEntryPoint": "scripts/verify-speckit-mirror-sync.js",
+          "originalEntryCommand": "node scripts/verify-speckit-mirror-sync.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+          "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+          "argumentCombination": "<no-args>",
+          "args": [],
+          "env": {},
+          "fixtures": [
+            {
+              "id": "g008_verify_speckit_mirror_sync_js_no_args_original_fixture_root",
+              "path": "<tmp>/g008_verify_speckit_mirror_sync_js_no_args-original-4Xjana",
+              "description": "Isolated fixture root used for original replay expected outputs."
+            },
+            {
+              "id": "g008_verify_speckit_mirror_sync_js_no_args_package_fixture_root",
+              "path": "<tmp>/g008_verify_speckit_mirror_sync_js_no_args-package-Gu1u88",
+              "description": "Isolated empty fixture root used for package replay comparison."
+            }
+          ],
+          "expectedStdout": "Speckit .specify mirror is in sync (51 files checked)\n",
+          "expectedStderr": "",
+          "expectedExitCode": 0,
+          "expectedFileArtifacts": [],
+          "expectedErrorPaths": [],
+          "expectedOutputProvenance": {
+            "expectedSource": "original_replay",
+            "originalReplayCommandId": "G008_ORIGINAL_REPLAY:scripts/verify-speckit-mirror-sync.js:no_args",
+            "originalReplayArtifactHash": "sha256:33079a4b7f41cb39b6f6689833f3acb2733f5cb6e3d8f52165318620fbc53b21",
+            "sourceDerivedProofId": "G008_SOURCE_DERIVED:scripts/verify-speckit-mirror-sync.js:no_args",
+            "sourceLineAnchors": [
+              {
+                "line": 20,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:20",
+                "text": "console.error('Speckit .specify mirror drift detected.');"
+              },
+              {
+                "line": 23,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:23",
+                "text": "console.error(`- extra: ${issue.targetRelative}`);"
+              },
+              {
+                "line": 26,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:26",
+                "text": "console.error(`- ${issue.type}: ${issue.targetRelative} <= ${issue.sourceRelative}`);"
+              },
+              {
+                "line": 31,
+                "anchor": "scripts/verify-speckit-mirror-sync.js:31",
+                "text": "console.log(`Speckit .specify mirror is in sync (${result.plan.entries.length} files checked)`);"
+              }
+            ]
+          },
+          "normalizationPolicy": {
+            "normalizedFields": [
+              "expectedStdout",
+              "expectedStderr",
+              "expectedErrorPaths"
+            ],
+            "replacements": [
+              "originalFixtureRoot=> <fixture-root>",
+              "packageFixtureRoot=> <fixture-root>",
+              "packageSourceAuthorityPath=> originalPath",
+              "packageDistRuntimePath=> originalPath"
+            ],
+            "pathEquivalenceReplacements": [
+              {
+                "from": "scripts/verify-speckit-mirror-sync.js",
+                "to": "scripts/verify-speckit-mirror-sync.js"
+              },
+              {
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+                "to": "scripts/verify-speckit-mirror-sync.js"
+              },
+              {
+                "from": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+                "to": "scripts/verify-speckit-mirror-sync.js"
+              }
+            ],
+            "nonNormalizedFields": [
+              "expectedExitCode",
+              "expectedFileArtifacts",
+              "script paths",
+              "stderr text outside fixture roots"
+            ]
+          },
+          "scenarioCoverageProof": {
+            "staticAnalysisCommandId": "G008_STATIC_FULL:scripts/verify-speckit-mirror-sync.js",
+            "entryPointCount": 1,
+            "argCombinationCount": 1,
+            "envKeyCount": 0,
+            "fixtureCount": 1,
+            "fileArtifactCount": 0,
+            "errorPathCount": 0,
+            "coveredEntryPointCount": 1,
+            "coveredArgCombinationCount": 1,
+            "coveredEnvKeyCount": 0,
+            "coveredFixtureCount": 1,
+            "coveredFileArtifactCount": 0,
+            "coveredErrorPathCount": 0,
+            "coverageDecision": "passed_full_original_behavior_coverage",
+            "discoveredFlags": [],
+            "discoveredEnvKeys": [],
+            "requiredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredArgumentCombinations": [
+              "<no-args>"
+            ],
+            "coveredEnvKeys": [],
+            "scenarioDefinitionCount": 1,
+            "coveredScenarioDefinitionIds": [
+              "no_args"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

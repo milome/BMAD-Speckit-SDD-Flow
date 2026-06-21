@@ -8,10 +8,15 @@ test('npm pack --dry-run includes packaged _bmad hook cjs files', () => {
   const result = spawnSync('npm', ['pack', '--dry-run', '--json'], {
     cwd,
     encoding: 'utf8',
+    maxBuffer: 128 * 1024 * 1024,
     shell: process.platform === 'win32',
   });
 
-  assert.strictEqual(result.status, 0, `npm pack failed: ${result.stderr || result.stdout}`);
+  assert.strictEqual(
+    result.status,
+    0,
+    `npm pack failed: ${result.error?.message || ''}\n${result.stderr || result.stdout}`
+  );
 
   const jsonStart = result.stdout.indexOf('[');
   assert.ok(jsonStart >= 0, `npm pack output missing JSON payload: ${result.stdout}`);

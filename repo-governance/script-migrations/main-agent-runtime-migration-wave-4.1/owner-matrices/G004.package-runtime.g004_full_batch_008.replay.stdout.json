@@ -1,0 +1,184 @@
+[
+  {
+    "originalPath": "scripts/resolve-active-requirement.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_cwd",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_record_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_requirement_set_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_resolve_active_requirement_ts_flag_run_id",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-governance-registry.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_runtime_governance_registry_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-governance-template-schema.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_runtime_governance_template_schema_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-governance.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_runtime_governance_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/runtime-scoring-data-path.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_runtime_scoring_data_path_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/sft-extract.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_sft_extract_ts_no_args",
+        "expectedStdout": "共提取 0 条，覆盖 0 个 Story；跳过 7 条（原因：无 §1/§4 且审计报告解析失败: 4; 无 source_path: 3）\n"
+      },
+      {
+        "scenarioId": "g004_sft_extract_ts_flag_min_score",
+        "expectedStdout": "共提取 0 条，覆盖 0 个 Story；跳过 7 条（原因：无 §1/§4 且审计报告解析失败: 4; 无 source_path: 3）\n"
+      },
+      {
+        "scenarioId": "g004_sft_extract_ts_flag_output",
+        "expectedStdout": "共提取 0 条，覆盖 0 个 Story；跳过 7 条（原因：无 §1/§4 且审计报告解析失败: 4; 无 source_path: 3）\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/six-model-runtime-decision.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_six_model_runtime_decision_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/skill-orchestration-audit.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_skill_orchestration_audit_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/strict-closeout-proof-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_help",
+        "expectedStdout": "Usage: strict-closeout-proof-gate --requirement-record <json> --source <requirement.md> [--attempt-id <id>] [--report-path <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_report_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_strict_closeout_proof_gate_ts_flag_source",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/target-artifact-realization-gate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_attempt_id",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_help",
+        "expectedStdout": "Usage: target-artifact-realization-gate --source <requirement.md> --requirement-record <json> --attempt-id <id> [--report-path <json>] [--json]\n"
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_mode",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_report_path",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_requirement_record",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_source",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_flag_version",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_env_home",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g004_target_artifact_realization_gate_ts_env_userprofile",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

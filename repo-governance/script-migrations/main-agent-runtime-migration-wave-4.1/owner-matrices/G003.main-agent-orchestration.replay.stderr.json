@@ -1,0 +1,127 @@
+[
+  {
+    "scenarioId": "g003_inspect",
+    "action": "inspect",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_dispatch_plan",
+    "action": "dispatch-plan",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_run_loop",
+    "action": "run-loop",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_claim",
+    "action": "claim",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_dispatch",
+    "action": "dispatch",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_complete",
+    "action": "complete",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_invalidate",
+    "action": "invalidate",
+    "stderr": ""
+  },
+  {
+    "scenarioId": "g003_route_intake",
+    "action": "route-intake",
+    "stderr": "main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>\n"
+  },
+  {
+    "scenarioId": "g003_adaptive_intake",
+    "action": "adaptive-intake",
+    "stderr": "main-agent-orchestration: route-intake requires --input <json-file> or --payload <json>\n"
+  },
+  {
+    "scenarioId": "g003_confirm_scope",
+    "action": "confirm-scope",
+    "stderr": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_confirmation_ingest",
+    "action": "confirmation-ingest",
+    "stderr": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_confirm_closeout_acceptance",
+    "action": "confirm-closeout-acceptance",
+    "stderr": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_closeout_acceptance_ingest",
+    "action": "closeout-acceptance-ingest",
+    "stderr": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_route_confirmation_drift",
+    "action": "route-confirmation-drift",
+    "stderr": "main-agent-orchestration route-confirmation-drift: route-confirmation-drift requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_confirmation_drift_route",
+    "action": "confirmation-drift-route",
+    "stderr": "main-agent-orchestration route-confirmation-drift: route-confirmation-drift requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_repair_confirmation_bookkeeping",
+    "action": "repair-confirmation-bookkeeping",
+    "stderr": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_confirmation_bookkeeping_repair",
+    "action": "confirmation-bookkeeping-repair",
+    "stderr": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_pre_confirmation_drilldown",
+    "action": "pre-confirmation-drilldown",
+    "stderr": "main-agent-orchestration pre-confirmation-drilldown: pre-confirmation-drilldown requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_pre_confirmation_drilldown",
+    "action": "pre_confirmation_drilldown",
+    "stderr": "main-agent-orchestration pre-confirmation-drilldown: pre-confirmation-drilldown requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_author_confirmation_ready_source",
+    "action": "author-confirmation-ready-source",
+    "stderr": "main-agent-orchestration author-confirmation-ready-source: pre-confirmation-drilldown requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_author_confirmation_ready_source",
+    "action": "author_confirmation_ready_source",
+    "stderr": "main-agent-orchestration author-confirmation-ready-source: pre-confirmation-drilldown requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_authoring_repair",
+    "action": "authoring-repair",
+    "stderr": "main-agent-orchestration authoring-repair: authoring-repair requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_authoring_repair",
+    "action": "authoring_repair",
+    "stderr": "main-agent-orchestration authoring-repair: authoring-repair requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_post_close_defect_intake",
+    "action": "post-close-defect-intake",
+    "stderr": "main-agent-orchestration post-close-defect-intake: post-close-defect-intake requires --source <source-document.md>\n"
+  },
+  {
+    "scenarioId": "g003_controlled_readiness_audit",
+    "action": "controlled-readiness-audit",
+    "stderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T08-34-39-765Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+  }
+]

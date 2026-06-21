@@ -1,0 +1,188 @@
+[
+  {
+    "originalPath": "scripts/runtime-step-state.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_runtime_step_state_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/sdd-artifact-manifest.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_sdd_artifact_manifest_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/skill-inventory-provider.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_skill_inventory_provider_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/skill-semantic-features-config.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_skill_semantic_features_config_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/sprint-status-authorized-update.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_sprint_status_authorized_update_ts_no_args",
+        "expectedStderr": "missing required argument: --storyKey\n"
+      },
+      {
+        "scenarioId": "g007_sprint_status_authorized_update_ts_flag_storykey",
+        "expectedStderr": "missing required argument: --status\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/stable-runtime-policy-json.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_stable_runtime_policy_json_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/strict-command-resolution-preflight.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_env_home",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_strict_command_resolution_preflight_ts_env_userprofile",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/subagent-current-attempt-revalidation.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_current_closeout_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_current_command_evidence",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_envelope",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_project_root",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_report_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_current_attempt_revalidation_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: envelope, requirement-record, report-out\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/subagent-surface-inventory.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"subagent-surface-inventory requires --source and --requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"subagent-surface-inventory requires --source and --requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"subagent-surface-inventory requires --source and --requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_subagent_surface_inventory_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"subagent-surface-inventory requires --source and --requirement-record\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/trace-closure-matrix.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_help",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-help\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\json.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_out",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g007_trace_closure_matrix_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  }
+]

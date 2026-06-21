@@ -1,0 +1,208 @@
+[
+  {
+    "originalPath": "scripts/governance-runtime-queue.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_governance_runtime_queue_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-stage-event-emitter.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_governance_stage_event_emitter_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_i18n_print_resolved_audit_prompt_ts_no_args",
+        "expectedStderr": "Usage: print-resolved-audit-prompt <refsDir> <templateBasename> [projectRoot]\n"
+      },
+      {
+        "scenarioId": "g004_i18n_print_resolved_audit_prompt_ts_flag_transpile_only",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_i18n_render_audit_block_cli_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/i18n/render-template.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_i18n_render_template_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ingest-architecture-confirmation.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, requirementRecord, confirmedBy\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_architecture_confirmation",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: renderReport, requirementRecord, confirmedBy\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_confirmation_text",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, requirementRecord, confirmedBy\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_confirmed_by",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, requirementRecord, confirmedBy\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_persist_state_check",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-persist-state-check\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_render_report",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, requirementRecord, confirmedBy\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_architecture_confirmation_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: architectureConfirmation, renderReport, confirmedBy\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ingest-implementation-evidence.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_ingest_implementation_evidence_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: evidence, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_implementation_evidence_ts_flag_evidence",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_implementation_evidence_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_ingest_implementation_evidence_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: evidence, requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_ingest_implementation_evidence_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: evidence\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing --requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing --requirement-record\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_initialize_six_model_requirement_confirmation_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_cwd",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_action",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_cursor_host",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_dangerously_skip_permissions",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_force",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_output_format",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_live_smoke_main_agent_runtime_ts_flag_permission_mode",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_attempt_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_evidence_dir",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_json",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_mode",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_requirement_record",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_run_id",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_ai_tdd_closeout_remediation_adapter_ts_flag_source",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

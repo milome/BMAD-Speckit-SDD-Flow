@@ -1,0 +1,288 @@
+[
+  {
+    "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_no_args",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_enablerealprapi",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_evidencebundleid",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=source-derived-evidencebundleid\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_project",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_provider",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_record_id",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- multi-host E2E journey failed\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=false, cursor=false, claude=false, codex=false, allRequiredHostsPassed=false, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- invalid evidence: pr-topology-release-artifact: all_affected_stories_passed=false, nodes=claude-node:blocked,codex-node:blocked, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- invalid evidence: quality-gate-artifact: critical_failures=1, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_requirement_set_id",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- multi-host E2E journey failed\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=false, cursor=false, claude=false, codex=false, allRequiredHostsPassed=false, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- invalid evidence: pr-topology-release-artifact: all_affected_stories_passed=false, nodes=claude-node:blocked,codex-node:blocked, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- invalid evidence: quality-gate-artifact: critical_failures=1, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_runid",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=source-derived-runid, storyKey=S-release-gate, evidenceBundleId=source-derived-runid:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_skipsprintaudit",
+        "expectedStderr": "[main-agent-delivery-evidence-run] sprint audit skipped by --skipSprintAudit\n[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_status",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_storykey",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=source-derived-storykey, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_token",
+        "expectedStderr": "[main-agent-delivery-evidence-run] --token is ignored; release gate now owns sprint authorization\n[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_delivery_evidence_run_ts_flag_transpile_only",
+        "expectedStderr": "[main-agent-release-gate] BLOCKED\n- invalid evidence: multi-host-real-artifact: mode=mock, journey=true, cursor=true, claude=true, codex=true, allRequiredHostsPassed=true, githubPrApi=true, prUrl=missing, provenance=matched runId=release-gate-<run-id>, storyKey=S-release-gate, evidenceBundleId=release-gate-<run-id>:bundle\n- release prerequisite failed: single-source-whitelist\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_delivery_truth_gate_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_development_journey_matrix_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_dual_host_pr_orchestrator_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_flag_check_all_source_traces",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: source-derived-check-all-source-traces\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_entryflow_traceability_check_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_attempt_id",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_command_summary",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_implementation_evidence",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_model_packet",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_execution_closure_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-functional-resume-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_flag_out_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_flag_registry",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_functional_resume_check_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-governed-data-products.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_flag_candidate_events",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_flag_out_dir",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_governed_data_products_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_flag_implementation_run_kind",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_flag_render_report",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_env_home",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_env_node_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_implementation_readiness_gate_ts_env_userprofile",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_production_loop_ready_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_production_loop_ready_check_ts_flag_dry_run",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_production_loop_ready_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_production_loop_ready_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_production_loop_ready_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  }
+]

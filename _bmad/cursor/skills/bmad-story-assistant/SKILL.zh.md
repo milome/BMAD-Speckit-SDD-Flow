@@ -5,32 +5,48 @@ description: |
   阶段零：在新项目/worktree 自动检测并补丁 party-mode 展示名优化（若 _bmad 存在且未优化）。
   使用 subagent 执行任务；审计步骤优先通过 Cursor Task 调度 code-reviewer（.claude/agents/ 或 .cursor/agents/），失败则回退 mcp_task generalPurpose。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow 约束。主 Agent 禁止直接修改生产代码。
-  **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story。主 Agent 在进入 Cursor party-mode 前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`；涉及方案选择或设计决策时进入 party-mode 至少 100 轮。
+  **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story。主 Agent 在进入 Cursor party-mode 前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`；Story 设计定稿默认 `final_solution_task_list_100`，普通分析默认 `decision_root_cause_50`。
   适用场景：用户提供 Epic 编号与 Story 编号（如 4、1 表示 Story 4.1），需生成 Story 文档、通过审计、执行 Dev Story 并完成实施后审计。全程中文。
 ---
 <!-- CLOSEOUT-APPROVED-CANONICAL -->
 > Closeout 术语收紧：本文件中“完成 / 通过 / 可进入下一阶段”一律指 `runAuditorHost` 返回 `closeout approved`。审计报告 `PASS` 仅表示可以进入 host close-out，单独的 `PASS` 不得视为完成、准入或放行。
 
+> **统一 closeout 硬门禁（适用于本技能全部审计闭环）**：
+> - 主 Agent 在每个阶段的完整 prompt 模板结尾、resume 指令结尾、以及审计通过后的 host 收口指令结尾，必须原样追加下列固定句；同时必须自动写入评分数据与本技能要求的交接文档（handoff / state / progress / 审计收口文档），禁止留给用户手动完成。
+> - 未执行 `runAuditorHost` 并验证评分写入成功前，禁止结束、禁止交还用户手动操作。
+> - 只有 `runAuditorHost` 返回 `closeout approved` 才算完成；其余都算未完成。
+> - 禁止给“你可以手动做下一步”的建议，除非用户明确要求。
+> - `runAuditorHost` 失败时必须自动重试，并在每次重试时记录失败原因与修复动作；未成功前不得退出当前闭环。
+> - 最终回复必须显式包含以下 4 行，缺一视为未完成：
+>   - `runAuditorHost 调用参数`
+>   - `runAuditorHost 返回结果`
+>   - `评分写入结果（成功/失败码）`
+>   - `closeout 状态（approved/未approved）`
+
 # BMAD Story 助手
 
-## 主 Agent 编排面（强制）
+## Main Agent Orchestration Surface
 
-消费项目用户通过 `$bmad-speckit`、`/bmad-speckit` 或 `bmad-speckit` 在当前 AI 宿主会话中激活主控。不得把 `npm run main-agent-orchestration` 或 `npx bmad-speckit main-agent-orchestration ...` 写成普通消费用户默认步骤；这些命令只允许用于安装验证、CI、debug 或 no-skill fallback。
+Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
-在 interactive main-agent 模式下，主 Agent 在发起、继续或收口本链路前，必须内部运行或等价消费 Main Agent control plane：
+## Cursor Party-Mode Return Validation Contract
+
+主 Agent 在 party-mode 返回后必须先**单独运行** standalone command：`node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`。检查顺序必须从 `_bmad-output/party-mode/runtime/current-session.json` 开始，然后读取 `execution_evidence_level`（取值 `none|pending|partial|final`），再读取 `visible_output_summary`，再读取 `diagnostic_classification`；禁止在读取 `visible_output_summary` 前先翻 `session log`、`tool-result.md`、`terminals/`、`agent-transcripts/`，也禁止用 `ls -la`、`mkdir -p`、`dir ... /b`、`2>&null`、`2>/dev/null` 或 shell fallback chain 猜测状态。若 `diagnostic_classification=degenerate_placeholder_completion` 或 `diagnostic_classification=stub_only_completion`，不得把它泛化为 Task tool 全局失效；若 `recovered_from_newer_launch=true` 或 `pending_launch_evidence_present=true`，不得回退到更旧 completed session 做总结。RCA 固定为：为什么以前看起来更稳定，是因为旧问题以前被吞掉、现在被显式分类，同时也存在新回归引入的状态同步风险；禁止把这些混写成全局无法处理、全局不稳定或整体坏了。
+
+In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
 ```text
 main-agent-orchestration --action inspect --host <codex|cursor|claude>
 main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ```
 
-全局分支只能由 `requirement-record.json`、`currentMentalModel` 和六个心智模型链路决定：需求确认、架构确认、实施准备、执行闭合、审计复核、交付确认。`bmad-help`、Dashboard、score、SFT、legacy report、`orchestrationState`、`pendingPacket`、`continueDecision`、`mainAgentNextAction` 和 `mainAgentReady` 只能作为 projection / compatibility hint / evidence；子代理返回、host closeout、rerun 或阻断事件后必须重新 inspect，再决定下一条全局分支。
+Global branching can only be derived from `requirement-record.json`, `currentMentalModel`, and the six mental model chain: requirement confirmation, architecture confirmation, implementation readiness, execution closure, audit review, and delivery confirmation. `bmad-help`, dashboard, score, SFT, legacy reports, `orchestrationState`, `pendingPacket`, `continueDecision`, `mainAgentNextAction`, and `mainAgentReady` are projections, compatibility hints, or evidence only; after any subagent result, host closeout, rerun, or blocking event, re-run inspect before choosing the next global branch.
 
-硬禁止事项：
-- 禁止要求普通消费用户通过 npm / npx 激活主控。
-- 禁止仅根据 `PASS`、reviewer prose、host summary、`runAuditorHost closeout approved`、handoff summary 或旧 runtime 文件继续派发。
-- interactive mode 下禁止手写 packet 文件或默认写 worker-consumable queue item。
-- 禁止让子代理决定下一条全局执行链；子代理只执行 bounded packet，下一步永远由主 Agent 回读受控记录后决定。
+Hard prohibitions:
+- Do not ask normal consumer users to activate governance through npm or npx.
+- Do not continue dispatch from `PASS`, reviewer prose, host summary, `runAuditorHost closeout approved`, handoff summary, or old runtime files alone.
+- Do not hand-write packet files or default to worker-consumable queue items in interactive mode.
+- Do not let subagents choose the next global branch; subagents execute bounded packets only, and the main Agent chooses the next step after re-reading controlled records.
 
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/cursor/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。Cursor 分支的 party-mode rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 只定义 Story 场景何时进入 party-mode，不得维护第二套 gate 语义。
 
@@ -43,24 +59,8 @@ main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 - 用户选择档位后，主 Agent **必须**完成发起前自检清单并输出 `【自检完成】...可以发起。`
 - Session Bootstrap JSON 由宿主在 `SubagentStart` 注入，主 Agent 不得省略该执行链。
 - Cursor 分支中不做中途暂停，也不在 `20 / 40 / ...` 轮次交还主 Agent；子代理一旦启动，必须在同一会话内连续运行到用户选择的总轮次。
-- 若 party-mode 子代理在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结。Cursor 现已支持 `subagentStop` hook，宿主会在 `subagentStop` 自动触发 party-mode 返回收口与摘要刷新；但返回后默认且**只允许先单独运行** `node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`。这条命令必须作为**单独一条 Node 命令**执行；**禁止**把 project-local helper 与 fallback helper 拼成同一条 shell 命令，**禁止**使用 `||`、`2>&null`、`2>/dev/null`、`cmd /c`、`pwsh -c` 等回退链。仅当已经确认 `.cursor/hooks/party-mode-read-current-session.cjs` 真实不存在，或该单条命令明确返回 `MODULE_NOT_FOUND` / `ENOENT` 且指向 helper 文件本身时，才允许在**第二步单独运行** `node _bmad/runtime/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`。该 helper 会先读取 `_bmad-output/party-mode/runtime/current-session.json`，并输出统一的 JSON 诊断摘要。主 Agent 以该 helper 的 JSON 输出作为唯一检查入口；**禁止**按修改时间猜测“最新 `pm-*` 会话”。检查顺序固定为：① `validation_status`、`status`、`session_key`、`target_rounds_total`；② **先读取** `execution_evidence_level`，该字段固定为 `none|pending|partial|final`：`none` 表示当前 run 没有任何可见执行证据；`pending` 表示已有启动/进行中证据，当前 run 仍视为活跃；`partial` 表示已有部分执行证据，但还没有最终阶段 verdict；`final` 表示已有最终阶段证据或最终 verdict；③ **优先读取** `visible_output_summary` 与 `visible_fragment_record_present`，先看 `observed_visible_round_count`、`first_visible_round`、`last_visible_round`、`progress_current_round`、`progress_target_round`、`final_gate_present`、`final_gate_profile`、`final_gate_total_rounds`、`diagnostic_classification`、`quality_flags`、`excerpt`；④ **仅在需要深挖时**再读取 `session_log_path`、`snapshot_path`、`audit_verdict_path`、`visible_output_capture_path`。**禁止**在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`，也**禁止**使用 `ls -la`、`mkdir -p`、`dir ... /b`、`2>/dev/null` 一类目录/文件探测命令。若 helper 输出 `diagnostic_classification=degenerate_placeholder_completion`，主 Agent 只能表述为「结构上已跑完，但讨论内容退化为占位符」，**不得**误写成“提前退出”；若 helper 输出 `diagnostic_classification=stub_only_completion`，主 Agent 只能表述为「本次只返回 completion stub」，**不得**仅凭这一轮就归纳为“Task tool 全局无法处理 party-mode”。只有当 helper 输出 `execution_evidence_level=none` 时，才允许进一步怀疑 transport / host 执行链失效。若 `validation_status != PASS` 或未达到用户选择的总轮次，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
-
-- 若 helper 输出 `recovered_from_newer_launch = true` 或 `pending_launch_evidence_present = true`，主 Agent 必须把当前结果解释为**存在更新的 pending / active launch**，不得继续引用更旧的 completed session 作为当前 Story run 的结果，也不得据此宣称当前 run 已结束。
-
-### RCA 固化：为什么以前看起来更稳定
-
-- 旧链路更“稳定”的表象，很大一部分来自**宽松判定**：有返回文本、有最终块、甚至只有弱证据时，就可能被默认为“完成”。
-- 现在返回诊断更细，很多旧问题会直接暴露为 `degenerate_placeholder_completion` 或 `stub_only_completion`。
-- 同时，近期 party-mode 的状态链路比以前复杂，确实也存在真实的新回归面。
-- 因此 Story 场景下的主 Agent 必须显式区分：
-  - 旧问题以前被吞掉，现在被显式分类
-  - 新治理链路带来的同步风险
-- **禁止**把两者混写成“Task tool 全局无法处理 party-mode”或“当前环境整体失效”。
-
-### Cursor Party-Mode 执行体约束
-
+- 若 party-mode 子代理在 `22/50`、`10/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结。Cursor 现已支持 `subagentStop` hook，宿主会在 `subagentStop` 自动触发 party-mode 返回收口与摘要刷新；但返回后必须**先读取** `_bmad-output/party-mode/runtime/current-session.json`，并以该文件作为唯一检查入口；**禁止**按修改时间猜测“最新 `pm-*` 会话”。检查顺序固定为：① `validation_status`、`status`、`session_key`、`target_rounds_total`；② **优先读取** `visible_output_summary` 与 `visible_fragment_record_present`，先看 `observed_visible_round_count`、`first_visible_round`、`last_visible_round`、`progress_current_round`、`progress_target_round`、`final_gate_present`、`final_gate_profile`、`final_gate_total_rounds`、`excerpt`；③ **仅在需要深挖时**再读取 `session_log_path`、`snapshot_path`、`audit_verdict_path`、`visible_output_capture_path`。**禁止**在读取 `visible_output_summary` 之前先翻 `session log` 或 `tool-result.md`。若 `validation_status != PASS` 或未达到用户选择的总轮次，必须沿用同一轮次与同一 gate profile 立即重发 facilitator。
 - 在当前 Cursor IDE 中，party-mode-facilitator 允许通过 `generalPurpose-compatible` 执行路径承载；`.cursor/agents/party-mode-facilitator.md` 仍是 canonical prompt/source asset，宿主必须在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`。
-- 由于 Cursor 分支不做中途暂停或分批回传，主 Agent 在 party-mode 子代理返回后，只检查其是否达到用户选择的总轮次并输出最终总结 / `## Final Gate Evidence`；若在 `10/50`、`11/50`、`22/50` 等中途轮次提前结束，主 Agent **不得**自行续写讨论或从 Round 1 重新开始总结，必须沿用同一总轮次与同一 gate profile 立即重发 facilitator，或显式向用户报告当前执行体无效。
 
 ## 快速决策指引
 
@@ -186,7 +186,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 0. （阶段零-前置）若 _bmad 存在且 party-mode 未做展示名优化，自动执行补丁
 1. 发起 Create Story 子任务（epic_num=4, story_num=1）
 2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
-3. 审计通过后，发起 Dev Story 实施子任务，传入 TASKS 或 BUGFIX 文档路径
+3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`node scripts/assert-implementation-entry.ts --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
 4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
 5. 审计通过即流程结束
 
@@ -588,7 +588,7 @@ Architecture Party-Mode角色（GAP-020 修复：与 Plan Party-Mode 差异说�
 
 通过 **mcp_task** 调用 subagent，执行 `/bmad-bmm-create-story` 等价工作流，生成 Epic `{epic_num}`、Story `{epic_num}-{story_num}` 文档。主 Agent 须将模板 **STORY-A1-CREATE**（阶段一 Create Story prompt）整段复制并替换占位符。
 
-**跳过判断**：仅当用户**明确**说出「已通过 party-mode 且审计通过」「跳过 Create Story」时，主 Agent 方可跳过阶段一、二。若用户仅提供 Epic/Story 编号或说「Story 已存在」而未明确上述表述，**必须**执行 Create Story（含 party-mode 100 轮，若有方案选择或设计决策）。
+**跳过判断**：仅当用户**明确**说出「已通过 party-mode 且审计通过」「跳过 Create Story」时，主 Agent 方可跳过阶段一、二。若用户仅提供 Epic/Story 编号或说「Story 已存在」而未明确上述表述，**必须**执行 Create Story（主 Agent 先展示 `20 / 50 / 100` 强度选项；若涉及设计定稿则默认 `final_solution_task_list_100`）。
 
 ### 1.1 发起子任务
 
@@ -713,7 +713,7 @@ prompt: |
 
 #### 步骤 2.3：阶段二准入检查（强制，先执行）
 
-主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**确认统一 auditor host runner 已完成 post-audit automation。若 host 尚未执行且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑 `runAuditorHost`。失败 non_blocking。
+主 Agent 在收到阶段二通过结论后、进入阶段三之前，**必须先**确认统一 auditor host runner 已完成 post-audit automation。若 host 尚未执行且报告文件 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage2.md` 存在，则主 Agent 执行 步骤 2.2 补跑 `runAuditorHost`。未获得 `closeout approved` 前不得进入阶段三。
 
 #### 步骤 2.2：补跑 runAuditorHost（步骤 2.3 判定 host 未完成时执行）
 
@@ -721,12 +721,12 @@ prompt: |
 ```bash
 npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage story --artifactPath <Story 文档路径> --reportPath <报告路径> --iterationCount 0
 ```
-补跑后再次确认 host 已完成收口；若报告不存在则停止。失败 non_blocking。
+补跑后再次确认 host 已完成收口；若报告不存在则停止并明确缺失原因。若调用失败，必须自动重试、记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认存在真实 blocker。
 
 **与 T11 衔接说明**：子代理在【审计通过后必做】中只返回 host 所需字段；主 Agent 通过 步骤 2.3 / 2.2 确保 `runAuditorHost` 已完成，避免重复收口。
 
 #### 审计通过后统一 Host 收口（强制）
-- story 阶段的评分写入、auditIndex 更新与其它 post-audit automation 统一由 `runAuditorHost` 承接；主 Agent 通过 步骤 2.2/2.3 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story；失败 non_blocking，记录 resultCode。
+- story 阶段的评分写入、auditIndex 更新与其它 post-audit automation 统一由 `runAuditorHost` 承接；主 Agent 通过 步骤 2.2/2.3 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=story。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得继续。
 
 ---
 
@@ -788,15 +788,18 @@ Layer 4: specify → 产出spec-E{epic}-S{story}.md（技术规格化Story内容
 
 ## 阶段三：Dev Story 实施（增强版）
 
-审计通过后，执行 **/bmad-bmm-dev-story** 等价工作流，对 Story `{epic_num}-{story_num}` 进行开发实施。
+审计通过后，**必须先**执行统一 Implementation Entry Gate 断言（`implementation-readiness`）。仅当结果为 `decision=pass` 时，才能执行 **/bmad-bmm-dev-story** 等价工作流，对 Story `{epic_num}-{story_num}` 进行开发实施；若结果为 `block` 或 `reroute`，必须先补齐 readiness 事实或按推荐 flow 调整，禁止直接启动 Dev Story。
 
 ### 前置检查
 
 在开始实施前，必须确认以下检查项：
+- [ ] 已执行统一 Implementation Entry Gate 断言，且结果为 `decision=pass`
 - [ ] PRD需求追溯章节已补充（列出本Story涉及的所有PRD需求ID）
 - [ ] Architecture约束已传递到Story文档（列出相关的Architecture组件和约束）
 - [ ] 复杂度评估已完成（确认本Story的复杂度分数）
 - [ ] Epic/Story规划层的依赖分析已确认（确认前置Story已完成）
+
+**重算规则（强制）**：若 Dev Story 先进入 `specify / plan / gaps / tasks` 等纯文档子阶段，则在首个真正写生产代码 / 测试代码的 `implement` 子阶段启动前，主 Agent 或宿主必须**再次重算同一个 Implementation Entry Gate**。禁止把第一次通过结果当成永久通行证。
 
 ### spec 目录创建（路径须含 epic-slug 与 story-slug）
 
@@ -1041,7 +1044,7 @@ prompt: |
 
   （4）implement 阶段 artifactDocPath 可为 story 子目录实现主文档路径或留空。
 
-  （5）调用失败时记录 resultCode 进审计证据，不阻断流程。
+  （5）调用失败时记录 `resultCode`、失败原因与修复动作进审计证据，并立即自动重试；未获得 `closeout approved` 前不得结束当前 stage、不得交还用户手动操作。
 
   **必须嵌套执行 speckit-workflow 完整流程**：specify → plan → GAPS → tasks → 执行。
 
@@ -1131,12 +1134,12 @@ cleanup 命令（按平台择一执行）：
   - 若 host 已完成，则无需执行 步骤 4.2。
   - 若 host 未完成且 `AUDIT_Story_{epic}-{story}_stage4.md` 存在，则主 Agent 执行 步骤 4.2 补跑。
   - 若报告可解析块维度错误，则先修正报告，再通过 `runAuditorHost` 重新收口。
-  - 补跑失败 non_blocking，主流程继续。
+  - 补跑失败时不得继续主流程；必须自动重试并记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认真实 blocker。
 - #### 步骤 4.2：补跑 runAuditorHost（步骤 4.3 判定 host 未完成时执行）
   - 当 步骤 4.3 判定 host 未完成且报告存在时，主 Agent 执行：`npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage implement --artifactPath <story 文档路径> --reportPath <报告路径> --iterationCount {本 stage 累计 fail 轮数，0 表示一次通过}`
-  - 若调用失败，记录 resultCode，不阻断流程（non_blocking）。
+  - 若调用失败，记录 `resultCode`、失败原因与修复动作，并自动重试；未获得 `closeout approved` 前不得提供完成选项。
 - #### 审计通过后统一 Host 收口（强制）
-  - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement；失败 non_blocking。
+  - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得结束。
 - 提供完成选项（见下文）
 
 **有条件通过（C级）**：
@@ -1534,6 +1537,8 @@ post-audit 前还必须追加以下检查：
 与阶段二相同：**优先** Cursor Task 调度 code-reviewer；**回退** mcp_task generalPurpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<story 文档路径>`、`stage=implement`，交由 invoking host/runner 统一调用 `runAuditorHost`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
 
 若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
+
+- **不中断执行 contract**：实施子代理必须连续完成当前作用域内的全部剩余 User Story/任务，不得在 milestone 完成后暂停等待主 Agent 批准。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域工作全部完成且可进入 post-audit；② 出现真实 blocker，需要 reroute / remediation；③ 本技能显式定义的审计或 checkpoint 边界已到达。
 
 ---
 

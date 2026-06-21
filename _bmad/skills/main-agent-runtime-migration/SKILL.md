@@ -14,6 +14,8 @@ Use this skill when migrating Main Agent consumer-visible commands away from roo
 - Do not mark root scripts deletion-ready without classification, caller switching, tests, install-matrix evidence, proof that no internal chain still depends on the file, and explicit approval.
 - Do not make `repo-governance/**` or this skill a consumer runtime dependency.
 - Do not require consumer projects to install `tsx` or `ts-node`.
+- Do not mark any `scripts/*` entry `migrationStatus: validated` or `validationStatus: passed` unless a package source equivalent set exists under `packages/bmad-speckit/src/main-agent/**` and passes the package source parity gate.
+- Report-only actions, descriptor-only helpers, shared dispatchers, dist output, repo-governance evidence, tests, and compiled fallback files are not package source equivalents.
 
 ## Target Architecture
 
@@ -24,11 +26,35 @@ Use this skill when migrating Main Agent consumer-visible commands away from roo
 - Root package shims may forward to the package CLI, but must not implement Main Agent behavior.
 - Compiled fallback may remain only as a bounded compatibility path for unmigrated legacy actions.
 
+## Package Source Parity Gate
+
+This gate applies before any retained `scripts/*` registry entry is marked complete with `migrationStatus: validated` or `validationStatus: passed`.
+
+Required package source equivalent:
+
+- Each completed root script must map to one package source file or a cohesive package source file set under `packages/bmad-speckit/src/main-agent/**`.
+- The equivalent set must be explicitly listed in registry `targetPaths` and evidence. It cannot be inferred from dist files, package bin files, index/router files, repo-governance evidence, tests, or shared runtime plumbing.
+- Count only files that implement entry-specific behavior. Shared framework files may count only when the evidence names the entry-specific functions they contain.
+- Any `.cjs` target is runtime output or compatibility material and cannot satisfy package source parity.
+- A target backed only by `createPackageRuntimeReportAction`, `createDurableHelperDescriptor`, `compiled/main-agent-orchestration.cjs`, or any compiled fallback bridge is incomplete and must stay `partial` or `blocked`.
+
+Size parity rule:
+
+- Compare the original root script against the package source equivalent set using normalized UTF-8 source bytes and normalized non-empty, non-comment LOC.
+- Normalization removes line-ending differences, blank lines, shebangs, license headers, and comments. Do not count dist output, generated evidence, tests, package CLI wrappers, or duplicated shared infrastructure.
+- Default completion threshold: absolute normalized byte delta must be no greater than `max(10% of the original normalized bytes, 1024 bytes)`.
+- Mechanical copy or `runtime_emit_cjs` threshold: use `max(1% of the original normalized bytes, 1024 bytes)` only for non-CJS package source equivalents because those migrations should be near byte-equivalent after normalization. Emitted `.cjs` files may be runtime artifacts, but they do not count as parity source.
+- Do not use plain `1%` as the general rule; it is too brittle for TypeScript-to-JavaScript migration, package decomposition, and removal of root-only bootstrap code.
+- Do not use plain `1KiB` as the general rule; it is too loose for small scripts and too strict for large scripts.
+- If a deliberate decomposition exceeds the default threshold, the entry cannot be `validated/passed` unless the evidence includes a capability ledger and a size-delta exception explaining every removed or relocated behavior. Without that evidence, use `partial` or `blocked`.
+- If the package equivalent set is less than 70% of the original normalized bytes, treat the entry as `blocked` unless the evidence proves the removed sections were generated, obsolete, dead, or root-only bootstrap code.
+
 ## Required Registry Work
 
 - Add or update the wave in `repo-governance/script-migration-registry.yaml`.
 - Use `script-migration-registry` as the migration record authority.
 - Record original path, target source paths, target dist paths, caller switch status, validation status, evidence refs, old path disposition, and deletion approval state.
+- For completed `scripts/*` entries, record the package source equivalent set in `targetPaths`; target paths that only point at dist, reports, descriptors, compiled fallback, tests, or repo-governance artifacts are insufficient.
 - If a new wave refines an older wave for the same original path, declare `refinesWaveId` and keep `deletionAllowed: false`.
 
 ## Test Requirements
@@ -50,6 +76,8 @@ Use this skill when migrating Main Agent consumer-visible commands away from roo
 - Run the registry validator and registry contract test.
 - Write `repo-governance/script-migrations/<wave-id>/evidence.json` with command rows, exit codes, and `sha256:` hashes.
 - Write `repo-governance/script-migrations/<wave-id>/summary.md` with old path disposition and residual risks.
+- Write package source parity evidence for every completed root script: original normalized bytes/LOC, package equivalent paths, package normalized bytes/LOC, byte delta, percent delta, excluded paths with reasons, and the final `passed`, `partial`, or `blocked` decision.
+- When a size-delta exception is used, write a capability ledger that maps original capabilities to package implementation paths and explicitly lists removed root-only or obsolete sections.
 
 ## Install Matrix
 
@@ -72,5 +100,6 @@ Each evidence record should prove:
 
 - Keep root scripts retained unless a separate approved cleanup contract exists.
 - Update registry status only after evidence exists.
+- Before using `validated` or `passed`, confirm each completed root script has package source equivalent paths and size parity evidence within the correct threshold.
 - Run the final encoding gate after evidence, registry, summary, and skill files are written.
-- Report changed files, command evidence, install-matrix evidence, root script disposition, and residual risks.
+- Report changed files, command evidence, install-matrix evidence, package source parity numbers, root script disposition, and residual risks.

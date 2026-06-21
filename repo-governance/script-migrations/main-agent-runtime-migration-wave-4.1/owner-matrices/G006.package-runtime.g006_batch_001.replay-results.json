@@ -1,0 +1,167 @@
+{
+  "schemaVersion": "main-agent-runtime-migration-wave-4-1-owner-initial-replay-results/v1",
+  "waveId": "main-agent-runtime-migration-wave-4.1",
+  "ownerTaskId": "G006",
+  "generatedAt": "2026-06-20T05:51:27.252Z",
+  "artifactSuffix": "g006_batch_001",
+  "timeoutMs": 10000,
+  "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G006.package-runtime.g006_batch_001.behavior-matrix.json",
+  "matrixHash": "sha256:7cca64924e3550753cb97caf639dce7a25270347dbd8fe78f76c2c5888edc99f",
+  "scenarioCount": 4,
+  "passedScenarioCount": 3,
+  "failedScenarioCount": 1,
+  "replayRows": [
+    {
+      "originalPath": "scripts/bmad-speckit-cli.js",
+      "entryId": "bmad-speckit-cli-js",
+      "scenarioId": "g006_bmad_speckit_cli_js_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 30,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 57,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g006_bmad_speckit_cli_js_no_args",
+        "originalEntryPoint": "scripts/bmad-speckit-cli.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+        "stdoutMatches": true,
+        "stderrMatches": false,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": false,
+        "passed": false,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 57,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/run-auditor-host.ts",
+      "entryId": "run-auditor-host",
+      "scenarioId": "g006_run_auditor_host_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js",
+      "originalReplay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 128,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 128,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 1,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g006_run_auditor_host_ts_no_args",
+        "originalEntryPoint": "scripts/run-auditor-host.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 1,
+        "stdoutBytes": 0,
+        "stderrBytes": 128,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/runtime-context-registry.ts",
+      "entryId": "runtime-context-registry-ts",
+      "scenarioId": "g006_runtime_context_registry_ts_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context-registry.js",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g006_runtime_context_registry_ts_no_args",
+        "originalEntryPoint": "scripts/runtime-context-registry.ts",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 0,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    },
+    {
+      "originalPath": "scripts/write-runtime-context.cjs",
+      "entryId": "write-runtime-context",
+      "scenarioId": "g006_write_runtime_context_cjs_no_args",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-context.cjs",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-context.cjs",
+      "originalReplay": {
+        "exitCode": 0,
+        "stdoutBytes": 41,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "replay": {
+        "exitCode": 0,
+        "stdoutBytes": 41,
+        "stderrBytes": 0,
+        "expectedFileArtifactCount": 0,
+        "expectedErrorPathCount": 0,
+        "timedOut": false
+      },
+      "comparison": {
+        "scenarioId": "g006_write_runtime_context_cjs_no_args",
+        "originalEntryPoint": "scripts/write-runtime-context.cjs",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-context.cjs",
+        "stdoutMatches": true,
+        "stderrMatches": true,
+        "exitCodeMatches": true,
+        "fileArtifactsMatch": true,
+        "errorPathsMatch": true,
+        "passed": true,
+        "exitCode": 0,
+        "stdoutBytes": 41,
+        "stderrBytes": 0,
+        "timedOut": false
+      }
+    }
+  ]
+}

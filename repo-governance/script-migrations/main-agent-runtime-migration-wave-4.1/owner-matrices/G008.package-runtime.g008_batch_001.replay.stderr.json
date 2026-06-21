@@ -1,0 +1,96 @@
+[
+  {
+    "originalPath": "scripts/analytics-cluster.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_analytics_cluster_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/analytics-prompt-optimize.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_analytics_prompt_optimize_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/analytics-rule-suggest.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_analytics_rule_suggest_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_audit_scoring_convergence_policy_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/audit-triad-orchestrator.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_audit_triad_orchestrator_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/check-story-score-written.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_check_story_score_written_ts_no_args",
+        "expectedStderr": "Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/compare-bmad-help-upstream.js",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g008_compare_bmad_help_upstream_js_env_bmad_help_upstream_commit",
+        "expectedStderr": "fatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\nnode:child_process:955\n    throw err;\n    ^\n\nError: Command failed: git show source-derived-bmad_help_upstream_commit:_bmad/_config/bmad-help.csv\nfatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n  status: 128,\n  signal: null,\n  output: [\n    null,\n    '',\n    \"fatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\\n\"\n  ],\n  pid: <pid>,\n  stdout: '',\n  stderr: \"fatal: invalid object name 'source-derived-bmad_help_upstream_commit'.\\n\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_controlled_readiness_audit_bridge_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/create-second-story.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_create_second_story_ts_no_args",
+        "expectedStderr": "scripts/bmad-state.ts:<line>\n<runtime-source-frame>\nError: Story E001-S002 already exists\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/create-test-story.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g008_create_test_story_ts_no_args",
+        "expectedStderr": "scripts/bmad-state.ts:<line>\n<runtime-source-frame>\nError: Story E001-S001 already exists\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  }
+]

@@ -1,0 +1,120 @@
+[
+  {
+    "originalPath": "scripts/critical-auditor-profile.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_critical_auditor_profile_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/dashboard-projection-mapping.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_help",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_json",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_out_dir",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_dashboard_projection_mapping_ts_flag_record_id",
+        "expectedStdout": "dashboard_projection=pass\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.cjs",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_deferred_gap_governance_cjs_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.d.cts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_deferred_gap_governance_d_cts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/diagnose-bmad-state.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_diagnose_bmad_state_ts_no_args",
+        "expectedStdout": "=== BMAD 状态诊断 ===\n\n【诊断项 1】current_context 设置:\n✅ current_context 正常: epic=E001, story=S001\n\n【诊断项 2】active_stories 列表:\n   发现 3 个活动 Story:\n\n   1. E001-S002\n      stage: specify ❌\n      status: active\n      ⚠️ 警告: stage 值 \"specify\" 不在预定义列表中\n   2. E001-S001\n      stage: specify_passed ✅\n      status: active\n   3. E999-S001\n      stage: completed ✅\n      status: active\n\n【诊断项 3】Story 状态文件一致性:\n   发现 10 个 Story 状态文件\n   - 999-1-progress.yaml\n   - 999-2-progress.yaml\n   - 999-5-progress.yaml\n   - 999-5-ralph-progress.yaml\n   - E001-S001-progress.yaml\n   - E001-S002-progress.yaml\n   - E999-S001-progress.yaml\n   - E999-S002-progress.yaml\n   - E999-S003-progress.yaml\n   - E999-S004-progress.yaml\n\n【诊断项 4】Reviewer Projection:\n⚠️ reviewer projection unavailable: requirement record flow invalid or missing: <missing>\n\n【诊断项 5】Readiness Projection:\n✅ readiness baseline run: REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER-readiness-<run-id>\n   readiness score: 100\n   effective verdict: blocked_pending_rereadiness\n   drift severity: major\n   re-readiness required: yes\n   drift signals: (none)\n   drifted dimensions: (none)\n   blocking reason: Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\n\n=== 诊断完成 ===\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
+        "expectedStdout": "[governance-fixture] existing mapping is usable: _bmad-output/runtime/requirement-records/index.json\n"
+      },
+      {
+        "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_flag_force",
+        "expectedStdout": "[governance-fixture] wrote _bmad-output/runtime/requirement-records/index.json\n"
+      },
+      {
+        "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_env_ci",
+        "expectedStdout": "[governance-fixture] existing mapping is usable: _bmad-output/runtime/requirement-records/index.json\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/eval-question-generate.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_eval_question_generate_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/extract-npm-pack-json.js",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_extract_npm_pack_json_js_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_governance_host_dispatch_adapter_ts_no_args",
+        "expectedStdout": ""
+      },
+      {
+        "scenarioId": "g008_governance_host_dispatch_adapter_ts_flag_output_format",
+        "expectedStdout": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/host-runtime-mode.ts",
+    "expectedStdoutByScenario": [
+      {
+        "scenarioId": "g008_host_runtime_mode_ts_no_args",
+        "expectedStdout": ""
+      }
+    ]
+  }
+]

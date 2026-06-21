@@ -1,0 +1,152 @@
+[
+  {
+    "originalPath": "scripts/analytics-cluster.ts",
+    "scenarioId": "g008_analytics_cluster_ts_no_args",
+    "expectedStdout": "[]\n"
+  },
+  {
+    "originalPath": "scripts/analytics-prompt-optimize.ts",
+    "scenarioId": "g008_analytics_prompt_optimize_ts_no_args",
+    "expectedStdout": "prompt-optimizer: wrote 0 suggestions to D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\scoring\\prompt-optimization-suggestions.md\n"
+  },
+  {
+    "originalPath": "scripts/analytics-rule-suggest.ts",
+    "scenarioId": "g008_analytics_rule_suggest_ts_no_args",
+    "expectedStdout": "rule-suggestion: wrote 0 suggestions to D:\\Dev\\BMAD-Speckit-SDD-Flow\\_bmad-output\\scoring\\rule-upgrade-suggestions.yaml\n"
+  },
+  {
+    "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+    "scenarioId": "g008_audit_scoring_convergence_policy_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/audit-triad-orchestrator.ts",
+    "scenarioId": "g008_audit_triad_orchestrator_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/check-story-score-written.ts",
+    "scenarioId": "g008_check_story_score_written_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/compare-bmad-help-upstream.js",
+    "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
+    "expectedStdout": "{\n  \"upstreamCommit\": \"2646672a\",\n  \"validation\": {\n    \"status\": \"pass\",\n    \"upstreamCorePreserved\": true,\n    \"projectExtensionsAllowed\": true,\n    \"changedRowsWithinAllowedFields\": true,\n    \"workflowCoreRulesPreserved\": true,\n    \"noForbiddenWorkflowPollution\": true,\n    \"allowedProjectExtensions\": [\n      \"core|RG|Runtime Governance\",\n      \"core|BA|Bug Assistant\",\n      \"core|ST|Standalone Tasks\"\n    ],\n    \"allowedAdaptationFields\": [\n      \"workflow-file\",\n      \"command\",\n      \"description\"\n    ],\n    \"forbiddenRoutingControlFields\": [\n      \"phase\",\n      \"sequence\",\n      \"required\",\n      \"output-location\"\n    ],\n    \"disallowedAdded\": [],\n    \"disallowedChanged\": [],\n    \"missingWorkflowCoreFlags\": [],\n    \"forbiddenWorkflowPollution\": []\n  },\n  \"catalog\": {\n    \"upstreamRows\": 64,\n    \"currentRows\": 67,\n    \"upstreamModuleCounts\": {\n      \"bmb\": 12,\n      \"bmm\": 30,\n      \"cis\": 5,\n      \"core\": 8,\n      \"tea\": 9\n    },\n    \"currentModuleCounts\": {\n      \"bmb\": 12,\n      \"bmm\": 30,\n      \"cis\": 5,\n      \"core\": 11,\n      \"tea\": 9\n    },\n    \"added\": [\n      {\n        \"module\": \"core\",\n        \"name\": \"Runtime Governance\",\n        \"code\": \"RG\",\n        \"phase\": \"anytime\",\n        \"command\": \"\"\n      },\n      {\n        \"module\": \"core\",\n        \"name\": \"Bug Assistant\",\n        \"code\": \"BA\",\n        \"phase\": \"anytime\",\n        \"command\": \"bmad-bug-assistant\"\n      },\n      {\n        \"module\": \"core\",\n        \"name\": \"Standalone Tasks\",\n        \"code\": \"ST\",\n        \"phase\": \"anytime\",\n        \"command\": \"bmad-standalone-tasks\"\n      }\n    ],\n    \"removed\": [],\n    \"changedCount\": 18,\n    \"changed\": [\n      {\n        \"key\": \"bmm|BP|Brainstorm Project\",\n        \"module\": \"bmm\",\n        \"name\": \"Brainstorm Project\",\n        \"code\": \"BP\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/workflows/brainstorming/workflow.md\",\n            \"current\": \"_bmad/skills/bmad-brainstorming/workflow.md\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|IR|Check Implementation Readiness\",\n        \"module\": \"bmm\",\n        \"name\": \"Check Implementation Readiness\",\n        \"code\": \"IR\",\n        \"changes\": [\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Ensure PRD UX Architecture and Epics Stories are aligned\",\n            \"current\": \"When governed runtime state exists, default to the governed_runtime_readiness_gate and route to the governed runtime implementation-readiness gate instead of directly running the upstream planning readiness workflow. When no governed runtime state exists, or the user explicitly requests BMAD upstream planning artifact readiness, use the upstream PRD/UX/Architecture/Epics readiness workflow. BMAD Upstream Workflow Catalog visibility remains informational under governed runtime.\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|CS|Create Story\",\n        \"module\": \"bmm\",\n        \"name\": \"Create Story\",\n        \"code\": \"CS\",\n        \"changes\": [\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Story cycle start: Prepare first found story in the sprint plan that is next, or if the command is run with a specific epic and story designation with context. Once complete, then VS then DS then CR then back to DS if needed or next CS or ER. BMAD 默认不创建 branch/worktree（solo 快速迭代）；可选 -CreateBranch、-CreateWorktree 做完整隔离。前置条件：sprint-planning 须先运行（sprint-status.yaml 缺失时需先 sprint-planning 或显式 bypass）。\",\n            \"current\": \"Story cycle start: Prepare first found story in the sprint plan that is next, or if the command is run with a specific epic and story designation with context. Once complete, then VS then DS then CR then back to DS if needed or next CS or ER. BMAD defaults to no branch/worktree (solo quick iteration); optional -CreateBranch, -CreateWorktree for full isolation. Prerequisite: sprint-planning must run first (or explicit bypass when sprint-status.yaml is missing).\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|DS|Dev Story\",\n        \"module\": \"bmm\",\n        \"name\": \"Dev Story\",\n        \"code\": \"DS\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml\",\n            \"current\": \"skill:bmad-story-assistant\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"bmad-bmm-dev-story\",\n            \"current\": \"bmad-story-assistant\"\n          },\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Story cycle: Execute story implementation tasks and tests then CR then back to DS if fixes needed. 前置条件：sprint-planning 须先运行（sprint-status.yaml 缺失时需先 sprint-planning 或提供 story 文件路径）。\",\n            \"current\": \"OFFICIAL path: use skill `bmad-story-assistant` for the full Story lifecycle (Create Story → audit → Dev Story → post-audit). Integrates speckit-workflow and audit-loop iteration. Only recommend when implementationReadinessStatus is ready_clean or repair_closed; otherwise route to readiness repair instead of implementation-first. NOT RECOMMENDED: `/bmad-bmm-dev-story` or `_bmad/commands/bmad-bmm-dev-story.md` alone—those bypass the orchestrated skill flow. Prerequisite: sprint-planning must run first.\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|CR|Code Review\",\n        \"module\": \"bmm\",\n        \"name\": \"Code Review\",\n        \"code\": \"CR\",\n        \"changes\": [\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Story cycle: If issues back to DS if approved then next CS or ER if epic complete\",\n            \"current\": \"Story cycle: If issues back to DS if approved then next CS or ER. Integrates with bmad-code-reviewer-lifecycle: audit loop iteration→parse reports→write to scoring. Low-score runs: npx bmad-speckit coach to diagnose weak points. High-score runs: npx bmad-speckit sft-extract to extract SFT training data (high-quality samples are more valuable for model fine-tuning).\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|QS|Quick Spec\",\n        \"module\": \"bmm\",\n        \"name\": \"Quick Spec\",\n        \"code\": \"QS\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/workflows/bmad-quick-flow/quick-spec/workflow.md\",\n            \"current\": \"skill:bmad-standalone-tasks\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"bmad-bmm-quick-spec\",\n            \"current\": \"bmad-standalone-tasks\"\n          },\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Do not suggest for potentially very complex things unless requested or if the user complains that they do not want to follow the extensive planning of the bmad method. Quick one-off tasks small changes simple apps brownfield additions to well established patterns utilities without extensive planning\",\n            \"current\": \"OFFICIAL path for TASKS/BUGFIX-style quick work: skill `bmad-standalone-tasks` (ralph-method, TDD red-green, audit-loop iteration). Recommend only after TASKS/BUGFIX 文档前置审计 and when implementation-readiness is not blocking. Do not preserve this as the default path under high complexity. NOT RECOMMENDED as primary: `bmad-bmm-quick-spec`, `_bmad/commands/bmad-bmm-quick-spec.md`, `bmad-agent-bmm-quick-flow-solo-dev`, or quick-spec workflow alone.\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|QD|Quick Dev\",\n        \"module\": \"bmm\",\n        \"name\": \"Quick Dev\",\n        \"code\": \"QD\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.md\",\n            \"current\": \"skill:bmad-standalone-tasks\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"bmad-bmm-quick-dev\",\n            \"current\": \"bmad-standalone-tasks\"\n          },\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Quick one-off tasks small changes simple apps utilities without extensive planning - Do not suggest for potentially very complex things unless requested or if the user complains that they do not want to follow the extensive planning of the bmad method, unless the user is already working through the implementation phase and just requests a 1 off things not already in the plan\",\n            \"current\": \"OFFICIAL path for TASKS/BUGFIX-style quick work: skill `bmad-standalone-tasks` (ralph-method, TDD, audit loops). Recommend only after TASKS/BUGFIX 文档前置审计 and when implementation-readiness is not blocking. Under high complexity, upgrade instead of keeping the quick path. NOT RECOMMENDED as primary: `bmad-bmm-quick-dev`, `_bmad/commands/bmad-bmm-quick-dev.md`, `bmad-agent-bmm-quick-flow-solo-dev`, or quick-dev workflow alone—those lack the standalone-tasks orchestration.\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|WD|Write Document\",\n        \"module\": \"bmm\",\n        \"name\": \"Write Document\",\n        \"code\": \"WD\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/agents/tech-writer/tech-writer.agent.yaml\",\n            \"current\": \"skill:bmad-agent-tech-writer\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"\",\n            \"current\": \"bmad-agent-bmm-tech-writer\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|US|Update Standards\",\n        \"module\": \"bmm\",\n        \"name\": \"Update Standards\",\n        \"code\": \"US\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/agents/tech-writer/tech-writer.agent.yaml\",\n            \"current\": \"skill:bmad-agent-tech-writer\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"\",\n            \"current\": \"bmad-agent-bmm-tech-writer\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|MG|Mermaid Generate\",\n        \"module\": \"bmm\",\n        \"name\": \"Mermaid Generate\",\n        \"code\": \"MG\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/agents/tech-writer/tech-writer.agent.yaml\",\n            \"current\": \"skill:bmad-agent-tech-writer\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"\",\n            \"current\": \"bmad-agent-bmm-tech-writer\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|VD|Validate Document\",\n        \"module\": \"bmm\",\n        \"name\": \"Validate Document\",\n        \"code\": \"VD\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/agents/tech-writer/tech-writer.agent.yaml\",\n            \"current\": \"skill:bmad-agent-tech-writer\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"\",\n            \"current\": \"bmad-agent-bmm-tech-writer\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"bmm|EC|Explain Concept\",\n        \"module\": \"bmm\",\n        \"name\": \"Explain Concept\",\n        \"code\": \"EC\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/bmm/agents/tech-writer/tech-writer.agent.yaml\",\n            \"current\": \"skill:bmad-agent-tech-writer\"\n          },\n          {\n            \"field\": \"command\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"\",\n            \"current\": \"bmad-agent-bmm-tech-writer\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"cis|BS|Brainstorming\",\n        \"module\": \"cis\",\n        \"name\": \"Brainstorming\",\n        \"code\": \"BS\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/workflows/brainstorming/workflow.md\",\n            \"current\": \"_bmad/skills/bmad-brainstorming/workflow.md\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"core|BSP|Brainstorming\",\n        \"module\": \"core\",\n        \"name\": \"Brainstorming\",\n        \"code\": \"BSP\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/workflows/brainstorming/workflow.md\",\n            \"current\": \"_bmad/skills/bmad-brainstorming/workflow.md\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"core|PM|Party Mode\",\n        \"module\": \"core\",\n        \"name\": \"Party Mode\",\n        \"code\": \"PM\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/workflows/party-mode/workflow.md\",\n            \"current\": \"_bmad/skills/bmad-party-mode/workflow.md\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"core|BH|bmad-help\",\n        \"module\": \"core\",\n        \"name\": \"bmad-help\",\n        \"code\": \"BH\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/tasks/help.md\",\n            \"current\": \"skill:bmad-help\"\n          },\n          {\n            \"field\": \"description\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"Get unstuck by showing what workflow steps come next or answering BMad Method questions.\",\n            \"current\": \"State-aware help: derive flow, contextMaturity, complexity, and implementationReadinessStatus from runtime state and artifacts, ask up to 1-2 critical follow-up questions when evidence is insufficient, and label routes as recommended / blocked with rerouteRequired when the current flow must upgrade.\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"core|ID|Index Docs\",\n        \"module\": \"core\",\n        \"name\": \"Index Docs\",\n        \"code\": \"ID\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/tasks/index-docs.xml\",\n            \"current\": \"_bmad/skills/bmad-index-docs/workflow.md\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      },\n      {\n        \"key\": \"core|SD|Shard Document\",\n        \"module\": \"core\",\n        \"name\": \"Shard Document\",\n        \"code\": \"SD\",\n        \"changes\": [\n          {\n            \"field\": \"workflow-file\",\n            \"risk\": \"adaptation\",\n            \"allowed\": true,\n            \"upstream\": \"_bmad/core/tasks/shard-doc.xml\",\n            \"current\": \"_bmad/skills/bmad-shard-doc/workflow.md\"\n          }\n        ],\n        \"allowed\": true,\n        \"highRiskRoutingFields\": []\n      }\n    ]\n  },\n  \"workflow\": {\n    \"upstream\": {\n      \"routingRules\": true,\n      \"displayRules\": true,\n      \"moduleDetection\": true,\n      \"inputAnalysis\": true,\n      \"execution\": true,\n      \"officialExecutionPaths\": false,\n      \"mainAgent\": false,\n      \"codexFiveLayer\": false,\n      \"recommendedSkillLabel\": false\n    },\n    \"current\": {\n      \"routingRules\": true,\n      \"displayRules\": true,\n      \"moduleDetection\": true,\n      \"inputAnalysis\": true,\n      \"execution\": true,\n      \"officialExecutionPaths\": true,\n      \"mainAgent\": false,\n      \"codexFiveLayer\": false,\n      \"recommendedSkillLabel\": true\n    }\n  }\n}\n"
+  },
+  {
+    "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+    "scenarioId": "g008_controlled_readiness_audit_bridge_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/create-second-story.ts",
+    "scenarioId": "g008_create_second_story_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/create-test-story.ts",
+    "scenarioId": "g008_create_test_story_ts_no_args",
+    "expectedStdout": "Creating E001-S001...\n"
+  },
+  {
+    "originalPath": "scripts/critical-auditor-profile.ts",
+    "scenarioId": "g008_critical_auditor_profile_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/dashboard-projection-mapping.ts",
+    "scenarioId": "g008_dashboard_projection_mapping_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.cjs",
+    "scenarioId": "g008_deferred_gap_governance_cjs_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/deferred-gap-governance.d.cts",
+    "scenarioId": "g008_deferred_gap_governance_d_cts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/diagnose-bmad-state.ts",
+    "scenarioId": "g008_diagnose_bmad_state_ts_no_args",
+    "expectedStdout": "=== BMAD 状态诊断 ===\n\n【诊断项 1】current_context 设置:\n✅ current_context 正常: epic=E999, story=S001\n\n【诊断项 2】active_stories 列表:\n   发现 3 个活动 Story:\n\n   1. E001-S002\n      stage: specify ❌\n      status: active\n      ⚠️ 警告: stage 值 \"specify\" 不在预定义列表中\n   2. E001-S001\n      stage: specify_passed ✅\n      status: active\n   3. E999-S001\n      stage: completed ✅\n      status: active\n\n【诊断项 3】Story 状态文件一致性:\n   发现 10 个 Story 状态文件\n   - 999-1-progress.yaml\n   - 999-2-progress.yaml\n   - 999-5-progress.yaml\n   - 999-5-ralph-progress.yaml\n   - E001-S001-progress.yaml\n   - E001-S002-progress.yaml\n   - E999-S001-progress.yaml\n   - E999-S002-progress.yaml\n   - E999-S003-progress.yaml\n   - E999-S004-progress.yaml\n\n【诊断项 4】Reviewer Projection:\n⚠️ reviewer projection unavailable: requirement record flow invalid or missing: <missing>\n\n【诊断项 5】Readiness Projection:\n✅ readiness baseline run: REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER-readiness-20260527000908\n   readiness score: 100\n   effective verdict: blocked_pending_rereadiness\n   drift severity: major\n   re-readiness required: yes\n   drift signals: (none)\n   drifted dimensions: (none)\n   blocking reason: Missing structured drift signal block for implementation verdict; re-readiness evidence is required.\n\n=== 诊断完成 ===\n"
+  },
+  {
+    "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
+    "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
+    "expectedStdout": "[governance-fixture] existing mapping is usable: _bmad-output/runtime/requirement-records/index.json\n"
+  },
+  {
+    "originalPath": "scripts/eval-question-generate.ts",
+    "scenarioId": "g008_eval_question_generate_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/extract-npm-pack-json.js",
+    "scenarioId": "g008_extract_npm_pack_json_js_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+    "scenarioId": "g008_governance_host_dispatch_adapter_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/host-runtime-mode.ts",
+    "scenarioId": "g008_host_runtime_mode_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/bootstrap-skill-bilingual-files.mjs",
+    "scenarioId": "g008_i18n_bootstrap_skill_bilingual_files_mjs_no_args",
+    "expectedStdout": "Synced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-bug-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-bug-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-story-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-story-assistant\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-eval-analytics\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/speckit-workflow\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/speckit-workflow\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/using-git-worktrees\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/using-git-worktrees\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-standalone-tasks\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-standalone-tasks\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-standalone-tasks-doc-review\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-standalone-tasks-doc-review\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-rca-helper\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-rca-helper\nSynced SKILL.md → SKILL.zh.md _bmad/cursor/skills/bmad-code-reviewer-lifecycle\nSynced SKILL.md → SKILL.zh.md _bmad/claude/skills/bmad-code-reviewer-lifecycle\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-party-mode\nSynced SKILL.md → SKILL.zh.md _bmad/core/skills/bmad-party-mode\nSynced SKILL.md → SKILL.zh.md _bmad/skills/bmad-customization-backup\nSynced SKILL.md → SKILL.zh.md _bmad/skills/git-push-monitor\nDone.\n"
+  },
+  {
+    "originalPath": "scripts/i18n/han-outside-fences.mjs",
+    "scenarioId": "g008_i18n_han_outside_fences_mjs_no_args",
+    "expectedStdout": "--cwd\t0\n"
+  },
+  {
+    "originalPath": "scripts/i18n/phase3_translate_skill_en.py",
+    "scenarioId": "g008_i18n_phase3_translate_skill_en_py_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/phase3-skill-en-transform.mjs",
+    "scenarioId": "g008_i18n_phase3_skill_en_transform_mjs_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+    "scenarioId": "g008_i18n_resolve_audit_prompt_path_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/normalize-pack-manifests.js",
+    "scenarioId": "g008_normalize_pack_manifests_js_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/parallel-mission-control.ts",
+    "scenarioId": "g008_parallel_mission_control_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/parse-bmad-audit-result.ts",
+    "scenarioId": "g008_parse_bmad_audit_result_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/party-mode-gate-check.ts",
+    "scenarioId": "g008_party_mode_gate_check_ts_no_args",
+    "expectedStdout": ""
+  },
+  {
+    "originalPath": "scripts/ralph-method/pathing.ts",
+    "scenarioId": "g008_ralph_method_pathing_ts_no_args",
+    "expectedStdout": ""
+  }
+]

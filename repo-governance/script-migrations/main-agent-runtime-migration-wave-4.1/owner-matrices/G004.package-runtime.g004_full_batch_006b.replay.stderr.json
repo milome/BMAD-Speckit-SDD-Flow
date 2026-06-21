@@ -1,0 +1,224 @@
+[
+  {
+    "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_scoring_gates_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_scoring_gates_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_scoring_gates_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_scoring_gates_check_ts_flag_report_path",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_scoring_gates_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-soak-runner.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_binary",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_contract_8h",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_developmentrunloop",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_durationms",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_evidencebundleid",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_evidencesessiondir",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_flow",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_hostkind",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_initialtickoffset",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_injectrecoverablefault",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_project",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_reportpath",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_runid",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_stage",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_startbackground",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_storykey",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_tickcommand",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_tickcommandtimeoutms",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_tickintervalms",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_soak_runner_ts_flag_transpile_only",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_no_args",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_flag_full_closeout",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"Unexpected positional argument: <fixture-root>\\\\full-closeout.json\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_flag_help",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_flag_json",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_flag_requirement_record",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"ENOENT: no such file or directory, open 'D:\\\\Dev\\\\BMAD-Speckit-SDD-Flow\\\\source-derived-requirement-record'\"\n}\n"
+      },
+      {
+        "scenarioId": "g004_main_agent_trace_status_policy_check_ts_flag_source",
+        "expectedStderr": "{\n  \"ok\": false,\n  \"error\": \"missing required args: requirementRecord\"\n}\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/main-agent-unified-ingress.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_main_agent_unified_ingress_ts_no_args",
+        "expectedStderr": "scripts/main-agent-unified-ingress.ts:<line>\n<runtime-source-frame>\nError: recordId is required for requirement-scoped unified ingress output\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n    at <runtime-stack-frame>\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_mcp_consumer_install_consumer_mcp_ps1_flag_smoke",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      },
+      {
+        "scenarioId": "g004_mcp_consumer_install_consumer_mcp_sh_flag_smoke",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_no_args",
+        "expectedStderr": ""
+      },
+      {
+        "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_ps1_flag_smoke",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_sh_no_args",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      },
+      {
+        "scenarioId": "g004_mcp_consumer_verify_consumer_mcp_sh_flag_smoke",
+        "expectedStderr": "<3>WSL (<relay> - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/model-governance-hint-resolver.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_model_governance_hint_resolver_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  },
+  {
+    "originalPath": "scripts/orchestration-dispatch-contract.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_orchestration_dispatch_contract_ts_no_args",
+        "expectedStderr": ""
+      }
+    ]
+  }
+]

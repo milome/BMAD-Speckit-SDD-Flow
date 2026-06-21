@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "{{SERVER_NAME}}": {
+      "command": "node",
+      "args": [
+        ".runtime-mcp/server/dist/index.cjs"
+      ],
+      "env": {
+        "BMAD_PROJECT_ROOT": ".",
+        "BMAD_ROOT": "_bmad",
+        "BMAD_OUTPUT_ROOT": "_bmad-output",
+        "BMAD_MCP_SERVER_CONFIG": ".runtime-mcp/server/config/server.config.json",
+        "BMAD_MCP_LOG_DIR": ".runtime-mcp/logs",
+        "BMAD_MCP_TMP_DIR": ".runtime-mcp/tmp"
+      }
+    }
+  }
+}
+

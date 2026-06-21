@@ -1,0 +1,11 @@
+[
+  {
+    "originalPath": "scripts/auditor-spec.ts",
+    "expectedStderrByScenario": [
+      {
+        "scenarioId": "g004_auditor_spec_ts_no_args",
+        "expectedStderr": "Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]\n"
+      }
+    ]
+  }
+]
