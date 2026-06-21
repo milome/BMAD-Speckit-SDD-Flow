@@ -2,7 +2,7 @@
   "schemaVersion": "main-agent-runtime-migration-wave-3.12-ledger/v1",
   "waveId": "main-agent-runtime-migration-wave-3.12",
   "sourcePlanPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/summary.md",
-  "sourcePlanHash": "sha256:7d729c4b2ca23fb701ad7155a5b7a2b58e053cf1f73b003f6df4320024b3a5af",
+  "sourcePlanHash": "sha256:57834bb7ef7066bfc51308af5d7db29741502246f0d7006c4cb80f3b1fff6492",
   "sourceAuditPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/full-physical-script-closure-audit.json",
   "sourceRegistryPath": "repo-governance/script-migration-registry.yaml",
   "sourceSummaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/summary.md",
@@ -27,22 +27,13 @@
       "@bmad-speckit/runtime-context": 2
     },
     "byImplementationState": {
-      "validated": 102
-    },
-    "byMigrationStatus": {
-      "validated": 102
-    },
-    "byValidationStatus": {
-      "passed": 102
-    },
-    "byCallerSwitchStatus": {
-      "switched": 102
+      "pending": 102
     }
   },
   "entries": [
     {
       "queueIndex": 1,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/analytics-cluster.ts",
       "entryId": "analytics-cluster-ts",
       "originalPathStatus": "retained",
@@ -56,8 +47,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -68,12 +59,11 @@
         {
           "targetPath": "packages/scoring/analytics/cluster-weaknesses.ts",
           "action": "replace_root_script_dependency_with_package_helper:analytics-cluster",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -151,7 +141,7 @@
     },
     {
       "queueIndex": 2,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/analytics-prompt-optimize.ts",
       "entryId": "analytics-prompt-optimize-ts",
       "originalPathStatus": "retained",
@@ -165,8 +155,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -177,12 +167,11 @@
         {
           "targetPath": "packages/scoring/analytics/prompt-optimizer.ts",
           "action": "replace_root_script_dependency_with_package_helper:analytics-prompt-optimize",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -260,7 +249,7 @@
     },
     {
       "queueIndex": 3,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/analytics-rule-suggest.ts",
       "entryId": "analytics-rule-suggest-ts",
       "originalPathStatus": "retained",
@@ -274,8 +263,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -286,12 +275,11 @@
         {
           "targetPath": "packages/scoring/analytics/rule-suggestion.ts",
           "action": "replace_root_script_dependency_with_package_helper:analytics-rule-suggest",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -369,7 +357,7 @@
     },
     {
       "queueIndex": 4,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/analytics-sft-extract.ts",
       "entryId": "analytics-sft-extract-ts",
       "originalPathStatus": "retained",
@@ -383,24 +371,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:analytics-sft-extract",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -479,7 +466,7 @@
     },
     {
       "queueIndex": 5,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
       "entryId": "architecture-confirmation-hash-recipe-ts",
       "originalPathStatus": "retained",
@@ -493,24 +480,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js",
           "action": "replace_root_script_dependency_with_package_helper:architecture-confirmation-hash-recipe",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -588,7 +574,7 @@
     },
     {
       "queueIndex": 6,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/architecture-drift-check.ts",
       "entryId": "architecture-drift-check-ts",
       "originalPathStatus": "retained",
@@ -605,8 +591,8 @@
         "bmad-speckit architecture-drift-check"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -617,12 +603,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:architecture-drift-check",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -699,7 +684,7 @@
     },
     {
       "queueIndex": 7,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/assert-implementation-entry.ts",
       "entryId": "assert-implementation-entry-ts",
       "originalPathStatus": "retained",
@@ -713,24 +698,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:assert-implementation-entry",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -809,7 +793,7 @@
     },
     {
       "queueIndex": 8,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/bmad-config.ts",
       "entryId": "bmad-config-ts",
       "originalPathStatus": "retained",
@@ -823,24 +807,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:bmad-config",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -919,7 +902,7 @@
     },
     {
       "queueIndex": 9,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
       "entryId": "bmad-help-five-layer-progress-marker-ts",
       "originalPathStatus": "retained",
@@ -933,24 +916,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js",
           "action": "replace_root_script_dependency_with_package_helper:bmad-help-five-layer-progress-marker",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -1028,7 +1010,7 @@
     },
     {
       "queueIndex": 10,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/bmad-help-routing-state.ts",
       "entryId": "bmad-help-routing-state-ts",
       "originalPathStatus": "retained",
@@ -1042,24 +1024,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js",
           "action": "replace_root_script_dependency_with_package_helper:bmad-help-routing-state",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -1137,7 +1118,7 @@
     },
     {
       "queueIndex": 11,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/bmad-state.ts",
       "entryId": "bmad-state-ts",
       "originalPathStatus": "retained",
@@ -1151,24 +1132,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js",
           "action": "replace_root_script_dependency_with_package_helper:bmad-state",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -1246,7 +1226,7 @@
     },
     {
       "queueIndex": 12,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/bmad-sync-from-v6.ps1",
       "entryId": "bmad-sync-from-v6-ps1",
       "originalPathStatus": "retained",
@@ -1260,24 +1240,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js",
           "action": "replace_root_script_dependency_with_package_helper:bmad-sync-from-v6",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -1355,7 +1334,7 @@
     },
     {
       "queueIndex": 13,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/bmad-sync-from-v6.sh",
       "entryId": "bmad-sync-from-v6-sh",
       "originalPathStatus": "retained",
@@ -1369,24 +1348,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js",
           "action": "replace_root_script_dependency_with_package_helper:bmad-sync-from-v6",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -1464,7 +1442,7 @@
     },
     {
       "queueIndex": 14,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/check-sprint-ready.ps1",
       "entryId": "check-sprint-ready-ps1",
       "originalPathStatus": "retained",
@@ -1478,24 +1456,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:check-sprint-ready",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -1574,7 +1551,7 @@
     },
     {
       "queueIndex": 15,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/check-sprint-ready.sh",
       "entryId": "check-sprint-ready-sh",
       "originalPathStatus": "retained",
@@ -1588,24 +1565,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:check-sprint-ready",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -1684,7 +1660,7 @@
     },
     {
       "queueIndex": 16,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/cleanup-packed-bmad.js",
       "entryId": "cleanup-packed-bmad-js",
       "originalPathStatus": "retained",
@@ -1698,24 +1674,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js",
           "action": "replace_root_script_dependency_with_package_helper:cleanup-packed-bmad",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -1793,7 +1768,7 @@
     },
     {
       "queueIndex": 17,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/coach-diagnose.ts",
       "entryId": "coach-diagnose-ts",
       "originalPathStatus": "retained",
@@ -1810,8 +1785,8 @@
         "bmad-speckit coach-diagnose"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -1822,12 +1797,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:coach-diagnose",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -1904,7 +1878,7 @@
     },
     {
       "queueIndex": 18,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/continue-state-contract.ts",
       "entryId": "continue-state-contract-ts",
       "originalPathStatus": "retained",
@@ -1918,24 +1892,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js",
           "action": "replace_root_script_dependency_with_package_helper:continue-state-contract",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2013,7 +1986,7 @@
     },
     {
       "queueIndex": 19,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/control-event-log-rebaseline.ts",
       "entryId": "control-event-log-rebaseline-ts",
       "originalPathStatus": "retained",
@@ -2027,24 +2000,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js",
           "action": "replace_root_script_dependency_with_package_helper:control-event-log-rebaseline",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2122,7 +2094,7 @@
     },
     {
       "queueIndex": 20,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/controlled-ingest-atomic-committer.ts",
       "entryId": "controlled-ingest-atomic-committer-ts",
       "originalPathStatus": "retained",
@@ -2136,24 +2108,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js",
           "action": "replace_root_script_dependency_with_package_helper:controlled-ingest-atomic-committer",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2231,7 +2202,7 @@
     },
     {
       "queueIndex": 21,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/dashboard-generate.ts",
       "entryId": "dashboard-generate-ts",
       "originalPathStatus": "retained",
@@ -2245,24 +2216,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:dashboard-generate",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -2341,7 +2311,7 @@
     },
     {
       "queueIndex": 22,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/dashboard-projection-mapping.ts",
       "entryId": "dashboard-projection-mapping-ts",
       "originalPathStatus": "retained",
@@ -2356,8 +2326,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -2368,23 +2338,21 @@
         {
           "targetPath": "packages/scoring/dashboard/reviewer-projection.ts",
           "action": "replace_root_script_dependency_with_package_helper:dashboard-projection-mapping",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         },
         {
           "targetPath": "packages/scoring/dashboard/six-model-projection.ts",
           "action": "replace_root_script_dependency_with_package_helper:dashboard-projection-mapping",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2470,7 +2438,7 @@
     },
     {
       "queueIndex": 23,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/deferred-gap-governance.cjs",
       "entryId": "deferred-gap-governance-cjs",
       "originalPathStatus": "retained",
@@ -2484,8 +2452,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -2496,12 +2464,11 @@
         {
           "targetPath": "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js",
           "action": "replace_root_script_dependency_with_package_helper:deferred-gap-governance",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2571,7 +2538,7 @@
     },
     {
       "queueIndex": 24,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/emit-runtime-policy.ts",
       "entryId": "emit-runtime-policy-ts",
       "originalPathStatus": "retained",
@@ -2588,8 +2555,8 @@
         "bmad-speckit emit-runtime-policy"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -2600,12 +2567,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:emit-runtime-policy",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -2682,7 +2648,7 @@
     },
     {
       "queueIndex": 25,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/ensure-runtime-dashboard-server.cjs",
       "entryId": "ensure-runtime-dashboard-server-cjs",
       "originalPathStatus": "retained",
@@ -2696,24 +2662,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js",
           "action": "replace_root_script_dependency_with_package_helper:ensure-runtime-dashboard-server",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2791,7 +2756,7 @@
     },
     {
       "queueIndex": 26,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/evidence-provenance.ts",
       "entryId": "evidence-provenance-ts",
       "originalPathStatus": "retained",
@@ -2805,24 +2770,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js",
           "action": "replace_root_script_dependency_with_package_helper:evidence-provenance",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -2900,7 +2864,7 @@
     },
     {
       "queueIndex": 27,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/execution-discipline-profiles.ts",
       "entryId": "execution-discipline-profiles-ts",
       "originalPathStatus": "retained",
@@ -2914,24 +2878,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js",
           "action": "replace_root_script_dependency_with_package_helper:execution-discipline-profiles",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -3009,7 +2972,7 @@
     },
     {
       "queueIndex": 28,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/execution-intent-schema.ts",
       "entryId": "execution-intent-schema-ts",
       "originalPathStatus": "retained",
@@ -3023,24 +2986,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js",
           "action": "replace_root_script_dependency_with_package_helper:execution-intent-schema",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -3118,7 +3080,7 @@
     },
     {
       "queueIndex": 29,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/execution-strategy-selection.ts",
       "entryId": "execution-strategy-selection-ts",
       "originalPathStatus": "retained",
@@ -3132,24 +3094,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js",
           "action": "replace_root_script_dependency_with_package_helper:execution-strategy-selection",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -3227,7 +3188,7 @@
     },
     {
       "queueIndex": 30,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/facilitator-registry.ts",
       "entryId": "facilitator-registry-ts",
       "originalPathStatus": "retained",
@@ -3241,24 +3202,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js",
           "action": "replace_root_script_dependency_with_package_helper:facilitator-registry",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -3336,7 +3296,7 @@
     },
     {
       "queueIndex": 31,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/facilitator-runtime-definition.ts",
       "entryId": "facilitator-runtime-definition-ts",
       "originalPathStatus": "retained",
@@ -3350,24 +3310,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js",
           "action": "replace_root_script_dependency_with_package_helper:facilitator-runtime-definition",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -3445,7 +3404,7 @@
     },
     {
       "queueIndex": 32,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/generate-codex-agents-from-claude.js",
       "entryId": "generate-codex-agents-from-claude-js",
       "originalPathStatus": "retained",
@@ -3459,24 +3418,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js",
           "action": "replace_root_script_dependency_with_package_helper:generate-codex-agents-from-claude",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -3554,7 +3512,7 @@
     },
     {
       "queueIndex": 33,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/governance-execution-result-ingestor.ts",
       "entryId": "governance-execution-result-ingestor-ts",
       "originalPathStatus": "retained",
@@ -3568,24 +3526,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:governance-execution-result-ingestor",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -3664,7 +3621,7 @@
     },
     {
       "queueIndex": 34,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/governance-hook-types.ts",
       "entryId": "governance-hook-types-ts",
       "originalPathStatus": "retained",
@@ -3678,24 +3635,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:governance-hook-types",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -3774,7 +3730,7 @@
     },
     {
       "queueIndex": 35,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/governance-provider-adapter.ts",
       "entryId": "governance-provider-adapter-ts",
       "originalPathStatus": "retained",
@@ -3788,24 +3744,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:governance-provider-adapter",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -3884,7 +3839,7 @@
     },
     {
       "queueIndex": 36,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/governance-runtime-queue.ts",
       "entryId": "governance-runtime-queue-ts",
       "originalPathStatus": "retained",
@@ -3898,24 +3853,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:governance-runtime-queue",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -3994,7 +3948,7 @@
     },
     {
       "queueIndex": 37,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/governance-stage-event-emitter.ts",
       "entryId": "governance-stage-event-emitter-ts",
       "originalPathStatus": "retained",
@@ -4008,24 +3962,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:governance-stage-event-emitter",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -4104,7 +4057,7 @@
     },
     {
       "queueIndex": 38,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/governance-transport-envelope.ts",
       "entryId": "governance-transport-envelope-ts",
       "originalPathStatus": "retained",
@@ -4118,24 +4071,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js",
           "action": "replace_root_script_dependency_with_package_helper:governance-transport-envelope",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4213,7 +4165,7 @@
     },
     {
       "queueIndex": 39,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/agent-manifest.ts",
       "entryId": "i18n-agent-manifest-ts",
       "originalPathStatus": "retained",
@@ -4227,24 +4179,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js",
           "action": "replace_root_script_dependency_with_package_helper:agent-manifest",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4322,7 +4273,7 @@
     },
     {
       "queueIndex": 40,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/detect-language.ts",
       "entryId": "i18n-detect-language-ts",
       "originalPathStatus": "retained",
@@ -4336,24 +4287,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js",
           "action": "replace_root_script_dependency_with_package_helper:detect-language",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4431,7 +4381,7 @@
     },
     {
       "queueIndex": 41,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/field-meta-types.ts",
       "entryId": "i18n-field-meta-types-ts",
       "originalPathStatus": "retained",
@@ -4445,24 +4395,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js",
           "action": "replace_root_script_dependency_with_package_helper:field-meta-types",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4540,7 +4489,7 @@
     },
     {
       "queueIndex": 42,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/language-policy.ts",
       "entryId": "i18n-language-policy-ts",
       "originalPathStatus": "retained",
@@ -4554,24 +4503,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js",
           "action": "replace_root_script_dependency_with_package_helper:language-policy",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4649,7 +4597,7 @@
     },
     {
       "queueIndex": 43,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/materialize-facilitator-definition.ts",
       "entryId": "i18n-materialize-facilitator-definition-ts",
       "originalPathStatus": "retained",
@@ -4663,24 +4611,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js",
           "action": "replace_root_script_dependency_with_package_helper:materialize-facilitator-definition",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4758,7 +4705,7 @@
     },
     {
       "queueIndex": 44,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/placeholder-types.ts",
       "entryId": "i18n-placeholder-types-ts",
       "originalPathStatus": "retained",
@@ -4772,24 +4719,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js",
           "action": "replace_root_script_dependency_with_package_helper:placeholder-types",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4867,7 +4813,7 @@
     },
     {
       "queueIndex": 45,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/protected-token-check.ts",
       "entryId": "i18n-protected-token-check-ts",
       "originalPathStatus": "retained",
@@ -4881,24 +4827,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js",
           "action": "replace_root_script_dependency_with_package_helper:protected-token-check",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -4976,7 +4921,7 @@
     },
     {
       "queueIndex": 46,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/render-field-view.ts",
       "entryId": "i18n-render-field-view-ts",
       "originalPathStatus": "retained",
@@ -4990,24 +4935,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js",
           "action": "replace_root_script_dependency_with_package_helper:render-field-view",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -5085,7 +5029,7 @@
     },
     {
       "queueIndex": 47,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/render-template.ts",
       "entryId": "i18n-render-template-ts",
       "originalPathStatus": "retained",
@@ -5099,24 +5043,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:render-template",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -5195,7 +5138,7 @@
     },
     {
       "queueIndex": 48,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/resolve-for-session-cli.ts",
       "entryId": "i18n-resolve-for-session-cli-ts",
       "originalPathStatus": "retained",
@@ -5209,24 +5152,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js",
           "action": "replace_root_script_dependency_with_package_helper:resolve-for-session-cli",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -5304,7 +5246,7 @@
     },
     {
       "queueIndex": 49,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/resolve-for-session.ts",
       "entryId": "i18n-resolve-for-session-ts",
       "originalPathStatus": "retained",
@@ -5318,24 +5260,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js",
           "action": "replace_root_script_dependency_with_package_helper:resolve-for-session",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -5413,7 +5354,7 @@
     },
     {
       "queueIndex": 50,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/resolve-localized-markdown-path.ts",
       "entryId": "i18n-resolve-localized-markdown-path-ts",
       "originalPathStatus": "retained",
@@ -5427,24 +5368,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js",
           "action": "replace_root_script_dependency_with_package_helper:resolve-localized-markdown-path",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -5522,7 +5462,7 @@
     },
     {
       "queueIndex": 51,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
       "entryId": "i18n-sync-party-mode-mirrors-ts",
       "originalPathStatus": "retained",
@@ -5536,24 +5476,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js",
           "action": "replace_root_script_dependency_with_package_helper:sync-party-mode-mirrors",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -5631,7 +5570,7 @@
     },
     {
       "queueIndex": 52,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/i18n/validate-template-manifest.ts",
       "entryId": "i18n-validate-template-manifest-ts",
       "originalPathStatus": "retained",
@@ -5645,24 +5584,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js",
           "action": "replace_root_script_dependency_with_package_helper:validate-template-manifest",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -5740,7 +5678,7 @@
     },
     {
       "queueIndex": 53,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/ingest-architecture-confirmation.ts",
       "entryId": "ingest-architecture-confirmation-ts",
       "originalPathStatus": "retained",
@@ -5754,24 +5692,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:ingest-architecture-confirmation",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -5850,7 +5787,7 @@
     },
     {
       "queueIndex": 54,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/init-to-root.js",
       "entryId": "init-to-root-js",
       "originalPathStatus": "retained",
@@ -5872,8 +5809,8 @@
         "bmad-speckit init-to-root"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -5884,12 +5821,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:init-to-root",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -5966,7 +5902,7 @@
     },
     {
       "queueIndex": 55,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/live-smoke-speckit-workflow.ts",
       "entryId": "live-smoke-speckit-workflow-ts",
       "originalPathStatus": "retained",
@@ -5983,8 +5919,8 @@
         "bmad-speckit live-smoke-speckit-workflow"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -5995,12 +5931,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:live-smoke-speckit-workflow",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -6077,7 +6012,7 @@
     },
     {
       "queueIndex": 56,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/long-run-runtime-policy.ts",
       "entryId": "long-run-runtime-policy-ts",
       "originalPathStatus": "retained",
@@ -6091,24 +6026,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js",
           "action": "replace_root_script_dependency_with_package_helper:long-run-runtime-policy",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -6186,7 +6120,7 @@
     },
     {
       "queueIndex": 57,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
       "entryId": "mcp-consumer-install-consumer-mcp-ps1",
       "originalPathStatus": "retained",
@@ -6200,24 +6134,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:install-consumer-mcp",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -6296,7 +6229,7 @@
     },
     {
       "queueIndex": 58,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
       "entryId": "mcp-consumer-install-consumer-mcp-sh",
       "originalPathStatus": "retained",
@@ -6310,24 +6243,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:install-consumer-mcp",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -6406,7 +6338,7 @@
     },
     {
       "queueIndex": 59,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
       "entryId": "mcp-consumer-verify-consumer-mcp-ps1",
       "originalPathStatus": "retained",
@@ -6420,24 +6352,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:verify-consumer-mcp",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -6516,7 +6447,7 @@
     },
     {
       "queueIndex": 60,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
       "entryId": "mcp-consumer-verify-consumer-mcp-sh",
       "originalPathStatus": "retained",
@@ -6530,24 +6461,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:verify-consumer-mcp",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -6626,7 +6556,7 @@
     },
     {
       "queueIndex": 61,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/model-governance-hint-resolver.ts",
       "entryId": "model-governance-hint-resolver-ts",
       "originalPathStatus": "retained",
@@ -6640,24 +6570,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:model-governance-hint-resolver",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -6736,7 +6665,7 @@
     },
     {
       "queueIndex": 62,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/model-governance-hints-schema.ts",
       "entryId": "model-governance-hints-schema-ts",
       "originalPathStatus": "retained",
@@ -6750,24 +6679,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js",
           "action": "replace_root_script_dependency_with_package_helper:model-governance-hints-schema",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -6845,7 +6773,7 @@
     },
     {
       "queueIndex": 63,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/monitor-push.sh",
       "entryId": "monitor-push-sh",
       "originalPathStatus": "retained",
@@ -6859,24 +6787,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js",
           "action": "replace_root_script_dependency_with_package_helper:monitor-push",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -6954,7 +6881,7 @@
     },
     {
       "queueIndex": 64,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/parse-and-write-score.ts",
       "entryId": "parse-and-write-score-ts",
       "originalPathStatus": "retained",
@@ -6968,24 +6895,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:parse-and-write-score",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -7064,7 +6990,7 @@
     },
     {
       "queueIndex": 65,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/prepublish-check.js",
       "entryId": "prepublish-check-js",
       "originalPathStatus": "retained",
@@ -7078,24 +7004,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js",
           "action": "replace_root_script_dependency_with_package_helper:prepublish-check",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7173,7 +7098,7 @@
     },
     {
       "queueIndex": 66,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/real-development-tick-worker.js",
       "entryId": "real-development-tick-worker-js",
       "originalPathStatus": "retained",
@@ -7187,24 +7112,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js",
           "action": "replace_root_script_dependency_with_package_helper:real-development-tick-worker",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7282,7 +7206,7 @@
     },
     {
       "queueIndex": 67,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/requirement-record-event-reducer.ts",
       "entryId": "requirement-record-event-reducer-ts",
       "originalPathStatus": "retained",
@@ -7296,24 +7220,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js",
           "action": "replace_root_script_dependency_with_package_helper:requirement-record-event-reducer",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7391,7 +7314,7 @@
     },
     {
       "queueIndex": 68,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/reviewer-shared-core.ts",
       "entryId": "reviewer-shared-core-ts",
       "originalPathStatus": "retained",
@@ -7405,24 +7328,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js",
           "action": "replace_root_script_dependency_with_package_helper:reviewer-shared-core",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7500,7 +7422,7 @@
     },
     {
       "queueIndex": 69,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/run-confirmed-final-required-commands.js",
       "entryId": "run-confirmed-final-required-commands-js",
       "originalPathStatus": "retained",
@@ -7514,24 +7436,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js",
           "action": "replace_root_script_dependency_with_package_helper:run-confirmed-final-required-commands",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7609,7 +7530,7 @@
     },
     {
       "queueIndex": 70,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/run-confirmed-trace-slice.js",
       "entryId": "run-confirmed-trace-slice-js",
       "originalPathStatus": "retained",
@@ -7623,24 +7544,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js",
           "action": "replace_root_script_dependency_with_package_helper:run-confirmed-trace-slice",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7718,7 +7638,7 @@
     },
     {
       "queueIndex": 71,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
       "entryId": "run-required-commands-from-ai-tdd-manifest-ts",
       "originalPathStatus": "retained",
@@ -7732,24 +7652,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js",
           "action": "replace_root_script_dependency_with_package_helper:run-required-commands-from-ai-tdd-manifest",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7827,7 +7746,7 @@
     },
     {
       "queueIndex": 72,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/run-runtime-dashboard-forever.cjs",
       "entryId": "run-runtime-dashboard-forever-cjs",
       "originalPathStatus": "retained",
@@ -7841,24 +7760,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js",
           "action": "replace_root_script_dependency_with_package_helper:run-runtime-dashboard-forever",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -7936,7 +7854,7 @@
     },
     {
       "queueIndex": 73,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/runtime-context-registry.ts",
       "entryId": "runtime-context-registry-ts",
       "originalPathStatus": "retained",
@@ -7950,8 +7868,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -7962,12 +7880,11 @@
         {
           "targetPath": "packages/runtime-context/src/registry.ts",
           "action": "replace_root_script_dependency_with_package_helper:runtime-context-registry",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -8045,7 +7962,7 @@
     },
     {
       "queueIndex": 74,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/runtime-context.ts",
       "entryId": "runtime-context-ts",
       "originalPathStatus": "retained",
@@ -8059,8 +7976,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -8071,12 +7988,11 @@
         {
           "targetPath": "packages/runtime-context/src/context.ts",
           "action": "replace_root_script_dependency_with_package_helper:runtime-context",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -8154,7 +8070,7 @@
     },
     {
       "queueIndex": 75,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/runtime-dashboard-server-state.cjs",
       "entryId": "runtime-dashboard-server-state-cjs",
       "originalPathStatus": "retained",
@@ -8168,24 +8084,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js",
           "action": "replace_root_script_dependency_with_package_helper:runtime-dashboard-server-state",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -8263,7 +8178,7 @@
     },
     {
       "queueIndex": 76,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/runtime-governance-registry.ts",
       "entryId": "runtime-governance-registry-ts",
       "originalPathStatus": "retained",
@@ -8277,24 +8192,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:runtime-governance-registry",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -8373,7 +8287,7 @@
     },
     {
       "queueIndex": 77,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/runtime-governance-template-schema.ts",
       "entryId": "runtime-governance-template-schema-ts",
       "originalPathStatus": "retained",
@@ -8387,24 +8301,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:runtime-governance-template-schema",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -8483,7 +8396,7 @@
     },
     {
       "queueIndex": 78,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/runtime-governance.ts",
       "entryId": "runtime-governance-ts",
       "originalPathStatus": "retained",
@@ -8497,24 +8410,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:runtime-governance",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -8593,7 +8505,7 @@
     },
     {
       "queueIndex": 79,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/scores-summary.ts",
       "entryId": "scores-summary-ts",
       "originalPathStatus": "retained",
@@ -8608,8 +8520,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -8620,23 +8532,21 @@
         {
           "targetPath": "packages/scoring/scores/format-table.ts",
           "action": "replace_root_script_dependency_with_package_helper:scores-summary",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         },
         {
           "targetPath": "packages/scoring/query/index.ts",
           "action": "replace_root_script_dependency_with_package_helper:scores-summary",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -8722,7 +8632,7 @@
     },
     {
       "queueIndex": 80,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/sdd-artifact-manifest.ts",
       "entryId": "sdd-artifact-manifest-ts",
       "originalPathStatus": "retained",
@@ -8736,24 +8646,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js",
           "action": "replace_root_script_dependency_with_package_helper:sdd-artifact-manifest",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -8831,7 +8740,7 @@
     },
     {
       "queueIndex": 81,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/setup.ps1",
       "entryId": "setup-ps1",
       "originalPathStatus": "retained",
@@ -8852,8 +8761,8 @@
         "bmad-speckit setup"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -8864,12 +8773,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:setup",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -8946,7 +8854,7 @@
     },
     {
       "queueIndex": 82,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/setup.sh",
       "entryId": "setup-sh",
       "originalPathStatus": "retained",
@@ -8967,8 +8875,8 @@
         "bmad-speckit setup"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -8979,12 +8887,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:setup",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -9061,7 +8968,7 @@
     },
     {
       "queueIndex": 83,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/sft-extract.ts",
       "entryId": "sft-extract-ts",
       "originalPathStatus": "retained",
@@ -9075,24 +8982,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:sft-extract",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -9171,7 +9077,7 @@
     },
     {
       "queueIndex": 84,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/skill-semantic-features-config.ts",
       "entryId": "skill-semantic-features-config-ts",
       "originalPathStatus": "retained",
@@ -9185,24 +9091,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js",
           "action": "replace_root_script_dependency_with_package_helper:skill-semantic-features-config",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -9280,7 +9185,7 @@
     },
     {
       "queueIndex": 85,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/speckit-cli.ts",
       "entryId": "speckit-cli-ts",
       "originalPathStatus": "retained",
@@ -9297,8 +9202,8 @@
         "bmad-speckit speckit-cli"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -9309,12 +9214,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:speckit-cli",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -9391,7 +9295,7 @@
     },
     {
       "queueIndex": 86,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/sprint-status-authorized-update.ts",
       "entryId": "sprint-status-authorized-update-ts",
       "originalPathStatus": "retained",
@@ -9405,24 +9309,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js",
           "action": "replace_root_script_dependency_with_package_helper:sprint-status-authorized-update",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -9500,7 +9403,7 @@
     },
     {
       "queueIndex": 87,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/stable-runtime-policy-json.ts",
       "entryId": "stable-runtime-policy-json-ts",
       "originalPathStatus": "retained",
@@ -9514,24 +9417,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js",
           "action": "replace_root_script_dependency_with_package_helper:stable-runtime-policy-json",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -9609,7 +9511,7 @@
     },
     {
       "queueIndex": 88,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/start-dashboard.ts",
       "entryId": "start-dashboard-ts",
       "originalPathStatus": "retained",
@@ -9623,8 +9525,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -9635,12 +9537,11 @@
         {
           "targetPath": "packages/scoring/dashboard/live-server.ts",
           "action": "replace_root_script_dependency_with_package_helper:start-dashboard",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -9718,7 +9619,7 @@
     },
     {
       "queueIndex": 89,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/start-runtime-dashboard-server.cjs",
       "entryId": "start-runtime-dashboard-server-cjs",
       "originalPathStatus": "retained",
@@ -9732,8 +9633,8 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -9744,12 +9645,11 @@
         {
           "targetPath": "packages/scoring/dashboard/live-server.ts",
           "action": "replace_root_script_dependency_with_package_helper:start-runtime-dashboard-server",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -9827,7 +9727,7 @@
     },
     {
       "queueIndex": 90,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/strict-command-resolution-preflight.ts",
       "entryId": "strict-command-resolution-preflight-ts",
       "originalPathStatus": "retained",
@@ -9841,24 +9741,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js",
           "action": "replace_root_script_dependency_with_package_helper:strict-command-resolution-preflight",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -9936,7 +9835,7 @@
     },
     {
       "queueIndex": 91,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/subagent-current-attempt-revalidation.ts",
       "entryId": "subagent-current-attempt-revalidation-ts",
       "originalPathStatus": "retained",
@@ -9950,24 +9849,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js",
           "action": "replace_root_script_dependency_with_package_helper:subagent-current-attempt-revalidation",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -10045,7 +9943,7 @@
     },
     {
       "queueIndex": 92,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/subagent-surface-inventory.ts",
       "entryId": "subagent-surface-inventory-ts",
       "originalPathStatus": "retained",
@@ -10059,24 +9957,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js",
           "action": "replace_root_script_dependency_with_package_helper:subagent-surface-inventory",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -10154,7 +10051,7 @@
     },
     {
       "queueIndex": 93,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/trace-closure-matrix.ts",
       "entryId": "trace-closure-matrix-ts",
       "originalPathStatus": "retained",
@@ -10168,24 +10065,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js",
           "action": "replace_root_script_dependency_with_package_helper:trace-closure-matrix",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -10263,7 +10159,7 @@
     },
     {
       "queueIndex": 94,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/update-specify-passed.ts",
       "entryId": "update-specify-passed-ts",
       "originalPathStatus": "retained",
@@ -10277,24 +10173,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js",
           "action": "replace_root_script_dependency_with_package_helper:update-specify-passed",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -10372,7 +10267,7 @@
     },
     {
       "queueIndex": 95,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/user-story-mapping.ts",
       "entryId": "user-story-mapping-ts",
       "originalPathStatus": "retained",
@@ -10386,24 +10281,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:user-story-mapping",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -10482,7 +10376,7 @@
     },
     {
       "queueIndex": 96,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/validate-consumer-governance.ps1",
       "entryId": "validate-consumer-governance-ps1",
       "originalPathStatus": "retained",
@@ -10496,24 +10390,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:validate-consumer-governance",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -10592,7 +10485,7 @@
     },
     {
       "queueIndex": 97,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/validate-single-source-whitelist.ts",
       "entryId": "validate-single-source-whitelist-ts",
       "originalPathStatus": "retained",
@@ -10609,8 +10502,8 @@
         "bmad-speckit validate-single-source-whitelist"
       ],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "blocked",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
@@ -10621,12 +10514,11 @@
         {
           "targetPath": "packages/bmad-speckit/bin/bmad-speckit.js",
           "action": "add_or_update_package_cli_command:validate-single-source-whitelist",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD009",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -10703,7 +10595,7 @@
     },
     {
       "queueIndex": 98,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/verify-hooks-no-ts-node.js",
       "entryId": "verify-hooks-no-ts-node-js",
       "originalPathStatus": "retained",
@@ -10717,24 +10609,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:verify-hooks-no-ts-node",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -10813,7 +10704,7 @@
     },
     {
       "queueIndex": 99,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/verify-story-mode.ts",
       "entryId": "verify-story-mode-ts",
       "originalPathStatus": "retained",
@@ -10827,24 +10718,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js",
           "action": "replace_root_script_dependency_with_package_helper:verify-story-mode",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -10922,7 +10812,7 @@
     },
     {
       "queueIndex": 100,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
       "entryId": "write-runtime-policy-snapshot-and-recovery-context-cjs",
       "originalPathStatus": "retained",
@@ -10936,24 +10826,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:write-runtime-policy-snapshot-and-recovery-context",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -11032,7 +10921,7 @@
     },
     {
       "queueIndex": 101,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
       "entryId": "write-runtime-policy-snapshot-and-recovery-context-ts",
       "originalPathStatus": "retained",
@@ -11046,24 +10935,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_consumer_runtime_reachable",
+      "oldPathDisposition": "retained_blocked_consumer_runtime_reachable",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
           "action": "register_package_runtime_action:write-runtime-policy-snapshot-and-recovery-context",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD007",
             "CMD011",
-            "CMD023",
-            "CMD025"
+            "CMD023"
           ]
         }
       ],
@@ -11142,7 +11030,7 @@
     },
     {
       "queueIndex": 102,
-      "implementationState": "validated",
+      "implementationState": "pending",
       "originalPath": "scripts/write-runtime-registry.js",
       "entryId": "write-runtime-registry-js",
       "originalPathStatus": "retained",
@@ -11156,24 +11044,23 @@
       ],
       "publicCommandsAfterMigration": [],
       "callerSwitchStatus": "switched",
-      "migrationStatus": "validated",
-      "validationStatus": "passed",
+      "migrationStatus": "blocked",
+      "validationStatus": "partial",
       "evidenceRefs": [
         "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/evidence.json"
       ],
-      "oldPathDisposition": "retained_validated_package_runtime_helper",
+      "oldPathDisposition": "retained_blocked_package_runtime_helper",
       "deletionAllowed": false,
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
           "targetPath": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js",
           "action": "replace_root_script_dependency_with_package_helper:write-runtime-registry",
-          "status": "switched",
+          "status": "pending",
           "proofCommandIds": [
             "CMD008",
             "CMD011",
-            "CMD020",
-            "CMD025"
+            "CMD020"
           ]
         }
       ],
@@ -11250,7 +11137,7 @@
       }
     }
   ],
-  "generatedAt": "2026-06-06T11:49:25.670Z",
+  "generatedAt": "2026-06-21T05:54:18.529Z",
   "queueOrderProof": {
     "source": "full-physical-script-closure-audit.consumerReachableMigrationQueue",
     "hashAlgorithm": "sha256",
@@ -11259,6 +11146,5 @@
     "lastPath": "scripts/write-runtime-registry.js",
     "count": 102,
     "queueHash": "sha256:202c3a2f3305b084771c42dc5b385f4e82255475db7d994fa97d71a38b1617ea"
-  },
-  "finalizedAt": "2026-06-06T12:33:49.495Z"
+  }
 }

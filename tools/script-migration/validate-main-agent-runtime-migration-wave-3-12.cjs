@@ -17,7 +17,7 @@ const {
 } = require('./safe-write-main-agent-wave-3-12-artifact.cjs');
 
 const EXPECTED_QUEUE_HASH = 'sha256:202c3a2f3305b084771c42dc5b385f4e82255475db7d994fa97d71a38b1617ea';
-const EXPECTED_SOURCE_PLAN_HASH = 'sha256:7d729c4b2ca23fb701ad7155a5b7a2b58e053cf1f73b003f6df4320024b3a5af';
+const EXPECTED_SOURCE_PLAN_HASH = 'sha256:57834bb7ef7066bfc51308af5d7db29741502246f0d7006c4cb80f3b1fff6492';
 const LEDGER_PATH = `${WAVE_DIR}/migration-ledger.json`;
 const SCOPE_BASELINE_PATH = `${WAVE_DIR}/scope-baseline.json`;
 const REGISTRY_PATH = 'repo-governance/script-migration-registry.yaml';

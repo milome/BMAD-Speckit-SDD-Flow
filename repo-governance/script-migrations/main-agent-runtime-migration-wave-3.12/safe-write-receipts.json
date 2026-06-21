@@ -1,6 +1,6 @@
 {
   "waveId": "main-agent-runtime-migration-wave-3.12",
-  "generatedAt": "2026-06-06T20:11:30.718Z",
+  "generatedAt": "2026-06-21T05:54:18.536Z",
   "receipts": [
     {
       "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/migration-ledger.json",
@@ -2033,12 +2033,123 @@
       "startedAt": "2026-06-06T20:11:30.714Z",
       "completedAt": "2026-06-06T20:11:30.717Z",
       "status": "passed"
+    },
+    {
+      "targetPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/migration-ledger.json",
+      "artifactPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/migration-ledger.json",
+      "operation": "wave_3_12_migration_ledger",
+      "hashKind": "promoted_file_bytes",
+      "draftPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/.migration-ledger.json.draft.20260621T055418531Z.43532.ab872546",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/migration-ledger.json.bak.20260621T055418531Z.43532.ab872546",
+      "requiredChecks": [
+        {
+          "type": "minBytes",
+          "minBytes": 1000,
+          "status": "passed"
+        },
+        {
+          "type": "containsMarker",
+          "marker": "main-agent-runtime-migration-wave-3.12",
+          "status": "passed"
+        },
+        {
+          "type": "containsMarker",
+          "marker": "sha256:202c3a2f3305b084771c42dc5b385f4e82255475db7d994fa97d71a38b1617ea",
+          "status": "passed"
+        },
+        {
+          "type": "jsonParse",
+          "status": "passed"
+        },
+        {
+          "type": "jsonObject",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "schemaVersion",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "waveId",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourcePlanPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourcePlanHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourceAuditPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourceRegistryPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "sourceSummaryPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "executionContractPath",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "executionContractHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "queueHash",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "counts",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "entries",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "generatedAt",
+          "status": "passed"
+        },
+        {
+          "type": "topLevelKey",
+          "key": "queueOrderProof",
+          "status": "passed"
+        }
+      ],
+      "draftSha256": "sha256:666451a2704f1dcf185172c98a05731abe7858499858b5ba723d1256fe8639f8",
+      "promotedSha256": "sha256:666451a2704f1dcf185172c98a05731abe7858499858b5ba723d1256fe8639f8",
+      "postWriteSha256": "sha256:666451a2704f1dcf185172c98a05731abe7858499858b5ba723d1256fe8639f8",
+      "sha256": "sha256:666451a2704f1dcf185172c98a05731abe7858499858b5ba723d1256fe8639f8",
+      "byteLength": 426197,
+      "startedAt": "2026-06-21T05:54:18.530Z",
+      "completedAt": "2026-06-21T05:54:18.535Z",
+      "status": "passed"
     }
   ],
   "selfVerification": {
     "hashKind": "canonical_json_without_selfVerification",
-    "payloadSha256": "sha256:a935f7f1d91074ebca36262376354c5c447bc9010848c9634cea3eb096320da8",
-    "computedAt": "2026-06-06T20:11:30.718Z",
+    "payloadSha256": "sha256:fe9868434b6bd5b3ac0c70900166e26cf05373c54b67b61711be44db71b0c415",
+    "computedAt": "2026-06-21T05:54:18.536Z",
     "status": "passed"
   }
 }

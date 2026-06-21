@@ -40,7 +40,7 @@ const EXPECTED_ENTRIES = [
     semantic: 'package_runtime_module',
     strategy: 'package_runtime_module',
     targetPaths: [
-      'packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js',
+      'packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts',
       'packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js',
     ],
     exports: [
@@ -60,7 +60,7 @@ const EXPECTED_ENTRIES = [
     semantic: 'package_runtime_module',
     strategy: 'package_runtime_module',
     targetPaths: [
-      'packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js',
+      'packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts',
       'packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js',
     ],
     exports: ['appendTaskProgress', 'readTaskProgress', 'evaluateSupervisedWorker'],
@@ -995,12 +995,21 @@ function validateRegistryWave(errors) {
     errors.push(`registry missing wave ${WAVE_ID}`);
     return;
   }
+  const expectedWaveStatus = EXPECTED_ENTRIES.every(
+    (entry) => expectedRegistryStatus(entry).validationStatus === 'passed'
+  )
+    ? 'validated'
+    : 'blocked';
   expectEqual(errors, 'registry wave refinesWaveId', wave.refinesWaveId, REFINES_WAVE_ID);
   expectEqual(errors, 'registry wave title', wave.title, WAVE_TITLE);
-  expectEqual(errors, 'registry wave status', wave.status, 'validated');
+  expectEqual(errors, 'registry wave status', wave.status, expectedWaveStatus);
   expectEqual(errors, 'registry wave contractPath', wave.contractPath, CONTRACT_PATH);
   expectIsoTimestamp(errors, 'registry wave startedAt', wave.startedAt);
-  expectIsoTimestamp(errors, 'registry wave completedAt', wave.completedAt);
+  if (expectedWaveStatus === 'validated') {
+    expectIsoTimestamp(errors, 'registry wave completedAt', wave.completedAt);
+  } else {
+    expectEqual(errors, 'registry wave completedAt', wave.completedAt, null);
+  }
   if (!Array.isArray(wave.entries)) {
     errors.push('registry wave entries must be an array');
     return;
@@ -1023,8 +1032,9 @@ function validateRegistryWave(errors) {
       metadata.originalClassBeforeMigration
     );
     expectEqual(errors, `${expected.entryId} migrationStrategy`, entry.migrationStrategy, expected.strategy);
-    expectEqual(errors, `${expected.entryId} migrationStatus`, entry.migrationStatus, 'validated');
-    expectEqual(errors, `${expected.entryId} validationStatus`, entry.validationStatus, 'passed');
+    const status = expectedRegistryStatus(expected);
+    expectEqual(errors, `${expected.entryId} migrationStatus`, entry.migrationStatus, status.migrationStatus);
+    expectEqual(errors, `${expected.entryId} validationStatus`, entry.validationStatus, status.validationStatus);
     expectEqual(errors, `${expected.entryId} callerSwitchStatus`, entry.callerSwitchStatus, metadata.callerSwitchStatus);
     expectEqual(errors, `${expected.entryId} oldPathDisposition`, entry.oldPathDisposition, metadata.oldPathDisposition);
     expectEqual(errors, `${expected.entryId} deletionAllowed`, entry.deletionAllowed, false);
@@ -1051,6 +1061,21 @@ function validateRegistryWave(errors) {
   }
 }
 
+function expectedRegistryStatus(entry) {
+  if (entry.strategy === 'repo_internal_reclassify') {
+    return {
+      migrationStatus: 'validated',
+      validationStatus: 'passed',
+      registryEvidenceResult: 'passed',
+    };
+  }
+  return {
+    migrationStatus: 'blocked',
+    validationStatus: 'partial',
+    registryEvidenceResult: 'partial',
+  };
+}
+
 function validateRegistryEvidence(errors, { required = true } = {}) {
   const evidence = readJson(`${WAVE_DIR}/registry-evidence.json`, errors, { required });
   if (!evidence) return;
@@ -1069,7 +1094,12 @@ function validateRegistryEvidence(errors, { required = true } = {}) {
       expectField(errors, `registry-evidence ${expected.entryId}`, entry, field);
     }
     expectEqual(errors, `registry-evidence ${expected.entryId} entryId`, entry.entryId, expected.entryId);
-    expectEqual(errors, `registry-evidence ${expected.entryId} result`, entry.result, 'passed');
+    expectEqual(
+      errors,
+      `registry-evidence ${expected.entryId} result`,
+      entry.result,
+      expectedRegistryStatus(expected).registryEvidenceResult
+    );
     for (const targetPath of expected.targetPaths) {
       expectIncludes(errors, `registry-evidence ${expected.entryId} targetPaths`, entry.targetPaths, targetPath);
     }

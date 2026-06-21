@@ -348,10 +348,13 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           target
         );
         const result = JSON.parse(output) as {
+          dispatchInstruction?: { sessionId?: string };
           taskReport?: { status?: string; evidence?: string[]; driftFlags?: string[] };
         };
         expect(result.taskReport?.status).toBe('blocked');
         expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
+        const taskReportSessionId = result.dispatchInstruction?.sessionId;
+        expect(taskReportSessionId).toEqual(expect.any(String));
         const reportPath = path.join(
           target,
           '_bmad-output',
@@ -359,11 +362,11 @@ describe('Codex consumer five-layer main-agent e2e', () => {
           'governance',
           'task-reports'
         );
-        const taskReports = fs.readdirSync(path.join(reportPath, registry.activeScope?.runId ?? ''));
+        const taskReports = fs.readdirSync(path.join(reportPath, taskReportSessionId as string));
         expect(taskReports.length).toBeGreaterThan(0);
         const blockedReport = JSON.parse(
           fs.readFileSync(
-            path.join(reportPath, registry.activeScope?.runId ?? '', taskReports[0]),
+            path.join(reportPath, taskReportSessionId as string, taskReports[0]),
             'utf8'
           )
         ) as {

@@ -33,13 +33,6 @@ function runLoopArgs(fixture: RequirementFixture) {
   };
 }
 
-function packetIdFromNativeGoalArgs(args: string[]): string {
-  const commandText = args.find((arg) => arg.startsWith('/goal ')) ?? '';
-  const match = commandText.match(/trace-execution[\\/]+([^\\/]+)[\\/]+goal_execution\.md/u);
-  if (!match) throw new Error(`packet id missing from native goal command: ${commandText}`);
-  return match[1];
-}
-
 function taskReportPath(root: string, sessionId: string, packetId: string): string {
   return path.join(
     root,
@@ -89,7 +82,7 @@ function appendOpenRerunLoop(fixture: RequirementFixture): void {
 }
 
 describe('main-agent native goal rerun loop behavior', () => {
-  it('ingests a blocked TaskReport when native goal command exits non-zero', () => {
+  it('blocks for main-session execution even when a native command mock would exit non-zero', () => {
     const fixture = materializeNativeGoalFixture();
     try {
       const result = runMainAgentAutomaticLoop({
@@ -103,7 +96,8 @@ describe('main-agent native goal rerun loop behavior', () => {
 
       expect(result.status).toBe('blocked');
       expect(result.taskReport?.status).toBe('blocked');
-      expect(result.taskReport?.driftFlags).toContain('native-goal-invocation-failed');
+      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(result.finalSurface.orchestrationState?.lastTaskReport?.status).toBe('blocked');
       expect(result.finalSurface.orchestrationState?.gatesLoop?.noProgressCount).toBe(1);
       expect(result.finalSurface.orchestrationState?.gatesLoop?.circuitOpen).toBe(false);
@@ -112,7 +106,7 @@ describe('main-agent native goal rerun loop behavior', () => {
     }
   });
 
-  it('records no progress when native goal exits zero without writing TaskReport', () => {
+  it('records no progress until the main session writes the prepared native goal TaskReport', () => {
     const fixture = materializeNativeGoalFixture();
     try {
       const result = runMainAgentAutomaticLoop({
@@ -126,7 +120,8 @@ describe('main-agent native goal rerun loop behavior', () => {
 
       expect(result.status).toBe('blocked');
       expect(result.taskReport?.status).toBe('blocked');
-      expect(result.taskReport?.driftFlags).toContain('native-goal-task-report-missing');
+      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(result.finalSurface.orchestrationState?.gatesLoop?.lastResult).toBe(
         'task-report:blocked'
       );
@@ -190,7 +185,7 @@ describe('main-agent native goal rerun loop behavior', () => {
     }
   });
 
-  it('resets gates loop progress after valid native receipt and done TaskReport', () => {
+  it('resets gates loop progress after the main session returns a done TaskReport', () => {
     const fixture = materializeNativeGoalFixture();
     try {
       const failed = runMainAgentAutomaticLoop({
@@ -201,10 +196,13 @@ describe('main-agent native goal rerun loop behavior', () => {
 
       const success = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
-        nativeGoalSpawnSyncFn: (_command, args) => {
-          const packetId = packetIdFromNativeGoalArgs(args);
-          writeDoneTaskReport(fixture.root, fixture.requirementSetId, packetId);
-          return { status: 0, stdout: 'native goal done', stderr: '' };
+        executor: ({ projectRoot, instruction }) => {
+          const reportPath = writeDoneTaskReport(
+            projectRoot,
+            instruction.sessionId,
+            instruction.packetId
+          );
+          return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
         },
       });
 

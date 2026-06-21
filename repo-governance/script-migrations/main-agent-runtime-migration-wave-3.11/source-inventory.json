@@ -1,16 +1,16 @@
 {
   "waveId": "main-agent-runtime-migration-wave-3.11",
-  "generatedAt": "2026-06-05T22:58:32.605Z",
+  "generatedAt": "2026-06-21T05:48:26.255Z",
   "entries": [
     {
       "originalPath": "scripts/host-runtime-mode.ts",
       "auditSemanticClassification": "package_runtime_module",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
+        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js"
       ],
-      "originalPathSha256": "sha256:b57a9df3949f134f22db48b1fcd04b9dd4e3d3d3b17a25d92c7649971239809f",
+      "originalPathSha256": "sha256:6783213f3b486cd5a84379867f5b88b35ee2818840e47655e224ad94a74639dd",
       "retainedRootPath": true,
       "deletionAllowed": false
     },
@@ -19,7 +19,7 @@
       "auditSemanticClassification": "package_runtime_module",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js"
       ],
       "originalPathSha256": "sha256:bbc6280ca332b9a9a818f72c486ebed7e621cafb3878c0ce2d13bbe6c8095c20",

@@ -309,7 +309,7 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('runs Codex host through native goal invocation when a native command is available', () => {
+  it('prepares Codex native goal for main-session execution without running a worker subprocess', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
     try {
@@ -323,16 +323,18 @@ describe('main-agent automatic run-loop', () => {
         },
       });
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
       expect(result.steps.find((step) => step.step === 'native-goal-invocation')?.summary).toContain(
-        'command=codex'
+        'command=main-session-native-goal'
       );
       expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
-      expect(result.taskReport?.validationsRun).toContain('fake-codex-native-goal');
+      expect(result.taskReport?.status).toBe('blocked');
+      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(result.taskReport?.validationsRun).not.toContain('codex-worker-adapter-smoke');
       expect(result.taskReport?.validationsRun).not.toContain('main-agent:run-loop-task-report');
-      expect(result.finalSurface.pendingPacketStatus).toBe('completed');
-      expect(result.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
+      expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
     } finally {
       cleanupRequirementWorkspace(root);
     }
@@ -373,7 +375,7 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('continues rerun_gate remediation through native goal invocation failures', () => {
+  it('continues rerun_gate remediation through main-session native goal blockers', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
     try {
@@ -384,8 +386,8 @@ describe('main-agent automatic run-loop', () => {
       });
       expect(remediate.status).toBe('blocked');
       expect(remediate.dispatchInstruction?.taskType).toBe('implement');
-      expect(remediate.taskReport?.validationsRun).toContain('native-goal-host-command');
-      expect(remediate.taskReport?.driftFlags).toContain('native-goal-invocation-failed');
+      expect(remediate.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
+      expect(remediate.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(remediate.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
 
       const review = runMainAgentAutomaticLoop({
@@ -397,7 +399,7 @@ describe('main-agent automatic run-loop', () => {
       expect(review.dispatchInstruction?.taskType).toBe('implement');
       expect(review.dispatchInstruction?.nextAction).toBe('dispatch_implement');
       expect(review.steps.find((step) => step.step === 'native-goal-invocation')?.summary).toContain(
-        'command=codex'
+        'command=main-session-native-goal'
       );
       expect(review.finalSurface.orchestrationState?.host).toBe('codex');
     } finally {

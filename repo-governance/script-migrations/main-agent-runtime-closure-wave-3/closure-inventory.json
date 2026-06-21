@@ -85,9 +85,9 @@
   "changedScriptsBaseline": {
     "baselineCommit": "335f2c402010f2f912488d61575b5ce0c090513a",
     "expectedCountFromPriorMatrix": 140,
-    "actualCountFromCommand": 140,
+    "actualCountFromCommand": 141,
     "nameStatusCommand": "git diff --name-status 335f2c402010f2f912488d61575b5ce0c090513a..HEAD -- scripts",
-    "countStatus": "matches_prior_matrix"
+    "countStatus": "baseline_drift"
   },
   "closureEntries": [
     {
