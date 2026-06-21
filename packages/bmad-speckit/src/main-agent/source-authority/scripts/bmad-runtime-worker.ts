@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
+
+const cjsRequire = createRequire(__filename);
 const { buildGovernanceRunnerCliPresentation } =
-  require('../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
+  cjsRequire('../_bmad/runtime/hooks/governance-runner-summary-presenter.cjs') as {
     buildGovernanceRunnerCliPresentation: (input: {
       executionIntentCandidate?: GovernanceExecutionResult['executionIntentCandidate'];
       executionPlanDecision?: GovernanceExecutionResult['executionPlanDecision'];

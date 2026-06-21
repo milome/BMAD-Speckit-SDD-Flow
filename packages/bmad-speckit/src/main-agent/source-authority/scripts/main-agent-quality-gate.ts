@@ -33,7 +33,7 @@ const EXPECTED_VERSION = 1;
 
 function resolveSourceRoot(): string {
   let current = path.resolve(__dirname, '..');
-  while (true) {
+  while (current) {
     if (fs.existsSync(path.join(current, THRESHOLDS_PATH))) return current;
     const parent = path.dirname(current);
     if (parent === current) return path.resolve(__dirname, '..');

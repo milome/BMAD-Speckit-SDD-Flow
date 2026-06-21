@@ -129,7 +129,7 @@ function copyDirContents(src, dest) {
 
 /**
  * 安全删除目录（带重试）
- * @param {string} target
+ * @param {string} target - Directory path to remove.
  */
 function rmWithRetry(target) {
   if (!fs.existsSync(target)) return;
@@ -234,7 +234,7 @@ function acquirePersistentPackSessionLock(lockDir) {
 
 /**
  * 获取 prepublish 同步锁，避免并行 pack/prepublish 争抢同一 staging 目录
- * @param {string} lockDir
+ * @param {string} lockDir - Lock directory path to acquire.
  */
 function acquirePrepublishSyncLock(lockDir) {
   const payload = {
@@ -260,7 +260,7 @@ function acquirePrepublishSyncLock(lockDir) {
 
 /**
  * 释放 prepublish 同步锁
- * @param {string} lockDir
+ * @param {string} lockDir - Lock directory path to release.
  */
 function releasePrepublishSyncLock(lockDir) {
   rmWithRetry(lockDir);

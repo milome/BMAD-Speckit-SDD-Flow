@@ -1,7 +1,10 @@
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
+
+const cjsRequire = createRequire(__filename);
 const { appendRunnerSummaryToArtifactMarkdown, renderGovernanceRunnerSummaryLines } =
-  require('../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
+  cjsRequire('../_bmad/runtime/hooks/governance-runner-summary-format.cjs') as {
     appendRunnerSummaryToArtifactMarkdown: (
       artifactMarkdown: string,
       runnerSummaryLines: string[]

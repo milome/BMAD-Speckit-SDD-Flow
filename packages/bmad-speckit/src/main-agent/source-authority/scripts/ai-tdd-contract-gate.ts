@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -17,8 +18,9 @@ import {
 } from './target-artifact-realization-gate';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 
+const cjsRequire = createRequire(__filename);
 const { buildDerivedContractExecutionManifest } =
-  require('../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js') as {
+  cjsRequire('../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js') as {
     buildDerivedContractExecutionManifest(input: {
       confirmation: JsonObject;
       manifest: JsonObject;

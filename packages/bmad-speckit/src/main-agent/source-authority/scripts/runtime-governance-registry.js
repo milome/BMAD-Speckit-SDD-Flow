@@ -6,6 +6,8 @@ exports.clearAugmentersForTest = clearAugmentersForTest;
 const augmenters = [];
 /**
  * Register an augmenter (append order). Idempotent duplicate ids append another entry (tests should clear).
+ * @param {string} id - Augmenter identifier.
+ * @param {(policy: object, ctx: object) => object} fn - Augmenter function.
  */
 function registerRuntimePolicyAugmenter(id, fn) {
     augmenters.push({ id, fn });

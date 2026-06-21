@@ -30,7 +30,7 @@ function realpathOrNull(value) {
 
 function findSourceRepoEquivalentRoot(startDir) {
   let current = path.resolve(startDir);
-  while (true) {
+  while (current) {
     if (
       fs.existsSync(path.join(current, 'scripts', 'init-to-root.js')) &&
       fs.existsSync(path.join(current, 'packages', 'bmad-speckit', 'package.json'))
@@ -579,49 +579,6 @@ function readDirWithRetry(targetPath, maxAttempts = 20) {
   throw new Error(`Unable to read dir after retries: ${targetPath}`);
 }
 
-/**
- * Deep merge BMAD settings with global settings, preserving global hooks.
- * BMAD settings take precedence, but global hooks (like Stop notification) are appended.
- * @param {object} bmadSettings - BMAD settings from _bmad/claude/settings.json
- * @param {object} globalSettings - Global settings from ~/.claude/settings.json
- * @returns {object} Merged settings
- */
-function deepMergeSettings(bmadSettings, globalSettings) {
-  const merged = JSON.parse(JSON.stringify(bmadSettings));
-
-  // Merge hooks: BMAD hooks first, then append global hooks that don't conflict
-  if (globalSettings.hooks) {
-    merged.hooks = merged.hooks || {};
-    for (const [hookName, globalHookValue] of Object.entries(globalSettings.hooks)) {
-      if (hookName === 'Stop' && Array.isArray(globalHookValue) && globalHookValue.length > 0) {
-        // For Stop hook, append global hooks after BMAD hooks
-        merged.hooks.Stop = merged.hooks.Stop || [];
-        // Filter out duplicate commands
-        const bmadCommands = new Set(merged.hooks.Stop.flatMap(h => h.hooks?.map(hh => hh.command) || []));
-        const globalHooksToAdd = globalHookValue.filter(h => {
-          const commands = h.hooks?.map(hh => hh.command) || [];
-          return !commands.every(cmd => bmadCommands.has(cmd));
-        });
-        if (globalHooksToAdd.length > 0) {
-          merged.hooks.Stop.push(...globalHooksToAdd);
-          console.log(`  Appended ${globalHooksToAdd.length} global Stop hook(s)`);
-        }
-      }
-      // Other hooks: BMAD takes precedence, skip global
-    }
-  }
-
-  // Preserve global env, permissions if not defined in BMAD
-  if (globalSettings.env && !merged.env) {
-    merged.env = globalSettings.env;
-  }
-  if (globalSettings.permissions && !merged.permissions) {
-    merged.permissions = globalSettings.permissions;
-  }
-
-  return merged;
-}
-
 function copyRecursive(src, dest) {
   const stat = statPathWithRetry(src);
   if (stat.isDirectory()) {
@@ -682,8 +639,8 @@ function copySkillDirsRecursive(srcRoot, destRoot, targetDir) {
 
 /**
  * Deploy emit + inject hooks for Cursor (same scripts as Claude hooks).
- * @param {string} targetDir
- * @param {string} bmadRoot
+ * @param {string} targetDir - Project root receiving Cursor hooks.
+ * @param {string} bmadRoot - BMAD source root containing runtime hook assets.
  */
 function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
   const destDir = path.join(targetDir, '.cursor', 'hooks');
@@ -716,8 +673,8 @@ function syncCursorRuntimePolicyHooks(targetDir, bmadRoot) {
 
 /**
  * Deploy shared runtime hook helpers + Claude thin shells into `.claude/hooks` (same layering as Cursor).
- * @param {string} targetDir
- * @param {string} bmadRoot
+ * @param {string} targetDir - Project root receiving Claude hooks.
+ * @param {string} bmadRoot - BMAD source root containing runtime hook assets.
  */
 function syncClaudeRuntimePolicyHooks(targetDir, bmadRoot) {
   const destDir = path.join(targetDir, '.claude', 'hooks');
@@ -924,8 +881,9 @@ function writeConsumerBmadSpeckitBinWrappers(targetDir, pkgRoot) {
 
 /**
  * External installs only receive `_bmad/` by default; hooks need a pre-built emit (no ts-node).
- * Resolve `@bmad-speckit/runtime-emit` from pkgRoot node_modules (bmad-speckit 渚濊禆鏍?锛屼緵澶嶅埗鍒?hooks/emit-runtime-policy.cjs銆? * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
- * @param {string} targetDir - Consumer project root.
+ * Resolve `@bmad-speckit/runtime-emit` from package node_modules or dev dist.
+ * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root.
+ * @returns {string | null} Runtime emit bundle path when available.
  */
 function resolveRuntimeEmitCjs(pkgRoot) {
   try {
@@ -948,7 +906,7 @@ function resolveRuntimeEmitCjs(pkgRoot) {
 /**
  * Resolve bundled resolve-for-session.cjs (i18n CLI) from @bmad-speckit/runtime-emit.
  * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
- * @returns {string | null}
+ * @returns {string | null} Bundled resolve-for-session path when available.
  */
 function resolveRuntimeResolveSessionCjs(pkgRoot) {
   try {
@@ -970,7 +928,7 @@ function resolveRuntimeResolveSessionCjs(pkgRoot) {
 /**
  * Resolve bundled render-audit-block.cjs (i18n audit preview CLI) from @bmad-speckit/runtime-emit.
  * @param {string} pkgRoot - BMAD-Speckit-SDD-Flow root (init script location).
- * @returns {string | null}
+ * @returns {string | null} Bundled render-audit-block path when available.
  */
 function resolveRuntimeRenderAuditBlockCjs(pkgRoot) {
   try {
@@ -1047,7 +1005,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
 
 /**
  * E15-S2 T5.16: Copy SKILL.zh.md or SKILL.en.md over SKILL.md based on runtime context languagePolicy.
- * @param {string} targetDir
+ * @param {string} targetDir - Project root receiving language-specific skill files.
  */
 function materializeSkillMdByLanguage(targetDir) {
   const ctxPath = path.join(targetDir, '_bmad-output', 'runtime', 'context', 'project.json');

@@ -43,7 +43,11 @@ const path = __importStar(require("node:path"));
 const node_crypto_1 = require("node:crypto");
 const context_1 = require("./context");
 const registry_1 = require("./registry");
-/** Same rule as create-story: epic_num-story_num-slug (e.g. 15-1-runtime-governance-complete). */
+/**
+ * Parse the story key using the create-story epic_num-story_num-slug rule.
+ * @param {string} storyKey - Story key to parse.
+ * @returns {{epicNum: string, storyNum: string, storySlug: string, epicId: string}} Parsed story metadata.
+ */
 function parseStoryKey(storyKey) {
     const trimmed = storyKey.trim();
     const m = /^(\d+)-(\d+)-(.+)$/.exec(trimmed);
@@ -157,6 +161,10 @@ function stageForLifecycle(lifecycle) {
 }
 /**
  * Persist registry after sprint-status write: refresh from sprint when present, re-affirm run scope.
+ * @param {string} root - Project root.
+ * @param {string} storyKey - Story key bound to the run.
+ * @param {string} runId - Runtime context run id.
+ * @param {'dev_story' | 'post_audit'} lifecycle - Lifecycle stage for persisted scope.
  */
 function persistRunRegistry(root, storyKey, runId, lifecycle) {
     const parsed = parseStoryKey(storyKey);

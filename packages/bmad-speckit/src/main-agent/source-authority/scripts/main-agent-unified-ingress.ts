@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import {
   runMainAgentAutomaticLoop,
@@ -16,6 +17,8 @@ import {
   type GovernanceTransportEnvelope,
   type GovernanceTransportValidation,
 } from './governance-transport-envelope';
+
+const cjsRequire = createRequire(__filename);
 
 export type MainAgentHostMode = 'hooks_enabled' | 'no_hooks';
 export type MainAgentHostKind = 'cursor' | 'claude' | 'codex';
@@ -395,8 +398,8 @@ function probeHostRecovery(input: {
     if (input.hostKind === 'claude') {
       try {
         // Health probe loads the runtime hook module; file existence alone is not sufficient.
-        delete require.cache[require.resolve(hookPath)];
-        require(hookPath);
+        delete cjsRequire.cache[cjsRequire.resolve(hookPath)];
+        cjsRequire(hookPath);
         return { hookAvailable: true, hookExecutable: true };
       } catch {
         return { hookAvailable: true, hookExecutable: false };
@@ -567,8 +570,8 @@ async function probeHostRecoveryAsync(input: {
     }
     if (input.hostKind === 'claude') {
       try {
-        delete require.cache[require.resolve(hookPath)];
-        require(hookPath);
+        delete cjsRequire.cache[cjsRequire.resolve(hookPath)];
+        cjsRequire(hookPath);
         return { hookAvailable: true, hookExecutable: true };
       } catch {
         return { hookAvailable: true, hookExecutable: false };

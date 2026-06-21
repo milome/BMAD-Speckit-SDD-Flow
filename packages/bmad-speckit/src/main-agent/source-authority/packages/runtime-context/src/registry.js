@@ -203,7 +203,11 @@ function readRuntimeContextRegistry(root) {
     parsed.latestReviewerCloseout = parsed.latestReviewerCloseout ?? null;
     return parsed;
 }
-/** Load existing registry from disk when present; otherwise a fresh default. */
+/**
+ * Load existing registry from disk when present; otherwise a fresh default.
+ * @param {string} root - Project root.
+ * @returns {object} Runtime context registry.
+ */
 function readRegistryOrDefault(root) {
     const file = runtimeContextRegistryPath(root);
     if (!fs.existsSync(file)) {

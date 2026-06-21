@@ -27,12 +27,6 @@ const path = require('node:path');
  * @property {string[]} warnings - 警告列表
  */
 
-/**
- * 颜色输出
- * @param {string} text - 文本
- * @param {string} color - 颜色
- * @returns {string}
- */
 function color(text, color) {
   const codes = {
     red: '\x1b[31m',
@@ -46,7 +40,7 @@ function color(text, color) {
 /**
  * 检查单个文件
  * @param {string} filePath - 文件路径
- * @returns {{passed: boolean, issues: string[]}}
+ * @returns {{passed: boolean, issues: string[]}} Result.
  */
 function checkFile(filePath) {
   const issues = [];
@@ -78,7 +72,7 @@ function checkFile(filePath) {
  * 递归获取目录中所有文件
  * @param {string} dir - 目录
  * @param {string[]} [files] - 累积的文件列表
- * @returns {string[]}
+ * @returns {string[]} File paths.
  */
 function getAllFiles(dir, files = []) {
   const entries = fs.readdirSync(dir);
@@ -110,7 +104,7 @@ function displayHookPath(hooksDir, file) {
 
 /**
  * 主验证流程
- * @returns {VerificationResult}
+ * @returns {VerificationResult} Result.
  */
 function verify() {
   const result = {

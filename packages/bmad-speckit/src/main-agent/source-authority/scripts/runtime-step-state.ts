@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
+
+const cjsRequire = createRequire(__filename);
 
 const runtimeStepStatePathCandidates = [
   path.resolve(__dirname, '..', '_bmad', 'runtime', 'hooks', 'runtime-step-state.cjs'),
@@ -11,7 +14,7 @@ const runtimeStepStatePath =
   runtimeStepStatePathCandidates.find((candidate) => fs.existsSync(candidate)) ||
   runtimeStepStatePathCandidates[0];
 
-const runtimeStepState = require(runtimeStepStatePath) as {
+const runtimeStepState = cjsRequire(runtimeStepStatePath) as {
   resolveRuntimeStepState: (
     projectRoot: string,
     options?: {

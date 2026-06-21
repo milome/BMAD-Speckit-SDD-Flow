@@ -2,13 +2,13 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-final-evidence-packet/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "contractPath": "docs/plans/2026-06-20-main-agent-runtime-migration-wave-4-1-goal-execution-plan.md",
-  "generatedAt": "2026-06-20T13:50:27.010Z",
+  "generatedAt": "2026-06-21T00:23:44.320Z",
   "ledgerPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/migration-ledger.json",
-  "ledgerHash": "sha256:0600a87bcab722a8494dedc257d4e51c4643723ac103a750051144e82a228929",
+  "ledgerHash": "sha256:075414d5c0357b876be86e7ac5ecda68c18c5f1cb49ad1c1b6e95cfb69619848",
   "behaviorEquivalenceMatrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/behavior-equivalence-matrix.json",
   "behaviorEquivalenceMatrixHash": "sha256:f4b65db4580ea7f24472d518613a073ea807d64404d027734c342159618b4d73",
   "packageSourceParityEvidencePath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json",
-  "packageSourceParityEvidenceHash": "sha256:dc1e58bbcabe95b91c749f45dc1f320da21fbac26f5f89f3afc78710d6ca2004",
+  "packageSourceParityEvidenceHash": "sha256:ac0064e555e2f5846b5e4f7b2c9c29b98767ba11f2e6f18e5318843f3edeffab",
   "summaryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md",
   "summaryHash": "sha256:116ceaca5312027a94845201bff56178dcf87eabddc8c944569b31250d8a51a9",
   "finalValidatorCore": {
@@ -772,15 +772,15 @@
   "receipts": {
     "packageSourceParityEvidence": {
       "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json",
-      "bytes": 768071,
-      "hash": "sha256:dc1e58bbcabe95b91c749f45dc1f320da21fbac26f5f89f3afc78710d6ca2004",
-      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json.backup-41688-1781963427004"
+      "bytes": 768349,
+      "hash": "sha256:ac0064e555e2f5846b5e4f7b2c9c29b98767ba11f2e6f18e5318843f3edeffab",
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/package-source-parity-evidence.json.backup-11252-1782001424313"
     },
     "summary": {
       "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md",
       "bytes": 2299,
       "hash": "sha256:116ceaca5312027a94845201bff56178dcf87eabddc8c944569b31250d8a51a9",
-      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md.backup-41688-1781963427008"
+      "backupPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/summary.md.backup-11252-1782001424318"
     }
   }
 }
