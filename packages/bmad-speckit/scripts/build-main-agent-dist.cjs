@@ -12,6 +12,11 @@ const packageDistRoot = path.join(packageRoot, 'dist');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
 const excludedRuntimeFiles = new Set([]);
 const sourceAuthorityRoot = path.join(sourceRoot, 'source-authority');
+const { ensureGovernanceUserStoryMappingFixture } = require(path.join(
+  repoRoot,
+  'scripts',
+  'ensure-governance-user-story-mapping-fixture.js'
+));
 const packageRuntimeTypeScriptCompilerOptions = {
   module: ts.ModuleKind.CommonJS,
   target: ts.ScriptTarget.ES2022,
@@ -501,6 +506,7 @@ function copySourceAuthorityAssetDirectory(relativePath) {
 }
 
 for (const directory of sourceAuthorityAssetDirectories) copySourceAuthorityAssetDirectory(directory);
+ensureGovernanceUserStoryMappingFixture({ root: repoRoot, force: false, log: null });
 function copySourceAuthorityAssetFile(relativePath) {
   const source = path.join(repoRoot, relativePath);
   const target = path.join(distRoot, 'source-authority', relativePath);

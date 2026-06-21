@@ -12,16 +12,23 @@ const RECORD_RELATIVE_PATH = `_bmad-output/runtime/requirement-records/${REQUIRE
 const RECORD_PATH = path.join(ROOT, ...RECORD_RELATIVE_PATH.split('/'));
 const FIXTURE_TIMESTAMP = '2026-04-30T00:00:00.000Z';
 
+function fixturePaths(root = ROOT) {
+  return {
+    mappingPath: path.join(root, ...MAPPING_RELATIVE_PATH.split('/')),
+    recordPath: path.join(root, ...RECORD_RELATIVE_PATH.split('/')),
+  };
+}
+
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
 }
 
-function isUsableMapping(value) {
+function isUsableMapping(value, recordPath = RECORD_PATH) {
   return (
     value &&
     typeof value === 'object' &&
-    fs.existsSync(RECORD_PATH) &&
+    fs.existsSync(recordPath) &&
     value.active &&
     typeof value.active === 'object' &&
     typeof value.active.recordPath === 'string' &&
@@ -36,10 +43,10 @@ function isUsableMapping(value) {
   );
 }
 
-function readExistingMapping() {
-  if (!fs.existsSync(MAPPING_PATH)) return null;
+function readExistingMapping(mappingPath = MAPPING_PATH) {
+  if (!fs.existsSync(mappingPath)) return null;
   try {
-    return JSON.parse(fs.readFileSync(MAPPING_PATH, 'utf8'));
+    return JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
   } catch {
     return null;
   }
@@ -118,14 +125,43 @@ function buildRequirementRecord() {
   };
 }
 
-const force = process.argv.includes('--force') || process.env.CI === 'true';
-const existing = readExistingMapping();
-
-if (!force && isUsableMapping(existing)) {
-  console.log(`[governance-fixture] existing mapping is usable: ${MAPPING_RELATIVE_PATH}`);
-  process.exit(0);
+function writeGovernanceUserStoryMappingFixture(root = ROOT) {
+  const { mappingPath, recordPath } = fixturePaths(root);
+  writeJson(mappingPath, buildFixture());
+  writeJson(recordPath, buildRequirementRecord());
+  return { mappingPath, recordPath };
 }
 
-writeJson(MAPPING_PATH, buildFixture());
-writeJson(RECORD_PATH, buildRequirementRecord());
-console.log(`[governance-fixture] wrote ${MAPPING_RELATIVE_PATH}`);
+function ensureGovernanceUserStoryMappingFixture(options = {}) {
+  const root = options.root || ROOT;
+  const force = options.force ?? process.env.CI === 'true';
+  const log = options.log === undefined ? console.log : options.log;
+  const { mappingPath, recordPath } = fixturePaths(root);
+  const existing = readExistingMapping(mappingPath);
+
+  if (!force && isUsableMapping(existing, recordPath)) {
+    if (log) log(`[governance-fixture] existing mapping is usable: ${MAPPING_RELATIVE_PATH}`);
+    return { written: false, mappingPath, recordPath };
+  }
+
+  writeGovernanceUserStoryMappingFixture(root);
+  if (log) log(`[governance-fixture] wrote ${MAPPING_RELATIVE_PATH}`);
+  return { written: true, mappingPath, recordPath };
+}
+
+if (require.main === module) {
+  ensureGovernanceUserStoryMappingFixture({ force: process.argv.includes('--force') || process.env.CI === 'true' });
+}
+
+module.exports = {
+  MAPPING_RELATIVE_PATH,
+  RECORD_RELATIVE_PATH,
+  REQUIREMENT_ID,
+  buildFixture,
+  buildRequirementRecord,
+  ensureGovernanceUserStoryMappingFixture,
+  fixturePaths,
+  isUsableMapping,
+  readExistingMapping,
+  writeGovernanceUserStoryMappingFixture,
+};

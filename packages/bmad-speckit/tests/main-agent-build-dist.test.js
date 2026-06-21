@@ -106,6 +106,9 @@ const EXPECTED_SOURCE_AUTHORITY_ASSETS = [
   '_bmad-output/runtime/requirement-records/index.json',
   '_bmad-output/runtime/requirement-records/REQ-CI-GOVERNANCE-MAPPING-FIXTURE/requirement-record.json',
 ];
+const GENERATED_SOURCE_AUTHORITY_ASSETS = EXPECTED_SOURCE_AUTHORITY_ASSETS.filter((relativePath) =>
+  relativePath.startsWith('_bmad-output/')
+);
 
 function isTypeScriptRuntimeSourcePath(relativePath) {
   return TYPE_SCRIPT_FAMILY_SOURCE_RE.test(relativePath) && !TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(relativePath);
@@ -205,6 +208,34 @@ function packageRuntimeTypeScriptDistRelativePath(relativePath) {
   if (/\.cts$/u.test(relativePath)) return relativePath.replace(/\.cts$/u, '.cjs');
   if (/\.mts$/u.test(relativePath)) return relativePath.replace(/\.mts$/u, '.mjs');
   throw new Error(`unsupported package runtime TypeScript source: ${relativePath}`);
+}
+
+function withTemporarilyMovedFiles(relativePaths, callback) {
+  const stamp = `test-backup-${process.pid}-${Date.now()}`;
+  const moved = [];
+
+  try {
+    for (const relativePath of relativePaths) {
+      const filePath = path.join(REPO_ROOT, relativePath);
+      const backupPath = `${filePath}.${stamp}`;
+      if (!fs.existsSync(filePath)) {
+        moved.push({ filePath, backupPath, existed: false });
+        continue;
+      }
+      fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+      fs.renameSync(filePath, backupPath);
+      moved.push({ filePath, backupPath, existed: true });
+    }
+    callback();
+  } finally {
+    for (const { filePath, backupPath, existed } of moved.reverse()) {
+      if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
+      if (existed && fs.existsSync(backupPath)) {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.renameSync(backupPath, filePath);
+      }
+    }
+  }
 }
 
 describe('main-agent dist build', () => {
@@ -494,5 +525,27 @@ describe('main-agent dist build', () => {
         `package runtime asset drifted from canonical source: ${relativePath}`
       );
     }
+  });
+
+  it('auto-provisions source-authority governance fixture for clean dist builds', () => {
+    withTemporarilyMovedFiles(GENERATED_SOURCE_AUTHORITY_ASSETS, () => {
+      execFileSync(process.execPath, [BUILD_SCRIPT], {
+        cwd: PACKAGE_ROOT,
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+
+      for (const relativePath of GENERATED_SOURCE_AUTHORITY_ASSETS) {
+        const repoAsset = path.join(REPO_ROOT, relativePath);
+        const distAsset = path.join(DIST_ROOT, 'source-authority', relativePath);
+        assert.equal(fs.existsSync(repoAsset), true, `build did not generate ${relativePath}`);
+        assert.equal(fs.existsSync(distAsset), true, `dist missing generated ${relativePath}`);
+        assert.equal(
+          fs.readFileSync(distAsset, 'utf8'),
+          fs.readFileSync(repoAsset, 'utf8'),
+          `dist generated fixture drifted from build input: ${relativePath}`
+        );
+      }
+    });
   });
 });
