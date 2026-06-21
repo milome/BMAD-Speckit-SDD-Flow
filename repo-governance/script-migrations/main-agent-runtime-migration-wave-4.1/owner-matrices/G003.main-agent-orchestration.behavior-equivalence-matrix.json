@@ -7,15 +7,15 @@
   "packageImplementationSet": [
     "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
   ],
-  "generatedAt": "2026-06-21T01:38:34.618Z",
+  "generatedAt": "2026-06-21T04:46:37.598Z",
   "generatedBeforeG009": true,
   "sourceDiscoveryPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.main-agent-orchestration.discovery.json",
-  "sourceDiscoveryHash": "sha256:5b5aa71cd1956559334a17ee90da1571ba3da313ff90e055338eeba3aed3938b",
+  "sourceDiscoveryHash": "sha256:6f4519ab8f8fe23acb12a0c1ad9409c871293fac74233501a3e89b66d11579bc",
   "sourceAuthorityManifestPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/source-authority/G003.main-agent-orchestration.package-source-manifest.json",
-  "sourceAuthorityManifestHash": "sha256:a1e9d0f69219fee3ab34c298da01ea34719426958b5f5502162a72958ace4072",
-  "sourceAuthorityEntryHash": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
+  "sourceAuthorityManifestHash": "sha256:e9e905f073c5980eeb8a5d5835a35e4ac7a96c80b198862ac0d5f6ea86709310",
+  "sourceAuthorityEntryHash": "sha256:eae939ee181f4df6e2435bb9324bb6e4719a39b286157bfc54f41db651b3d31a",
   "runtimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
-  "runtimeEntryPointHash": "sha256:133cdc87f0bb682c85b0f3cebd2f09826527812930f88fa2a21810d2d4eb6c77",
+  "runtimeEntryPointHash": "sha256:9d4ff33f1264889dad43555499becc69f68fc0ac8f357bc5c57e7a19f6ba68a9",
   "sourceAuthorityDependencyGraph": {
     "sourceCount": 124,
     "edgeCount": 328,
@@ -561,7 +561,7 @@
       "fixtures": [
         {
           "id": "g003_inspect_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_inspect",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_inspect",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -634,7 +634,7 @@
       "fixtures": [
         {
           "id": "g003_dispatch_plan_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_dispatch_plan",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_dispatch_plan",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -708,11 +708,11 @@
       "fixtures": [
         {
           "id": "g003_run_loop_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_run_loop",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_run_loop",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
-      "expectedStdout": "{\n  \"runId\": \"main-agent-run-loop-1782005914842\",\n  \"status\": \"blocked\",\n  \"steps\": [\n    {\n      \"step\": \"inspect.initial\",\n      \"status\": \"fail\",\n      \"summary\": \"NO_ACTIVE_REQUIREMENT: contract_authoring_required\"\n    }\n  ],\n  \"dispatchInstruction\": null,\n  \"taskReport\": null,\n  \"finalSurface\": {\n    \"source\": \"no_active_requirement\",\n    \"sessionId\": null,\n    \"orchestrationStatePath\": null,\n    \"orchestrationState\": null,\n    \"pendingPacketStatus\": \"none\",\n    \"pendingPacket\": null,\n    \"fourSignal\": null,\n    \"latestGate\": null,\n    \"gatesLoop\": null,\n    \"closeout\": null,\n    \"drift\": null,\n    \"diagnostics\": [\n      {\n        \"category\": \"active_requirement\",\n        \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n        \"sourceChecked\": [\n          \"_bmad-output/runtime/requirement-records/index.json\"\n        ],\n        \"repairAction\": \"contract_authoring_required\",\n        \"automaticRepairAvailable\": false,\n        \"nextCommand\": \"bmads\",\n        \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n      }\n    ],\n    \"mainAgentCanContinue\": false,\n    \"continueDecision\": \"blocked\",\n    \"mainAgentNextAction\": \"contract_authoring_required\",\n    \"mainAgentReady\": false,\n    \"mainAgentStageSummary\": {\n      \"schemaVersion\": \"main-agent-stage-summary/v1\",\n      \"recordId\": null,\n      \"requirementSetId\": null,\n      \"currentMentalModel\": null,\n      \"currentMentalModelStatus\": \"no_active_requirement\",\n      \"currentStageOrdinal\": null,\n      \"totalStages\": 6,\n      \"nextAction\": \"contract_authoring_required\",\n      \"nextMentalModel\": \"requirement_confirmation\",\n      \"ready\": false,\n      \"blocked\": true,\n      \"blockingReasons\": [\n        \"no_active_requirement\",\n        \"contract_authoring_required\"\n      ],\n      \"lastEventType\": null,\n      \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n    }\n  },\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
+      "expectedStdout": "{\n  \"runId\": \"main-agent-run-loop-1782017197829\",\n  \"status\": \"blocked\",\n  \"steps\": [\n    {\n      \"step\": \"inspect.initial\",\n      \"status\": \"fail\",\n      \"summary\": \"NO_ACTIVE_REQUIREMENT: contract_authoring_required\"\n    }\n  ],\n  \"dispatchInstruction\": null,\n  \"taskReport\": null,\n  \"finalSurface\": {\n    \"source\": \"no_active_requirement\",\n    \"sessionId\": null,\n    \"orchestrationStatePath\": null,\n    \"orchestrationState\": null,\n    \"pendingPacketStatus\": \"none\",\n    \"pendingPacket\": null,\n    \"fourSignal\": null,\n    \"latestGate\": null,\n    \"gatesLoop\": null,\n    \"closeout\": null,\n    \"drift\": null,\n    \"diagnostics\": [\n      {\n        \"category\": \"active_requirement\",\n        \"authoritativeSource\": \"_bmad-output/runtime/requirement-records/index.json\",\n        \"sourceChecked\": [\n          \"_bmad-output/runtime/requirement-records/index.json\"\n        ],\n        \"repairAction\": \"contract_authoring_required\",\n        \"automaticRepairAvailable\": false,\n        \"nextCommand\": \"bmads\",\n        \"message\": \"NO_ACTIVE_REQUIREMENT: create or import a requirement contract and complete requirement confirmation before orchestration can continue.\"\n      }\n    ],\n    \"mainAgentCanContinue\": false,\n    \"continueDecision\": \"blocked\",\n    \"mainAgentNextAction\": \"contract_authoring_required\",\n    \"mainAgentReady\": false,\n    \"mainAgentStageSummary\": {\n      \"schemaVersion\": \"main-agent-stage-summary/v1\",\n      \"recordId\": null,\n      \"requirementSetId\": null,\n      \"currentMentalModel\": null,\n      \"currentMentalModelStatus\": \"no_active_requirement\",\n      \"currentStageOrdinal\": null,\n      \"totalStages\": 6,\n      \"nextAction\": \"contract_authoring_required\",\n      \"nextMentalModel\": \"requirement_confirmation\",\n      \"ready\": false,\n      \"blocked\": true,\n      \"blockingReasons\": [\n        \"no_active_requirement\",\n        \"contract_authoring_required\"\n      ],\n      \"lastEventType\": null,\n      \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n    }\n  },\n  \"mainAgentStageSummary\": {\n    \"schemaVersion\": \"main-agent-stage-summary/v1\",\n    \"recordId\": null,\n    \"requirementSetId\": null,\n    \"currentMentalModel\": null,\n    \"currentMentalModelStatus\": \"no_active_requirement\",\n    \"currentStageOrdinal\": null,\n    \"totalStages\": 6,\n    \"nextAction\": \"contract_authoring_required\",\n    \"nextMentalModel\": \"requirement_confirmation\",\n    \"ready\": false,\n    \"blocked\": true,\n    \"blockingReasons\": [\n      \"no_active_requirement\",\n      \"contract_authoring_required\"\n    ],\n    \"lastEventType\": null,\n    \"userFacingMessage\": \"当前项目尚未创建需求契约。BMAD 不会把初始化占位状态当作真实需求。请先创建或导入一个可确认的需求源文档。\"\n  }\n}\n",
       "expectedStderr": "",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
@@ -778,7 +778,7 @@
       "fixtures": [
         {
           "id": "g003_claim_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_claim",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_claim",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -844,7 +844,7 @@
       "fixtures": [
         {
           "id": "g003_dispatch_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_dispatch",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_dispatch",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -910,7 +910,7 @@
       "fixtures": [
         {
           "id": "g003_complete_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_complete",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_complete",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -988,7 +988,7 @@
       "fixtures": [
         {
           "id": "g003_invalidate_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_invalidate",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_invalidate",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1050,7 +1050,7 @@
       "fixtures": [
         {
           "id": "g003_route_intake_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_route_intake",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_route_intake",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1112,7 +1112,7 @@
       "fixtures": [
         {
           "id": "g003_adaptive_intake_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_adaptive_intake",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_adaptive_intake",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1174,18 +1174,18 @@
       "fixtures": [
         {
           "id": "g003_confirm_scope_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_confirm_scope",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_confirm_scope",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirm_scope\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedStderr": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirm_scope\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+          "firstLine": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>"
         }
       ],
       "expectedOutputProvenance": {
@@ -1244,18 +1244,18 @@
       "fixtures": [
         {
           "id": "g003_confirmation_ingest_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_confirmation_ingest",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_confirmation_ingest",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirmation_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedStderr": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirmation_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+          "firstLine": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>"
         }
       ],
       "expectedOutputProvenance": {
@@ -1306,18 +1306,18 @@
       "fixtures": [
         {
           "id": "g003_confirm_closeout_acceptance_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_confirm_closeout_acceptance",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_confirm_closeout_acceptance",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirm_closeout_acceptance\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js\n",
+      "expectedStderr": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirm_closeout_acceptance\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js"
+          "firstLine": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>"
         }
       ],
       "expectedOutputProvenance": {
@@ -1380,18 +1380,18 @@
       "fixtures": [
         {
           "id": "g003_closeout_acceptance_ingest_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_closeout_acceptance_ingest",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_closeout_acceptance_ingest",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_closeout_acceptance_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js\n",
+      "expectedStderr": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_closeout_acceptance_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js"
+          "firstLine": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>"
         }
       ],
       "expectedOutputProvenance": {
@@ -1442,7 +1442,7 @@
       "fixtures": [
         {
           "id": "g003_route_confirmation_drift_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_route_confirmation_drift",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_route_confirmation_drift",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1536,7 +1536,7 @@
       "fixtures": [
         {
           "id": "g003_confirmation_drift_route_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_confirmation_drift_route",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_confirmation_drift_route",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1598,18 +1598,18 @@
       "fixtures": [
         {
           "id": "g003_repair_confirmation_bookkeeping_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_repair_confirmation_bookkeeping",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_repair_confirmation_bookkeeping",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_repair_confirmation_bookkeeping\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedStderr": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_repair_confirmation_bookkeeping\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+          "firstLine": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>"
         }
       ],
       "expectedOutputProvenance": {
@@ -1668,18 +1668,18 @@
       "fixtures": [
         {
           "id": "g003_confirmation_bookkeeping_repair_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_confirmation_bookkeeping_repair",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_confirmation_bookkeeping_repair",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirmation_bookkeeping_repair\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n",
+      "expectedStderr": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirmation_bookkeeping_repair\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js"
+          "firstLine": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>"
         }
       ],
       "expectedOutputProvenance": {
@@ -1730,7 +1730,7 @@
       "fixtures": [
         {
           "id": "g003_pre_confirmation_drilldown_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_pre_confirmation_drilldown",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_pre_confirmation_drilldown",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1796,7 +1796,7 @@
       "fixtures": [
         {
           "id": "g003_pre_confirmation_drilldown_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_pre_confirmation_drilldown",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_pre_confirmation_drilldown",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1898,7 +1898,7 @@
       "fixtures": [
         {
           "id": "g003_author_confirmation_ready_source_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_author_confirmation_ready_source",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_author_confirmation_ready_source",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -1980,7 +1980,7 @@
       "fixtures": [
         {
           "id": "g003_author_confirmation_ready_source_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_author_confirmation_ready_source",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_author_confirmation_ready_source",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -2046,7 +2046,7 @@
       "fixtures": [
         {
           "id": "g003_authoring_repair_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_authoring_repair",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_authoring_repair",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -2108,7 +2108,7 @@
       "fixtures": [
         {
           "id": "g003_authoring_repair_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_authoring_repair",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_authoring_repair",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -2178,7 +2178,7 @@
       "fixtures": [
         {
           "id": "g003_post_close_defect_intake_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_post_close_defect_intake",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_post_close_defect_intake",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
@@ -2244,18 +2244,18 @@
       "fixtures": [
         {
           "id": "g003_controlled_readiness_audit_fixture_root",
-          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T01-38-34-618Z/g003_controlled_readiness_audit",
+          "path": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.replay-fixtures/2026-06-21T04-46-37-598Z/g003_controlled_readiness_audit",
           "description": "Isolated empty fixture root used to exercise the original action branch without source checkout state."
         }
       ],
       "expectedStdout": "",
-      "expectedStderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n",
+      "expectedStderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T04-46-37-598Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n",
       "expectedExitCode": 1,
       "expectedFileArtifacts": [],
       "expectedErrorPaths": [
         {
           "channel": "stderr",
-          "firstLine": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required"
+          "firstLine": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T04-46-37-598Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required"
         }
       ],
       "expectedOutputProvenance": {

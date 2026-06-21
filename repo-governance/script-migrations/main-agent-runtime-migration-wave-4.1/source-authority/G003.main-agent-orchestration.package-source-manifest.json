@@ -1,6 +1,6 @@
 {
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-g003-package-source-authority/v1",
-  "generatedAt": "2026-06-21T01:38:04.902Z",
+  "generatedAt": "2026-06-21T04:44:53.101Z",
   "entrySource": "scripts/main-agent-orchestration.ts",
   "entryTarget": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
   "entrySourceAuthorityTarget": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
@@ -68,28 +68,28 @@
       "sha256": "sha256:8b11688c322e190e64113f5f309ca4c607c492d36651284539db4e73af685ddf"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "sourceSha256": "sha256:b9bcba3d2ac0df251a28094a1b6c5f8a4589d3800b9945833775c437fba6355a",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "bytes": 4240,
-      "sha256": "sha256:b9bcba3d2ac0df251a28094a1b6c5f8a4589d3800b9945833775c437fba6355a"
+      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "sourceSha256": "sha256:9033fb1b88e7f8d978640612c593f234be2afa9051f89a81ebe213a9dc190431",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "bytes": 5296,
+      "sha256": "sha256:9033fb1b88e7f8d978640612c593f234be2afa9051f89a81ebe213a9dc190431"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "sourceSha256": "sha256:c5a7b4948f2e0014b3ef230dd1c83697b36ab4351228b57113a2faf009d1c6af",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "bytes": 7429,
-      "sha256": "sha256:c5a7b4948f2e0014b3ef230dd1c83697b36ab4351228b57113a2faf009d1c6af"
+      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "sourceSha256": "sha256:2390b1e15ffb4abfc9c8d390e2305d9dce21f0f82dfa8716773338563f201489",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "bytes": 5185,
+      "sha256": "sha256:2390b1e15ffb4abfc9c8d390e2305d9dce21f0f82dfa8716773338563f201489"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "sourceSha256": "sha256:c1933e7a1d5907d2f28c7ac07d6a4e2fb328197a902104cc30b3e7d8e454b36d",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "bytes": 9244,
-      "sha256": "sha256:c1933e7a1d5907d2f28c7ac07d6a4e2fb328197a902104cc30b3e7d8e454b36d"
+      "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "sourceSha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "bytes": 11689,
+      "sha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f"
     },
     {
       "source": "packages/runtime-context/src/context.ts",
@@ -456,8 +456,8 @@
       "sourceSha256": "sha256:e6f700d0586a90dac234f2c958383338c66451057adb60366396f4dd77688256",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "bytes": 105716,
-      "sha256": "sha256:ea46c963b70a6b3f5d3938bdf5cce619b596d33c653b8be846d977f28d5a5948"
+      "bytes": 106220,
+      "sha256": "sha256:82b9795ab851f1c69aabaf1c6c505b48910e2a5b460f3a569917b088a2efc7a3"
     },
     {
       "source": "scripts/architecture-confirmation-hash-recipe.ts",
@@ -520,8 +520,8 @@
       "sourceSha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
-      "bytes": 3281,
-      "sha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998"
+      "bytes": 3292,
+      "sha256": "sha256:13ff491386724f5cc7770dd539419f0561d489fbdf313f41d3c61ce9ab159388"
     },
     {
       "source": "scripts/deferred-gap-governance.cjs",
@@ -616,8 +616,8 @@
       "sourceSha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
-      "bytes": 57108,
-      "sha256": "sha256:1116f473764f37084a15f686d449e4d01aa5fe92c3c76fc07883a9a86a1bdaa2"
+      "bytes": 57614,
+      "sha256": "sha256:929f98a34b9759dfbeed4f871cca6ae7e067c975d0ae60c713989fc3bde67ccc"
     },
     {
       "source": "scripts/governance-transport-envelope.ts",
@@ -629,7 +629,7 @@
     },
     {
       "source": "scripts/host-runtime-mode.ts",
-      "sourceSha256": "sha256:7b6ce53d4637e6e6875250e6d8df6b03a093625ab3bb8f6483df7e680098117e",
+      "sourceSha256": "sha256:6783213f3b486cd5a84379867f5b88b35ee2818840e47655e224ad94a74639dd",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
       "bytes": 13160,
@@ -709,11 +709,11 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
+      "sourceSha256": "sha256:eae939ee181f4df6e2435bb9324bb6e4719a39b286157bfc54f41db651b3d31a",
       "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "bytes": 440388,
-      "sha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff"
+      "bytes": 440385,
+      "sha256": "sha256:eae939ee181f4df6e2435bb9324bb6e4719a39b286157bfc54f41db651b3d31a"
     },
     {
       "source": "scripts/model-governance-hint-resolver.ts",
@@ -1041,18 +1041,18 @@
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "sourceSha256": "sha256:b9bcba3d2ac0df251a28094a1b6c5f8a4589d3800b9945833775c437fba6355a",
+      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "sourceSha256": "sha256:9033fb1b88e7f8d978640612c593f234be2afa9051f89a81ebe213a9dc190431",
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.js"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "sourceSha256": "sha256:c5a7b4948f2e0014b3ef230dd1c83697b36ab4351228b57113a2faf009d1c6af",
+      "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "sourceSha256": "sha256:2390b1e15ffb4abfc9c8d390e2305d9dce21f0f82dfa8716773338563f201489",
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js"
     },
     {
-      "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
-      "sourceSha256": "sha256:c1933e7a1d5907d2f28c7ac07d6a4e2fb328197a902104cc30b3e7d8e454b36d",
+      "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
+      "sourceSha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f",
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
     },
     {
@@ -1392,7 +1392,7 @@
     },
     {
       "source": "scripts/host-runtime-mode.ts",
-      "sourceSha256": "sha256:7b6ce53d4637e6e6875250e6d8df6b03a093625ab3bb8f6483df7e680098117e",
+      "sourceSha256": "sha256:6783213f3b486cd5a84379867f5b88b35ee2818840e47655e224ad94a74639dd",
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/host-runtime-mode.js"
     },
     {
@@ -1442,7 +1442,7 @@
     },
     {
       "source": "scripts/main-agent-orchestration.ts",
-      "sourceSha256": "sha256:8471f99abfb0c369d2d92eacc432f635184c26d05beb0db6b4f2ae564b6f86ff",
+      "sourceSha256": "sha256:eae939ee181f4df6e2435bb9324bb6e4719a39b286157bfc54f41db651b3d31a",
       "target": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js"
     },
     {
@@ -1648,19 +1648,19 @@
       "to": "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js",
-      "specifier": "../runtime/host-runtime-mode.js",
-      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
+      "specifier": "../runtime/host-runtime-mode",
+      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "specifier": "./native-goal-command.js",
-      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "specifier": "./native-goal-command",
+      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts"
     },
     {
-      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "specifier": "../runtime/host-runtime-mode.js",
-      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "from": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
+      "specifier": "../runtime/host-runtime-mode",
+      "to": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
       "from": "packages/runtime-context/src/context.ts",
@@ -2789,8 +2789,8 @@
     },
     {
       "from": "scripts/main-agent-orchestration.ts",
-      "specifier": "../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js",
-      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js"
+      "specifier": "../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker",
+      "to": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts"
     },
     {
       "from": "scripts/main-agent-orchestration.ts",

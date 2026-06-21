@@ -20,7 +20,9 @@ const {
   writeJson,
 } = require('./main-agent-wave-4-1-utils.cjs');
 
-const { capturePackageOrchestration } = require('../../packages/bmad-speckit/src/main-agent/actions/source-authority-orchestration.js');
+const {
+  capturePackageOrchestration,
+} = require('../../packages/bmad-speckit/dist/main-agent/actions/source-authority-orchestration.js');
 
 const OWNER_TASK_ID = 'G003';
 const ORIGINAL_PATH = 'scripts/main-agent-orchestration.ts';

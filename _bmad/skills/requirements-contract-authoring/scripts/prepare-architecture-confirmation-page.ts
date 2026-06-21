@@ -9,8 +9,34 @@ const path = require('node:path');
 const SKILL_DIR = path.resolve(__dirname, '..');
 const PRODUCER = path.join(SKILL_DIR, 'scripts', 'generate-architecture-confirmation-artifact.ts');
 const RENDERER = path.join(SKILL_DIR, 'scripts', 'render-architecture-confirmation-html.ts');
-const INGEST = path.resolve('scripts/ingest-architecture-confirmation.ts');
-const TSX_CLI = path.resolve('node_modules/tsx/dist/cli.cjs');
+const INGEST = resolvePackageDistScript(
+  'dist/main-agent/source-authority/scripts/ingest-architecture-confirmation.js'
+);
+
+function resolvePackageDistScript(relativeDistPath) {
+  const directCandidates = [
+    path.resolve('packages/bmad-speckit', relativeDistPath),
+    path.resolve('node_modules/bmad-speckit', relativeDistPath),
+  ];
+  for (const candidate of directCandidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+
+  try {
+    const packageJson = require.resolve('bmad-speckit/package.json', {
+      paths: [process.cwd(), SKILL_DIR],
+    });
+    const packageRoot = path.dirname(packageJson);
+    const packageCandidate = path.join(packageRoot, relativeDistPath);
+    if (fs.existsSync(packageCandidate)) return packageCandidate;
+  } catch {
+    // Fall through to the fail-closed error below.
+  }
+
+  throw new Error(
+    `Unable to resolve package dist script ${relativeDistPath}; build or install bmad-speckit before preparing architecture confirmation.`
+  );
+}
 
 function parseArgs(argv) {
   const args = { language: 'zh-CN', theme: 'audit' };
@@ -44,22 +70,6 @@ function normalize(value) {
 
 function runNode(script, args, label, allowNonZero = false) {
   const result = spawnSync(process.execPath, [script, ...args], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  });
-  if (!allowNonZero && result.status !== 0) {
-    throw new Error(`${label} failed: ${result.stdout}\n${result.stderr}`);
-  }
-  return {
-    label,
-    status: result.status,
-    stdout: result.stdout,
-    stderr: result.stderr,
-  };
-}
-
-function runTsNode(script, args, label, allowNonZero = false) {
-  const result = spawnSync(process.execPath, [TSX_CLI, script, ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
   });
@@ -127,7 +137,7 @@ function main(argv) {
   const steps = [];
 
   if (!args.skipStateCheck) {
-    const stateCheckStep = runTsNode(
+    const stateCheckStep = runNode(
       INGEST,
       [
         '--action',

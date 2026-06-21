@@ -6,10 +6,10 @@ const os = require('node:os');
 const path = require('node:path');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
-const SRC_ENTRY = path.join(PACKAGE_ROOT, 'src', 'main-agent', 'index.js');
+const DIST_ENTRY = path.join(PACKAGE_ROOT, 'dist', 'main-agent', 'index.js');
 const SOURCE_AUTHORITY_ENTRY = path.join(
   PACKAGE_ROOT,
-  'src',
+  'dist',
   'main-agent',
   'source-authority',
   'scripts',
@@ -54,8 +54,8 @@ async function runGuarded(argv) {
     return true;
   };
   try {
-    delete require.cache[require.resolve(SRC_ENTRY)];
-    const { mainAgentRuntimeCommand } = require(SRC_ENTRY);
+    delete require.cache[require.resolve(DIST_ENTRY)];
+    const { mainAgentRuntimeCommand } = require(DIST_ENTRY);
     const exitCode = await mainAgentRuntimeCommand(argv);
     return { exitCode, stdout, stderr };
   } finally {
@@ -66,7 +66,7 @@ async function runGuarded(argv) {
 }
 
 describe('main-agent G003 package source authority', () => {
-  it('loads package-local main-agent orchestration source without compiled fallback', () => {
+  it('loads package-local dist main-agent orchestration runtime without compiled fallback', () => {
     const sourceAuthority = require(SOURCE_AUTHORITY_ENTRY);
 
     assert.equal(typeof sourceAuthority.mainMainAgentOrchestration, 'function');

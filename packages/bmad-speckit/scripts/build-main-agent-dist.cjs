@@ -167,7 +167,6 @@ function collectSourceAuthorityTypeScriptDeclarationFiles(dir = sourceAuthorityR
 const staticFiles = [
   'index.js',
   'runtime.js',
-  'runtime/supervised-worker-runtime.js',
   'runtime/diagnose-bmad-state.js',
   'runtime/parallel-mission-control.js',
   'actions/package-runtime-report.js',
@@ -264,6 +263,7 @@ const staticFiles = [
 const files = Array.from(new Set([...staticFiles, ...collectRuntimeFiles()]));
 const packageRuntimeTypeScriptFiles = [
   'runtime/host-runtime-mode.ts',
+  'runtime/supervised-worker-runtime.ts',
   'actions/native-goal-command.ts',
   'actions/native-goal-invoker.ts',
 ];

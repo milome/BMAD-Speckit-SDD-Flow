@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { normalizeRuntimeHost } from '../runtime/host-runtime-mode.js';
+import { normalizeRuntimeHost } from '../runtime/host-runtime-mode';
 
 interface CompiledPromptRefLike {
   auditReceiptPath: string;

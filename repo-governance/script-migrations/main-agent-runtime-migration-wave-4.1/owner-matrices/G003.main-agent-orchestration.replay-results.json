@@ -2,9 +2,9 @@
   "schemaVersion": "main-agent-runtime-migration-wave-4-1-g003-replay-results/v1",
   "waveId": "main-agent-runtime-migration-wave-4.1",
   "ownerTaskId": "G003",
-  "generatedAt": "2026-06-21T01:38:34.618Z",
+  "generatedAt": "2026-06-21T04:46:37.598Z",
   "matrixPath": "repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/owner-matrices/G003.main-agent-orchestration.behavior-equivalence-matrix.json",
-  "matrixHash": "sha256:b179e6523e27ca726603925406f877f03d2d7a2ab34ab2f526974c4be4087ed2",
+  "matrixHash": "sha256:1b939d798a4cc2a9171bddb60a485f8a2ff328ab3d998f7d0e1a7663015c3ade",
   "packageSourceEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
   "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
   "replayRows": [
@@ -136,7 +136,7 @@
       "passed": true,
       "exitCode": 1,
       "stdoutBytes": 0,
-      "stderrBytes": 343
+      "stderrBytes": 93
     },
     {
       "scenarioId": "g003_confirmation_ingest",
@@ -149,7 +149,7 @@
       "passed": true,
       "exitCode": 1,
       "stdoutBytes": 0,
-      "stderrBytes": 349
+      "stderrBytes": 93
     },
     {
       "scenarioId": "g003_confirm_closeout_acceptance",
@@ -162,7 +162,7 @@
       "passed": true,
       "exitCode": 1,
       "stdoutBytes": 0,
-      "stderrBytes": 377
+      "stderrBytes": 121
     },
     {
       "scenarioId": "g003_closeout_acceptance_ingest",
@@ -175,7 +175,7 @@
       "passed": true,
       "exitCode": 1,
       "stdoutBytes": 0,
-      "stderrBytes": 376
+      "stderrBytes": 121
     },
     {
       "scenarioId": "g003_route_confirmation_drift",
@@ -214,7 +214,7 @@
       "passed": true,
       "exitCode": 1,
       "stdoutBytes": 0,
-      "stderrBytes": 386
+      "stderrBytes": 129
     },
     {
       "scenarioId": "g003_confirmation_bookkeeping_repair",
@@ -227,7 +227,7 @@
       "passed": true,
       "exitCode": 1,
       "stdoutBytes": 0,
-      "stderrBytes": 386
+      "stderrBytes": 129
     },
     {
       "scenarioId": "g003_pre_confirmation_drilldown",

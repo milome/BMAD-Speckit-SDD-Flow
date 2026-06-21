@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
-const RUNTIME_ROOT = path.join(PACKAGE_ROOT, 'src', 'main-agent', 'runtime');
+const RUNTIME_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent', 'runtime');
 const TYPE_SCRIPT_RUNNER_PATTERN = new RegExp(`\\b${['t', 's', 'x'].join('')}\\b`);
 const TS_NODE_PATTERN = new RegExp(['t', 's', '-', 'n', 'o', 'd', 'e'].join(''));
 

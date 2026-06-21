@@ -29,6 +29,7 @@ const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
 const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
 const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
   'runtime/host-runtime-mode.ts',
+  'runtime/supervised-worker-runtime.ts',
   'actions/native-goal-command.ts',
   'actions/native-goal-invoker.ts',
 ];
@@ -254,6 +255,11 @@ describe('main-agent dist build', () => {
       allowed.has('packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js'),
       false,
       'host-runtime-mode source authority must be TypeScript only'
+    );
+    assert.equal(
+      allowed.has('packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js'),
+      false,
+      'supervised-worker-runtime source authority must be TypeScript only'
     );
   });
 

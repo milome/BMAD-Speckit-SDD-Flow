@@ -4,8 +4,8 @@ import * as path from 'node:path';
 import {
   normalizeRuntimeHost,
   writeNativeGoalInvocationReceipt,
-} from '../runtime/host-runtime-mode.js';
-import { resolveNativeGoalCommand } from './native-goal-command.js';
+} from '../runtime/host-runtime-mode';
+import { resolveNativeGoalCommand } from './native-goal-command';
 
 interface TaskReport {
   packetId: string;

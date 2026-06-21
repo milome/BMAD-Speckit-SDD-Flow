@@ -29,6 +29,10 @@ description: |
 
 Consumer users activate governance through `$bmad-speckit`, `/bmad-speckit`, or `bmad-speckit` in the active AI host session. Do not present `npm run main-agent-orchestration` or `npx bmad-speckit main-agent-orchestration ...` as the default consumer-user step; those commands are install validation, CI, debug, or no-skill fallback only.
 
+## Cursor Party-Mode Return Validation Contract
+
+主 Agent 在 party-mode 返回后必须先**单独运行** standalone command：`node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`。检查顺序必须从 `_bmad-output/party-mode/runtime/current-session.json` 开始，然后读取 `execution_evidence_level`（取值 `none|pending|partial|final`），再读取 `visible_output_summary`，再读取 `diagnostic_classification`；禁止在读取 `visible_output_summary` 前先翻 `session log`、`tool-result.md`、`terminals/`、`agent-transcripts/`，也禁止用 `ls -la`、`mkdir -p`、`dir ... /b`、`2>&null`、`2>/dev/null` 或 shell fallback chain 猜测状态。若 `diagnostic_classification=degenerate_placeholder_completion` 或 `diagnostic_classification=stub_only_completion`，不得把它泛化为 Task tool 全局失效；若 `recovered_from_newer_launch=true` 或 `pending_launch_evidence_present=true`，不得回退到更旧 completed session 做总结。RCA 固定为：为什么以前看起来更稳定，是因为旧问题以前被吞掉、现在被显式分类，同时也存在新回归引入的状态同步风险；禁止把这些混写成全局无法处理、全局不稳定或整体坏了。
+
 In interactive main-agent mode, before starting, continuing, or closing this flow, the main Agent must internally run or equivalently consume the Main Agent control plane:
 
 ```text

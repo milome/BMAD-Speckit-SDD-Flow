@@ -44,6 +44,10 @@ Hard prohibitions:
 
 > **Party-mode source of truth（Cursor）**：`{project-root}/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md`。所有 party-mode 的 rounds / `designated_challenger_id` / challenger ratio / session-meta-snapshot-evidence / recovery / exit gate 语义都以该文件为准；本 skill 不得定义第二套 gate 语义。
 
+### Cursor party-mode return validation contract
+
+主 Agent 在 party-mode 返回后必须先**单独运行** standalone command：`node .cursor/hooks/party-mode-read-current-session.cjs --project-root "{project-root}"`。检查顺序必须从 `_bmad-output/party-mode/runtime/current-session.json` 开始，然后读取 `execution_evidence_level`（取值 `none|pending|partial|final`），再读取 `visible_output_summary`，再读取 `diagnostic_classification`；禁止在读取 `visible_output_summary` 前先翻 `session log`、`tool-result.md`、`terminals/`、`agent-transcripts/`，也禁止用 `ls -la`、`mkdir -p`、`dir ... /b`、`2>&null`、`2>/dev/null` 或 shell fallback chain 猜测状态。若 `diagnostic_classification=degenerate_placeholder_completion` 或 `diagnostic_classification=stub_only_completion`，不得把它泛化为 Task tool 全局失效；若 `recovered_from_newer_launch=true` 或 `pending_launch_evidence_present=true`，不得回退到更旧 completed session 做总结。RCA 固定为：为什么以前看起来更稳定，是因为旧问题以前被吞掉、现在被显式分类，同时也存在新回归引入的状态同步风险；禁止把这些混写成全局无法处理、全局不稳定或整体坏了。
+
 ## Party-Mode 主 Agent 编排约束（Cursor）
 
 - 正确流程固定为：`展示 20 / 50 / 100 强度选项 → 用户选择 → 完成发起前自检清单 → 输出自检结果 → 由宿主在 SubagentStart 注入 Session Bootstrap JSON → 发起 party-mode-facilitator 子代理`。
@@ -250,8 +254,9 @@ Hard prohibitions:
 
 **产出要求**：
 1. 根因结论（一段话，无歧义）。
-2. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。必须写入明确的 canonical BUGFIX 文档路径。
-3. 全程使用中文。
+2. **BUGFIX 文档路径**：{主 Agent 填入 BUGFIX 文档路径}。路径约定：有 story 时使用 `_bmad-output/implementation-artifacts/epic-{epic}-{epic-slug}/story-{story}-{slug}/BUGFIX_{slug}.md`；无 story 时使用 `_bmad-output/implementation-artifacts/_orphan/BUGFIX_{slug}.md`。
+3. 生成 BUGFIX 文档，包含：§1 问题描述、§2 根因分析、§3 影响范围、§4 修复方案（须为明确描述，禁止使用本 skill「§ 禁止词表」中的词：可选、可考虑、后续、待定、酌情、视情况、后续迭代）、§5 验收标准。必须将 BUGFIX 文档直接写入上述「BUGFIX 文档路径」，不得写入泛化输出目录或未绑定 story/orphan 的临时 bugfix 目录。
+4. 全程使用中文。
 ```
 
 ### 阶段一审计完整 prompt 模板（主 Agent 必须完整复制到审计子任务的 prompt 中）

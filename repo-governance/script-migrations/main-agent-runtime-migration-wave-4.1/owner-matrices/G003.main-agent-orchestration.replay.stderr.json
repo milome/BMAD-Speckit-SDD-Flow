@@ -47,22 +47,22 @@
   {
     "scenarioId": "g003_confirm_scope",
     "action": "confirm-scope",
-    "stderr": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirm_scope\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n"
+    "stderr": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>\n"
   },
   {
     "scenarioId": "g003_confirmation_ingest",
     "action": "confirmation-ingest",
-    "stderr": "main-agent-orchestration confirm-scope: controlled confirmation entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirmation_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n"
+    "stderr": "main-agent-orchestration confirm-scope: confirm-scope requires --source <source-document.md>\n"
   },
   {
     "scenarioId": "g003_confirm_closeout_acceptance",
     "action": "confirm-closeout-acceptance",
-    "stderr": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirm_closeout_acceptance\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js\n"
+    "stderr": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>\n"
   },
   {
     "scenarioId": "g003_closeout_acceptance_ingest",
     "action": "closeout-acceptance-ingest",
-    "stderr": "main-agent-orchestration confirm-closeout-acceptance: controlled closeout acceptance entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_closeout_acceptance_ingest\\_bmad\\skills\\requirements-contract-authoring\\scripts\\ingest-confirmation-event.js\n"
+    "stderr": "main-agent-orchestration confirm-closeout-acceptance: confirm-closeout-acceptance requires --source <source-document.md>\n"
   },
   {
     "scenarioId": "g003_route_confirmation_drift",
@@ -77,12 +77,12 @@
   {
     "scenarioId": "g003_repair_confirmation_bookkeeping",
     "action": "repair-confirmation-bookkeeping",
-    "stderr": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_repair_confirmation_bookkeeping\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n"
+    "stderr": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>\n"
   },
   {
     "scenarioId": "g003_confirmation_bookkeeping_repair",
     "action": "confirmation-bookkeeping-repair",
-    "stderr": "main-agent-orchestration repair-confirmation-bookkeeping: controlled confirmation repair entry missing: D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_confirmation_bookkeeping_repair\\_bmad\\skills\\requirements-contract-authoring\\scripts\\confirm-requirements-scope.js\n"
+    "stderr": "main-agent-orchestration repair-confirmation-bookkeeping: repair-confirmation-bookkeeping requires --source <source-document.md>\n"
   },
   {
     "scenarioId": "g003_pre_confirmation_drilldown",
@@ -122,6 +122,6 @@
   {
     "scenarioId": "g003_controlled_readiness_audit",
     "action": "controlled-readiness-audit",
-    "stderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T01-38-34-618Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
+    "stderr": "main-agent-orchestration controlled-readiness-audit: NO_ACTIVE_REQUIREMENT: no active requirement record found under D:\\Dev\\BMAD-Speckit-SDD-Flow\\repo-governance\\script-migrations\\main-agent-runtime-migration-wave-4.1\\owner-matrices\\G003.replay-fixtures\\2026-06-21T04-46-37-598Z\\g003_controlled_readiness_audit\\_bmad-output\\runtime\\requirement-records; nextRequiredAction=contract_authoring_required\n"
   }
 ]

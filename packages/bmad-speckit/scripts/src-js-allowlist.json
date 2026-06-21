@@ -220,7 +220,6 @@
     "packages/bmad-speckit/src/main-agent/runtime.js",
     "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
     "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
-    "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
     "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
     "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
     "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
