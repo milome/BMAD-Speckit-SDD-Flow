@@ -47,7 +47,6 @@
 cd <consumer-root>
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 npx --no-install bmad-speckit check
@@ -172,7 +171,7 @@ npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --forc
 cd <consumer-root>
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -186,7 +185,7 @@ npx --no-install bmad-speckit large-doc --help
 cd <consumer-root>
 npm install --save-dev --ignore-scripts .\bmad-speckit-sdd-flow-<version>.tgz
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -256,7 +255,7 @@ cd <consumer-root>
 
 # 1. project-local runtime dependency and shim
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 
 # 2. 显式对齐目标宿主安装面
 npx --no-install bmad-speckit init . --ai claude,cursor-agent,codex --yes --force

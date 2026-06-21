@@ -125,7 +125,6 @@ For long-term use in a consumer project, install the package as a project-local 
 ```bash
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check
@@ -150,7 +149,7 @@ If you are installing from a CI artifact instead of the npm registry, install th
 ```bash
 npm install --save-dev --ignore-scripts ./bmad-speckit-sdd-flow-<version>.tgz
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -330,9 +329,8 @@ Install the workflow into a consumer project with the published npm package. For
 ```bash
 npm install --save-dev --ignore-scripts bmad-speckit-sdd-flow@latest
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
-npx --no-install bmad-speckit --help
 npx --no-install bmad-speckit version
+npx --no-install bmad-speckit --help
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check
 npx --no-install bmad-speckit dashboard-status
@@ -385,7 +383,6 @@ Recommended install verification commands for a consumer project. Run the `init`
 
 ```bash
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
 npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai codex --yes --force
 npx --no-install bmad-speckit check

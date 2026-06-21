@@ -216,7 +216,7 @@ npx vitest run packages/scoring/governance/__tests__/write-rerun-history.test.ts
 ```powershell
 cd <consumer-root>
 npm ls bmad-speckit-sdd-flow --depth=0
-node -e "const fs=require('node:fs'); const p=process.platform==='win32'?'node_modules/.bin/bmad-speckit.cmd':'node_modules/.bin/bmad-speckit'; if(!fs.existsSync(p)){console.error('missing project-local '+p); process.exit(1)} console.log('found '+p)"
+npx --no-install bmad-speckit version
 npx --no-install bmad-speckit init . --ai claude,cursor-agent --yes --force
 pwsh _bmad\speckit\scripts\powershell\check-prerequisites.ps1 -PathsOnly
 npx --no-install bmad-speckit check
