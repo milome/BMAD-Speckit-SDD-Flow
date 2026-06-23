@@ -136,6 +136,42 @@ _Avoid_: loose orphan artifact, unowned implementation artifact, closeout proof
 A documented compatibility extension between governed components that preserves confirmed source hashes and authority boundaries.
 _Avoid_: silent scope change, hidden amendment, second source authority
 
+**Implementation Source Document**:
+A human-readable requirement document that may contain exactly one inline implementation confirmation block as its machine-readable requirement semantics.
+_Avoid_: separate contract file, generated prompt, audit report
+
+**Implementation Confirmation Block**:
+The inline `implementationConfirmation` block that carries the controlled requirement semantics for an Implementation Source Document.
+_Avoid_: prose summary, advisory matrix, separate requirements contract
+
+**Source Materialization**:
+The controlled write that inserts or updates the Implementation Confirmation Block inside an Implementation Source Document.
+_Avoid_: diagnostic artifact write, chat draft, external prompt generation
+
+**Source Mutation Decision**:
+The authoring decision that either allows Source Materialization or blocks it with source-bound reasons before the Implementation Source Document is changed.
+_Avoid_: best-effort write, late-only reverse audit, implicit checkpoint approval
+
+**Target Authority**:
+Source-bound proof that target modification paths refer to the intended project files.
+_Avoid_: hardcoded governance path, inferred fallback, unrelated test path
+
+**Validation Authority**:
+Source-bound or explicit proof that required commands validate the intended target behavior.
+_Avoid_: unrelated command, default vitest fallback, advisory smoke check
+
+**Requirement Coverage Ledger**:
+The authoring ledger that maps every requirement-bearing source block to a controlled requirement, target authority, non-goal, or blocking reason.
+_Avoid_: found-candidates-only list, keyword hit count, summary coverage statement
+
+**Diagnostic Authoring Artifact**:
+An isolated authoring artifact that explains a blocked attempt without becoming requirement semantics or execution authority.
+_Avoid_: draft implementation confirmation, completion evidence, no-gap receipt
+
+**Execution-Ready Implementation Confirmation**:
+An Implementation Confirmation Block that has explicit user confirmation, passed required reverse-audit gates, and can be used by downstream req-trace or model-packet generation.
+_Avoid_: draft block, diagnostic artifact, pre-write projection
+
 ## Relationships
 
 - A **Current Mental Model** is exactly one member of the **Six Mental Models**.
@@ -166,6 +202,11 @@ _Avoid_: silent scope change, hidden amendment, second source authority
 - A **Gate-Enforced Current Target Map** must be blocked or passed by the AI TDD gate, not merely rendered for human review.
 - A **Failed Evidence Packet** stops the command run at the first required-command failure and records failure provenance; it must not contain partial completion proof for unrun commands.
 - A **Failed Evidence Packet** is not an **Implementation Evidence Ingested Event** and must not be used as current-attempt delivery proof.
+- An **Implementation Source Document** owns at most one **Implementation Confirmation Block**.
+- **Source Materialization** requires an allowing **Source Mutation Decision**.
+- A **Source Mutation Decision** consumes **Target Authority**, **Validation Authority**, and a **Requirement Coverage Ledger** before allowing source changes.
+- A **Diagnostic Authoring Artifact** cannot become an **Implementation Confirmation Block** without a new allowing **Source Mutation Decision**.
+- An **Execution-Ready Implementation Confirmation** requires explicit user confirmation and cannot be inferred from a draft block, diagnostic artifact, or pre-write projection.
 
 ## Example Dialogue
 
@@ -271,6 +312,15 @@ _Avoid_: silent scope change, hidden amendment, second source authority
 > **Dev:** "Does passing an execution discipline profile into req-trace change the confirmed req-trace requirement?"
 > **Domain expert:** "No. It is a **Controlled Integration Extension**. The profile can be rendered as discipline guidance, but it cannot change confirmed source hashes or become scope authority."
 
+> **Dev:** "Can we append a draft implementationConfirmation before we know target paths and validation commands are correct?"
+> **Domain expert:** "No. A **Source Mutation Decision** must first prove **Target Authority**, **Validation Authority**, and **Requirement Coverage Ledger** readiness."
+
+> **Dev:** "Can a blocked authoring run leave a draft block in the source document while it is blocked?"
+> **Domain expert:** "No. It may write a **Diagnostic Authoring Artifact**, but **Source Materialization** is forbidden until the next **Source Mutation Decision** allows it."
+
+> **Dev:** "Can req-trace compile a draft implementation confirmation if all pre-write gates passed?"
+> **Domain expert:** "No. Req-trace requires an **Execution-Ready Implementation Confirmation**, not a draft block or diagnostic artifact."
+
 ## Flagged Ambiguities
 
 - "record_closed" was previously used as if it could be a **Current Mental Model**; resolved: it is only a derived **Record Lifecycle State** or terminal close event.
@@ -308,3 +358,9 @@ _Avoid_: silent scope change, hidden amendment, second source authority
 - "profile supplement" could have meant a worker-only prompt prefix; resolved: an **Execution Discipline Profile** is compiler-rendered into relevant **Compiled Prompt Artifacts**, while workers only verify and consume it.
 - "orphan artifact" could have meant an unowned loose file; resolved: governed non-story closeout evidence must be a **Governed Orphan Work-Product**, while loose `_orphan/**` files remain compatibility-only until bound, excluded, or re-homed.
 - "`--execution-discipline-profile-ref`" could have been read as changing req-trace source authority; resolved: it is a **Controlled Integration Extension** for prompt projection only.
+- "requirements contract" could have meant a separate source of authority; resolved: use **Implementation Confirmation Block** inside an **Implementation Source Document**.
+- "source materialization" could have meant any authoring output; resolved: it only means writing the **Implementation Confirmation Block** into the source document.
+- "target path" could have meant a hardcoded validation fallback; resolved: generated paths require **Target Authority**.
+- "required command" could have meant any runnable check; resolved: execution readiness requires **Validation Authority**.
+- "draft artifact" could have meant a recoverable source mutation; resolved: blocked attempts write **Diagnostic Authoring Artifacts**, not source semantics.
+- "execution-ready" could have meant any complete-looking draft; resolved: only an **Execution-Ready Implementation Confirmation** with explicit user confirmation and required reverse-audit evidence can feed req-trace or model-packet generation.

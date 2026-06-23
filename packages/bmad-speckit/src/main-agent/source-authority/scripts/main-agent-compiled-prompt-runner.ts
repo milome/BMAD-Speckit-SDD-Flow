@@ -215,7 +215,7 @@ export function runMainAgentCompiledPrompt(input: {
       blockingReasons:
         confirmedSource.status === 'confirmed_source_unresolvable'
           ? confirmedSource.blockingReasons
-          : [],
+          : ['execution_ready_authority_missing'],
       stdoutPath: null,
       stderrPath: null,
       auditReceiptPath: null,

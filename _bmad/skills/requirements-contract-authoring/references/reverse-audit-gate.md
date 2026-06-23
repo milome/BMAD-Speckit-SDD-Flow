@@ -100,7 +100,7 @@ The contract confirmability audit answers only whether the requirements scope ca
    - Fail closed on missing kernel, missing packet, missing critic convergence, missing reconciliation, stale hashes, failed gate verdict, or renderer did not show drilldown sections.
    - Verify `semantic-kernel.json` is current.
    - Verify `must_decomposition_packet.json` is synchronized and current.
-   - Verify Critical Auditor has `consecutiveNoNewGapRounds: 3`.
+   - Verify Critical Auditor convergence is derived from three current, hash-bound no-new-gap receipt files.
    - Verify packet/source reconciliation passed.
    - Verify `MUST -> packet -> projections -> source rows`.
    - Verify `packet projection -> implementationConfirmation row`.

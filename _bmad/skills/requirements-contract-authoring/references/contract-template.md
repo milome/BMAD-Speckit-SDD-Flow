@@ -51,9 +51,9 @@ implementationConfirmation:
       status: synchronized
     criticalAuditor:
       minimumRounds: 3
-      consecutiveNoNewGapRounds: 3
-      latestReceiptHash: "sha256:..."
-      convergenceVerdict: bounded_no_new_gap
+      consecutiveNoNewGapRounds: "<derived-from-current-critical-auditor-receipts>"
+      latestReceiptHash: "<latest-current-receipt-hash>"
+      convergenceVerdict: "<audit_not_run|blocked|bounded_no_new_gap>"
     packetSourceReconciliation:
       reportPath: "_bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json"
       verdict: pass
@@ -250,7 +250,7 @@ Run the deterministic gate before rendering:
 node <skill-dir>/scripts/pre_render_must_decomposition_gate.js --source <source-document.md> --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring --json
 ```
 
-Critical Auditor receipt convergence is represented by `consecutiveNoNewGapRounds: 3`; fewer rounds, unresolved validated gaps, stale input hashes, or author claims without critic disposition block confirmation.
+Critical Auditor receipt convergence is represented only by a value derived from three current, hash-bound Critical Auditor receipt files. Fewer rounds, unresolved validated gaps, stale input hashes, synthetic `bounded_no_new_gap` claims, or author claims without critic disposition block confirmation.
 
 ## Applicability Domains
 

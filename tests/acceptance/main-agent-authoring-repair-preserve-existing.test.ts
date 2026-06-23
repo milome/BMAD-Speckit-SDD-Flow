@@ -52,7 +52,51 @@ function semanticConfirmationForHash(
     'reconfirmationRequest',
     'confirmationRender',
   ]);
-  return Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
+  const semantic = Object.fromEntries(
+    Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key))
+  );
+  const drilldown =
+    semantic.preConfirmationDrilldown &&
+    typeof semantic.preConfirmationDrilldown === 'object' &&
+    !Array.isArray(semantic.preConfirmationDrilldown)
+      ? { ...(semantic.preConfirmationDrilldown as Record<string, unknown>) }
+      : {};
+  const semanticKernelRef =
+    drilldown.semanticKernelRef &&
+    typeof drilldown.semanticKernelRef === 'object' &&
+    !Array.isArray(drilldown.semanticKernelRef)
+      ? { ...(drilldown.semanticKernelRef as Record<string, unknown>) }
+      : {};
+  const mustDecompositionPacketRef =
+    drilldown.mustDecompositionPacketRef &&
+    typeof drilldown.mustDecompositionPacketRef === 'object' &&
+    !Array.isArray(drilldown.mustDecompositionPacketRef)
+      ? { ...(drilldown.mustDecompositionPacketRef as Record<string, unknown>) }
+      : {};
+  if (Object.keys(semanticKernelRef).length > 0) {
+    delete semanticKernelRef.hash;
+    drilldown.semanticKernelRef = semanticKernelRef;
+  }
+  if (Object.keys(mustDecompositionPacketRef).length > 0) {
+    delete mustDecompositionPacketRef.hash;
+    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
+  }
+  const criticalAuditor =
+    drilldown.criticalAuditor &&
+    typeof drilldown.criticalAuditor === 'object' &&
+    !Array.isArray(drilldown.criticalAuditor)
+      ? { ...(drilldown.criticalAuditor as Record<string, unknown>) }
+      : {};
+  if (Object.keys(criticalAuditor).length > 0) {
+    delete criticalAuditor.consecutiveNoNewGapRounds;
+    delete criticalAuditor.latestReceiptHash;
+    delete criticalAuditor.convergenceVerdict;
+    drilldown.criticalAuditor = criticalAuditor;
+  }
+  if (Object.keys(drilldown).length > 0) {
+    semantic.preConfirmationDrilldown = drilldown;
+  }
+  return semantic;
 }
 
 function currentSourceHashes(source: string): {
@@ -418,11 +462,19 @@ function authoringPaths(root: string, recordId: string) {
 function writeSourceMaterializationReceipt(
   root: string,
   source: string,
-  requirementSetId: string,
-  recordId = requirementSetId
+  recordId: string,
+  requirementSetId = `${recordId}-SET`
 ): string {
-  const paths = authoringPaths(root, requirementSetId);
-  mkdirSync(paths.dir, { recursive: true });
+  const receiptDir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId,
+    'authoring'
+  );
+  const receiptPath = path.join(receiptDir, 'source-materialization-receipt.json');
+  mkdirSync(receiptDir, { recursive: true });
   const hashes = currentSourceHashes(source);
   const receipt: Record<string, unknown> = {
     schemaVersion: 'source-materialization-receipt/v1',
@@ -450,12 +502,8 @@ function writeSourceMaterializationReceipt(
     receiptHash: null,
   };
   receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
-  writeFileSync(
-    paths.sourceMaterializationReceipt,
-    `${JSON.stringify(receipt, null, 2)}\n`,
-    'utf8'
-  );
-  return paths.sourceMaterializationReceipt;
+  writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  return receiptPath;
 }
 
 function rootRelative(root: string, filePath: string): string {
@@ -508,7 +556,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, `${recordId}-SET`, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
       const original = readFileSync(source, 'utf8');
       const result = runMainAgentAuthoringRepair(root, {
         source,
@@ -551,6 +599,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       let result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
       expect(result.blockingStage).toBe('critical_auditor_round_required');
@@ -561,6 +610,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
@@ -577,6 +627,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(2),
       });
@@ -592,6 +643,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(3),
       });
@@ -620,13 +672,19 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
-      runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
       writeNoNewGapResponse(paths.request(1), paths.response(1));
       writeFileSync(source, `${readFileSync(source, 'utf8')}\nStale hash mutation.\n`, 'utf8');
 
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
@@ -655,7 +713,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
-      runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
       const request = readJson(paths.request(1));
       writeFileSync(
         paths.response(1),
@@ -683,6 +746,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
@@ -711,7 +775,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
-      runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
       const request = readJson(paths.request(1));
       expect(request.gateDryRun.actionableBlockingIssueCount).toBeGreaterThan(0);
       writeNoNewGapResponse(paths.request(1), paths.response(1));
@@ -719,6 +788,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
@@ -739,7 +809,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeSourceMaterializationReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
-      runMainAgentAuthoringRepair(root, { source, recordId, mode: 'preserve-existing' });
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
       writeNoNewGapResponse(paths.request(1), paths.response(1), {
         reviewedProjectionRefs: ['UNKNOWN-PROJECTION-REF'],
       });
@@ -747,6 +822,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
@@ -779,6 +855,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         source,
         '--record-id',
         recordId,
+        '--requirement-set-id',
+        `${recordId}-SET`,
         '--mode',
         'preserve-existing',
         '--json',
@@ -800,6 +878,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
+        requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
       expect(result.warnings).toContainEqual({

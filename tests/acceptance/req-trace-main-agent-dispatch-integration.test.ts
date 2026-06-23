@@ -309,6 +309,7 @@ describe('req-trace main-agent dispatch integration', () => {
 
       expect(result.status).toBe('no_confirmed_source');
       expect(result.compiledPromptRef).toBeNull();
+      expect(result.blockingReasons).toContain('execution_ready_authority_missing');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -333,6 +334,7 @@ describe('req-trace main-agent dispatch integration', () => {
         reason: 'runtime_registry_bridge_no_confirmed_source',
       });
       expect(result.compiledPromptRef).toBeNull();
+      expect(result.blockingReasons).toContain('execution_ready_authority_missing');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

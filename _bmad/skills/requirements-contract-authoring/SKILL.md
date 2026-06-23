@@ -52,9 +52,10 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Critical Auditor responses are fail-closed. A no-new-gap response must include non-empty `reviewedProjectionRefs`, the current `gateDryRunHash`, the dry-run `reconciliationIssueCount`, all required `checkedProjectionGroups`, and `priorFindingsDisposition[]` entries classified only as `new`, `resolved`, `unchanged`, or `rejected`.
 - `pre_materialization_advisory_scan`: before source materialization, host-level multi-role or subagent work is allowed only as a short-window, read-only coverage suggestion pass. It MUST be labeled `purpose=pre_materialization_advisory_scan`, MUST emit or record `not_audit_evidence`, MUST NOT write audit artifacts, MUST NOT run as a loop, MUST NOT be called checkpoint, MUST NOT be called Critical Auditor, and MUST NOT count as convergence evidence.
 - When that advisory pass is offered in an interactive terminal, render the opt-in prompt to the current session's `stderr` immediately after the authoring lane banner and scale-assessment output, before any subagent spawn. The prompt is plain text, not a popup or file write, and it appears only once with a 10-second yes/no countdown. Skip it entirely in non-TTY, CI, `--json`, `--quiet`, or piped sessions; default to `No` on timeout. Only an explicit `Yes` may spawn exactly 3 read-only subagents, each labeled `purpose=pre_materialization_advisory_scan`; print compressed summaries from all 3, then merge them into a single revision suggestion. The prompt output is transient terminal state only and MUST NOT be treated as audit evidence, checkpoint evidence, or a loop.
-- `post_materialization_deep_audit`: after source materialization, deep audit work MUST be labeled separately from advisory work and MUST require the current source hash, inline `implementationConfirmation`, and source materialization receipt before request generation.
+- `pre_write_blocking_gate`: `author-confirmation-ready-source` MUST NOT mutate the implementation source document until `source-mutation-decision.json.finalDecision` is `allow_source_materialization`. This gate must evaluate the current `draft-source-preview.md`, controlled MUST candidates, requirement coverage ledger, target authority, validation authority, projection-domain sanity, scale routing, checkpoint persistence when required, real Critical Auditor receipts, packet/source reconciliation, pre-render MUST decomposition, and pre-render global consistency. Any blocker MUST leave the source document unchanged and may persist only diagnostic authoring artifacts under `_bmad-output`.
+- `post_materialization_deep_audit`: after source materialization, deep audit work MUST be labeled separately from advisory work and MUST require the current source hash, inline `implementationConfirmation`, source materialization receipt, and `source-mutation-decision.json.finalDecision: allow_source_materialization` before request generation. Post-materialization deep audit MUST NOT retroactively satisfy a missing pre-write blocking gate.
 - `critical_auditor_round`: Critical Auditor request generation MUST require the current gate dry-run hash, current source hash, current implementationConfirmation hash, and current packet hash.
-- `source_materialization_before_deep_audit`: `author-confirmation-ready-source` MUST write the source document before Critical Auditor, multi-subagent audit, `grill-with-docs`, or `docs-review` starts a deep review loop. Before this source materialization, only quick scan, atomic decomposition draft creation, packet generation, and source edit planning are allowed. `authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only, MUST NOT create a new `implementationConfirmation` block, and `grill-with-docs` / `docs-review` MUST audit written files only instead of chat-only drafts.
+- `authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only and MUST NOT create a new `implementationConfirmation` block. `grill-with-docs` / `docs-review` may review written source files or the persisted `draft-source-preview.md` and authoring artifacts, but chat-only drafts are not valid audit targets.
 - If the source document, inline `implementationConfirmation`, semantic kernel, or packet hash changes, `authoring-repair` must automatically archive stale Critical Auditor requests, responses, receipts, and dry-run artifacts, then restart the three-round loop from round 1. Do not ask the user to manually delete or move stale audit artifacts.
 - If the user asks to update an existing implementation source document and the edit changes `implementationConfirmation.must[]`, `notDone[]`, `evidence[]`, `traceRows[]`, `acceptanceTests[]`, `requiredCommands[]`, `currentTargetMap`, `aiTddContractExecutionManifestProjection`, governance event semantics, controlled ingest semantics, or closeout semantics, the agent MUST run `main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json` before reporting completion, unless the user explicitly requested draft-only editing.
 - Draft-only output after a semantic source edit must be labeled exactly as not confirmation-ready:
@@ -86,7 +87,7 @@ User wording must be normalized before any authoring, repair, render, or audit r
 - A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane first; after the source document is written, `authoring-repair preserve-existing` may audit the already materialized contract.
 - Confirmation language selection and confirmation HTML rendering are post-authoring steps. They must not be treated as entry prerequisites for `author-confirmation-ready-source`.
 - Missing confirmation language MUST remain `null` or `not_selected` until the user explicitly selects `zh-CN`, `en-US`, or `bilingual`.
-- Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or source materialization.
+- Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or pre-write blocking gates.
 
 Default to `author-confirmation-ready-source` when the user asks to generate a requirements contract document, requirement contract, or source document confirmation block.
 
@@ -163,7 +164,7 @@ Do not collapse these modes into one long execution chain. "Generate requirement
 Internal stages are mandatory workflow phases, not user-facing manual commands:
 
 - `semantic-kernel-authoring`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json`.
-- `atomic-decomposition-loop`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, invoke Critical Auditor with a current gate dry-run and the fixed round attack perspective, and iterate until current-hash `consecutiveNoNewGapRounds: 3` is reached.
+- `atomic-decomposition-loop`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, invoke Critical Auditor with a current gate dry-run and the fixed round attack perspective, and iterate until three current-hash, receipt-bound consecutive no-new-gap rounds are derived from real Critical Auditor receipt files. Do not write a fixed convergence count by hand.
 - `packet-source-materialization`: materialize only synchronized packet projections into inline `implementationConfirmation`.
 - `pre-render-drilldown-gate`: run `pre_render_must_decomposition_gate.js` after three bound no-new-gap receipts and block HTML rendering until the gate returns `PASS` and packet/source reconciliation returns `pass`.
 
@@ -295,9 +296,9 @@ implementationConfirmation:
       status: synchronized
     criticalAuditor:
       minimumRounds: 3
-      consecutiveNoNewGapRounds: 3
-      latestReceiptHash: sha256:...
-      convergenceVerdict: bounded_no_new_gap
+      consecutiveNoNewGapRounds: <derived-from-current-critical-auditor-receipts>
+      latestReceiptHash: <latest-current-receipt-hash>
+      convergenceVerdict: <audit_not_run|blocked|bounded_no_new_gap>
     packetSourceReconciliation:
       reportPath: _bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json
       verdict: pass
@@ -596,7 +597,7 @@ Rules:
 
 Before rendering HTML, verify the source document against confirmation-page blocking rules:
 
-Run the pre-confirmation atomic decomposition workflow first. Its pre-materialization phase performs packet planning and source edit planning by producing `semantic-kernel.json` and synchronized `must_decomposition_packet.json`; this phase may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance. Its post-materialization phase performs auditor convergence by producing Critical Auditor requests/responses/receipts, per-round deterministic gate dry-run reports, packet/source reconciliation, and a deterministic pre-render MUST decomposition gate report. This workflow is mandatory for both checkpoint and single_pass scale decisions.
+Run the pre-confirmation atomic decomposition workflow first. Its pre-write phase performs packet planning, source edit planning, real Critical Auditor convergence, packet/source reconciliation, and deterministic pre-render gates against `draft-source-preview.md` by producing `semantic-kernel.json`, synchronized `must_decomposition_packet.json`, Critical Auditor requests/responses/receipts, per-round deterministic gate dry-run reports, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`; this phase may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance. Source materialization is allowed only after `source-mutation-decision.json.finalDecision` is `allow_source_materialization`; its post-materialization phase verifies the written source, receipt, and current hashes before render or deep audit. This workflow is mandatory for both checkpoint and single_pass scale decisions.
 
 Run the deterministic definition drilldown first:
 

@@ -393,7 +393,14 @@ function collectCriticalAuditorIssues({ receiptReads, auditInputHash }) {
   return { issues, receipts, consecutiveNoNewGapRounds: consecutive, latestReceiptHash };
 }
 
-function buildReconciliationReport({ confirmation, packet }) {
+function buildReconciliationReport({
+  confirmation,
+  packet,
+  sourcePath = '',
+  packetPath = '',
+  sourceDocumentHash = '',
+  implementationConfirmationHash = '',
+}) {
   const issues = [];
   const packetHash = packet?.packetHash ?? '';
   const projections = allPacketProjectionRows(packet ?? {});
@@ -437,14 +444,22 @@ function buildReconciliationReport({ confirmation, packet }) {
     }
   }
 
-  return {
+  const report = {
     schemaVersion: 'must-packet-source-reconciliation-report/v1',
+    recordId: String(confirmation?.recordId ?? '').trim() || null,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt: new Date().toISOString(),
+    inputRefs: stringList([sourcePath, packetPath]).map((item) => normalizePathForReport(item)),
     verdict: issues.length ? 'fail' : 'pass',
     packetHash,
     checkedGroups: SOURCE_ROW_GROUPS.map((group) => group.sourceKey),
     issueCount: issues.length,
     issues,
   };
+  report.contentHash = hashObject({ ...report, contentHash: null });
+  return report;
 }
 
 function runGate(args) {
@@ -498,7 +513,14 @@ function runGate(args) {
   const auditor = collectCriticalAuditorIssues({ receiptReads, auditInputHash });
   blockingIssues.push(...auditor.issues);
 
-  const reconciliation = buildReconciliationReport({ confirmation, packet });
+  const reconciliation = buildReconciliationReport({
+    confirmation,
+    packet,
+    sourcePath,
+    packetPath,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+  });
   blockingIssues.push(...reconciliation.issues);
   if (reconciliation.verdict !== 'pass') {
     blockingIssues.push(issue('packet_source_reconciliation_failed', 'packet/source reconciliation verdict is not pass', [reconciliationPath]));
@@ -508,9 +530,18 @@ function runGate(args) {
   const receipt = {
     schemaVersion: 'must-decomposition-receipt/v1',
     verdict,
+    recordId: String(confirmation?.recordId ?? '').trim() || null,
     sourcePath: normalizePathForReport(sourcePath),
     sourceDocumentHash,
     implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt: new Date().toISOString(),
+    inputRefs: [
+      normalizePathForReport(sourcePath),
+      normalizePathForReport(kernelPath),
+      normalizePathForReport(packetPath),
+      normalizePathForReport(reconciliationPath),
+    ],
     semanticKernelHash: kernel?.kernelHash ?? null,
     packetHash: packet?.packetHash ?? null,
     auditInputHash,
@@ -524,14 +555,25 @@ function runGate(args) {
     reconciliationReportPath: normalizePathForReport(reconciliationPath),
     failedChecks: unique(blockingIssues.map((item) => item.code)),
   };
+  receipt.receiptHash = hashObject({ ...receipt, receiptHash: null });
   const report = {
     schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
     verdict,
+    recordId: String(confirmation?.recordId ?? '').trim() || null,
     confirmability: verdict === 'PASS' ? 'confirmable' : 'blocked',
     sourcePath: normalizePathForReport(sourcePath),
     authoringDir: normalizePathForReport(authoringDir),
     sourceDocumentHash,
     implementationConfirmationHash,
+    createdBy: 'pre_render_must_decomposition_gate',
+    createdAt: new Date().toISOString(),
+    inputRefs: [
+      normalizePathForReport(sourcePath),
+      normalizePathForReport(kernelPath),
+      normalizePathForReport(packetPath),
+      normalizePathForReport(receiptPath),
+      normalizePathForReport(reconciliationPath),
+    ],
     semanticKernelRef: { path: normalizePathForReport(kernelPath), hash: kernel?.kernelHash ?? null },
     mustDecompositionPacketRef: { path: normalizePathForReport(packetPath), hash: packet?.packetHash ?? null, status: packet?.status ?? null },
     mustDecompositionReceiptPath: normalizePathForReport(receiptPath),
@@ -543,6 +585,7 @@ function runGate(args) {
     failedChecks: receipt.failedChecks,
     blockingIssues,
   };
+  report.contentHash = hashObject({ ...report, contentHash: null });
 
   writeJson(reconciliationPath, reconciliation);
   writeJson(receiptPath, receipt);
