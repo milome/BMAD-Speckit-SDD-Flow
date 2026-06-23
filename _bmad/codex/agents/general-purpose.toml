@@ -6,7 +6,6 @@ developer_instructions = """You are running as a BMAD Codex custom agent alias o
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks
-- alias_for_dispatch_role: general-purpose
 
 Alias name: general-purpose
 Source behavior contract: _bmad/claude/agents/bmad-master.md

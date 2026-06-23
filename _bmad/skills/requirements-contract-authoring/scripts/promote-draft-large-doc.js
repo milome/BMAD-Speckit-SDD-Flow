@@ -10,7 +10,22 @@ const { requireLargeDocumentWriter } = require("./resolve-bmad-runtime");
 
 const { safeWriteText } = requireLargeDocumentWriter();
 
-const CONFIRMATION_READY_STATUSES = new Set(["user_confirmed"]);
+const PROMOTION_STAGE_POLICIES = {
+  "confirmation-ready": {
+    allowedStatuses: new Set(["user_confirmed"]),
+    confirmationReadyOnSuccess: true,
+    safePromotionAsDraft: false,
+  },
+  "authoring-draft": {
+    allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required"]),
+    confirmationReadyOnSuccess: false,
+    safePromotionAsDraft: true,
+  },
+};
+
+function promotionPolicyFor(stage) {
+  return PROMOTION_STAGE_POLICIES[stage] ?? null;
+}
 
 function usage() {
   return [
@@ -23,6 +38,7 @@ function usage() {
     "  --require <text>        Required literal text. May be repeated.",
     "  --min-bytes <n>         Minimum UTF-8 byte count.",
     "  --retry-receipt <path>  Retry receipt JSON path.",
+    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default) or authoring-draft.",
     "  --preflight-only        Stop after normalization and manifest preflight.",
     "  --dry-run               Run all checks without replacing the target.",
     "  --json                  Emit JSON receipt.",
@@ -36,6 +52,7 @@ function parseArgs(argv) {
     json: false,
     dryRun: false,
     preflightOnly: false,
+    promotionStage: "confirmation-ready",
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -62,7 +79,7 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
-    if (["--draft", "--target", "--min-bytes", "--retry-receipt"].includes(arg)) {
+    if (["--draft", "--target", "--min-bytes", "--retry-receipt", "--promotion-stage"].includes(arg)) {
       const value = argv[index + 1];
       if (!value) throw new Error(`missing value for ${arg}`);
       args[arg.slice(2).replace(/-([a-z])/gu, (_, char) => char.toUpperCase())] = value;
@@ -102,6 +119,12 @@ function baseReceipt(args) {
     preflightOnly: Boolean(args.preflightOnly),
     draftPath: normalizePathForReport(args.draft),
     targetPath: normalizePathForReport(args.target),
+    promotionStage: args.promotionStage,
+    allowedStatuses: [],
+    statusValue: null,
+    confirmationReady: false,
+    safePromotionAsDraft: false,
+    requiresUserConfirmationBeforeExecution: true,
     manifestPath: null,
     targetHash: null,
     writeReceipt: null,
@@ -261,6 +284,18 @@ function main() {
   const draftPath = path.resolve(args.draft);
   const targetPath = path.resolve(args.target);
   const receipt = baseReceipt({ ...args, draft: draftPath, target: targetPath });
+  const promotionPolicy = promotionPolicyFor(args.promotionStage);
+  if (!promotionPolicy) {
+    receipt.failureClass = "draft_syntax_error";
+    receipt.details = {
+      errors: [`unknown_promotion_stage:${args.promotionStage}`],
+      allowedPromotionStages: Object.keys(PROMOTION_STAGE_POLICIES),
+    };
+    writeReceipt(receipt, args.json);
+    return 2;
+  }
+  receipt.allowedStatuses = [...promotionPolicy.allowedStatuses];
+  receipt.safePromotionAsDraft = promotionPolicy.safePromotionAsDraft;
 
   try {
     if (draftPath === targetPath) {
@@ -312,6 +347,7 @@ function main() {
     });
     receipt.manifestPath = normalizePathForReport(manifestPath);
     receipt.preflight.manifest = manifest;
+    receipt.statusValue = manifest.statusValue ?? null;
 
     if (!manifest.ok) {
       const failed = fail(
@@ -333,11 +369,15 @@ function main() {
       return 0;
     }
 
-    if (!CONFIRMATION_READY_STATUSES.has(String(manifest.statusValue))) {
+    if (!promotionPolicy.allowedStatuses.has(String(manifest.statusValue))) {
       const failed = fail(
         receipt,
         "semantic_decision_required:expected_draft_gap_policy",
-        { statusValue: manifest.statusValue },
+        {
+          promotionStage: args.promotionStage,
+          allowedStatuses: [...promotionPolicy.allowedStatuses],
+          statusValue: manifest.statusValue,
+        },
         { ...args, draft: draftPath, target: targetPath },
         manifest
       );
@@ -345,22 +385,34 @@ function main() {
       return failed.exitCode;
     }
 
-    const audit = runReverseAudit(draftPath);
-    receipt.audit = audit;
-    if (!audit.ok) {
-      const failed = fail(
-        receipt,
-        "semantic_audit_gap",
-        { status: audit.status, failedChecks: audit.report?.failedChecks ?? [] },
-        { ...args, draft: draftPath, target: targetPath },
-        manifest
-      );
-      writeReceipt(failed.receipt, args.json);
-      return failed.exitCode;
+    if (args.promotionStage === "authoring-draft") {
+      receipt.audit = {
+        status: null,
+        ok: true,
+        skipped: true,
+        reason: "authoring_draft_is_not_confirmation_ready",
+      };
+      receipt.residualRisks.push("reverse_audit_not_run_authoring_draft");
+    } else {
+      const audit = runReverseAudit(draftPath);
+      receipt.audit = audit;
+      if (!audit.ok) {
+        const failed = fail(
+          receipt,
+          "semantic_audit_gap",
+          { status: audit.status, failedChecks: audit.report?.failedChecks ?? [] },
+          { ...args, draft: draftPath, target: targetPath },
+          manifest
+        );
+        writeReceipt(failed.receipt, args.json);
+        return failed.exitCode;
+      }
     }
 
     if (args.dryRun) {
       receipt.ok = true;
+      receipt.confirmationReady = promotionPolicy.confirmationReadyOnSuccess;
+      receipt.requiresUserConfirmationBeforeExecution = !promotionPolicy.confirmationReadyOnSuccess;
       receipt.targetHash = fs.existsSync(targetPath)
         ? sha256(fs.readFileSync(targetPath, "utf8"))
         : null;
@@ -374,6 +426,8 @@ function main() {
     receipt.backupPath = normalizePathForReport(promotion.writeReceipt.backupPath);
     receipt.targetHash = promotion.targetHash;
     receipt.ok = true;
+    receipt.confirmationReady = promotionPolicy.confirmationReadyOnSuccess;
+    receipt.requiresUserConfirmationBeforeExecution = !promotionPolicy.confirmationReadyOnSuccess;
     receipt.failureClass = null;
     writeReceipt(receipt, args.json);
     return 0;

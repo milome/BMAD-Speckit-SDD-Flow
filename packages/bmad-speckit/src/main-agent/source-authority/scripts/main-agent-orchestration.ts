@@ -1541,6 +1541,9 @@ interface PreConfirmationPaths {
   indexPath: string;
   semanticKernel: string;
   mustDecompositionPacket: string;
+  controlledMustCandidates: string;
+  draftImplementationConfirmation: string;
+  authoringMaterializationReceipt: string;
   scaleAssessmentInitial: string;
   scaleAssessmentPostPacket: string;
   scaleAssessmentPostMaterialization: string;
@@ -1719,8 +1722,30 @@ interface SourceMustRequirement {
   id: string;
   text: string;
   textZh?: string;
-  source: 'explicit_source_must' | 'inline_implementation_confirmation';
+  source:
+    | 'explicit_source_must'
+    | 'inline_implementation_confirmation'
+    | 'controlled_plain_source_candidate';
   sourceLine: number | null;
+  sourcePath?: string;
+  sourceDocumentHash?: string;
+  sourceSpan?: { startLine: number; endLine: number };
+  headingPath?: string[];
+  candidateId?: string;
+}
+
+interface ControlledMustCandidate {
+  candidateId: string;
+  sourcePath: string;
+  sourceHash: string;
+  sourceDocumentHash: string;
+  sourceSpan: { startLine: number; endLine: number };
+  headingPath: string[];
+  originalText: string;
+  normalizedRequirement: string;
+  decision: 'accepted_for_draft' | 'rejected';
+  decisionReason: string;
+  requiresHumanReview: boolean;
 }
 
 function preConfirmationIssue(
@@ -1797,6 +1822,9 @@ function preConfirmationPaths(
     indexPath: path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
     semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
     mustDecompositionPacket: path.join(authoringDir, 'must_decomposition_packet.json'),
+    controlledMustCandidates: path.join(authoringDir, 'controlled-must-candidates.json'),
+    draftImplementationConfirmation: path.join(authoringDir, 'draft-implementation-confirmation.json'),
+    authoringMaterializationReceipt: path.join(authoringDir, 'authoring-materialization-receipt.json'),
     scaleAssessmentInitial: path.join(authoringDir, 'scale-assessment-initial.json'),
     scaleAssessmentPostPacket: path.join(authoringDir, 'scale-assessment-post-packet.json'),
     scaleAssessmentPostMaterialization: path.join(
@@ -2002,6 +2030,177 @@ function resolveSourceMustRequirements(sourcePath: string): SourceMustRequiremen
   return [];
 }
 
+function stripMarkdownListMarker(line: string): string {
+  return normalizeText(line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/u, ''));
+}
+
+function isRequirementBearingPlainSourceLine(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized || normalized.length < 24) {
+    return false;
+  }
+  if (/^MUST(?:-\d+)?\s*[:：]/iu.test(normalized)) {
+    return false;
+  }
+  if (/\b(?:lacks?|missing|without|no)\s+(?:explicit\s+)?MUST\b/iu.test(normalized)) {
+    return false;
+  }
+  if (/\b(?:must|shall|required to|requires?|cannot|must not|forbidden)\b/iu.test(normalized)) {
+    return true;
+  }
+  return /(?:必须|不得|禁止|需要|应当|不能|不允许)/u.test(normalized);
+}
+
+function buildControlledMustCandidatesFromPlainSource(
+  root: string,
+  sourcePath: string,
+  sourceText: string
+): ControlledMustCandidate[] {
+  const sourceDocumentHash = sha256Text(sourceText);
+  const sourceRel = toRootRelativePath(root, sourcePath);
+  const extraction = extractImplementationConfirmationBlock(sourceText);
+  const lines = sourceText.replace(/\r\n/g, '\n').split('\n');
+  const headingPath: string[] = [];
+  let inFence = false;
+  const candidates: ControlledMustCandidate[] = [];
+
+  lines.forEach((line, index) => {
+    const lineNumber = index + 1;
+    if (extraction && index >= extraction.start && index < extraction.end) {
+      return;
+    }
+    if (/^\s*```/u.test(line)) {
+      inFence = !inFence;
+      return;
+    }
+    if (inFence) {
+      return;
+    }
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*$/u);
+    if (heading) {
+      headingPath.splice(heading[1].length - 1);
+      headingPath[heading[1].length - 1] = normalizeText(heading[2]);
+      return;
+    }
+    const normalizedRequirement = stripMarkdownListMarker(line);
+    if (!isRequirementBearingPlainSourceLine(normalizedRequirement)) {
+      return;
+    }
+    const ordinal = requirementOrdinal(candidates.length);
+    candidates.push({
+      candidateId: `MUST-CAND-${ordinal}`,
+      sourcePath: sourceRel,
+      sourceHash: sourceDocumentHash,
+      sourceDocumentHash,
+      sourceSpan: { startLine: lineNumber, endLine: lineNumber },
+      headingPath: headingPath.filter(Boolean),
+      originalText: line,
+      normalizedRequirement,
+      decision: 'accepted_for_draft',
+      decisionReason: 'Source text uses mandatory requirement language and has a concrete behavior.',
+      requiresHumanReview: true,
+    });
+  });
+
+  return candidates;
+}
+
+function mustRequirementsFromControlledCandidates(
+  requirementSetId: string,
+  candidates: ControlledMustCandidate[]
+): SourceMustRequirement[] {
+  const stablePrefix = sanitizeRequirementIdSegment(requirementSetId)
+    .replace(/[^A-Z0-9]+/giu, '-')
+    .replace(/^-|-$/gu, '')
+    .toUpperCase()
+    .slice(0, 24)
+    .replace(/^-|-$/gu, '');
+  return candidates
+    .filter((candidate) => candidate.decision === 'accepted_for_draft')
+    .map((candidate, index) => ({
+      id: `MUST-${stablePrefix ? `${stablePrefix}-` : ''}L${candidate.sourceSpan.startLine}-${requirementOrdinal(index)}`,
+      text: candidate.normalizedRequirement,
+      source: 'controlled_plain_source_candidate' as const,
+      sourceLine: candidate.sourceSpan.startLine,
+      sourcePath: candidate.sourcePath,
+      sourceDocumentHash: candidate.sourceDocumentHash,
+      sourceSpan: candidate.sourceSpan,
+      headingPath: candidate.headingPath,
+      candidateId: candidate.candidateId,
+    }));
+}
+
+function writeControlledMustCandidateArtifacts(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  requirementSetId: string;
+  createdAt: string;
+  sourceText: string;
+  candidates: ControlledMustCandidate[];
+  mustRequirements: SourceMustRequirement[];
+  draftConfirmation?: Record<string, unknown> | null;
+  decision: 'draft_materialization_allowed' | 'controlled_must_candidates_missing';
+}): void {
+  const sourceDocumentHash = sha256Text(input.sourceText);
+  const acceptedCandidates = input.candidates.filter(
+    (candidate) => candidate.decision === 'accepted_for_draft'
+  );
+  const base = {
+    sourcePath: toRootRelativePath(input.root, input.sourcePath),
+    sourceDocumentHash,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+  };
+  writeJsonUtf8(input.paths.controlledMustCandidates, {
+    schemaVersion: 'requirements-authoring-controlled-must-candidates/v1',
+    ...base,
+    sourceHash: sourceDocumentHash,
+    candidateCount: input.candidates.length,
+    acceptedCandidateCount: acceptedCandidates.length,
+    mustCount: input.mustRequirements.length,
+    failClosed: input.decision === 'controlled_must_candidates_missing',
+    candidates: input.candidates,
+    decision: input.decision,
+  });
+  writeJsonUtf8(input.paths.draftImplementationConfirmation, {
+    schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+    ...base,
+    status: 'draft',
+    candidateCount: input.candidates.length,
+    acceptedCandidateCount: acceptedCandidates.length,
+    mustCount: input.mustRequirements.length,
+    failClosed: input.decision === 'controlled_must_candidates_missing',
+    mustRequirements: input.mustRequirements,
+    implementationConfirmation: input.draftConfirmation ?? null,
+    decision: input.decision,
+  });
+  writeJsonUtf8(input.paths.authoringMaterializationReceipt, {
+    schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+    ...base,
+    candidateArtifactPath: toRootRelativePath(input.root, input.paths.controlledMustCandidates),
+    draftImplementationConfirmationPath: toRootRelativePath(
+      input.root,
+      input.paths.draftImplementationConfirmation
+    ),
+    candidateCount: input.candidates.length,
+    acceptedCandidateCount: acceptedCandidates.length,
+    mustCount: input.mustRequirements.length,
+    failClosed: input.decision === 'controlled_must_candidates_missing',
+    decision: input.decision,
+    requiresUserConfirmationBeforeExecution: true,
+    receiptHash: sha256Json({
+      ...base,
+      candidateCount: input.candidates.length,
+      acceptedCandidateCount: acceptedCandidates.length,
+      mustCount: input.mustRequirements.length,
+      decision: input.decision,
+    }),
+  });
+}
+
 function buildPreConfirmationImplementationConfirmation(input: {
   root: string;
   sourcePath: string;
@@ -2024,6 +2223,13 @@ function buildPreConfirmationImplementationConfirmation(input: {
     ...(requirement.textZh ? { textZh: requirement.textZh } : {}),
     source: requirement.source,
     sourceLine: requirement.sourceLine,
+    ...(requirement.sourcePath ? { sourcePath: requirement.sourcePath } : {}),
+    ...(requirement.sourceDocumentHash
+      ? { sourceDocumentHash: requirement.sourceDocumentHash }
+      : {}),
+    ...(requirement.sourceSpan ? { sourceSpan: requirement.sourceSpan } : {}),
+    ...(requirement.headingPath ? { headingPath: requirement.headingPath } : {}),
+    ...(requirement.candidateId ? { candidateId: requirement.candidateId } : {}),
     evidenceRefs: ['EVD-001'],
     coveredByTraceRows: ['TRACE-001'],
     coveredBySequenceViews: ['SEQ-001'],
@@ -3053,6 +3259,11 @@ function buildSemanticKernel(input: {
       text: requirement.text,
       source: requirement.source,
       sourceLine: requirement.sourceLine,
+      sourcePath: requirement.sourcePath,
+      sourceDocumentHash: requirement.sourceDocumentHash,
+      sourceSpan: requirement.sourceSpan,
+      headingPath: requirement.headingPath,
+      candidateId: requirement.candidateId,
     })),
     createdBy: 'main_agent_orchestration.requirement_confirmation.pre_confirmation_drilldown',
     createdAt: input.createdAt,
@@ -3148,6 +3359,11 @@ function buildMustDecompositionPacket(input: {
         sourceRequirementText: requirement.text,
         sourceRequirementLine: requirement.sourceLine,
         sourceRequirementAuthority: requirement.source,
+        sourcePath: requirement.sourcePath,
+        sourceDocumentHash: requirement.sourceDocumentHash,
+        sourceSpan: requirement.sourceSpan,
+        headingPath: requirement.headingPath,
+        candidateId: requirement.candidateId,
         decompositionBasis: {
           observableBehaviors: [
             `${requirement.id} is preserved from source text`,
@@ -5796,6 +6012,12 @@ function artifactMap(root: string, paths: PreConfirmationPaths): Record<string, 
   return {
     semanticKernel: toRootRelativePath(root, paths.semanticKernel),
     mustDecompositionPacket: toRootRelativePath(root, paths.mustDecompositionPacket),
+    controlledMustCandidates: toRootRelativePath(root, paths.controlledMustCandidates),
+    draftImplementationConfirmation: toRootRelativePath(root, paths.draftImplementationConfirmation),
+    authoringMaterializationReceipt: toRootRelativePath(
+      root,
+      paths.authoringMaterializationReceipt
+    ),
     criticalAuditorReceiptRound1: toRootRelativePath(root, paths.receiptPaths[0]),
     criticalAuditorReceiptRound2: toRootRelativePath(root, paths.receiptPaths[1]),
     criticalAuditorReceiptRound3: toRootRelativePath(root, paths.receiptPaths[2]),
@@ -6181,12 +6403,65 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const mustRequirements = resolveSourceMustRequirements(sourcePath);
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  let mustRequirements = resolveSourceMustRequirements(sourcePath);
+  if (mustRequirements.length === 0) {
+    const controlledCandidates = buildControlledMustCandidatesFromPlainSource(root, sourcePath, sourceText);
+    mustRequirements = mustRequirementsFromControlledCandidates(
+      identity.requirementSetId,
+      controlledCandidates
+    );
+    if (mustRequirements.length > 0) {
+      const draftConfirmation = buildPreConfirmationImplementationConfirmation({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        language,
+        paths,
+        packetHash,
+        semanticKernelHash: semanticKernelHashSeed,
+        latestReceiptHash: receiptHashSeed,
+        mustRequirements,
+      });
+      writeControlledMustCandidateArtifacts({
+        root,
+        sourcePath,
+        paths,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        createdAt,
+        sourceText,
+        candidates: controlledCandidates,
+        mustRequirements,
+        draftConfirmation,
+        decision: 'draft_materialization_allowed',
+      });
+    } else {
+      writeControlledMustCandidateArtifacts({
+        root,
+        sourcePath,
+        paths,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        createdAt,
+        sourceText,
+        candidates: controlledCandidates,
+        mustRequirements,
+        draftConfirmation: null,
+        decision: 'controlled_must_candidates_missing',
+      });
+    }
+  }
   if (mustRequirements.length === 0) {
     const issue = preConfirmationIssue(
       'controlled_must_candidates_missing',
-      'No explicit MUST: rows or inline implementationConfirmation.must[] entries were found; authoring must generate controlled MUST candidates before packet materialization.',
-      [toRootRelativePath(root, sourcePath), 'implementationConfirmation.must'],
+      'No explicit MUST: rows, inline implementationConfirmation.must[] entries, or source-bound controlled MUST candidates were found after candidate extraction.',
+      [
+        toRootRelativePath(root, sourcePath),
+        'implementationConfirmation.must',
+        toRootRelativePath(root, paths.controlledMustCandidates),
+      ],
       'semantic_kernel_authoring'
     );
     return buildPreConfirmationResult({

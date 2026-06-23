@@ -53,6 +53,27 @@ function writeDraftSourceWithoutMust(root: string, name = 'source-without-must.m
   return source;
 }
 
+function writePlainSourceWithControlledCandidate(
+  root: string,
+  name = 'plain-controlled-candidate.md'
+): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Plain Controlled Candidate Requirement',
+      '',
+      '## Behavior',
+      '',
+      'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
 function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
   mkdirSync(path.dirname(source), { recursive: true });
@@ -337,6 +358,9 @@ function artifacts(root: string, recordId: string, requirementSetId = recordId) 
     confirmation,
     semanticKernel: path.join(authoring, 'semantic-kernel.json'),
     packet: path.join(authoring, 'must_decomposition_packet.json'),
+    controlledMustCandidates: path.join(authoring, 'controlled-must-candidates.json'),
+    draftImplementationConfirmation: path.join(authoring, 'draft-implementation-confirmation.json'),
+    authoringMaterializationReceipt: path.join(authoring, 'authoring-materialization-receipt.json'),
     scaleAssessmentInitial: path.join(authoring, 'scale-assessment-initial.json'),
     scaleAssessmentPostPacket: path.join(authoring, 'scale-assessment-post-packet.json'),
     scaleAssessmentPostMaterialization: path.join(
@@ -628,10 +652,123 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(result.blockingIssues.map((issue) => issue.code)).toContain(
         'controlled_must_candidates_missing'
       );
+      expect(existsSync(paths.controlledMustCandidates)).toBe(true);
+      expect(existsSync(paths.draftImplementationConfirmation)).toBe(true);
+      expect(existsSync(paths.authoringMaterializationReceipt)).toBe(true);
+      const candidates = readJson(paths.controlledMustCandidates);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+      const receipt = readJson(paths.authoringMaterializationReceipt);
+      expect(candidates).toMatchObject({
+        schemaVersion: 'requirements-authoring-controlled-must-candidates/v1',
+        sourcePath: 'docs/requirements/source-without-must.md',
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+      });
+      expect(draftProjection).toMatchObject({
+        schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+      });
+      expect(receipt).toMatchObject({
+        schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+        requiresUserConfirmationBeforeExecution: true,
+      });
       expect(existsSync(paths.semanticKernel)).toBe(false);
       expect(existsSync(paths.packet)).toBe(false);
       expect(existsSync(paths.receipt1)).toBe(false);
       expect(existsSync(paths.renderReport)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes controlled MUST candidates from plain source before draft confirmation', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-plain-candidate-'));
+    try {
+      const source = writePlainSourceWithControlledCandidate(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-PLAIN-CANDIDATE',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-PLAIN-CANDIDATE',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-PLAIN-CANDIDATE',
+        'REQSET-PRE-CONFIRMATION-PLAIN-CANDIDATE'
+      );
+      const candidates = readJson(paths.controlledMustCandidates);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+      const receipt = readJson(paths.authoringMaterializationReceipt);
+      const confirmation = readImplementationConfirmation(source);
+      const mustRow = confirmation.must[0];
+
+      expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
+        'controlled_must_candidates_missing'
+      );
+      expect(existsSync(paths.controlledMustCandidates)).toBe(true);
+      expect(existsSync(paths.draftImplementationConfirmation)).toBe(true);
+      expect(existsSync(paths.authoringMaterializationReceipt)).toBe(true);
+      expect(candidates).toMatchObject({
+        schemaVersion: 'requirements-authoring-controlled-must-candidates/v1',
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+      });
+      expect(candidates.candidates[0]).toMatchObject({
+        candidateId: 'MUST-CAND-001',
+        sourcePath: 'docs/requirements/plain-controlled-candidate.md',
+        sourceSpan: { startLine: 5, endLine: 5 },
+        headingPath: ['Plain Controlled Candidate Requirement', 'Behavior'],
+        decision: 'accepted_for_draft',
+        requiresHumanReview: true,
+      });
+      expect(candidates.candidates[0].sourceDocumentHash).toMatch(/^sha256:/u);
+      expect(draftProjection).toMatchObject({
+        schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+        status: 'draft',
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+      });
+      expect(receipt).toMatchObject({
+        schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+        requiresUserConfirmationBeforeExecution: true,
+      });
+      expect(mustRow).toMatchObject({
+        text: 'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
+        source: 'controlled_plain_source_candidate',
+        sourceLine: 5,
+        sourcePath: 'docs/requirements/plain-controlled-candidate.md',
+        sourceSpan: { startLine: 5, endLine: 5 },
+        candidateId: 'MUST-CAND-001',
+      });
+      expect(mustRow.id).toMatch(/^MUST-REQSET-PRE-CONFIRMATION-L5-001$/u);
+      expect(mustRow.sourceDocumentHash).toBe(candidates.sourceDocumentHash);
+      expect(confirmation.status).toBe('draft');
+      expect(confirmation.status).not.toBe('user_confirmed');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

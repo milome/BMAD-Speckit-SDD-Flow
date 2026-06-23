@@ -476,6 +476,19 @@ describe('requirements-contract large document write flow', () => {
     expect(semantic.json.failureClass).toBe(
       'semantic_decision_required:expected_draft_gap_policy'
     );
+    expect(semantic.json).toMatchObject({
+      promotionStage: 'confirmation-ready',
+      allowedStatuses: ['user_confirmed'],
+      statusValue: 'draft',
+      confirmationReady: false,
+      safePromotionAsDraft: false,
+      requiresUserConfirmationBeforeExecution: true,
+    });
+    expect(semantic.json.details).toMatchObject({
+      promotionStage: 'confirmation-ready',
+      allowedStatuses: ['user_confirmed'],
+      statusValue: 'draft',
+    });
     expect(fs.readFileSync(target, 'utf8')).toBe(before);
 
     const missingRequired = runNode(PROMOTE, [
@@ -512,6 +525,99 @@ describe('requirements-contract large document write flow', () => {
     expect(shell.result.status).toBe(1);
     expect(shell.json.failureClass).toBe('shell_transport_error');
     expect(fs.readFileSync(target, 'utf8')).toBe(before);
+  });
+
+  it('allows explicit authoring-draft promotion without treating draft as confirmed', () => {
+    const target = write('target.md', '# old target\n');
+    const draft = write('authoring-draft.md', draftWithStatus('draft'));
+
+    const promoted = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'authoring-draft',
+      '--json',
+    ]);
+
+    expect(promoted.result.status).toBe(0);
+    expect(promoted.json).toMatchObject({
+      ok: true,
+      promotionStage: 'authoring-draft',
+      allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
+      statusValue: 'draft',
+      confirmationReady: false,
+      safePromotionAsDraft: true,
+      requiresUserConfirmationBeforeExecution: true,
+    });
+    expect(promoted.json.audit).toMatchObject({
+      ok: true,
+      skipped: true,
+      reason: 'authoring_draft_is_not_confirmation_ready',
+    });
+    expect(promoted.json.residualRisks).toContain('reverse_audit_not_run_authoring_draft');
+    expect(promoted.json.writeReceipt.schemaVersion).toBe('large-document-writer-safe-write/v1');
+    expect(fs.readFileSync(target, 'utf8')).toContain('status: draft');
+    expect(fs.readFileSync(target, 'utf8')).not.toContain('status: user_confirmed');
+  });
+
+  it('enforces the authoring-draft status whitelist and rejects confirmed status', () => {
+    for (const status of ['draft_updated_not_confirmation_ready', 'reconfirm_required']) {
+      const target = write(`target-${status}.md`, '# old target\n');
+      const draft = write(`authoring-${status}.md`, draftWithStatus(status));
+
+      const promoted = runNode(PROMOTE, [
+        '--draft',
+        draft,
+        '--target',
+        target,
+        '--promotion-stage',
+        'authoring-draft',
+        '--json',
+      ]);
+
+      expect(promoted.result.status).toBe(0);
+      expect(promoted.json).toMatchObject({
+        ok: true,
+        promotionStage: 'authoring-draft',
+        statusValue: status,
+        confirmationReady: false,
+        safePromotionAsDraft: true,
+        requiresUserConfirmationBeforeExecution: true,
+      });
+      expect(fs.readFileSync(target, 'utf8')).toContain(`status: ${status}`);
+    }
+
+    const target = write('target-confirmed.md', '# old target\n');
+    const confirmedDraft = write('authoring-confirmed.md', draftWithStatus('user_confirmed'));
+    const rejected = runNode(PROMOTE, [
+      '--draft',
+      confirmedDraft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'authoring-draft',
+      '--json',
+    ]);
+
+    expect(rejected.result.status).toBe(1);
+    expect(rejected.json).toMatchObject({
+      ok: false,
+      promotionStage: 'authoring-draft',
+      allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
+      statusValue: 'user_confirmed',
+      confirmationReady: false,
+      safePromotionAsDraft: true,
+      requiresUserConfirmationBeforeExecution: true,
+      failureClass: 'semantic_decision_required:expected_draft_gap_policy',
+    });
+    expect(rejected.json.details).toMatchObject({
+      promotionStage: 'authoring-draft',
+      allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
+      statusValue: 'user_confirmed',
+    });
+    expect(fs.readFileSync(target, 'utf8')).toBe('# old target\n');
   });
 
   it('does not implement allow-expected-draft-gap', () => {
@@ -572,12 +678,26 @@ describe('requirements-contract large document write flow', () => {
     const dryRun = runNode(PROMOTE, ['--draft', source, '--target', target, '--dry-run', '--json']);
     expect(dryRun.result.status).toBe(0);
     expect(dryRun.json.ok).toBe(true);
+    expect(dryRun.json).toMatchObject({
+      promotionStage: 'confirmation-ready',
+      allowedStatuses: ['user_confirmed'],
+      confirmationReady: true,
+      safePromotionAsDraft: false,
+      requiresUserConfirmationBeforeExecution: false,
+    });
     expect(dryRun.json.audit.ok).toBe(true);
     expect(fs.readFileSync(target, 'utf8')).toBe('# old target\n');
 
     const promoted = runNode(PROMOTE, ['--draft', source, '--target', target, '--json']);
     expect(promoted.result.status).toBe(0);
     expect(promoted.json.ok).toBe(true);
+    expect(promoted.json).toMatchObject({
+      promotionStage: 'confirmation-ready',
+      allowedStatuses: ['user_confirmed'],
+      confirmationReady: true,
+      safePromotionAsDraft: false,
+      requiresUserConfirmationBeforeExecution: false,
+    });
     expect(promoted.json.backupPath).toMatch(/target\.md\.backup-/u);
     expect(fs.existsSync(promoted.json.backupPath)).toBe(true);
     expect(fs.readFileSync(promoted.json.backupPath, 'utf8')).toBe('# old target\n');

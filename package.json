@@ -3,6 +3,7 @@
   "version": "2.0.3",
   "description": "Agent governance and AI-TDD control plane for requirement-contract-driven Main Agent orchestration, built on BMAD + Spec-Kit",
   "scripts": {
+    "build": "npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && npm run build:ralph-method && npm run build:main-agent-dist",
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
     "format": "prettier --write \"packages/scoring/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"vitest.config.ts\"",

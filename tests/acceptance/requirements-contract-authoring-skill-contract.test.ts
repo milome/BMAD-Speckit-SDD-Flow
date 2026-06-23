@@ -430,12 +430,26 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('## Large Document Draft Promotion Protocol');
       expect(skill).toContain('node <skill-dir>/scripts/promote-draft-large-doc.js');
       expect(skill).toContain('--retry-receipt');
+      expect(skill).toContain('--promotion-stage confirmation-ready');
+      expect(skill).toContain('--promotion-stage authoring-draft');
       expect(skill).toContain('--preflight-only');
       expect(skill).toContain('--dry-run');
       expect(skill).toContain('normalize-draft-markdown.js');
       expect(skill).toContain('generate-draft-manifest.js');
       expect(skill).toContain('semantic_decision_required:expected_draft_gap_policy');
       expect(skill).toContain('Do not add or use `--allow-expected-draft-gap`');
+      expect(skill).toContain(
+        'plain source doc -> controlled MUST candidates -> draft implementationConfirmation -> safe promotion as draft -> render/audit -> explicit user confirmation -> status: user_confirmed'
+      );
+      expect(skill).toContain('`--promotion-stage authoring-draft` allows only');
+      expect(skill).toContain('not confirmation-ready, not implementation-ready, and not execution-ready');
+      expect(skill).toContain('`promotionStage`');
+      expect(skill).toContain('`allowedStatuses`');
+      expect(skill).toContain('`statusValue`');
+      expect(skill).toContain('`confirmationReady: false`');
+      expect(skill).toContain('`safePromotionAsDraft: true`');
+      expect(skill).toContain('`requiresUserConfirmationBeforeExecution: true`');
+      expect(skill).toContain('allows only `status: user_confirmed`');
       expect(skill).toContain('The write flow must work when the current project root has no `scripts` directory');
     }
   });

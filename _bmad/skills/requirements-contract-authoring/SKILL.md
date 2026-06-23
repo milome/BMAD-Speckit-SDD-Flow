@@ -117,19 +117,39 @@ Use file-based UTF-8 drafts:
 node <skill-dir>/scripts/promote-draft-large-doc.js \
   --draft <authoring-dir>/<source-name>.contract-draft.md \
   --target <source-document.md> \
+  --promotion-stage confirmation-ready \
   --require implementationConfirmation: \
   --min-bytes <minimum-expected-bytes> \
   --retry-receipt <authoring-dir>/large-doc-write-retry-receipt.json \
   --json
 ```
 
-The promotion command performs `normalize-draft-markdown.js`, `generate-draft-manifest.js`, lightweight preflight, reverse audit policy checks, package safe-writer final persistence, timestamped backup creation through the safe-writer receipt, and UTF-8 target replacement. Use `--preflight-only` to validate syntax without reverse audit or target replacement. Use `--dry-run` to run promotion checks without replacing the target.
+The promotion command performs `normalize-draft-markdown.js`, `generate-draft-manifest.js`, lightweight preflight, stage-aware status policy checks, package safe-writer final persistence, timestamped backup creation through the safe-writer receipt, and UTF-8 target replacement. In `--promotion-stage confirmation-ready`, it also runs the confirmation-ready reverse audit and only allows `status: user_confirmed`. Use `--preflight-only` to validate syntax without reverse audit or target replacement. Use `--dry-run` to run promotion checks without replacing the target.
 
-The final persistence seam in `promote-draft-large-doc.js` must call the package large-document-writer safe-writer through the runtime resolver. The promotion receipt must remain owned by this requirements-contract-authoring workflow and must expose `writeReceipt.schemaVersion: "large-document-writer-safe-write/v1"` plus `backupPath` and `targetHash` derived from the safe-writer receipt. Do not replace this requirements-specific promotion with `bmad-speckit large-doc promote`, and do not bypass `normalizeDraftInPlace()`, `buildManifest()`, confirmation-ready status gates, reverse audit, retry receipt handling, or `failureClass` reporting.
+The final persistence seam in `promote-draft-large-doc.js` must call the package large-document-writer safe-writer through the runtime resolver. The promotion receipt must remain owned by this requirements-contract-authoring workflow and must expose `writeReceipt.schemaVersion: "large-document-writer-safe-write/v1"` plus `backupPath` and `targetHash` derived from the safe-writer receipt. Do not replace this requirements-specific promotion with `bmad-speckit large-doc promote`, and do not bypass `normalizeDraftInPlace()`, `buildManifest()`, stage-aware status gates, confirmation-ready reverse audit when required, retry receipt handling, or `failureClass` reporting.
 
 The normalizer only repairs deterministic transport damage: LF/BOM normalization, single-backtick Mermaid fence damage, and unquoted colon-space YAML scalar values inside `implementationConfirmation:`. It must not invent requirements, evidence, status, hashes, confirmation text, or audit results.
 
-If a draft is syntactically valid but not confirmation-ready, the promotion command must stop before target replacement with `semantic_decision_required:expected_draft_gap_policy`. Do not add or use `--allow-expected-draft-gap`; the allowed non-confirmation-ready promotion policy is not defined.
+Legal draft authoring path:
+
+`plain source doc -> controlled MUST candidates -> draft implementationConfirmation -> safe promotion as draft -> render/audit -> explicit user confirmation -> status: user_confirmed`
+
+For authoring materialization only, use:
+
+```bash
+node <skill-dir>/scripts/promote-draft-large-doc.js \
+  --draft <authoring-dir>/<source-name>.contract-draft.md \
+  --target <source-document.md> \
+  --promotion-stage authoring-draft \
+  --require implementationConfirmation: \
+  --min-bytes <minimum-expected-bytes> \
+  --retry-receipt <authoring-dir>/large-doc-write-retry-receipt.json \
+  --json
+```
+
+`--promotion-stage authoring-draft` allows only `status: draft`, `status: draft_updated_not_confirmation_ready`, or `status: reconfirm_required`. It is persistence only: it is not confirmation-ready, not implementation-ready, and not execution-ready. Its receipt must include `promotionStage`, `allowedStatuses`, `statusValue`, `confirmationReady: false`, `safePromotionAsDraft: true`, and `requiresUserConfirmationBeforeExecution: true`. It must skip confirmation-ready reverse audit because that audit intentionally requires `status: user_confirmed`.
+
+`--promotion-stage confirmation-ready` is the default and allows only `status: user_confirmed`. If a draft is syntactically valid but not allowed by the selected stage, the promotion command must stop before target replacement with `semantic_decision_required:expected_draft_gap_policy`. Do not add or use `--allow-expected-draft-gap`; use the explicit `--promotion-stage authoring-draft` policy for non-confirmed authoring persistence.
 
 Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs` or any consumer-root `scripts/...` writer for this skill. The write flow must work when the current project root has no `scripts` directory.
 
