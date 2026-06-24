@@ -14,11 +14,27 @@ const STRICT_BLOB_RESTORE_PATHS = [
   'repo-governance/script-migration-registry.yaml',
 ];
 const STRICT_LIVE_RESTORE_PATHS = [
-  'scripts/main-agent-orchestration.ts',
   `${WAVE_DIR_RELATIVE}/install-matrix/no-save.json`,
   `${WAVE_DIR_RELATIVE}/install-matrix/save-dev.json`,
   `${WAVE_DIR_RELATIVE}/install-matrix/npx-package.json`,
   `${WAVE_DIR_RELATIVE}/install-matrix/init-sync-consumer.json`,
+];
+const ROOT_ORCHESTRATION_RUNTIME_REFERENCE_SCAN_PATHS = [
+  'package.json',
+  'packages/bmad-speckit/bin/bmad-speckit.js',
+  'packages/bmad-speckit/src',
+  'tests/acceptance',
+  'tests/unit',
+  '.github',
+];
+const ROOT_ORCHESTRATION_RUNTIME_REFERENCE_PATTERNS = [
+  /\bnode[^\n\r]*scripts[\\/]main-agent-orchestration\.ts/gu,
+  /\btsx[^\n\r]*scripts[\\/]main-agent-orchestration\.ts/gu,
+  /\bts-node[^\n\r]*scripts[\\/]main-agent-orchestration\.ts/gu,
+  /from\s+['"](?:\.\.\/)*scripts[\\/]main-agent-orchestration(?:\.ts)?['"]/gu,
+  /require\(\s*['"](?:\.\.\/)*scripts[\\/]main-agent-orchestration(?:\.ts)?['"]\s*\)/gu,
+  /import\(\s*['"](?:\.\.\/)*scripts[\\/]main-agent-orchestration(?:\.ts)?['"]\s*\)/gu,
+  /path\.join\([^)\n\r]*['"]scripts['"][^)\n\r]*['"]main-agent-orchestration\.ts['"][^)\n\r]*\)/gu,
 ];
 
 function runSetupCommand(command: string, args: string[], cwd: string) {
@@ -77,6 +93,23 @@ function restoreHeadBlob(relativePath: string, targetRoot: string) {
   const target = path.join(targetRoot, ...normalizedPath.split('/'));
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, result.stdout);
+}
+
+function collectTextFiles(relativePath: string): string[] {
+  const absolute = path.join(LIVE_ROOT, relativePath);
+  if (!fs.existsSync(absolute)) return [];
+  const stat = fs.statSync(absolute);
+  if (stat.isFile()) return [absolute];
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(absolute, { withFileTypes: true })) {
+    const child = path.join(absolute, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectTextFiles(path.relative(LIVE_ROOT, child)));
+      continue;
+    }
+    if (/\.(?:json|js|ts|tsx|md)$/u.test(entry.name)) files.push(child);
+  }
+  return files;
 }
 
 function restoreLiveCheckoutFile(relativePath: string, targetRoot: string) {
@@ -176,6 +209,24 @@ function parseStdout(result: ReturnType<typeof runNode>): any {
 }
 
 describe('main agent runtime migration wave 4.1 contract surfaces', () => {
+  it('rejects active runtime or test commands that execute root main-agent orchestration TypeScript', () => {
+    const hits: string[] = [];
+    for (const scanPath of ROOT_ORCHESTRATION_RUNTIME_REFERENCE_SCAN_PATHS) {
+      for (const file of collectTextFiles(scanPath)) {
+        const relativeFile = path.relative(LIVE_ROOT, file).replace(/\\/g, '/');
+        const content = fs.readFileSync(file, 'utf8');
+        for (const pattern of ROOT_ORCHESTRATION_RUNTIME_REFERENCE_PATTERNS) {
+          pattern.lastIndex = 0;
+          for (const match of content.matchAll(pattern)) {
+            hits.push(`${relativeFile}: ${match[0]}`);
+          }
+        }
+      }
+    }
+
+    expect(hits).toEqual([]);
+  });
+
   it('tracks G001 scope and owner-local evidence without marking the full 240-row goal complete', () => {
     expect(fs.existsSync(SCOPE_BASELINE_PATH)).toBe(true);
     expect(fs.existsSync(LEDGER_PATH)).toBe(true);
@@ -510,7 +561,7 @@ describe('main agent runtime migration wave 4.1 contract surfaces', () => {
     row.behaviorEquivalenceMatrix = [
       {
         scenarioId: 'incomplete-scenario',
-        originalEntryCommand: 'node scripts/main-agent-orchestration.ts --help',
+        originalEntryCommand: 'legacy-original-entry://scripts/main-agent-orchestration.ts --help',
         packageEntryCommand: 'node packages/bmad-speckit/bin/bmad-speckit.js main-agent --help',
       },
     ];
@@ -537,14 +588,14 @@ describe('main agent runtime migration wave 4.1 contract surfaces', () => {
   it('rejects semantically empty matrix fields, missing package source files, and mismatched ratio arithmetic', () => {
     const ledger = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
     const row = structuredClone(ledger.entries[0]);
-    row.packageImplementationSet = ['packages/bmad-speckit/src/main-agent/does-not-exist.js'];
+    row.packageImplementationSet = ['packages/bmad-speckit/src/main-agent/does-not-exist.ts'];
     row.behaviorEquivalenceMatrix = [
       {
         scenarioId: '   ',
         originalEntryPoint: '',
-        originalEntryCommand: 'node scripts/not-the-original.ts',
-        packageEntryPoint: 'packages/bmad-speckit/src/main-agent/does-not-exist.js',
-        packageEntryCommand: 'tsx scripts/main-agent-orchestration.ts',
+        originalEntryCommand: 'legacy-original-entry://scripts/not-the-original.ts',
+        packageEntryPoint: 'packages/bmad-speckit/src/main-agent/does-not-exist.ts',
+        packageEntryCommand: 'tsx package-source-entry://main-agent-orchestration.ts',
         argumentCombination: {},
         args: 'not-array',
         env: [],
@@ -670,13 +721,13 @@ describe('main agent runtime migration wave 4.1 contract surfaces', () => {
   it('rejects scenario package entry points outside the row implementation set and any root scripts command', () => {
     const ledger = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
     const row = structuredClone(ledger.entries[0]);
-    row.packageImplementationSet = ['packages/bmad-speckit/src/utils/path.js'];
+    row.packageImplementationSet = ['packages/bmad-speckit/src/utils/path.ts'];
     row.behaviorEquivalenceMatrix = [
       {
         scenarioId: 'root-command-bypass',
         originalEntryPoint: row.originalPath,
         originalEntryCommand: `node ${row.originalPath}`,
-        packageEntryPoint: 'packages/bmad-speckit/src/utils/tty.js',
+        packageEntryPoint: 'packages/bmad-speckit/src/utils/tty.ts',
         packageEntryCommand: 'node scripts/analytics-cluster.ts',
         argumentCombination: { argv: [] },
         args: [],

@@ -24,20 +24,20 @@ Deletion is not approved.
 
 ## Durable Helper Entries
 
-- scripts/governance-packet-execution-store.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js (governance-packet-execution-store)
-- scripts/governance-packet-reconciler.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js (governance-packet-reconciler)
-- scripts/governance-remediation-artifact.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js (governance-remediation-artifact)
-- scripts/governance-remediation-config.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js (governance-remediation-config)
-- scripts/governance-remediation-runner.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js (governance-remediation-runner)
-- scripts/i18n/agent-display-names.ts -> packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js (agent-display-names)
-- scripts/i18n/load-manifest.ts -> packages/bmad-speckit/src/main-agent/helpers/load-manifest.js (load-manifest)
-- scripts/i18n/party-mode-runtime-assets.ts -> packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js (party-mode-runtime-assets)
-- scripts/model-governance-policy-filter.ts -> packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js (model-governance-policy-filter)
-- scripts/party-mode-runtime.ts -> packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js (party-mode-runtime)
-- scripts/prompt-routing-governance.ts -> packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js (prompt-routing-governance)
-- scripts/prompt-routing-hints-schema.ts -> packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js (prompt-routing-hints-schema)
-- scripts/prompt-routing-hints.ts -> packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js (prompt-routing-hints)
-- scripts/skill-inventory-provider.ts -> packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js (skill-inventory-provider)
+- scripts/governance-packet-execution-store.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts (governance-packet-execution-store)
+- scripts/governance-packet-reconciler.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts (governance-packet-reconciler)
+- scripts/governance-remediation-artifact.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts (governance-remediation-artifact)
+- scripts/governance-remediation-config.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts (governance-remediation-config)
+- scripts/governance-remediation-runner.ts -> packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts (governance-remediation-runner)
+- scripts/i18n/agent-display-names.ts -> packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts (agent-display-names)
+- scripts/i18n/load-manifest.ts -> packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts (load-manifest)
+- scripts/i18n/party-mode-runtime-assets.ts -> packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts (party-mode-runtime-assets)
+- scripts/model-governance-policy-filter.ts -> packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts (model-governance-policy-filter)
+- scripts/party-mode-runtime.ts -> packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts (party-mode-runtime)
+- scripts/prompt-routing-governance.ts -> packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts (prompt-routing-governance)
+- scripts/prompt-routing-hints-schema.ts -> packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts (prompt-routing-hints-schema)
+- scripts/prompt-routing-hints.ts -> packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts (prompt-routing-hints)
+- scripts/skill-inventory-provider.ts -> packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts (skill-inventory-provider)
 
 ## Commands
 

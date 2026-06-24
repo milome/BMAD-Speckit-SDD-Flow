@@ -31,13 +31,13 @@
       "helperId": "governance-packet-execution-store",
       "exportName": "governancePacketExecutionStoreHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -66,13 +66,13 @@
       "helperId": "governance-packet-reconciler",
       "exportName": "governancePacketReconcilerHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -101,13 +101,13 @@
       "helperId": "governance-remediation-artifact",
       "exportName": "governanceRemediationArtifactHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -136,13 +136,13 @@
       "helperId": "governance-remediation-config",
       "exportName": "governanceRemediationConfigHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -171,13 +171,13 @@
       "helperId": "governance-remediation-runner",
       "exportName": "governanceRemediationRunnerHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -206,13 +206,13 @@
       "helperId": "agent-display-names",
       "exportName": "agentDisplayNamesHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js"
+        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js",
+        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -241,13 +241,13 @@
       "helperId": "load-manifest",
       "exportName": "loadManifestHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js",
+        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -276,13 +276,13 @@
       "helperId": "party-mode-runtime-assets",
       "exportName": "partyModeRuntimeAssetsHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js"
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js",
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -311,13 +311,13 @@
       "helperId": "model-governance-policy-filter",
       "exportName": "modelGovernancePolicyFilterHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js"
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js",
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -346,13 +346,13 @@
       "helperId": "party-mode-runtime",
       "exportName": "partyModeRuntimeHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js"
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js",
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -381,13 +381,13 @@
       "helperId": "prompt-routing-governance",
       "exportName": "promptRoutingGovernanceHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js"
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js",
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -416,13 +416,13 @@
       "helperId": "prompt-routing-hints-schema",
       "exportName": "promptRoutingHintsSchemaHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js"
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js",
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -451,13 +451,13 @@
       "helperId": "prompt-routing-hints",
       "exportName": "promptRoutingHintsHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js"
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js",
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
       ],
       "publicCommandsBeforeMigration": [
@@ -486,13 +486,13 @@
       "helperId": "skill-inventory-provider",
       "exportName": "skillInventoryProviderHelper",
       "targetSourcePaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js"
+        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts"
       ],
       "targetDistPaths": [
         "packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
       ],
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js",
+        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
       ],
       "publicCommandsBeforeMigration": [

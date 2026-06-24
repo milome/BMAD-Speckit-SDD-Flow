@@ -451,7 +451,7 @@ Purpose: Move the 28 consumer runtime reachable entries into package runtime mod
 
 Files:
 - PATH packages/bmad-speckit/src/main-agent/actions/**
-- PATH packages/bmad-speckit/src/main-agent/runtime.js
+- PATH packages/bmad-speckit/src/main-agent/runtime.ts
 - PATH packages/bmad-speckit/scripts/build-main-agent-dist.cjs
 - PATH packages/bmad-speckit/tests/main-agent-wave-3-12-runtime-modules.test.js
 - PATH repo-governance/script-migrations/main-agent-runtime-migration-wave-3.12/migration-ledger.json

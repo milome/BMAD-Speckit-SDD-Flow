@@ -29,7 +29,7 @@ Date: 2026-05-10
 - Root package inclusion is already broad enough: `package.json` includes `_bmad` in `files`, so both skills are included in root npm tarballs after they are tracked.
 - Workspace CLI package inclusion is already broad enough: `packages/bmad-speckit/package.json` includes `_bmad/`, and `scripts/prepublish-check.js` mirrors root `_bmad` to `packages/bmad-speckit/_bmad`.
 - Runtime host deployment is already broad enough: `scripts/init-to-root.js` syncs `_bmad/skills` into `.cursor/skills`, `.claude/skills`, and `.codex/skills`.
-- Install surface manifest discovery is already dynamic: `packages/bmad-speckit/src/services/install-surface-manifest.js` derives host/global skill paths from `_bmad/skills`, so no per-skill manifest list should be needed.
+- Install surface manifest discovery is already dynamic: `packages/bmad-speckit/src/services/install-surface-manifest.ts` derives host/global skill paths from `_bmad/skills`, so no per-skill manifest list should be needed.
 - Global setup scripts are not fully dynamic: `scripts/setup.ps1` and `scripts/setup.sh` use hardcoded skill arrays, so these two skill names must be added there if setup should install them into user-level/global skills directories.
 - Acceptance tests currently assert representative skills such as `npm-public-release` and `encoding-integrity-guardian`; they should be extended to assert these two new skills in consumer runtime and global sync paths.
 

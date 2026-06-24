@@ -7,13 +7,13 @@ import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const { buildBmadHelpOutput, renderBmadHelp } = require(
-  '../../packages/bmad-speckit/src/runtime/bmad-help-renderer.js'
+  '../../packages/bmad-speckit/src/runtime/bmad-help-renderer.ts'
 ) as {
   buildBmadHelpOutput: (options: { projectRoot: string }) => Record<string, unknown>;
   renderBmadHelp: (output: Record<string, unknown>) => string;
 };
 const { buildBmadsOutput, renderBmads } = require(
-  '../../packages/bmad-speckit/src/runtime/bmads-renderer.js'
+  '../../packages/bmad-speckit/src/runtime/bmads-renderer.ts'
 ) as {
   buildBmadsOutput: (projectRoot: string) => Record<string, unknown>;
   renderBmads: (output: Record<string, unknown>) => string;

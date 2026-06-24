@@ -722,7 +722,7 @@
       "originalPath": "scripts/real-development-tick-worker.js",
       "entryId": "real-development-tick-worker-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
       "scenarioCoverageProof": {
@@ -781,7 +781,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_no_args",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -844,7 +844,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -915,7 +915,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_flag_name_only",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js --name-only source-derived-name-only",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js --name-only source-derived-name-only",
           "argumentCombination": "--name-only <source-derived-safe-value>",
           "args": [
@@ -981,7 +981,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -1052,7 +1052,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_env_bmad_framework_root",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
           "argumentCombination": "env BMAD_FRAMEWORK_ROOT=<source-derived-safe-value>",
           "args": [],
@@ -1117,7 +1117,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -1188,7 +1188,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_session_dir",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
           "argumentCombination": "env BMAD_REAL_DEV_SESSION_DIR=<source-derived-safe-value>",
           "args": [],
@@ -1253,7 +1253,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -1324,7 +1324,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
           "argumentCombination": "env BMAD_REAL_DEV_TICK=<source-derived-safe-value>",
           "args": [],
@@ -1389,7 +1389,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -1460,7 +1460,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_dir",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
           "argumentCombination": "env BMAD_REAL_DEV_TICK_DIR=<source-derived-safe-value>",
           "args": [],
@@ -1525,7 +1525,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -1596,7 +1596,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_timeout_ms",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
           "argumentCombination": "env BMAD_REAL_DEV_TICK_TIMEOUT_MS=<source-derived-safe-value>",
           "args": [],
@@ -1661,7 +1661,7 @@
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
                 "to": "scripts/real-development-tick-worker.js"
               },
               {
@@ -2036,7 +2036,7 @@
       "originalPath": "scripts/run-confirmed-final-required-commands.js",
       "entryId": "run-confirmed-final-required-commands-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
       "scenarioCoverageProof": {
@@ -2078,7 +2078,7 @@
           "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
           "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
           "originalEntryCommand": "node scripts/run-confirmed-final-required-commands.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -2151,7 +2151,7 @@
                 "to": "scripts/run-confirmed-final-required-commands.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
                 "to": "scripts/run-confirmed-final-required-commands.js"
               },
               {
@@ -2205,7 +2205,7 @@
           "scenarioId": "g007_run_confirmed_final_required_commands_js_flag_json",
           "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
           "originalEntryCommand": "node scripts/run-confirmed-final-required-commands.js --json",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js --json",
           "argumentCombination": "--json <present>",
           "args": [
@@ -2280,7 +2280,7 @@
                 "to": "scripts/run-confirmed-final-required-commands.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
                 "to": "scripts/run-confirmed-final-required-commands.js"
               },
               {
@@ -2336,7 +2336,7 @@
       "originalPath": "scripts/run-confirmed-trace-slice.js",
       "entryId": "run-confirmed-trace-slice-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
       "scenarioCoverageProof": {
@@ -2394,7 +2394,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -2477,7 +2477,7 @@
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
@@ -2547,7 +2547,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_flag_help",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js --help source-derived-help",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js --help source-derived-help",
           "argumentCombination": "--help <source-derived-safe-value>",
           "args": [
@@ -2633,7 +2633,7 @@
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
@@ -2703,7 +2703,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_flag_json",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js --json <fixture-root>/json.json",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js --json <fixture-root>/json.json",
           "argumentCombination": "--json <source-derived-safe-value>",
           "args": [
@@ -2799,7 +2799,7 @@
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
@@ -2869,7 +2869,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_flag_record",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js --record source-derived-record",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js --record source-derived-record",
           "argumentCombination": "--record <source-derived-safe-value>",
           "args": [
@@ -2955,7 +2955,7 @@
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
@@ -3025,7 +3025,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_flag_source",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js --source <fixture-root>/source.json",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js --source <fixture-root>/source.json",
           "argumentCombination": "--source <source-derived-safe-value>",
           "args": [
@@ -3121,7 +3121,7 @@
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
@@ -3191,7 +3191,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_flag_trace",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js --trace",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js --trace",
           "argumentCombination": "--trace <present>",
           "args": [
@@ -3276,7 +3276,7 @@
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
                 "to": "scripts/run-confirmed-trace-slice.js"
               },
               {

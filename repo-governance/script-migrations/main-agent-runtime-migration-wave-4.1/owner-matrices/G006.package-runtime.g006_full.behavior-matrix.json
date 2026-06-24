@@ -16,7 +16,7 @@
       "originalPath": "scripts/bmad-speckit-cli.js",
       "entryId": "bmad-speckit-cli-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
       "scenarioCoverageProof": {
@@ -58,7 +58,7 @@
           "scenarioId": "g006_bmad_speckit_cli_js_no_args",
           "originalEntryPoint": "scripts/bmad-speckit-cli.js",
           "originalEntryCommand": "node scripts/bmad-speckit-cli.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -116,7 +116,7 @@
                 "to": "scripts/bmad-speckit-cli.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
                 "to": "scripts/bmad-speckit-cli.js"
               },
               {
@@ -170,7 +170,7 @@
           "scenarioId": "g006_bmad_speckit_cli_js_env_node_path",
           "originalEntryPoint": "scripts/bmad-speckit-cli.js",
           "originalEntryCommand": "node scripts/bmad-speckit-cli.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
           "argumentCombination": "env NODE_PATH=<source-derived-safe-value>",
           "args": [],
@@ -230,7 +230,7 @@
                 "to": "scripts/bmad-speckit-cli.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
                 "to": "scripts/bmad-speckit-cli.js"
               },
               {

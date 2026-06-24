@@ -15,15 +15,15 @@
 
 ### package_runtime_module
 
-- scripts/main-agent-codex-worker-adapter.ts -> packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js, packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js; reachability=consumer_runtime_reachable; deletion=not_allowed
-- scripts/main-agent-compiled-prompt-runner.ts -> packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js, packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js; reachability=consumer_runtime_reachable; deletion=not_allowed
-- scripts/main-agent-implementation-readiness-gate.ts -> packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js, packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js; reachability=consumer_runtime_reachable; deletion=not_allowed
-- scripts/main-agent-unified-ingress.ts -> packages/bmad-speckit/src/main-agent/actions/unified-ingress.js, packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js; reachability=installed_surface_reachable; deletion=not_allowed
-- scripts/main-agent-delivery-closeout-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js, packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js; reachability=installed_surface_reachable; deletion=not_allowed
-- scripts/main-agent-delivery-evidence-run.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js, packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js; reachability=installed_surface_reachable; deletion=not_allowed
-- scripts/main-agent-soak-runner.ts -> packages/bmad-speckit/src/main-agent/actions/soak-runner.js, packages/bmad-speckit/dist/main-agent/actions/soak-runner.js; reachability=installed_surface_reachable; deletion=not_allowed
-- scripts/main-agent-dual-host-pr-orchestrator.ts -> packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js, packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js; reachability=installed_surface_reachable; deletion=not_allowed
-- scripts/main-agent-chaos-scenarios.ts -> packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js, packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js; reachability=installed_surface_reachable; deletion=not_allowed
+- scripts/main-agent-codex-worker-adapter.ts -> packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.ts, packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js; reachability=consumer_runtime_reachable; deletion=not_allowed
+- scripts/main-agent-compiled-prompt-runner.ts -> packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.ts, packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js; reachability=consumer_runtime_reachable; deletion=not_allowed
+- scripts/main-agent-implementation-readiness-gate.ts -> packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.ts, packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js; reachability=consumer_runtime_reachable; deletion=not_allowed
+- scripts/main-agent-unified-ingress.ts -> packages/bmad-speckit/src/main-agent/actions/unified-ingress.ts, packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js; reachability=installed_surface_reachable; deletion=not_allowed
+- scripts/main-agent-delivery-closeout-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.ts, packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js; reachability=installed_surface_reachable; deletion=not_allowed
+- scripts/main-agent-delivery-evidence-run.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.ts, packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js; reachability=installed_surface_reachable; deletion=not_allowed
+- scripts/main-agent-soak-runner.ts -> packages/bmad-speckit/src/main-agent/actions/soak-runner.ts, packages/bmad-speckit/dist/main-agent/actions/soak-runner.js; reachability=installed_surface_reachable; deletion=not_allowed
+- scripts/main-agent-dual-host-pr-orchestrator.ts -> packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.ts, packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js; reachability=installed_surface_reachable; deletion=not_allowed
+- scripts/main-agent-chaos-scenarios.ts -> packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.ts, packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js; reachability=installed_surface_reachable; deletion=not_allowed
 
 ### repo_internal_reclassify
 

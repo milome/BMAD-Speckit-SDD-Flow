@@ -11,7 +11,7 @@ import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-clo
 import {
   resolveMainAgentOrchestrationSurface,
   runMainAgentConfirmationDriftRoute,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { resolveSixModelRuntimeDecision } from '../../scripts/six-model-runtime-decision';
 import { appendControlEventAndReplay } from '../../scripts/requirement-record-control-store';
 

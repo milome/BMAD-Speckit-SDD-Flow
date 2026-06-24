@@ -11,7 +11,7 @@ import {
   resolveActiveRequirement,
 } from '../../scripts/resolve-active-requirement';
 import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
-import { mainMainAgentOrchestration } from '../../scripts/main-agent-orchestration';
+import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 let root: string;
 

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { providerSmokeCommand } = require('../src/commands/provider-smoke.js');
+const { providerSmokeCommand } = require('../src/commands/provider-smoke');
 
 describe('provider-smoke command', () => {
   it('returns a successful stub smoke result from governance config', async () => {

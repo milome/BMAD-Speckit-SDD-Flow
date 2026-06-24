@@ -36,6 +36,6 @@ describe('training-ready sft docs contract', () => {
     expect(sourceReference).toContain('packages/scoring/analytics/exporters/openai-chat.ts');
     expect(sourceReference).toContain('packages/scoring/analytics/exporters/hf-conversational.ts');
     expect(sourceReference).toContain('packages/scoring/analytics/exporters/hf-tool-calling.ts');
-    expect(sourceReference).toContain('packages/bmad-speckit/src/runtime-client.js');
+    expect(sourceReference).toContain('packages/bmad-speckit/src/runtime-client.ts');
   });
 });

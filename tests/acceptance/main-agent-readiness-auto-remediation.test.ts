@@ -8,7 +8,7 @@ import {
   resolveMainAgentOrchestrationSurface,
   runMainAgentReadinessAutoRemediation,
   runMainAgentAutomaticLoop,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
 import type { ResolvedRuntimeContext } from '../../scripts/resolve-active-requirement';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';

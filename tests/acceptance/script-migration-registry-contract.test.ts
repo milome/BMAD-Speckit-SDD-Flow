@@ -159,7 +159,7 @@ describe('script migration registry contract', () => {
     expect(wave2Entry.deletionAllowed).toBe(false);
     expect(wave2Entry.deletionApprovalRef).toBeNull();
     expect(wave2Entry.migrationBlockers).toContain('package_runtime_source_authority_incomplete');
-    expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/src/main-agent/index.js');
+    expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/src/main-agent/index.ts');
     expect(wave2Entry.targetPaths).toContain('packages/bmad-speckit/dist/main-agent/index.js');
   });
 
@@ -244,7 +244,7 @@ describe('script migration registry contract', () => {
   it('rejects validated package runtime entries backed only by report-shell actions', () => {
     const registry = readRegistry();
     const entry = findEntryById(registry, 'analytics-sft-extract-ts');
-    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js'];
+    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts'];
     forcePassed(entry);
     const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
     writeYaml(fixturePath, registry);
@@ -259,7 +259,7 @@ describe('script migration registry contract', () => {
     const registry = readRegistry();
     const entry = findEntryById(registry, 'architecture-confirmation-hash-recipe-ts');
     entry.targetPaths = [
-      'packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js',
+      'packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts',
     ];
     forcePassed(entry);
     const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
@@ -343,7 +343,7 @@ describe('script migration registry contract', () => {
   it('rejects validated script migrations whose package source equivalent is too small', () => {
     const registry = readRegistry();
     const entry = findEntryById(registry, 'main-agent-release-gate');
-    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/actions/release-gate.js'];
+    entry.targetPaths = ['packages/bmad-speckit/src/main-agent/actions/release-gate.ts'];
     forcePassed(entry);
     const fixturePath = path.join(tempDir(), 'script-migration-registry.yaml');
     writeYaml(fixturePath, registry);
@@ -413,7 +413,7 @@ describe('script migration registry contract', () => {
           originalClassBeforeMigration: 'fixture_conflict',
           migrationStrategy: 'package_runtime_module',
           migrationStatus: 'planned',
-          targetPaths: ['packages/bmad-speckit/src/conflicting-main-agent/index.js'],
+          targetPaths: ['packages/bmad-speckit/src/conflicting-main-agent/index.ts'],
           publicCommandsBeforeMigration: [],
           publicCommandsAfterMigration: [],
           callerSwitchStatus: 'pending',

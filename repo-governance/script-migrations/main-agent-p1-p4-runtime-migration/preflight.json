@@ -10,13 +10,13 @@
       "exitCode": 0,
       "stdoutLines": [
         "## dev...origin/dev",
-        " M packages/bmad-speckit/src/services/platform-skill-frontmatter.js",
+        " M packages/bmad-speckit/src/services/platform-skill-frontmatter.ts",
         " M repo-governance/script-migration-registry.yaml",
         "?? packages/bmad-speckit/tests/platform-skill-frontmatter.test.js",
         "?? repo-governance/script-migrations/main-agent-runtime-migration-wave-3.5/registry-evidence.json"
       ],
       "unrelatedDirtyPathsPreserved": [
-        "packages/bmad-speckit/src/services/platform-skill-frontmatter.js",
+        "packages/bmad-speckit/src/services/platform-skill-frontmatter.ts",
         "packages/bmad-speckit/tests/platform-skill-frontmatter.test.js"
       ],
       "goalPreExistingDirtyPathsPreserved": [

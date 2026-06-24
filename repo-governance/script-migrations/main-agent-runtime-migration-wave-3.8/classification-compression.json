@@ -22,9 +22,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent adaptive-intake-governance-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -55,9 +55,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent adaptive-intake-proof-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -88,9 +88,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent ai-tdd-contract-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -148,9 +148,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent audit-stage-routing",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts",
         "packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -208,9 +208,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent auditor-post-actions",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts",
         "packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -241,9 +241,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent auditor-spec",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts",
         "packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -274,9 +274,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent bmad-runtime-worker",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts",
         "packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -361,9 +361,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent e2e-dual-host-journey-runner",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -394,9 +394,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent e2e-host-matrix-journey-runner",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -427,9 +427,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent final-closeout-evidence-runner",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -487,9 +487,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent governance-packet-dispatch-worker",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts",
         "packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -547,9 +547,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent print-resolved-audit-prompt",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts",
         "packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -580,9 +580,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent render-audit-block-cli",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts",
         "packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -640,9 +640,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent ingest-implementation-evidence",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -727,9 +727,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent per-must-closure-evidence-index",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts",
         "packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -760,9 +760,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent pre-rerun-anti-false-positive-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -955,9 +955,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent strict-closeout-proof-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1042,9 +1042,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent target-artifact-realization-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1075,9 +1075,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent trace-040-evidence-packet-generator",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts",
         "packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1108,9 +1108,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent update-runtime-audit-index",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts",
         "packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1141,9 +1141,9 @@
       "directCallerEvidence": "direct CLI entrypoint or root package command was detected during Wave 3.8 classification scan",
       "consumerReachability": "covered by bmad-speckit main-agent verify-cursor-audit-granularity",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts",
         "packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],

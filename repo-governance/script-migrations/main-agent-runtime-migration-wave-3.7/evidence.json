@@ -56,9 +56,9 @@
       "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
       "actionSlug": "initialize-six-model-requirement-confirmation",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+        "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.ts",
         "packages/bmad-speckit/dist/main-agent/actions/initialize-six-model-requirement-confirmation.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -118,9 +118,9 @@
       "originalPath": "scripts/reconfirmation-runtime.ts",
       "actionSlug": "reconfirmation-runtime",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js",
+        "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/actions/reconfirmation-runtime.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -180,9 +180,9 @@
       "originalPath": "scripts/requirement-record-control-store.ts",
       "actionSlug": "requirement-record-control-store",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js",
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.ts",
         "packages/bmad-speckit/dist/main-agent/actions/requirement-record-control-store.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -242,9 +242,9 @@
       "originalPath": "scripts/requirement-record-live-schema-gate.ts",
       "actionSlug": "requirement-record-live-schema-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/requirement-record-live-schema-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -304,9 +304,9 @@
       "originalPath": "scripts/requirement-record-schema-evolution.ts",
       "actionSlug": "requirement-record-schema-evolution",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js",
+        "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.ts",
         "packages/bmad-speckit/dist/main-agent/actions/requirement-record-schema-evolution.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -366,9 +366,9 @@
       "originalPath": "scripts/resolve-active-requirement.ts",
       "actionSlug": "resolve-active-requirement",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js",
+        "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.ts",
         "packages/bmad-speckit/dist/main-agent/actions/resolve-active-requirement.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -428,9 +428,9 @@
       "originalPath": "scripts/runtime-scoring-data-path.ts",
       "actionSlug": "runtime-scoring-data-path",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js",
+        "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.ts",
         "packages/bmad-speckit/dist/main-agent/actions/runtime-scoring-data-path.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -490,9 +490,9 @@
       "originalPath": "scripts/six-model-runtime-decision.ts",
       "actionSlug": "six-model-runtime-decision",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js",
+        "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.ts",
         "packages/bmad-speckit/dist/main-agent/actions/six-model-runtime-decision.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],

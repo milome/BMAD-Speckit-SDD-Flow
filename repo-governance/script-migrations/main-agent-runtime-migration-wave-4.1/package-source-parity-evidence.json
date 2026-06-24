@@ -1650,10 +1650,10 @@
       "migrationStrategy": "compatibility_alias",
       "matrixOwnerTaskId": "G006",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js"
@@ -1682,7 +1682,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/bmad-speckit-cli.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts"
         ],
         "originalBytes": 1151,
         "originalLoc": 37,
@@ -2298,10 +2298,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
@@ -2330,7 +2330,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/cleanup-packed-bmad.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
         ],
         "originalBytes": 1976,
         "originalLoc": 68,
@@ -2460,10 +2460,10 @@
       "migrationStrategy": "repo_internal_reclassify",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js"
@@ -2492,7 +2492,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/compare-bmad-help-upstream.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts"
         ],
         "originalBytes": 7438,
         "originalLoc": 217,
@@ -3837,10 +3837,10 @@
       "migrationStrategy": "repo_internal_reclassify",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
@@ -3869,7 +3869,7 @@
         "status": "passed_within_strict_threshold",
         "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts"
         ],
         "originalBytes": 5286,
         "originalLoc": 168,
@@ -4485,10 +4485,10 @@
       "migrationStrategy": "repo_internal_reclassify",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/extract-npm-pack-json.js"
@@ -4517,7 +4517,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/extract-npm-pack-json.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts"
         ],
         "originalBytes": 822,
         "originalLoc": 35,
@@ -4809,10 +4809,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
@@ -4841,7 +4841,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/generate-codex-agents-from-claude.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
         ],
         "originalBytes": 18116,
         "originalLoc": 408,
@@ -8130,10 +8130,10 @@
       "migrationStrategy": "public_cli_de_surface",
       "matrixOwnerTaskId": "G005",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js"
@@ -8162,7 +8162,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/init-to-root.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts"
         ],
         "originalBytes": 51273,
         "originalLoc": 1291,
@@ -11696,10 +11696,10 @@
       "migrationStrategy": "repo_internal_reclassify",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js"
@@ -11728,7 +11728,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/normalize-pack-manifests.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts"
         ],
         "originalBytes": 6079,
         "originalLoc": 204,
@@ -12587,10 +12587,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js"
@@ -12619,7 +12619,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/prepublish-check.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
         ],
         "originalBytes": 17157,
         "originalLoc": 513,
@@ -13721,10 +13721,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js"
@@ -13753,7 +13753,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/real-development-tick-worker.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
         ],
         "originalBytes": 17418,
         "originalLoc": 511,
@@ -13964,10 +13964,10 @@
       "migrationStrategy": "repo_internal_reclassify",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
@@ -13996,7 +13996,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts"
         ],
         "originalBytes": 3215,
         "originalLoc": 96,
@@ -15017,10 +15017,10 @@
       "migrationStrategy": "deprecated_no_migration",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
@@ -15049,7 +15049,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/run-ci-release-gate-fixture.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts"
         ],
         "originalBytes": 4273,
         "originalLoc": 152,
@@ -15098,10 +15098,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
@@ -15130,7 +15130,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/run-confirmed-final-required-commands.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
         ],
         "originalBytes": 722,
         "originalLoc": 25,
@@ -15179,10 +15179,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
@@ -15211,7 +15211,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/run-confirmed-trace-slice.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
         ],
         "originalBytes": 17000,
         "originalLoc": 458,
@@ -18743,10 +18743,10 @@
       "migrationStrategy": "package_runtime_module",
       "matrixOwnerTaskId": "G004",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
@@ -18775,7 +18775,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/verify-hooks-no-ts-node.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts"
         ],
         "originalBytes": 4026,
         "originalLoc": 172,
@@ -18986,10 +18986,10 @@
       "migrationStrategy": "repo_internal_reclassify",
       "matrixOwnerTaskId": "G008",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
@@ -19018,7 +19018,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/verify-speckit-mirror-sync.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts"
         ],
         "originalBytes": 869,
         "originalLoc": 32,
@@ -19391,10 +19391,10 @@
       "migrationStrategy": "durable_helper_copy",
       "matrixOwnerTaskId": "G007",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js"
@@ -19423,7 +19423,7 @@
         "status": "passed_within_strict_threshold_pending_behavior_matrix",
         "originalPath": "scripts/write-runtime-registry.js",
         "packageImplementationSet": [
-          "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
         ],
         "originalBytes": 3113,
         "originalLoc": 110,

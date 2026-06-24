@@ -395,28 +395,28 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/check.js",
+            "path": "packages/bmad-speckit/src/commands/check.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/constants/ai-registry-builtin.js",
+            "path": "packages/bmad-speckit/src/constants/ai-registry-builtin.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/services/install-surface-manifest.js",
+            "path": "packages/bmad-speckit/src/services/install-surface-manifest.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/services/sync-service.js",
+            "path": "packages/bmad-speckit/src/services/sync-service.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -653,13 +653,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -726,13 +726,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -799,13 +799,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -1259,10 +1259,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js"
+          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts"
         ]
       },
       "registryHistory": [
@@ -1367,10 +1367,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js"
+          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts"
         ]
       },
       "registryHistory": [
@@ -1424,7 +1424,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/architecture-drift-check.js"
+          "packages/bmad-speckit/src/commands/architecture-drift-check.ts"
         ]
       },
       "registryHistory": [
@@ -1481,10 +1481,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js"
+          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts"
         ]
       },
       "registryHistory": [
@@ -1631,13 +1631,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+          "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts",
           "packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -1746,13 +1746,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+          "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts",
           "packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -1826,13 +1826,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+          "packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts",
           "packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -1890,10 +1890,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/bmad-config.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/bmad-config.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/bmad-config.js"
+          "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts"
         ]
       },
       "registryHistory": [
@@ -2097,10 +2097,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts"
         ]
       },
       "registryHistory": [
@@ -2149,10 +2149,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts"
         ]
       },
       "registryHistory": [
@@ -2209,13 +2209,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+          "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts",
           "packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -2384,7 +2384,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
         ]
       },
@@ -2474,10 +2474,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-state.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts"
         ]
       },
       "registryHistory": [
@@ -2562,10 +2562,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ]
       },
       "registryHistory": [
@@ -2670,10 +2670,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ]
       },
       "registryHistory": [
@@ -2738,10 +2738,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
         ]
       },
       "registryHistory": [
@@ -2916,10 +2916,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
         ]
       },
       "registryHistory": [
@@ -2996,7 +2996,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/check-score.js"
+          "packages/bmad-speckit/src/commands/check-score.ts"
         ]
       },
       "registryHistory": [
@@ -3029,7 +3029,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/check-score.js",
+            "path": "packages/bmad-speckit/src/commands/check-score.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -3160,10 +3160,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js"
+          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts"
         ]
       },
       "registryHistory": [
@@ -3188,7 +3188,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -3264,7 +3264,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/coach-diagnose.js"
+          "packages/bmad-speckit/src/commands/coach-diagnose.ts"
         ]
       },
       "registryHistory": [
@@ -3329,7 +3329,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/coach.js",
+            "path": "packages/bmad-speckit/src/commands/coach.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -3751,10 +3751,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js"
+          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts"
         ]
       },
       "registryHistory": [
@@ -3803,10 +3803,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js"
+          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts"
         ]
       },
       "registryHistory": [
@@ -3863,10 +3863,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js"
+          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts"
         ]
       },
       "registryHistory": [
@@ -4187,10 +4187,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js"
+          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts"
         ]
       },
       "registryHistory": [
@@ -4223,7 +4223,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/dashboard.js",
+            "path": "packages/bmad-speckit/src/commands/dashboard.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -4565,7 +4565,7 @@
           "missing_package_source_parity_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js"
+          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts"
         ]
       },
       "registryHistory": [
@@ -4604,7 +4604,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js",
+            "path": "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -4726,7 +4726,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+          "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts",
           "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
         ]
       },
@@ -4816,13 +4816,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+          "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts",
           "packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -4889,13 +4889,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+          "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts",
           "packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -4980,7 +4980,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+          "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
         ]
       },
@@ -5075,7 +5075,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/emit-runtime-policy.js"
+          "packages/bmad-speckit/src/commands/emit-runtime-policy.ts"
         ]
       },
       "registryHistory": [
@@ -5400,10 +5400,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js"
+          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts"
         ]
       },
       "registryHistory": [
@@ -5471,7 +5471,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/eval-question-generate.js"
+          "packages/bmad-speckit/src/commands/eval-question-generate.ts"
         ]
       },
       "registryHistory": [
@@ -5715,10 +5715,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js"
+          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts"
         ]
       },
       "registryHistory": [
@@ -5767,10 +5767,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts"
         ]
       },
       "registryHistory": [
@@ -5819,10 +5819,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts"
         ]
       },
       "registryHistory": [
@@ -5871,10 +5871,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts"
         ]
       },
       "registryHistory": [
@@ -5981,10 +5981,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts"
         ]
       },
       "registryHistory": [
@@ -6041,10 +6041,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts"
         ]
       },
       "registryHistory": [
@@ -6101,13 +6101,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+          "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts",
           "packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -6174,10 +6174,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js"
+          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts"
         ]
       },
       "registryHistory": [
@@ -6194,7 +6194,7 @@
         "count": 3,
         "direct": [
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -6241,10 +6241,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts"
         ]
       },
       "registryHistory": [
@@ -6317,10 +6317,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts"
         ]
       },
       "registryHistory": [
@@ -6435,13 +6435,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+          "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts",
           "packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -6516,11 +6516,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js",
+          "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
         ]
       },
@@ -6578,11 +6578,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js",
+          "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
         ]
       },
@@ -6648,10 +6648,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts"
         ]
       },
       "registryHistory": [
@@ -6716,11 +6716,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js",
+          "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
         ]
       },
@@ -6778,11 +6778,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js",
+          "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
         ]
       },
@@ -6848,11 +6848,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js",
+          "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
         ]
       },
@@ -6965,10 +6965,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts"
         ]
       },
       "registryHistory": [
@@ -7025,10 +7025,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts"
         ]
       },
       "registryHistory": [
@@ -7085,10 +7085,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js"
+          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts"
         ]
       },
       "registryHistory": [
@@ -7140,7 +7140,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
+          "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
           "packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js"
         ]
       },
@@ -7230,11 +7230,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js",
+          "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
         ]
       },
@@ -7284,10 +7284,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts"
         ]
       },
       "registryHistory": [
@@ -7394,10 +7394,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts"
         ]
       },
       "registryHistory": [
@@ -7453,10 +7453,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts"
         ]
       },
       "registryHistory": [
@@ -7563,10 +7563,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts"
         ]
       },
       "registryHistory": [
@@ -7645,11 +7645,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/load-manifest.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js",
+          "packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
         ]
       },
@@ -7699,10 +7699,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts"
         ]
       },
       "registryHistory": [
@@ -7759,11 +7759,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js",
+          "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
         ]
       },
@@ -7929,10 +7929,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts"
         ]
       },
       "registryHistory": [
@@ -7981,13 +7981,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+          "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts",
           "packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -8054,10 +8054,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts"
         ]
       },
       "registryHistory": [
@@ -8106,13 +8106,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+          "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts",
           "packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -8171,10 +8171,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts"
         ]
       },
       "registryHistory": [
@@ -8223,10 +8223,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js"
+          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts"
         ]
       },
       "registryHistory": [
@@ -8363,10 +8363,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts"
         ]
       },
       "registryHistory": [
@@ -8423,10 +8423,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts"
         ]
       },
       "registryHistory": [
@@ -8507,10 +8507,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts"
         ]
       },
       "registryHistory": [
@@ -8559,10 +8559,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts"
         ]
       },
       "registryHistory": [
@@ -8619,10 +8619,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts"
         ]
       },
       "registryHistory": [
@@ -8671,10 +8671,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js"
+          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts"
         ]
       },
       "registryHistory": [
@@ -8739,13 +8739,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+          "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts",
           "packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -8841,7 +8841,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/init-to-root.js"
+          "packages/bmad-speckit/src/commands/init-to-root.ts"
         ]
       },
       "registryHistory": [
@@ -9008,7 +9008,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/services/sync-service.js",
+            "path": "packages/bmad-speckit/src/services/sync-service.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -9333,13 +9333,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/initialize-six-model-requirement-confirmation.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js",
+          "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.ts",
           "packages/bmad-speckit/dist/main-agent/actions/initialize-six-model-requirement-confirmation.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -9390,13 +9390,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/live-smoke-main-agent-runtime.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js",
+          "packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.ts",
           "packages/bmad-speckit/dist/main-agent/actions/live-smoke-main-agent-runtime.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -9468,7 +9468,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.js"
+          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.ts"
         ]
       },
       "registryHistory": [
@@ -9533,10 +9533,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js"
+          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts"
         ]
       },
       "registryHistory": [
@@ -9609,13 +9609,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/ai-tdd-closeout-remediation-adapter.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js",
+          "packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.ts",
           "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-closeout-remediation-adapter.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -9698,13 +9698,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/audit-review-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/audit-review-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/audit-review-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/audit-review-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -9779,13 +9779,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/bmad-artifact-hardcut.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js",
+          "packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.ts",
           "packages/bmad-speckit/dist/main-agent/actions/bmad-artifact-hardcut.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -9959,13 +9959,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+          "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.ts",
           "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -10087,13 +10087,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+          "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.ts",
           "packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -10254,13 +10254,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+          "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.ts",
           "packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -10358,13 +10358,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/control-plane-isolation-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/control-plane-isolation-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -10439,13 +10439,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/data-governance-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/data-governance-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/data-governance-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/data-governance-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -10520,13 +10520,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/dataset-release-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/dataset-release-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -10609,13 +10609,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/decision-field-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/decision-field-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/decision-field-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/decision-field-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/decision-field-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/decision-field-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -10690,13 +10690,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -10858,13 +10858,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+          "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.ts",
           "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -10981,9 +10981,9 @@
           "package_source_parity_size_delta_blocked"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/delivery-truth-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -11120,13 +11120,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/development-journey-matrix.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js",
+          "packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.ts",
           "packages/bmad-speckit/dist/main-agent/actions/development-journey-matrix.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -11209,13 +11209,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+          "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.ts",
           "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -11329,13 +11329,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/entryflow-traceability-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/entryflow-traceability-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -11410,13 +11410,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/execution-closure-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/execution-closure-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -11491,13 +11491,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/functional-resume-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/functional-resume-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/functional-resume-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/functional-resume-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -11572,13 +11572,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governed-data-products.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/governed-data-products.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/governed-data-products.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governed-data-products.js",
+          "packages/bmad-speckit/src/main-agent/actions/governed-data-products.ts",
           "packages/bmad-speckit/dist/main-agent/actions/governed-data-products.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -11814,13 +11814,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -11993,12 +11993,12 @@
           "package_runtime_source_authority_incomplete"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/index.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
-          "packages/bmad-speckit/src/main-agent/actions/inspect.js",
-          "packages/bmad-speckit/src/main-agent/actions/confirm-scope.js",
-          "packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js",
-          "packages/bmad-speckit/src/main-agent/actions/run-loop.js",
+          "packages/bmad-speckit/src/main-agent/index.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
+          "packages/bmad-speckit/src/main-agent/actions/inspect.ts",
+          "packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts",
+          "packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts",
+          "packages/bmad-speckit/src/main-agent/actions/run-loop.ts",
           "packages/bmad-speckit/dist/main-agent/index.js",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/dist/main-agent/actions/inspect.js",
@@ -12344,13 +12344,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/production-loop-ready-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/production-loop-ready-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -12437,9 +12437,9 @@
           "package_source_parity_size_delta_blocked"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/quality-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/quality-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/quality-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -12581,9 +12581,9 @@
           "package_source_parity_size_delta_blocked"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/release-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/release-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/release-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -12736,13 +12736,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/runtime-policy-snapshot-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/runtime-policy-snapshot-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -12825,13 +12825,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/scoring-gates-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/scoring-gates-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -12914,13 +12914,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/soak-runner.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+          "packages/bmad-speckit/src/main-agent/actions/soak-runner.ts",
           "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -13033,13 +13033,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/trace-status-policy-check.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.js",
+          "packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.ts",
           "packages/bmad-speckit/dist/main-agent/actions/trace-status-policy-check.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -13114,13 +13114,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/unified-ingress.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+          "packages/bmad-speckit/src/main-agent/actions/unified-ingress.ts",
           "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js"
         ]
       },
@@ -13242,10 +13242,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
         ]
       },
       "registryHistory": [
@@ -13317,10 +13317,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
         ]
       },
       "registryHistory": [
@@ -13385,10 +13385,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
         ]
       },
       "registryHistory": [
@@ -13453,10 +13453,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
         ]
       },
       "registryHistory": [
@@ -13521,10 +13521,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js"
+          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts"
         ]
       },
       "registryHistory": [
@@ -13581,10 +13581,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js"
+          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts"
         ]
       },
       "registryHistory": [
@@ -13633,11 +13633,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js",
+          "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
         ]
       },
@@ -13695,10 +13695,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/monitor-push.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js"
+          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts"
         ]
       },
       "registryHistory": [
@@ -13843,13 +13843,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/orchestration-dispatch-contract.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js",
+          "packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.ts",
           "packages/bmad-speckit/dist/main-agent/actions/orchestration-dispatch-contract.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -13956,13 +13956,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/orchestration-governance-contract.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js",
+          "packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.ts",
           "packages/bmad-speckit/dist/main-agent/actions/orchestration-governance-contract.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -14021,13 +14021,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/orchestration-state.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/orchestration-state.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/orchestration-state.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/orchestration-state.js",
+          "packages/bmad-speckit/src/main-agent/actions/orchestration-state.ts",
           "packages/bmad-speckit/dist/main-agent/actions/orchestration-state.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -14097,7 +14097,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+          "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts",
           "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
         ]
       },
@@ -14211,10 +14211,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js"
+          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts"
         ]
       },
       "registryHistory": [
@@ -14340,7 +14340,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/score.js",
+            "path": "packages/bmad-speckit/src/commands/score.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -14876,11 +14876,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js",
+          "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
         ]
       },
@@ -14946,13 +14946,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+          "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts",
           "packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -15003,13 +15003,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -15068,10 +15068,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js"
+          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts"
         ]
       },
       "registryHistory": [
@@ -15152,7 +15152,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -15247,11 +15247,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js",
+          "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
         ]
       },
@@ -15309,11 +15309,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js",
+          "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
         ]
       },
@@ -15363,11 +15363,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js",
+          "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
         ]
       },
@@ -15420,7 +15420,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+          "packages/bmad-speckit/src/main-agent/helpers/query-validate.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
         ]
       },
@@ -16475,10 +16475,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js"
+          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts"
         ]
       },
       "registryHistory": [
@@ -16495,7 +16495,7 @@
         "count": 3,
         "direct": [
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -16542,13 +16542,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/reconfirmation-runtime.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js",
+          "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.ts",
           "packages/bmad-speckit/dist/main-agent/actions/reconfirmation-runtime.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -16599,13 +16599,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/record-main-agent-inspect-readiness-closure.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js",
+          "packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.ts",
           "packages/bmad-speckit/dist/main-agent/actions/record-main-agent-inspect-readiness-closure.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -16714,13 +16714,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/requirement-record-control-store.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js",
+          "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.ts",
           "packages/bmad-speckit/dist/main-agent/actions/requirement-record-control-store.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -16795,10 +16795,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js"
+          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts"
         ]
       },
       "registryHistory": [
@@ -16863,13 +16863,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/requirement-record-live-schema-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/requirement-record-live-schema-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -16920,13 +16920,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/requirement-record-schema-evolution.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js",
+          "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.ts",
           "packages/bmad-speckit/dist/main-agent/actions/requirement-record-schema-evolution.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -16993,13 +16993,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/resolve-active-requirement.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js",
+          "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.ts",
           "packages/bmad-speckit/dist/main-agent/actions/resolve-active-requirement.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -17388,10 +17388,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js"
+          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts"
         ]
       },
       "registryHistory": [
@@ -17856,10 +17856,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts"
         ]
       },
       "registryHistory": [
@@ -17876,7 +17876,7 @@
         "count": 5,
         "direct": [
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -17938,10 +17938,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts"
         ]
       },
       "registryHistory": [
@@ -17958,7 +17958,7 @@
         "count": 2,
         "direct": [
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -18063,10 +18063,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts"
         ]
       },
       "registryHistory": [
@@ -18154,10 +18154,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts"
         ]
       },
       "registryHistory": [
@@ -18473,10 +18473,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts"
         ]
       },
       "registryHistory": [
@@ -18547,10 +18547,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts"
         ]
       },
       "registryHistory": [
@@ -18621,10 +18621,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts"
         ]
       },
       "registryHistory": [
@@ -18696,10 +18696,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-governance.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts"
         ]
       },
       "registryHistory": [
@@ -18827,13 +18827,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/runtime-scoring-data-path.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js",
+          "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.ts",
           "packages/bmad-speckit/dist/main-agent/actions/runtime-scoring-data-path.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -18887,7 +18887,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+          "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
         ]
       },
@@ -18998,7 +18998,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/scores.js",
+            "path": "packages/bmad-speckit/src/commands/scores.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -19133,10 +19133,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts"
         ]
       },
       "registryHistory": [
@@ -19190,7 +19190,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/setup.js"
+          "packages/bmad-speckit/src/commands/setup.ts"
         ]
       },
       "registryHistory": [
@@ -19391,7 +19391,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/setup.js"
+          "packages/bmad-speckit/src/commands/setup.ts"
         ]
       },
       "registryHistory": [
@@ -19523,10 +19523,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/sft-extract.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/sft-extract.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/sft-extract.js"
+          "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts"
         ]
       },
       "registryHistory": [
@@ -19591,7 +19591,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/sft-extract.js",
+            "path": "packages/bmad-speckit/src/commands/sft-extract.ts",
             "kind": "package-source",
             "matchKinds": [
               "posix-path",
@@ -19745,13 +19745,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/six-model-runtime-decision.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js",
+          "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.ts",
           "packages/bmad-speckit/dist/main-agent/actions/six-model-runtime-decision.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -19802,11 +19802,11 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js",
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts",
           "descriptor_only_durable_helper:packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js",
+          "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
         ]
       },
@@ -19856,13 +19856,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/skill-orchestration-audit.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.js",
+          "packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.ts",
           "packages/bmad-speckit/dist/main-agent/actions/skill-orchestration-audit.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -19913,10 +19913,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js"
+          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts"
         ]
       },
       "registryHistory": [
@@ -19970,7 +19970,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/speckit-cli.js"
+          "packages/bmad-speckit/src/commands/speckit-cli.ts"
         ]
       },
       "registryHistory": [
@@ -20043,10 +20043,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js"
+          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts"
         ]
       },
       "registryHistory": [
@@ -20103,10 +20103,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js"
+          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts"
         ]
       },
       "registryHistory": [
@@ -20268,28 +20268,28 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/dashboard-start.js",
+            "path": "packages/bmad-speckit/src/commands/dashboard-start.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/dashboard-status.js",
+            "path": "packages/bmad-speckit/src/commands/dashboard-status.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/dashboard-stop.js",
+            "path": "packages/bmad-speckit/src/commands/dashboard-stop.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/commands/runtime-mcp.js",
+            "path": "packages/bmad-speckit/src/commands/runtime-mcp.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -20366,13 +20366,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -20447,10 +20447,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js"
+          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts"
         ]
       },
       "registryHistory": [
@@ -20507,10 +20507,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts"
         ]
       },
       "registryHistory": [
@@ -20625,10 +20625,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts"
         ]
       },
       "registryHistory": [
@@ -20680,7 +20680,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js"
         ]
       },
@@ -20770,13 +20770,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+          "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts",
           "packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -20951,13 +20951,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+          "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts",
           "packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -21008,10 +21008,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js"
+          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts"
         ]
       },
       "registryHistory": [
@@ -21060,13 +21060,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+          "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts",
           "packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -21132,10 +21132,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js"
+          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts"
         ]
       },
       "registryHistory": [
@@ -21184,10 +21184,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js"
+          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts"
         ]
       },
       "registryHistory": [
@@ -21244,10 +21244,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js"
+          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts"
         ]
       },
       "registryHistory": [
@@ -21325,7 +21325,7 @@
         ],
         "targetPaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.js"
+          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.ts"
         ]
       },
       "registryHistory": [
@@ -21385,7 +21385,7 @@
           "missing_matching_passing_functional_evidence"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+          "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts",
           "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
         ]
       },
@@ -21475,13 +21475,13 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts",
           "report_only_package_runtime_action:packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+          "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts",
           "packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js",
+          "packages/bmad-speckit/src/main-agent/runtime.ts",
           "packages/bmad-speckit/dist/main-agent/runtime.js",
           "packages/bmad-speckit/bin/bmad-speckit.js"
         ]
@@ -21555,10 +21555,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js"
+          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts"
         ]
       },
       "registryHistory": [
@@ -21860,10 +21860,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js"
+          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts"
         ]
       },
       "registryHistory": [
@@ -21956,14 +21956,14 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/services/install-surface-manifest.js",
+            "path": "packages/bmad-speckit/src/services/install-surface-manifest.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/services/sync-service.js",
+            "path": "packages/bmad-speckit/src/services/sync-service.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"
@@ -22103,10 +22103,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
         ]
       },
       "registryHistory": [
@@ -22163,10 +22163,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+          "report_only_package_runtime_action:packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
         ]
       },
       "registryHistory": [
@@ -22222,10 +22222,10 @@
         "migrationStatus": "blocked",
         "validationStatus": "partial",
         "blockers": [
-          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js"
+          "descriptor_only_durable_helper:packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts"
         ],
         "targetPaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js"
+          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts"
         ]
       },
       "registryHistory": [
@@ -22250,7 +22250,7 @@
             ]
           },
           {
-            "path": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js",
+            "path": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts",
             "kind": "package-source",
             "matchKinds": [
               "basename"

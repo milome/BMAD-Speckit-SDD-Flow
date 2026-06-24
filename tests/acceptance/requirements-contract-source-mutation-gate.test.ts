@@ -53,7 +53,7 @@ describe('requirements contract source mutation gate', () => {
       const decision = readJson(paths.sourceMutationDecision);
       const draft = readJson(paths.draftImplementationConfirmation).implementationConfirmation;
 
-      expect(issueCodes(result)).toContain('critical_auditor_round_provider_missing');
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(decision.finalDecision).toBe('block_source_materialization');
       expect(decision.auditEvidenceDecision).toBe('block');
       expect(decision.sourceMutationPerformed).toBe(false);

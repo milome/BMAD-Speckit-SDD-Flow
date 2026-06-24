@@ -2,28 +2,28 @@
 
 ## Migrated
 
-- scripts/live-smoke-main-agent-runtime.ts -> packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js
-- scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts -> packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js
-- scripts/main-agent-audit-review-gate.ts -> packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js
-- scripts/main-agent-bmad-artifact-hardcut.ts -> packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js
-- scripts/main-agent-control-plane-isolation-check.ts -> packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js
-- scripts/main-agent-data-governance-gate.ts -> packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js
-- scripts/main-agent-dataset-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js
-- scripts/main-agent-decision-field-check.ts -> packages/bmad-speckit/src/main-agent/actions/decision-field-check.js
-- scripts/main-agent-development-journey-matrix.ts -> packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js
-- scripts/main-agent-entryflow-traceability-check.ts -> packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js
-- scripts/main-agent-execution-closure-gate.ts -> packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js
-- scripts/main-agent-functional-resume-check.ts -> packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js
-- scripts/main-agent-governed-data-products.ts -> packages/bmad-speckit/src/main-agent/actions/governed-data-products.js
-- scripts/main-agent-production-loop-ready-check.ts -> packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js
-- scripts/main-agent-runtime-policy-snapshot-check.ts -> packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.js
-- scripts/main-agent-scoring-gates-check.ts -> packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.js
-- scripts/main-agent-trace-status-policy-check.ts -> packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.js
-- scripts/orchestration-dispatch-contract.ts -> packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js
-- scripts/orchestration-governance-contract.ts -> packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js
-- scripts/orchestration-state.ts -> packages/bmad-speckit/src/main-agent/actions/orchestration-state.js
-- scripts/record-main-agent-inspect-readiness-closure.ts -> packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js
-- scripts/skill-orchestration-audit.ts -> packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.js
+- scripts/live-smoke-main-agent-runtime.ts -> packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.ts
+- scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts -> packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.ts
+- scripts/main-agent-audit-review-gate.ts -> packages/bmad-speckit/src/main-agent/actions/audit-review-gate.ts
+- scripts/main-agent-bmad-artifact-hardcut.ts -> packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.ts
+- scripts/main-agent-control-plane-isolation-check.ts -> packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.ts
+- scripts/main-agent-data-governance-gate.ts -> packages/bmad-speckit/src/main-agent/actions/data-governance-gate.ts
+- scripts/main-agent-dataset-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.ts
+- scripts/main-agent-decision-field-check.ts -> packages/bmad-speckit/src/main-agent/actions/decision-field-check.ts
+- scripts/main-agent-development-journey-matrix.ts -> packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.ts
+- scripts/main-agent-entryflow-traceability-check.ts -> packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.ts
+- scripts/main-agent-execution-closure-gate.ts -> packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.ts
+- scripts/main-agent-functional-resume-check.ts -> packages/bmad-speckit/src/main-agent/actions/functional-resume-check.ts
+- scripts/main-agent-governed-data-products.ts -> packages/bmad-speckit/src/main-agent/actions/governed-data-products.ts
+- scripts/main-agent-production-loop-ready-check.ts -> packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.ts
+- scripts/main-agent-runtime-policy-snapshot-check.ts -> packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.ts
+- scripts/main-agent-scoring-gates-check.ts -> packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.ts
+- scripts/main-agent-trace-status-policy-check.ts -> packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.ts
+- scripts/orchestration-dispatch-contract.ts -> packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.ts
+- scripts/orchestration-governance-contract.ts -> packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.ts
+- scripts/orchestration-state.ts -> packages/bmad-speckit/src/main-agent/actions/orchestration-state.ts
+- scripts/record-main-agent-inspect-readiness-closure.ts -> packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.ts
+- scripts/skill-orchestration-audit.ts -> packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.ts
 
 ## Strategy
 

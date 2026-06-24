@@ -569,7 +569,7 @@
       "originalPath": "scripts/write-runtime-registry.js",
       "entryId": "write-runtime-registry-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
       "scenarioCoverageProof": {
@@ -606,7 +606,7 @@
           "scenarioId": "g007_write_runtime_registry_js_no_args",
           "originalEntryPoint": "scripts/write-runtime-registry.js",
           "originalEntryCommand": "node scripts/write-runtime-registry.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -669,7 +669,7 @@
                 "to": "scripts/write-runtime-registry.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts",
                 "to": "scripts/write-runtime-registry.js"
               },
               {

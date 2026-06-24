@@ -290,22 +290,22 @@ describe('main-agent dist build', () => {
       'src JS allowlist must not contain ignored or generated files outside git source control'
     );
     assert.equal(
-      allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js'),
+      allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts'),
       false,
       'native-goal-invoker source authority must be TypeScript only'
     );
     assert.equal(
-      allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-command.js'),
+      allowed.has('packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts'),
       false,
       'native-goal-command source authority must be TypeScript only'
     );
     assert.equal(
-      allowed.has('packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js'),
+      allowed.has('packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts'),
       false,
       'host-runtime-mode source authority must be TypeScript only'
     );
     assert.equal(
-      allowed.has('packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js'),
+      allowed.has('packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts'),
       false,
       'supervised-worker-runtime source authority must be TypeScript only'
     );

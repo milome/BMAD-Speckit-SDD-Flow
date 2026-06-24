@@ -613,12 +613,12 @@ Use this section to bind any domain-specific classifier, state machine, schema, 
 
 **Files:**
 - `scripts/main-agent-orchestration.ts`
-- `packages/bmad-speckit/src/main-agent/index.js`
-- `packages/bmad-speckit/src/main-agent/runtime.js`
-- `packages/bmad-speckit/src/main-agent/actions/inspect.js`
-- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.js`
-- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js`
-- `packages/bmad-speckit/src/main-agent/actions/run-loop.js`
+- `packages/bmad-speckit/src/main-agent/index.ts`
+- `packages/bmad-speckit/src/main-agent/runtime.ts`
+- `packages/bmad-speckit/src/main-agent/actions/inspect.ts`
+- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts`
+- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts`
+- `packages/bmad-speckit/src/main-agent/actions/run-loop.ts`
 - `packages/bmad-speckit/dist/main-agent/**`
 - `repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/migration-ledger.json`
 
@@ -645,7 +645,7 @@ Use this section to bind any domain-specific classifier, state machine, schema, 
 **Files:**
 - `packages/bmad-speckit/src/main-agent/actions/**`
 - `packages/bmad-speckit/src/main-agent/helpers/**`
-- `packages/bmad-speckit/src/main-agent/runtime.js`
+- `packages/bmad-speckit/src/main-agent/runtime.ts`
 - `packages/bmad-speckit/bin/bmad-speckit.js`
 - `repo-governance/script-migrations/main-agent-runtime-migration-wave-4.1/migration-ledger.json`
 

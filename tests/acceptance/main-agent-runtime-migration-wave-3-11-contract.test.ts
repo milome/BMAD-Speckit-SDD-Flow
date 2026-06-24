@@ -143,8 +143,8 @@ describe('main-agent runtime migration wave 3.11 contract', () => {
     expect(contract).toContain('G013: not applicable');
     expect(contract).toContain('writer-internal command specs');
     expect(contract).toContain('cmd-test-install-surface-regressions');
-    expect(contract).toContain('packages/bmad-speckit/src/commands/check.js');
-    expect(contract).toContain('packages/bmad-speckit/src/services/sync-service.js');
+    expect(contract).toContain('packages/bmad-speckit/src/commands/check.ts');
+    expect(contract).toContain('packages/bmad-speckit/src/services/sync-service.ts');
     expect(contract).toContain('--start-repair-round <roundId>');
     expect(contract).toContain('evidence-history/**');
     expect(contract).toContain('evidence-history/*.evidence.json');

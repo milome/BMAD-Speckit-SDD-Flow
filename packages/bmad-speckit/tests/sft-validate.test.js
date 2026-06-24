@@ -3,7 +3,7 @@ const assert = require('node:assert');
 
 let validateModule;
 try {
-  validateModule = require('../src/commands/sft-validate.js');
+  validateModule = require('../src/commands/sft-validate');
 } catch {
   validateModule = null;
 }

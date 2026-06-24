@@ -14,12 +14,12 @@
 
 ### 新增运行时入口
 
-[生产] packages/bmad-speckit/src/commands/dashboard-live.js
-[生产] packages/bmad-speckit/src/commands/runtime-mcp.js
-[生产] packages/bmad-speckit/src/commands/sft-preview.js
-[生产] packages/bmad-speckit/src/commands/sft-validate.js
-[生产] packages/bmad-speckit/src/commands/sft-bundle.js
-[生产] packages/bmad-speckit/src/runtime-client.js
+[生产] packages/bmad-speckit/src/commands/dashboard-live.ts
+[生产] packages/bmad-speckit/src/commands/runtime-mcp.ts
+[生产] packages/bmad-speckit/src/commands/sft-preview.ts
+[生产] packages/bmad-speckit/src/commands/sft-validate.ts
+[生产] packages/bmad-speckit/src/commands/sft-bundle.ts
+[生产] packages/bmad-speckit/src/runtime-client.ts
 
 ### 新增 dashboard shared core / live server / MCP
 
@@ -90,28 +90,28 @@
 ## packages
 
 [生产] packages/bmad-speckit/bin/bmad-speckit.js
-[生产] packages/bmad-speckit/src/commands/banner.js
-[生产] packages/bmad-speckit/src/commands/check.js
-[生产] packages/bmad-speckit/src/commands/config.js
-[生产] packages/bmad-speckit/src/commands/feedback.js
-[生产] packages/bmad-speckit/src/commands/init.js
-[生产] packages/bmad-speckit/src/commands/init-skeleton.js
-[生产] packages/bmad-speckit/src/commands/script-generator.js
-[生产] packages/bmad-speckit/src/commands/upgrade.js
-[生产] packages/bmad-speckit/src/commands/version.js
-[生产] packages/bmad-speckit/src/constants/ai-builtin.js
-[生产] packages/bmad-speckit/src/constants/ai-registry-builtin.js
-[生产] packages/bmad-speckit/src/constants/exit-codes.js
-[生产] packages/bmad-speckit/src/services/ai-registry.js
-[生产] packages/bmad-speckit/src/services/config-manager.js
-[生产] packages/bmad-speckit/src/services/skill-publisher.js
-[生产] packages/bmad-speckit/src/services/sync-service.js
-[生产] packages/bmad-speckit/src/services/template-fetcher.js
-[生产] packages/bmad-speckit/src/utils/file-encoding.js
-[生产] packages/bmad-speckit/src/utils/network-timeout.js
-[生产] packages/bmad-speckit/src/utils/path.js
-[生产] packages/bmad-speckit/src/utils/structure-validate.js
-[生产] packages/bmad-speckit/src/utils/tty.js
+[生产] packages/bmad-speckit/src/commands/banner.ts
+[生产] packages/bmad-speckit/src/commands/check.ts
+[生产] packages/bmad-speckit/src/commands/config.ts
+[生产] packages/bmad-speckit/src/commands/feedback.ts
+[生产] packages/bmad-speckit/src/commands/init.ts
+[生产] packages/bmad-speckit/src/commands/init-skeleton.ts
+[生产] packages/bmad-speckit/src/commands/script-generator.ts
+[生产] packages/bmad-speckit/src/commands/upgrade.ts
+[生产] packages/bmad-speckit/src/commands/version.ts
+[生产] packages/bmad-speckit/src/constants/ai-builtin.ts
+[生产] packages/bmad-speckit/src/constants/ai-registry-builtin.ts
+[生产] packages/bmad-speckit/src/constants/exit-codes.ts
+[生产] packages/bmad-speckit/src/services/ai-registry.ts
+[生产] packages/bmad-speckit/src/services/config-manager.ts
+[生产] packages/bmad-speckit/src/services/skill-publisher.ts
+[生产] packages/bmad-speckit/src/services/sync-service.ts
+[生产] packages/bmad-speckit/src/services/template-fetcher.ts
+[生产] packages/bmad-speckit/src/utils/file-encoding.ts
+[生产] packages/bmad-speckit/src/utils/network-timeout.ts
+[生产] packages/bmad-speckit/src/utils/path.ts
+[生产] packages/bmad-speckit/src/utils/structure-validate.ts
+[生产] packages/bmad-speckit/src/utils/tty.ts
 [测试] packages/bmad-speckit/tests/ai-registry.test.js
 [测试] packages/bmad-speckit/tests/ai-registry-builtin.test.js
 [测试] packages/bmad-speckit/tests/ai-registry-integration.test.js

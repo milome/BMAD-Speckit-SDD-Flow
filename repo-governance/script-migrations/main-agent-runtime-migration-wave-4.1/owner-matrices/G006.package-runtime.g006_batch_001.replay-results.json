@@ -15,7 +15,7 @@
       "originalPath": "scripts/bmad-speckit-cli.js",
       "entryId": "bmad-speckit-cli-js",
       "scenarioId": "g006_bmad_speckit_cli_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-speckit-cli.js",
       "originalReplay": {
         "exitCode": 1,
@@ -36,7 +36,7 @@
       "comparison": {
         "scenarioId": "g006_bmad_speckit_cli_js_no_args",
         "originalEntryPoint": "scripts/bmad-speckit-cli.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
         "stdoutMatches": true,
         "stderrMatches": false,
         "exitCodeMatches": true,

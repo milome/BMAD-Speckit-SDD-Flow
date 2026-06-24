@@ -52,7 +52,7 @@
       "entryId": "analytics-cluster-ts",
       "scenarioId": "g004_analytics_cluster_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 3,
@@ -90,7 +90,7 @@
       "entryId": "analytics-prompt-optimize-ts",
       "scenarioId": "g004_analytics_prompt_optimize_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 126,
@@ -128,7 +128,7 @@
       "entryId": "analytics-rule-suggest-ts",
       "scenarioId": "g004_analytics_rule_suggest_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 120,
@@ -166,7 +166,7 @@
       "entryId": "audit-scoring-convergence-policy",
       "scenarioId": "g004_audit_scoring_convergence_policy_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -204,7 +204,7 @@
       "entryId": "audit-triad-orchestrator",
       "scenarioId": "g004_audit_triad_orchestrator_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -242,7 +242,7 @@
       "entryId": "check-story-score-written",
       "scenarioId": "g004_check_story_score_written_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -279,8 +279,8 @@
       "originalPath": "scripts/compare-bmad-help-upstream.js",
       "entryId": "compare-bmad-help-upstream-js",
       "scenarioId": "g004_compare_bmad_help_upstream_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 17860,
@@ -300,7 +300,7 @@
       "comparison": {
         "scenarioId": "g004_compare_bmad_help_upstream_js_no_args",
         "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -318,7 +318,7 @@
       "entryId": "controlled-readiness-audit-bridge",
       "scenarioId": "g004_controlled_readiness_audit_bridge_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -356,7 +356,7 @@
       "entryId": "create-second-story",
       "scenarioId": "g004_create_second_story_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-second-story.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-second-story.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-second-story.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -394,7 +394,7 @@
       "entryId": "create-test-story-ts",
       "scenarioId": "g004_create_test_story_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-test-story.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-test-story.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-test-story.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 22,
@@ -432,7 +432,7 @@
       "entryId": "critical-auditor-profile",
       "scenarioId": "g004_critical_auditor_profile_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -470,7 +470,7 @@
       "entryId": "dashboard-projection-mapping-ts",
       "scenarioId": "g004_dashboard_projection_mapping_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-projection-mapping.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-projection-mapping.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-projection-mapping.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -584,7 +584,7 @@
       "entryId": "diagnose-bmad-state",
       "scenarioId": "g004_diagnose_bmad_state_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/diagnose-bmad-state.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/diagnose-bmad-state.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/diagnose-bmad-state.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 1402,
@@ -621,8 +621,8 @@
       "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
       "entryId": "ensure-governance-user-story-mapping-fixture-js",
       "scenarioId": "g004_ensure_governance_user_story_mapping_fixture_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 101,
@@ -642,7 +642,7 @@
       "comparison": {
         "scenarioId": "g004_ensure_governance_user_story_mapping_fixture_js_no_args",
         "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -660,7 +660,7 @@
       "entryId": "eval-question-generate",
       "scenarioId": "g004_eval_question_generate_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -697,8 +697,8 @@
       "originalPath": "scripts/extract-npm-pack-json.js",
       "entryId": "extract-npm-pack-json-js",
       "scenarioId": "g004_extract_npm_pack_json_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -718,7 +718,7 @@
       "comparison": {
         "scenarioId": "g004_extract_npm_pack_json_js_no_args",
         "originalEntryPoint": "scripts/extract-npm-pack-json.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -736,7 +736,7 @@
       "entryId": "governance-host-dispatch-adapter",
       "scenarioId": "g004_governance_host_dispatch_adapter_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -774,7 +774,7 @@
       "entryId": "host-runtime-mode",
       "scenarioId": "g004_host_runtime_mode_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -964,7 +964,7 @@
       "entryId": "resolve-audit-prompt-path",
       "scenarioId": "g004_i18n_resolve_audit_prompt_path_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1001,8 +1001,8 @@
       "originalPath": "scripts/normalize-pack-manifests.js",
       "entryId": "normalize-pack-manifests-js",
       "scenarioId": "g004_normalize_pack_manifests_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -1022,7 +1022,7 @@
       "comparison": {
         "scenarioId": "g004_normalize_pack_manifests_js_no_args",
         "originalEntryPoint": "scripts/normalize-pack-manifests.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -1040,7 +1040,7 @@
       "entryId": "parallel-mission-control",
       "scenarioId": "g004_parallel_mission_control_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1078,7 +1078,7 @@
       "entryId": "parse-bmad-audit-result",
       "scenarioId": "g004_parse_bmad_audit_result_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1116,7 +1116,7 @@
       "entryId": "party-mode-gate-check",
       "scenarioId": "g004_party_mode_gate_check_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -1154,7 +1154,7 @@
       "entryId": "ralph-method-pathing-ts",
       "scenarioId": "g004_ralph_method_pathing_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1192,7 +1192,7 @@
       "entryId": "ralph-method-progress-format-ts",
       "scenarioId": "g004_ralph_method_progress_format_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/progress-format.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/progress-format.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/progress-format.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1230,7 +1230,7 @@
       "entryId": "ralph-method-schema-ts",
       "scenarioId": "g004_ralph_method_schema_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1268,7 +1268,7 @@
       "entryId": "ralph-method-speckit-implement-ts",
       "scenarioId": "g004_ralph_method_speckit_implement_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/speckit-implement.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/speckit-implement.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/speckit-implement.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1306,7 +1306,7 @@
       "entryId": "ralph-method-types-ts",
       "scenarioId": "g004_ralph_method_types_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1344,7 +1344,7 @@
       "entryId": "ralph-method-verify-pass-consistency-ts",
       "scenarioId": "g004_ralph_method_verify_pass_consistency_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1382,7 +1382,7 @@
       "entryId": "ralph-method-verify-ralph-compliance-ts",
       "scenarioId": "g004_ralph_method_verify_ralph_compliance_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1420,7 +1420,7 @@
       "entryId": "ralph-method-verify-tdd-trace-ts",
       "scenarioId": "g004_ralph_method_verify_tdd_trace_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1458,7 +1458,7 @@
       "entryId": "ralph-method-write-tracking-files-ts",
       "scenarioId": "g004_ralph_method_write_tracking_files_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1495,8 +1495,8 @@
       "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
       "entryId": "render-upstream-bmad-help-baseline-js",
       "scenarioId": "g004_render_upstream_bmad_help_baseline_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 24727,
@@ -1516,7 +1516,7 @@
       "comparison": {
         "scenarioId": "g004_render_upstream_bmad_help_baseline_js_no_args",
         "originalEntryPoint": "scripts/render-upstream-bmad-help-baseline.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -1534,7 +1534,7 @@
       "entryId": "reviewer-contract",
       "scenarioId": "g004_reviewer_contract_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1572,7 +1572,7 @@
       "entryId": "reviewer-registry",
       "scenarioId": "g004_reviewer_registry_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1610,7 +1610,7 @@
       "entryId": "reviewer-rollout-gate",
       "scenarioId": "g004_reviewer_rollout_gate_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1648,7 +1648,7 @@
       "entryId": "reviewer-runtime-definition",
       "scenarioId": "g004_reviewer_runtime_definition_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1686,7 +1686,7 @@
       "entryId": "reviewer-schema",
       "scenarioId": "g004_reviewer_schema_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1723,8 +1723,8 @@
       "originalPath": "scripts/run-ci-release-gate-fixture.js",
       "entryId": "run-ci-release-gate-fixture",
       "scenarioId": "g004_run_ci_release_gate_fixture_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 289,
@@ -1744,7 +1744,7 @@
       "comparison": {
         "scenarioId": "g004_run_ci_release_gate_fixture_js_no_args",
         "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
         "stdoutMatches": false,
         "stderrMatches": false,
         "exitCodeMatches": false,
@@ -1762,7 +1762,7 @@
       "entryId": "run-fresh-regression-matrix-ts",
       "scenarioId": "g004_run_fresh_regression_matrix_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 31230,
@@ -1800,7 +1800,7 @@
       "entryId": "runtime-context-ts",
       "scenarioId": "g004_runtime_context_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -1838,7 +1838,7 @@
       "entryId": "scores-summary-ts",
       "scenarioId": "g004_scores_summary_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 1105,
@@ -1876,7 +1876,7 @@
       "entryId": "start-dashboard-ts",
       "scenarioId": "g004_start_dashboard_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-dashboard.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-dashboard.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-dashboard.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 82,
@@ -1952,7 +1952,7 @@
       "entryId": "subagent-evidence-envelope",
       "scenarioId": "g004_subagent_evidence_envelope_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
       "originalReplay": {
         "exitCode": 2,
         "stdoutBytes": 0,
@@ -1990,7 +1990,7 @@
       "entryId": "supervised-worker-runtime",
       "scenarioId": "g004_supervised_worker_runtime_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,
@@ -2028,7 +2028,7 @@
       "entryId": "test-locks-ts",
       "scenarioId": "g004_test_locks_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 18,
@@ -2066,7 +2066,7 @@
       "entryId": "test-story-flow-ts",
       "scenarioId": "g004_test_story_flow_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 1037,
@@ -2179,8 +2179,8 @@
       "originalPath": "scripts/verify-speckit-mirror-sync.js",
       "entryId": "verify-speckit-mirror-sync-js",
       "scenarioId": "g004_verify_speckit_mirror_sync_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 54,
@@ -2200,7 +2200,7 @@
       "comparison": {
         "scenarioId": "g004_verify_speckit_mirror_sync_js_no_args",
         "originalEntryPoint": "scripts/verify-speckit-mirror-sync.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts",
         "stdoutMatches": false,
         "stderrMatches": false,
         "exitCodeMatches": false,

@@ -5,8 +5,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const pkg = require('../package.json');
-const { generateSkeleton, writeSelectedAI } = require('../src/commands/init-skeleton');
-const { syncCommandsRulesConfig } = require('../src/services/sync-service');
+const { generateSkeleton, writeSelectedAI } = require('../dist/commands/init-skeleton');
+const { syncCommandsRulesConfig } = require('../dist/services/sync-service');
 
 const AGENT_TO_AI = {
   cursor: 'cursor-agent',

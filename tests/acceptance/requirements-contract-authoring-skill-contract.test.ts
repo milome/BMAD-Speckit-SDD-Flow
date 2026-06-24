@@ -548,6 +548,38 @@ describe('requirements-contract-authoring published contract', () => {
     );
   });
 
+  it('publishes staging-first main-session provider rules on every installed skill surface', () => {
+    const surfaces = readSkillSurface('SKILL.md');
+    expect(surfaces).toHaveLength(SURFACE_SKILL_DIRS.length);
+
+    for (const content of surfaces) {
+      expect(content).toContain('staging-first authoring transaction');
+      expect(content).toContain('authoring/staging/draft-source.md');
+      expect(content).toContain('source-promotion-decision.json');
+      expect(content).toContain('Source materialization is the final promotion step');
+
+      expect(content).toContain('provider missing continuation');
+      expect(content).toContain('blockingStage: "critical_auditor_provider_mode_required"');
+      expect(content).toContain('nextRequiredAction: "run_main_session_critical_auditor_round"');
+      expect(content).toContain('sourceMutationPerformed: false');
+      expect(content).toContain('source-materialization-receipt.json');
+
+      expect(content).toContain(
+        '/goal main session owns Critical Auditor response generation, staging rework, receipt writing, and source promotion'
+      );
+      expect(content).toContain('Long-running requirements-contract authoring work must stay visible in the main session');
+      expect(content).toContain('subagent provider modes are read-only response providers');
+      expect(content).toContain('critical-auditor-round-response/v1');
+      expect(content).toContain('They must not write source documents, packets, receipts, requirement records, source promotion decisions, or convergence claims');
+
+      expect(content).toContain(
+        'large-document-writer is transport only and is not semantic owner for requirements contracts'
+      );
+      expect(content).toContain('requirements-contract-authoring owns semantic extraction');
+      expect(content).not.toContain('source_materialization_before_deep_audit');
+    }
+  });
+
   it('publishes preConfirmationDrilldown metadata while keeping inline implementationConfirmation authoritative', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));

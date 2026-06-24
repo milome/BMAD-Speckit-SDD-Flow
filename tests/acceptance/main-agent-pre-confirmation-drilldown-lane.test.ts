@@ -17,7 +17,7 @@ import {
   mainMainAgentOrchestration,
   resolveMainAgentOrchestrationSurface,
   runMainAgentPreConfirmationDrilldown,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 function writeDraftSource(root: string, name = 'source.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);

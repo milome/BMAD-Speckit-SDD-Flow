@@ -221,7 +221,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_no_args",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -261,7 +261,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_flag_name_only",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -301,7 +301,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_env_bmad_framework_root",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -341,7 +341,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_session_dir",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -381,7 +381,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -421,7 +421,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_dir",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -461,7 +461,7 @@
           "comparison": {
             "scenarioId": "g007_real_development_tick_worker_js_env_bmad_real_dev_tick_timeout_ms",
             "originalEntryPoint": "scripts/real-development-tick-worker.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -611,7 +611,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
             "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -651,7 +651,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_final_required_commands_js_flag_json",
             "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -701,7 +701,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
             "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -741,7 +741,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_trace_slice_js_flag_help",
             "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -781,7 +781,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_trace_slice_js_flag_json",
             "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -821,7 +821,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_trace_slice_js_flag_record",
             "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -861,7 +861,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_trace_slice_js_flag_source",
             "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -901,7 +901,7 @@
           "comparison": {
             "scenarioId": "g007_run_confirmed_trace_slice_js_flag_trace",
             "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

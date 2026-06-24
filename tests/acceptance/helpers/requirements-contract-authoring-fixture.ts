@@ -4,13 +4,14 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import yaml from 'js-yaml';
-import { runMainAgentPreConfirmationDrilldown } from '../../../scripts/main-agent-orchestration';
+import { runMainAgentPreConfirmationDrilldown } from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 type JsonObject = Record<string, unknown>;
 
@@ -20,6 +21,7 @@ interface CriticalAuditorFixtureInput {
     hash: string;
     reconciliation: { issueCount: number };
     reportPath: string;
+    actionableBlockingIssues?: Array<{ code?: string }>;
   };
   packetProjectionSummary: {
     projectionGroups: string[];
@@ -83,6 +85,10 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
     scaleRoutingDecision: path.join(authoring, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoring, 'checkpoint-persistence-evidence.json'),
+    progress: path.join(authoring, 'semantic-checkpoint-progress.json'),
+    reconciliationReport: path.join(authoring, 'must_packet_source_reconciliation_report.json'),
+    preRenderMustGate: path.join(authoring, 'pre-render-must-decomposition-gate-report.json'),
+    preRenderGlobalConsistency: path.join(authoring, 'pre-render-global-consistency-report.json'),
     sourceMaterializationReceipt: path.join(
       root,
       '_bmad-output',
@@ -98,6 +104,173 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
 
 export function readJson<T = JsonObject>(filePath: string): T {
   return JSON.parse(readFileSync(filePath, 'utf8')) as T;
+}
+
+export function stagingTransactionDir(root: string, recordId: string): string {
+  const stagingRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'authoring',
+    'staging'
+  );
+  const entries = existsSync(stagingRoot)
+    ? readdirSync(stagingRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => path.join(stagingRoot, entry.name))
+    : [];
+  if (entries.length !== 1) {
+    throw new Error(`expected exactly one staging transaction under ${stagingRoot}, found ${entries.length}`);
+  }
+  return entries[0];
+}
+
+export function roundArtifact(root: string, recordId: string, kind: 'request' | 'response' | 'receipt', roundIndex = 1): string {
+  const base = stagingTransactionDir(root, recordId);
+  const file =
+    kind === 'request'
+      ? `critical-auditor-round-request-${roundIndex}.json`
+      : kind === 'response'
+        ? `critical-auditor-round-response-${roundIndex}.json`
+        : `critical-auditor-receipt-round-${roundIndex}.json`;
+  return path.join(base, file);
+}
+
+export function sourcePromotionDecisionPath(root: string, recordId: string): string {
+  return path.join(stagingTransactionDir(root, recordId), 'source-promotion-decision.json');
+}
+
+export function writeCheckpointPersistenceEvidence(root: string, recordId: string): string {
+  const paths = artifacts(root, recordId, `${recordId}-SET`);
+  const route = readJson<Record<string, unknown>>(paths.scaleRoutingDecision);
+  const progress = readJson<Record<string, unknown>>(paths.progress);
+  const checkpointIds = Array.isArray(progress.checkpoints)
+    ? (progress.checkpoints as Array<Record<string, unknown>>)
+        .filter((checkpoint) => checkpoint.status === 'passed')
+        .map((checkpoint) => String(checkpoint.id))
+    : [];
+  const evidence = {
+    ok: true,
+    status: 'satisfied',
+    routeDecisionPath: paths.scaleRoutingDecision,
+    routeDecisionHash: route.routeDecisionHash,
+    checkpointPersistenceSatisfiedCandidate: true,
+    checkpointPersistenceRef: {
+      routeDecisionHash: route.routeDecisionHash,
+      progressPath: paths.progress,
+      progressHash: sha256File(paths.progress),
+      completedCheckpointIds: checkpointIds,
+      preRenderMustDecompositionGateHash: sha256File(paths.preRenderMustGate),
+      preRenderGlobalConsistencyHash: sha256File(paths.preRenderGlobalConsistency),
+      packetSourceReconciliationHash: sha256File(paths.reconciliationReport),
+    },
+    completedCheckpointIds: checkpointIds,
+    progressHash: sha256File(paths.progress),
+    preRenderMustDecompositionGateHash: sha256File(paths.preRenderMustGate),
+    preRenderGlobalConsistencyHash: sha256File(paths.preRenderGlobalConsistency),
+    packetSourceReconciliationHash: sha256File(paths.reconciliationReport),
+  };
+  const evidencePath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'authoring',
+    'checkpoint-persistence-evidence.external.json'
+  );
+  writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
+  return evidencePath;
+}
+
+export function stagingMustDecompositionPacket(root: string, recordId: string): Record<string, unknown> {
+  const packetFile = path.join(stagingTransactionDir(root, recordId), 'must_decomposition_packet.json');
+  const parsed = readJson<{ must_decomposition_packet?: Record<string, unknown> }>(packetFile);
+  if (!parsed.must_decomposition_packet) {
+    throw new Error(`must_decomposition_packet missing from ${packetFile}`);
+  }
+  return parsed.must_decomposition_packet;
+}
+
+export function firstProjectionRef(packet: Record<string, unknown>): string {
+  const packets = Array.isArray(packet.mustPackets) ? packet.mustPackets : [];
+  for (const mustPacket of packets) {
+    if (!mustPacket || typeof mustPacket !== 'object' || Array.isArray(mustPacket)) {
+      continue;
+    }
+    for (const value of Object.values(mustPacket as Record<string, unknown>)) {
+      if (!Array.isArray(value)) {
+        continue;
+      }
+      for (const row of value) {
+        if (row && typeof row === 'object' && !Array.isArray(row)) {
+          const id = String((row as Record<string, unknown>).id ?? '').trim();
+          if (id) {
+            return id;
+          }
+        }
+      }
+    }
+  }
+  throw new Error('projection ref not found in packet');
+}
+
+export function buildValidResponseFromRequest(
+  request: Record<string, unknown>,
+  packet: Record<string, unknown>
+): Record<string, unknown> {
+  const gateDryRun = request.gateDryRun as Record<string, unknown>;
+  const actionableBlockingIssues = Array.isArray(gateDryRun.actionableBlockingIssues)
+    ? (gateDryRun.actionableBlockingIssues as Array<Record<string, unknown>>)
+    : [];
+  const reviewedMustRefs = Array.isArray(request.mustRefs)
+    ? (request.mustRefs as string[])
+    : [];
+  const projectionSummary = request.packetProjectionSummary as Record<string, unknown> | undefined;
+  const projectionRefs = Array.isArray(projectionSummary?.projectionRefs)
+    ? (projectionSummary.projectionRefs as string[])
+    : [];
+  return {
+    schemaVersion: 'critical-auditor-round-response/v1',
+    verdict: 'no_new_valid_gap',
+    roundIndex: request.roundIndex,
+    transactionId: request.transactionId,
+    namespaceVersion: request.namespaceVersion,
+    requestHash: request.requestHash,
+    sourceHash: request.sourceHash,
+    sourceDocumentHash: request.sourceDocumentHash,
+    implementationConfirmationHash: request.implementationConfirmationHash,
+    packetHash: request.packetHash,
+    gateDryRunHash: gateDryRun.gateDryRunHash ?? gateDryRun.hash,
+    reconciliationIssueCount: (gateDryRun.reconciliation as Record<string, unknown>).issueCount,
+    checkedProjectionGroups: request.packetProjectionSummary
+      ? (request.packetProjectionSummary as Record<string, unknown>).projectionGroups
+      : [
+          'semantic_kernel',
+          'must_decomposition_packet',
+          'source_materialization_receipt',
+          'packet_source_reconciliation',
+          'pre_render_must_decomposition_gate',
+        ],
+    reviewedMustRefs,
+    reviewedProjectionRefs: [projectionRefs[0] ?? firstProjectionRef(packet)],
+    priorFindingsDisposition: [
+      {
+        findingRef: 'ROUND-1-BASELINE',
+        disposition: 'new',
+        evidenceRefs: [String(gateDryRun.reportPath ?? 'gate-dry-run')],
+      },
+    ],
+    rejectedGapCandidates: [{ id: 'REJ-1', reason: 'no new valid gap detected' }],
+    falsePositiveProofs: actionableBlockingIssues.map((issue) => ({
+      blockerCode: String(issue.code ?? ''),
+      proofType: 'current_source_packet_hash_match',
+      evidenceRefs: [String(gateDryRun.reportPath ?? 'gate-dry-run')],
+    })),
+    rationale: 'No new valid gap detected in the current staging transaction.',
+  };
 }
 
 export function readImplementationConfirmation(filePath: string): JsonObject {
@@ -129,6 +302,11 @@ export function cleanCriticalAuditorRound(input: CriticalAuditorFixtureInput) {
       },
     ],
     rejectedGapCandidates: [{ id: `REJ-${roundIndex}`, reason: 'no new valid gap detected' }],
+    falsePositiveProofs: (gateDryRun.actionableBlockingIssues ?? []).map((issue) => ({
+      blockerCode: String(issue.code ?? ''),
+      proofType: 'current_source_packet_hash_match',
+      evidenceRefs: [gateDryRun.reportPath],
+    })),
     rationale: `Round ${roundIndex} found no new valid gap.`,
   };
 }
@@ -186,6 +364,27 @@ export function writeConsumerRequirement(root: string, relativePath = 'docs/requ
       '## 非目标',
       '',
       '本需求不重写交易引擎。',
+      '',
+    ].join('\n')
+  );
+}
+
+export function writeMinimalConsumerRequirement(
+  root: string,
+  relativePath = 'docs/requirements/minimal-consumer.md'
+) {
+  return writeText(
+    root,
+    relativePath,
+    [
+      '# Minimal Consumer Requirement',
+      '',
+      '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
+      '',
+      '## 验收标准',
+      '',
+      '- 主图摘要必须展示所有启用周期。',
+      '- pytest tests/test_multi_timeframe_settings.py 必须覆盖主图摘要显示。',
       '',
     ].join('\n')
   );

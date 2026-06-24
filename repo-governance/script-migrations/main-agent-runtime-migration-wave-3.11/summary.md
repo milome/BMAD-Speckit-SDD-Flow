@@ -10,15 +10,15 @@ This summary does not prove every source repository script is directly callable 
 
 - scripts/host-runtime-mode.ts -> packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts, packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js (package_runtime_module)
 - scripts/supervised-worker-runtime.ts -> packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts, packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js (package_runtime_module)
-- scripts/diagnose-bmad-state.ts -> packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js, packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js (package_runtime_module)
-- scripts/parallel-mission-control.ts -> packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js, packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js (package_runtime_module)
-- scripts/bmad-state-reader.ts -> packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js, packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js (durable_helper_copy)
-- scripts/e2e-verify-paths.ts -> packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js, packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js (durable_helper_copy)
-- scripts/query-validate.ts -> packages/bmad-speckit/src/main-agent/helpers/query-validate.js, packages/bmad-speckit/dist/main-agent/helpers/query-validate.js (durable_helper_copy)
-- scripts/runtime-step-state.ts -> packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js, packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js (durable_helper_copy)
-- scripts/verify-agent-files.ts -> packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js, packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js (durable_helper_copy)
-- scripts/eval-question-generate.ts -> packages/bmad-speckit/bin/bmad-speckit.js, packages/bmad-speckit/src/commands/eval-question-generate.js (public_cli_de_surface)
-- scripts/check-story-score-written.ts -> packages/bmad-speckit/bin/bmad-speckit.js, packages/bmad-speckit/src/commands/check-score.js (public_cli_de_surface)
+- scripts/diagnose-bmad-state.ts -> packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts, packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js (package_runtime_module)
+- scripts/parallel-mission-control.ts -> packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts, packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js (package_runtime_module)
+- scripts/bmad-state-reader.ts -> packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts, packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js (durable_helper_copy)
+- scripts/e2e-verify-paths.ts -> packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts, packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js (durable_helper_copy)
+- scripts/query-validate.ts -> packages/bmad-speckit/src/main-agent/helpers/query-validate.ts, packages/bmad-speckit/dist/main-agent/helpers/query-validate.js (durable_helper_copy)
+- scripts/runtime-step-state.ts -> packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts, packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js (durable_helper_copy)
+- scripts/verify-agent-files.ts -> packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts, packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js (durable_helper_copy)
+- scripts/eval-question-generate.ts -> packages/bmad-speckit/bin/bmad-speckit.js, packages/bmad-speckit/src/commands/eval-question-generate.ts (public_cli_de_surface)
+- scripts/check-story-score-written.ts -> packages/bmad-speckit/bin/bmad-speckit.js, packages/bmad-speckit/src/commands/check-score.ts (public_cli_de_surface)
 
 ## True No-Migration Entries Within This Contract Inventory
 

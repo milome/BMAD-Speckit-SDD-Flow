@@ -11,11 +11,11 @@
  * - Package dir: node bin/bmad-speckit.js <cmd>
  * - Global: bmad-speckit <cmd> after npm link
  *
- * Exit codes are defined in constants/exit-codes.js.
+ * Exit codes are defined in constants/exit-codes.ts and consumed through dist.
  */
 const { program } = require('commander');
 const pkg = require('../package.json');
-const ttyUtils = require('../src/utils/tty');
+const ttyUtils = require('../dist/utils/tty');
 
 function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
@@ -42,6 +42,11 @@ function forwardedArgsFromCommand(command) {
     else args.push(flag, String(value));
   }
   return args;
+}
+
+function rawArgsAfterCommandName(commandName) {
+  const index = process.argv.findIndex((arg) => arg === commandName);
+  return index === -1 ? [] : process.argv.slice(index + 1);
 }
 
 function emitDeprecatedAlias(commandName, replacement, args) {
@@ -83,14 +88,14 @@ function registerWave312PublicCommand(commandName, exportName, description) {
     .action((opts, command) =>
       runCommandPromise(
         commandName,
-        loadCommand(`../src/commands/${commandName}`, exportName)(opts, forwardedArgsFromCommand(command))
+        loadCommand(`../dist/commands/${commandName}`, exportName)(opts, forwardedArgsFromCommand(command))
       )
     );
 }
 
 // Show banner for init (including init --help) when in TTY
 if (process.argv.includes('init') && ttyUtils.isTTY()) {
-  const { showBanner } = require('../src/commands/init');
+  const { showBanner } = require('../dist/commands/init');
   showBanner();
 }
 
@@ -121,7 +126,7 @@ program
   .option('--github-token <token>', 'GitHub API token')
   .option('--skip-tls', 'Skip SSL/TLS verification (not recommended)')
   .option('--offline', 'Use only local cache, no network')
-  .action((...args) => loadCommand('../src/commands/init', 'initCommand')(...args));
+  .action((...args) => loadCommand('../dist/commands/init', 'initCommand')(...args));
 
 program
   .command('check')
@@ -130,7 +135,7 @@ program
   .option('--json', 'Output as JSON')
   .option('--ignore-agent-tools', 'Skip AI tool (detectCommand) detection')
   .action((opts) =>
-    loadCommand('../src/commands/check', 'checkCommand')({
+    loadCommand('../dist/commands/check', 'checkCommand')({
       cwd: process.cwd(),
       listAi: opts.listAi,
       json: opts.json,
@@ -143,7 +148,7 @@ program
   .description('Show CLI version, template version, Node version')
   .option('--json', 'Output as JSON')
   .action((opts) =>
-    loadCommand('../src/commands/version', 'versionCommand')({
+    loadCommand('../dist/commands/version', 'versionCommand')({
       cwd: process.cwd(),
       json: opts.json,
     })
@@ -156,7 +161,7 @@ program
   .option('--template <tag>', 'Target version (latest, v1.0.0)')
   .option('--offline', 'Use only local cache')
   .action((opts) =>
-    loadCommand('../src/commands/upgrade', 'upgradeCommand')(process.cwd(), {
+    loadCommand('../dist/commands/upgrade', 'upgradeCommand')(process.cwd(), {
       dryRun: opts.dryRun,
       template: opts.template,
       offline: opts.offline,
@@ -171,7 +176,7 @@ program
   .option('--remove-global-skills', 'Also remove managed global skill directories')
   .option('--dry-run', 'Preview uninstall actions without changing files')
   .action((opts) =>
-    loadCommand('../src/commands/uninstall', 'uninstallCommand')({
+    loadCommand('../dist/commands/uninstall', 'uninstallCommand')({
       target: opts.target,
       agent: opts.agent,
       removeGlobalSkills: opts.removeGlobalSkills,
@@ -182,7 +187,7 @@ program
 program
   .command('add-agent <ai>')
   .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
-  .action((ai) => loadCommand('../src/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
+  .action((ai) => loadCommand('../dist/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
 
 program
   .command('large-doc')
@@ -193,7 +198,7 @@ program
   .action((opts, command) =>
     runCommandPromise(
       'large-doc',
-      loadCommand('../src/commands/large-doc', 'largeDocCommand')(
+      loadCommand('../dist/commands/large-doc', 'largeDocCommand')(
         opts,
         forwardedArgsFromCommand(command)
       )
@@ -209,7 +214,7 @@ program
   .action((opts, command) =>
     runCommandPromise(
       'goal-contract',
-      loadCommand('../src/commands/goal-contract', 'goalContractCommand')(
+      loadCommand('../dist/commands/goal-contract', 'goalContractCommand')(
         opts,
         forwardedArgsFromCommand(command)
       )
@@ -219,7 +224,7 @@ program
 program
   .command('feedback')
   .description('Show feedback entry and full-flow compatible AI list')
-  .action(() => loadCommand('../src/commands/feedback', 'feedbackCommand')());
+  .action(() => loadCommand('../dist/commands/feedback', 'feedbackCommand')());
 
 const ralphCmd = program.command('ralph').description('Ralph tracking runtime helpers');
 
@@ -234,7 +239,7 @@ ralphCmd
   .option('--storySlug <slug>', 'Story slug')
   .option('--taskDescription <text>', 'Override task description')
   .option('--overwrite', 'Overwrite existing Ralph files')
-  .action((opts) => loadCommand('../src/commands/ralph', 'ralphPrepareCommand')(opts));
+  .action((opts) => loadCommand('../dist/commands/ralph', 'ralphPrepareCommand')(opts));
 
 ralphCmd
   .command('record-phase')
@@ -250,7 +255,7 @@ ralphCmd
   .option('--epicSlug <slug>', 'Epic slug')
   .option('--storySlug <slug>', 'Story slug')
   .option('--storyLogTimestamp <iso>', 'ISO-8601 timestamp used for progress entry')
-  .action((opts) => loadCommand('../src/commands/ralph', 'ralphRecordPhaseCommand')(opts));
+  .action((opts) => loadCommand('../dist/commands/ralph', 'ralphRecordPhaseCommand')(opts));
 
 ralphCmd
   .command('verify')
@@ -261,7 +266,7 @@ ralphCmd
   .option('--story <n>', 'Story number')
   .option('--epicSlug <slug>', 'Epic slug')
   .option('--storySlug <slug>', 'Story slug')
-  .action((opts) => loadCommand('../src/commands/ralph', 'ralphVerifyCommand')(opts));
+  .action((opts) => loadCommand('../dist/commands/ralph', 'ralphVerifyCommand')(opts));
 
 const configCmd = program
   .command('config')
@@ -272,7 +277,7 @@ configCmd
   .description('Get config value by key')
   .option('--json', 'Output as JSON')
   .action((key, opts) => {
-    loadCommand('../src/commands/config', 'configGetCommand')(process.cwd(), {
+    loadCommand('../dist/commands/config', 'configGetCommand')(process.cwd(), {
       key,
       json: opts.json,
     });
@@ -283,7 +288,7 @@ configCmd
   .description('Set config value')
   .option('--global', 'Force global scope')
   .action((key, value, opts) => {
-    loadCommand('../src/commands/config', 'configSetCommand')(process.cwd(), {
+    loadCommand('../dist/commands/config', 'configSetCommand')(process.cwd(), {
       key,
       value,
       global: opts.global,
@@ -295,7 +300,7 @@ configCmd
   .description('List merged config (project overrides global)')
   .option('--json', 'Output as JSON')
   .action((opts) => {
-    loadCommand('../src/commands/config', 'configListCommand')(process.cwd(), {
+    loadCommand('../dist/commands/config', 'configListCommand')(process.cwd(), {
       json: opts.json,
     });
   });
@@ -329,7 +334,7 @@ program
   .option('--agent <agent>', 'Agent type (cursor|claude-code|codex)')
   .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
   .action((opts) => {
-    loadCommand('../src/commands/score', 'scoreCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/score', 'scoreCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -342,7 +347,7 @@ program
   .requiredOption('--story <n>', 'Story number')
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--stage <stage>', 'Stage filter (story|implement)')
-  .action((opts) => loadCommand('../src/commands/check-score', 'checkScoreCommand')(opts));
+  .action((opts) => loadCommand('../dist/commands/check-score', 'checkScoreCommand')(opts));
 
 program
   .command('eval-question-generate')
@@ -355,7 +360,7 @@ program
   .option('--dataPath <path>', 'Scoring data directory for --run-id compatibility')
   .allowUnknownOption(false)
   .action((opts) => {
-    loadCommand('../src/commands/eval-question-generate', 'evalQuestionGenerateCli')(opts).then(
+    loadCommand('../dist/commands/eval-question-generate', 'evalQuestionGenerateCli')(opts).then(
       (exitCode) => process.exit(exitCode)
     );
   });
@@ -371,7 +376,7 @@ program
   .option('--scenario <scenario>', 'Scenario filter (real_dev|eval_question|all)', 'real_dev')
   .option('--dataPath <path>', 'Scoring data directory')
   .action((opts) => {
-    loadCommand('../src/commands/coach', 'coachCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/coach', 'coachCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -390,7 +395,7 @@ program
   .option('--output-json <path>', 'JSON snapshot output path')
   .option('--include-runtime', 'Append runtime context sections to markdown output')
   .option('--show-deferred-gaps', 'Append deferred gap governance table to dashboard markdown')
-  .action((opts) => loadCommand('../src/commands/dashboard', 'dashboardCommand')(opts));
+  .action((opts) => loadCommand('../dist/commands/dashboard', 'dashboardCommand')(opts));
 
 program
   .command('deferred-gap-audit')
@@ -399,7 +404,7 @@ program
   .option('--json', 'Print JSON audit output')
   .option('--fail-on-alert', 'Exit non-zero when alerts are present')
   .action((opts) =>
-    loadCommand('../src/commands/deferred-gap-audit', 'deferredGapAuditCommand')(opts)
+    loadCommand('../dist/commands/deferred-gap-audit', 'deferredGapAuditCommand')(opts)
   );
 
 program
@@ -418,7 +423,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed for canonical exporters')
   .option('--drop-no-code-pair', 'Reject samples without code pair in canonical exporters')
   .action((opts) => {
-    loadCommand('../src/commands/sft-extract', 'sftExtractCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/sft-extract', 'sftExtractCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -439,7 +444,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../src/commands/sft-preview', 'sftPreviewCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/sft-preview', 'sftPreviewCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -460,7 +465,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../src/commands/sft-validate', 'sftValidateCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/sft-validate', 'sftValidateCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -481,7 +486,7 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../src/commands/sft-bundle', 'sftBundleCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/sft-bundle', 'sftBundleCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -494,7 +499,7 @@ program
   .option('--story <x.y>', 'Story X.Y')
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--limit <n>', 'Max records to display', String(100))
-  .action((opts) => loadCommand('../src/commands/scores', 'scoresCommand')(opts));
+  .action((opts) => loadCommand('../dist/commands/scores', 'scoresCommand')(opts));
 
 program
   .command('ensure-run-runtime-context')
@@ -504,7 +509,7 @@ program
   .option('--persist', 'After sprint-status write: refresh registry using last-*-run.json')
   .action((opts) => {
     try {
-      loadCommand('../src/commands/ensure-run-runtime-context', 'ensureRunRuntimeContextCommand')(opts);
+      loadCommand('../dist/commands/ensure-run-runtime-context', 'ensureRunRuntimeContextCommand')(opts);
     } catch (err) {
       console.error(err);
       process.exit(1);
@@ -518,7 +523,7 @@ program
   .action((opts) => {
     try {
       loadCommand(
-        '../src/commands/sync-runtime-context-from-sprint',
+        '../dist/commands/sync-runtime-context-from-sprint',
         'syncRuntimeContextFromSprintCommand'
       )(opts);
     } catch (err) {
@@ -534,7 +539,7 @@ program
   .action((opts) => {
     try {
       const gate = loadCommand(
-        '../src/commands/assert-implementation-entry',
+        '../dist/commands/assert-implementation-entry',
         'assertImplementationEntryCommand'
       )(opts);
       if (gate && gate.decision !== 'pass') {
@@ -554,7 +559,7 @@ program
   .option('--dashboard-port <n>', 'Port to auto-start the dashboard on')
   .option('--host <host>', 'Dashboard host when auto-starting', '127.0.0.1')
   .action((opts) => {
-    loadCommand('../src/commands/runtime-mcp', 'runtimeMcpCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/runtime-mcp', 'runtimeMcpCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -567,7 +572,7 @@ program
   .option('--timeoutMs <ms>', 'Request timeout in ms')
   .option('--prompt <text>', 'Custom smoke prompt')
   .action((opts) => {
-    loadCommand('../src/commands/provider-smoke', 'providerSmokeCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/provider-smoke', 'providerSmokeCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -581,7 +586,7 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Open the dashboard in the default browser')
   .action((opts) => {
-    loadCommand('../src/commands/dashboard-start', 'dashboardStartCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/dashboard-start', 'dashboardStartCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -591,7 +596,7 @@ program
   .command('dashboard-status')
   .description('Inspect the stable runtime dashboard server state and health')
   .action(() => {
-    loadCommand('../src/commands/dashboard-status', 'dashboardStatusCommand')().catch((err) => {
+    loadCommand('../dist/commands/dashboard-status', 'dashboardStatusCommand')().catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -601,7 +606,7 @@ program
   .command('dashboard-stop')
   .description('Stop the stable runtime dashboard server and clear state')
   .action(() => {
-    loadCommand('../src/commands/dashboard-stop', 'dashboardStopCommand')().catch((err) => {
+    loadCommand('../dist/commands/dashboard-stop', 'dashboardStopCommand')().catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -615,7 +620,7 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Start a stable background server and open the dashboard in the browser')
   .action((opts) => {
-    loadCommand('../src/commands/dashboard-live', 'dashboardLiveCommand')(opts).catch((err) => {
+    loadCommand('../dist/commands/dashboard-live', 'dashboardLiveCommand')(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -639,7 +644,7 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRuntimeModule(
-      '../src/runtime/bmad-help-renderer.js',
+      '../dist/runtime/bmad-help-renderer',
       'mainBmadHelpRenderer',
       forwardedArgsFromCommand(command)
     )
@@ -657,7 +662,7 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRuntimeModule(
-      '../src/runtime/bmads-renderer.js',
+      '../dist/runtime/bmads-renderer',
       'mainBmadsRenderer',
       forwardedArgsFromCommand(command)
     )
@@ -685,7 +690,7 @@ program
   .allowExcessArguments(true)
   .action((_options, command) =>
     runRuntimeModule(
-      '../src/runtime/bmads-renderer.js',
+      '../dist/runtime/bmads-renderer',
       'mainBmadsRenderer',
       forwardedArgsFromCommand(command)
     )
@@ -696,11 +701,11 @@ program
   .description('Run the BMAD main-agent orchestration CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
+  .action((_options, _command) =>
     runRuntimeModule(
       '../dist/main-agent/index.js',
       'mainAgentRuntimeCommand',
-      ['--legacy-orchestration', ...forwardedArgsFromCommand(command)]
+      ['--legacy-orchestration', ...rawArgsAfterCommandName('main-agent-orchestration')]
     )
   );
 

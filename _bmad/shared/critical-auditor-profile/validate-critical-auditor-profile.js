@@ -2,6 +2,10 @@
 /* eslint-disable no-console */
 
 const FIXED_PERSPECTIVES = ['product_intent', 'model_projection', 'main_agent_execution'];
+const ALLOWED_PROFILE_IDS = [
+  'main-agent-six-mental-model-critical-auditor',
+  'requirements-contract-critical-auditor',
+];
 const REQUIRED_STAGE_PROFILES = [
   'requirements_compiler',
   'implementation_readiness',
@@ -65,7 +69,7 @@ function validateCriticalAuditorProfile(input) {
   if (metadata.schemaVersion !== 'critical-auditor-profile/v1') {
     blockingReasons.push('critical_auditor_profile_schema_invalid');
   }
-  if (metadata.profileId !== 'main-agent-six-mental-model-critical-auditor') {
+  if (!ALLOWED_PROFILE_IDS.includes(metadata.profileId)) {
     blockingReasons.push('critical_auditor_profile_id_invalid');
   }
   if (!/^[0-9]+\.[0-9]+\.[0-9]+$/u.test(text(metadata.profileVersion))) {
@@ -153,8 +157,14 @@ function validateCriticalAuditorProfileForStage(input) {
 }
 
 function main() {
-  const { loadCriticalAuditorProfile } = require('./load-critical-auditor-profile');
-  const profile = loadCriticalAuditorProfile(process.cwd());
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const explicitProfilePath = process.argv
+    .slice(2)
+    .find((arg) => arg && !arg.startsWith('--'));
+  const profile = explicitProfilePath
+    ? JSON.parse(fs.readFileSync(path.resolve(process.cwd(), explicitProfilePath), 'utf8'))
+    : require('./load-critical-auditor-profile').loadCriticalAuditorProfile(process.cwd());
   const result = validateCriticalAuditorProfile({ profile });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (!result.ok) process.exitCode = 3;
@@ -170,6 +180,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  ALLOWED_PROFILE_IDS,
   FIXED_PERSPECTIVES,
   REQUIRED_STAGE_PROFILES,
   validateCriticalAuditorProfile,

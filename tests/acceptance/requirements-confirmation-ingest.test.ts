@@ -30,7 +30,7 @@ const CONFIRM_SCOPE = path.join(
   'scripts',
   'confirm-requirements-scope.js'
 );
-const MAIN_AGENT_ORCHESTRATION = path.join(ROOT, 'scripts', 'main-agent-orchestration.ts');
+const BMAD_SPECKIT_CLI = path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 const REQ_TRACE_PROMPT = path.join(
   ROOT,
   '_bmad',
@@ -484,14 +484,6 @@ function runNode(script: string, args: string[]) {
   });
 }
 
-function runTsx(script: string, args: string[]) {
-  return spawnSync('npx', ['--no-install', 'tsx', script, ...args], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
-}
-
 function runPython(script: string, args: string[]) {
   return spawnSync('python', [script, ...args], {
     cwd: ROOT,
@@ -754,7 +746,8 @@ describe('controlled confirmation ingest', () => {
     const source = writeSource();
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
     expect(blockedPrompt.status).toBe(3);
-    expect(blockedPrompt.stdout).toContain('BLOCK: CONFIRMATION_REQUIRED');
+    expect(blockedPrompt.stdout).toContain('BLOCK: EXECUTION_READY_AUTHORITY_MISSING');
+    expect(blockedPrompt.stdout).toContain('execution_ready_authority_missing');
     expect(blockedPrompt.stdout).toContain(
       'implementationConfirmation.status is not user_confirmed'
     );
@@ -1121,7 +1114,8 @@ describe('controlled confirmation ingest', () => {
     const closeoutReport = writeCloseoutRenderReport({ report, recordPath });
     const closeoutConfirmationTextFile = path.join(tempDir, 'closeout-confirmation.txt');
     fs.writeFileSync(closeoutConfirmationTextFile, closeoutReport.confirmationText, 'utf8');
-    const result = runTsx(MAIN_AGENT_ORCHESTRATION, [
+    const result = runNode(BMAD_SPECKIT_CLI, [
+      'main-agent-orchestration',
       '--action',
       'confirm-closeout-acceptance',
       '--cwd',

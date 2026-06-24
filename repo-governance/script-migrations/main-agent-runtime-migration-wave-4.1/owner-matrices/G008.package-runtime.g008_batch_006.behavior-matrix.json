@@ -3545,7 +3545,7 @@
       "originalPath": "scripts/verify-speckit-mirror-sync.js",
       "entryId": "verify-speckit-mirror-sync-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
       "scenarioCoverageProof": {
@@ -3582,7 +3582,7 @@
           "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
           "originalEntryPoint": "scripts/verify-speckit-mirror-sync.js",
           "originalEntryCommand": "node scripts/verify-speckit-mirror-sync.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -3650,7 +3650,7 @@
                 "to": "scripts/verify-speckit-mirror-sync.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts",
                 "to": "scripts/verify-speckit-mirror-sync.js"
               },
               {

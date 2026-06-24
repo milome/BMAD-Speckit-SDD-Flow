@@ -31,7 +31,7 @@
       "auditSemanticClassification": "package_runtime_module",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
       ],
       "originalPathSha256": "sha256:96b84274cc576c5b76a692da1efbe2285082038d5a0cbeb78c42ebcc0d6449c7",
@@ -43,7 +43,7 @@
       "auditSemanticClassification": "package_runtime_module",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
       ],
       "originalPathSha256": "sha256:161d16d14159ec9b4068cb98ded1c684448c62686475c453198f5fac632177d5",
@@ -55,7 +55,7 @@
       "auditSemanticClassification": "package_local_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
       ],
       "originalPathSha256": "sha256:8ba3dd62ed945ebc16485acbef35820b871654884d35ae156524158cfe35f32e",
@@ -67,7 +67,7 @@
       "auditSemanticClassification": "package_local_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
       ],
       "originalPathSha256": "sha256:01b230ffc02255351bd8ae638271b92f4da7287c0e932ddd9d6237baae9b1dc0",
@@ -79,7 +79,7 @@
       "auditSemanticClassification": "package_local_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+        "packages/bmad-speckit/src/main-agent/helpers/query-validate.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
       ],
       "originalPathSha256": "sha256:61e837c184b48dceac96042621118885216db7028166a8e88849c514e4d2f114",
@@ -91,7 +91,7 @@
       "auditSemanticClassification": "package_local_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
       ],
       "originalPathSha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
@@ -103,7 +103,7 @@
       "auditSemanticClassification": "package_local_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
       ],
       "originalPathSha256": "sha256:3c3cd0860d1b4db7fb75a3954d86b1e3a707a1e0d9946899feffabb73b2160ec",
@@ -116,7 +116,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/eval-question-generate.js"
+        "packages/bmad-speckit/src/commands/eval-question-generate.ts"
       ],
       "originalPathSha256": "sha256:4acfedacea9b5313c3b0455f662b3a234fae94aa651f7bdfe6937ed79981a209",
       "retainedRootPath": true,
@@ -128,7 +128,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/check-score.js"
+        "packages/bmad-speckit/src/commands/check-score.ts"
       ],
       "originalPathSha256": "sha256:478d536e64fdaf172a12670c795d54c567971881c93495125a0725de47e106f9",
       "retainedRootPath": true,

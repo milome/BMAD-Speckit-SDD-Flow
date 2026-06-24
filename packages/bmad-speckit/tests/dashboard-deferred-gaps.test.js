@@ -4,8 +4,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { dashboardCommand } = require('../src/commands/dashboard.js');
-const { deferredGapAuditCommand } = require('../src/commands/deferred-gap-audit.js');
+const { dashboardCommand } = require('../src/commands/dashboard');
+const { deferredGapAuditCommand } = require('../src/commands/deferred-gap-audit');
 
 function writeReport(root, filename, gapLines) {
   const reportDir = path.join(root, '_bmad-output', 'planning-artifacts', 'feature-gap');

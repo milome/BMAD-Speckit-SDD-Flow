@@ -97,9 +97,9 @@ Fail closed when any required section, field, task ID, acceptance ID, evidence c
 - `_bmad/_config/six-model-artifact-manifest.yaml` remains the six-model artifact authority.
 - The new AI-TDD CSV files are display projection inputs only and MUST NOT write runtime control state.
 - `packages/bmad-speckit/bin/bmad-speckit.js` is the only package CLI entry that may expose `bmad-speckit bmad-help` and `bmad-speckit bmads`.
-- `packages/bmad-speckit/src/runtime/bmad-help-renderer.js` owns the package-deployed `bmad-help` user-facing projection.
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js` owns the package-deployed `bmads` user-facing projection.
-- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.js` owns package-deployed current runtime next-action projection logic for these commands.
+- `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts` owns the package-deployed `bmad-help` user-facing projection.
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts` owns the package-deployed `bmads` user-facing projection.
+- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts` owns package-deployed current runtime next-action projection logic for these commands.
 - `scripts/main-agent-delivery-closeout-gate.ts` owns delivery closeout gate execution and closeout acceptance lifecycle evidence.
 - `_bmad/core/skills/bmad-help/workflow.md` and `_bmad/skills/bmad-help/workflow.md` own `bmad-help` workflow prose.
 - `_bmad/skills/ai-tdd-runtime-navigator/workflow.md` documents the internal read-only runtime navigator projection used by `bmads` and `bmad-speckit` surfaces.
@@ -208,9 +208,9 @@ The implementation must convert the requirement prose into deterministic display
 - `packages/bmad-speckit/bin/bmad-speckit.js` MUST remain the only package CLI entry for `bmad-speckit bmad-help` and `bmad-speckit bmads`.
 - `/goal` MUST NOT add `packages/bmad-speckit/bin/bmad-help.js`.
 - `/goal` MUST NOT add `packages/bmad-speckit/bin/bmads.js`.
-- Package runtime implementation MUST live under `packages/bmad-speckit/src/runtime/**/*.js`.
-- `scripts/bmads-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmads-renderer.js` and then removed from root `scripts/`.
-- `scripts/bmad-help-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmad-help-renderer.js` and then removed from root `scripts/`.
+- Package runtime implementation MUST live under `packages/bmad-speckit/src/runtime/**/*.ts`.
+- `scripts/bmads-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmads-renderer.ts` and then removed from root `scripts/`.
+- `scripts/bmad-help-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts` and then removed from root `scripts/`.
 - A root renderer tombstone, wrapper, replacement surface, or preserved root renderer surface MUST NOT be created for these two renderers.
 - Root `package.json` `scripts.bmads` MUST NOT call `scripts/bmads-renderer.ts`, `ts-node`, `tsx`, or any root TypeScript renderer.
 - If root `package.json` keeps `scripts.bmads`, it MUST call the package CLI path or installed CLI form for `bmads`.
@@ -355,7 +355,7 @@ Purpose: Enforce manifest headers, enum values, booleans, stable tokens, local p
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.js`
+- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.ts`
 - `packages/bmad-speckit/tests/ai-tdd-projection-manifest.test.js`
 - `_bmad/_config/ai-tdd-six-model-manifest.csv`
 - `_bmad/_config/ai-tdd-six-model-action-matrix.csv`
@@ -364,7 +364,7 @@ Files:
 
 Steps:
 
-1. Create `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.js`.
+1. Create `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.ts`.
 2. Export a parser function that accepts a CSV file path and a manifest kind.
 3. Validate required headers for each of the four CSV files.
 4. Validate `modelId`, `schemaStatus`, `runtimeNextAction`, `terminalEvent`, and boolean fields against the source requirement enum set.
@@ -398,10 +398,10 @@ Purpose: Keep `bmad-help` as the upstream workflow panorama while adding only co
 Files:
 
 - `packages/bmad-speckit/bin/bmad-speckit.js`
-- `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.js`
+- `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts`
 - `_bmad/_config/bmad-help.csv`
 - `_bmad/core/skills/bmad-help/workflow.md`
 - `_bmad/skills/bmad-help/workflow.md`
@@ -418,8 +418,8 @@ Steps:
 
 1. Inspect the existing `bmad-help` default output order before editing.
 2. Add the `bmad-help` subcommand to the existing `packages/bmad-speckit/bin/bmad-speckit.js` CLI entry.
-3. Preserve the existing default section order in `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`.
-4. Preserve the existing default catalog row rendering in `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`.
+3. Preserve the existing default section order in `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`.
+4. Preserve the existing default catalog row rendering in `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`.
 5. Add a short cross-entry block for active runtime state.
 6. Include `bmads` or `bmad-speckit` in the short cross-entry block.
 7. Include view mode in the short cross-entry block.
@@ -434,7 +434,7 @@ Steps:
 16. Add a baseline fixture or inline expected catalog row labels for `bmad-speckit bmad-help --catalog`.
 17. Add a forbidden-removal assertion for existing `bmad-help` main output labels.
 18. Do not add `packages/bmad-speckit/bin/bmad-help.js`.
-19. Ensure the `bmad-help` subcommand in `packages/bmad-speckit/bin/bmad-speckit.js` requires or dispatches to `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`.
+19. Ensure the `bmad-help` subcommand in `packages/bmad-speckit/bin/bmad-speckit.js` requires or dispatches to `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`.
 20. Ensure the `bmad-help` subcommand never calls `runRepoScript`, root `scripts/*`, a root npm alias, `tsx`, or a repo-root TypeScript renderer.
 
 Validation:
@@ -464,10 +464,10 @@ Purpose: Make `bmads` show the AI-TDD runtime panorama with active records, curr
 Files:
 
 - `packages/bmad-speckit/bin/bmad-speckit.js`
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts`
 - `_bmad/_config/ai-tdd-six-model-manifest.csv`
 - `_bmad/_config/ai-tdd-six-model-action-matrix.csv`
 - `_bmad/_config/ai-tdd-six-model-skill-routes.csv`
@@ -495,7 +495,7 @@ Steps:
 17. Render the current `bmads` Next Safe Action instead of `req-trace-matrix-prompt-generator` when an active RequirementRecord has reconfirmation, stale hash, stale attempt, awaiting acceptance, or open blocker.
 18. Render `goal-execution-contract-generator` only when no active RequirementRecord exists or the person asks for an independent goal execution contract.
 19. Do not add `packages/bmad-speckit/bin/bmads.js`.
-20. Ensure the `bmads` subcommand in `packages/bmad-speckit/bin/bmad-speckit.js` requires or dispatches to `packages/bmad-speckit/src/runtime/bmads-renderer.js`.
+20. Ensure the `bmads` subcommand in `packages/bmad-speckit/bin/bmad-speckit.js` requires or dispatches to `packages/bmad-speckit/src/runtime/bmads-renderer.ts`.
 21. Ensure the `bmads` subcommand never calls `runRepoScript`, root `scripts/*`, a root npm alias, `tsx`, or a repo-root TypeScript renderer.
 
 Validation:
@@ -522,9 +522,9 @@ Purpose: Apply `compact`, `route`, `expanded`, and `full` budgets without compre
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.js`
+- `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.ts`
 - `packages/bmad-speckit/tests/bmad-help-display-budget.test.js`
 - `packages/bmad-speckit/tests/bmads-six-model-panorama.test.js`
 
@@ -554,8 +554,8 @@ Purpose: Make closeout acceptance and reconfirmation states visible without expo
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts`
 - `scripts/main-agent-delivery-closeout-gate.ts`
 - `_bmad/_config/ai-tdd-six-model-action-matrix.csv`
 - `_bmad/_config/ai-tdd-six-model-skill-routes.csv`
@@ -639,11 +639,11 @@ Purpose: Keep package mirror surfaces aligned for config and workflow files that
 Files:
 
 - `packages/bmad-speckit/bin/bmad-speckit.js`
-- `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.js`
+- `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts`
 - `package.json`
 - `.gitattributes`
 
@@ -695,20 +695,20 @@ Files:
 - `scripts/bmads-renderer.ts`
 - `scripts/bmad-help-renderer.ts`
 - `packages/bmad-speckit/bin/bmad-speckit.js`
-- `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.js`
-- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.js`
+- `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/projection-manifest.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/display-budget.ts`
+- `packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts`
 - `packages/bmad-speckit/tests/bmad-help-bmads-fusion-contract.test.js`
 - `packages/bmad-speckit/tests/bmad-help-entry-surface-contract.test.js`
 - `packages/bmad-speckit/tests/bmads-six-model-panorama.test.js`
 
 Steps:
 
-1. Treat `packages/bmad-speckit/src/runtime/**/*.js` as the only deployable runtime implementation for `bmad-help` and `bmads`.
-2. Port any still-needed behavior from `scripts/bmads-renderer.ts` into `packages/bmad-speckit/src/runtime/bmads-renderer.js`.
-3. Port any still-needed behavior from `scripts/bmad-help-renderer.ts` into `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`.
+1. Treat `packages/bmad-speckit/src/runtime/**/*.ts` as the only deployable runtime implementation for `bmad-help` and `bmads`.
+2. Port any still-needed behavior from `scripts/bmads-renderer.ts` into `packages/bmad-speckit/src/runtime/bmads-renderer.ts`.
+3. Port any still-needed behavior from `scripts/bmad-help-renderer.ts` into `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`.
 4. Remove `scripts/bmads-renderer.ts` and `scripts/bmad-help-renderer.ts`; root-only developer workflows must use `node packages/bmad-speckit/bin/bmad-speckit.js bmads` or `node packages/bmad-speckit/bin/bmad-speckit.js bmad-help`.
 5. Do not leave a tombstone, wrapper, replacement surface, or any preserved root renderer surface for either root renderer.
 6. Update root `package.json` `scripts.bmads` so it does not call `scripts/bmads-renderer.ts`, `ts-node`, `tsx`, or any root TypeScript renderer.

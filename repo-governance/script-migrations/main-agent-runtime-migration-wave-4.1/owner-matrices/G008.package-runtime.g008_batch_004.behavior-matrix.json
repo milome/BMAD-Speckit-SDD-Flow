@@ -1290,7 +1290,7 @@
       "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
       "entryId": "render-upstream-bmad-help-baseline-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
       "scenarioCoverageProof": {
@@ -1332,7 +1332,7 @@
           "scenarioId": "g008_render_upstream_bmad_help_baseline_js_no_args",
           "originalEntryPoint": "scripts/render-upstream-bmad-help-baseline.js",
           "originalEntryCommand": "node scripts/render-upstream-bmad-help-baseline.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -1390,7 +1390,7 @@
                 "to": "scripts/render-upstream-bmad-help-baseline.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
                 "to": "scripts/render-upstream-bmad-help-baseline.js"
               },
               {
@@ -1444,7 +1444,7 @@
           "scenarioId": "g008_render_upstream_bmad_help_baseline_js_env_bmad_help_upstream_commit",
           "originalEntryPoint": "scripts/render-upstream-bmad-help-baseline.js",
           "originalEntryCommand": "node scripts/render-upstream-bmad-help-baseline.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
           "argumentCombination": "env BMAD_HELP_UPSTREAM_COMMIT=<source-derived-safe-value>",
           "args": [],
@@ -1509,7 +1509,7 @@
                 "to": "scripts/render-upstream-bmad-help-baseline.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
                 "to": "scripts/render-upstream-bmad-help-baseline.js"
               },
               {

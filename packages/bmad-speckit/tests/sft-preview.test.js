@@ -3,7 +3,7 @@ const assert = require('node:assert');
 
 let previewModule;
 try {
-  previewModule = require('../src/commands/sft-preview.js');
+  previewModule = require('../src/commands/sft-preview');
 } catch {
   previewModule = null;
 }

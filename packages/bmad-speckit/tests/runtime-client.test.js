@@ -2,7 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert');
 let runtimeClientModule;
 try {
-  runtimeClientModule = require('../src/runtime-client.js');
+  runtimeClientModule = require('../src/runtime-client');
 } catch {
   runtimeClientModule = null;
 }

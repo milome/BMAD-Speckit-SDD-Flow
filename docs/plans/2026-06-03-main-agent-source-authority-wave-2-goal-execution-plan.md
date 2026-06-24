@@ -148,12 +148,12 @@ This wave must not clean up root scripts. Root `scripts/*` contains internal dev
 
 ### Addendum D002: Package Source Authority Contract
 
-- `packages/bmad-speckit/src/main-agent/index.js` MUST export `mainAgentRuntimeCommand`.
-- `packages/bmad-speckit/src/main-agent/runtime.js` MUST implement action selection for `inspect`, `confirm-scope`, `dispatch-plan`, and `run-loop`.
-- `packages/bmad-speckit/src/main-agent/actions/inspect.js` MUST contain the package source implementation for `inspect`.
-- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.js` MUST contain the package source implementation for `confirm-scope`.
-- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js` MUST contain the package source implementation for `dispatch-plan`.
-- `packages/bmad-speckit/src/main-agent/actions/run-loop.js` MUST contain the package source implementation for `run-loop`.
+- `packages/bmad-speckit/src/main-agent/index.ts` MUST export `mainAgentRuntimeCommand`.
+- `packages/bmad-speckit/src/main-agent/runtime.ts` MUST implement action selection for `inspect`, `confirm-scope`, `dispatch-plan`, and `run-loop`.
+- `packages/bmad-speckit/src/main-agent/actions/inspect.ts` MUST contain the package source implementation for `inspect`.
+- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts` MUST contain the package source implementation for `confirm-scope`.
+- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts` MUST contain the package source implementation for `dispatch-plan`.
+- `packages/bmad-speckit/src/main-agent/actions/run-loop.ts` MUST contain the package source implementation for `run-loop`.
 - Covered action modules MUST NOT import root `scripts/*.ts`.
 - Covered action modules MUST NOT import `packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs`.
 - Covered action modules MUST NOT depend on a source repository checkout path.
@@ -258,12 +258,12 @@ Files:
 - `packages/bmad-speckit/package.json`
 - `packages/bmad-speckit/bin/bmad-speckit.js`
 - `packages/bmad-speckit/scripts/build-main-agent-dist.cjs`
-- `packages/bmad-speckit/src/main-agent/index.js`
-- `packages/bmad-speckit/src/main-agent/runtime.js`
-- `packages/bmad-speckit/src/main-agent/actions/inspect.js`
-- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.js`
-- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js`
-- `packages/bmad-speckit/src/main-agent/actions/run-loop.js`
+- `packages/bmad-speckit/src/main-agent/index.ts`
+- `packages/bmad-speckit/src/main-agent/runtime.ts`
+- `packages/bmad-speckit/src/main-agent/actions/inspect.ts`
+- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts`
+- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts`
+- `packages/bmad-speckit/src/main-agent/actions/run-loop.ts`
 - `packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs`
 - `packages/bmad-speckit/dist/main-agent/index.js`
 - `packages/bmad-speckit/dist/main-agent/runtime.js`
@@ -433,21 +433,21 @@ Purpose: Make `packages/bmad-speckit/src/main-agent/**` the true source authorit
 
 Files:
 
-- `packages/bmad-speckit/src/main-agent/index.js`
-- `packages/bmad-speckit/src/main-agent/runtime.js`
-- `packages/bmad-speckit/src/main-agent/actions/inspect.js`
-- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.js`
-- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js`
-- `packages/bmad-speckit/src/main-agent/actions/run-loop.js`
+- `packages/bmad-speckit/src/main-agent/index.ts`
+- `packages/bmad-speckit/src/main-agent/runtime.ts`
+- `packages/bmad-speckit/src/main-agent/actions/inspect.ts`
+- `packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts`
+- `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts`
+- `packages/bmad-speckit/src/main-agent/actions/run-loop.ts`
 
 Steps:
 
-1. Implement `mainAgentRuntimeCommand` in `packages/bmad-speckit/src/main-agent/index.js`.
-2. Implement covered action selection in `packages/bmad-speckit/src/main-agent/runtime.js`.
-3. Implement package source behavior for `inspect` in `packages/bmad-speckit/src/main-agent/actions/inspect.js`.
-4. Implement package source behavior for `confirm-scope` in `packages/bmad-speckit/src/main-agent/actions/confirm-scope.js`.
-5. Implement package source behavior for `dispatch-plan` in `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js`.
-6. Implement package source behavior for `run-loop` in `packages/bmad-speckit/src/main-agent/actions/run-loop.js`.
+1. Implement `mainAgentRuntimeCommand` in `packages/bmad-speckit/src/main-agent/index.ts`.
+2. Implement covered action selection in `packages/bmad-speckit/src/main-agent/runtime.ts`.
+3. Implement package source behavior for `inspect` in `packages/bmad-speckit/src/main-agent/actions/inspect.ts`.
+4. Implement package source behavior for `confirm-scope` in `packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts`.
+5. Implement package source behavior for `dispatch-plan` in `packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts`.
+6. Implement package source behavior for `run-loop` in `packages/bmad-speckit/src/main-agent/actions/run-loop.ts`.
 7. Preserve JSON output fields required by D002.
 8. Preserve `unsupported_main_agent_action` for unknown actions.
 9. Preserve `runtime_state_missing` for required runtime state failures.
@@ -512,7 +512,7 @@ Purpose: Keep legacy fallback explicitly bounded and prevent covered action regr
 Files:
 
 - `packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs`
-- `packages/bmad-speckit/src/main-agent/runtime.js`
+- `packages/bmad-speckit/src/main-agent/runtime.ts`
 - `packages/bmad-speckit/tests/main-agent-compiled-fallback-boundary.test.js`
 - `repo-governance/script-migration-registry.yaml`
 
@@ -742,8 +742,8 @@ Every checkbox must have direct evidence before completion is claimed.
 - [ ] ACC004: `repo-governance/script-migration-registry.yaml` contains `waveId: main-agent-source-authority-wave-2` with `refinesWaveId: main-agent-migration-wave-1`, and CMD-09 proves the validator/test suite accepts this explicit refinement while still rejecting unrelated active-wave conflicts.
 - [ ] ACC005: The Wave 2 registry entry uses `originalPath: scripts/main-agent-orchestration.ts`, `oldPathDisposition: retained_source_dev_only`, `deletionAllowed: false`, and `deletionApprovalRef: null`.
 - [ ] ACC006: The Wave 2 registry entry records both `packages/bmad-speckit/src/main-agent/**` target paths and `packages/bmad-speckit/dist/main-agent/**` target paths.
-- [ ] ACC007: `packages/bmad-speckit/src/main-agent/index.js` exports `mainAgentRuntimeCommand`.
-- [ ] ACC008: `packages/bmad-speckit/src/main-agent/runtime.js` supports `inspect`, `confirm-scope`, `dispatch-plan`, and `run-loop`.
+- [ ] ACC007: `packages/bmad-speckit/src/main-agent/index.ts` exports `mainAgentRuntimeCommand`.
+- [ ] ACC008: `packages/bmad-speckit/src/main-agent/runtime.ts` supports `inspect`, `confirm-scope`, `dispatch-plan`, and `run-loop`.
 - [ ] ACC009: `packages/bmad-speckit/package.json` defines `build:main-agent-dist` and invokes it from `prepack` before package validation.
 - [ ] ACC010: `packages/bmad-speckit/package.json` includes `dist/` in the package `files` array.
 - [ ] ACC011: `packages/bmad-speckit/scripts/build-main-agent-dist.cjs` exists.
@@ -967,7 +967,7 @@ Produce explicit evidence for every scenario.
 
 ### MV-01 Package Dist Source Authority Inspection
 
-1. Open `packages/bmad-speckit/src/main-agent/runtime.js`.
+1. Open `packages/bmad-speckit/src/main-agent/runtime.ts`.
 2. Verify `inspect`, `confirm-scope`, `dispatch-plan`, and `run-loop` are implemented through package source action modules.
 3. Open `packages/bmad-speckit/dist/main-agent/runtime.js`.
 4. Verify dist runtime was generated from package source.

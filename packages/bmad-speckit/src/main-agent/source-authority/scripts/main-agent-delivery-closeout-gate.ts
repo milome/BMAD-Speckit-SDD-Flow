@@ -379,7 +379,8 @@ function renderCloseoutConfirmation(input: {
   const confirmationTextFile = path.join(path.dirname(input.htmlPath), 'closeout-confirmation.txt');
   const ingestCommand = [
     'node',
-    'scripts/main-agent-orchestration.ts',
+    'packages/bmad-speckit/bin/bmad-speckit.js',
+    'main-agent-orchestration',
     '--action',
     'confirm-closeout-acceptance',
     '--source',

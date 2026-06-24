@@ -28,7 +28,7 @@ function writeSourcePlan(root: string): string {
       '',
       '## File Map',
       '',
-      '- Modify `packages/bmad-speckit/src/commands/goal-contract.js`.',
+      '- Modify `packages/bmad-speckit/src/commands/goal-contract.ts`.',
       '',
       '## Implementation Task Breakdown',
       '',

@@ -22,7 +22,7 @@ module.exports = {
   overrides: [
     {
       files: [
-        'packages/bmad-speckit/src/**/*.js',
+        'packages/bmad-speckit/src/**/*.ts',
         'packages/scoring/**/*.ts',
         'scripts/**/*.ts',
       ],
@@ -57,6 +57,7 @@ module.exports = {
     },
     {
       files: [
+        'packages/bmad-speckit/src/**/*.ts',
         'packages/bmad-speckit/**/*.cjs',
         'packages/bmad-speckit/**/*.js',
         'packages/runtime-emit/src/**/*.js',

@@ -967,7 +967,7 @@
       "originalPath": "scripts/compare-bmad-help-upstream.js",
       "entryId": "compare-bmad-help-upstream-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
       "scenarioCoverageProof": {
@@ -1009,7 +1009,7 @@
           "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
           "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
           "originalEntryCommand": "node scripts/compare-bmad-help-upstream.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -1067,7 +1067,7 @@
                 "to": "scripts/compare-bmad-help-upstream.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
                 "to": "scripts/compare-bmad-help-upstream.js"
               },
               {
@@ -1121,7 +1121,7 @@
           "scenarioId": "g008_compare_bmad_help_upstream_js_env_bmad_help_upstream_commit",
           "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
           "originalEntryCommand": "node scripts/compare-bmad-help-upstream.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
           "argumentCombination": "env BMAD_HELP_UPSTREAM_COMMIT=<source-derived-safe-value>",
           "args": [],
@@ -1186,7 +1186,7 @@
                 "to": "scripts/compare-bmad-help-upstream.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
                 "to": "scripts/compare-bmad-help-upstream.js"
               },
               {

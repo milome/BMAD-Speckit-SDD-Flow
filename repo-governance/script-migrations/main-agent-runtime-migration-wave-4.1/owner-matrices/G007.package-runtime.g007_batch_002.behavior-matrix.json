@@ -2039,7 +2039,7 @@
       "originalPath": "scripts/generate-codex-agents-from-claude.js",
       "entryId": "generate-codex-agents-from-claude-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
       "scenarioCoverageProof": {
@@ -2081,7 +2081,7 @@
           "scenarioId": "g007_generate_codex_agents_from_claude_js_no_args",
           "originalEntryPoint": "scripts/generate-codex-agents-from-claude.js",
           "originalEntryCommand": "node scripts/generate-codex-agents-from-claude.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -2149,7 +2149,7 @@
                 "to": "scripts/generate-codex-agents-from-claude.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
                 "to": "scripts/generate-codex-agents-from-claude.js"
               },
               {
@@ -2203,7 +2203,7 @@
           "scenarioId": "g007_generate_codex_agents_from_claude_js_flag_check",
           "originalEntryPoint": "scripts/generate-codex-agents-from-claude.js",
           "originalEntryCommand": "node scripts/generate-codex-agents-from-claude.js --check",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js --check",
           "argumentCombination": "--check <present>",
           "args": [
@@ -2273,7 +2273,7 @@
                 "to": "scripts/generate-codex-agents-from-claude.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
                 "to": "scripts/generate-codex-agents-from-claude.js"
               },
               {

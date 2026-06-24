@@ -3,7 +3,7 @@ const assert = require('node:assert');
 
 let bundleModule;
 try {
-  bundleModule = require('../src/commands/sft-bundle.js');
+  bundleModule = require('../src/commands/sft-bundle');
 } catch {
   bundleModule = null;
 }
@@ -95,7 +95,7 @@ describe('sft-bundle command', () => {
   });
 
   it('score command auto-writes scoped bundle after passing implement audit', async () => {
-    const scoreModule = require('../src/commands/score.js');
+    const scoreModule = require('../src/commands/score');
     let parseCalled = false;
     const runtimeCalls = [];
     const logs = [];
@@ -145,7 +145,7 @@ describe('sft-bundle command', () => {
   });
 
   it('does not auto-write scoped bundle for non-passed implement events', async () => {
-    const scoreModule = require('../src/commands/score.js');
+    const scoreModule = require('../src/commands/score');
     const runtimeCalls = [];
 
     await scoreModule.scoreCommand(

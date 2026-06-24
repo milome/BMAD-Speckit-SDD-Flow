@@ -38,9 +38,9 @@
       "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
       "actionSlug": "live-smoke-main-agent-runtime",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js",
+        "packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/actions/live-smoke-main-agent-runtime.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -82,9 +82,9 @@
       "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
       "actionSlug": "ai-tdd-closeout-remediation-adapter",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js",
+        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-closeout-remediation-adapter.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -126,9 +126,9 @@
       "originalPath": "scripts/main-agent-audit-review-gate.ts",
       "actionSlug": "audit-review-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/audit-review-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/audit-review-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -170,9 +170,9 @@
       "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
       "actionSlug": "bmad-artifact-hardcut",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js",
+        "packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.ts",
         "packages/bmad-speckit/dist/main-agent/actions/bmad-artifact-hardcut.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -214,9 +214,9 @@
       "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
       "actionSlug": "control-plane-isolation-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/control-plane-isolation-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -258,9 +258,9 @@
       "originalPath": "scripts/main-agent-data-governance-gate.ts",
       "actionSlug": "data-governance-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/data-governance-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/data-governance-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -302,9 +302,9 @@
       "originalPath": "scripts/main-agent-dataset-release-gate.ts",
       "actionSlug": "dataset-release-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/dataset-release-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -346,9 +346,9 @@
       "originalPath": "scripts/main-agent-decision-field-check.ts",
       "actionSlug": "decision-field-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/decision-field-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/decision-field-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/decision-field-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -390,9 +390,9 @@
       "originalPath": "scripts/main-agent-development-journey-matrix.ts",
       "actionSlug": "development-journey-matrix",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js",
+        "packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.ts",
         "packages/bmad-speckit/dist/main-agent/actions/development-journey-matrix.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -434,9 +434,9 @@
       "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
       "actionSlug": "entryflow-traceability-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/entryflow-traceability-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -478,9 +478,9 @@
       "originalPath": "scripts/main-agent-execution-closure-gate.ts",
       "actionSlug": "execution-closure-gate",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/execution-closure-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -522,9 +522,9 @@
       "originalPath": "scripts/main-agent-functional-resume-check.ts",
       "actionSlug": "functional-resume-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/functional-resume-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/functional-resume-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -566,9 +566,9 @@
       "originalPath": "scripts/main-agent-governed-data-products.ts",
       "actionSlug": "governed-data-products",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governed-data-products.js",
+        "packages/bmad-speckit/src/main-agent/actions/governed-data-products.ts",
         "packages/bmad-speckit/dist/main-agent/actions/governed-data-products.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -610,9 +610,9 @@
       "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
       "actionSlug": "production-loop-ready-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/production-loop-ready-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -654,9 +654,9 @@
       "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
       "actionSlug": "runtime-policy-snapshot-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/runtime-policy-snapshot-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -698,9 +698,9 @@
       "originalPath": "scripts/main-agent-scoring-gates-check.ts",
       "actionSlug": "scoring-gates-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/scoring-gates-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -742,9 +742,9 @@
       "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
       "actionSlug": "trace-status-policy-check",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/trace-status-policy-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -786,9 +786,9 @@
       "originalPath": "scripts/orchestration-dispatch-contract.ts",
       "actionSlug": "orchestration-dispatch-contract",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js",
+        "packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.ts",
         "packages/bmad-speckit/dist/main-agent/actions/orchestration-dispatch-contract.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -830,9 +830,9 @@
       "originalPath": "scripts/orchestration-governance-contract.ts",
       "actionSlug": "orchestration-governance-contract",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js",
+        "packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.ts",
         "packages/bmad-speckit/dist/main-agent/actions/orchestration-governance-contract.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -874,9 +874,9 @@
       "originalPath": "scripts/orchestration-state.ts",
       "actionSlug": "orchestration-state",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/orchestration-state.js",
+        "packages/bmad-speckit/src/main-agent/actions/orchestration-state.ts",
         "packages/bmad-speckit/dist/main-agent/actions/orchestration-state.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -918,9 +918,9 @@
       "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
       "actionSlug": "record-main-agent-inspect-readiness-closure",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js",
+        "packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.ts",
         "packages/bmad-speckit/dist/main-agent/actions/record-main-agent-inspect-readiness-closure.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -962,9 +962,9 @@
       "originalPath": "scripts/skill-orchestration-audit.ts",
       "actionSlug": "skill-orchestration-audit",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.js",
+        "packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.ts",
         "packages/bmad-speckit/dist/main-agent/actions/skill-orchestration-audit.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],

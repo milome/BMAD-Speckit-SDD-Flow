@@ -1,0 +1,288 @@
+{
+  "metadata": {
+    "profileId": "requirements-contract-critical-auditor",
+    "profileVersion": "1.0.0",
+    "profileHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "schemaVersion": "critical-auditor-profile/v1",
+    "createdAt": "2026-06-24T00:00:00.000Z",
+    "authoritativeFor": [
+      "requirements contract authoring",
+      "Critical Auditor round response validation",
+      "staging-first source promotion safety",
+      "packet source reconciliation",
+      "main-session audit convergence"
+    ]
+  },
+  "registryBindings": {
+    "requirementsContractAuthoringSkill": "_bmad/skills/requirements-contract-authoring/SKILL.md",
+    "sourceAuthority": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+    "codexAuditorSurface": "_bmad/codex/agents/auditors/requirements-contract-critical-auditor.toml",
+    "claudeAuditorSurface": "_bmad/claude/agents/auditors/requirements-contract-critical-auditor.md",
+    "roundResponseSchema": "critical-auditor-round-response/v1"
+  },
+  "stageProfileDefinitions": {},
+  "stageProfiles": {
+    "requirements_compiler": {
+      "stageProfileId": "requirements_compiler",
+      "owningStages": [
+        "requirements_contract_authoring",
+        "author-confirmation-ready-source",
+        "critical_auditor_receipt_loop"
+      ],
+      "dimensionContractId": "requirements_contract_authoring",
+      "dimensionMode": "requirements_contract",
+      "expectedDimensions": [
+        "requirement_coverage_completeness",
+        "controlled_must_atomicity",
+        "target_authority_correctness",
+        "validation_command_authority",
+        "behavior_edge_failure_path_coverage",
+        "packet_source_reconciliation",
+        "no_fallback_no_synthetic_receipt",
+        "hash_binding",
+        "current_id_namespace",
+        "source_materialization_safety",
+        "user_confirmability_gate"
+      ],
+      "requiredCheckItemIds": [
+        "requirements_contract.requirement_coverage_completeness",
+        "requirements_contract.controlled_must_atomicity",
+        "requirements_contract.target_authority_correctness",
+        "requirements_contract.validation_command_authority",
+        "requirements_contract.behavior_edge_failure_path_coverage",
+        "requirements_contract.packet_source_reconciliation",
+        "requirements_contract.no_fallback_no_synthetic_receipt",
+        "requirements_contract.hash_binding",
+        "requirements_contract.current_id_namespace",
+        "requirements_contract.source_materialization_safety",
+        "requirements_contract.user_confirmability_gate"
+      ],
+      "vetoItemIds": [
+        "requirements_contract.no_fallback_no_synthetic_receipt",
+        "requirements_contract.source_materialization_safety",
+        "requirements_contract.current_id_namespace"
+      ],
+      "stageProfileHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "implementation_readiness": {
+      "stageProfileId": "implementation_readiness",
+      "owningStages": [
+        "requirements_contract_authoring_readiness"
+      ],
+      "dimensionContractId": "requirements_contract_authoring",
+      "dimensionMode": "requirements_contract",
+      "expectedDimensions": [
+        "requirement_coverage_completeness",
+        "target_authority_correctness",
+        "validation_command_authority",
+        "behavior_edge_failure_path_coverage",
+        "hash_binding",
+        "user_confirmability_gate"
+      ],
+      "requiredCheckItemIds": [
+        "requirements_contract.requirement_coverage_completeness",
+        "requirements_contract.target_authority_correctness",
+        "requirements_contract.validation_command_authority",
+        "requirements_contract.behavior_edge_failure_path_coverage",
+        "requirements_contract.hash_binding",
+        "requirements_contract.user_confirmability_gate"
+      ],
+      "vetoItemIds": [
+        "requirements_contract.user_confirmability_gate"
+      ],
+      "stageProfileHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    "post_implementation_code_audit": {
+      "stageProfileId": "post_implementation_code_audit",
+      "owningStages": [
+        "requirements_contract_authoring_rework",
+        "critical_auditor_rework_verification"
+      ],
+      "dimensionContractId": "requirements_contract_authoring",
+      "dimensionMode": "requirements_contract",
+      "expectedDimensions": [
+        "packet_source_reconciliation",
+        "no_fallback_no_synthetic_receipt",
+        "hash_binding",
+        "current_id_namespace",
+        "source_materialization_safety"
+      ],
+      "requiredCheckItemIds": [
+        "requirements_contract.packet_source_reconciliation",
+        "requirements_contract.no_fallback_no_synthetic_receipt",
+        "requirements_contract.hash_binding",
+        "requirements_contract.current_id_namespace",
+        "requirements_contract.source_materialization_safety"
+      ],
+      "vetoItemIds": [
+        "requirements_contract.no_fallback_no_synthetic_receipt",
+        "requirements_contract.source_materialization_safety"
+      ],
+      "stageProfileHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "delivery_confirmation": {
+      "stageProfileId": "delivery_confirmation",
+      "owningStages": [
+        "requirements_contract_source_promotion",
+        "requirements_contract_delivery_confirmation"
+      ],
+      "dimensionContractId": "requirements_contract_authoring",
+      "dimensionMode": "requirements_contract",
+      "expectedDimensions": [
+        "requirement_coverage_completeness",
+        "packet_source_reconciliation",
+        "no_fallback_no_synthetic_receipt",
+        "hash_binding",
+        "current_id_namespace",
+        "source_materialization_safety",
+        "user_confirmability_gate"
+      ],
+      "requiredCheckItemIds": [
+        "requirements_contract.requirement_coverage_completeness",
+        "requirements_contract.packet_source_reconciliation",
+        "requirements_contract.no_fallback_no_synthetic_receipt",
+        "requirements_contract.hash_binding",
+        "requirements_contract.current_id_namespace",
+        "requirements_contract.source_materialization_safety",
+        "requirements_contract.user_confirmability_gate"
+      ],
+      "vetoItemIds": [
+        "requirements_contract.no_fallback_no_synthetic_receipt",
+        "requirements_contract.source_materialization_safety",
+        "requirements_contract.user_confirmability_gate"
+      ],
+      "stageProfileHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    }
+  },
+  "perspectives": [
+    "product_intent",
+    "model_projection",
+    "main_agent_execution"
+  ],
+  "dimensionContractBinding": {
+    "dimensionSetId": "requirements-contract-critical-auditor-dimensions/v1",
+    "dimensions": [
+      "requirement_coverage_completeness",
+      "controlled_must_atomicity",
+      "target_authority_correctness",
+      "validation_command_authority",
+      "behavior_edge_failure_path_coverage",
+      "packet_source_reconciliation",
+      "no_fallback_no_synthetic_receipt",
+      "hash_binding",
+      "current_id_namespace",
+      "source_materialization_safety",
+      "user_confirmability_gate"
+    ],
+    "sourceDocumentCoverageRequired": true,
+    "consumerTargetProjectionRequired": true,
+    "businessCoverageSanityRequired": true
+  },
+  "checkItemSetBinding": {
+    "requiredCheckItemPrefix": "requirements_contract.",
+    "eachDimensionRequiresCheckItem": true,
+    "vetoItemsMustPass": true,
+    "gateDryRunBlockersMustBeDisposed": true
+  },
+  "auditRoundPolicy": {
+    "consecutiveNoGapRoundsRequired": 3,
+    "resetOnHashChange": [
+      "requestHash",
+      "sourceHash",
+      "sourceDocumentHash",
+      "implementationConfirmationHash",
+      "packetHash",
+      "gateDryRunHash",
+      "transactionId",
+      "namespaceVersion"
+    ],
+    "staleConvergenceForbidden": true,
+    "syntheticCleanReceiptsForbidden": true
+  },
+  "roundReceiptContract": {
+    "requiredFields": [
+      "schemaVersion",
+      "requestHash",
+      "recordId",
+      "roundIndex",
+      "transactionId",
+      "namespaceVersion",
+      "sourceHash",
+      "sourceDocumentHash",
+      "implementationConfirmationHash",
+      "packetHash",
+      "gateDryRunHash",
+      "reconciliationIssueCount",
+      "checkedProjectionGroups",
+      "verdict",
+      "reviewedMustRefs",
+      "reviewedProjectionRefs",
+      "priorFindingsDisposition",
+      "falsePositiveProofs",
+      "gapCandidates",
+      "validatedGaps",
+      "rejectedGapCandidates",
+      "rationale"
+    ]
+  },
+  "convergenceReceiptContract": {
+    "requiredConsecutiveRoundReceipts": 3,
+    "allowedWriter": "main_session_only",
+    "noNewGapVerdicts": [
+      "no_new_valid_gap",
+      "no_new_confirmation_blocking_gap"
+    ],
+    "hashBindingMustBeIdenticalAcrossRounds": true,
+    "sourcePromotionRequiresGatePass": true,
+    "sourcePromotionRequiresPacketSourceReconciliation": true
+  },
+  "failClosedPolicy": {
+    "blockingReasons": [
+      "critical_auditor_round_provider_missing",
+      "critical_auditor_response_missing",
+      "critical_auditor_response_hash_mismatch",
+      "critical_auditor_response_namespace_mismatch",
+      "critical_auditor_valid_gap_found",
+      "source_materialization_before_convergence",
+      "source_hash_race_detected",
+      "synthetic_clean_receipt_forbidden"
+    ],
+    "sourceMutationBeforeConvergenceAllowed": false,
+    "sourceMaterializationReceiptBeforePromotionAllowed": false
+  },
+  "auditCallPointRegistry": {
+    "author-confirmation-ready-source": "requirements_compiler",
+    "critical_auditor_round": "requirements_compiler",
+    "critical_auditor_rework": "post_implementation_code_audit",
+    "source_promotion": "delivery_confirmation"
+  },
+  "triadOrchestrationPolicy": {
+    "perspectivesRequiredPerRound": [
+      "product_intent",
+      "model_projection",
+      "main_agent_execution"
+    ],
+    "mainSessionInlineDefault": true,
+    "mainAgentOwnsRepair": true,
+    "subagentsMayWriteRuntimeState": false
+  },
+  "subagentIndependencePolicy": {
+    "readonlyResponseProviderOnly": true,
+    "subagentsMayWriteSource": false,
+    "subagentsMayWritePacket": false,
+    "subagentsMayWriteReceipt": false,
+    "subagentsMayWriteRequirementRecord": false,
+    "subagentsMayDeclareConvergence": false
+  },
+  "mainAgentRepairPolicy": {
+    "repairOwner": "main_session",
+    "repairTarget": "authoring/staging/draft-source.md",
+    "sourceAuthorityWriteRequiresConvergence": true,
+    "repairMustPrecedeNextAuditRound": true
+  },
+  "repairReceiptFeedbackPolicy": {
+    "feedbackDispatchRequired": true,
+    "nextRoundMustConsumePreviousReceipt": true,
+    "stagingDraftHashMustChangeWhenValidatedGapRequiresRework": true
+  }
+}

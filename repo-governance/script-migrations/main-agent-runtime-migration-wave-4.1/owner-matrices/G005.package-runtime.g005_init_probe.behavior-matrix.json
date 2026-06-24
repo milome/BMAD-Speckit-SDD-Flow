@@ -16,7 +16,7 @@
       "originalPath": "scripts/init-to-root.js",
       "entryId": "init-to-root-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
       "scenarioCoverageProof": {
@@ -88,7 +88,7 @@
           "scenarioId": "g005_init_to_root_js_no_args",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -201,7 +201,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -285,7 +285,7 @@
           "scenarioId": "g005_init_to_root_js_flag_agent",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js --agent source-derived-agent",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --agent source-derived-agent",
           "argumentCombination": "--agent <source-derived-safe-value>",
           "args": [
@@ -401,7 +401,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -485,7 +485,7 @@
           "scenarioId": "g005_init_to_root_js_flag_full",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js --full",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --full",
           "argumentCombination": "--full <present>",
           "args": [
@@ -600,7 +600,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -684,7 +684,7 @@
           "scenarioId": "g005_init_to_root_js_flag_no_package_json",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js --no-package-json",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --no-package-json",
           "argumentCombination": "--no-package-json <present>",
           "args": [
@@ -799,7 +799,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -883,7 +883,7 @@
           "scenarioId": "g005_init_to_root_js_flag_with_mcp",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js --with-mcp",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --with-mcp",
           "argumentCombination": "--with-mcp <present>",
           "args": [
@@ -998,7 +998,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -1082,7 +1082,7 @@
           "scenarioId": "g005_init_to_root_js_flag_with_package_json",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js --with-package-json D:\\Dev\\BMAD-Speckit-SDD-Flow",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js --with-package-json D:\\Dev\\BMAD-Speckit-SDD-Flow",
           "argumentCombination": "--with-package-json <present> <source-root-self-target>",
           "args": [
@@ -1198,7 +1198,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -1282,7 +1282,7 @@
           "scenarioId": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
           "argumentCombination": "env BMAD_SKIP_CONSUMER_MCP_INSTALL=<source-derived-safe-value>",
           "args": [],
@@ -1397,7 +1397,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -1481,7 +1481,7 @@
           "scenarioId": "g005_init_to_root_js_env_init_cwd",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
           "argumentCombination": "env INIT_CWD=<source-derived-safe-value>",
           "args": [],
@@ -1596,7 +1596,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -1680,7 +1680,7 @@
           "scenarioId": "g005_init_to_root_js_env_node_env",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
           "argumentCombination": "env NODE_ENV=<source-derived-safe-value>",
           "args": [],
@@ -1795,7 +1795,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {
@@ -1879,7 +1879,7 @@
           "scenarioId": "g005_init_to_root_js_env_vitest",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/init-to-root.js",
           "argumentCombination": "env VITEST=<source-derived-safe-value>",
           "args": [],
@@ -1994,7 +1994,7 @@
                 "to": "scripts/init-to-root.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
                 "to": "scripts/init-to-root.js"
               },
               {

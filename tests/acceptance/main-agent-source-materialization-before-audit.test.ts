@@ -10,7 +10,7 @@ import {
   runMainAgentAuthoringRepair,
   runMainAgentPreConfirmationDrilldown,
   validateWrittenDeepReviewInput,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') {

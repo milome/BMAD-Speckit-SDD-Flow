@@ -30,9 +30,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "adaptive-intake-governance-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -55,9 +55,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "adaptive-intake-proof-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -80,9 +80,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "ai-tdd-contract-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -105,9 +105,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "audit-scoring-convergence-policy",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/audit-scoring-convergence-policy.js",
+        "packages/bmad-speckit/src/main-agent/actions/audit-scoring-convergence-policy.ts",
         "packages/bmad-speckit/dist/main-agent/actions/audit-scoring-convergence-policy.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -130,9 +130,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "audit-stage-routing",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts",
         "packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -155,9 +155,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "audit-triad-orchestrator",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/audit-triad-orchestrator.js",
+        "packages/bmad-speckit/src/main-agent/actions/audit-triad-orchestrator.ts",
         "packages/bmad-speckit/dist/main-agent/actions/audit-triad-orchestrator.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -180,9 +180,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "auditor-post-actions",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts",
         "packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -205,9 +205,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "auditor-spec",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts",
         "packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -230,9 +230,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "bmad-runtime-worker",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts",
         "packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -255,9 +255,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "controlled-readiness-audit-bridge",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/controlled-readiness-audit-bridge.js",
+        "packages/bmad-speckit/src/main-agent/actions/controlled-readiness-audit-bridge.ts",
         "packages/bmad-speckit/dist/main-agent/actions/controlled-readiness-audit-bridge.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -280,9 +280,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "critical-auditor-profile",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/critical-auditor-profile.js",
+        "packages/bmad-speckit/src/main-agent/actions/critical-auditor-profile.ts",
         "packages/bmad-speckit/dist/main-agent/actions/critical-auditor-profile.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -305,9 +305,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "e2e-dual-host-journey-runner",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -330,9 +330,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "e2e-host-matrix-journey-runner",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -355,9 +355,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "final-closeout-evidence-runner",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -380,9 +380,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "governance-host-dispatch-adapter",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-host-dispatch-adapter.js",
+        "packages/bmad-speckit/src/main-agent/actions/governance-host-dispatch-adapter.ts",
         "packages/bmad-speckit/dist/main-agent/actions/governance-host-dispatch-adapter.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -405,9 +405,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "governance-packet-dispatch-worker",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts",
         "packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -430,9 +430,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "host-runtime-mode",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/host-runtime-mode.js",
+        "packages/bmad-speckit/src/main-agent/actions/host-runtime-mode.ts",
         "packages/bmad-speckit/dist/main-agent/actions/host-runtime-mode.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -455,9 +455,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "print-resolved-audit-prompt",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts",
         "packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -480,9 +480,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "render-audit-block-cli",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts",
         "packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -505,9 +505,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "resolve-audit-prompt-path",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/resolve-audit-prompt-path.js",
+        "packages/bmad-speckit/src/main-agent/actions/resolve-audit-prompt-path.ts",
         "packages/bmad-speckit/dist/main-agent/actions/resolve-audit-prompt-path.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -530,9 +530,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "ingest-implementation-evidence",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -555,9 +555,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "parse-bmad-audit-result",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/parse-bmad-audit-result.js",
+        "packages/bmad-speckit/src/main-agent/actions/parse-bmad-audit-result.ts",
         "packages/bmad-speckit/dist/main-agent/actions/parse-bmad-audit-result.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -580,9 +580,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "party-mode-gate-check",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/party-mode-gate-check.js",
+        "packages/bmad-speckit/src/main-agent/actions/party-mode-gate-check.ts",
         "packages/bmad-speckit/dist/main-agent/actions/party-mode-gate-check.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -605,9 +605,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "per-must-closure-evidence-index",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts",
         "packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -630,9 +630,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "pre-rerun-anti-false-positive-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -655,9 +655,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "reviewer-contract",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/reviewer-contract.js",
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-contract.ts",
         "packages/bmad-speckit/dist/main-agent/actions/reviewer-contract.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -680,9 +680,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "reviewer-registry",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/reviewer-registry.js",
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-registry.ts",
         "packages/bmad-speckit/dist/main-agent/actions/reviewer-registry.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -705,9 +705,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "reviewer-rollout-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/reviewer-rollout-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-rollout-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/reviewer-rollout-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -730,9 +730,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "reviewer-runtime-definition",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/reviewer-runtime-definition.js",
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-runtime-definition.ts",
         "packages/bmad-speckit/dist/main-agent/actions/reviewer-runtime-definition.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -755,9 +755,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "reviewer-schema",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/reviewer-schema.js",
+        "packages/bmad-speckit/src/main-agent/actions/reviewer-schema.ts",
         "packages/bmad-speckit/dist/main-agent/actions/reviewer-schema.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -780,9 +780,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "run-ci-release-gate-fixture",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/run-ci-release-gate-fixture.js",
+        "packages/bmad-speckit/src/main-agent/actions/run-ci-release-gate-fixture.ts",
         "packages/bmad-speckit/dist/main-agent/actions/run-ci-release-gate-fixture.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -805,9 +805,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "strict-closeout-proof-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -830,9 +830,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "subagent-evidence-envelope",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/subagent-evidence-envelope.js",
+        "packages/bmad-speckit/src/main-agent/actions/subagent-evidence-envelope.ts",
         "packages/bmad-speckit/dist/main-agent/actions/subagent-evidence-envelope.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -855,9 +855,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "supervised-worker-runtime",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/supervised-worker-runtime.js",
+        "packages/bmad-speckit/src/main-agent/actions/supervised-worker-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/actions/supervised-worker-runtime.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -880,9 +880,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "target-artifact-realization-gate",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -905,9 +905,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "trace-040-evidence-packet-generator",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts",
         "packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -930,9 +930,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "update-runtime-audit-index",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts",
         "packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -955,9 +955,9 @@
       "routeDecision": "blocked_until_classification_compression",
       "plannedActionSlug": "verify-cursor-audit-granularity",
       "plannedTargetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts",
         "packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],

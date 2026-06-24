@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   mainMainAgentOrchestration,
   runMainAgentAuthoringRepair,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;

@@ -42,7 +42,11 @@ interface RuntimeEventRecord {
   payload: Record<string, unknown>;
 }
 
-/** Same rule as create-story: epic_num-story_num-slug (e.g. 15-1-runtime-governance-complete). */
+/**
+ * Same rule as create-story: epic_num-story_num-slug (e.g. 15-1-runtime-governance-complete).
+ * @param {string} storyKey - Runtime story key to parse.
+ * @returns {ParsedStoryKey} Parsed story key parts and epic id.
+ */
 export function parseStoryKey(storyKey: string): ParsedStoryKey {
   const trimmed = storyKey.trim();
   const m = /^(\d+)-(\d+)-(.+)$/.exec(trimmed);
@@ -179,6 +183,10 @@ function stageForLifecycle(lifecycle: 'dev_story' | 'post_audit'): 'implement' |
 
 /**
  * Persist registry after sprint-status write: refresh from sprint when present, re-affirm run scope.
+ * @param {string} root - Project root used for runtime registry paths.
+ * @param {string} storyKey - Runtime story key to persist.
+ * @param {string} runId - Runtime run id to persist.
+ * @param {'dev_story' | 'post_audit'} lifecycle - Runtime lifecycle lane for the run.
  */
 function persistRunRegistry(
   root: string,

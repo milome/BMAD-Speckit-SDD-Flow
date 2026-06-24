@@ -21,7 +21,7 @@ import {
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
   writeMainAgentRunLoopTaskReport,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { runUnifiedIngressAsync } from '../../scripts/main-agent-unified-ingress';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
 import {

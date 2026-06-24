@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import AIRegistry from '../../packages/bmad-speckit/src/services/ai-registry.js';
-import { validateSelectedAITargets } from '../../packages/bmad-speckit/src/commands/check.js';
+import AIRegistry from '../../packages/bmad-speckit/src/services/ai-registry.ts';
+import { validateSelectedAITargets } from '../../packages/bmad-speckit/src/commands/check.ts';
 
 const ROOT = path.join(import.meta.dirname, '..', '..');
 
