@@ -9,14 +9,6 @@ const SURFACE_SKILL_DIRS = [
   path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring'),
   path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring'),
   path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring'),
-  path.join(
-    ROOT,
-    'packages',
-    'bmad-speckit',
-    '_bmad',
-    'skills',
-    'requirements-contract-authoring'
-  ),
 ];
 
 function readSkillFile(relativePath: string): string {

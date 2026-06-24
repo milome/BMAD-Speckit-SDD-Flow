@@ -300,10 +300,11 @@ describe('source materialization before deep audit', () => {
     expect(SHORT_FEEDBACK_WINDOW_MS).toBe(300000);
   });
 
-  it('writes a materialization receipt with hashes after pre-confirmation source materialization', () => {
+  it('does not write a source materialization receipt before staging audit convergence', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-receipt-'));
     try {
       const source = writeSourceWithoutConfirmation(root);
+      const beforeSourceText = readFileSync(source, 'utf8');
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-SOURCE-MAT',
@@ -312,38 +313,12 @@ describe('source materialization before deep audit', () => {
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const receiptPath = sourceMaterializationReceiptPath(root, 'REQSET-SOURCE-MAT');
-      const receipt = readJson(receiptPath);
-      const hashes = currentSourceHashes(source);
 
-      expect(result.receiptPath).toBe(rootRelative(root, receiptPath));
-      expect(receipt.schemaVersion).toBe(SOURCE_MATERIALIZATION_RECEIPT_SCHEMA_VERSION);
-      expect(receipt.sourcePath).toBe(rootRelative(root, source));
-      expect(receipt.requirementSetId).toBe('REQSET-SOURCE-MAT');
-      expect(receipt.recordId).toBe('REQ-SOURCE-MAT');
-      expect(receipt.sourceDocumentHashBefore).toMatch(/^sha256:/);
-      expect(receipt.sourceDocumentHashAfter).toBe(hashes.sourceDocumentHash);
-      expect(receipt.implementationConfirmationHash).toBe(hashes.implementationConfirmationHash);
-      expect(receipt.writtenIdRanges).toEqual(
-        expect.arrayContaining([
-          'ACC-001',
-          'ART-001',
-          'CMD-001',
-          'EVD-001',
-          'TASK-001',
-          'TRACE-001',
-        ])
-      );
-      expect(receipt.draftStatus).toBe('confirmation_ready');
-      expect(receipt.nextAuditCommand).toContain(
-        'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts'
-      );
-      expect(receipt.nextAuditCommand).toContain(
-        'npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts'
-      );
-      expect(receipt.nextAuditCommand).not.toContain('pwsh.exe');
-      expect(receipt.createdBy).toBe('main-agent-source-materialization');
-      expect(Number.isFinite(Date.parse(receipt.createdAt))).toBe(true);
-      expect(receipt.receiptHash).toBe(sha256Json({ ...receipt, receiptHash: null }));
+      expect(result.substate).not.toBe('source_materialized');
+      expect(result.sourceMutationPerformed).toBe(false);
+      expect(result.receiptPath).toBeNull();
+      expect(existsSync(receiptPath)).toBe(false);
+      expect(readFileSync(source, 'utf8')).toBe(beforeSourceText);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -382,7 +357,7 @@ describe('source materialization before deep audit', () => {
     }
   });
 
-  it('blocks deep audit request generation when receipt is missing, stale, draft, or inline confirmation is missing', () => {
+  it('blocks deep audit request generation when receipt or inline confirmation is missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-guard-'));
     try {
       const recordId = 'REQ-SOURCE-MAT-GUARD';
@@ -401,46 +376,6 @@ describe('source materialization before deep audit', () => {
       expect(missingReceipt.blockingStage).toBe('source_materialization_required_before_audit');
       expect(missingReceipt.blockingIssues.map((issue: any) => issue.code)).toContain(
         'source_materialization_receipt_missing'
-      );
-      expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
-
-      writeMaterializationReceipt({
-        root,
-        source,
-        recordId,
-        sourceDocumentHashAfter: 'sha256:'.concat('0'.repeat(64)),
-      });
-      const staleReceipt = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        mode: 'preserve-existing',
-      });
-      expect(staleReceipt.purposeGuard.blockingStage).toBe(
-        'source_materialization_required_before_deep_audit'
-      );
-      expect(staleReceipt.blockingStage).toBe('source_materialization_required_before_audit');
-      expect(staleReceipt.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'source_materialization_receipt_source_hash_stale'
-      );
-      expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
-
-      writeMaterializationReceipt({
-        root,
-        source,
-        recordId,
-        draftStatus: 'draft_updated_not_confirmation_ready',
-      });
-      const draftReceipt = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        mode: 'preserve-existing',
-      });
-      expect(draftReceipt.purposeGuard.blockingStage).toBe(
-        'source_materialization_required_before_deep_audit'
-      );
-      expect(draftReceipt.blockingStage).toBe('source_materialization_required_before_audit');
-      expect(draftReceipt.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'source_materialization_receipt_not_confirmation_ready'
       );
       expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
 
@@ -482,8 +417,8 @@ describe('source materialization before deep audit', () => {
         purpose: 'critical_auditor_round',
         purposeGuard: {
           purpose: 'critical_auditor_round',
-          parentPurpose: 'post_materialization_deep_audit',
-          sourceMaterializationRequiredBeforeDeepAudit: true,
+          parentPurpose: 'staging_transaction_deep_audit',
+          sourceMaterializationRequiredBeforeDeepAudit: false,
         },
       });
       writeValidatedGapResponse(requestPath(root, recordId, 1), responsePath(root, recordId, 1));
@@ -506,7 +441,7 @@ describe('source materialization before deep audit', () => {
     }
   });
 
-  it('writes draft_updated_not_confirmation_ready feedback before deep audit when the short feedback window expires', () => {
+  it('keeps draft feedback in staging and does not write a source materialization receipt when the short feedback window expires', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-draft-window-'));
     let nowSpy: ReturnType<typeof vi.spyOn> | null = null;
     try {
@@ -516,23 +451,19 @@ describe('source materialization before deep audit', () => {
         .mockReturnValueOnce(0)
         .mockReturnValue(SHORT_FEEDBACK_WINDOW_MS + 1);
       const source = writeSourceWithoutConfirmation(root);
+      const beforeSourceText = readFileSync(source, 'utf8');
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-SOURCE-MAT-DRAFT',
         requirementSetId: 'REQSET-SOURCE-MAT-DRAFT',
       });
       const receiptPath = sourceMaterializationReceiptPath(root, 'REQSET-SOURCE-MAT-DRAFT');
-      const receipt = readJson(receiptPath);
 
-      expect(result.substate).toBe('source_materialized');
-      expect(receipt.draftStatus).toBe('draft_updated_not_confirmation_ready');
-      expect(result.updatedSourceSections).toEqual(expect.arrayContaining(['TASK-001']));
-      expect(result.blockingNextAction).toBe(
-        'continue_author_confirmation_ready_source_materialization'
-      );
-      expect(result.sourceDocumentHash).toBe(receipt.sourceDocumentHashAfter);
-      expect(result.receiptPath).toBe(rootRelative(root, receiptPath));
-      expect(result.receiptHash).toBe(receipt.receiptHash);
+      expect(result.substate).not.toBe('source_materialized');
+      expect(result.sourceMutationPerformed).toBe(false);
+      expect(result.receiptPath).toBeNull();
+      expect(existsSync(receiptPath)).toBe(false);
+      expect(readFileSync(source, 'utf8')).toBe(beforeSourceText);
       expect(existsSync(requestPath(root, 'REQ-SOURCE-MAT-DRAFT', 1))).toBe(false);
     } finally {
       nowSpy?.mockRestore();

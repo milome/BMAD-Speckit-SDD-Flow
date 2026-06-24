@@ -26,7 +26,7 @@ describe('requirements contract validation authority', () => {
       const validation = readJson(paths.validationAuthorityReport);
       const draft = readJson(paths.draftImplementationConfirmation).implementationConfirmation;
 
-      expect(issueCodes(result)).toContain('critical_auditor_round_provider_missing');
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(validation.decision).toBe('pass');
       expect(validation.accepted[0]).toMatchObject({
         command: 'pytest tests/test_multi_timeframe_settings.py',
@@ -50,7 +50,7 @@ describe('requirements contract validation authority', () => {
       const paths = artifacts(root, 'REQ-SOURCE-COMMAND', 'REQ-SOURCE-COMMAND-SET');
       const validation = readJson(paths.validationAuthorityReport);
 
-      expect(issueCodes(result)).toContain('critical_auditor_round_provider_missing');
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(validation.accepted).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

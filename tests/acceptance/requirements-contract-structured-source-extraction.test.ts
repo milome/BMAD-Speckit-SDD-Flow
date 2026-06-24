@@ -61,7 +61,7 @@ describe('requirements contract structured source extraction', () => {
       const candidateText = JSON.stringify(candidates.candidates);
       const ledgerText = JSON.stringify(ledger.entries);
 
-      expect(issueCodes(result)).toContain('critical_auditor_round_provider_missing');
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(candidates.acceptedCandidateCount).toBeGreaterThanOrEqual(6);
       expect(candidateText).toContain('preserve preview state');
       expect(candidateText).toContain('批量操作必须支持');

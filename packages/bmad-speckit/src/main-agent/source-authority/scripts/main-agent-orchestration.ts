@@ -3934,13 +3934,9 @@ function writeSourceMaterializationReceipt(input: {
     sourcePath: toRootRelativePath(input.root, input.sourcePath),
     requirementSetId: input.requirementSetId,
     recordId: input.recordId,
-    transactionId: input.transactionId,
-    sourceStartHash: input.sourceStartHash,
-    sourceDocumentHashPrePromote: input.sourceDocumentHashPrePromote,
     sourceDocumentHashBefore: input.sourceDocumentHashBefore,
     sourceDocumentHashAfter: input.sourceDocumentHashAfter,
     implementationConfirmationHash: input.implementationConfirmationHash,
-    criticalAuditorReceiptHashes: input.criticalAuditorReceiptHashes,
     writtenIdRanges: input.writtenIdRanges,
     draftStatus: input.draftStatus,
     nextAuditCommand: nextSourceAuditCommand(input.root, input.sourcePath),
@@ -3948,6 +3944,18 @@ function writeSourceMaterializationReceipt(input: {
     createdBy: 'main-agent-source-materialization',
     receiptHash: null,
   };
+  if (normalizeText(input.transactionId)) {
+    receipt.transactionId = normalizeText(input.transactionId);
+  }
+  if (normalizeText(input.sourceStartHash)) {
+    receipt.sourceStartHash = normalizeText(input.sourceStartHash);
+  }
+  if (normalizeText(input.sourceDocumentHashPrePromote)) {
+    receipt.sourceDocumentHashPrePromote = normalizeText(input.sourceDocumentHashPrePromote);
+  }
+  if (Array.isArray(input.criticalAuditorReceiptHashes)) {
+    receipt.criticalAuditorReceiptHashes = input.criticalAuditorReceiptHashes;
+  }
   receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
   writeJsonUtf8(input.paths.sourceMaterializationReceipt, receipt);
   return {

@@ -64,7 +64,7 @@ describe('requirements contract consumer target authority', () => {
         sourceSpan: row.sourceSpan,
       }));
 
-      expect(issueCodes(result)).toContain('critical_auditor_round_provider_missing');
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(accepted).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
