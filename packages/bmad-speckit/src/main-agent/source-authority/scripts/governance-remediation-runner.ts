@@ -6,10 +6,15 @@ const cjsRequire = createRequire(__filename);
 
 function requirePackageBmadModule<T>(relativePath: string): T {
   const normalizedRelativePath = relativePath.replace(/\\/gu, '/');
-  const candidates = [
-    path.resolve(__dirname, '..', normalizedRelativePath),
-    path.resolve(__dirname, '..', '..', '..', '..', normalizedRelativePath),
-  ];
+  const candidateRoots = [
+    path.resolve(__dirname, '..'),
+    path.resolve(__dirname, '..', '..', '..', '..'),
+    process.env.BMAD_SPECKIT_REPO_ROOT ? path.resolve(process.env.BMAD_SPECKIT_REPO_ROOT) : null,
+    path.resolve(__dirname, '..', '..', '..', '..', '..', '..'),
+  ].filter((candidateRoot): candidateRoot is string => candidateRoot !== null);
+  const candidates = [...new Set(candidateRoots)].map((candidateRoot) =>
+    path.resolve(candidateRoot, normalizedRelativePath)
+  );
   const target = candidates.find((candidate) => fs.existsSync(candidate));
   if (!target) {
     throw new Error(`Package _bmad module missing: ${relativePath}`);

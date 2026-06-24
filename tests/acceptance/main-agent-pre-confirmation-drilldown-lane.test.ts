@@ -1331,6 +1331,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         const targetSkill = path.join(root, surface, 'skills', 'requirements-contract-authoring');
         mkdirSync(path.dirname(targetSkill), { recursive: true });
         cpSync(sourceSkill, targetSkill, { recursive: true });
+        cpSync(path.join(process.cwd(), '_bmad', 'shared'), path.join(root, surface, 'shared'), {
+          recursive: true,
+        });
         const source = writeDraftSource(root);
         const recordId = `REQ-PRE-CONFIRMATION-${surface.slice(1).toUpperCase()}-SKILL`;
 
