@@ -38,6 +38,9 @@ function resolveSharedRuntime() {
   const candidates = [];
   for (const anchor of anchors) {
     candidates.push(path.join(anchor, '_bmad', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'));
+    candidates.push(path.join(anchor, '.codex', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'));
+    candidates.push(path.join(anchor, '.cursor', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'));
+    candidates.push(path.join(anchor, '.claude', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'));
     candidates.push(path.join(anchor, 'packages', 'bmad-speckit', '_bmad', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'));
     candidates.push(path.join(anchor, 'node_modules', 'bmad-speckit', '_bmad', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'));
     candidates.push(

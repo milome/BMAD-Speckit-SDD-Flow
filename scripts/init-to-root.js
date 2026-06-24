@@ -31,6 +31,8 @@ const { syncSpecifyMirror } = require(path.join(
 
 function resolveInstallSurfaceManifestTools() {
   const candidates = [
+    path.join(PKG_ROOT, 'packages', 'bmad-speckit', 'dist', 'services', 'install-surface-manifest.js'),
+    path.join(PKG_ROOT, 'node_modules', 'bmad-speckit', 'dist', 'services', 'install-surface-manifest.js'),
     path.join(PKG_ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'install-surface-manifest.js'),
     path.join(PKG_ROOT, 'node_modules', 'bmad-speckit', 'src', 'services', 'install-surface-manifest.js'),
   ];

@@ -314,11 +314,11 @@ async function testE10S3DefaultScript() {
 // T6.2: grep verification - script generator in init, path usage, defaultScript
 function testE10S3Grep() {
   const checks = [
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'generateScript' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'resolvedScriptType' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'defaultScript' },
-    { file: path.join(ROOT, 'src/commands/script-generator.js'), pattern: 'path.join' },
-    { file: path.join(ROOT, 'src/commands/script-generator.js'), pattern: 'writeFileWithEncoding' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'generateScript' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'resolvedScriptType' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'defaultScript' },
+    { file: path.join(ROOT, 'src/commands/script-generator.ts'), pattern: 'path.join' },
+    { file: path.join(ROOT, 'src/commands/script-generator.ts'), pattern: 'writeFileWithEncoding' },
   ];
   for (const { file, pattern } of checks) {
     if (!fs.existsSync(file) || !runGrep(pattern, file)) return false;
@@ -349,11 +349,11 @@ async function testE10S4ConfigAfterInit() {
 // E10-S4 T6.3: grep - init.js and init-skeleton use config-manager; get with cwd
 function testE10S4Grep() {
   const checks = [
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'config-manager' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'defaultAI' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'cwd' },
-    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'config-manager' },
-    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'setAll' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'config-manager' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'defaultAI' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'cwd' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.ts'), pattern: 'config-manager' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.ts'), pattern: 'setAll' },
   ];
   for (const { file, pattern } of checks) {
     if (!fs.existsSync(file) || !runGrep(pattern, file)) return false;
@@ -441,12 +441,12 @@ function testE10S5CheckFail() {
 // E10-S5 T6.2: grep - init worktree uses validateBmadStructure, configManager; check uses structure-validate
 function testE10S5Grep() {
   const checks = [
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'validateBmadStructure' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'runWorktreeFlow' },
-    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'bmadPath' },
-    { file: path.join(ROOT, 'src/commands/init-skeleton.js'), pattern: 'setAll' },
-    { file: path.join(ROOT, 'src/commands/check.js'), pattern: 'structure-validate' },
-    { file: path.join(ROOT, 'src/commands/check.js'), pattern: 'validateBmadStructure' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'validateBmadStructure' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'runWorktreeFlow' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.ts'), pattern: 'bmadPath' },
+    { file: path.join(ROOT, 'src/commands/init-skeleton.ts'), pattern: 'setAll' },
+    { file: path.join(ROOT, 'src/commands/check.ts'), pattern: 'structure-validate' },
+    { file: path.join(ROOT, 'src/commands/check.ts'), pattern: 'validateBmadStructure' },
     { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: 'check' },
   ];
   for (const { file, pattern } of checks) {
@@ -801,13 +801,13 @@ function testT029() {
     { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: 'init' },
     { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: '--ai' },
     { file: path.join(ROOT, 'bin/bmad-speckit.js'), pattern: '--yes' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'template-fetcher' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'ai-registry' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'utils/path' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'utils/tty' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'isTTY' },
-    { file: path.join(ROOT, 'src/commands/init.js'), pattern: 'getDefaultAI' },
-    { file: path.join(ROOT, 'src/services/template-fetcher.js'), pattern: 'path' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'template-fetcher' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'ai-registry' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'utils/path' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'utils/tty' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'isTTY' },
+    { file: path.join(ROOT, 'src/commands/init.ts'), pattern: 'getDefaultAI' },
+    { file: path.join(ROOT, 'src/services/template-fetcher.ts'), pattern: 'path' },
   ];
   for (const { file, pattern } of checks) {
     if (!fs.existsSync(file) || !runGrep(pattern, file)) {

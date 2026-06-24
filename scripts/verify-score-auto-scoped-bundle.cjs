@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { scoreCommand } = require('../packages/bmad-speckit/src/commands/score.js');
+const { scoreCommand } = require('../packages/bmad-speckit/dist/commands/score.js');
 
 async function main() {
   const root = process.cwd();
