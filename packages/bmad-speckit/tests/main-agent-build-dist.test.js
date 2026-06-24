@@ -20,6 +20,7 @@ const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
   'actions/native-goal-invoker.ts',
 ];
 const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
+  '_bmad/runtime/hooks/deferred-gap-governance.cjs',
   '_bmad/core/agents/code-reviewer/base-prompt.md',
   '_bmad/core/agents/code-reviewer/metadata.json',
   '_bmad/core/agents/code-reviewer/profiles.json',
@@ -477,6 +478,26 @@ describe('main-agent dist build', () => {
           `dist generated fixture drifted from build input: ${relativePath}`
         );
       }
+    });
+  });
+
+  it('builds package _bmad mirror before source-authority import rewriting', () => {
+    const packageRuntimeAsset = 'packages/bmad-speckit/_bmad/runtime/hooks/deferred-gap-governance.cjs';
+    withTemporarilyMovedFiles([packageRuntimeAsset], () => {
+      execFileSync(process.execPath, [BUILD_SCRIPT], {
+        cwd: PACKAGE_ROOT,
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+
+      const packageAsset = path.join(REPO_ROOT, packageRuntimeAsset);
+      const repoAsset = path.join(REPO_ROOT, '_bmad/runtime/hooks/deferred-gap-governance.cjs');
+      assert.equal(fs.existsSync(packageAsset), true, 'build did not restore package _bmad mirror');
+      assert.equal(
+        fs.readFileSync(packageAsset, 'utf8'),
+        fs.readFileSync(repoAsset, 'utf8'),
+        'package _bmad mirror drifted from canonical runtime hook'
+      );
     });
   });
 });

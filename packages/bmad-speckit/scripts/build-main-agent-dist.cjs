@@ -279,6 +279,7 @@ if (fs.existsSync(packageDistRoot)) {
   fs.rmSync(packageDistRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
+for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
 for (const file of files) copyRuntimeFile(file);
 
 function packageRuntimeTypeScriptDistRelativePath(relativePath) {
@@ -390,7 +391,6 @@ function copyRuntimeAssetDirectory(relativePath) {
   copyDirectoryContents(source, target);
 }
 
-for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
 function sanitizeSourceAuthorityPackageJson(source) {
   const pkg = JSON.parse(fs.readFileSync(source, 'utf8'));
   delete pkg.scripts;
