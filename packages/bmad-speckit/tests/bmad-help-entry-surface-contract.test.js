@@ -69,8 +69,8 @@ describe('bmad-help and bmads package entry surface', () => {
 
     assert.ok(cli.includes(".command('bmad-help')"));
     assert.ok(cli.includes(".command('bmads')"));
-    assert.ok(cli.includes('../src/runtime/bmad-help-renderer'));
-    assert.ok(cli.includes('../src/runtime/bmads-renderer'));
+    assert.ok(cli.includes('../dist/runtime/bmad-help-renderer'));
+    assert.ok(cli.includes('../dist/runtime/bmads-renderer'));
     assert.ok(!cli.includes("runRepoScript('bmads-renderer.ts'"));
     assert.ok(!cli.includes("runRepoScript('bmad-help-renderer.ts'"));
 

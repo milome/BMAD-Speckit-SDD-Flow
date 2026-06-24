@@ -340,7 +340,12 @@ function requireRuntimeState(context) {
 }
 
 async function runMainAgentRuntime(context) {
-  if (context.legacyOrchestration && ORCHESTRATION_ACTIONS.has(context.action)) {
+  if (
+    context.legacyOrchestration &&
+    ORCHESTRATION_ACTIONS.has(context.action) &&
+    context.action !== 'inspect' &&
+    context.action !== 'confirm-scope'
+  ) {
     return emitPackageOrchestration(context);
   }
 

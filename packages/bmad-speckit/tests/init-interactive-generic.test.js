@@ -11,7 +11,7 @@ const path = require('path');
 const os = require('os');
 
 const BIN = path.join(__dirname, '../bin/bmad-speckit.js');
-const initPath = path.join(__dirname, '../src/commands/init');
+const initPath = path.join(__dirname, '../src/commands/init.ts');
 
 describe('Init interactive generic validation (GAP-R2-2)', () => {
   it('runInteractiveFlow contains generic aiCommandsDir validation (grep regression)', () => {

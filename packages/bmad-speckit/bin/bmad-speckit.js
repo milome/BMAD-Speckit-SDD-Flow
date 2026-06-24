@@ -712,28 +712,30 @@ program
 program
   .command('confirm-scope')
   .description('Confirm requirement scope through controlled ingest after exact chat hash confirmation')
+  .option('--json', 'Print machine-readable JSON')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
+  .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
       '--legacy-orchestration',
       '--action',
       'confirm-scope',
-      ...forwardedArgsFromCommand(command),
+      ...rawArgsAfterCommandName('confirm-scope'),
     ])
   );
 
 program
   .command('main-agent:confirm-scope')
   .description('Run the BMAD confirmation ingest orchestration surface')
+  .option('--json', 'Print machine-readable JSON')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
+  .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
       '--legacy-orchestration',
       '--action',
       'confirm-scope',
-      ...forwardedArgsFromCommand(command),
+      ...rawArgsAfterCommandName('main-agent:confirm-scope'),
     ])
   );
 
