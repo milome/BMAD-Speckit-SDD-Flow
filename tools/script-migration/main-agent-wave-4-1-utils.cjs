@@ -326,7 +326,14 @@ function sourceAuthorityPathToDistRuntimePath(value) {
     'packages/bmad-speckit/src/main-agent/',
     'packages/bmad-speckit/dist/main-agent/'
   );
+  if (
+    distPath ===
+    'packages/bmad-speckit/dist/main-agent/source-authority/scripts/deferred-gap-governance-d-cts-source.ts'
+  ) {
+    return 'packages/bmad-speckit/dist/main-agent/source-authority/scripts/deferred-gap-governance.d.cts.js';
+  }
   if (isTypeScriptDeclarationPath(distPath)) return distPath;
+  if (/\.source\.(?:ts|tsx)$/u.test(distPath)) return distPath.replace(/\.source\.(?:ts|tsx)$/u, '.js');
   if (/\.(?:ts|tsx)$/u.test(distPath)) return distPath.replace(/\.(?:ts|tsx)$/u, '.js');
   if (/\.cts$/u.test(distPath)) return distPath.replace(/\.cts$/u, '.cjs');
   if (/\.mts$/u.test(distPath)) return distPath.replace(/\.mts$/u, '.mjs');

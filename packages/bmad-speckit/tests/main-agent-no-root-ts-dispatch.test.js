@@ -35,7 +35,7 @@ describe('main-agent public dispatch root TypeScript guard', () => {
     assert.doesNotMatch(publicMainAgent, TS_NODE_PATTERN);
   });
 
-  it('retains the root orchestration script as source_dev_only_or_compatibility_shim_after_wave_1', () => {
+  it('retains the root orchestration script only as source-dev compatibility surface', () => {
     const rootScript = path.join(PROJECT_ROOT, 'scripts', 'main-agent-orchestration.ts');
 
     assert.equal(fs.existsSync(rootScript), true);

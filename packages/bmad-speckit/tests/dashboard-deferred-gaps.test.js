@@ -36,9 +36,9 @@ function writeReport(root, filename, gapLines) {
 
 describe('dashboard deferred gaps', () => {
   it('loads deferred gap governance from _bmad hook assets instead of consumer root scripts', () => {
-    const dashboardSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'commands', 'dashboard.js'), 'utf8');
-    const auditSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'commands', 'deferred-gap-audit.js'), 'utf8');
-    const loaderSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'utils', 'deferred-gap-governance-loader.js'), 'utf8');
+    const dashboardSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'commands', 'dashboard.ts'), 'utf8');
+    const auditSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'commands', 'deferred-gap-audit.ts'), 'utf8');
+    const loaderSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'utils', 'deferred-gap-governance-loader.ts'), 'utf8');
 
     assert.doesNotMatch(dashboardSource, /scripts\/deferred-gap-governance\.cjs/);
     assert.doesNotMatch(auditSource, /scripts\/deferred-gap-governance\.cjs/);

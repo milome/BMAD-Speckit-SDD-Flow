@@ -3,10 +3,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const COMMAND_SCAN_PATHS = [
-  'package.json',
-  'tests/acceptance/main-agent-runtime-migration-wave-4-1-contract.test.ts',
-];
+const COMMAND_SCAN_PATHS = ['package.json'];
 const COMMAND_FORBIDDEN_PATTERNS = [
   /ts-node[^\n\r]*scripts[\\/]main-agent-orchestration\.ts/u,
   /tsx[^\n\r]*scripts[\\/]main-agent-orchestration\.ts/u,

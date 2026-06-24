@@ -12,6 +12,7 @@ const {
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+const TS_SOURCE_REGISTER = path.join(PACKAGE_ROOT, 'tests', 'register-ts-source.cjs');
 
 function tempCsv(name, text) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-projection-'));
@@ -21,7 +22,11 @@ function tempCsv(name, text) {
 }
 
 function materializePackageMirror() {
-  const result = spawnSync('node', ['scripts/prepublish-check.js'], {
+  const result = spawnSync('node', [
+    '-r',
+    TS_SOURCE_REGISTER,
+    'scripts/prepublish-check.js',
+  ], {
     cwd: PROJECT_ROOT,
     encoding: 'utf8',
     env: {

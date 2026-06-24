@@ -153,14 +153,40 @@ function rewriteWorkspaceRuntimeRequest(request, relativePath) {
   return `${prefix}${packageName}/dist/${runtimeSubpath}`;
 }
 
+function rewriteRepoRootRuntimeAssetRequest(request, relativePath) {
+  const normalizedRequest = request.replace(/\\/g, '/');
+  const match = normalizedRequest.match(/^((?:\.\.\/)+)_bmad\/(.+)$/u);
+  if (!match) return request;
+  const target = path.join(packageRoot, '_bmad', ...match[2].split('/'));
+  const candidates = [target, `${target}.js`, `${target}.json`, path.join(target, 'index.js')];
+  if (!candidates.some((runtimeTarget) => fs.existsSync(runtimeTarget))) {
+    throw new Error(
+      [
+        `source-authority runtime import has no package _bmad mirror target: ${request}`,
+        `source-authority file: ${relativePath}`,
+        `expected package mirror target under: ${path.relative(repoRoot, target).replace(/\\/g, '/')}`,
+      ].join('\n')
+    );
+  }
+  const currentFileDir = path.dirname(path.join(distRoot, relativePath));
+  const targetRuntimePath = path.relative(currentFileDir, target).replace(/\\/g, '/');
+  return targetRuntimePath.startsWith('.') ? targetRuntimePath : `./${targetRuntimePath}`;
+}
+
 function rewriteSourceAuthorityRuntimeImports(text, relativePath) {
   return text
     .replace(/(require\(\s*['"])([^'"]+)(['"]\s*\))/gu, (match, start, request, end) => {
-      const rewritten = rewriteWorkspaceRuntimeRequest(request, relativePath);
+      const rewritten = rewriteRepoRootRuntimeAssetRequest(
+        rewriteWorkspaceRuntimeRequest(request, relativePath),
+        relativePath
+      );
       return `${start}${rewritten}${end}`;
     })
     .replace(/(from\s+['"])([^'"]+)(['"])/gu, (match, start, request, end) => {
-      const rewritten = rewriteWorkspaceRuntimeRequest(request, relativePath);
+      const rewritten = rewriteRepoRootRuntimeAssetRequest(
+        rewriteWorkspaceRuntimeRequest(request, relativePath),
+        relativePath
+      );
       return `${start}${rewritten}${end}`;
     });
 }

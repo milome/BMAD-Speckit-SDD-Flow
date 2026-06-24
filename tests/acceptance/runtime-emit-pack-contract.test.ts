@@ -3,7 +3,37 @@ import path from 'node:path';
 import { execFileSync, execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
+function withTemporarilyMovedPath(targetPath: string, callback: () => void): void {
+  if (!fs.existsSync(targetPath)) {
+    callback();
+    return;
+  }
+
+  const backupPath = `${targetPath}.test-backup-${process.pid}-${Date.now()}`;
+  fs.renameSync(targetPath, backupPath);
+  try {
+    callback();
+  } finally {
+    if (fs.existsSync(targetPath)) fs.rmSync(targetPath, { recursive: true, force: true });
+    fs.renameSync(backupPath, targetPath);
+  }
+}
+
 describe('runtime-emit pack contract', () => {
+  it('builds during clean install before the package _bmad mirror exists', () => {
+    const repoRoot = process.cwd();
+    const packageRoot = path.join(repoRoot, 'packages', 'runtime-emit');
+    const packageBmadMirror = path.join(repoRoot, 'packages', 'bmad-speckit', '_bmad');
+
+    withTemporarilyMovedPath(packageBmadMirror, () => {
+      execFileSync(process.execPath, ['build.js'], { cwd: packageRoot, stdio: 'pipe' });
+    });
+
+    expect(
+      fs.existsSync(path.join(packageRoot, 'dist', 'run-auditor-host.cjs'))
+    ).toBe(true);
+  }, 120_000);
+
   it('cleans stale dist files before build and packs only manifest-listed bundles', () => {
     const packageRoot = path.join(process.cwd(), 'packages', 'runtime-emit');
     const stalePath = path.join(packageRoot, 'dist', 'governance-runtime-worker.cjs');

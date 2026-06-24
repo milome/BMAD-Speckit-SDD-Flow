@@ -15,12 +15,11 @@ import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
-const WAVE_ID = 'main-agent-source-authority-wave-2';
-const WAVE_DIR = join(REPO_ROOT, '.tmp', WAVE_ID);
-const INSTALL_MATRIX_DIR = join(WAVE_DIR, 'install-matrix');
+const CONSUMER_RUNTIME_DIR = join(REPO_ROOT, '.tmp', 'main-agent-consumer-runtime');
+const INSTALL_EVIDENCE_DIR = join(CONSUMER_RUNTIME_DIR, 'install-evidence');
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const npmCacheDir = mkdtempSync(join(tmpdir(), 'wave2-main-agent-npm-cache-'));
+const npmCacheDir = mkdtempSync(join(tmpdir(), 'main-agent-consumer-runtime-npm-cache-'));
 
 type ProcessResult = {
   command: string;
@@ -83,20 +82,20 @@ function expectSuccess(result: ProcessResult): ProcessResult {
 }
 
 function latestTarball(): string | null {
-  if (!existsSync(WAVE_DIR)) return null;
-  const candidates = readdirSync(WAVE_DIR)
+  if (!existsSync(CONSUMER_RUNTIME_DIR)) return null;
+  const candidates = readdirSync(CONSUMER_RUNTIME_DIR)
     .filter((name) => name.endsWith('.tgz'))
-    .map((name) => join(WAVE_DIR, name))
+    .map((name) => join(CONSUMER_RUNTIME_DIR, name))
     .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
   return candidates[0] ?? null;
 }
 
 function prepareRootPackageTarball(): string {
-  mkdirSync(WAVE_DIR, { recursive: true });
+  mkdirSync(CONSUMER_RUNTIME_DIR, { recursive: true });
   const existing = latestTarball();
   if (existing) return existing;
   expectSuccess(runProcess(npmCmd, ['run', 'build:main-agent-dist', '--prefix', 'packages/bmad-speckit'], REPO_ROOT));
-  expectSuccess(runProcess(npmCmd, ['pack', '--pack-destination', WAVE_DIR], REPO_ROOT));
+  expectSuccess(runProcess(npmCmd, ['pack', '--pack-destination', CONSUMER_RUNTIME_DIR], REPO_ROOT));
   const tarball = latestTarball();
   if (!tarball) throw new Error('npm pack did not create a root package tarball');
   return tarball;
@@ -127,7 +126,7 @@ function ensureRuntimeProbe(target: string): { probePath: string; logPath: strin
       "const fs = require('node:fs');",
       "const childProcess = require('node:child_process');",
       "const Module = require('node:module');",
-      "const logPath = process.env.BMAD_WAVE2_RUNTIME_PROBE_LOG;",
+      "const logPath = process.env.BMAD_RUNTIME_PROBE_LOG;",
       "const ROOT_SCRIPT_RE = /(^|[\\\\/])scripts[\\\\/]main-agent-orchestration\\.ts\\b/i;",
       "const TSX_RE = /(^|[\\\\/])tsx(?:\\.cmd)?$|\\btsx\\b/i;",
       "const TS_NODE_RE = /(^|[\\\\/])ts-node(?:\\.cmd)?$|\\bts-node\\b/i;",
@@ -219,8 +218,8 @@ function writeInstallEvidence(row: {
   parsed: any;
   flags: ProbeFlags;
 }): void {
-  mkdirSync(INSTALL_MATRIX_DIR, { recursive: true });
-  const filePath = join(INSTALL_MATRIX_DIR, `${row.installMode}-${row.commandId}.json`);
+  mkdirSync(INSTALL_EVIDENCE_DIR, { recursive: true });
+  const filePath = join(INSTALL_EVIDENCE_DIR, `${row.installMode}-${row.commandId}.json`);
   const evidence = {
     installMode: row.installMode,
     commandId: row.commandId,
@@ -255,7 +254,7 @@ function runObservedMainAgentInspect(
 ): void {
   const { probePath, logPath } = ensureRuntimeProbe(target);
   const result = runProcess(command, args, target, {
-    BMAD_WAVE2_RUNTIME_PROBE_LOG: logPath,
+    BMAD_RUNTIME_PROBE_LOG: logPath,
     NODE_OPTIONS: `${process.env.NODE_OPTIONS ? `${process.env.NODE_OPTIONS} ` : ''}--require=${probePath}`,
   });
   const parsed = parseLastJson(result.stdout);
@@ -287,14 +286,14 @@ function runObservedMainAgentInspect(
   expect(flags.usedCompiledFallback, `${result.command} entered compiled fallback`).toBe(false);
 }
 
-describe('main-agent source authority wave 2 consumer dist runtime', () => {
-  it('writes save-dev, npx --package, and tgz evidence for package-local dist runtime', () => {
+describe('main-agent consumer dist runtime', () => {
+  it('runs save-dev, npx --package, and tgz package-local dist runtime without TypeScript dispatch', () => {
     const tarball = prepareRootPackageTarball();
     const packageSpec = slash(tarball);
 
-    const saveDev = mkdtempSync(join(tmpdir(), 'wave2-main-agent-save-dev-'));
+    const saveDev = mkdtempSync(join(tmpdir(), 'main-agent-save-dev-'));
     try {
-      writeConsumerPackageJson(saveDev, 'wave2-main-agent-save-dev');
+      writeConsumerPackageJson(saveDev, 'main-agent-save-dev');
       expectSuccess(runProcess(npmCmd, ['install', '--save-dev', tarball], saveDev));
       const packagePath = resolveInstalledPackageRuntime(saveDev);
       expect(packagePath).not.toBe('unresolved');
@@ -311,9 +310,9 @@ describe('main-agent source authority wave 2 consumer dist runtime', () => {
       rmSync(saveDev, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
 
-    const npxConsumer = mkdtempSync(join(tmpdir(), 'wave2-main-agent-npx-package-'));
+    const npxConsumer = mkdtempSync(join(tmpdir(), 'main-agent-npx-package-'));
     try {
-      writeConsumerPackageJson(npxConsumer, 'wave2-main-agent-npx-package');
+      writeConsumerPackageJson(npxConsumer, 'main-agent-npx-package');
       runObservedMainAgentInspect(
         'npx-package',
         'main-agent-inspect',
@@ -327,9 +326,9 @@ describe('main-agent source authority wave 2 consumer dist runtime', () => {
       rmSync(npxConsumer, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
 
-    const tgzConsumer = mkdtempSync(join(tmpdir(), 'wave2-main-agent-tgz-'));
+    const tgzConsumer = mkdtempSync(join(tmpdir(), 'main-agent-tgz-'));
     try {
-      writeConsumerPackageJson(tgzConsumer, 'wave2-main-agent-tgz');
+      writeConsumerPackageJson(tgzConsumer, 'main-agent-tgz');
       expectSuccess(runProcess(npmCmd, ['install', '--no-save', tarball], tgzConsumer));
       const packagePath = resolveInstalledPackageRuntime(tgzConsumer);
       expect(packagePath).not.toBe('unresolved');

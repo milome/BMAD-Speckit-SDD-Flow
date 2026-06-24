@@ -1,4 +1,4 @@
-const { readdirSync } = require('node:fs');
+const { existsSync, readdirSync } = require('node:fs');
 const { basename, isAbsolute, join, relative, resolve } = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -80,10 +80,17 @@ if (filters.length > 0 && testFiles.length === 0) {
 
 const childEnv = { ...process.env };
 delete childEnv.NODE_TEST_CONTEXT;
+const tsSourceRegisterPath = './tests/register-ts-source.cjs';
+const preloadArgs = existsSync(tsSourceRegisterPath) ? ['-r', tsSourceRegisterPath] : [];
 
 function runTestFiles(files, extraArgs = []) {
   if (files.length === 0) return 0;
-  const result = spawnSync(process.execPath, ['--test', ...extraArgs, ...files], {
+  const result = spawnSync(process.execPath, [
+    ...preloadArgs,
+    '--test',
+    ...extraArgs,
+    ...files,
+  ], {
     stdio: 'inherit',
     env: childEnv,
   });

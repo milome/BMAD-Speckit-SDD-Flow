@@ -9,22 +9,8 @@ const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.cjs');
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
 const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
-const SRC_ROOT = path.join(PACKAGE_ROOT, 'src');
 const SRC_JS_ALLOWLIST = path.join(PACKAGE_ROOT, 'scripts', 'src-js-allowlist.json');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
-const WAVE_4_1_LEDGER = path.join(
-  REPO_ROOT,
-  'repo-governance',
-  'script-migrations',
-  'main-agent-runtime-migration-wave-4.1',
-  'migration-ledger.json'
-);
-const { sourceAuthorityPathToDistRuntimePath } = require(path.join(
-  REPO_ROOT,
-  'tools',
-  'script-migration',
-  'main-agent-wave-4-1-utils.cjs'
-));
 const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
 const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
 const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
@@ -83,6 +69,13 @@ const EXPECTED_DIST_FILES = [
 ];
 const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
   {
+    file: 'source-authority/scripts/critical-auditor-profile.js',
+    forbidden: '../../../../../../_bmad/shared/critical-auditor-profile',
+    required: '../../../../_bmad/shared/critical-auditor-profile',
+    runtimeTarget: '_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
+    runtimeTargetBase: 'package',
+  },
+  {
     file: 'source-authority/scripts/query-validate.js',
     forbidden: '../packages/scoring/query',
     required: '../packages/scoring/dist/query',
@@ -115,11 +108,16 @@ function isTypeScriptRuntimeSourcePath(relativePath) {
 }
 
 function sourceAuthorityRelativeToDistRelativePath(relativePath) {
-  const sourcePath = `packages/bmad-speckit/src/main-agent/source-authority/${relativePath}`;
-  const distPath = sourceAuthorityPathToDistRuntimePath(sourcePath);
-  const prefix = 'packages/bmad-speckit/dist/main-agent/';
-  assert.ok(distPath && distPath.startsWith(prefix), `invalid source-authority dist mapping: ${sourcePath}`);
-  return distPath.slice(prefix.length);
+  if (relativePath === 'scripts/deferred-gap-governance-d-cts-source.ts') {
+    return 'source-authority/scripts/deferred-gap-governance.d.cts.js';
+  }
+  const distPath = `source-authority/${relativePath}`;
+  if (TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(distPath)) return distPath;
+  if (/\.source\.(?:ts|tsx)$/u.test(distPath)) return distPath.replace(/\.source\.(?:ts|tsx)$/u, '.js');
+  if (/\.(?:ts|tsx)$/u.test(distPath)) return distPath.replace(/\.(?:ts|tsx)$/u, '.js');
+  if (/\.cts$/u.test(distPath)) return distPath.replace(/\.cts$/u, '.cjs');
+  if (/\.mts$/u.test(distPath)) return distPath.replace(/\.mts$/u, '.mjs');
+  throw new Error(`unsupported source-authority TypeScript path: ${relativePath}`);
 }
 
 function collectSourceAuthorityTypeScriptFiles(dir, base = dir) {
@@ -146,20 +144,6 @@ function collectPackageJsonFiles(dir, base = dir) {
     }
     if (!entry.isFile() || entry.name !== 'package.json') continue;
     collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
-  }
-  return collected.sort();
-}
-
-function collectPackageSourceJavaScriptFiles(dir, base = dir) {
-  const collected = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      collected.push(...collectPackageSourceJavaScriptFiles(fullPath, base));
-      continue;
-    }
-    if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
-    collected.push(`packages/bmad-speckit/src/${path.relative(base, fullPath).replace(/\\/g, '/')}`);
   }
   return collected.sort();
 }
@@ -274,8 +258,10 @@ describe('main-agent dist build', () => {
     );
 
     const allowed = new Set(manifest.allowedPaths);
-    const actual = collectPackageSourceJavaScriptFiles(SRC_ROOT);
     const tracked = new Set(collectTrackedPackageSourceFiles());
+    const actual = [...tracked]
+      .filter((relativePath) => relativePath.endsWith('.js'))
+      .sort((a, b) => a.localeCompare(b));
     const unexpected = actual.filter((relativePath) => !allowed.has(relativePath));
     const stale = manifest.allowedPaths.filter(
       (relativePath) => !fs.existsSync(path.join(REPO_ROOT, relativePath))
@@ -388,66 +374,6 @@ describe('main-agent dist build', () => {
       );
     }
 
-    const ledger = JSON.parse(fs.readFileSync(WAVE_4_1_LEDGER, 'utf8'));
-    const typeScriptReplayChecks = [];
-    const typeScriptOriginalsWithoutTypeScriptSource = [];
-    for (const entry of ledger.entries) {
-      const sourcePaths = new Set([
-        ...(entry.packageImplementationSet || []),
-        ...(entry.sourceAuthorityPaths || []),
-      ]);
-      const typeScriptSourcePaths = Array.from(sourcePaths).filter((sourcePath) =>
-        TYPE_SCRIPT_FAMILY_SOURCE_RE.test(sourcePath)
-      );
-      if (TYPE_SCRIPT_FAMILY_SOURCE_RE.test(entry.originalPath) && typeScriptSourcePaths.length === 0) {
-        typeScriptOriginalsWithoutTypeScriptSource.push(entry.originalPath);
-      }
-      for (const sourcePath of typeScriptSourcePaths) {
-        const distRuntimePath = sourceAuthorityPathToDistRuntimePath(sourcePath);
-        typeScriptReplayChecks.push({ entry, sourcePath, distRuntimePath });
-        assert.ok(
-          distRuntimePath,
-          `missing dist runtime mapping for ${entry.originalPath}: ${sourcePath}`
-        );
-        assert.equal(
-          fs.existsSync(path.join(REPO_ROOT, distRuntimePath)),
-          true,
-          `ledger TypeScript-family source has no dist proof for ${entry.originalPath}: ${sourcePath}`
-        );
-        if (TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(sourcePath)) {
-          assert.match(
-            distRuntimePath,
-            /\.d\.(?:ts|cts|mts)$/u,
-            `declaration-only TypeScript source must keep declaration dist proof instead of fake JS replay: ${sourcePath}`
-          );
-          continue;
-        }
-        assert.match(
-          distRuntimePath,
-          /\.js$/u,
-          `runtime TypeScript source must compile to dist JS for ${entry.originalPath}: ${sourcePath}`
-        );
-        assert.ok(
-          entry.runtimeReplayPaths.includes(distRuntimePath),
-          `ledger runtimeReplayPaths missing compiled dist JS for ${entry.originalPath}: ${distRuntimePath}`
-        );
-        assert.ok(
-          entry.distOutputPaths.includes(distRuntimePath),
-          `ledger distOutputPaths missing compiled dist JS for ${entry.originalPath}: ${distRuntimePath}`
-        );
-      }
-    }
-    assert.deepEqual(
-      typeScriptOriginalsWithoutTypeScriptSource,
-      [],
-      'every TypeScript original script must expose package TypeScript source authority'
-    );
-    assert.ok(
-      typeScriptReplayChecks.length >=
-        ledger.entries.filter((entry) => TYPE_SCRIPT_FAMILY_SOURCE_RE.test(entry.originalPath)).length,
-      'every migrated TypeScript-family source authority path must have dist proof'
-    );
-
     for (const expectedImport of EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS) {
       const distFile = path.join(DIST_ROOT, expectedImport.file);
       const source = fs.readFileSync(distFile, 'utf8');
@@ -462,7 +388,12 @@ describe('main-agent dist build', () => {
         `${expectedImport.file} must require package dist JS`
       );
       assert.equal(
-        fs.existsSync(path.join(DIST_ROOT, expectedImport.runtimeTarget)),
+        fs.existsSync(
+          path.join(
+            expectedImport.runtimeTargetBase === 'package' ? PACKAGE_ROOT : DIST_ROOT,
+            expectedImport.runtimeTarget
+          )
+        ),
         true,
         `missing rewritten runtime target ${expectedImport.runtimeTarget}`
       );

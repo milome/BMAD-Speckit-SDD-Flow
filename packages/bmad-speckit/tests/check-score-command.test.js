@@ -21,7 +21,7 @@ describe('check-score package command', () => {
   it('keeps check-score wired to the package command module', () => {
     const cli = fs.readFileSync(PACKAGE_CLI, 'utf8');
     assert.match(cli, /\.command\('check-score'\)/);
-    assert.match(cli, /\.\.\/src\/commands\/check-score/);
+    assert.match(cli, /\.\.\/dist\/commands\/check-score/);
     const block = cli.slice(cli.indexOf(".command('check-score'"), cli.indexOf(".command('eval-question-generate'"));
     assert.doesNotMatch(block, /scripts[\\/]check-story-score-written\.ts/);
     assert.doesNotMatch(block, /\btsx\b/);
@@ -29,11 +29,11 @@ describe('check-score package command', () => {
   });
 
   it('finds matching scoring records from a fixture dataPath', () => {
-    const root = makeRoot('wave-3-11-check-score-');
+    const root = makeRoot('check-score-command-');
     try {
       const dataPath = path.join(root, 'scores');
       writeJson(path.join(dataPath, 'record.json'), {
-        run_id: 'wave-3-11-e9-s1-story',
+        run_id: 'check-score-e9-s1-story',
         scenario: 'real_dev',
         stage: 'story',
         phase_score: 82,
