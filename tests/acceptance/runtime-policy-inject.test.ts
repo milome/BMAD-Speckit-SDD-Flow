@@ -15,6 +15,23 @@ import {
 
 const repoRoot = process.cwd();
 
+function expectSpawnStatus(
+  result: ReturnType<typeof spawnSync>,
+  expectedStatus: number,
+  label: string
+): void {
+  if (result.status !== expectedStatus) {
+    throw new Error(
+      [
+        `${label} expected exit ${expectedStatus} but received ${String(result.status)}`,
+        `signal=${String(result.signal)}`,
+        `stderr=${String(result.stderr || '').slice(0, 4000)}`,
+        `stdout=${String(result.stdout || '').slice(0, 4000)}`,
+      ].join('\n')
+    );
+  }
+}
+
 /** Consumer-like root: `_bmad` + hoisted `node_modules` (workspace @bmad-speckit/runtime-emit); no project-root `scripts/`. */
 function makeEmitReadyRoot(): string {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-hook-inject-'));
@@ -115,7 +132,7 @@ describe('runtime-policy-inject (dual host entry)', () => {
           CLAUDE_PROJECT_DIR: tempRoot,
         },
       });
-      expect(r.status).toBe(0);
+      expectSpawnStatus(r, 0, 'cursor host stdin injection');
       const out = JSON.parse(r.stdout || '{}');
       expect(out.systemMessage).toContain('本回合 Runtime Governance（JSON）');
       expect(out.systemMessage).toContain('"flow"');

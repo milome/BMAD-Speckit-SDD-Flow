@@ -23,6 +23,9 @@ const cjsRequire = createRequire(__filename);
 function requirePackageBmadModule<T>(relativePath: string): T {
   const normalizedRelativePath = relativePath.replace(/\\/gu, '/');
   const candidateRoots = [
+    process.env.CLAUDE_PROJECT_DIR ? path.resolve(process.env.CLAUDE_PROJECT_DIR) : null,
+    process.env.CURSOR_PROJECT_ROOT ? path.resolve(process.env.CURSOR_PROJECT_ROOT) : null,
+    process.cwd(),
     path.resolve(__dirname, '..'),
     path.resolve(__dirname, '..', '..', '..', '..'),
     process.env.BMAD_SPECKIT_REPO_ROOT ? path.resolve(process.env.BMAD_SPECKIT_REPO_ROOT) : null,
@@ -38,19 +41,22 @@ function requirePackageBmadModule<T>(relativePath: string): T {
   return cjsRequire(target) as T;
 }
 
-const { buildDerivedContractExecutionManifest } =
-  requirePackageBmadModule<{
-    buildDerivedContractExecutionManifest(input: {
-      confirmation: JsonObject;
-      manifest: JsonObject;
-      record?: JsonObject;
-      sourcePath?: string;
-      recordPath?: string;
-      attemptId?: string;
-      sourceDocumentHash?: string;
-      implementationConfirmationHash?: string;
-    }): JsonObject;
-  }>('_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js');
+function loadContractExecutionManifestBuilder(): {
+  buildDerivedContractExecutionManifest(input: {
+    confirmation: JsonObject;
+    manifest: JsonObject;
+    record?: JsonObject;
+    sourcePath?: string;
+    recordPath?: string;
+    attemptId?: string;
+    sourceDocumentHash?: string;
+    implementationConfirmationHash?: string;
+  }): JsonObject;
+} {
+  return requirePackageBmadModule(
+    '_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js'
+  );
+}
 
 type AiTddMode = 'pre-implementation' | 'pre-rerun' | 'iteration' | 'closeout';
 type Decision = 'pass' | 'blocked';
@@ -1570,6 +1576,7 @@ function buildManifest(input: {
       ],
     },
   };
+  const { buildDerivedContractExecutionManifest } = loadContractExecutionManifestBuilder();
   return buildDerivedContractExecutionManifest({
     confirmation,
     manifest: rawManifest,

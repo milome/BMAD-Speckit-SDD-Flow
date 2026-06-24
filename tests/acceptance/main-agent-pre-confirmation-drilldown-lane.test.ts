@@ -247,6 +247,24 @@ function authorityForSource(root: string, source: string): {
   };
 }
 
+function writeValidationAuthorityTarget(root: string): {
+  targetPath: string;
+  requiredCommand: string;
+} {
+  const targetPath = 'src/requirements-contract-authoring.ts';
+  const absoluteTargetPath = path.join(root, targetPath);
+  mkdirSync(path.dirname(absoluteTargetPath), { recursive: true });
+  writeFileSync(
+    absoluteTargetPath,
+    'export const requirementsContractAuthoringTarget = true;\n',
+    'utf8'
+  );
+  return {
+    targetPath,
+    requiredCommand: `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${targetPath}`,
+  };
+}
+
 function semanticConfirmationForHash(
   confirmation: Record<string, unknown>
 ): Record<string, unknown> {
@@ -829,22 +847,31 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-no-auditor-'));
     try {
       const source = writeDraftSource(root);
+      const authority = writeValidationAuthorityTarget(root);
 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-NO-AUDITOR',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-NO-AUDITOR',
         confirmationLanguage: 'zh-CN',
-        ...authorityForSource(root, source),
+        ...authority,
       });
 
       const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-NO-AUDITOR');
       expect(result.substate).toBe('blocked_by_render_gate');
       expect(result.confirmability).toBe('blocked');
       expect(result.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_round_provider_missing'
+        'critical_auditor_provider_mode_required'
       );
+      expect(result.blockingStage).toBe('critical_auditor_provider_mode_required');
+      expect(result.nextRequiredAction).toBe('run_main_session_critical_auditor_round');
+      expect(result.criticalAuditorContinuation).toMatchObject({
+        providerMode: 'main_session_inline',
+        roundIndex: 1,
+        nextRequiredAction: 'run_main_session_critical_auditor_round',
+      });
       expect(existsSync(paths.receipt1)).toBe(false);
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
       expect(existsSync(paths.renderReport)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });

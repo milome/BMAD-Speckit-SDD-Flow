@@ -21,7 +21,7 @@ describe('speckit mirror automation', () => {
     const root = process.cwd();
     const initToRoot = readFileSync(path.join(root, 'scripts', 'init-to-root.js'), 'utf8');
     const syncService = readFileSync(
-      path.join(root, 'packages', 'bmad-speckit', 'src', 'services', 'sync-service.js'),
+      path.join(root, 'packages', 'bmad-speckit', 'src', 'services', 'sync-service.ts'),
       'utf8'
     );
 
