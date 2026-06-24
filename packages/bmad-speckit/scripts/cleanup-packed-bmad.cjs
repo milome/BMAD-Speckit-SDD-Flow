@@ -7,7 +7,7 @@ const packageRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(packageRoot, '..', '..');
 const sourceAuthorityCleanup = path.join(
   packageRoot,
-  'src',
+  'dist',
   'main-agent',
   'source-authority',
   'scripts',

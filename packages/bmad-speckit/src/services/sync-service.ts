@@ -185,6 +185,7 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
       ? path.dirname(ct.commandsDir)
       : ct.rulesDir ? path.dirname(ct.rulesDir) : null;
     if (agentRoot) {
+      deployHostShared(projectRoot, bmadRoot, agentRoot);
       const projectSkillsDest = path.join(projectRoot, agentRoot, 'skills');
       const sharedSkillsSrc = path.join(bmadRoot, 'skills');
       if (fs.existsSync(sharedSkillsSrc) && fs.statSync(sharedSkillsSrc).isDirectory()) {
@@ -225,6 +226,14 @@ function syncCommandsRulesConfig(projectRoot, selectedAI, options = {}) {
   deployRuntimeGovernanceFromPackage(projectRoot);
 
   fs.mkdirSync(path.join(projectRoot, 'specs'), { recursive: true });
+}
+
+function deployHostShared(projectRoot, bmadRoot, hostRootDir) {
+  const src = path.join(bmadRoot, 'shared');
+  const dest = path.join(projectRoot, hostRootDir, 'shared');
+  if (fs.existsSync(src) && fs.statSync(src).isDirectory()) {
+    copyDirRecursive(src, dest);
+  }
 }
 
 function deployCodexInfrastructure(projectRoot, bmadRoot, configTemplate) {

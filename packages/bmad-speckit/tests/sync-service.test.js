@@ -52,8 +52,14 @@ function createCodexBmadSource(root) {
   mkdirp(path.join(root, 'codex', 'agents'));
   mkdirp(path.join(root, 'codex', 'protocols'));
   mkdirp(path.join(root, 'codex', 'skills'));
+  mkdirp(path.join(root, 'shared', 'skill-runtime'));
   mkdirp(path.join(root, 'i18n'));
   fs.writeFileSync(path.join(root, 'codex', 'agents', 'agent.toml'), 'name = "agent"\n', 'utf8');
+  fs.writeFileSync(
+    path.join(root, 'shared', 'skill-runtime', 'resolve-bmad-runtime.js'),
+    'module.exports = { requireBmadSpeckit() {}, requireRootPackageDependency() {} };\n',
+    'utf8'
+  );
   for (const protocol of ['audit-result-schema.md', 'handoff-schema.md', 'commit-protocol.md']) {
     fs.writeFileSync(path.join(root, 'codex', 'protocols', protocol), `# ${protocol}\n`, 'utf8');
   }
@@ -286,6 +292,10 @@ describe('SyncService (Story 12.2 T1)', () => {
     SyncService.syncCommandsRulesConfig(projectRoot, 'codex', { bmadPath });
 
     assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'i18n')), '.codex/i18n should be deployed');
+    assert.ok(
+      fs.existsSync(path.join(projectRoot, '.codex', 'shared', 'skill-runtime', 'resolve-bmad-runtime.js')),
+      '.codex/shared skill runtime should be deployed'
+    );
     assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'README.md')), '.codex/README.md should be deployed');
     assert.ok(!fs.existsSync(path.join(projectRoot, '_bmad')), 'bmadPath mode must not copy root _bmad');
   });
