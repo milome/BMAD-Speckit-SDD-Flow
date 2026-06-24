@@ -108,7 +108,19 @@ jobs:
       - name: Vitest suite
         id: vitest
         continue-on-error: true
-        run: npx vitest run
+        run: npm run test:vitest:default
+
+      - name: Consumer install final-state tests
+        id: consumer_install
+        continue-on-error: true
+        timeout-minutes: 20
+        run: npm run test:consumer-install-final
+
+      - name: Consumer runtime final-state replay
+        id: consumer_runtime
+        continue-on-error: true
+        timeout-minutes: 15
+        run: npm run test:consumer-runtime-final
 
       - name: BMAD SpecKit tests
         id: bmad_speckit
@@ -148,6 +160,8 @@ jobs:
           }
 
           check_step "Vitest suite" "${{ steps.vitest.outcome }}"
+          check_step "Consumer install final-state tests" "${{ steps.consumer_install.outcome }}"
+          check_step "Consumer runtime final-state replay" "${{ steps.consumer_runtime.outcome }}"
           check_step "BMAD SpecKit tests" "${{ steps.bmad_speckit.outcome }}"
           check_step "Main Agent release gate" "${{ steps.release_gate.outcome }}"
           check_step "Main Agent quality gate" "${{ steps.quality_gate.outcome }}"
