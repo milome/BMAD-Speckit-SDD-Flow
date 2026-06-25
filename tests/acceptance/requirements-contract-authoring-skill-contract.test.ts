@@ -502,7 +502,7 @@ describe('requirements-contract-authoring published contract', () => {
 
   it('keeps skill resolver candidates aligned with supported host surfaces', () => {
     const resolverFiles = [
-      'scripts/main-agent-orchestration.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
       'scripts/main-agent-implementation-readiness-gate.ts',
       'scripts/ai-tdd-contract-gate.ts',
       'scripts/strict-command-resolution-preflight.ts',
