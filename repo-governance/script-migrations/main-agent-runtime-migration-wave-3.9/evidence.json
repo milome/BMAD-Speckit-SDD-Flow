@@ -58,7 +58,7 @@
       "exportName": "governancePacketExecutionStoreHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-execution-store.js"
       ],
       "publicCliAction": false,
@@ -120,7 +120,7 @@
       "exportName": "governancePacketReconcilerHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-packet-reconciler.js"
       ],
       "publicCliAction": false,
@@ -182,7 +182,7 @@
       "exportName": "governanceRemediationArtifactHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-artifact.js"
       ],
       "publicCliAction": false,
@@ -244,7 +244,7 @@
       "exportName": "governanceRemediationConfigHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-config.js"
       ],
       "publicCliAction": false,
@@ -306,7 +306,7 @@
       "exportName": "governanceRemediationRunnerHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js",
+        "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/governance-remediation-runner.js"
       ],
       "publicCliAction": false,
@@ -368,7 +368,7 @@
       "exportName": "agentDisplayNamesHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js",
+        "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/agent-display-names.js"
       ],
       "publicCliAction": false,
@@ -430,7 +430,7 @@
       "exportName": "loadManifestHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js",
+        "packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/load-manifest.js"
       ],
       "publicCliAction": false,
@@ -492,7 +492,7 @@
       "exportName": "partyModeRuntimeAssetsHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js",
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime-assets.js"
       ],
       "publicCliAction": false,
@@ -554,7 +554,7 @@
       "exportName": "modelGovernancePolicyFilterHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js",
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/model-governance-policy-filter.js"
       ],
       "publicCliAction": false,
@@ -616,7 +616,7 @@
       "exportName": "partyModeRuntimeHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js",
+        "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/party-mode-runtime.js"
       ],
       "publicCliAction": false,
@@ -678,7 +678,7 @@
       "exportName": "promptRoutingGovernanceHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js",
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-governance.js"
       ],
       "publicCliAction": false,
@@ -740,7 +740,7 @@
       "exportName": "promptRoutingHintsSchemaHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js",
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints-schema.js"
       ],
       "publicCliAction": false,
@@ -802,7 +802,7 @@
       "exportName": "promptRoutingHintsHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js",
+        "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/prompt-routing-hints.js"
       ],
       "publicCliAction": false,
@@ -864,7 +864,7 @@
       "exportName": "skillInventoryProviderHelper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js",
+        "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/skill-inventory-provider.js"
       ],
       "publicCliAction": false,

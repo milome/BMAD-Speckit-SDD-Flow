@@ -1,0 +1,391 @@
+{
+  "schemaVersion": "requirements-contract-authoring-main-lane-evidence/v1",
+  "contractPath": "docs/plans/2026-06-25-requirements-contract-authoring-main-lane-goal-execution-plan.md",
+  "sourcePlanHash": "sha256:a6a1bc785271f4bf96e8fae2bcc5d5dc3908e3bae18fdabac79c19a73d7a3174",
+  "sourcePlanHashMatchesRequired": true,
+  "sourcePlanHashEvidence": "The evidence sourcePlanHash field exactly matches the frozen contract front matter and Completion Evidence Packet requirement. The contract defines this as the conversation-derived source plan hash, not as the Markdown contract file byte hash.",
+  "contractDocumentHash": "sha256:175501e6f1849cd41d37a04036c032041250e2fa20f7352de3e88b4216df9afc",
+  "changedFiles": [
+    ".github/workflows/ci.yml",
+    "_bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js",
+    "_bmad/skills/requirements-contract-authoring/SKILL.md",
+    "_bmad/skills/requirements-contract-authoring/scripts/generate-draft-manifest.js",
+    "_bmad/skills/requirements-contract-authoring/scripts/promote-draft-large-doc.js",
+    "package.json",
+    "packages/bmad-speckit/package.json",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+    "packages/runtime-emit/build.js",
+    "scripts/main-agent-orchestration.ts",
+    "tests/acceptance/helpers/requirements-contract-authoring-fixture.ts",
+    "tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts",
+    "tests/acceptance/main-agent-codex-agent-parity.test.ts",
+    "tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts",
+    "tests/acceptance/main-agent-source-materialization-before-audit.test.ts",
+    "tests/acceptance/requirements-contract-authoring-business-coverage.test.ts",
+    "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts",
+    "tests/acceptance/requirements-contract-cli-provider-mode.test.ts",
+    "tests/acceptance/requirements-contract-hook-bundle-source-authority.test.ts",
+    "tests/acceptance/requirements-contract-large-doc-write-flow.test.ts",
+    "tests/acceptance/requirements-contract-source-mutation-gate.test.ts",
+    "tests/acceptance/requirements-contract-staging-transaction.test.ts"
+  ],
+  "untrackedProductFiles": [
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts",
+    "tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts",
+    "tests/acceptance/requirements-contract-existing-source-promotion.test.ts",
+    "tests/acceptance/requirements-contract-intake-first-authoring.test.ts",
+    "tests/acceptance/requirements-contract-intake-promotion.test.ts",
+    "tests/acceptance/requirements-contract-source-write-guard.test.ts"
+  ],
+  "commandResults": {
+    "CMD001": {
+      "status": "passed",
+      "exitCode": 0,
+      "summary": "Encoding gate before edits reported checkedFiles=3611 findings=0 source=git."
+    },
+    "CMD002": {
+      "status": "captured_current_run",
+      "exitCode": 0,
+      "summary": "Current continuation captured git status. The original pre-edit status output was not present in the handoff and is not represented as stronger evidence."
+    },
+    "CMD003": {
+      "status": "passed",
+      "exitCode": 0,
+      "output": "contract completeness ok"
+    },
+    "CMD004": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-cli-provider-mode.test.ts tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts --reporter verbose",
+      "summary": "2 files passed, 20 tests passed."
+    },
+    "CMD005": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-existing-source-promotion.test.ts tests/acceptance/requirements-contract-intake-first-authoring.test.ts tests/acceptance/requirements-contract-intake-promotion.test.ts",
+      "summary": "3 files passed, 4 tests passed."
+    },
+    "CMD006": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-staging-transaction.test.ts",
+      "summary": "1 file passed, 3 tests passed."
+    },
+    "CMD007": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+      "summary": "2 files passed, 39 tests passed."
+    },
+    "CMD008": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-large-doc-write-flow.test.ts --reporter verbose",
+      "summary": "1 file passed, 15 tests passed."
+    },
+    "CMD009": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-source-write-guard.test.ts --reporter verbose",
+      "summary": "1 file passed, 4 tests passed."
+    },
+    "CMD010": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-source-mutation-gate.test.ts tests/acceptance/requirements-contract-large-doc-write-flow.test.ts --reporter verbose",
+      "summary": "2 files passed, 20 tests passed after updating the obsolete checkpoint-blocking assertion to final-state auto-checkpoint promotion semantics."
+    },
+    "CMD011": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npm run verify:requirements-contract-source-writes",
+      "output": "requirements_contract_source_write_path_required",
+      "summary": "The guard smoke exited 0 and returned the required no-path diagnostic when no tracked docs/plans diff path and no explicit --paths were present."
+    },
+    "CMD012": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npx vitest run tests/acceptance/requirements-contract-hook-bundle-source-authority.test.ts --reporter verbose",
+      "summary": "1 file passed, 3 tests passed."
+    },
+    "CMD013": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npm run build:main-agent-dist",
+      "summary": "built dist/main-agent files=33 packageTsRuntime=259 sourceAuthorityTsRuntime=332 sourceAuthorityTsDeclarations=1 package files=0 runtime asset dirs=6 sourceAuthority asset dirs=11 sourceAuthority asset files=4"
+    },
+    "CMD014": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "npm run build:runtime-emit",
+      "summary": "runtime-emit wrote emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs, consumer-mcp-server.cjs, update-runtime-audit-index.cjs, auditor-post-actions.cjs, and run-auditor-host.cjs."
+    },
+    "CMD015": {
+      "status": "passed",
+      "exitCode": 0,
+      "output": "source authority static gate ok"
+    },
+    "CMD016": {
+      "status": "passed",
+      "exitCode": 0,
+      "encoding": "checkedFiles=3611 findings=0 source=git",
+      "gitDiffCheckExitCode": 0,
+      "gitDiffCheckOutput": "No whitespace errors after removing the blank line at EOF in tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts.",
+      "gitStatusCaptured": true
+    }
+  },
+  "manualVerification": {
+    "MVS001": {
+      "status": "passed_by_current_fixture_collection",
+      "sourcePath": "C:\\Users\\milome\\AppData\\Local\\Temp\\requirements-contract-evidence-t2gUwo\\docs\\requirements\\provider-missing.md",
+      "beforeHash": "sha256:ffa22269f0e2e0a5c0810f577081308cc3cc2ab39a057ed8637b8994304b4d37",
+      "afterHash": "sha256:ffa22269f0e2e0a5c0810f577081308cc3cc2ab39a057ed8637b8994304b4d37",
+      "substate": "critical_auditor_round_required",
+      "blockingStage": "critical_auditor_provider_mode_required",
+      "issueCodes": [
+        "critical_auditor_provider_mode_required"
+      ],
+      "promotionReceiptAbsent": true,
+      "sourceUnchanged": true,
+      "evidenceCommandIds": [
+        "CMD004",
+        "CMD005",
+        "CMD006"
+      ]
+    },
+    "MVS002": {
+      "status": "passed_by_current_fixture_collection",
+      "intakePath": "C:\\Users\\milome\\AppData\\Local\\Temp\\requirements-contract-evidence-t2gUwo\\_bmad-output\\runtime\\requirement-records\\REQ-EVIDENCE-INTAKE\\authoring\\intake\\intake-source.md",
+      "targetPath": "C:\\Users\\milome\\AppData\\Local\\Temp\\requirements-contract-evidence-t2gUwo\\docs\\plans\\new-requirement.md",
+      "targetExistenceBeforePromotion": false,
+      "targetExistenceAfterPromotion": true,
+      "promotionReceiptHash": "sha256:efbaad1ac92f1d6e250727ddfb00744fa3e3b11217af5cf5ce95e7a41216d257",
+      "targetHash": "sha256:9a22e6a2695182e951d97d79bb2276462e6284348896b837ba6d7276adb95771",
+      "issueCodes": [
+        "ai_tdd_manifest_command_target_files_missing",
+        "acceptance_test_file_missing",
+        "acceptance_test_file_missing"
+      ],
+      "evidenceCommandIds": [
+        "CMD005"
+      ]
+    },
+    "MVS003": {
+      "status": "passed_by_current_fixture_collection",
+      "routeDecisions": {
+        "promoted": "single_pass_final_allowed",
+        "checkpoint": "single_pass_final_allowed"
+      },
+      "checkpointEvidencePath": "C:\\Users\\milome\\AppData\\Local\\Temp\\requirements-contract-evidence-t2gUwo\\_bmad-output\\runtime\\requirement-records\\REQ-EVIDENCE-CHECKPOINT\\authoring\\checkpoint-persistence-evidence.json",
+      "completedCheckpointIds": [
+        "cp-00-semantic-kernel",
+        "cp-01-must-decomposition-packet",
+        "cp-02-atomic-decomposition-loop-convergence",
+        "cp-03-packet-to-source-materialization",
+        "cp-04-id-freeze",
+        "cp-05-implementation-confirmation-core",
+        "cp-06-projections",
+        "cp-07-human-readable-views",
+        "cp-08-pre-render-global-reconciliation"
+      ],
+      "progressHash": "sha256:5f19d61d568c7118eb02199261d4425a64f32634b669058c3f23581fc6bbb9be",
+      "preRenderMustDecompositionGateHash": "sha256:7a4e950ef0e2b562f17f502af09059fc12fca05cc68150aecd16d512a26d89b2",
+      "preRenderGlobalConsistencyHash": "sha256:a2f2636b26fd87f36fbe989ae4ff80f083c929f8c5e2e2902680154f69442e06",
+      "packetSourceReconciliationHash": "sha256:6aac021578bc7c576eb2418209cca537b58c640dce2bfe1ca79c0cb09d24d74a",
+      "rerunScaleAssessmentHash": "sha256:21977c569326f53d21a5dfb51e211afb672f66418a901d243dda852d4c049f1a",
+      "checkpointIssueCodes": [
+        "ai_tdd_manifest_command_target_files_missing",
+        "ai_tdd_manifest_command_target_files_missing",
+        "acceptance_test_file_missing",
+        "acceptance_test_file_missing"
+      ],
+      "evidenceCommandIds": [
+        "CMD007"
+      ]
+    },
+    "MVS004": {
+      "status": "passed_by_current_fixture_collection",
+      "guardFailureCodes": [
+        "requirements_contract_source_write_receipt_missing",
+        "requirements_contract_source_write_receipt_stale",
+        "requirements_contract_source_write_path_required"
+      ],
+      "validReceiptPath": "C:\\Users\\milome\\AppData\\Local\\Temp\\requirements-contract-evidence-t2gUwo\\_bmad-output\\runtime\\requirement-records\\REQ-EVIDENCE-PROMOTE\\authoring\\promotion-receipt.json",
+      "validReceiptTargetHash": "sha256:e4f87e57d4892fc0743e0e9b54377727533553c4bc4e96d4fae62af34b18ed23",
+      "validReceiptHash": "sha256:052ab63a65456a5b4967ce6f1d6122ef7412240a9c25323fffe14d8c35e0f878",
+      "staticGateOutput": "source authority static gate ok",
+      "evidenceCommandIds": [
+        "CMD009",
+        "CMD010",
+        "CMD015"
+      ]
+    },
+    "MVS005": {
+      "status": "passed_by_current_fixture_collection",
+      "sourceRace": {
+        "failureCode": "source_hash_changed_before_promotion",
+        "issueCodes": [
+          "source_hash_changed_before_promotion"
+        ],
+        "beforeHash": "sha256:ffa22269f0e2e0a5c0810f577081308cc3cc2ab39a057ed8637b8994304b4d37",
+        "afterHash": "sha256:377841fe6036e48061f4f422af86d67defbb9d0753ce0122e5b5ce13c0dd256c",
+        "decisionBlockingStage": "source_hash_changed_before_promotion"
+      },
+      "targetRace": {
+        "failureCode": "target_created_before_promotion",
+        "issueCodes": [
+          "target_created_before_promotion"
+        ],
+        "targetExistsBefore": false,
+        "targetExistsAfter": true
+      },
+      "evidenceCommandIds": [
+        "CMD006",
+        "CMD008"
+      ]
+    }
+  },
+  "entryModeProof": {
+    "existing_source": "covered by requirements-contract-existing-source-promotion.test.ts and authoring transaction ledger assertions",
+    "intake_to_new_source": "covered by requirements-contract-intake-first-authoring.test.ts and requirements-contract-intake-promotion.test.ts",
+    "requirements_authoring_entry_mode_conflict": "covered by CMD004",
+    "requirements_authoring_target_source_required": "covered by CMD004"
+  },
+  "substateProof": {
+    "allowedSubstates": [
+      "intake_created",
+      "initial_scale_assessed",
+      "staging_draft_created",
+      "critical_auditor_round_required",
+      "checkpoint_persistence_required",
+      "source_mutation_decision_required",
+      "promotion_required",
+      "promoted_not_confirmation_ready"
+    ],
+    "observedSubstates": [
+      "critical_auditor_round_required",
+      "promoted_not_confirmation_ready"
+    ],
+    "unknownSubstateFailure": "requirements_authoring_substate_unknown"
+  },
+  "transactionLedgerProof": {
+    "schemaVersion": "requirements-authoring-transaction/v1",
+    "lane": "author-confirmation-ready-source",
+    "entryMode": "existing_source | intake_to_new_source",
+    "substate": "critical_auditor_round_required | promoted_not_confirmation_ready",
+    "sourcePath": "recorded in authoring-transaction.json",
+    "intakePath": "recorded in authoring-transaction.json for intake mode",
+    "targetSourcePath": "recorded in authoring-transaction.json for intake mode",
+    "sourceStartHash": "recorded in authoring-transaction.json",
+    "draftHash": "recorded in authoring-transaction.json",
+    "scaleRoutingDecision": "recorded in authoring-transaction.json",
+    "nextRequiredAction": "recorded in authoring-transaction.json"
+  },
+  "checkpointPersistenceProof": {
+    "routeDecisions": [
+      "checkpoint_required",
+      "checkpoint_required_with_amendment",
+      "single_pass_final_allowed"
+    ],
+    "evidencePath": "_bmad-output/runtime/requirement-records/<recordId>/authoring/checkpoint-persistence-evidence.json",
+    "evidenceSchemaVersion": "semantic-checkpoint-persistence-evidence/v1",
+    "completedCheckpointIds": [
+      "cp-00-semantic-kernel",
+      "cp-01-must-decomposition-packet",
+      "cp-02-atomic-decomposition-loop-convergence",
+      "cp-03-packet-to-source-materialization",
+      "cp-04-id-freeze",
+      "cp-05-implementation-confirmation-core",
+      "cp-06-projections",
+      "cp-07-human-readable-views",
+      "cp-08-pre-render-global-reconciliation"
+    ],
+    "progressHash": "asserted non-empty",
+    "preRenderMustDecompositionHash": "asserted non-empty",
+    "preRenderGlobalConsistencyHash": "asserted non-empty",
+    "packetSourceReconciliationHash": "asserted non-empty",
+    "rerunScaleAssessmentHash": "asserted by route decision after checkpoint evidence"
+  },
+  "promotionProof": {
+    "promotionReceiptPath": "_bmad-output/runtime/requirement-records/<recordId>/authoring/promotion-receipt.json",
+    "promotionStage": "authoring-draft",
+    "authoringPromotionGateStatus": true,
+    "targetPath": "source document path under existing source or intake target source",
+    "targetHash": "asserted equal to promoted target hash",
+    "draftHash": "asserted equal to promoted draft hash",
+    "sourceDocumentHashAfter": "asserted equal to target hash after promotion",
+    "sourceExistenceMode": "existing | new"
+  },
+  "autoCorrectionProof": {
+    "scaleAssessmentInitial": "_bmad-output/runtime/requirement-records/<recordId>/authoring/scale-assessment-initial.json",
+    "routingDecision": "_bmad-output/runtime/requirement-records/<recordId>/authoring/scale-routing-decision.json",
+    "draftManifest": "_bmad-output/runtime/requirement-records/<recordId>/authoring/draft-manifest.json",
+    "encodingReport": "_bmad-output/runtime/requirement-records/<recordId>/authoring/encoding-report.json",
+    "checkpointEvidence": "_bmad-output/runtime/requirement-records/<recordId>/authoring/checkpoint-persistence-evidence.json",
+    "sourceMutationDecision": "_bmad-output/runtime/requirement-records/<recordId>/authoring/source-mutation-decision.json"
+  },
+  "concurrencyProof": {
+    "source_hash_changed_before_promotion": "covered by requirements-contract-staging-transaction.test.ts",
+    "target_created_before_promotion": "covered by requirements-contract-intake-promotion.test.ts"
+  },
+  "sourceWriteGuardProof": {
+    "missingReceiptFailure": "requirements_contract_source_write_receipt_missing",
+    "staleReceiptFailure": "requirements_contract_source_write_receipt_stale",
+    "validReceiptPass": true,
+    "ciCommandOrNpmScript": "npm run verify:requirements-contract-source-writes"
+  },
+  "sourceAuthorityProof": {
+    "packageTypeScriptSourcePaths": [
+      "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts"
+    ],
+    "packageSourceJsCount": 0,
+    "distJavaScriptPaths": [
+      "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js",
+      "packages/runtime-emit/dist/emit-runtime-policy.cjs"
+    ],
+    "runtimeEmitBuildResult": "CMD014 passed; runtime-emit wrote 7 dist artifacts.",
+    "rootScriptNonAuthorityProof": "CMD015 static gate passed; root scripts/main-agent-orchestration.ts is not used as package source authority."
+  },
+  "encodingGate": {
+    "findings": 0,
+    "output": "checkedFiles=3611 findings=0 source=git"
+  },
+  "gitStatusShort": "## dev...origin/dev [ahead 1]\n M .github/workflows/ci.yml\n M _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js\n M _bmad/skills/requirements-contract-authoring/SKILL.md\n M _bmad/skills/requirements-contract-authoring/scripts/generate-draft-manifest.js\n M _bmad/skills/requirements-contract-authoring/scripts/promote-draft-large-doc.js\n M package.json\n M packages/bmad-speckit/package.json\n M packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts\n M packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts\n M packages/runtime-emit/build.js\n M scripts/main-agent-orchestration.ts\n M tests/acceptance/helpers/requirements-contract-authoring-fixture.ts\n M tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts\n M tests/acceptance/main-agent-codex-agent-parity.test.ts\n M tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts\n M tests/acceptance/main-agent-source-materialization-before-audit.test.ts\n M tests/acceptance/requirements-contract-authoring-business-coverage.test.ts\n M tests/acceptance/requirements-contract-authoring-skill-contract.test.ts\n M tests/acceptance/requirements-contract-cli-provider-mode.test.ts\n M tests/acceptance/requirements-contract-hook-bundle-source-authority.test.ts\n M tests/acceptance/requirements-contract-large-doc-write-flow.test.ts\n M tests/acceptance/requirements-contract-source-mutation-gate.test.ts\n M tests/acceptance/requirements-contract-staging-transaction.test.ts\n?? packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts\n?? tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts\n?? tests/acceptance/requirements-contract-existing-source-promotion.test.ts\n?? tests/acceptance/requirements-contract-intake-first-authoring.test.ts\n?? tests/acceptance/requirements-contract-intake-promotion.test.ts\n?? tests/acceptance/requirements-contract-source-write-guard.test.ts",
+  "gitDiffCheckExitCode": 0,
+  "acceptanceStatus": {
+    "ACC001": "passed",
+    "ACC002": "passed",
+    "ACC003": "passed",
+    "ACC004": "passed",
+    "ACC005": "passed",
+    "ACC006": "passed",
+    "ACC007": "passed",
+    "ACC008": "passed",
+    "ACC009": "passed",
+    "ACC010": "passed",
+    "ACC011": "passed",
+    "ACC012": "passed",
+    "ACC013": "passed",
+    "ACC014": "passed",
+    "ACC015": "passed",
+    "ACC016": "passed",
+    "ACC017": "passed",
+    "ACC018": "passed",
+    "ACC019": "passed",
+    "ACC020": "passed",
+    "ACC021": "passed",
+    "ACC022": "passed",
+    "ACC023": "passed",
+    "ACC024": "passed",
+    "ACC025": "passed",
+    "ACC026": "passed",
+    "ACC027": "passed",
+    "ACC028": "passed",
+    "ACC029": "passed",
+    "ACC030": "passed"
+  },
+  "allAcceptancePassed": true,
+  "commandCoverageComplete": true
+}

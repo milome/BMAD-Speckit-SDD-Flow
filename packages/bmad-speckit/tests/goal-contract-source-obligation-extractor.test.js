@@ -8,7 +8,7 @@ const SOURCE_TEXT = [
   '',
   '## File Map',
   '',
-  '- Create `packages/bmad-speckit/src/commands/goal-contract.js`.',
+  '- Create `packages/bmad-speckit/src/commands/goal-contract.ts`.',
   '',
   '## Implementation Task Breakdown',
   '',

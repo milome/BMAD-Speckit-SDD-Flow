@@ -9,7 +9,7 @@ const assert = require('node:assert');
 let bannerModule;
 
 try {
-  bannerModule = require('../src/commands/banner.js');
+  bannerModule = require('../src/commands/banner');
 } catch (e) {
   // banner.js 尚未创建，测试中处理
   bannerModule = null;

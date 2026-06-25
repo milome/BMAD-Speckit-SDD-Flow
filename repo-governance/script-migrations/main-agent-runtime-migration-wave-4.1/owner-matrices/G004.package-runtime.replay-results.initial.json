@@ -3357,7 +3357,7 @@
       "originalPath": "scripts/verify-hooks-no-ts-node.js",
       "entryId": "verify-hooks-no-ts-node-js",
       "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts",
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
       "originalReplay": {
         "exitCode": 0,
@@ -3378,7 +3378,7 @@
       "comparison": {
         "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
         "originalEntryPoint": "scripts/verify-hooks-no-ts-node.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts",
         "stdoutMatches": false,
         "stderrMatches": true,
         "exitCodeMatches": true,

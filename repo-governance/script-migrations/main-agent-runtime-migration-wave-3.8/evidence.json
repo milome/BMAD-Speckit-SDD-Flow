@@ -57,9 +57,9 @@
       "actionSlug": "adaptive-intake-governance-gate",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-governance-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -120,9 +120,9 @@
       "actionSlug": "adaptive-intake-proof-gate",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/adaptive-intake-proof-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -183,9 +183,9 @@
       "actionSlug": "ai-tdd-contract-gate",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ai-tdd-contract-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -305,9 +305,9 @@
       "actionSlug": "audit-stage-routing",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
+        "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts",
         "packages/bmad-speckit/dist/main-agent/actions/audit-stage-routing.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -427,9 +427,9 @@
       "actionSlug": "auditor-post-actions",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
+        "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts",
         "packages/bmad-speckit/dist/main-agent/actions/auditor-post-actions.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -490,9 +490,9 @@
       "actionSlug": "auditor-spec",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
+        "packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts",
         "packages/bmad-speckit/dist/main-agent/actions/auditor-spec.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -553,9 +553,9 @@
       "actionSlug": "bmad-runtime-worker",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
+        "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts",
         "packages/bmad-speckit/dist/main-agent/actions/bmad-runtime-worker.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -734,9 +734,9 @@
       "actionSlug": "e2e-dual-host-journey-runner",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/e2e-dual-host-journey-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -797,9 +797,9 @@
       "actionSlug": "e2e-host-matrix-journey-runner",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/e2e-host-matrix-journey-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -860,9 +860,9 @@
       "actionSlug": "final-closeout-evidence-runner",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/final-closeout-evidence-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -982,9 +982,9 @@
       "actionSlug": "governance-packet-dispatch-worker",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
+        "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts",
         "packages/bmad-speckit/dist/main-agent/actions/governance-packet-dispatch-worker.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1104,9 +1104,9 @@
       "actionSlug": "print-resolved-audit-prompt",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
+        "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts",
         "packages/bmad-speckit/dist/main-agent/actions/print-resolved-audit-prompt.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1167,9 +1167,9 @@
       "actionSlug": "render-audit-block-cli",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
+        "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts",
         "packages/bmad-speckit/dist/main-agent/actions/render-audit-block-cli.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1289,9 +1289,9 @@
       "actionSlug": "ingest-implementation-evidence",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
+        "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts",
         "packages/bmad-speckit/dist/main-agent/actions/ingest-implementation-evidence.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1470,9 +1470,9 @@
       "actionSlug": "per-must-closure-evidence-index",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
+        "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts",
         "packages/bmad-speckit/dist/main-agent/actions/per-must-closure-evidence-index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1533,9 +1533,9 @@
       "actionSlug": "pre-rerun-anti-false-positive-gate",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -1950,9 +1950,9 @@
       "actionSlug": "strict-closeout-proof-gate",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/strict-closeout-proof-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -2131,9 +2131,9 @@
       "actionSlug": "target-artifact-realization-gate",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/target-artifact-realization-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -2194,9 +2194,9 @@
       "actionSlug": "trace-040-evidence-packet-generator",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
+        "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts",
         "packages/bmad-speckit/dist/main-agent/actions/trace-040-evidence-packet-generator.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -2257,9 +2257,9 @@
       "actionSlug": "update-runtime-audit-index",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
+        "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts",
         "packages/bmad-speckit/dist/main-agent/actions/update-runtime-audit-index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -2320,9 +2320,9 @@
       "actionSlug": "verify-cursor-audit-granularity",
       "routeDecision": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
+        "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts",
         "packages/bmad-speckit/dist/main-agent/actions/verify-cursor-audit-granularity.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],

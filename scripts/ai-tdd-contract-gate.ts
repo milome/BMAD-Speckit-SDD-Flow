@@ -17,19 +17,20 @@ import {
 } from './target-artifact-realization-gate';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 
-const { buildDerivedContractExecutionManifest } =
-  require('../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js') as {
-    buildDerivedContractExecutionManifest(input: {
-      confirmation: JsonObject;
-      manifest: JsonObject;
-      record?: JsonObject;
-      sourcePath?: string;
-      recordPath?: string;
-      attemptId?: string;
-      sourceDocumentHash?: string;
-      implementationConfirmationHash?: string;
-    }): JsonObject;
-  };
+function loadContractExecutionManifestBuilder(): {
+  buildDerivedContractExecutionManifest(input: {
+    confirmation: JsonObject;
+    manifest: JsonObject;
+    record?: JsonObject;
+    sourcePath?: string;
+    recordPath?: string;
+    attemptId?: string;
+    sourceDocumentHash?: string;
+    implementationConfirmationHash?: string;
+  }): JsonObject;
+} {
+  return require('../_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js');
+}
 
 type AiTddMode = 'pre-implementation' | 'pre-rerun' | 'iteration' | 'closeout';
 type Decision = 'pass' | 'blocked';
@@ -1549,6 +1550,7 @@ function buildManifest(input: {
       ],
     },
   };
+  const { buildDerivedContractExecutionManifest } = loadContractExecutionManifestBuilder();
   return buildDerivedContractExecutionManifest({
     confirmation,
     manifest: rawManifest,

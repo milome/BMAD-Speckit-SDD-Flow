@@ -817,6 +817,8 @@ export function mainEmitRuntimePolicy(argv: string[]): number {
 }
 
 if (require.main === module && isDirectEmitRuntimePolicyCli(process.argv[1])) {
-  const code = mainEmitRuntimePolicy(process.argv.slice(2));
-  process.exit(code);
+  setImmediate(() => {
+    const code = mainEmitRuntimePolicy(process.argv.slice(2));
+    process.exit(code);
+  });
 }

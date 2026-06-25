@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/src/services/install-surface-manifest';
+import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/dist/services/install-surface-manifest.js';
 import {
   buildPassImplementationEntryGate,
   buildSixModelResultsForImplementationReady,

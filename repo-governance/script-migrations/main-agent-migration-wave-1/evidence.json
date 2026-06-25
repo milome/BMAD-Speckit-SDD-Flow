@@ -6,12 +6,12 @@
       "entryId": "main-agent-orchestration",
       "originalPath": "scripts/main-agent-orchestration.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/index.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
-        "packages/bmad-speckit/src/main-agent/actions/inspect.js",
-        "packages/bmad-speckit/src/main-agent/actions/confirm-scope.js",
-        "packages/bmad-speckit/src/main-agent/actions/dispatch-plan.js",
-        "packages/bmad-speckit/src/main-agent/actions/run-loop.js",
+        "packages/bmad-speckit/src/main-agent/index.ts",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
+        "packages/bmad-speckit/src/main-agent/actions/inspect.ts",
+        "packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts",
+        "packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts",
+        "packages/bmad-speckit/src/main-agent/actions/run-loop.ts",
         "packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs"
       ],
       "commands": [

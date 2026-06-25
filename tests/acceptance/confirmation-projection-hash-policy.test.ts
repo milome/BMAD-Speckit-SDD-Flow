@@ -7,7 +7,7 @@ import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
 import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
-import { runMainAgentConfirmationDriftRoute } from '../../scripts/main-agent-orchestration';
+import { runMainAgentConfirmationDriftRoute } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 const ROOT = process.cwd();
 const INGEST = path.join(

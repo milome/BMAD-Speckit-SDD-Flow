@@ -37,13 +37,13 @@ test('npm pack --dry-run includes packaged _bmad hook cjs files', () => {
     '_bmad/skills/ai-tdd-runtime-navigator/workflow.md',
     '_bmad/skills/large-document-writer/SKILL.md',
     '_bmad/skills/large-document-writer/agents/openai.yaml',
-    'src/runtime/bmad-help-renderer.js',
-    'src/runtime/bmads-renderer.js',
-    'src/runtime/ai-tdd/projection-manifest.js',
-    'src/runtime/ai-tdd/display-budget.js',
-    'src/runtime/ai-tdd/runtime-decision.js',
-    'src/commands/large-doc.js',
-    'src/utils/large-document-writer/index.js',
+    'dist/runtime/bmad-help-renderer.js',
+    'dist/runtime/bmads-renderer.js',
+    'dist/runtime/ai-tdd/projection-manifest.js',
+    'dist/runtime/ai-tdd/display-budget.js',
+    'dist/runtime/ai-tdd/runtime-decision.js',
+    'dist/commands/large-doc.js',
+    'dist/utils/large-document-writer/index.js',
   ];
 
   const expectedHookSubset = expectedHookFiles.filter((file) => file.endsWith('.cjs'));

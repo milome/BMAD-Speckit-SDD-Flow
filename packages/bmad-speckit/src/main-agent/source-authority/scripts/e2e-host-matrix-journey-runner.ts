@@ -327,13 +327,10 @@ function runInspectCheck(
     allowLegacyContextFallback?: boolean;
   } = {}
 ) {
-  const tsNodeBin = require.resolve('ts-node/dist/bin.js');
+  const packageCli = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
   const args = [
-    tsNodeBin,
-    '--project',
-    path.join(process.cwd(), 'tsconfig.node.json'),
-    '--transpile-only',
-    path.join(process.cwd(), 'scripts', 'main-agent-orchestration.ts'),
+    packageCli,
+    'main-agent-orchestration',
     '--cwd',
     projectRoot,
     '--action',

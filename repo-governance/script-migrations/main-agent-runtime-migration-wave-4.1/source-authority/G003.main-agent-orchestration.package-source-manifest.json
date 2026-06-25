@@ -30,40 +30,40 @@
     {
       "source": "_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
       "sourceSha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.ts",
       "bytes": 34692,
       "sha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
       "sourceSha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.ts",
       "bytes": 5417,
       "sha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
       "sourceSha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.ts",
       "bytes": 3918,
       "sha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
       "sourceSha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.ts",
       "bytes": 9445,
       "sha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
       "sourceSha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.ts",
       "bytes": 6062,
       "sha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6"
     },
@@ -1043,17 +1043,17 @@
     {
       "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts",
       "sourceSha256": "sha256:9033fb1b88e7f8d978640612c593f234be2afa9051f89a81ebe213a9dc190431",
-      "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.js"
+      "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-command.ts"
     },
     {
       "source": "packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts",
       "sourceSha256": "sha256:2390b1e15ffb4abfc9c8d390e2305d9dce21f0f82dfa8716773338563f201489",
-      "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.js"
+      "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/actions/native-goal-invoker.ts"
     },
     {
       "source": "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
       "sourceSha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f",
-      "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js"
+      "target": "packages/bmad-speckit/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts"
     },
     {
       "source": "packages/runtime-context/src/context.ts",

@@ -354,7 +354,10 @@ function validateConfirmation(parsed, driftClassification = null) {
         'confirmation projection hash changed without semantic confirmation drift; record projection refresh before prompt generation.'
       );
     }
-    throw new BlockedInput('BLOCK: CONFIRMATION_REQUIRED', 'implementationConfirmation.status is not user_confirmed.');
+    throw new BlockedInput(
+      'BLOCK: EXECUTION_READY_AUTHORITY_MISSING',
+      'issueCode=execution_ready_authority_missing; implementationConfirmation.status is not user_confirmed; draft and diagnostic authoring artifacts are not execution-ready authority.'
+    );
   }
 
   const openQuestions = Array.isArray(confirmation.openQuestions) ? confirmation.openQuestions : [];

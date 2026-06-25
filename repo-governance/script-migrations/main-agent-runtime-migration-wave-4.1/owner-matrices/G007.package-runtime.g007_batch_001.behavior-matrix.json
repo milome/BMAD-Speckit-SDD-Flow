@@ -1153,7 +1153,7 @@
       "originalPath": "scripts/cleanup-packed-bmad.js",
       "entryId": "cleanup-packed-bmad-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
       "scenarioCoverageProof": {
@@ -1190,7 +1190,7 @@
           "scenarioId": "g007_cleanup_packed_bmad_js_no_args",
           "originalEntryPoint": "scripts/cleanup-packed-bmad.js",
           "originalEntryCommand": "node scripts/cleanup-packed-bmad.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -1243,7 +1243,7 @@
                 "to": "scripts/cleanup-packed-bmad.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts",
                 "to": "scripts/cleanup-packed-bmad.js"
               },
               {

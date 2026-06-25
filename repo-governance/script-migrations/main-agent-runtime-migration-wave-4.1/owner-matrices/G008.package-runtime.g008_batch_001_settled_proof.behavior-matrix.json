@@ -694,7 +694,7 @@
       "originalPath": "scripts/compare-bmad-help-upstream.js",
       "entryId": "compare-bmad-help-upstream-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
       "behaviorEquivalenceMatrix": [
@@ -702,7 +702,7 @@
           "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
           "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
           "originalEntryCommand": "node scripts/compare-bmad-help-upstream.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -1694,7 +1694,7 @@
       "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
       "entryId": "ensure-governance-user-story-mapping-fixture-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
       "behaviorEquivalenceMatrix": [
@@ -1702,7 +1702,7 @@
           "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
           "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
           "originalEntryCommand": "node scripts/ensure-governance-user-story-mapping-fixture.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -1945,7 +1945,7 @@
       "originalPath": "scripts/extract-npm-pack-json.js",
       "entryId": "extract-npm-pack-json-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/extract-npm-pack-json.js",
       "behaviorEquivalenceMatrix": [
@@ -1953,7 +1953,7 @@
           "scenarioId": "g008_extract_npm_pack_json_js_no_args",
           "originalEntryPoint": "scripts/extract-npm-pack-json.js",
           "originalEntryCommand": "node scripts/extract-npm-pack-json.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/extract-npm-pack-json.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -2794,7 +2794,7 @@
       "originalPath": "scripts/normalize-pack-manifests.js",
       "entryId": "normalize-pack-manifests-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
       "behaviorEquivalenceMatrix": [
@@ -2802,7 +2802,7 @@
           "scenarioId": "g008_normalize_pack_manifests_js_no_args",
           "originalEntryPoint": "scripts/normalize-pack-manifests.js",
           "originalEntryCommand": "node scripts/normalize-pack-manifests.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [

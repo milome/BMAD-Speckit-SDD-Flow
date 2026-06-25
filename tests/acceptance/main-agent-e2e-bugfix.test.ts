@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
   ensureMainAgentDispatchPacket,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   buildPassImplementationEntryGate,
   buildSixModelResultsForImplementationReady,

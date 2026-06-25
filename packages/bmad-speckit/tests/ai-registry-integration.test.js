@@ -69,11 +69,11 @@ describe('AI Registry integration (Story 12.1 T5)', () => {
     assert.strictEqual(r.status, 0, exitMsg);
   });
 
-  it('T4.2 init uses AIRegistry (grep init.js)', () => {
-    const initPath = path.join(__dirname, '../src/commands/init.js');
+  it('T4.2 init uses AIRegistry (grep init.ts)', () => {
+    const initPath = path.join(__dirname, '../src/commands/init.ts');
     const content = fs.readFileSync(initPath, 'utf8');
-    assert.ok(content.includes('ai-registry') || content.includes('AIRegistry'), 'init.js must require ai-registry');
-    assert.ok(!content.includes('require(\'../constants/ai-builtin\')') && !content.includes('require("../constants/ai-builtin")'), 'init.js must not require ai-builtin');
+    assert.ok(content.includes('ai-registry') || content.includes('AIRegistry'), 'init.ts must use ai-registry');
+    assert.ok(!content.includes('../constants/ai-builtin'), 'init.ts must not import ai-builtin directly');
   });
 
   it('T4.2 init --ai invalid-ai --yes => exit 2, output available list', () => {

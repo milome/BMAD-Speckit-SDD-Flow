@@ -1208,7 +1208,7 @@
         {
           "path": "docs/requirements/2026-05-31-bmad-help-bmads-fusion-requirements.md",
           "line": 727,
-          "match": "| `packages/bmad-speckit/src/runtime/bmad-help-renderer.js` | `node_modules/bmad-speckit/src/runtime/bmad-help-renderer.js` | package runtime 保留原始输出和既有 catalog/reference 行为；仅追加短互引、runtime 摘要和预算保护。根 `scripts/bmad-help-renderer.ts` 必须移除。 |"
+          "match": "| `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts` | `node_modules/bmad-speckit/src/runtime/bmad-help-renderer.js` | package runtime 保留原始输出和既有 catalog/reference 行为；仅追加短互引、runtime 摘要和预算保护。根 `scripts/bmad-help-renderer.ts` 必须移除。 |"
         },
         {
           "path": "docs/requirements/2026-04-29-bmad-help-bmads-entry-split.md",
@@ -1248,7 +1248,7 @@
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
           "line": 213,
-          "match": "- `scripts/bmad-help-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmad-help-renderer.js` and then removed from root `scripts/`."
+          "match": "- `scripts/bmad-help-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts` and then removed from root `scripts/`."
         },
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
@@ -1258,7 +1258,7 @@
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
           "line": 711,
-          "match": "3. Port any still-needed behavior from `scripts/bmad-help-renderer.ts` into `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`."
+          "match": "3. Port any still-needed behavior from `scripts/bmad-help-renderer.ts` into `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`."
         },
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
@@ -1826,7 +1826,7 @@
         {
           "path": "docs/requirements/2026-05-31-bmad-help-bmads-fusion-requirements.md",
           "line": 728,
-          "match": "| `packages/bmad-speckit/src/runtime/bmads-renderer.js` | `node_modules/bmad-speckit/src/runtime/bmads-renderer.js` | package runtime console 增加 active records、Six Mental Model Panorama、delivery awaiting acceptance route。根 `scripts/bmads-re"
+          "match": "| `packages/bmad-speckit/src/runtime/bmads-renderer.ts` | `node_modules/bmad-speckit/src/runtime/bmads-renderer.js` | package runtime console 增加 active records、Six Mental Model Panorama、delivery awaiting acceptance route。根 `scripts/bmads-re"
         },
         {
           "path": "docs/plans/SCRIPT_MATRIX_2026-06-01-consumer-deployment-and-invocation.md",
@@ -1861,7 +1861,7 @@
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
           "line": 212,
-          "match": "- `scripts/bmads-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmads-renderer.js` and then removed from root `scripts/`."
+          "match": "- `scripts/bmads-renderer.ts` MUST be ported to `packages/bmad-speckit/src/runtime/bmads-renderer.ts` and then removed from root `scripts/`."
         },
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
@@ -1876,7 +1876,7 @@
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
           "line": 710,
-          "match": "2. Port any still-needed behavior from `scripts/bmads-renderer.ts` into `packages/bmad-speckit/src/runtime/bmads-renderer.js`."
+          "match": "2. Port any still-needed behavior from `scripts/bmads-renderer.ts` into `packages/bmad-speckit/src/runtime/bmads-renderer.ts`."
         },
         {
           "path": "docs/plans/2026-06-01-bmad-help-bmads-fusion-goal-execution-plan.md",
@@ -1966,7 +1966,7 @@
         {
           "path": "docs/plans/prd.TASKS_scoring-cli-integration.json",
           "line": 267,
-          "match": "\"description\": \"创建 packages/bmad-speckit/src/commands/check-score.js，将 scripts/check-story-score-written.ts 逻辑转写为 JS\","
+          "match": "\"description\": \"创建 packages/bmad-speckit/src/commands/check-score.ts，将 scripts/check-story-score-written.ts 逻辑转写为 JS\","
         },
         {
           "path": "docs/plans/2026-06-02-changed-scripts-closure-classification.md",
@@ -1979,7 +1979,7 @@
           "match": "| 135 | M | `scripts/check-story-score-written.ts` | pending_classification | unclear | docs:1; package_bmad_speckit:1; scripts_source:1 | unknown | yes, after logic/CLI split | unproven | low | Do not delete. Classify with owner and caller"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/check-score.js",
+          "path": "packages/bmad-speckit/src/commands/check-score.ts",
           "line": 3,
           "match": "* Ported from scripts/check-story-score-written.ts to JS for CLI integration."
         },
@@ -2584,7 +2584,7 @@
         {
           "path": "docs/plans/prd.TASKS_scoring-cli-integration.json",
           "line": 333,
-          "match": "\"description\": \"创建 packages/bmad-speckit/src/commands/dashboard.js，将 scripts/dashboard-generate.ts 逻辑转写为 JS\","
+          "match": "\"description\": \"创建 packages/bmad-speckit/src/commands/dashboard.ts，将 scripts/dashboard-generate.ts 逻辑转写为 JS\","
         },
         {
           "path": "docs/plans/2026-06-02-changed-scripts-closure-classification.md",
@@ -2597,7 +2597,7 @@
           "match": "| 50 | M | `scripts/dashboard-generate.ts` | consumer_runtime_migrate | yes_import_closure_or_installed_surface | installed_bmad_surface:1; docs:1; package_bmad_speckit:1; scripts_source:1 | yes | yes, after logic/CLI split | no | medium | "
         },
         {
-          "path": "packages/bmad-speckit/src/commands/dashboard.js",
+          "path": "packages/bmad-speckit/src/commands/dashboard.ts",
           "line": 3,
           "match": "* Ported from scripts/dashboard-generate.ts to JS for CLI integration."
         }
@@ -4160,7 +4160,7 @@
         {
           "path": "docs/plans/2026-04-09-governance-packet-execution-closure-implementation-plan.md",
           "line": 575,
-          "match": "git add scripts/bmad-runtime-worker.ts scripts/governance-hook-types.ts <legacy detached runner helper> packages/runtime-emit/build.js packages/runtime-emit/package.json packages/bmad-speckit/src/services/sync-service.js scripts/init-to-roo"
+          "match": "git add scripts/bmad-runtime-worker.ts scripts/governance-hook-types.ts <legacy detached runner helper> packages/runtime-emit/build.js packages/runtime-emit/package.json packages/bmad-speckit/src/services/sync-service.ts scripts/init-to-roo"
         }
       ],
       "installSurfaces": [],
@@ -12845,7 +12845,7 @@
         {
           "path": "docs/plans/prd.TASKS_scoring-cli-integration.json",
           "line": 399,
-          "match": "\"description\": \"创建 packages/bmad-speckit/src/commands/scores.js，将 scripts/scores-summary.ts 逻辑转写为 JS\","
+          "match": "\"description\": \"创建 packages/bmad-speckit/src/commands/scores.ts，将 scripts/scores-summary.ts 逻辑转写为 JS\","
         },
         {
           "path": "docs/plans/2026-06-02-changed-scripts-closure-classification.md",
@@ -12858,7 +12858,7 @@
           "match": "| 138 | M | `scripts/scores-summary.ts` | pending_classification | unclear | docs:1; package_bmad_speckit:1; scripts_source:1 | unknown | yes, after logic/CLI split | unproven | low | Do not delete. Classify with owner and caller evidence f"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/scores.js",
+          "path": "packages/bmad-speckit/src/commands/scores.ts",
           "line": 3,
           "match": "* Ported from scripts/scores-summary.ts to JS for CLI integration."
         },
@@ -13626,27 +13626,27 @@
           "match": "expect(existsSync(join(target, 'scripts', 'start-runtime-dashboard-server.cjs'))).toBe(false);"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/runtime-mcp.js",
+          "path": "packages/bmad-speckit/src/commands/runtime-mcp.ts",
           "line": 18,
           "match": "return require(path.resolve(process.cwd(), 'scripts', 'start-runtime-dashboard-server.cjs'));"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/dashboard-stop.js",
+          "path": "packages/bmad-speckit/src/commands/dashboard-stop.ts",
           "line": 6,
           "match": "return require(path.resolve(root, 'scripts', 'start-runtime-dashboard-server.cjs'));"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/dashboard-stop.js",
+          "path": "packages/bmad-speckit/src/commands/dashboard-stop.ts",
           "line": 8,
           "match": "return require(path.resolve(__dirname, '..', '..', '..', '..', 'scripts', 'start-runtime-dashboard-server.cjs'));"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/dashboard-status.js",
+          "path": "packages/bmad-speckit/src/commands/dashboard-status.ts",
           "line": 6,
           "match": "return require(path.resolve(root, 'scripts', 'start-runtime-dashboard-server.cjs'));"
         },
         {
-          "path": "packages/bmad-speckit/src/commands/dashboard-status.js",
+          "path": "packages/bmad-speckit/src/commands/dashboard-status.ts",
           "line": 8,
           "match": "return require(path.resolve(__dirname, '..', '..', '..', '..', 'scripts', 'start-runtime-dashboard-server.cjs'));"
         }

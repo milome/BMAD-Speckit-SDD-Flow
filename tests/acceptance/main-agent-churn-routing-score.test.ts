@@ -1,9 +1,9 @@
 import { execSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildMainAgentDispatchInstruction } from '../../scripts/main-agent-orchestration';
+import { buildMainAgentDispatchInstruction } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   writeUserStoryMappingIndex,
   type UserStoryMappingIndex,
@@ -44,8 +44,22 @@ function bootstrapProject(root: string, index: UserStoryMappingIndex): void {
 }
 
 function runRouteIntake(root: string, inputPath: string): any {
+  const distEntry = path.join(
+    process.cwd(),
+    'packages',
+    'bmad-speckit',
+    'dist',
+    'main-agent',
+    'source-authority',
+    'scripts',
+    'main-agent-orchestration.js'
+  );
+  if (!existsSync(distEntry)) {
+    throw new Error(`package dist main-agent orchestration entry is missing; run npm run build: ${distEntry}`);
+  }
   const command = [
-    'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-orchestration.ts',
+    'node',
+    `"${distEntry}"`,
     '--cwd',
     `"${root}"`,
     '--flow',

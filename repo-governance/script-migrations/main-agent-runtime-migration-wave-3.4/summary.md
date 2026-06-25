@@ -2,12 +2,12 @@
 
 ## Migrated
 
-- scripts/main-agent-unified-ingress.ts -> packages/bmad-speckit/src/main-agent/actions/unified-ingress.js
-- scripts/main-agent-delivery-closeout-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js
-- scripts/main-agent-delivery-evidence-run.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js
-- scripts/main-agent-soak-runner.ts -> packages/bmad-speckit/src/main-agent/actions/soak-runner.js
-- scripts/main-agent-dual-host-pr-orchestrator.ts -> packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js
-- scripts/main-agent-chaos-scenarios.ts -> packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js
+- scripts/main-agent-unified-ingress.ts -> packages/bmad-speckit/src/main-agent/actions/unified-ingress.ts
+- scripts/main-agent-delivery-closeout-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.ts
+- scripts/main-agent-delivery-evidence-run.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.ts
+- scripts/main-agent-soak-runner.ts -> packages/bmad-speckit/src/main-agent/actions/soak-runner.ts
+- scripts/main-agent-dual-host-pr-orchestrator.ts -> packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.ts
+- scripts/main-agent-chaos-scenarios.ts -> packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.ts
 
 ## Strategy
 

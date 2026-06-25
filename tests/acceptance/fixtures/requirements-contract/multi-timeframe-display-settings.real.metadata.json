@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "requirements-contract-real-fixture-metadata/v1",
+  "fixturePath": "tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md",
+  "sourceClassification": "sanitized-real-consumer-requirements",
+  "sourceProject": "REDACTED_CONSUMER_PROJECT",
+  "lineCountMethod": "utf8 text split on CRLF or LF; final empty segment is counted when the file ends with a newline",
+  "sourceBackup": {
+    "path": "<redacted-consumer-project>/_bmad-output/runtime/requirement-records/REQ-MULTI_TIMEFRAME_DISPLAY_SETTINGS_REQUIREMENTS/authoring/multi_timeframe_display_settings_requirements.md.backup-20260623235942.md",
+    "bytes": 59946,
+    "lines": 1470,
+    "sha256": "4663d96263a67491b977e9555065d520ad720f5ffe00442b95eda69f9bd2d6e8"
+  },
+  "currentSource": {
+    "path": "<redacted-consumer-project>/docs/plans/multi_timeframe_display_settings_requirements.md",
+    "bytes": 53267,
+    "lines": 1384,
+    "sha256": "008846a38b07adf6113dc5d932ea1d51c75a9600bafc8d7d70edec3869cdcf40"
+  },
+  "sanitizedFixture": {
+    "path": "tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md",
+    "bytes": 15159,
+    "lines": 473,
+    "sha256": "7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e"
+  },
+  "sanitization": {
+    "removedBlock": "implementationConfirmation",
+    "removedStartLine": 464,
+    "removedLineCount": 1007,
+    "reason": "Remove generated contract materialization from a failed authoring path while preserving business requirement prose for regression coverage."
+  },
+  "requiredBusinessAnchors": {
+    "frIds": [
+      "FR-1",
+      "FR-2",
+      "FR-3",
+      "FR-4",
+      "FR-5",
+      "FR-6",
+      "FR-7",
+      "FR-8",
+      "FR-9"
+    ],
+    "hiddenByDefaultPeriods": [
+      "15m",
+      "30m",
+      "45m",
+      "D"
+    ],
+    "outOfScopeTimeline": "1m",
+    "targetPaths": [
+      "vnpy/chart/multi_timeframe_widget.py",
+      "vnpy/chart/multi_timeframe_settings_dialog.py",
+      "vnpy/trader/ui/widget.py"
+    ],
+    "testSuggestionAnchors": [
+      "## 13. 测试建议",
+      "### 13.1 单元测试",
+      "### 13.2 UI 行为测试",
+      "### 13.3 小屏回归测试"
+    ]
+  },
+  "externalConsumerProjectAccessed": false
+}

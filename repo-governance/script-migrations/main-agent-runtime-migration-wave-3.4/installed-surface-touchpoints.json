@@ -10,7 +10,7 @@
       "selectedRuntimeRoute": "package_runtime_module",
       "routeReason": "Installed and test surfaces can reach unified ingress; consumer-safe route is the package CLI runtime action.",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.ts",
         "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
       ],
       "touchpoints": [
@@ -34,7 +34,7 @@
       "selectedRuntimeRoute": "package_runtime_module",
       "routeReason": "Delivery closeout is consumer lifecycle reachable; the installed route must not depend on root TypeScript.",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
       ],
       "touchpoints": [
@@ -58,7 +58,7 @@
       "selectedRuntimeRoute": "package_runtime_module",
       "routeReason": "Delivery evidence execution is installed-surface reachable and must be callable through package runtime.",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.ts",
         "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
       ],
       "touchpoints": [
@@ -82,7 +82,7 @@
       "selectedRuntimeRoute": "package_runtime_module",
       "routeReason": "Soak runner is an installed-surface lifecycle probe; the package action records that long-run soak is optional evidence.",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
       ],
       "touchpoints": [
@@ -106,7 +106,7 @@
       "selectedRuntimeRoute": "package_runtime_module",
       "routeReason": "Dual-host PR orchestration can be referenced by installed governance surfaces and must resolve through package runtime.",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.ts",
         "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
       ],
       "touchpoints": [
@@ -130,7 +130,7 @@
       "selectedRuntimeRoute": "package_runtime_module",
       "routeReason": "Chaos scenario checks are consumer-visible validation probes and must not require source repo TypeScript execution.",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.ts",
         "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
       ],
       "touchpoints": [

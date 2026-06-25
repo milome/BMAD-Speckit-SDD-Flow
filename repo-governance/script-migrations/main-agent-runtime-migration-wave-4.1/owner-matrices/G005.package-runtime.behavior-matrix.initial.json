@@ -14,7 +14,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_architecture_drift_check_ts_no_args",
@@ -120,7 +120,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_coach_diagnose_ts_no_args",
@@ -261,7 +261,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_emit_runtime_policy_ts_no_args",
@@ -392,7 +392,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_eval_questions_cli_ts_no_args",
@@ -536,15 +536,15 @@
       "originalPath": "scripts/init-to-root.js",
       "entryId": "init-to-root-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_init_to_root_js_no_args",
           "originalEntryPoint": "scripts/init-to-root.js",
           "originalEntryCommand": "node scripts/init-to-root.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
           "packageEntryCommand": "node <packageEntryPoint> --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -13125,7 +13125,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_live_smoke_speckit_workflow_ts_no_args",
@@ -13226,7 +13226,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_main_agent_bmad_help_five_layer_matrix_ts_no_args",
@@ -13347,7 +13347,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_main_agent_host_matrix_pr_orchestrator_ts_no_args",
@@ -13635,7 +13635,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_speckit_cli_ts_no_args",
@@ -13781,7 +13781,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_validate_single_source_whitelist_ts_no_args",

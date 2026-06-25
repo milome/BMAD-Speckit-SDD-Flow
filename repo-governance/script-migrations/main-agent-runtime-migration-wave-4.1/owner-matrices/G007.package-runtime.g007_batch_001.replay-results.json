@@ -391,7 +391,7 @@
           "comparison": {
             "scenarioId": "g007_cleanup_packed_bmad_js_no_args",
             "originalEntryPoint": "scripts/cleanup-packed-bmad.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

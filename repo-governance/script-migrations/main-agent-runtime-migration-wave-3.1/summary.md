@@ -7,9 +7,9 @@ nextWaveRecommendation: blocked_until_wave_3_1_acceptance_review_complete
 
 ## Migrated Package Runtime Modules
 
-- scripts/main-agent-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/release-gate.js -> packages/bmad-speckit/dist/main-agent/actions/release-gate.js
-- scripts/main-agent-quality-gate.ts -> packages/bmad-speckit/src/main-agent/actions/quality-gate.js -> packages/bmad-speckit/dist/main-agent/actions/quality-gate.js
-- scripts/main-agent-delivery-truth-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js -> packages/bmad-speckit/dist/main-agent/actions/delivery-truth-gate.js
+- scripts/main-agent-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/release-gate.ts -> packages/bmad-speckit/dist/main-agent/actions/release-gate.js
+- scripts/main-agent-quality-gate.ts -> packages/bmad-speckit/src/main-agent/actions/quality-gate.ts -> packages/bmad-speckit/dist/main-agent/actions/quality-gate.js
+- scripts/main-agent-delivery-truth-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.ts -> packages/bmad-speckit/dist/main-agent/actions/delivery-truth-gate.js
 
 ## Runtime Emit CJS
 

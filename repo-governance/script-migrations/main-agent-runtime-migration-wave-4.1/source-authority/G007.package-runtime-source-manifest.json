@@ -28,40 +28,40 @@
     {
       "source": "_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
       "sourceSha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.ts",
       "bytes": 34692,
       "sha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
       "sourceSha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.ts",
       "bytes": 5417,
       "sha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
       "sourceSha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.ts",
       "bytes": 3918,
       "sha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
       "sourceSha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.ts",
       "bytes": 9445,
       "sha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
       "sourceSha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.ts",
       "bytes": 6062,
       "sha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6"
     },
@@ -90,10 +90,10 @@
       "sha256": "sha256:c6c231e949de670fc447dc816ea5427f90f56d97a5a02eb8fd2662e599769e9f"
     },
     {
-      "source": "packages/bmad-speckit/src/utils/goal-contract/release-gate.js",
+      "source": "packages/bmad-speckit/src/utils/goal-contract/release-gate.ts",
       "sourceSha256": "sha256:2bcde64fe8a047d6bb316b30b4dae0eca7db58a7fbc24898f99e3899be8e2fba",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/utils/goal-contract/release-gate.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/utils/goal-contract/release-gate.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/utils/goal-contract/release-gate.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/utils/goal-contract/release-gate.ts",
       "bytes": 5079,
       "sha256": "sha256:2bcde64fe8a047d6bb316b30b4dae0eca7db58a7fbc24898f99e3899be8e2fba"
     },
@@ -540,8 +540,8 @@
     {
       "source": "scripts/cleanup-packed-bmad.js",
       "sourceSha256": "sha256:c1fd670de1d7e0a8da1d91337e83cbbc2d92cd999897bdd294a5a1943e97bcc0",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts",
       "bytes": 2068,
       "sha256": "sha256:aeaea9fd3aca7f3b3a16dc9a9dd69c7fa5f4b4c03a74b90683d4f9223177082c"
     },
@@ -668,8 +668,8 @@
     {
       "source": "scripts/generate-codex-agents-from-claude.js",
       "sourceSha256": "sha256:a0f2259627dcedba7e7d1db709649a4ba46c59b45e9b6b15f6a7a064d3c9fb7f",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
       "bytes": 18116,
       "sha256": "sha256:a0f2259627dcedba7e7d1db709649a4ba46c59b45e9b6b15f6a7a064d3c9fb7f"
     },
@@ -988,8 +988,8 @@
     {
       "source": "scripts/prepublish-check.js",
       "sourceSha256": "sha256:3aa7fa65d7d12ccf00259c46de22d735ec21194e3af9a424b01c3f5f38c2dd1f",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
       "bytes": 17345,
       "sha256": "sha256:0f52b5829c19f6134f5cb676da80ffc693415d59f3277faa936a4e504864cc21"
     },
@@ -1028,8 +1028,8 @@
     {
       "source": "scripts/real-development-tick-worker.js",
       "sourceSha256": "sha256:8aa71ec78188eb4db1714689ffc6e4cb9c5f29ca5aed329d98b2dbc19af7307b",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
       "bytes": 17418,
       "sha256": "sha256:8aa71ec78188eb4db1714689ffc6e4cb9c5f29ca5aed329d98b2dbc19af7307b"
     },
@@ -1124,16 +1124,16 @@
     {
       "source": "scripts/run-confirmed-final-required-commands.js",
       "sourceSha256": "sha256:4f2fe98d4855169cff8772ac3fe3f9a9fd1d76bbe6f17dad8c05dd2965d94c56",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
       "bytes": 722,
       "sha256": "sha256:4f2fe98d4855169cff8772ac3fe3f9a9fd1d76bbe6f17dad8c05dd2965d94c56"
     },
     {
       "source": "scripts/run-confirmed-trace-slice.js",
       "sourceSha256": "sha256:ec7d7a5e310cd88546e82ef3b09a0cae8524bb86a22a4cd7f88f73435c2268b2",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
       "bytes": 17000,
       "sha256": "sha256:ec7d7a5e310cd88546e82ef3b09a0cae8524bb86a22a4cd7f88f73435c2268b2"
     },
@@ -1356,8 +1356,8 @@
     {
       "source": "scripts/write-runtime-registry.js",
       "sourceSha256": "sha256:b3165110667bfaf1b191c78af65fac44a6879fc07df16ff3bc091dea4c94b420",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts",
       "bytes": 3113,
       "sha256": "sha256:b3165110667bfaf1b191c78af65fac44a6879fc07df16ff3bc091dea4c94b420"
     }
@@ -1541,10 +1541,10 @@
     {
       "originalPath": "scripts/cleanup-packed-bmad.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
@@ -1841,10 +1841,10 @@
     {
       "originalPath": "scripts/generate-codex-agents-from-claude.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
@@ -2541,10 +2541,10 @@
     {
       "originalPath": "scripts/prepublish-check.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js"
@@ -2666,10 +2666,10 @@
     {
       "originalPath": "scripts/real-development-tick-worker.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js"
@@ -2741,10 +2741,10 @@
     {
       "originalPath": "scripts/run-confirmed-final-required-commands.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
@@ -2766,10 +2766,10 @@
     {
       "originalPath": "scripts/run-confirmed-trace-slice.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
@@ -3191,10 +3191,10 @@
     {
       "originalPath": "scripts/write-runtime-registry.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js"
@@ -15319,7 +15319,7 @@
     {
       "from": "scripts/prepublish-check.js",
       "specifier": "../packages/bmad-speckit/src/utils/goal-contract/release-gate",
-      "to": "packages/bmad-speckit/src/utils/goal-contract/release-gate.js"
+      "to": "packages/bmad-speckit/src/utils/goal-contract/release-gate.ts"
     },
     {
       "from": "scripts/execution-intent-schema.ts",

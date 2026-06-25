@@ -1436,7 +1436,8 @@ describe('req trace generator confirmation block gate', () => {
     const result = run(['--source-document', source]);
 
     expect(result.status).toBe(3);
-    expect(result.stdout).toContain('BLOCK: CONFIRMATION_REQUIRED');
+    expect(result.stdout).toContain('BLOCK: EXECUTION_READY_AUTHORITY_MISSING');
+    expect(result.stdout).toContain('execution_ready_authority_missing');
   });
 
   it('blocks missing confirmation blocks', () => {

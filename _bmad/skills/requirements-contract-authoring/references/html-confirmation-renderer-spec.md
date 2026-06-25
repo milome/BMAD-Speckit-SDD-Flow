@@ -434,7 +434,7 @@ The section must answer:
 - How each `MUST-*` was split into atomic tasks.
 - Whether `expectedTaskCount` and `actualTaskCount` match.
 - Which gaps were found, rejected, fixed, moved to `OUT-*`, or converted to blocking `openQuestions`.
-- Whether Critical Auditor has `consecutiveNoNewGapRounds: 3`.
+- Whether Critical Auditor convergence is derived from three current, hash-bound no-new-gap receipt files.
 - Whether all `EVD-*`, `TRACE-*`, `ACC-*`, `E2E-*`, `currentTargetMap`, and AI-TDD rows are same-origin packet projections.
 - Whether packet/source reconciliation passed in both directions.
 

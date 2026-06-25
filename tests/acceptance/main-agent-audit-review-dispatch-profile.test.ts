@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildMainAgentDispatchInstruction } from '../../scripts/main-agent-orchestration';
+import { buildMainAgentDispatchInstruction } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   createExecutionPacket,
   type ExecutionPacket,

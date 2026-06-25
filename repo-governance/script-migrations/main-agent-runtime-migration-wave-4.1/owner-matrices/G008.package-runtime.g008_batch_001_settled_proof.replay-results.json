@@ -243,7 +243,7 @@
       "originalPath": "scripts/compare-bmad-help-upstream.js",
       "entryId": "compare-bmad-help-upstream-js",
       "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
       "originalReplay": {
         "exitCode": 0,
@@ -264,7 +264,7 @@
       "comparison": {
         "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
         "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -585,7 +585,7 @@
       "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
       "entryId": "ensure-governance-user-story-mapping-fixture-js",
       "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
       "originalReplay": {
         "exitCode": 0,
@@ -606,7 +606,7 @@
       "comparison": {
         "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
         "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -661,7 +661,7 @@
       "originalPath": "scripts/extract-npm-pack-json.js",
       "entryId": "extract-npm-pack-json-js",
       "scenarioId": "g008_extract_npm_pack_json_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/extract-npm-pack-json.js",
       "originalReplay": {
         "exitCode": 1,
@@ -682,7 +682,7 @@
       "comparison": {
         "scenarioId": "g008_extract_npm_pack_json_js_no_args",
         "originalEntryPoint": "scripts/extract-npm-pack-json.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,
@@ -965,7 +965,7 @@
       "originalPath": "scripts/normalize-pack-manifests.js",
       "entryId": "normalize-pack-manifests-js",
       "scenarioId": "g008_normalize_pack_manifests_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
       "originalReplay": {
         "exitCode": 1,
@@ -986,7 +986,7 @@
       "comparison": {
         "scenarioId": "g008_normalize_pack_manifests_js_no_args",
         "originalEntryPoint": "scripts/normalize-pack-manifests.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
         "stdoutMatches": true,
         "stderrMatches": true,
         "exitCodeMatches": true,

@@ -291,7 +291,7 @@
           "comparison": {
             "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
             "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -331,7 +331,7 @@
           "comparison": {
             "scenarioId": "g008_run_ci_release_gate_fixture_js_flag_pass",
             "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

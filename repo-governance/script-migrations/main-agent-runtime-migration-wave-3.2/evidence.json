@@ -11,7 +11,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "consumer_runtime_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.ts",
         "packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js"
       ],
       "commands": [],
@@ -30,7 +30,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "consumer_runtime_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js"
       ],
       "commands": [],
@@ -49,7 +49,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "consumer_runtime_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js"
       ],
       "commands": [],
@@ -68,7 +68,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "installed_surface_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.js",
+        "packages/bmad-speckit/src/main-agent/actions/unified-ingress.ts",
         "packages/bmad-speckit/dist/main-agent/actions/unified-ingress.js"
       ],
       "commands": [],
@@ -87,7 +87,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "installed_surface_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/delivery-closeout-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/delivery-closeout-gate.js"
       ],
       "commands": [],
@@ -346,7 +346,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "installed_surface_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.js",
+        "packages/bmad-speckit/src/main-agent/actions/delivery-evidence-run.ts",
         "packages/bmad-speckit/dist/main-agent/actions/delivery-evidence-run.js"
       ],
       "commands": [],
@@ -365,7 +365,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "installed_surface_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/soak-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/soak-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/soak-runner.js"
       ],
       "commands": [],
@@ -400,7 +400,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "installed_surface_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.js",
+        "packages/bmad-speckit/src/main-agent/actions/dual-host-pr-orchestrator.ts",
         "packages/bmad-speckit/dist/main-agent/actions/dual-host-pr-orchestrator.js"
       ],
       "commands": [],
@@ -419,7 +419,7 @@
       "recommendedMigrationStrategy": "package_runtime_module",
       "consumerReachability": "installed_surface_reachable",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.js",
+        "packages/bmad-speckit/src/main-agent/actions/chaos-scenarios.ts",
         "packages/bmad-speckit/dist/main-agent/actions/chaos-scenarios.js"
       ],
       "commands": [],

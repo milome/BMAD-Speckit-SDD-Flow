@@ -8,7 +8,7 @@ const { spawnSync } = require('node:child_process');
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const PACKAGE_CLI = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
-const command = require(path.join(PACKAGE_ROOT, 'src', 'commands', 'eval-question-generate.js'));
+const command = require(path.join(PACKAGE_ROOT, 'src', 'commands', 'eval-question-generate'));
 const { loadManifest } = require(path.join(
   PROJECT_ROOT,
   'packages',
@@ -29,7 +29,7 @@ function writeJson(filePath, value) {
 
 describe('eval-question-generate package command', () => {
   it('generates eval question files and a loadable manifest from --input', async () => {
-    const root = makeRoot('wave-3-11-eval-question-');
+    const root = makeRoot('eval-question-generate-');
     try {
       const input = path.join(root, 'coach-report.json');
       const outputDir = path.join(root, 'questions');
@@ -63,14 +63,14 @@ describe('eval-question-generate package command', () => {
   });
 
   it('fails closed for unresolved --run-id compatibility scope', async () => {
-    const root = makeRoot('wave-3-11-eval-run-id-');
+    const root = makeRoot('eval-question-run-id-');
     try {
       const dataPath = path.join(root, 'empty-scores');
       fs.mkdirSync(dataPath, { recursive: true });
       await assert.rejects(
         () =>
           command.evalQuestionGenerateCommand({
-            runId: 'wave-3-11-missing-run',
+            runId: 'missing-run',
             dataPath,
             outputDir: path.join(root, 'questions'),
           }),
@@ -86,7 +86,7 @@ describe('eval-question-generate package command', () => {
   });
 
   it('treats --version after eval-question-generate as the question version option', () => {
-    const root = makeRoot('wave-3-11-eval-cli-version-');
+    const root = makeRoot('eval-question-cli-version-');
     try {
       const input = path.join(root, 'coach-report.json');
       const outputDir = path.join(root, 'questions');

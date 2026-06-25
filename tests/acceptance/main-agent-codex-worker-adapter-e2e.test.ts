@@ -7,7 +7,7 @@ import {
   buildMainAgentDispatchInstruction,
   markMainAgentPacketDispatched,
   runMainAgentAutomaticLoop,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';
 import {
   governanceEventTypeRegistryPolicyHash,

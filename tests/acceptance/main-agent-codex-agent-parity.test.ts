@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import AIRegistry from '../../packages/bmad-speckit/src/services/ai-registry.js';
-import { validateSelectedAITargets } from '../../packages/bmad-speckit/src/commands/check.js';
+import AIRegistry from '../../packages/bmad-speckit/src/services/ai-registry.ts';
+import { validateSelectedAITargets } from '../../packages/bmad-speckit/src/commands/check.ts';
 
 const ROOT = path.join(import.meta.dirname, '..', '..');
 
@@ -48,6 +48,8 @@ describe('Codex agent parity with Claude branch', () => {
       expect(content).not.toMatch(/^source_behavior_contract\s*=/mu);
       expect(content).not.toMatch(/^host_role\s*=/mu);
       expect(content).not.toMatch(/^alias_for_dispatch_role\s*=/mu);
+      expect(content).not.toContain('source_claude_agent');
+      expect(content).not.toContain('alias_for_dispatch_role');
       expect(content).not.toContain('Source Claude agent:');
       expect(content).not.toContain('.claude/');
     }
@@ -87,6 +89,8 @@ describe('Codex agent parity with Claude branch', () => {
       expect(runtimeAgentContent).not.toMatch(/^source_behavior_contract\s*=/mu);
       expect(runtimeAgentContent).not.toMatch(/^host_role\s*=/mu);
       expect(runtimeAgentContent).not.toMatch(/^alias_for_dispatch_role\s*=/mu);
+      expect(runtimeAgentContent).not.toContain('source_claude_agent');
+      expect(runtimeAgentContent).not.toContain('alias_for_dispatch_role');
 
       const readme = fs.readFileSync(path.join(target, '.codex', 'README.md'), 'utf8');
       expect(readme).toContain('Custom Codex agents');

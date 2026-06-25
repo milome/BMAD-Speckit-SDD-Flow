@@ -17,7 +17,7 @@ const governanceUserStoryMappingFixtureModuleParts = [
   'ensure-governance-user-story-mapping-fixture.js',
 ];
 const { ensureGovernanceUserStoryMappingFixture } = require(path.join(
-  sourceAuthorityRoot,
+  repoRoot,
   ...governanceUserStoryMappingFixtureModuleParts
 ));
 const packageRuntimeTypeScriptCompilerOptions = {
@@ -55,6 +55,12 @@ function isTypeScriptRuntimeFile(relativePath) {
 }
 
 function sourceAuthorityTypeScriptRuntimeDistRelativePath(relativePath) {
+  if (relativePath === 'source-authority/scripts/deferred-gap-governance-d-cts-source.ts') {
+    return 'source-authority/scripts/deferred-gap-governance.d.cts.js';
+  }
+  if (/\.source\.(?:ts|tsx)$/u.test(relativePath)) {
+    return relativePath.replace(/\.source\.(?:ts|tsx)$/u, '.js');
+  }
   if (/\.(?:ts|tsx)$/u.test(relativePath)) return relativePath.replace(/\.(?:ts|tsx)$/u, '.js');
   if (/\.cts$/u.test(relativePath)) return relativePath.replace(/\.cts$/u, '.cjs');
   if (/\.mts$/u.test(relativePath)) return relativePath.replace(/\.mts$/u, '.mjs');
@@ -82,13 +88,30 @@ function collectRuntimeFiles(dir = sourceRoot, base = sourceRoot) {
     const isSourceAuthorityDeclarationFile =
       isSourceAuthorityFile && isTypeScriptDeclarationFile(relativePath);
     const allowedRuntimeExtension = isSourceAuthorityFile
-      ? /\.(?:js|cjs|mjs|py|ps1|sh|md)$/u
-      : /\.(?:js|cjs)$/u;
+      ? /\.(?:cjs|mjs|py|ps1|sh|md)$/u
+      : /\.cjs$/u;
     if (!entry.isFile() || (!allowedRuntimeExtension.test(entry.name) && !isSourceAuthorityDeclarationFile)) {
       continue;
     }
     if (excludedRuntimeFiles.has(relativePath)) continue;
     if (hasAdjacentSourceAuthorityTypeScript(relativePath, base)) continue;
+    collected.push(relativePath);
+  }
+  return collected.sort();
+}
+
+function collectPackageTypeScriptFiles(dir = packageSourceRoot, base = packageSourceRoot) {
+  if (!fs.existsSync(dir)) return [];
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectPackageTypeScriptFiles(fullPath, base));
+      continue;
+    }
+    if (!entry.isFile() || !isTypeScriptRuntimeFile(entry.name)) continue;
+    const relativePath = path.relative(base, fullPath).replace(/\\/g, '/');
+    if (relativePath.startsWith('main-agent/source-authority/')) continue;
     collected.push(relativePath);
   }
   return collected.sort();
@@ -130,14 +153,40 @@ function rewriteWorkspaceRuntimeRequest(request, relativePath) {
   return `${prefix}${packageName}/dist/${runtimeSubpath}`;
 }
 
+function rewriteRepoRootRuntimeAssetRequest(request, relativePath) {
+  const normalizedRequest = request.replace(/\\/g, '/');
+  const match = normalizedRequest.match(/^((?:\.\.\/)+)_bmad\/(.+)$/u);
+  if (!match) return request;
+  const target = path.join(packageRoot, '_bmad', ...match[2].split('/'));
+  const candidates = [target, `${target}.js`, `${target}.json`, path.join(target, 'index.js')];
+  if (!candidates.some((runtimeTarget) => fs.existsSync(runtimeTarget))) {
+    throw new Error(
+      [
+        `source-authority runtime import has no package _bmad mirror target: ${request}`,
+        `source-authority file: ${relativePath}`,
+        `expected package mirror target under: ${path.relative(repoRoot, target).replace(/\\/g, '/')}`,
+      ].join('\n')
+    );
+  }
+  const currentFileDir = path.dirname(path.join(distRoot, relativePath));
+  const targetRuntimePath = path.relative(currentFileDir, target).replace(/\\/g, '/');
+  return targetRuntimePath.startsWith('.') ? targetRuntimePath : `./${targetRuntimePath}`;
+}
+
 function rewriteSourceAuthorityRuntimeImports(text, relativePath) {
   return text
     .replace(/(require\(\s*['"])([^'"]+)(['"]\s*\))/gu, (match, start, request, end) => {
-      const rewritten = rewriteWorkspaceRuntimeRequest(request, relativePath);
+      const rewritten = rewriteRepoRootRuntimeAssetRequest(
+        rewriteWorkspaceRuntimeRequest(request, relativePath),
+        relativePath
+      );
       return `${start}${rewritten}${end}`;
     })
     .replace(/(from\s+['"])([^'"]+)(['"])/gu, (match, start, request, end) => {
-      const rewritten = rewriteWorkspaceRuntimeRequest(request, relativePath);
+      const rewritten = rewriteRepoRootRuntimeAssetRequest(
+        rewriteWorkspaceRuntimeRequest(request, relativePath),
+        relativePath
+      );
       return `${start}${rewritten}${end}`;
     });
 }
@@ -172,114 +221,12 @@ function collectSourceAuthorityTypeScriptDeclarationFiles(dir = sourceAuthorityR
   return collected.sort();
 }
 
-const staticFiles = [
-  'index.js',
-  'runtime.js',
-  'runtime/diagnose-bmad-state.js',
-  'runtime/parallel-mission-control.js',
-  'actions/package-runtime-report.js',
-  'actions/adaptive-intake-governance-gate.js',
-  'actions/adaptive-intake-proof-gate.js',
-  'actions/ai-tdd-contract-gate.js',
-  'actions/ai-tdd-closeout-remediation-adapter.js',
-  'actions/audit-review-gate.js',
-  'actions/audit-stage-routing.js',
-  'actions/auditor-post-actions.js',
-  'actions/auditor-spec.js',
-  'actions/bmad-runtime-worker.js',
-  'actions/bmad-artifact-hardcut.js',
-  'actions/inspect.js',
-  'actions/chaos-scenarios.js',
-  'actions/codex-worker-adapter.js',
-  'actions/compiled-prompt-runner.js',
-  'actions/confirm-scope.js',
-  'actions/control-plane-isolation-check.js',
-  'actions/data-governance-gate.js',
-  'actions/delivery-closeout-gate.js',
-  'actions/delivery-evidence-run.js',
-  'actions/dataset-release-gate.js',
-  'actions/decision-field-check.js',
-  'actions/development-journey-matrix.js',
-  'actions/dispatch-plan.js',
-  'actions/dual-host-pr-orchestrator.js',
-  'actions/e2e-dual-host-journey-runner.js',
-  'actions/e2e-host-matrix-journey-runner.js',
-  'actions/entryflow-traceability-check.js',
-  'actions/execution-closure-gate.js',
-  'actions/final-closeout-evidence-runner.js',
-  'actions/functional-resume-check.js',
-  'actions/governed-data-products.js',
-  'actions/governance-packet-dispatch-worker.js',
-  'actions/implementation-readiness-gate.js',
-  'actions/initialize-six-model-requirement-confirmation.js',
-  'actions/ingest-implementation-evidence.js',
-  'actions/live-smoke-main-agent-runtime.js',
-  'actions/orchestration-dispatch-contract.js',
-  'actions/orchestration-governance-contract.js',
-  'actions/orchestration-state.js',
-  'actions/per-must-closure-evidence-index.js',
-  'actions/pre-rerun-anti-false-positive-gate.js',
-  'actions/print-resolved-audit-prompt.js',
-  'actions/production-loop-ready-check.js',
-  'actions/run-loop.js',
-  'actions/release-gate.js',
-  'actions/quality-gate.js',
-  'actions/reconfirmation-runtime.js',
-  'actions/record-main-agent-inspect-readiness-closure.js',
-  'actions/requirement-record-control-store.js',
-  'actions/requirement-record-live-schema-gate.js',
-  'actions/requirement-record-schema-evolution.js',
-  'actions/resolve-active-requirement.js',
-  'actions/runtime-policy-snapshot-check.js',
-  'actions/runtime-scoring-data-path.js',
-  'actions/scoring-gates-check.js',
-  'actions/render-audit-block-cli.js',
-  'actions/skill-orchestration-audit.js',
-  'actions/six-model-runtime-decision.js',
-  'actions/delivery-truth-gate.js',
-  'actions/soak-runner.js',
-  'actions/strict-closeout-proof-gate.js',
-  'actions/target-artifact-realization-gate.js',
-  'actions/trace-status-policy-check.js',
-  'actions/trace-040-evidence-packet-generator.js',
-  'actions/unified-ingress.js',
-  'actions/update-runtime-audit-index.js',
-  'actions/verify-cursor-audit-granularity.js',
-  'auditor-host/run-auditor-host.cjs',
-  'helpers/durable-helper-report.js',
-  'helpers/agent-display-names.js',
-  'helpers/bmad-state-reader.js',
-  'helpers/e2e-verify-paths.js',
-  'helpers/governance-packet-execution-store.js',
-  'helpers/governance-packet-reconciler.js',
-  'helpers/governance-remediation-artifact.js',
-  'helpers/governance-remediation-config.js',
-  'helpers/governance-remediation-runner.js',
-  'helpers/load-manifest.js',
-  'helpers/model-governance-policy-filter.js',
-  'helpers/party-mode-runtime.js',
-  'helpers/party-mode-runtime-assets.js',
-  'helpers/prompt-routing-governance.js',
-  'helpers/prompt-routing-hints.js',
-  'helpers/prompt-routing-hints-schema.js',
-  'helpers/query-validate.js',
-  'helpers/runtime-step-state.js',
-  'helpers/skill-inventory-provider.js',
-  'helpers/verify-agent-files.js',
-  'helpers/write-runtime-context.cjs',
-];
+const staticFiles = [];
 const files = Array.from(new Set([...staticFiles, ...collectRuntimeFiles()]));
-const packageRuntimeTypeScriptFiles = [
-  'runtime/host-runtime-mode.ts',
-  'runtime/supervised-worker-runtime.ts',
-  'actions/native-goal-command.ts',
-  'actions/native-goal-invoker.ts',
-];
+const packageRuntimeTypeScriptFiles = collectPackageTypeScriptFiles();
 const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles();
 const sourceAuthorityTypeScriptDeclarationFiles = collectSourceAuthorityTypeScriptDeclarationFiles();
-const packageFiles = [
-  'scoring-runtime.js',
-];
+const packageFiles = [];
 const runtimeAssetDirectories = [
   '_bmad/_schemas',
   '_bmad/runtime/hooks',
@@ -328,10 +275,11 @@ function copyRuntimeFile(relativePath) {
   fs.writeFileSync(target, text, 'utf8');
 }
 
-if (fs.existsSync(distRoot)) {
-  fs.rmSync(distRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+if (fs.existsSync(packageDistRoot)) {
+  fs.rmSync(packageDistRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
+for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
 for (const file of files) copyRuntimeFile(file);
 
 function packageRuntimeTypeScriptDistRelativePath(relativePath) {
@@ -341,8 +289,8 @@ function packageRuntimeTypeScriptDistRelativePath(relativePath) {
   throw new Error(`unsupported package runtime TypeScript runtime file: ${relativePath}`);
 }
 
-function compilePackageRuntimeTypeScriptFile(relativePath, targetRoot = distRoot) {
-  const source = path.join(sourceRoot, relativePath);
+function compilePackageRuntimeTypeScriptFile(relativePath, targetRoot = packageDistRoot) {
+  const source = path.join(packageSourceRoot, relativePath);
   const distRelativePath = packageRuntimeTypeScriptDistRelativePath(relativePath);
   const target = path.join(targetRoot, distRelativePath);
   if (!fs.existsSync(source)) {
@@ -443,7 +391,6 @@ function copyRuntimeAssetDirectory(relativePath) {
   copyDirectoryContents(source, target);
 }
 
-for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
 function sanitizeSourceAuthorityPackageJson(source) {
   const pkg = JSON.parse(fs.readFileSync(source, 'utf8'));
   delete pkg.scripts;
@@ -528,7 +475,7 @@ for (const file of sourceAuthorityAssetFiles) copySourceAuthorityAssetFile(file)
 for (const file of packageRuntimeTypeScriptFiles) {
   compilePackageRuntimeTypeScriptFile(
     file,
-    path.join(distRoot, 'source-authority', 'packages', 'bmad-speckit', 'src', 'main-agent')
+    path.join(distRoot, 'source-authority', 'packages', 'bmad-speckit', 'src')
   );
 }
 for (const file of sourceAuthorityTypeScriptFiles) compileSourceAuthorityTypeScriptFile(file);

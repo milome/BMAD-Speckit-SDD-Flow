@@ -5,7 +5,7 @@ import {
   buildMainAgentDispatchInstruction,
   ingestMainAgentTaskReport,
   resolveMainAgentOrchestrationSurface,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { resolveSixModelRuntimeDecision } from '../../scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,

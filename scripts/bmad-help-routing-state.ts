@@ -43,7 +43,7 @@ import {
 import {
   resolveMainAgentOrchestrationSurface,
   type MainAgentOrchestrationSurface,
-} from './main-agent-orchestration';
+} from '../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { validateLayer1PrdCompletionMarker } from './bmad-help-five-layer-progress-marker';
 import {
   resolveActiveRequirement,

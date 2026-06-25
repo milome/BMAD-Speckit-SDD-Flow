@@ -3495,7 +3495,7 @@
       "originalPath": "scripts/verify-hooks-no-ts-node.js",
       "entryId": "verify-hooks-no-ts-node-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
       "behaviorEquivalenceMatrix": [
@@ -3503,7 +3503,7 @@
           "scenarioId": "g004_verify_hooks_no_ts_node_js_no_args",
           "originalEntryPoint": "scripts/verify-hooks-no-ts-node.js",
           "originalEntryCommand": "node scripts/verify-hooks-no-ts-node.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [

@@ -2,9 +2,9 @@
 
 ## Migrated
 
-- scripts/main-agent-codex-worker-adapter.ts -> packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js
-- scripts/main-agent-compiled-prompt-runner.ts -> packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js
-- scripts/main-agent-implementation-readiness-gate.ts -> packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js
+- scripts/main-agent-codex-worker-adapter.ts -> packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.ts
+- scripts/main-agent-compiled-prompt-runner.ts -> packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.ts
+- scripts/main-agent-implementation-readiness-gate.ts -> packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.ts
 
 ## Strategy
 

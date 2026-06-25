@@ -111,7 +111,7 @@ describe('architecture pre-continue gate hook', () => {
   it('sync/install wiring includes pre-continue-check for claude and cursor', () => {
     const initScript = readFileSync(join(ROOT, 'scripts', 'init-to-root.js'), 'utf8');
     const syncService = readFileSync(
-      join(ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'sync-service.js'),
+      join(ROOT, 'packages', 'bmad-speckit', 'src', 'services', 'sync-service.ts'),
       'utf8'
     );
     const claudeSettings = readFileSync(join(ROOT, '_bmad', 'claude', 'settings.json'), 'utf8');

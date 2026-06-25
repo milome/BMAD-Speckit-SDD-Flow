@@ -8,9 +8,9 @@
       "entryId": "main-agent-codex-worker-adapter",
       "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.js",
+        "packages/bmad-speckit/src/main-agent/actions/codex-worker-adapter.ts",
         "packages/bmad-speckit/dist/main-agent/actions/codex-worker-adapter.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js"
       ],
       "commands": [
@@ -91,9 +91,9 @@
       "entryId": "main-agent-compiled-prompt-runner",
       "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.js",
+        "packages/bmad-speckit/src/main-agent/actions/compiled-prompt-runner.ts",
         "packages/bmad-speckit/dist/main-agent/actions/compiled-prompt-runner.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js"
       ],
       "commands": [
@@ -174,9 +174,9 @@
       "entryId": "main-agent-implementation-readiness-gate",
       "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/implementation-readiness-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js"
       ],
       "commands": [

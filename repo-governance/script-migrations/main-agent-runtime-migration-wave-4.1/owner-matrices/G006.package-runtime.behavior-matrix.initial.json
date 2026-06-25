@@ -12,15 +12,15 @@
       "originalPath": "scripts/bmad-speckit-cli.js",
       "entryId": "bmad-speckit-cli-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_bmad_speckit_cli_js_no_args",
           "originalEntryPoint": "scripts/bmad-speckit-cli.js",
           "originalEntryCommand": "node scripts/bmad-speckit-cli.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
           "packageEntryCommand": "node <packageEntryPoint> --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -105,7 +105,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_run_auditor_host_ts_no_args",
@@ -231,7 +231,7 @@
       "packageImplementationSet": [
         "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts"
       ],
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
       "behaviorEquivalenceMatrix": [
         {
           "scenarioId": "g004_runtime_context_registry_ts_no_args",

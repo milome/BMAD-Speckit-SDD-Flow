@@ -29,7 +29,7 @@ import {
 } from '../packages/scoring/gate/version-lock';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 const { scoreCommand: defaultScoreCommand } =
-  require('../packages/bmad-speckit/src/commands/score.js') as {
+  require('../packages/bmad-speckit/src/commands/score') as {
     scoreCommand: (opts: Record<string, unknown>) => Promise<unknown>;
   };
 

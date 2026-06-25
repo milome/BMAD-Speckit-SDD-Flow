@@ -3,7 +3,7 @@ import {
   buildParallelMissionPlan,
   buildPrTopology,
   validatePrTopologyForReleaseGate,
-} from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts';
 
 describe('main-agent PR topology', () => {
   it('allows all affected stories to pass only after required PR nodes are closed', () => {

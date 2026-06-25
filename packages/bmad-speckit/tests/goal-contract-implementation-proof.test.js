@@ -38,7 +38,7 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '- Optional internal refactor may update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.js`.',
+      '- Optional internal refactor may update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
     ]);
     const out = path.join(root, 'goal.md');
 
@@ -63,7 +63,7 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '- The allowed seam can update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.js`.',
+      '- The allowed seam can update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
     ]);
     const out = path.join(root, 'goal.md');
 
@@ -90,7 +90,7 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## File Map',
       '',
-      '- Modify `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.js`.',
+      '- Modify `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
       '',
       '## Implementation Task Breakdown',
       '',
@@ -121,7 +121,7 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## File Map',
       '',
-      '- Modify `packages/bmad-speckit/src/utils/goal-contract/non-deterministic-source-validator.js`.',
+      '- Modify `packages/bmad-speckit/src/utils/goal-contract/non-deterministic-source-validator.ts`.',
       '',
       '## Implementation Task Breakdown',
       '',
@@ -150,7 +150,7 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## File Map',
       '',
-      '- Modify `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.js`.',
+      '- Modify `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
       '',
       '## Implementation Task Breakdown',
       '',

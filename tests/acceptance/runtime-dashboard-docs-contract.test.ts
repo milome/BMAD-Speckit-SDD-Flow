@@ -32,7 +32,7 @@ describe('runtime dashboard docs contract', () => {
     expect(sourceReference).toContain('packages/scoring/dashboard/live-server.ts');
     expect(sourceReference).toContain('packages/scoring/dashboard/mcp-server.ts');
     expect(sourceReference).toContain('packages/scoring/dashboard/runtime-query.ts');
-    expect(sourceReference).toContain('packages/bmad-speckit/src/commands/runtime-mcp.js');
-    expect(sourceReference).toContain('packages/bmad-speckit/src/commands/dashboard-live.js');
+    expect(sourceReference).toContain('packages/bmad-speckit/src/commands/runtime-mcp.ts');
+    expect(sourceReference).toContain('packages/bmad-speckit/src/commands/dashboard-live.ts');
   });
 });

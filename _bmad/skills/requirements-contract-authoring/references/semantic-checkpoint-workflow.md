@@ -69,7 +69,7 @@ Checkpoint artifacts:
 
 - cp-00 writes or validates `semantic-kernel.json`.
 - cp-01 writes or validates `must_decomposition_packet.json`.
-- cp-02 records Critical Auditor receipts until `consecutiveNoNewGapRounds: 3`.
+- cp-02 records Critical Auditor receipts until three current-hash no-new-gap rounds are derived from real receipt files.
 - cp-03 materializes packet projections into the inline source.
 - cp-04 freezes IDs after source materialization.
 - cp-05 fills implementationConfirmation core and `applicability.*`.

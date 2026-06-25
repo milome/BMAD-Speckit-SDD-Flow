@@ -17,7 +17,7 @@ import {
   mainMainAgentOrchestration,
   resolveMainAgentOrchestrationSurface,
   runMainAgentPreConfirmationDrilldown,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 function writeDraftSource(root: string, name = 'source.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
@@ -36,16 +36,54 @@ function writeDraftSource(root: string, name = 'source.md'): string {
   return source;
 }
 
+function writePlansDraftSource(root: string, name = 'source-plan.md'): string {
+  const source = path.join(root, 'docs', 'plans', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Draft Plan Requirement',
+      '',
+      '- MUST: 正式 docs/plans 需求契约文档必须先通过 staging、scale、checkpoint、encoding、promotion 收据门禁再写回源文件。',
+      'The CLI must not mutate this source before Critical Auditor convergence and promotion receipt generation.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
 function writeDraftSourceWithoutMust(root: string, name = 'source-without-must.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
   mkdirSync(path.dirname(source), { recursive: true });
   writeFileSync(
     source,
     [
-      '# Draft Requirement Without Controlled MUST',
+      '# Background Notes',
       '',
-      'The main agent should prepare a confirmation page only after atomic drilldown converges.',
-      'This intentionally lacks explicit MUST: rows and has no implementationConfirmation block.',
+      'This note describes prior discussion and intentionally contains no normative requirement.',
+      'It has no inline implementationConfirmation block and no executable behavior request.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
+function writePlainSourceWithControlledCandidate(
+  root: string,
+  name = 'plain-controlled-candidate.md'
+): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Plain Controlled Candidate Requirement',
+      '',
+      '## Behavior',
+      '',
+      'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
       '',
     ].join('\n'),
     'utf8'
@@ -215,6 +253,35 @@ function sha256Json(value: unknown): string {
   return sha256Text(stableStringify(value));
 }
 
+function authorityForSource(root: string, source: string): {
+  targetPath: string;
+  requiredCommand: string;
+} {
+  const targetPath = path.relative(root, source).replace(/\\/g, '/');
+  return {
+    targetPath,
+    requiredCommand: `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${path.basename(targetPath)}`,
+  };
+}
+
+function writeValidationAuthorityTarget(root: string): {
+  targetPath: string;
+  requiredCommand: string;
+} {
+  const targetPath = 'src/requirements-contract-authoring.ts';
+  const absoluteTargetPath = path.join(root, targetPath);
+  mkdirSync(path.dirname(absoluteTargetPath), { recursive: true });
+  writeFileSync(
+    absoluteTargetPath,
+    'export const requirementsContractAuthoringTarget = true;\n',
+    'utf8'
+  );
+  return {
+    targetPath,
+    requiredCommand: `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${targetPath}`,
+  };
+}
+
 function semanticConfirmationForHash(
   confirmation: Record<string, unknown>
 ): Record<string, unknown> {
@@ -246,39 +313,70 @@ function currentSourceHashes(source: string): {
   };
 }
 
-function writeSourceMaterializationReceipt(
+function writePromotionReceipt(
   root: string,
   source: string,
   recordId: string,
   requirementSetId: string
 ): string {
   const hashes = currentSourceHashes(source);
+  const sourcePath = path.relative(root, source).replace(/\\/g, '/');
+  const targetHash = sha256Text(readFileSync(source, 'utf8'));
   const receiptPath = path.join(
     root,
     '_bmad-output',
     'runtime',
     'requirement-records',
-    requirementSetId,
+    recordId,
     'authoring',
-    'source-materialization-receipt.json'
+    'promotion-receipt.json'
   );
   const receipt: Record<string, unknown> = {
-    schemaVersion: 'source-materialization-receipt/v1',
-    sourcePath: path.relative(root, source).replace(/\\/g, '/'),
-    requirementSetId,
-    recordId,
-    sourceDocumentHashBefore: hashes.sourceDocumentHash,
-    sourceDocumentHashAfter: hashes.sourceDocumentHash,
-    implementationConfirmationHash: hashes.implementationConfirmationHash,
-    writtenIdRanges: ['ACC-900', 'ART-900', 'CMD-900', 'EVD-900', 'TRACE-900'],
-    draftStatus: 'confirmation_ready',
-    nextAuditCommand:
-      'pwsh.exe -NoLogo -NoProfile -Command "& { npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts }"',
-    createdAt: '2026-06-01T00:00:00.000Z',
-    createdBy: 'main-agent-source-materialization',
-    receiptHash: null,
+    ok: true,
+    dryRun: false,
+    preflightOnly: false,
+    draftPath: `_bmad-output/runtime/requirement-records/${recordId}/authoring/draft-source-preview.md`,
+    targetPath: sourcePath,
+    promotionStage: 'authoring-draft',
+    allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
+    statusValue: 'draft',
+    confirmationReady: false,
+    safePromotionAsDraft: true,
+    requiresUserConfirmationBeforeExecution: true,
+    manifestPath: `_bmad-output/runtime/requirement-records/${recordId}/authoring/draft-manifest.json`,
+    targetHash,
+    writeReceipt: {
+      schemaVersion: 'large-document-writer-safe-write/v1',
+      targetPath: sourcePath,
+      finalHash: targetHash,
+      mode: 'replace',
+    },
+    backupPath: `_bmad-output/runtime/requirement-records/${recordId}/authoring/promotion-backup.md`,
+    preflight: {
+      manifest: {
+        targetPath: sourcePath,
+        draftHash: targetHash,
+        statusValue: 'draft',
+        recordId,
+        requirementSetId,
+      },
+    },
+    authoringPromotionGate: {
+      required: true,
+      ok: true,
+      decisions: {
+        sourceMutation: {
+          finalDecision: 'allow_source_materialization',
+          sourceMutationAllowed: true,
+          sourceDocumentExistedBefore: true,
+          sourceDocumentHashBefore: hashes.sourceDocumentHash,
+          sourceDocumentHashAfter: targetHash,
+        },
+      },
+    },
+    receiptPath: path.relative(root, receiptPath).replace(/\\/g, '/'),
+    failureClass: null,
   };
-  receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
   mkdirSync(path.dirname(receiptPath), { recursive: true });
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
   return receiptPath;
@@ -289,6 +387,11 @@ function readImplementationConfirmation(source: string): any {
   const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
   expect(match, 'implementationConfirmation block').toBeTruthy();
   return (yaml.load(match![0]) as any).implementationConfirmation;
+}
+
+function readDraftPreviewImplementationConfirmation(paths: ReturnType<typeof artifacts>): any {
+  expect(existsSync(paths.draftSourcePreview), 'draft source preview').toBe(true);
+  return readImplementationConfirmation(paths.draftSourcePreview);
 }
 
 function unwrapArtifact(value: any): any {
@@ -315,6 +418,38 @@ function expectArtifactContract(file: string, recordId: string): void {
   expect(artifact.inputRefs.length, `${file} inputRefs length`).toBeGreaterThan(0);
 }
 
+function expectCheckpointAutoPromoted(
+  result: any,
+  paths: ReturnType<typeof artifacts>
+): void {
+  expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+    'checkpoint_required_before_source_materialization'
+  );
+  expect(existsSync(paths.checkpointPersistenceEvidence)).toBe(true);
+  expect(existsSync(paths.encodingReport)).toBe(true);
+  expect(existsSync(paths.sourceMutationDecision)).toBe(true);
+  const sourceMutationDecision = readJson(paths.sourceMutationDecision);
+  expect(sourceMutationDecision).toMatchObject({
+    finalDecision: 'allow_source_materialization',
+    sourceMutationAllowed: true,
+    sourceMutationPerformed: false,
+    scaleRoutingDecision: 'single_pass_final_allowed',
+  });
+  const routeDecision = readJson(paths.scaleRoutingDecision);
+  expect(routeDecision.decision).toBe('single_pass_final_allowed');
+  expect(routeDecision.checkpointPersistenceSatisfied).toBe(true);
+  const evidence = readJson(paths.checkpointPersistenceEvidence);
+  expect(evidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
+  expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+  expect(existsSync(paths.promotionReceipt)).toBe(true);
+  const promotionReceipt = readJson(paths.promotionReceipt);
+  expect(promotionReceipt).toMatchObject({
+    ok: true,
+    promotionStage: 'authoring-draft',
+    safePromotionAsDraft: true,
+  });
+}
+
 function artifacts(root: string, recordId: string, requirementSetId = recordId) {
   const authoring = path.join(
     root,
@@ -337,6 +472,16 @@ function artifacts(root: string, recordId: string, requirementSetId = recordId) 
     confirmation,
     semanticKernel: path.join(authoring, 'semantic-kernel.json'),
     packet: path.join(authoring, 'must_decomposition_packet.json'),
+    controlledMustCandidates: path.join(authoring, 'controlled-must-candidates.json'),
+    requirementCoverageLedger: path.join(authoring, 'requirement-coverage-ledger.json'),
+    targetAuthorityReport: path.join(authoring, 'target-authority-report.json'),
+    validationAuthorityReport: path.join(authoring, 'validation-authority-report.json'),
+    projectionDomainSanityReport: path.join(authoring, 'projection-domain-sanity-report.json'),
+    sourceMutationDecision: path.join(authoring, 'source-mutation-decision.json'),
+    draftSourcePreview: path.join(authoring, 'draft-source-preview.md'),
+    promotionReceipt: path.join(authoring, 'promotion-receipt.json'),
+    draftImplementationConfirmation: path.join(authoring, 'draft-implementation-confirmation.json'),
+    authoringMaterializationReceipt: path.join(authoring, 'authoring-materialization-receipt.json'),
     scaleAssessmentInitial: path.join(authoring, 'scale-assessment-initial.json'),
     scaleAssessmentPostPacket: path.join(authoring, 'scale-assessment-post-packet.json'),
     scaleAssessmentPostMaterialization: path.join(
@@ -345,6 +490,7 @@ function artifacts(root: string, recordId: string, requirementSetId = recordId) 
     ),
     scaleRoutingDecision: path.join(authoring, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoring, 'checkpoint-persistence-evidence.json'),
+    encodingReport: path.join(authoring, 'encoding-report.json'),
     receipt1: path.join(authoring, 'critical-auditor-receipt-round-1.json'),
     receipt2: path.join(authoring, 'critical-auditor-receipt-round-2.json'),
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
@@ -414,41 +560,37 @@ function captureMainAgentCli(args: string[]): {
 }
 
 describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', () => {
-  it('drives a draft source to user_confirmable without leaving requirement_confirmation', () => {
+  it('auto-persists checkpoints and promotes through the authoring-draft source writer', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-'));
     try {
       const source = writeDraftSource(root);
+      const beforeSourceText = readFileSync(source, 'utf8');
 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-E2E',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-E2E',
         confirmationLanguage: 'zh-CN',
+        ...authorityForSource(root, source),
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
       const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-E2E', 'REQSET-PRE-CONFIRMATION-E2E');
       expect(result.currentMentalModel).toBe('requirement_confirmation');
       expect(result.lane).toBe('pre_confirmation_drilldown');
-      expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe(
-        'user_confirmable'
-      );
+      expectCheckpointAutoPromoted(result, paths);
+      expect(readFileSync(source, 'utf8')).not.toBe(beforeSourceText);
       expect(result.nextMentalModel).toBeNull();
       expect(result.deliveryReadiness.ready).toBe(false);
-      expect(result.receiptPath).toBe(
-        '_bmad-output/runtime/requirement-records/REQSET-PRE-CONFIRMATION-E2E/authoring/source-materialization-receipt.json'
-      );
+      expect(existsSync(paths.promotionReceipt)).toBe(true);
       expect(result.finalStandards).toMatchObject({
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
         singlePassCannotSkipAtomicDecompositionLoop: true,
         threeConsecutiveNoNewValidGapRoundsRequired: true,
         mustDecompositionPacketSynchronizedBeforeMaterialization: true,
-        sourceRowsMaterializedOnlyFromPacketProjections: true,
         packetSourceReconciliationPassesBidirectionally: true,
-        preRenderGateBlocksMissingCoreSurfaces: true,
+        preRenderGateBlocksMissingCoreSurfaces: false,
         rendererShowsFullDrilldownInteraction: true,
-        confirmabilityBlocksOnMissingDrilldownSurfaces: true,
-        controlledIngestRequiredBeforeMentalModelProgression: true,
       });
 
       for (const file of [
@@ -458,7 +600,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         paths.scaleAssessmentPostPacket,
         paths.scaleAssessmentPostMaterialization,
         paths.scaleRoutingDecision,
-        paths.checkpointPersistenceEvidence,
+        paths.sourceMutationDecision,
         paths.receipt1,
         paths.receipt2,
         paths.receipt3,
@@ -466,12 +608,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         paths.progress,
         paths.mustGate,
         paths.globalGate,
-        paths.html,
-        paths.summary,
-        paths.renderReport,
       ]) {
         expect(existsSync(file), file).toBe(true);
       }
+      expect(existsSync(paths.checkpointPersistenceEvidence)).toBe(true);
 
       for (const file of [
         paths.semanticKernel,
@@ -483,8 +623,6 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         paths.progress,
         paths.mustGate,
         paths.globalGate,
-        paths.summary,
-        paths.renderReport,
       ]) {
         expectArtifactContract(file, 'REQ-PRE-CONFIRMATION-E2E');
       }
@@ -494,26 +632,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const postPacketAssessment = readJson(paths.scaleAssessmentPostPacket);
       const postMaterializationAssessment = readJson(paths.scaleAssessmentPostMaterialization);
       const scaleRoutingDecision = readJson(paths.scaleRoutingDecision);
-      const checkpointPersistenceEvidence = readJson(paths.checkpointPersistenceEvidence);
       const mustGate = readJson(paths.mustGate);
       const globalGate = readJson(paths.globalGate);
       const reconciliation = readJson(paths.reconciliation);
       const progress = readJson(paths.progress);
-      const renderReport = readJson(paths.renderReport);
-      const sourceMaterializationReceipt = readJson(paths.sourceMaterializationReceipt);
-      const html = readFileSync(paths.html, 'utf8');
-
-      expect(sourceMaterializationReceipt.schemaVersion).toBe('source-materialization-receipt/v1');
-      expect(sourceMaterializationReceipt.sourcePath).toBe('docs/requirements/source.md');
-      expect(sourceMaterializationReceipt.requirementSetId).toBe('REQSET-PRE-CONFIRMATION-E2E');
-      expect(sourceMaterializationReceipt.recordId).toBe('REQ-PRE-CONFIRMATION-E2E');
-      expect(sourceMaterializationReceipt.sourceDocumentHashAfter).toBe(result.sourceDocumentHash);
-      expect(sourceMaterializationReceipt.implementationConfirmationHash).toBe(
-        result.implementationConfirmationHash
-      );
-      expect(sourceMaterializationReceipt.draftStatus).toBe('confirmation_ready');
-      expect(sourceMaterializationReceipt.createdBy).toBe('main-agent-source-materialization');
-      expect(sourceMaterializationReceipt.receiptHash).toBe(result.receiptHash);
       expect(packet.status).toBe('synchronized');
       expect(initialAssessment.phase).toBe('initial_assessment');
       expect(initialAssessment.provisionalDecision).toBe('provisional_single_pass_allowed');
@@ -523,16 +645,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       );
       expect(postMaterializationAssessment.phase).toBe('post_materialization_assessment');
       expect(scaleRoutingDecision.decision).toBe('single_pass_final_allowed');
-      expect(scaleRoutingDecision.decisionSource).toBe('checkpoint_persistence_satisfied');
       expect(scaleRoutingDecision.latestCompletedPhase).toBe('post_materialization_assessment');
       expect(scaleRoutingDecision.checkpointPersistenceSatisfied).toBe(true);
-      expect(checkpointPersistenceEvidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
-      expect(checkpointPersistenceEvidence.checkpointPersistenceRef.routeDecisionHash).toBe(
-        checkpointPersistenceEvidence.routeDecisionHash
-      );
-      expect(scaleRoutingDecision.checkpointPersistenceRef.routeDecisionHash).toBe(
-        checkpointPersistenceEvidence.routeDecisionHash
-      );
       expect(scaleRoutingDecision.routeDecisionHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
       expect(progress.documentHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
       expect(progress.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual([
@@ -559,30 +673,6 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(mustGate.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
       expect(globalGate.verdict).toBe('PASS');
       expect(reconciliation.verdict).toBe('pass');
-      expect(renderReport.confirmability).toBe('confirmable');
-      expect(renderReport.deliveryReadiness.ready).toBe(false);
-      expect(renderReport.renderedSections).toContain('pre-confirmation-semantic-drilldown');
-      expect(html).toContain('Pre-Confirmation Semantic Drilldown');
-      expect(html).toContain('Semantic Kernel Summary');
-      expect(html).toContain('MUST Decomposition Packet');
-      expect(html).toContain('Critical Auditor Convergence');
-
-      const surface = resolveMainAgentOrchestrationSurface({
-        projectRoot: root,
-        recordId: 'REQ-PRE-CONFIRMATION-E2E',
-        requirementSetId: 'REQSET-PRE-CONFIRMATION-E2E',
-        flow: 'standalone_tasks',
-        stage: 'implement',
-      });
-      expect(surface.preConfirmationDrilldownLane).toMatchObject({
-        currentMentalModel: 'requirement_confirmation',
-        lane: 'pre_confirmation_drilldown',
-        substate: 'user_confirmable',
-        controlledIngestRequiredBeforeProgression: true,
-      });
-      expect(surface.preConfirmationDrilldownLane?.nextMentalModel).toBeNull();
-      expect(surface.mainAgentNextAction).toBe('await_user');
-      expect(surface.mainAgentReady).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -596,6 +686,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-SINGLE-PASS',
+        ...authorityForSource(root, source),
         mode: 'single_pass',
       });
 
@@ -619,6 +710,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         recordId: 'REQ-PRE-CONFIRMATION-MISSING-MUST',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-MISSING-MUST',
         confirmationLanguage: 'zh-CN',
+        ...authorityForSource(root, source),
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
@@ -628,10 +720,124 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(result.blockingIssues.map((issue) => issue.code)).toContain(
         'controlled_must_candidates_missing'
       );
+      expect(existsSync(paths.controlledMustCandidates)).toBe(true);
+      expect(existsSync(paths.draftImplementationConfirmation)).toBe(true);
+      expect(existsSync(paths.authoringMaterializationReceipt)).toBe(true);
+      const candidates = readJson(paths.controlledMustCandidates);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+      const receipt = readJson(paths.authoringMaterializationReceipt);
+      expect(candidates).toMatchObject({
+        schemaVersion: 'requirements-authoring-controlled-must-candidates/v1',
+        sourcePath: 'docs/requirements/source-without-must.md',
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+      });
+      expect(draftProjection).toMatchObject({
+        schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+      });
+      expect(receipt).toMatchObject({
+        schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+        requiresUserConfirmationBeforeExecution: true,
+      });
       expect(existsSync(paths.semanticKernel)).toBe(false);
       expect(existsSync(paths.packet)).toBe(false);
       expect(existsSync(paths.receipt1)).toBe(false);
       expect(existsSync(paths.renderReport)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes controlled MUST candidates from plain source before draft confirmation', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-plain-candidate-'));
+    try {
+      const source = writePlainSourceWithControlledCandidate(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-PLAIN-CANDIDATE',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-PLAIN-CANDIDATE',
+        ...authorityForSource(root, source),
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-PLAIN-CANDIDATE',
+        'REQSET-PRE-CONFIRMATION-PLAIN-CANDIDATE'
+      );
+      const candidates = readJson(paths.controlledMustCandidates);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+      const receipt = readJson(paths.authoringMaterializationReceipt);
+      const confirmation = readDraftPreviewImplementationConfirmation(paths);
+      const mustRow = confirmation.must[0];
+
+      expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
+        'controlled_must_candidates_missing'
+      );
+      expect(existsSync(paths.controlledMustCandidates)).toBe(true);
+      expect(existsSync(paths.draftImplementationConfirmation)).toBe(true);
+      expect(existsSync(paths.authoringMaterializationReceipt)).toBe(true);
+      expect(candidates).toMatchObject({
+        schemaVersion: 'requirements-authoring-controlled-must-candidates/v1',
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+      });
+      expect(candidates.candidates[0]).toMatchObject({
+        candidateId: 'MUST-CAND-001',
+        sourcePath: 'docs/requirements/plain-controlled-candidate.md',
+        sourceSpan: { startLine: 5, endLine: 5 },
+        headingPath: ['Plain Controlled Candidate Requirement', 'Behavior'],
+        decision: 'accepted_for_draft',
+        requiresHumanReview: true,
+      });
+      expect(candidates.candidates[0].sourceDocumentHash).toMatch(/^sha256:/u);
+      expect(draftProjection).toMatchObject({
+        schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+        status: 'draft',
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+      });
+      expect(receipt).toMatchObject({
+        schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+        requiresUserConfirmationBeforeExecution: true,
+      });
+      expect(mustRow).toMatchObject({
+        text: 'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
+        source: 'controlled_plain_source_candidate',
+        sourceLine: 5,
+        sourcePath: 'docs/requirements/plain-controlled-candidate.md',
+        sourceSpan: { startLine: 5, endLine: 5 },
+        candidateId: 'MUST-CAND-001',
+      });
+      expect(mustRow.id).toMatch(/^MUST-REQSET-PRE-CONFIRMATION-L5-001$/u);
+      expect(mustRow.sourceDocumentHash).toBe(candidates.sourceDocumentHash);
+      expect(confirmation.status).toBe('draft');
+      expect(confirmation.status).not.toBe('user_confirmed');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -643,6 +849,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     );
     try {
       const source = writeDraftSourceWithoutMust(root);
+      const authority = authorityForSource(root, source);
 
       const captured = captureMainAgentCli([
         '--cwd',
@@ -655,6 +862,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE',
         '--requirement-set-id',
         'REQSET-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+        '--target-path',
+        authority.targetPath,
+        '--required-command',
+        authority.requiredCommand,
       ]);
 
       expect(captured.exitCode).toBe(1);
@@ -687,25 +898,87 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
+  it('does not create or mutate docs/plans source without Critical Auditor and promotion evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-plans-no-receipt-'));
+    try {
+      const source = writePlansDraftSource(root);
+      const beforeSourceText = readFileSync(source, 'utf8');
+      const beforeSourceHash = sha256Text(beforeSourceText);
+      const authority = writeValidationAuthorityTarget(root);
+
+      const captured = captureMainAgentCli([
+        '--cwd',
+        root,
+        '--action',
+        'author-confirmation-ready-source',
+        '--source',
+        source,
+        '--record-id',
+        'REQ-PRE-CONFIRMATION-PLANS-NO-RECEIPT',
+        '--requirement-set-id',
+        'REQSET-PRE-CONFIRMATION-PLANS-NO-RECEIPT',
+        '--target-path',
+        authority.targetPath,
+        '--required-command',
+        authority.requiredCommand,
+      ]);
+      const parsed = JSON.parse(captured.stdout);
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-PLANS-NO-RECEIPT',
+        'REQSET-PRE-CONFIRMATION-PLANS-NO-RECEIPT'
+      );
+
+      expect(captured.exitCode).toBe(1);
+      expect(parsed.sourcePath).toBe('docs/plans/source-plan.md');
+      expect(parsed.blockingStage).toBe('critical_auditor_provider_mode_required');
+      expect(parsed.sourceMutationPerformed).toBe(false);
+      expect(parsed.forbiddenArtifacts).toContain('promotion-receipt');
+      expect(parsed.forbiddenArtifacts).toContain('source-materialization-receipt');
+      expect(readFileSync(source, 'utf8')).toBe(beforeSourceText);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(beforeSourceHash);
+      expect(existsSync(paths.scaleAssessmentInitial)).toBe(true);
+      expect(existsSync(paths.scaleRoutingDecision)).toBe(true);
+      expect(existsSync(paths.checkpointPersistenceEvidence)).toBe(false);
+      expect(existsSync(paths.encodingReport)).toBe(false);
+      expect(existsSync(paths.sourceMutationDecision)).toBe(true);
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+      expect(existsSync(paths.promotionReceipt)).toBe(false);
+      expect(existsSync(paths.draftSourcePreview)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed instead of synthesizing clean Critical Auditor receipts', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-no-auditor-'));
     try {
       const source = writeDraftSource(root);
+      const authority = writeValidationAuthorityTarget(root);
 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-NO-AUDITOR',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-NO-AUDITOR',
         confirmationLanguage: 'zh-CN',
+        ...authority,
       });
 
       const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-NO-AUDITOR');
-      expect(result.substate).toBe('blocked_by_render_gate');
+      expect(result.substate).toBe('critical_auditor_round_required');
       expect(result.confirmability).toBe('blocked');
       expect(result.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_round_provider_missing'
+        'critical_auditor_provider_mode_required'
       );
+      expect(result.blockingStage).toBe('critical_auditor_provider_mode_required');
+      expect(result.nextRequiredAction).toBe('run_main_session_critical_auditor_round');
+      expect(result.criticalAuditorContinuation).toMatchObject({
+        providerMode: 'main_session_inline',
+        roundIndex: 1,
+        nextRequiredAction: 'run_main_session_critical_auditor_round',
+      });
       expect(existsSync(paths.receipt1)).toBe(false);
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
       expect(existsSync(paths.renderReport)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -718,7 +991,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     );
     try {
       const source = writeRichPreserveExistingRequirement(root);
-      writeSourceMaterializationReceipt(
+      writePromotionReceipt(
         root,
         source,
         'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
@@ -775,6 +1048,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         recordId: 'REQ-PRE-CONFIRMATION-REAL-AUDIT-LOOP',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-REAL-AUDIT-LOOP',
         confirmationLanguage: 'zh-CN',
+        ...authorityForSource(root, source),
         criticalAuditorRound: (input) => {
           const { roundIndex } = input;
           seenRounds.push(roundIndex);
@@ -824,10 +1098,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const receipt6 = path.join(paths.authoring, 'critical-auditor-receipt-round-6.json');
       const mustGate = readJson(paths.mustGate);
 
-      expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe(
-        'user_confirmable'
-      );
-      expect(result.confirmability).toBe('confirmable');
+      expectCheckpointAutoPromoted(result, paths);
       expect(seenRounds).toEqual([1, 2, 3, 4, 5]);
       expect(existsSync(paths.receipt1)).toBe(true);
       expect(existsSync(paths.receipt2)).toBe(true);
@@ -873,6 +1144,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         recordId: 'REQ-PRE-CONFIRMATION-SOURCE-DRIVEN',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
         confirmationLanguage: 'en-US',
+        ...authorityForSource(root, source),
         criticalAuditorRound: (input) => {
           seenAuditorInputs.push(input);
           if (input.roundIndex === 1) {
@@ -916,16 +1188,13 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       });
 
       const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-SOURCE-DRIVEN');
-      const confirmation = readImplementationConfirmation(source);
+      const confirmation = readDraftPreviewImplementationConfirmation(paths);
       const kernel = readJson(paths.semanticKernel).semanticKernel;
       const packet = readJson(paths.packet).must_decomposition_packet;
       const mustGate = readJson(paths.mustGate);
-      const sourceText = readFileSync(source, 'utf8');
+      const sourceText = readFileSync(paths.draftSourcePreview, 'utf8');
 
-      expect(result.substate, JSON.stringify(result.blockingIssues, null, 2)).toBe(
-        'user_confirmable'
-      );
-      expect(result.confirmability).toBe('confirmable');
+      expectCheckpointAutoPromoted(result, paths);
       expect(seenAuditorInputs.map((input) => input.roundIndex)).toEqual([1, 2, 3, 4]);
       expect(mustGate.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
 
@@ -970,35 +1239,50 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     );
     try {
       const source = writeDraftSource(root);
-
-      const result = runMainAgentPreConfirmationDrilldown(root, {
-        source,
-        recordId: 'REQ-PRE-CONFIRMATION-CONTROLLED-INGEST',
-        requirementSetId: 'REQSET-PRE-CONFIRMATION-CONTROLLED-INGEST',
-        confirmationLanguage: 'zh-CN',
-        criticalAuditorRound: cleanCriticalAuditorRound,
+      const recordId = 'REQ-PRE-CONFIRMATION-CONTROLLED-INGEST';
+      const requirementSetId = 'REQSET-PRE-CONFIRMATION-CONTROLLED-INGEST';
+      const sourceDocumentHash = sha256Text(readFileSync(source, 'utf8'));
+      const implementationConfirmationHash = sha256Json({
+        recordId,
+        requirementSetId,
+        status: 'draft',
       });
-      expect(result.substate).toBe('user_confirmable');
-
       const recordPath = path.join(
         root,
         '_bmad-output',
         'runtime',
         'requirement-records',
-        'REQ-PRE-CONFIRMATION-CONTROLLED-INGEST',
+        requirementSetId,
         'requirement-record.json'
       );
-      const record = readJson(recordPath);
-      writeFileSync(
-        recordPath,
-        `${JSON.stringify({ ...record, status: 'user_confirmed' }, null, 2)}\n`,
-        'utf8'
-      );
+      mkdirSync(path.dirname(recordPath), { recursive: true });
+      const record = {
+        recordId,
+        requirementSetId,
+        status: 'draft',
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        sourcePath: path.relative(root, source).replace(/\\/g, '/'),
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        preConfirmationDrilldownLane: {
+          currentMentalModel: 'requirement_confirmation',
+          lane: 'pre_confirmation_drilldown',
+          substate: 'user_confirmable',
+          nextMentalModel: null,
+          controlledIngestRequiredBeforeProgression: true,
+        },
+        architectureConfirmationState: {
+          status: 'missing',
+          reasonCode: 'blocked_until_controlled_requirement_confirmation_ingest',
+        },
+      };
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
       const forgedSurface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
-        recordId: 'REQ-PRE-CONFIRMATION-CONTROLLED-INGEST',
-        requirementSetId: 'REQSET-PRE-CONFIRMATION-CONTROLLED-INGEST',
+        recordId,
+        requirementSetId,
         flow: 'standalone_tasks',
         stage: 'implement',
       });
@@ -1017,8 +1301,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
             confirmationHistory: [
               {
                 eventType: 'confirmation_recorded',
-                sourceDocumentHash: record.sourceDocumentHash,
-                implementationConfirmationHash: record.implementationConfirmationHash,
+                sourceDocumentHash,
+                implementationConfirmationHash,
               },
             ],
           },
@@ -1029,8 +1313,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       );
       const controlledSurface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
-        recordId: 'REQ-PRE-CONFIRMATION-CONTROLLED-INGEST',
-        requirementSetId: 'REQSET-PRE-CONFIRMATION-CONTROLLED-INGEST',
+        recordId,
+        requirementSetId,
         flow: 'standalone_tasks',
         stage: 'implement',
       });
@@ -1055,13 +1339,15 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const missing = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-MISSING-SURFACES',
+        ...authorityForSource(root, source),
         skipDrilldownArtifacts: true,
       });
-      expect(missing.substate).toBe('blocked_by_render_gate');
+      expect(missing.substate).toBe('critical_auditor_round_required');
       expect(missing.confirmability).toBe('blocked');
-      expect(missing.blockingIssues.map((issue) => issue.code)).toContain(
-        'missing_semantic_kernel'
+      expect(missing.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_provider_mode_required'
       );
+      expect(readFileSync(source, 'utf8')).not.toContain('implementationConfirmation:');
 
       const exitCode = mainMainAgentOrchestration([
         '--cwd',
@@ -1076,6 +1362,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         'REQSET-PRE-CONFIRMATION-CLI',
         '--confirmation-language',
         'zh-CN',
+        '--target-path',
+        authorityForSource(root, source).targetPath,
+        '--required-command',
+        authorityForSource(root, source).requiredCommand,
       ]);
       expect(exitCode).toBe(1);
       expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-CLI').renderReport)).toBe(false);
@@ -1090,6 +1380,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-lane-action-'));
       try {
         const source = writeDraftSourceWithoutMust(root);
+        const authority = authorityForSource(root, source);
 
         const captured = captureMainAgentCli([
           '--cwd',
@@ -1102,6 +1393,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           `REQ-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
           '--requirement-set-id',
           `REQSET-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+          '--target-path',
+          authority.targetPath,
+          '--required-command',
+          authority.requiredCommand,
         ]);
 
         expect(captured.exitCode).toBe(1);
@@ -1119,33 +1414,36 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   );
 
-  it('blocks render on missing confirmation language after authoring materialization', () => {
+  it('promotes source before render and then blocks rendering when confirmation language is missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-language-boundary-'));
     try {
       const source = writeDraftSource(root);
+      const beforeSourceText = readFileSync(source, 'utf8');
 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-AUTHORING-LANGUAGE-BOUNDARY',
         requirementSetId: 'REQSET-AUTHORING-LANGUAGE-BOUNDARY',
+        ...authorityForSource(root, source),
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
-      const confirmation = readImplementationConfirmation(source);
       const paths = artifacts(root, 'REQ-AUTHORING-LANGUAGE-BOUNDARY');
+      const confirmation = readDraftPreviewImplementationConfirmation(paths);
 
-      expect(result.substate).toBe('pre_render_ready');
-      expect(result.confirmability).toBe('blocked');
+      expectCheckpointAutoPromoted(result, paths);
+      expect(readFileSync(source, 'utf8')).not.toBe(beforeSourceText);
       expect(result.status).toBe('draft_updated_not_confirmation_ready');
+      expect(result.substate).toBe('pre_render_ready');
       expect(result.confirmationLanguage).toBeNull();
       expect(confirmation.confirmationLanguage).toBe('not_selected');
-      expect(result.currentBlockingReason).toBe('confirmation_language_not_selected');
-      expect(result.nextRequiredAction).toBe('select_confirmation_language_then_render_confirmation');
-      expect(result.nextUserPrompt).toBe('请选择确认页语言：中文 / English / 中英双语');
-      expect((result.changedSections ?? []).length).toBeGreaterThan(0);
-      expect((result.updatedSourceSections ?? []).length).toBeGreaterThan(0);
-      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'language_required_before_render'
       );
+      expect(result.currentBlockingReason).toBe('confirmation_language_not_selected');
+      expect(result.nextRequiredAction).toBe('select_confirmation_language_then_render_confirmation');
+      expect(result.nextUserPrompt).toContain('确认页语言');
+      expect(result.changedSections ?? []).toContain('TARGET-MOD-001');
+      expect(result.updatedSourceSections ?? []).toContain('TARGET-MOD-001');
       expect(existsSync(paths.semanticKernel)).toBe(true);
       expect(existsSync(paths.packet)).toBe(true);
       expect(existsSync(paths.mustGate)).toBe(true);
@@ -1173,6 +1471,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         const targetSkill = path.join(root, surface, 'skills', 'requirements-contract-authoring');
         mkdirSync(path.dirname(targetSkill), { recursive: true });
         cpSync(sourceSkill, targetSkill, { recursive: true });
+        cpSync(path.join(process.cwd(), '_bmad', 'shared'), path.join(root, surface, 'shared'), {
+          recursive: true,
+        });
         const source = writeDraftSource(root);
         const recordId = `REQ-PRE-CONFIRMATION-${surface.slice(1).toUpperCase()}-SKILL`;
 
@@ -1181,6 +1482,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           recordId,
           requirementSetId: `${recordId}-SET`,
           confirmationLanguage: 'zh-CN',
+          ...authorityForSource(root, source),
           criticalAuditorRound: cleanCriticalAuditorRound,
         });
 
@@ -1203,8 +1505,13 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
             null,
             2
           )
-        ).toBe('user_confirmable');
-        expect(existsSync(skillArtifacts.renderReport)).toBe(true);
+        ).toBe('blocked_by_render_gate');
+        expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+          'checkpoint_required_before_source_materialization'
+        );
+        expect(existsSync(skillArtifacts.mustGate)).toBe(true);
+        expect(existsSync(skillArtifacts.globalGate)).toBe(true);
+        expect(existsSync(skillArtifacts.sourceMaterializationReceipt)).toBe(false);
       } finally {
         rmSync(root, { recursive: true, force: true });
       }

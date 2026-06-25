@@ -88,8 +88,8 @@ Fail closed when any required section, field, task ID, acceptance ID, evidence c
 
 ## Authority Model
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js` is the runtime renderer authority for `$bmads` and `$bmad-speckit` stdout.
-- `packages/bmad-speckit/src/runtime/markdown-sections.js` is the heading schema authority when a new renderer section or heading key is needed.
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts` is the runtime renderer authority for `$bmads` and `$bmad-speckit` stdout.
+- `packages/bmad-speckit/src/runtime/markdown-sections.ts` is the heading schema authority when a new renderer section or heading key is needed.
 - `_bmad/_config/ai-tdd-six-model-*.csv` files remain display projection data only; they must not write RequirementRecord control state.
 - `_bmad-output/runtime/requirement-records/**/requirement-record.json` remains RequirementRecord runtime state authority.
 - `$bmad-help` remains BMAD upstream workflow and catalog help; it must not expand the RequirementRecord six-model panorama.
@@ -196,8 +196,8 @@ Purpose: Establish the exact current implementation surface before editing.
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/markdown-sections.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/markdown-sections.ts`
 - `packages/bmad-speckit/tests/runtime-entry-content-fidelity.test.js`
 - `packages/bmad-speckit/tests/bmads-heading-contract.test.js`
 - `packages/bmad-speckit/tests/bmads-six-model-panorama.test.js`
@@ -212,7 +212,7 @@ Steps:
 Validation:
 
 - `git status --short`
-- `rg -n -e 'record_closed' -e 'Runtime Workflow Guidance' -e 'Current Actionable Requirement Records' -e 'Six Mental Model Panorama' -- 'packages/bmad-speckit/src/runtime/bmads-renderer.js' 'packages/bmad-speckit/tests'`
+- `rg -n -e 'record_closed' -e 'Runtime Workflow Guidance' -e 'Current Actionable Requirement Records' -e 'Six Mental Model Panorama' -- 'packages/bmad-speckit/src/runtime/bmads-renderer.ts' 'packages/bmad-speckit/tests'`
 
 Acceptance:
 
@@ -225,7 +225,7 @@ Purpose: Add stable section headings for the new action panel without hardcoding
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/markdown-sections.js`
+- `packages/bmad-speckit/src/runtime/markdown-sections.ts`
 
 Steps:
 
@@ -249,7 +249,7 @@ Purpose: Create deterministic renderer logic for skills, CLI commands, suggested
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
 
 Steps:
 
@@ -276,7 +276,7 @@ Purpose: Make the default `$bmads` and `$bmad-speckit` page answer what the user
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
 
 Steps:
 
@@ -303,7 +303,7 @@ Purpose: Prevent runtime routes from being mislabeled as skills while still givi
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
 
 Steps:
 
@@ -332,7 +332,7 @@ Purpose: Stop making internal terminal events look executable.
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
 - `packages/bmad-speckit/tests/runtime-entry-content-fidelity.test.js`
 - `packages/bmad-speckit/tests/bmads-six-model-panorama.test.js`
 
@@ -403,8 +403,8 @@ Purpose: Prove the renderer, package CLI, content fidelity, i18n, and encoding i
 
 Files:
 
-- `packages/bmad-speckit/src/runtime/bmads-renderer.js`
-- `packages/bmad-speckit/src/runtime/markdown-sections.js`
+- `packages/bmad-speckit/src/runtime/bmads-renderer.ts`
+- `packages/bmad-speckit/src/runtime/markdown-sections.ts`
 - `packages/bmad-speckit/tests/runtime-entry-content-fidelity.test.js`
 - `packages/bmad-speckit/tests/bmads-heading-contract.test.js`
 - `packages/bmad-speckit/tests/bmads-six-model-panorama.test.js`
@@ -430,7 +430,7 @@ Acceptance:
 ## Strict Acceptance Checklist
 
 - [ ] ACC001: `git status --short` output is captured before implementation and unrelated dirty files are not reverted.
-- [ ] ACC002: The implementation identifies existing `record_closed` inline-code occurrences in `packages/bmad-speckit/src/runtime/bmads-renderer.js` and updates the renderer rather than only changing tests.
+- [ ] ACC002: The implementation identifies existing `record_closed` inline-code occurrences in `packages/bmad-speckit/src/runtime/bmads-renderer.ts` and updates the renderer rather than only changing tests.
 - [ ] ACC003: English `$bmads` default stdout contains `## Available Next Actions`.
 - [ ] ACC004: zh-CN `$bmads --lang zh-CN` stdout contains `## 可用下一步`.
 - [ ] ACC005: English Available Next Actions contains `### Recommended Now`, `### Core Skills`, and `### Navigation`.
@@ -451,7 +451,7 @@ Acceptance:
 | Acceptance ID | Task IDs | Evidence command or artifact | Pass condition |
 |---|---|---|---|
 | ACC001 | G001 | `git status --short` | Output is captured and no unrelated dirty file is reverted. |
-| ACC002 | G001, G006 | `rg -n -e 'record_closed' -- 'packages/bmad-speckit/src/runtime/bmads-renderer.js' 'packages/bmad-speckit/tests'` | Renderer occurrences no longer use inline-code formatting for `record_closed`; tests assert the new behavior. |
+| ACC002 | G001, G006 | `rg -n -e 'record_closed' -- 'packages/bmad-speckit/src/runtime/bmads-renderer.ts' 'packages/bmad-speckit/tests'` | Renderer occurrences no longer use inline-code formatting for `record_closed`; tests assert the new behavior. |
 | ACC003 | G002, G004, G007 | `node packages/bmad-speckit/bin/bmad-speckit.js bmads` | Output contains `## Available Next Actions`. |
 | ACC004 | G002, G004, G007 | `node packages/bmad-speckit/bin/bmad-speckit.js bmads --lang zh-CN` | Output contains `## 可用下一步`. |
 | ACC005 | G003, G004, G007 | `node --test packages/bmad-speckit/tests/runtime-entry-content-fidelity.test.js` | English action subsection assertions pass. |

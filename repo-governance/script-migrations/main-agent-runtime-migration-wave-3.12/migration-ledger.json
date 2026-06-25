@@ -364,7 +364,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js"
+        "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/analytics-sft-extract.ts"
@@ -381,7 +381,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:analytics-sft-extract",
           "status": "pending",
           "proofCommandIds": [
@@ -403,7 +403,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/analytics-sft-extract.js",
           "copyCommandId": "CMD018"
         }
@@ -436,7 +436,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js"
+          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/analytics-sft-extract.js"
@@ -449,8 +449,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/analytics-sft-extract.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -473,7 +473,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js"
+        "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/architecture-confirmation-hash-recipe.ts"
@@ -490,7 +490,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts",
           "action": "replace_root_script_dependency_with_package_helper:architecture-confirmation-hash-recipe",
           "status": "pending",
           "proofCommandIds": [
@@ -512,7 +512,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/architecture-confirmation-hash-recipe.js",
           "copyCommandId": "CMD018"
         }
@@ -545,7 +545,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js"
+          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/architecture-confirmation-hash-recipe.js"
@@ -558,7 +558,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js"
+          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -582,7 +582,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/architecture-drift-check.js"
+        "packages/bmad-speckit/src/commands/architecture-drift-check.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run main-agent:architecture-drift-check"
@@ -656,7 +656,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/architecture-drift-check.js"
+          "packages/bmad-speckit/src/commands/architecture-drift-check.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -667,7 +667,7 @@
         "originalPath": "scripts/architecture-drift-check.ts",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/architecture-drift-check.js"
+          "packages/bmad-speckit/src/commands/architecture-drift-check.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -691,7 +691,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js"
+        "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/assert-implementation-entry.ts"
@@ -708,7 +708,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:assert-implementation-entry",
           "status": "pending",
           "proofCommandIds": [
@@ -730,7 +730,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/assert-implementation-entry.js",
           "copyCommandId": "CMD018"
         }
@@ -763,7 +763,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js"
+          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/assert-implementation-entry.js"
@@ -776,8 +776,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/assert-implementation-entry.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -800,7 +800,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/bmad-config.js"
+        "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/bmad-config.ts"
@@ -817,7 +817,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:bmad-config",
           "status": "pending",
           "proofCommandIds": [
@@ -839,7 +839,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/bmad-config.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/bmad-config.js",
           "copyCommandId": "CMD018"
         }
@@ -872,7 +872,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/bmad-config.js"
+          "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/bmad-config.js"
@@ -885,8 +885,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/bmad-config.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/bmad-config.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -909,7 +909,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/bmad-help-five-layer-progress-marker.ts"
@@ -926,7 +926,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts",
           "action": "replace_root_script_dependency_with_package_helper:bmad-help-five-layer-progress-marker",
           "status": "pending",
           "proofCommandIds": [
@@ -948,7 +948,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/bmad-help-five-layer-progress-marker.js",
           "copyCommandId": "CMD018"
         }
@@ -981,7 +981,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
@@ -994,7 +994,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1017,7 +1017,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/bmad-help-routing-state.ts"
@@ -1034,7 +1034,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts",
           "action": "replace_root_script_dependency_with_package_helper:bmad-help-routing-state",
           "status": "pending",
           "proofCommandIds": [
@@ -1056,7 +1056,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/bmad-help-routing-state.js",
           "copyCommandId": "CMD018"
         }
@@ -1089,7 +1089,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-help-routing-state.js"
@@ -1102,7 +1102,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/bmad-help-routing-state.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1125,7 +1125,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/bmad-state.ts"
@@ -1142,7 +1142,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts",
           "action": "replace_root_script_dependency_with_package_helper:bmad-state",
           "status": "pending",
           "proofCommandIds": [
@@ -1164,7 +1164,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/bmad-state.js",
           "copyCommandId": "CMD018"
         }
@@ -1197,7 +1197,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-state.js"
@@ -1210,7 +1210,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/bmad-state.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1233,7 +1233,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/bmad-sync-from-v6.ps1"
@@ -1250,7 +1250,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts",
           "action": "replace_root_script_dependency_with_package_helper:bmad-sync-from-v6",
           "status": "pending",
           "proofCommandIds": [
@@ -1272,7 +1272,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/bmad-sync-from-v6.js",
           "copyCommandId": "CMD018"
         }
@@ -1305,7 +1305,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-sync-from-v6.js"
@@ -1318,7 +1318,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/bmad-sync-from-v6.ps1",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1341,7 +1341,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/bmad-sync-from-v6.sh"
@@ -1358,7 +1358,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts",
           "action": "replace_root_script_dependency_with_package_helper:bmad-sync-from-v6",
           "status": "pending",
           "proofCommandIds": [
@@ -1380,7 +1380,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/bmad-sync-from-v6.js",
           "copyCommandId": "CMD018"
         }
@@ -1413,7 +1413,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-sync-from-v6.js"
@@ -1426,7 +1426,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/bmad-sync-from-v6.sh",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1449,7 +1449,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/check-sprint-ready.ps1"
@@ -1466,7 +1466,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:check-sprint-ready",
           "status": "pending",
           "proofCommandIds": [
@@ -1488,7 +1488,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/check-sprint-ready.js",
           "copyCommandId": "CMD018"
         }
@@ -1521,7 +1521,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/check-sprint-ready.js"
@@ -1534,8 +1534,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/check-sprint-ready.ps1",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1558,7 +1558,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/check-sprint-ready.sh"
@@ -1575,7 +1575,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:check-sprint-ready",
           "status": "pending",
           "proofCommandIds": [
@@ -1597,7 +1597,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/check-sprint-ready.js",
           "copyCommandId": "CMD018"
         }
@@ -1630,7 +1630,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/check-sprint-ready.js"
@@ -1643,8 +1643,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/check-sprint-ready.sh",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1667,7 +1667,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/cleanup-packed-bmad.js"
@@ -1684,7 +1684,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts",
           "action": "replace_root_script_dependency_with_package_helper:cleanup-packed-bmad",
           "status": "pending",
           "proofCommandIds": [
@@ -1706,7 +1706,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/cleanup-packed-bmad.js",
           "copyCommandId": "CMD018"
         }
@@ -1739,7 +1739,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js"
+          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/cleanup-packed-bmad.js"
@@ -1752,7 +1752,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/cleanup-packed-bmad.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js"
+          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1776,7 +1776,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/coach-diagnose.js"
+        "packages/bmad-speckit/src/commands/coach-diagnose.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run coach:diagnose"
@@ -1850,7 +1850,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/coach-diagnose.js"
+          "packages/bmad-speckit/src/commands/coach-diagnose.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -1861,7 +1861,7 @@
         "originalPath": "scripts/coach-diagnose.ts",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/coach-diagnose.js"
+          "packages/bmad-speckit/src/commands/coach-diagnose.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1885,7 +1885,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js"
+        "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/continue-state-contract.ts"
@@ -1902,7 +1902,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts",
           "action": "replace_root_script_dependency_with_package_helper:continue-state-contract",
           "status": "pending",
           "proofCommandIds": [
@@ -1924,7 +1924,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/continue-state-contract.js",
           "copyCommandId": "CMD018"
         }
@@ -1957,7 +1957,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js"
+          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/continue-state-contract.js"
@@ -1970,7 +1970,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/continue-state-contract.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js"
+          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -1993,7 +1993,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js"
+        "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/control-event-log-rebaseline.ts"
@@ -2010,7 +2010,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts",
           "action": "replace_root_script_dependency_with_package_helper:control-event-log-rebaseline",
           "status": "pending",
           "proofCommandIds": [
@@ -2032,7 +2032,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/control-event-log-rebaseline.js",
           "copyCommandId": "CMD018"
         }
@@ -2065,7 +2065,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js"
+          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/control-event-log-rebaseline.js"
@@ -2078,7 +2078,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/control-event-log-rebaseline.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js"
+          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2101,7 +2101,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js"
+        "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/controlled-ingest-atomic-committer.ts"
@@ -2118,7 +2118,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts",
           "action": "replace_root_script_dependency_with_package_helper:controlled-ingest-atomic-committer",
           "status": "pending",
           "proofCommandIds": [
@@ -2140,7 +2140,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/controlled-ingest-atomic-committer.js",
           "copyCommandId": "CMD018"
         }
@@ -2173,7 +2173,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js"
+          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/controlled-ingest-atomic-committer.js"
@@ -2186,7 +2186,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/controlled-ingest-atomic-committer.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js"
+          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2209,7 +2209,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js"
+        "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/dashboard-generate.ts"
@@ -2226,7 +2226,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:dashboard-generate",
           "status": "pending",
           "proofCommandIds": [
@@ -2248,7 +2248,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/dashboard-generate.js",
           "copyCommandId": "CMD018"
         }
@@ -2281,7 +2281,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js"
+          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/dashboard-generate.js"
@@ -2294,8 +2294,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/dashboard-generate.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2445,7 +2445,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js"
+        "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/deferred-gap-governance.cjs"
@@ -2462,7 +2462,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js",
+          "targetPath": "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts",
           "action": "replace_root_script_dependency_with_package_helper:deferred-gap-governance",
           "status": "pending",
           "proofCommandIds": [
@@ -2511,7 +2511,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js"
+          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -2521,7 +2521,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/deferred-gap-governance.cjs",
         "scanScopes": [
-          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js"
+          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2546,7 +2546,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/emit-runtime-policy.js"
+        "packages/bmad-speckit/src/commands/emit-runtime-policy.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run emit-runtime-policy"
@@ -2620,7 +2620,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/emit-runtime-policy.js"
+          "packages/bmad-speckit/src/commands/emit-runtime-policy.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -2631,7 +2631,7 @@
         "originalPath": "scripts/emit-runtime-policy.ts",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/emit-runtime-policy.js"
+          "packages/bmad-speckit/src/commands/emit-runtime-policy.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2655,7 +2655,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js"
+        "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/ensure-runtime-dashboard-server.cjs"
@@ -2672,7 +2672,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts",
           "action": "replace_root_script_dependency_with_package_helper:ensure-runtime-dashboard-server",
           "status": "pending",
           "proofCommandIds": [
@@ -2694,7 +2694,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/ensure-runtime-dashboard-server.js",
           "copyCommandId": "CMD018"
         }
@@ -2727,7 +2727,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js"
+          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/ensure-runtime-dashboard-server.js"
@@ -2740,7 +2740,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/ensure-runtime-dashboard-server.cjs",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js"
+          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2763,7 +2763,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js"
+        "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/evidence-provenance.ts"
@@ -2780,7 +2780,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts",
           "action": "replace_root_script_dependency_with_package_helper:evidence-provenance",
           "status": "pending",
           "proofCommandIds": [
@@ -2802,7 +2802,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/evidence-provenance.js",
           "copyCommandId": "CMD018"
         }
@@ -2835,7 +2835,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js"
+          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/evidence-provenance.js"
@@ -2848,7 +2848,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/evidence-provenance.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js"
+          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2871,7 +2871,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js"
+        "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/execution-discipline-profiles.ts"
@@ -2888,7 +2888,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts",
           "action": "replace_root_script_dependency_with_package_helper:execution-discipline-profiles",
           "status": "pending",
           "proofCommandIds": [
@@ -2910,7 +2910,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/execution-discipline-profiles.js",
           "copyCommandId": "CMD018"
         }
@@ -2943,7 +2943,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/execution-discipline-profiles.js"
@@ -2956,7 +2956,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/execution-discipline-profiles.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -2979,7 +2979,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js"
+        "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/execution-intent-schema.ts"
@@ -2996,7 +2996,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts",
           "action": "replace_root_script_dependency_with_package_helper:execution-intent-schema",
           "status": "pending",
           "proofCommandIds": [
@@ -3018,7 +3018,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/execution-intent-schema.js",
           "copyCommandId": "CMD018"
         }
@@ -3051,7 +3051,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/execution-intent-schema.js"
@@ -3064,7 +3064,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/execution-intent-schema.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3087,7 +3087,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js"
+        "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/execution-strategy-selection.ts"
@@ -3104,7 +3104,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts",
           "action": "replace_root_script_dependency_with_package_helper:execution-strategy-selection",
           "status": "pending",
           "proofCommandIds": [
@@ -3126,7 +3126,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/execution-strategy-selection.js",
           "copyCommandId": "CMD018"
         }
@@ -3159,7 +3159,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/execution-strategy-selection.js"
@@ -3172,7 +3172,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/execution-strategy-selection.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3195,7 +3195,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js"
+        "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/facilitator-registry.ts"
@@ -3212,7 +3212,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts",
           "action": "replace_root_script_dependency_with_package_helper:facilitator-registry",
           "status": "pending",
           "proofCommandIds": [
@@ -3234,7 +3234,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/facilitator-registry.js",
           "copyCommandId": "CMD018"
         }
@@ -3267,7 +3267,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/facilitator-registry.js"
@@ -3280,7 +3280,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/facilitator-registry.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3303,7 +3303,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js"
+        "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/facilitator-runtime-definition.ts"
@@ -3320,7 +3320,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts",
           "action": "replace_root_script_dependency_with_package_helper:facilitator-runtime-definition",
           "status": "pending",
           "proofCommandIds": [
@@ -3342,7 +3342,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/facilitator-runtime-definition.js",
           "copyCommandId": "CMD018"
         }
@@ -3375,7 +3375,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/facilitator-runtime-definition.js"
@@ -3388,7 +3388,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/facilitator-runtime-definition.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3411,7 +3411,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/generate-codex-agents-from-claude.js"
@@ -3428,7 +3428,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts",
           "action": "replace_root_script_dependency_with_package_helper:generate-codex-agents-from-claude",
           "status": "pending",
           "proofCommandIds": [
@@ -3450,7 +3450,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/generate-codex-agents-from-claude.js",
           "copyCommandId": "CMD018"
         }
@@ -3483,7 +3483,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js"
+          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/generate-codex-agents-from-claude.js"
@@ -3496,7 +3496,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/generate-codex-agents-from-claude.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js"
+          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3519,7 +3519,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/governance-execution-result-ingestor.ts"
@@ -3536,7 +3536,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:governance-execution-result-ingestor",
           "status": "pending",
           "proofCommandIds": [
@@ -3558,7 +3558,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/governance-execution-result-ingestor.js",
           "copyCommandId": "CMD018"
         }
@@ -3591,7 +3591,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/governance-execution-result-ingestor.js"
@@ -3604,8 +3604,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/governance-execution-result-ingestor.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3628,7 +3628,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/governance-hook-types.ts"
@@ -3645,7 +3645,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:governance-hook-types",
           "status": "pending",
           "proofCommandIds": [
@@ -3667,7 +3667,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/governance-hook-types.js",
           "copyCommandId": "CMD018"
         }
@@ -3700,7 +3700,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/governance-hook-types.js"
@@ -3713,8 +3713,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/governance-hook-types.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3737,7 +3737,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/governance-provider-adapter.ts"
@@ -3754,7 +3754,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:governance-provider-adapter",
           "status": "pending",
           "proofCommandIds": [
@@ -3776,7 +3776,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/governance-provider-adapter.js",
           "copyCommandId": "CMD018"
         }
@@ -3809,7 +3809,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/governance-provider-adapter.js"
@@ -3822,8 +3822,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/governance-provider-adapter.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3846,7 +3846,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/governance-runtime-queue.ts"
@@ -3863,7 +3863,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:governance-runtime-queue",
           "status": "pending",
           "proofCommandIds": [
@@ -3885,7 +3885,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/governance-runtime-queue.js",
           "copyCommandId": "CMD018"
         }
@@ -3918,7 +3918,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/governance-runtime-queue.js"
@@ -3931,8 +3931,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/governance-runtime-queue.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -3955,7 +3955,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/governance-stage-event-emitter.ts"
@@ -3972,7 +3972,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:governance-stage-event-emitter",
           "status": "pending",
           "proofCommandIds": [
@@ -3994,7 +3994,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/governance-stage-event-emitter.js",
           "copyCommandId": "CMD018"
         }
@@ -4027,7 +4027,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/governance-stage-event-emitter.js"
@@ -4040,8 +4040,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/governance-stage-event-emitter.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4064,7 +4064,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/governance-transport-envelope.ts"
@@ -4081,7 +4081,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts",
           "action": "replace_root_script_dependency_with_package_helper:governance-transport-envelope",
           "status": "pending",
           "proofCommandIds": [
@@ -4103,7 +4103,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/governance-transport-envelope.js",
           "copyCommandId": "CMD018"
         }
@@ -4136,7 +4136,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js"
+          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/governance-transport-envelope.js"
@@ -4149,7 +4149,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/governance-transport-envelope.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js"
+          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4172,7 +4172,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/agent-manifest.ts"
@@ -4189,7 +4189,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts",
           "action": "replace_root_script_dependency_with_package_helper:agent-manifest",
           "status": "pending",
           "proofCommandIds": [
@@ -4211,7 +4211,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-agent-manifest.js",
           "copyCommandId": "CMD018"
         }
@@ -4244,7 +4244,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-agent-manifest.js"
@@ -4257,7 +4257,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/agent-manifest.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4280,7 +4280,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/detect-language.ts"
@@ -4297,7 +4297,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts",
           "action": "replace_root_script_dependency_with_package_helper:detect-language",
           "status": "pending",
           "proofCommandIds": [
@@ -4319,7 +4319,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-detect-language.js",
           "copyCommandId": "CMD018"
         }
@@ -4352,7 +4352,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-detect-language.js"
@@ -4365,7 +4365,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/detect-language.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4388,7 +4388,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/field-meta-types.ts"
@@ -4405,7 +4405,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts",
           "action": "replace_root_script_dependency_with_package_helper:field-meta-types",
           "status": "pending",
           "proofCommandIds": [
@@ -4427,7 +4427,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-field-meta-types.js",
           "copyCommandId": "CMD018"
         }
@@ -4460,7 +4460,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-field-meta-types.js"
@@ -4473,7 +4473,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/field-meta-types.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4496,7 +4496,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/language-policy.ts"
@@ -4513,7 +4513,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts",
           "action": "replace_root_script_dependency_with_package_helper:language-policy",
           "status": "pending",
           "proofCommandIds": [
@@ -4535,7 +4535,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-language-policy.js",
           "copyCommandId": "CMD018"
         }
@@ -4568,7 +4568,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-language-policy.js"
@@ -4581,7 +4581,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/language-policy.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4604,7 +4604,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/materialize-facilitator-definition.ts"
@@ -4621,7 +4621,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts",
           "action": "replace_root_script_dependency_with_package_helper:materialize-facilitator-definition",
           "status": "pending",
           "proofCommandIds": [
@@ -4643,7 +4643,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-materialize-facilitator-definition.js",
           "copyCommandId": "CMD018"
         }
@@ -4676,7 +4676,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-materialize-facilitator-definition.js"
@@ -4689,7 +4689,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/materialize-facilitator-definition.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4712,7 +4712,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/placeholder-types.ts"
@@ -4729,7 +4729,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts",
           "action": "replace_root_script_dependency_with_package_helper:placeholder-types",
           "status": "pending",
           "proofCommandIds": [
@@ -4751,7 +4751,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-placeholder-types.js",
           "copyCommandId": "CMD018"
         }
@@ -4784,7 +4784,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-placeholder-types.js"
@@ -4797,7 +4797,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/placeholder-types.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4820,7 +4820,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/protected-token-check.ts"
@@ -4837,7 +4837,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts",
           "action": "replace_root_script_dependency_with_package_helper:protected-token-check",
           "status": "pending",
           "proofCommandIds": [
@@ -4859,7 +4859,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-protected-token-check.js",
           "copyCommandId": "CMD018"
         }
@@ -4892,7 +4892,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-protected-token-check.js"
@@ -4905,7 +4905,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/protected-token-check.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -4928,7 +4928,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/render-field-view.ts"
@@ -4945,7 +4945,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts",
           "action": "replace_root_script_dependency_with_package_helper:render-field-view",
           "status": "pending",
           "proofCommandIds": [
@@ -4967,7 +4967,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-render-field-view.js",
           "copyCommandId": "CMD018"
         }
@@ -5000,7 +5000,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-render-field-view.js"
@@ -5013,7 +5013,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/render-field-view.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5036,7 +5036,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js"
+        "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/render-template.ts"
@@ -5053,7 +5053,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:render-template",
           "status": "pending",
           "proofCommandIds": [
@@ -5075,7 +5075,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/i18n-render-template.js",
           "copyCommandId": "CMD018"
         }
@@ -5108,7 +5108,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js"
+          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/i18n-render-template.js"
@@ -5121,8 +5121,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/render-template.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5145,7 +5145,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/resolve-for-session-cli.ts"
@@ -5162,7 +5162,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts",
           "action": "replace_root_script_dependency_with_package_helper:resolve-for-session-cli",
           "status": "pending",
           "proofCommandIds": [
@@ -5184,7 +5184,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-for-session-cli.js",
           "copyCommandId": "CMD018"
         }
@@ -5217,7 +5217,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-for-session-cli.js"
@@ -5230,7 +5230,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/resolve-for-session-cli.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5253,7 +5253,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/resolve-for-session.ts"
@@ -5270,7 +5270,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts",
           "action": "replace_root_script_dependency_with_package_helper:resolve-for-session",
           "status": "pending",
           "proofCommandIds": [
@@ -5292,7 +5292,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-for-session.js",
           "copyCommandId": "CMD018"
         }
@@ -5325,7 +5325,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-for-session.js"
@@ -5338,7 +5338,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/resolve-for-session.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5361,7 +5361,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/resolve-localized-markdown-path.ts"
@@ -5378,7 +5378,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts",
           "action": "replace_root_script_dependency_with_package_helper:resolve-localized-markdown-path",
           "status": "pending",
           "proofCommandIds": [
@@ -5400,7 +5400,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-localized-markdown-path.js",
           "copyCommandId": "CMD018"
         }
@@ -5433,7 +5433,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
@@ -5446,7 +5446,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/resolve-localized-markdown-path.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5469,7 +5469,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/sync-party-mode-mirrors.ts"
@@ -5486,7 +5486,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts",
           "action": "replace_root_script_dependency_with_package_helper:sync-party-mode-mirrors",
           "status": "pending",
           "proofCommandIds": [
@@ -5508,7 +5508,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-sync-party-mode-mirrors.js",
           "copyCommandId": "CMD018"
         }
@@ -5541,7 +5541,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
@@ -5554,7 +5554,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5577,7 +5577,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/i18n/validate-template-manifest.ts"
@@ -5594,7 +5594,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts",
           "action": "replace_root_script_dependency_with_package_helper:validate-template-manifest",
           "status": "pending",
           "proofCommandIds": [
@@ -5616,7 +5616,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/i18n-validate-template-manifest.js",
           "copyCommandId": "CMD018"
         }
@@ -5649,7 +5649,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-validate-template-manifest.js"
@@ -5662,7 +5662,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/i18n/validate-template-manifest.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5685,7 +5685,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js"
+        "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/ingest-architecture-confirmation.ts"
@@ -5702,7 +5702,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:ingest-architecture-confirmation",
           "status": "pending",
           "proofCommandIds": [
@@ -5724,7 +5724,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/ingest-architecture-confirmation.js",
           "copyCommandId": "CMD018"
         }
@@ -5757,7 +5757,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js"
+          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/ingest-architecture-confirmation.js"
@@ -5770,8 +5770,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/ingest-architecture-confirmation.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5795,7 +5795,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/init-to-root.js"
+        "packages/bmad-speckit/src/commands/init-to-root.ts"
       ],
       "publicCommandsBeforeMigration": [
         "bmad-speckit-init",
@@ -5874,7 +5874,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/init-to-root.js"
+          "packages/bmad-speckit/src/commands/init-to-root.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -5885,7 +5885,7 @@
         "originalPath": "scripts/init-to-root.js",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/init-to-root.js"
+          "packages/bmad-speckit/src/commands/init-to-root.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -5910,7 +5910,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.js"
+        "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run smoke:speckit-workflow"
@@ -5984,7 +5984,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.js"
+          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -5995,7 +5995,7 @@
         "originalPath": "scripts/live-smoke-speckit-workflow.ts",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.js"
+          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6019,7 +6019,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js"
+        "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/long-run-runtime-policy.ts"
@@ -6036,7 +6036,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts",
           "action": "replace_root_script_dependency_with_package_helper:long-run-runtime-policy",
           "status": "pending",
           "proofCommandIds": [
@@ -6058,7 +6058,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/long-run-runtime-policy.js",
           "copyCommandId": "CMD018"
         }
@@ -6091,7 +6091,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js"
+          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/long-run-runtime-policy.js"
@@ -6104,7 +6104,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/long-run-runtime-policy.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js"
+          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6127,7 +6127,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/mcp/consumer/install-consumer-mcp.ps1"
@@ -6144,7 +6144,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:install-consumer-mcp",
           "status": "pending",
           "proofCommandIds": [
@@ -6166,7 +6166,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-install-consumer-mcp.js",
           "copyCommandId": "CMD018"
         }
@@ -6199,7 +6199,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
@@ -6212,8 +6212,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6236,7 +6236,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/mcp/consumer/install-consumer-mcp.sh"
@@ -6253,7 +6253,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:install-consumer-mcp",
           "status": "pending",
           "proofCommandIds": [
@@ -6275,7 +6275,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-install-consumer-mcp.js",
           "copyCommandId": "CMD018"
         }
@@ -6308,7 +6308,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
@@ -6321,8 +6321,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6345,7 +6345,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/mcp/consumer/verify-consumer-mcp.ps1"
@@ -6362,7 +6362,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:verify-consumer-mcp",
           "status": "pending",
           "proofCommandIds": [
@@ -6384,7 +6384,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-verify-consumer-mcp.js",
           "copyCommandId": "CMD018"
         }
@@ -6417,7 +6417,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
@@ -6430,8 +6430,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6454,7 +6454,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/mcp/consumer/verify-consumer-mcp.sh"
@@ -6471,7 +6471,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:verify-consumer-mcp",
           "status": "pending",
           "proofCommandIds": [
@@ -6493,7 +6493,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-verify-consumer-mcp.js",
           "copyCommandId": "CMD018"
         }
@@ -6526,7 +6526,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
@@ -6539,8 +6539,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6563,7 +6563,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js"
+        "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/model-governance-hint-resolver.ts"
@@ -6580,7 +6580,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:model-governance-hint-resolver",
           "status": "pending",
           "proofCommandIds": [
@@ -6602,7 +6602,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/model-governance-hint-resolver.js",
           "copyCommandId": "CMD018"
         }
@@ -6635,7 +6635,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js"
+          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/model-governance-hint-resolver.js"
@@ -6648,8 +6648,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/model-governance-hint-resolver.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6672,7 +6672,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js"
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/model-governance-hints-schema.ts"
@@ -6689,7 +6689,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts",
           "action": "replace_root_script_dependency_with_package_helper:model-governance-hints-schema",
           "status": "pending",
           "proofCommandIds": [
@@ -6711,7 +6711,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/model-governance-hints-schema.js",
           "copyCommandId": "CMD018"
         }
@@ -6744,7 +6744,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js"
+          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/model-governance-hints-schema.js"
@@ -6757,7 +6757,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/model-governance-hints-schema.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js"
+          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6780,7 +6780,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js"
+        "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/monitor-push.sh"
@@ -6797,7 +6797,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts",
           "action": "replace_root_script_dependency_with_package_helper:monitor-push",
           "status": "pending",
           "proofCommandIds": [
@@ -6819,7 +6819,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/monitor-push.js",
           "copyCommandId": "CMD018"
         }
@@ -6852,7 +6852,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js"
+          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/monitor-push.js"
@@ -6865,7 +6865,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/monitor-push.sh",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js"
+          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6888,7 +6888,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js"
+        "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/parse-and-write-score.ts"
@@ -6905,7 +6905,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:parse-and-write-score",
           "status": "pending",
           "proofCommandIds": [
@@ -6927,7 +6927,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/parse-and-write-score.js",
           "copyCommandId": "CMD018"
         }
@@ -6960,7 +6960,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js"
+          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/parse-and-write-score.js"
@@ -6973,8 +6973,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/parse-and-write-score.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -6997,7 +6997,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run prepublishOnly"
@@ -7014,7 +7014,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts",
           "action": "replace_root_script_dependency_with_package_helper:prepublish-check",
           "status": "pending",
           "proofCommandIds": [
@@ -7036,7 +7036,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/prepublish-check.js",
           "copyCommandId": "CMD018"
         }
@@ -7069,7 +7069,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js"
+          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/prepublish-check.js"
@@ -7082,7 +7082,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/prepublish-check.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js"
+          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7105,7 +7105,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/real-development-tick-worker.js"
@@ -7122,7 +7122,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts",
           "action": "replace_root_script_dependency_with_package_helper:real-development-tick-worker",
           "status": "pending",
           "proofCommandIds": [
@@ -7144,7 +7144,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/real-development-tick-worker.js",
           "copyCommandId": "CMD018"
         }
@@ -7177,7 +7177,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js"
+          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/real-development-tick-worker.js"
@@ -7190,7 +7190,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/real-development-tick-worker.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js"
+          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7213,7 +7213,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js"
+        "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/requirement-record-event-reducer.ts"
@@ -7230,7 +7230,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts",
           "action": "replace_root_script_dependency_with_package_helper:requirement-record-event-reducer",
           "status": "pending",
           "proofCommandIds": [
@@ -7252,7 +7252,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/requirement-record-event-reducer.js",
           "copyCommandId": "CMD018"
         }
@@ -7285,7 +7285,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js"
+          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/requirement-record-event-reducer.js"
@@ -7298,7 +7298,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/requirement-record-event-reducer.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js"
+          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7321,7 +7321,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js"
+        "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/reviewer-shared-core.ts"
@@ -7338,7 +7338,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts",
           "action": "replace_root_script_dependency_with_package_helper:reviewer-shared-core",
           "status": "pending",
           "proofCommandIds": [
@@ -7360,7 +7360,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/reviewer-shared-core.js",
           "copyCommandId": "CMD018"
         }
@@ -7393,7 +7393,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js"
+          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/reviewer-shared-core.js"
@@ -7406,7 +7406,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/reviewer-shared-core.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js"
+          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7429,7 +7429,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/run-confirmed-final-required-commands.js"
@@ -7446,7 +7446,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts",
           "action": "replace_root_script_dependency_with_package_helper:run-confirmed-final-required-commands",
           "status": "pending",
           "proofCommandIds": [
@@ -7468,7 +7468,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/run-confirmed-final-required-commands.js",
           "copyCommandId": "CMD018"
         }
@@ -7501,7 +7501,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/run-confirmed-final-required-commands.js"
@@ -7514,7 +7514,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/run-confirmed-final-required-commands.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7537,7 +7537,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/run-confirmed-trace-slice.js"
@@ -7554,7 +7554,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts",
           "action": "replace_root_script_dependency_with_package_helper:run-confirmed-trace-slice",
           "status": "pending",
           "proofCommandIds": [
@@ -7576,7 +7576,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/run-confirmed-trace-slice.js",
           "copyCommandId": "CMD018"
         }
@@ -7609,7 +7609,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/run-confirmed-trace-slice.js"
@@ -7622,7 +7622,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/run-confirmed-trace-slice.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7645,7 +7645,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/run-required-commands-from-ai-tdd-manifest.ts"
@@ -7662,7 +7662,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts",
           "action": "replace_root_script_dependency_with_package_helper:run-required-commands-from-ai-tdd-manifest",
           "status": "pending",
           "proofCommandIds": [
@@ -7684,7 +7684,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js",
           "copyCommandId": "CMD018"
         }
@@ -7717,7 +7717,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
@@ -7730,7 +7730,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -7753,7 +7753,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/run-runtime-dashboard-forever.cjs"
@@ -7770,7 +7770,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts",
           "action": "replace_root_script_dependency_with_package_helper:run-runtime-dashboard-forever",
           "status": "pending",
           "proofCommandIds": [
@@ -7792,7 +7792,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/run-runtime-dashboard-forever.js",
           "copyCommandId": "CMD018"
         }
@@ -7825,7 +7825,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/run-runtime-dashboard-forever.js"
@@ -7838,7 +7838,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/run-runtime-dashboard-forever.cjs",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js"
+          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8077,7 +8077,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js"
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/runtime-dashboard-server-state.cjs"
@@ -8094,7 +8094,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts",
           "action": "replace_root_script_dependency_with_package_helper:runtime-dashboard-server-state",
           "status": "pending",
           "proofCommandIds": [
@@ -8116,7 +8116,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/runtime-dashboard-server-state.js",
           "copyCommandId": "CMD018"
         }
@@ -8149,7 +8149,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/runtime-dashboard-server-state.js"
@@ -8162,7 +8162,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/runtime-dashboard-server-state.cjs",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js"
+          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8185,7 +8185,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js"
+        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/runtime-governance-registry.ts"
@@ -8202,7 +8202,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:runtime-governance-registry",
           "status": "pending",
           "proofCommandIds": [
@@ -8224,7 +8224,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/runtime-governance-registry.js",
           "copyCommandId": "CMD018"
         }
@@ -8257,7 +8257,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/runtime-governance-registry.js"
@@ -8270,8 +8270,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/runtime-governance-registry.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8294,7 +8294,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js"
+        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/runtime-governance-template-schema.ts"
@@ -8311,7 +8311,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:runtime-governance-template-schema",
           "status": "pending",
           "proofCommandIds": [
@@ -8333,7 +8333,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/runtime-governance-template-schema.js",
           "copyCommandId": "CMD018"
         }
@@ -8366,7 +8366,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/runtime-governance-template-schema.js"
@@ -8379,8 +8379,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/runtime-governance-template-schema.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8403,7 +8403,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js"
+        "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/runtime-governance.ts"
@@ -8420,7 +8420,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:runtime-governance",
           "status": "pending",
           "proofCommandIds": [
@@ -8442,7 +8442,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/runtime-governance.js",
           "copyCommandId": "CMD018"
         }
@@ -8475,7 +8475,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/runtime-governance.js"
@@ -8488,8 +8488,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/runtime-governance.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8639,7 +8639,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/sdd-artifact-manifest.ts"
@@ -8656,7 +8656,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts",
           "action": "replace_root_script_dependency_with_package_helper:sdd-artifact-manifest",
           "status": "pending",
           "proofCommandIds": [
@@ -8678,7 +8678,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/sdd-artifact-manifest.js",
           "copyCommandId": "CMD018"
         }
@@ -8711,7 +8711,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/sdd-artifact-manifest.js"
@@ -8724,7 +8724,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/sdd-artifact-manifest.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js"
+          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8748,7 +8748,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/setup.js"
+        "packages/bmad-speckit/src/commands/setup.ts"
       ],
       "publicCommandsBeforeMigration": [
         "bmad-speckit-setup",
@@ -8826,7 +8826,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/setup.js"
+          "packages/bmad-speckit/src/commands/setup.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -8837,7 +8837,7 @@
         "originalPath": "scripts/setup.ps1",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/setup.js"
+          "packages/bmad-speckit/src/commands/setup.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8862,7 +8862,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/setup.js"
+        "packages/bmad-speckit/src/commands/setup.ts"
       ],
       "publicCommandsBeforeMigration": [
         "bmad-speckit-setup-sh",
@@ -8940,7 +8940,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/setup.js"
+          "packages/bmad-speckit/src/commands/setup.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -8951,7 +8951,7 @@
         "originalPath": "scripts/setup.sh",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/setup.js"
+          "packages/bmad-speckit/src/commands/setup.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -8975,7 +8975,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/sft-extract.js"
+        "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/sft-extract.ts"
@@ -8992,7 +8992,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:sft-extract",
           "status": "pending",
           "proofCommandIds": [
@@ -9014,7 +9014,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/sft-extract.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/sft-extract.js",
           "copyCommandId": "CMD018"
         }
@@ -9047,7 +9047,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/sft-extract.js"
+          "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/sft-extract.js"
@@ -9060,8 +9060,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/sft-extract.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/sft-extract.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9084,7 +9084,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js"
+        "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/skill-semantic-features-config.ts"
@@ -9101,7 +9101,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts",
           "action": "replace_root_script_dependency_with_package_helper:skill-semantic-features-config",
           "status": "pending",
           "proofCommandIds": [
@@ -9123,7 +9123,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/skill-semantic-features-config.js",
           "copyCommandId": "CMD018"
         }
@@ -9156,7 +9156,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js"
+          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/skill-semantic-features-config.js"
@@ -9169,7 +9169,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/skill-semantic-features-config.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js"
+          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9193,7 +9193,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/speckit-cli.js"
+        "packages/bmad-speckit/src/commands/speckit-cli.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/speckit-cli.ts"
@@ -9267,7 +9267,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/speckit-cli.js"
+          "packages/bmad-speckit/src/commands/speckit-cli.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -9278,7 +9278,7 @@
         "originalPath": "scripts/speckit-cli.ts",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/speckit-cli.js"
+          "packages/bmad-speckit/src/commands/speckit-cli.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9302,7 +9302,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js"
+        "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/sprint-status-authorized-update.ts"
@@ -9319,7 +9319,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts",
           "action": "replace_root_script_dependency_with_package_helper:sprint-status-authorized-update",
           "status": "pending",
           "proofCommandIds": [
@@ -9341,7 +9341,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/sprint-status-authorized-update.js",
           "copyCommandId": "CMD018"
         }
@@ -9374,7 +9374,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js"
+          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/sprint-status-authorized-update.js"
@@ -9387,7 +9387,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/sprint-status-authorized-update.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js"
+          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9410,7 +9410,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js"
+        "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/stable-runtime-policy-json.ts"
@@ -9427,7 +9427,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts",
           "action": "replace_root_script_dependency_with_package_helper:stable-runtime-policy-json",
           "status": "pending",
           "proofCommandIds": [
@@ -9449,7 +9449,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/stable-runtime-policy-json.js",
           "copyCommandId": "CMD018"
         }
@@ -9482,7 +9482,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js"
+          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/stable-runtime-policy-json.js"
@@ -9495,7 +9495,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/stable-runtime-policy-json.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js"
+          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9734,7 +9734,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js"
+        "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/strict-command-resolution-preflight.ts"
@@ -9751,7 +9751,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts",
           "action": "replace_root_script_dependency_with_package_helper:strict-command-resolution-preflight",
           "status": "pending",
           "proofCommandIds": [
@@ -9773,7 +9773,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/strict-command-resolution-preflight.js",
           "copyCommandId": "CMD018"
         }
@@ -9806,7 +9806,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js"
+          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/strict-command-resolution-preflight.js"
@@ -9819,7 +9819,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/strict-command-resolution-preflight.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js"
+          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9842,7 +9842,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js"
+        "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/subagent-current-attempt-revalidation.ts"
@@ -9859,7 +9859,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts",
           "action": "replace_root_script_dependency_with_package_helper:subagent-current-attempt-revalidation",
           "status": "pending",
           "proofCommandIds": [
@@ -9881,7 +9881,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/subagent-current-attempt-revalidation.js",
           "copyCommandId": "CMD018"
         }
@@ -9914,7 +9914,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/subagent-current-attempt-revalidation.js"
@@ -9927,7 +9927,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/subagent-current-attempt-revalidation.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -9950,7 +9950,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js"
+        "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/subagent-surface-inventory.ts"
@@ -9967,7 +9967,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts",
           "action": "replace_root_script_dependency_with_package_helper:subagent-surface-inventory",
           "status": "pending",
           "proofCommandIds": [
@@ -9989,7 +9989,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/subagent-surface-inventory.js",
           "copyCommandId": "CMD018"
         }
@@ -10022,7 +10022,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/subagent-surface-inventory.js"
@@ -10035,7 +10035,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/subagent-surface-inventory.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10058,7 +10058,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js"
+        "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/trace-closure-matrix.ts"
@@ -10075,7 +10075,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts",
           "action": "replace_root_script_dependency_with_package_helper:trace-closure-matrix",
           "status": "pending",
           "proofCommandIds": [
@@ -10097,7 +10097,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/trace-closure-matrix.js",
           "copyCommandId": "CMD018"
         }
@@ -10130,7 +10130,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js"
+          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/trace-closure-matrix.js"
@@ -10143,7 +10143,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/trace-closure-matrix.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js"
+          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10166,7 +10166,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js"
+        "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/update-specify-passed.ts"
@@ -10183,7 +10183,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts",
           "action": "replace_root_script_dependency_with_package_helper:update-specify-passed",
           "status": "pending",
           "proofCommandIds": [
@@ -10205,7 +10205,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/update-specify-passed.js",
           "copyCommandId": "CMD018"
         }
@@ -10238,7 +10238,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js"
+          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/update-specify-passed.js"
@@ -10251,7 +10251,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/update-specify-passed.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js"
+          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10274,7 +10274,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js"
+        "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/user-story-mapping.ts"
@@ -10291,7 +10291,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:user-story-mapping",
           "status": "pending",
           "proofCommandIds": [
@@ -10313,7 +10313,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/user-story-mapping.js",
           "copyCommandId": "CMD018"
         }
@@ -10346,7 +10346,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js"
+          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/user-story-mapping.js"
@@ -10359,8 +10359,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/user-story-mapping.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10383,7 +10383,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js"
+        "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/validate-consumer-governance.ps1"
@@ -10400,7 +10400,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:validate-consumer-governance",
           "status": "pending",
           "proofCommandIds": [
@@ -10422,7 +10422,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/validate-consumer-governance.js",
           "copyCommandId": "CMD018"
         }
@@ -10455,7 +10455,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js"
+          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/validate-consumer-governance.js"
@@ -10468,8 +10468,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/validate-consumer-governance.ps1",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10493,7 +10493,7 @@
       "migrationStrategy": "public_cli_de_surface",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/validate-single-source-whitelist.js"
+        "packages/bmad-speckit/src/commands/validate-single-source-whitelist.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run validate:single-source-whitelist"
@@ -10567,7 +10567,7 @@
       "targetExistenceProof": {
         "sourcePaths": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.js"
+          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.ts"
         ],
         "distPaths": [],
         "proofCommandIds": [
@@ -10578,7 +10578,7 @@
         "originalPath": "scripts/validate-single-source-whitelist.ts",
         "scanScopes": [
           "packages/bmad-speckit/bin/bmad-speckit.js",
-          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.js"
+          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10602,7 +10602,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts"
       ],
       "publicCommandsBeforeMigration": [
         "npm run verify:hooks"
@@ -10619,7 +10619,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:verify-hooks-no-ts-node",
           "status": "pending",
           "proofCommandIds": [
@@ -10641,7 +10641,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/verify-hooks-no-ts-node.js",
           "copyCommandId": "CMD018"
         }
@@ -10674,7 +10674,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js"
+          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/verify-hooks-no-ts-node.js"
@@ -10687,8 +10687,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/verify-hooks-no-ts-node.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10711,7 +10711,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js"
+        "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/verify-story-mode.ts"
@@ -10728,7 +10728,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts",
           "action": "replace_root_script_dependency_with_package_helper:verify-story-mode",
           "status": "pending",
           "proofCommandIds": [
@@ -10750,7 +10750,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/verify-story-mode.js",
           "copyCommandId": "CMD018"
         }
@@ -10783,7 +10783,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js"
+          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/verify-story-mode.js"
@@ -10796,7 +10796,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/verify-story-mode.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js"
+          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10819,7 +10819,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/write-runtime-policy-snapshot-and-recovery-context.cjs"
@@ -10836,7 +10836,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:write-runtime-policy-snapshot-and-recovery-context",
           "status": "pending",
           "proofCommandIds": [
@@ -10858,7 +10858,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js",
           "copyCommandId": "CMD018"
         }
@@ -10891,7 +10891,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
@@ -10904,8 +10904,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -10928,7 +10928,7 @@
       "originalClassBeforeMigration": "consumer_runtime_reachable",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/write-runtime-policy-snapshot-and-recovery-context.ts"
@@ -10945,7 +10945,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/runtime.ts",
           "action": "register_package_runtime_action:write-runtime-policy-snapshot-and-recovery-context",
           "status": "pending",
           "proofCommandIds": [
@@ -10967,7 +10967,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js",
           "copyCommandId": "CMD018"
         }
@@ -11000,7 +11000,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
@@ -11013,8 +11013,8 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js",
-          "packages/bmad-speckit/src/main-agent/runtime.js"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts",
+          "packages/bmad-speckit/src/main-agent/runtime.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",
@@ -11037,7 +11037,7 @@
       "originalClassBeforeMigration": "package_runtime_helper",
       "migrationStrategy": "durable_helper_copy",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts"
       ],
       "publicCommandsBeforeMigration": [
         "source repository scripts/write-runtime-registry.js"
@@ -11054,7 +11054,7 @@
       "deletionApprovalRef": null,
       "callerSwitchPlan": [
         {
-          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js",
+          "targetPath": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts",
           "action": "replace_root_script_dependency_with_package_helper:write-runtime-registry",
           "status": "pending",
           "proofCommandIds": [
@@ -11076,7 +11076,7 @@
       "cliProbeCommand": null,
       "buildCopyPlan": [
         {
-          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js",
+          "sourcePath": "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts",
           "targetPath": "packages/bmad-speckit/dist/main-agent/helpers/write-runtime-registry.js",
           "copyCommandId": "CMD018"
         }
@@ -11109,7 +11109,7 @@
       },
       "targetExistenceProof": {
         "sourcePaths": [
-          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js"
+          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts"
         ],
         "distPaths": [
           "packages/bmad-speckit/dist/main-agent/helpers/write-runtime-registry.js"
@@ -11122,7 +11122,7 @@
       "rootScriptDependencyForbidden": {
         "originalPath": "scripts/write-runtime-registry.js",
         "scanScopes": [
-          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js"
+          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts"
         ],
         "forbiddenDependencyForms": [
           "direct require/import of original root script path",

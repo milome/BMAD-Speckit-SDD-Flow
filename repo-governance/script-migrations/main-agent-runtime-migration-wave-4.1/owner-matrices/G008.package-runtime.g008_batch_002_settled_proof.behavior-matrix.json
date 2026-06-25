@@ -846,7 +846,7 @@
       "originalPath": "scripts/render-upstream-bmad-help-baseline.js",
       "entryId": "render-upstream-bmad-help-baseline-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
       "behaviorEquivalenceMatrix": [
@@ -854,7 +854,7 @@
           "scenarioId": "g008_render_upstream_bmad_help_baseline_js_no_args",
           "originalEntryPoint": "scripts/render-upstream-bmad-help-baseline.js",
           "originalEntryCommand": "node scripts/render-upstream-bmad-help-baseline.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/render-upstream-bmad-help-baseline.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -1464,7 +1464,7 @@
       "originalPath": "scripts/run-ci-release-gate-fixture.js",
       "entryId": "run-ci-release-gate-fixture",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
       "behaviorEquivalenceMatrix": [
@@ -1472,7 +1472,7 @@
           "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
           "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
           "originalEntryCommand": "node scripts/run-ci-release-gate-fixture.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -3019,7 +3019,7 @@
       "originalPath": "scripts/verify-speckit-mirror-sync.js",
       "entryId": "verify-speckit-mirror-sync-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
       "behaviorEquivalenceMatrix": [
@@ -3027,7 +3027,7 @@
           "scenarioId": "g008_verify_speckit_mirror_sync_js_no_args",
           "originalEntryPoint": "scripts/verify-speckit-mirror-sync.js",
           "originalEntryCommand": "node scripts/verify-speckit-mirror-sync.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-speckit-mirror-sync.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-speckit-mirror-sync.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [

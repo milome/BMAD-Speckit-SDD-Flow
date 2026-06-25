@@ -246,7 +246,11 @@ export function readRuntimeContextRegistry(root: string): RuntimeContextRegistry
   return parsed;
 }
 
-/** Load existing registry from disk when present; otherwise a fresh default. */
+/**
+ * Load existing registry from disk when present; otherwise a fresh default.
+ * @param {string} root - Project root used for the runtime registry path.
+ * @returns {RuntimeContextRegistry} Existing registry or a default registry.
+ */
 export function readRegistryOrDefault(root: string): RuntimeContextRegistry {
   const file = runtimeContextRegistryPath(root);
   if (!fs.existsSync(file)) {

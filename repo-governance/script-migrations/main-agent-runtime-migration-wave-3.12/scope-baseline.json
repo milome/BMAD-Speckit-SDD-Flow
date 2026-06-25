@@ -17,23 +17,23 @@
     },
     {
       "status": " M",
-      "path": "packages/bmad-speckit/src/commands/check.js",
-      "raw": " M packages/bmad-speckit/src/commands/check.js"
+      "path": "packages/bmad-speckit/src/commands/check.ts",
+      "raw": " M packages/bmad-speckit/src/commands/check.ts"
     },
     {
       "status": " M",
-      "path": "packages/bmad-speckit/src/main-agent/runtime.js",
-      "raw": " M packages/bmad-speckit/src/main-agent/runtime.js"
+      "path": "packages/bmad-speckit/src/main-agent/runtime.ts",
+      "raw": " M packages/bmad-speckit/src/main-agent/runtime.ts"
     },
     {
       "status": " M",
-      "path": "packages/bmad-speckit/src/services/platform-skill-frontmatter.js",
-      "raw": " M packages/bmad-speckit/src/services/platform-skill-frontmatter.js"
+      "path": "packages/bmad-speckit/src/services/platform-skill-frontmatter.ts",
+      "raw": " M packages/bmad-speckit/src/services/platform-skill-frontmatter.ts"
     },
     {
       "status": " M",
-      "path": "packages/bmad-speckit/src/services/sync-service.js",
-      "raw": " M packages/bmad-speckit/src/services/sync-service.js"
+      "path": "packages/bmad-speckit/src/services/sync-service.ts",
+      "raw": " M packages/bmad-speckit/src/services/sync-service.ts"
     },
     {
       "status": " M",
@@ -102,368 +102,368 @@
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/commands/eval-question-generate.js",
-      "raw": "?? packages/bmad-speckit/src/commands/eval-question-generate.js"
+      "path": "packages/bmad-speckit/src/commands/eval-question-generate.ts",
+      "raw": "?? packages/bmad-speckit/src/commands/eval-question-generate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-governance-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/adaptive-intake-proof-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-closeout-remediation-adapter.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/ai-tdd-contract-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/audit-review-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/audit-review-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/audit-review-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/audit-stage-routing.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/auditor-post-actions.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/auditor-spec.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/auditor-spec.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/auditor-spec.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/bmad-artifact-hardcut.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/bmad-runtime-worker.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/control-plane-isolation-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/data-governance-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/data-governance-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/data-governance-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/dataset-release-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/decision-field-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/decision-field-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/decision-field-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/decision-field-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/development-journey-matrix.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/e2e-dual-host-journey-runner.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/e2e-host-matrix-journey-runner.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/entryflow-traceability-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/execution-closure-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/final-closeout-evidence-runner.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/functional-resume-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/functional-resume-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/functional-resume-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/governance-packet-dispatch-worker.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/governed-data-products.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/governed-data-products.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/governed-data-products.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/governed-data-products.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/ingest-implementation-evidence.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/initialize-six-model-requirement-confirmation.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/live-smoke-main-agent-runtime.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/orchestration-dispatch-contract.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/orchestration-governance-contract.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/orchestration-state.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/orchestration-state.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/orchestration-state.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/orchestration-state.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/package-runtime-report.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/package-runtime-report.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/package-runtime-report.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/package-runtime-report.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/per-must-closure-evidence-index.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/pre-rerun-anti-false-positive-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/print-resolved-audit-prompt.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/production-loop-ready-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/reconfirmation-runtime.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/record-main-agent-inspect-readiness-closure.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/render-audit-block-cli.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/requirement-record-control-store.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/requirement-record-live-schema-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/requirement-record-schema-evolution.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/resolve-active-requirement.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/runtime-policy-snapshot-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/runtime-scoring-data-path.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/scoring-gates-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/six-model-runtime-decision.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/skill-orchestration-audit.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/strict-closeout-proof-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/target-artifact-realization-gate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/trace-040-evidence-packet-generator.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/trace-status-policy-check.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/update-runtime-audit-index.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.js"
+      "path": "packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/actions/verify-cursor-audit-granularity.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/agent-display-names.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/agent-display-names.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/durable-helper-report.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/durable-helper-report.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/durable-helper-report.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/durable-helper-report.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-packet-execution-store.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-packet-reconciler.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-remediation-artifact.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-remediation-config.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/governance-remediation-runner.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/load-manifest.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/load-manifest.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/load-manifest.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/model-governance-policy-filter.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime-assets.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/party-mode-runtime.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/prompt-routing-governance.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints-schema.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/prompt-routing-hints.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/query-validate.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/query-validate.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/query-validate.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/skill-inventory-provider.ts"
     },
     {
       "status": "??",
-      "path": "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
-      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js"
+      "path": "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts",
+      "raw": "?? packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts"
     },
     {
       "status": "??",

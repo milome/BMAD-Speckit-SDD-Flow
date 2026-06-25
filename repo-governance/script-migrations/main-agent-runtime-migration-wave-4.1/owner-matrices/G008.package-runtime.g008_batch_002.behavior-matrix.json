@@ -1463,7 +1463,7 @@
       "originalPath": "scripts/ensure-governance-user-story-mapping-fixture.js",
       "entryId": "ensure-governance-user-story-mapping-fixture-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
       "scenarioCoverageProof": {
@@ -1510,7 +1510,7 @@
           "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
           "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
           "originalEntryCommand": "node scripts/ensure-governance-user-story-mapping-fixture.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -1573,7 +1573,7 @@
                 "to": "scripts/ensure-governance-user-story-mapping-fixture.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
                 "to": "scripts/ensure-governance-user-story-mapping-fixture.js"
               },
               {
@@ -1632,7 +1632,7 @@
           "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_flag_force",
           "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
           "originalEntryCommand": "node scripts/ensure-governance-user-story-mapping-fixture.js --force",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js --force",
           "argumentCombination": "--force <present>",
           "args": [
@@ -1697,7 +1697,7 @@
                 "to": "scripts/ensure-governance-user-story-mapping-fixture.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
                 "to": "scripts/ensure-governance-user-story-mapping-fixture.js"
               },
               {
@@ -1756,7 +1756,7 @@
           "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_env_ci",
           "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
           "originalEntryCommand": "node scripts/ensure-governance-user-story-mapping-fixture.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
           "argumentCombination": "env CI=<source-derived-safe-value>",
           "args": [],
@@ -1821,7 +1821,7 @@
                 "to": "scripts/ensure-governance-user-story-mapping-fixture.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
                 "to": "scripts/ensure-governance-user-story-mapping-fixture.js"
               },
               {
@@ -2068,7 +2068,7 @@
       "originalPath": "scripts/extract-npm-pack-json.js",
       "entryId": "extract-npm-pack-json-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/extract-npm-pack-json.js",
       "scenarioCoverageProof": {
@@ -2105,7 +2105,7 @@
           "scenarioId": "g008_extract_npm_pack_json_js_no_args",
           "originalEntryPoint": "scripts/extract-npm-pack-json.js",
           "originalEntryCommand": "node scripts/extract-npm-pack-json.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/extract-npm-pack-json.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -2178,7 +2178,7 @@
                 "to": "scripts/extract-npm-pack-json.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
                 "to": "scripts/extract-npm-pack-json.js"
               },
               {

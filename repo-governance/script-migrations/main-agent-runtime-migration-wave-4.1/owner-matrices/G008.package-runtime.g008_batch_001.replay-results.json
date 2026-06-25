@@ -341,7 +341,7 @@
           "comparison": {
             "scenarioId": "g008_compare_bmad_help_upstream_js_no_args",
             "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -381,7 +381,7 @@
           "comparison": {
             "scenarioId": "g008_compare_bmad_help_upstream_js_env_bmad_help_upstream_commit",
             "originalEntryPoint": "scripts/compare-bmad-help-upstream.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/compare-bmad-help-upstream.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

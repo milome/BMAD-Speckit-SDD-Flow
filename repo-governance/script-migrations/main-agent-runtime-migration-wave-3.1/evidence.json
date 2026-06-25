@@ -10,9 +10,9 @@
       "originalPath": "scripts/main-agent-release-gate.ts",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/release-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/release-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/release-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -27,7 +27,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -162,7 +162,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -181,9 +181,9 @@
       "originalPath": "scripts/main-agent-quality-gate.ts",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/quality-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/quality-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/quality-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -198,7 +198,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -333,7 +333,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -352,9 +352,9 @@
       "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
       "migrationStrategy": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js",
+        "packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.ts",
         "packages/bmad-speckit/dist/main-agent/actions/delivery-truth-gate.js",
-        "packages/bmad-speckit/src/main-agent/runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime.js",
         "packages/bmad-speckit/bin/bmad-speckit.js"
       ],
@@ -369,7 +369,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -504,7 +504,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -537,7 +537,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -672,7 +672,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -705,7 +705,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -840,7 +840,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -871,7 +871,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -1006,7 +1006,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -1037,7 +1037,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -1172,7 +1172,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -1203,7 +1203,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -1338,7 +1338,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -1369,7 +1369,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+          "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
           "stderrPreview": ""
         },
         {
@@ -1504,7 +1504,7 @@
           "exitCode": 0,
           "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
           "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+          "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
           "stderrPreview": ""
         }
       ],
@@ -1526,7 +1526,7 @@
       "exitCode": 0,
       "stdoutHash": "sha256:44ccc0cbc82faa50a073cf655f0c34472646229cfb055e9261f20435dfebc90c",
       "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
+      "stdoutPreview": "## dev...origin/dev [ahead 1]\n M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speck",
       "stderrPreview": ""
     },
     {
@@ -1661,7 +1661,7 @@
       "exitCode": 0,
       "stdoutHash": "sha256:014e33148317a6ac040f2d4cfda9cd2958f458808f65191dcbcd340ff8056d2c",
       "stderrHash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.js\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
+      "stdoutPreview": " M .tmp/main-agent-migration-wave-1/install-matrix/npx-package-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/save-dev-main-agent-inspect.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmad-help.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-bmads.json\n M .tmp/main-agent-migration-wave-1/install-matrix/tgz-main-agent-inspect.json\n M packages/bmad-speckit/bin/bmad-speckit.js\n M packages/bmad-speckit/scripts/build-main-agent-dist.cjs\n M packages/bmad-speckit/src/main-agent/runtime.ts\n M packages/bmad-speckit/tests/main-agent-build-dist.test.js\n M packages/bmad-speckit/tests/main-agent-dist-runti",
       "stderrPreview": ""
     }
   ],
@@ -1671,9 +1671,9 @@
     "repo-governance/script-migrations/main-agent-runtime-migration-wave-3.1/install-matrix/no-save.json"
   ],
   "packageRuntimeModuleMigrations": [
-    "scripts/main-agent-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/release-gate.js",
-    "scripts/main-agent-quality-gate.ts -> packages/bmad-speckit/src/main-agent/actions/quality-gate.js",
-    "scripts/main-agent-delivery-truth-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.js"
+    "scripts/main-agent-release-gate.ts -> packages/bmad-speckit/src/main-agent/actions/release-gate.ts",
+    "scripts/main-agent-quality-gate.ts -> packages/bmad-speckit/src/main-agent/actions/quality-gate.ts",
+    "scripts/main-agent-delivery-truth-gate.ts -> packages/bmad-speckit/src/main-agent/actions/delivery-truth-gate.ts"
   ],
   "runtimeEmitCjsMigrations": [
     "scripts/run-auditor-host.ts -> packages/bmad-speckit/src/main-agent/auditor-host/run-auditor-host.cjs"

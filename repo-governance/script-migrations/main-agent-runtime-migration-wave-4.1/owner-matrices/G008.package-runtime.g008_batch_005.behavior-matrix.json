@@ -786,7 +786,7 @@
       "originalPath": "scripts/run-ci-release-gate-fixture.js",
       "entryId": "run-ci-release-gate-fixture",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
       "scenarioCoverageProof": {
@@ -828,7 +828,7 @@
           "scenarioId": "g008_run_ci_release_gate_fixture_js_no_args",
           "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
           "originalEntryCommand": "node scripts/run-ci-release-gate-fixture.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -881,7 +881,7 @@
                 "to": "scripts/run-ci-release-gate-fixture.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
                 "to": "scripts/run-ci-release-gate-fixture.js"
               },
               {
@@ -935,7 +935,7 @@
           "scenarioId": "g008_run_ci_release_gate_fixture_js_flag_pass",
           "originalEntryPoint": "scripts/run-ci-release-gate-fixture.js",
           "originalEntryCommand": "node scripts/run-ci-release-gate-fixture.js --pass",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js --pass",
           "argumentCombination": "--pass <present>",
           "args": [
@@ -990,7 +990,7 @@
                 "to": "scripts/run-ci-release-gate-fixture.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-ci-release-gate-fixture.ts",
                 "to": "scripts/run-ci-release-gate-fixture.js"
               },
               {

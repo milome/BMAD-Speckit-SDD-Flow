@@ -32,7 +32,7 @@
       "entryId": "diagnose-bmad-state",
       "originalPath": "scripts/diagnose-bmad-state.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
       ],
       "commands": [],
@@ -45,7 +45,7 @@
       "entryId": "parallel-mission-control",
       "originalPath": "scripts/parallel-mission-control.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
       ],
       "commands": [],
@@ -58,7 +58,7 @@
       "entryId": "bmad-state-reader",
       "originalPath": "scripts/bmad-state-reader.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
       ],
       "commands": [],
@@ -71,7 +71,7 @@
       "entryId": "e2e-verify-paths",
       "originalPath": "scripts/e2e-verify-paths.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
       ],
       "commands": [],
@@ -84,7 +84,7 @@
       "entryId": "query-validate",
       "originalPath": "scripts/query-validate.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+        "packages/bmad-speckit/src/main-agent/helpers/query-validate.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
       ],
       "commands": [],
@@ -97,7 +97,7 @@
       "entryId": "runtime-step-state",
       "originalPath": "scripts/runtime-step-state.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
       ],
       "commands": [],
@@ -110,7 +110,7 @@
       "entryId": "verify-agent-files",
       "originalPath": "scripts/verify-agent-files.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
       ],
       "commands": [],
@@ -124,7 +124,7 @@
       "originalPath": "scripts/eval-question-generate.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/eval-question-generate.js"
+        "packages/bmad-speckit/src/commands/eval-question-generate.ts"
       ],
       "commands": [],
       "installMatrixEvidence": {
@@ -137,7 +137,7 @@
       "originalPath": "scripts/check-story-score-written.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/check-score.js"
+        "packages/bmad-speckit/src/commands/check-score.ts"
       ],
       "commands": [],
       "installMatrixEvidence": {

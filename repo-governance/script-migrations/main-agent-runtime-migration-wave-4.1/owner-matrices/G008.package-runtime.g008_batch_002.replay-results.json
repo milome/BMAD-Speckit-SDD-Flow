@@ -451,7 +451,7 @@
           "comparison": {
             "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_no_args",
             "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -491,7 +491,7 @@
           "comparison": {
             "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_flag_force",
             "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -531,7 +531,7 @@
           "comparison": {
             "scenarioId": "g008_ensure_governance_user_story_mapping_fixture_js_env_ci",
             "originalEntryPoint": "scripts/ensure-governance-user-story-mapping-fixture.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ensure-governance-user-story-mapping-fixture.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -631,7 +631,7 @@
           "comparison": {
             "scenarioId": "g008_extract_npm_pack_json_js_no_args",
             "originalEntryPoint": "scripts/extract-npm-pack-json.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/extract-npm-pack-json.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

@@ -9,14 +9,6 @@ const SURFACE_SKILL_DIRS = [
   path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring'),
   path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring'),
   path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring'),
-  path.join(
-    ROOT,
-    'packages',
-    'bmad-speckit',
-    '_bmad',
-    'skills',
-    'requirements-contract-authoring'
-  ),
 ];
 
 function readSkillFile(relativePath: string): string {
@@ -179,7 +171,7 @@ describe('requirements-contract-authoring published contract', () => {
         'Missing confirmation language MUST remain `null` or `not_selected`'
       );
       expect(skill).toContain(
-        'Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or source materialization'
+        'Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or pre-write blocking gates'
       );
     }
   });
@@ -211,22 +203,28 @@ describe('requirements-contract-authoring published contract', () => {
     }
   });
 
-  it('requires source materialization before deep audit and keeps preserve-existing audit-only', () => {
+  it('requires pre-write blocking gates before source materialization and keeps preserve-existing audit-only', () => {
     for (const skill of readSkillSurface('SKILL.md')) {
-      expect(skill).toContain('source_materialization_before_deep_audit');
-      expect(skill).toContain(
-        '`author-confirmation-ready-source` MUST write the source document before Critical Auditor, multi-subagent audit, `grill-with-docs`, or `docs-review` starts a deep review loop'
-      );
-      expect(skill).toContain(
-        'only quick scan, atomic decomposition draft creation, packet generation, and source edit planning are allowed'
-      );
+      expect(skill).not.toContain('source_materialization_before_deep_audit');
+      expect(skill).toContain('pre_write_blocking_gate');
+      expect(skill).toContain('MUST NOT mutate the implementation source document');
+      expect(skill).toContain('source-mutation-decision.json.finalDecision');
+      expect(skill).toContain('draft-source-preview.md');
+      expect(skill).toContain('requirement coverage ledger');
+      expect(skill).toContain('target authority');
+      expect(skill).toContain('validation authority');
+      expect(skill).toContain('projection-domain sanity');
+      expect(skill).toContain('real Critical Auditor receipts');
+      expect(skill).toContain('leave the source document unchanged');
+      expect(skill).toContain('diagnostic authoring artifacts under `_bmad-output`');
       expect(skill).toContain(
         '`authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only'
       );
       expect(skill).toContain('MUST NOT create a new `implementationConfirmation` block');
       expect(skill).toContain(
-        '`grill-with-docs` / `docs-review` MUST audit written files only instead of chat-only drafts'
+        '`grill-with-docs` / `docs-review` may review written source files or the persisted `draft-source-preview.md`'
       );
+      expect(skill).toContain('chat-only drafts are not valid audit targets');
     }
   });
 
@@ -245,11 +243,12 @@ describe('requirements-contract-authoring published contract', () => {
     }
   });
 
-  it('splits atomic decomposition into packet planning before materialization and auditor convergence after materialization', () => {
+  it('splits atomic decomposition into pre-write convergence and post-materialization verification', () => {
     for (const skill of readSkillSurface('SKILL.md')) {
-      expect(skill).toContain('pre-materialization phase performs packet planning and source edit planning');
+      expect(skill).toContain('pre-write phase performs packet planning, source edit planning, real Critical Auditor convergence');
       expect(skill).toContain('may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance');
-      expect(skill).toContain('post-materialization phase performs auditor convergence');
+      expect(skill).toContain('Source materialization is allowed only after `source-mutation-decision.json.finalDecision` is `allow_source_materialization`');
+      expect(skill).toContain('post-materialization phase verifies the written source, receipt, and current hashes');
     }
   });
 
@@ -430,12 +429,47 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('## Large Document Draft Promotion Protocol');
       expect(skill).toContain('node <skill-dir>/scripts/promote-draft-large-doc.js');
       expect(skill).toContain('--retry-receipt');
+      expect(skill).toContain('--promotion-stage confirmation-ready');
+      expect(skill).toContain('--promotion-stage authoring-draft');
+      expect(skill).toContain('--scale-assessment <authoring-dir>/scale-assessment-initial.json');
+      expect(skill).toContain('--scale-routing-decision <authoring-dir>/scale-routing-decision.json');
+      expect(skill).toContain('--source-mutation-decision <authoring-dir>/source-mutation-decision.json');
+      expect(skill).toContain('--encoding-report <authoring-dir>/encoding-report.json');
+      expect(skill).toContain('--receipt-out <authoring-dir>/promotion-receipt.json');
+      expect(skill).toContain('--auto-repair');
       expect(skill).toContain('--preflight-only');
       expect(skill).toContain('--dry-run');
       expect(skill).toContain('normalize-draft-markdown.js');
       expect(skill).toContain('generate-draft-manifest.js');
       expect(skill).toContain('semantic_decision_required:expected_draft_gap_policy');
       expect(skill).toContain('Do not add or use `--allow-expected-draft-gap`');
+      expect(skill).toContain(
+        'plain source doc -> controlled MUST candidates -> draft implementationConfirmation -> safe promotion as draft -> render/audit -> explicit user confirmation -> status: user_confirmed'
+      );
+      expect(skill).toContain('`--promotion-stage authoring-draft` allows only');
+      expect(skill).toContain('not confirmation-ready, not implementation-ready, and not execution-ready');
+      expect(skill).toContain('`promotionStage`');
+      expect(skill).toContain('`allowedStatuses`');
+      expect(skill).toContain('`statusValue`');
+      expect(skill).toContain('`confirmationReady: false`');
+      expect(skill).toContain('`safePromotionAsDraft: true`');
+      expect(skill).toContain('`requiresUserConfirmationBeforeExecution: true`');
+      expect(skill).toContain('`authoringPromotionGate`');
+      expect(skill).toContain('`receiptPath`');
+      expect(skill).toContain('Authoring-draft promotion is guarded');
+      expect(skill).toContain('`authoring_promotion_gate_failed`');
+      expect(skill).toContain('`nextRequiredActions[]`');
+      expect(skill).toContain('The target document must not be created or modified');
+      expect(skill).toContain('may generate missing `scale-assessment-initial.json`');
+      expect(skill).toContain('MUST NOT synthesize `source-mutation-decision.json`');
+      expect(skill).toContain('Critical Auditor convergence');
+      expect(skill).toContain('checkpoint persistence');
+      expect(skill).toContain('sourceDocumentHashBefore` bound to the current target document hash');
+      expect(skill).toContain('sourceDocumentHashAfter` bound to the current draft manifest hash');
+      expect(skill).toContain('sourceDocumentExistedBefore: false');
+      expect(skill).toContain('currentTargetState');
+      expect(skill).toContain('expectedDraftHash');
+      expect(skill).toContain('allows only `status: user_confirmed`');
       expect(skill).toContain('The write flow must work when the current project root has no `scripts` directory');
     }
   });
@@ -468,7 +502,7 @@ describe('requirements-contract-authoring published contract', () => {
 
   it('keeps skill resolver candidates aligned with supported host surfaces', () => {
     const resolverFiles = [
-      'scripts/main-agent-orchestration.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
       'scripts/main-agent-implementation-readiness-gate.ts',
       'scripts/ai-tdd-contract-gate.ts',
       'scripts/strict-command-resolution-preflight.ts',
@@ -506,9 +540,15 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('semantic-kernel.json');
       expect(content).toContain('must_decomposition_packet.json');
       expect(content).toContain('Critical Auditor');
-      expect(content).toContain('consecutiveNoNewGapRounds: 3');
+      expect(content).not.toContain('consecutiveNoNewGapRounds: 3');
       expect(content).toContain('pre_render_must_decomposition_gate.js');
     }
+
+    expect(skill).toContain('receipts bound to the current input hash');
+    expect(skill).toContain('must not fabricate no-new-gap receipts');
+    expect(template).toContain('three current, hash-bound Critical Auditor receipt files');
+    expect(template).toContain('synthetic `bounded_no_new_gap` claims');
+    expect(rendererSpec).toContain('three current, hash-bound no-new-gap receipt files');
 
     expect(skill).toContain(
       'single_pass also cannot skip the pre-confirmation atomic decomposition loop'
@@ -519,6 +559,40 @@ describe('requirements-contract-authoring published contract', () => {
     expect(rendererSpec).toContain(
       'missing pre-confirmation semantic drilldown gate report -> confirmability=blocked'
     );
+  });
+
+  it('publishes staging-first main-session provider rules on every installed skill surface', () => {
+    const surfaces = readSkillSurface('SKILL.md');
+    expect(surfaces).toHaveLength(SURFACE_SKILL_DIRS.length);
+
+    for (const content of surfaces) {
+      expect(content).toContain('staging-first authoring transaction');
+      expect(content).toContain('authoring/staging/draft-source.md');
+      expect(content).toContain('source-promotion-decision.json');
+      expect(content).toContain('Source materialization is the final promotion step');
+
+      expect(content).toContain('provider missing continuation');
+      expect(content).toContain('blockingStage: "critical_auditor_provider_mode_required"');
+      expect(content).toContain('nextRequiredAction: "run_main_session_critical_auditor_round"');
+      expect(content).toContain('sourceMutationPerformed: false');
+      expect(content).toContain('promotion-receipt.json');
+      expect(content).toContain('source-materialization-receipt.json');
+      expect(content).toContain('Legacy `source-materialization-receipt.json` is not a valid current source write receipt');
+
+      expect(content).toContain(
+        '/goal main session owns Critical Auditor response generation, staging rework, receipt writing, and source promotion'
+      );
+      expect(content).toContain('Long-running requirements-contract authoring work must stay visible in the main session');
+      expect(content).toContain('subagent provider modes are read-only response providers');
+      expect(content).toContain('critical-auditor-round-response/v1');
+      expect(content).toContain('They must not write source documents, packets, receipts, requirement records, source promotion decisions, or convergence claims');
+
+      expect(content).toContain(
+        'large-document-writer is transport only and is not semantic owner for requirements contracts'
+      );
+      expect(content).toContain('requirements-contract-authoring owns semantic extraction');
+      expect(content).not.toContain('source_materialization_before_deep_audit');
+    }
   });
 
   it('publishes preConfirmationDrilldown metadata while keeping inline implementationConfirmation authoritative', () => {

@@ -14,7 +14,7 @@
       "entryId": "architecture-drift-check-ts",
       "scenarioId": "g004_architecture_drift_check_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 39,
@@ -52,7 +52,7 @@
       "entryId": "coach-diagnose-ts",
       "scenarioId": "g004_coach_diagnose_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 860,
@@ -90,7 +90,7 @@
       "entryId": "emit-runtime-policy-ts",
       "scenarioId": "g004_emit_runtime_policy_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 680,
@@ -128,7 +128,7 @@
       "entryId": "eval-questions",
       "scenarioId": "g004_eval_questions_cli_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -165,8 +165,8 @@
       "originalPath": "scripts/init-to-root.js",
       "entryId": "init-to-root-js",
       "scenarioId": "g004_init_to_root_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 11473,
@@ -186,7 +186,7 @@
       "comparison": {
         "scenarioId": "g004_init_to_root_js_no_args",
         "originalEntryPoint": "scripts/init-to-root.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
         "stdoutMatches": false,
         "stderrMatches": false,
         "exitCodeMatches": false,
@@ -204,7 +204,7 @@
       "entryId": "live-smoke-speckit-workflow-ts",
       "scenarioId": "g004_live_smoke_speckit_workflow_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 200,
@@ -242,7 +242,7 @@
       "entryId": "main-agent-bmad-help-five-layer-matrix",
       "scenarioId": "g004_main_agent_bmad_help_five_layer_matrix_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -280,7 +280,7 @@
       "entryId": "main-agent-host-matrix-pr-orchestrate",
       "scenarioId": "g004_main_agent_host_matrix_pr_orchestrator_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 2127,
@@ -394,7 +394,7 @@
       "entryId": "speckit-cli-ts",
       "scenarioId": "g004_speckit_cli_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 1262,
@@ -432,7 +432,7 @@
       "entryId": "validate-single-source-whitelist-ts",
       "scenarioId": "g004_validate_single_source_whitelist_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,

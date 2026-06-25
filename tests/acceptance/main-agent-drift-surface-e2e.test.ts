@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { resolveMainAgentOrchestrationSurface } from '../../scripts/main-agent-orchestration';
+import { resolveMainAgentOrchestrationSurface } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { runAuditorHost } from '../../scripts/run-auditor-host';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {

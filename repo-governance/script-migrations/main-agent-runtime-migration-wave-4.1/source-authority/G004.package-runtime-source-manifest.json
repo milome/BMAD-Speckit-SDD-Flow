@@ -44,40 +44,40 @@
     {
       "source": "_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
       "sourceSha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.ts",
       "bytes": 34692,
       "sha256": "sha256:7dc15a992866aa875bb1a5344a93e3d7975d8c9fae05d1d0bcd1516511637cfc"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
       "sourceSha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.ts",
       "bytes": 5417,
       "sha256": "sha256:a8dceb5327347f7dd16b6edc5bf09a70ec09c9b4cfcd1bcd56061dbef8290586"
     },
     {
       "source": "_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
       "sourceSha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.ts",
       "bytes": 3918,
       "sha256": "sha256:fb40ac3a6d579e3b1d8e0e6031664bfdc0a61b7d74f68e6c0f47e0d5eb4a435d"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
       "sourceSha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.ts",
       "bytes": 9445,
       "sha256": "sha256:c08f6f36eadfb129cec39fbdfb7d62d1f42908ba48ea9b658507cda562e1907f"
     },
     {
       "source": "_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
       "sourceSha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.ts",
       "bytes": 6062,
       "sha256": "sha256:db049edd364ed8069aa82606519bca4e69744e1272f14e112773b176db41cfc6"
     },
@@ -1860,8 +1860,8 @@
     {
       "source": "scripts/verify-hooks-no-ts-node.js",
       "sourceSha256": "sha256:de2d80f9ec270fd97359249007b60e0c2154e4399dc9922aa470f9457301b69e",
-      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js",
+      "target": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts",
       "bytes": 4332,
       "sha256": "sha256:e56bdbaf9853aff6cee6a9493cadbaa56eea1bec96f783724333c4d0e6dd789a"
     },
@@ -4086,10 +4086,10 @@
     {
       "originalPath": "scripts/verify-hooks-no-ts-node.js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts"
       ],
       "sourceAuthorityPaths": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-hooks-no-ts-node.ts"
       ],
       "runtimeReplayPaths": [
         "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-hooks-no-ts-node.js"

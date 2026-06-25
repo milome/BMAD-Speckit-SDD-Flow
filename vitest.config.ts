@@ -2,6 +2,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 /** Exclude bmad-speckit tests (use node:test); they run via test:bmad-speckit, invoked after vitest in npm test */
 export default defineConfig({
   test: {
+    setupFiles: ['tests/register-package-ts-source.cjs'],
     exclude: [
       ...configDefaults.exclude,
       'packages/bmad-speckit/tests/**/*',
@@ -11,6 +12,12 @@ export default defineConfig({
       '.worktrees/**/*',
       // Real wall-clock long-run evidence must be executed explicitly, not by default CI aggregation.
       'tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts',
+      // Consumer install/package final-state tests run in explicit CI steps with OS-level timeouts.
+      'tests/acceptance/accept-install-consumer-cli.test.ts',
+      'tests/acceptance/accept-pack-bmad-speckit.test.ts',
+      'tests/acceptance/accept-root-package-bmad-speckit-bin.test.ts',
+      'tests/acceptance/accept-consumer-governance-zero-scripts.test.ts',
+      'tests/acceptance/main-agent-dist-consumer-runtime.test.ts',
     ],
     /** Reduce flaky timeout failures for integration tests (parse-and-write, dashboard-epic-aggregate, hash) */
     testTimeout: 20000,

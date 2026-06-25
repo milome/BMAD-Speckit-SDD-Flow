@@ -13,8 +13,8 @@
       "originalPath": "scripts/bmad-speckit-cli.js",
       "entryId": "bmad-speckit-cli-js",
       "scenarioId": "g004_bmad_speckit_cli_js_no_args",
-      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+      "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -34,7 +34,7 @@
       "comparison": {
         "scenarioId": "g004_bmad_speckit_cli_js_no_args",
         "originalEntryPoint": "scripts/bmad-speckit-cli.js",
-        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.js",
+        "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-speckit-cli.ts",
         "stdoutMatches": true,
         "stderrMatches": false,
         "exitCodeMatches": true,
@@ -52,7 +52,7 @@
       "entryId": "run-auditor-host",
       "scenarioId": "g004_run_auditor_host_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
       "originalReplay": {
         "exitCode": 1,
         "stdoutBytes": 0,
@@ -90,7 +90,7 @@
       "entryId": "runtime-context-registry-ts",
       "scenarioId": "g004_runtime_context_registry_ts_no_args",
       "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
-      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.js",
+      "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
       "originalReplay": {
         "exitCode": 0,
         "stdoutBytes": 0,

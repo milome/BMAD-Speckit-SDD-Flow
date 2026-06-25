@@ -111,8 +111,8 @@ Fail closed when any required section, field, task ID, acceptance ID, evidence c
 - `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/summary.md` is the Wave 3.11 human closeout projection after task G012 writes it.
 - `packages/bmad-speckit/src/main-agent/runtime/**` is the package source authority for the four migrated runtime modules.
 - `packages/bmad-speckit/src/main-agent/helpers/**` is the package source authority for the five migrated helper modules.
-- `packages/bmad-speckit/src/commands/eval-question-generate.js` is the package source authority for the eval question generation public CLI action.
-- `packages/bmad-speckit/src/commands/check-score.js` remains the package source authority for the existing check-score public CLI action.
+- `packages/bmad-speckit/src/commands/eval-question-generate.ts` is the package source authority for the eval question generation public CLI action.
+- `packages/bmad-speckit/src/commands/check-score.ts` remains the package source authority for the existing check-score public CLI action.
 - `packages/bmad-speckit/dist/main-agent/**` is the package consumer runtime output for Main Agent runtime and helper modules.
 - `packages/bmad-speckit/bin/bmad-speckit.js` is the package CLI facade authority for consumer-visible command dispatch.
 - `model_packet.json is the machine-readable execution authority` only when a generated Main Agent execution packet exists for this contract.
@@ -129,8 +129,8 @@ The fix is a narrow migration wave. Wave 3.11 migrates four runtime support modu
 
 - Wave 3.10 corrected fourteen challenged scripts.
 - Wave 3.11 intentionally covers thirteen entries.
-- `scripts/bmad-help-renderer.ts` is excluded from Wave 3.11 because Wave 3.10 already records it as `already_migrated_package_runtime_deprecated_root_path` with existing package runtime authority through `packages/bmad-speckit/src/runtime/bmad-help-renderer.js`.
-- `scripts/bmads-renderer.ts` is excluded from Wave 3.11 because Wave 3.10 already records it as `already_migrated_package_runtime_deprecated_root_path` with existing package runtime authority through `packages/bmad-speckit/src/runtime/bmads-renderer.js`.
+- `scripts/bmad-help-renderer.ts` is excluded from Wave 3.11 because Wave 3.10 already records it as `already_migrated_package_runtime_deprecated_root_path` with existing package runtime authority through `packages/bmad-speckit/src/runtime/bmad-help-renderer.ts`.
+- `scripts/bmads-renderer.ts` is excluded from Wave 3.11 because Wave 3.10 already records it as `already_migrated_package_runtime_deprecated_root_path` with existing package runtime authority through `packages/bmad-speckit/src/runtime/bmads-renderer.ts`.
 - `scripts/eval-question-generate.ts` is included in Wave 3.11 because this contract explicitly promotes the closure audit follow-up recommendation into a public CLI package action migration decision; the pre-implementation audit state is not treated as already-proven consumer reachability.
 - Wave 3.11 preserves Wave 3.10 semantic corrections unless this contract explicitly changes an entry. Wave 3.11 supersedes completion, migration target, validation, and evidence state for its thirteen entries only.
 - This scope delta is closed: adding or removing a Wave 3.11 entry requires `contract_amendment_required`.
@@ -182,10 +182,10 @@ Canonical semantic-to-registry mapping for Wave 3.11:
 
 ### D002 Runtime Module Migration Addendum
 
-- `scripts/host-runtime-mode.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js` and `packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js`.
-- `scripts/supervised-worker-runtime.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js` and `packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js`.
-- `scripts/diagnose-bmad-state.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js` and `packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js`.
-- `scripts/parallel-mission-control.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js` and `packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js`.
+- `scripts/host-runtime-mode.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts` and `packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js`.
+- `scripts/supervised-worker-runtime.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts` and `packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js`.
+- `scripts/diagnose-bmad-state.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts` and `packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js`.
+- `scripts/parallel-mission-control.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts` and `packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js`.
 - `packages/bmad-speckit/scripts/build-main-agent-dist.cjs` MUST copy each runtime module target from `src/main-agent/runtime/` to `dist/main-agent/runtime/`.
 - Package tests MUST import the four runtime modules from `packages/bmad-speckit/src/main-agent/runtime/` or `packages/bmad-speckit/dist/main-agent/runtime/`.
 - Package tests MUST NOT import any of the four original root TypeScript scripts.
@@ -196,11 +196,11 @@ Canonical semantic-to-registry mapping for Wave 3.11:
 
 ### D003 Package Helper Closure Addendum
 
-- `scripts/bmad-state-reader.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js` and `packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js`.
-- `scripts/e2e-verify-paths.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js` and `packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js`.
-- `scripts/query-validate.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/query-validate.js` and `packages/bmad-speckit/dist/main-agent/helpers/query-validate.js`.
-- `scripts/runtime-step-state.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js` and `packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js`.
-- `scripts/verify-agent-files.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js` and `packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js`.
+- `scripts/bmad-state-reader.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts` and `packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js`.
+- `scripts/e2e-verify-paths.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts` and `packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js`.
+- `scripts/query-validate.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/query-validate.ts` and `packages/bmad-speckit/dist/main-agent/helpers/query-validate.js`.
+- `scripts/runtime-step-state.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts` and `packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js`.
+- `scripts/verify-agent-files.ts` MUST migrate to `packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts` and `packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js`.
 - `packages/bmad-speckit/scripts/build-main-agent-dist.cjs` MUST copy each helper target from `src/main-agent/helpers/` to `dist/main-agent/helpers/`.
 - Helper modules MUST use package-relative paths or caller-provided project paths.
 - Helper modules MUST NOT read `repo-governance/**` as consumer runtime input.
@@ -208,10 +208,10 @@ Canonical semantic-to-registry mapping for Wave 3.11:
 
 ### D004 Public CLI Package Action Addendum
 
-- `scripts/eval-question-generate.ts` MUST migrate to `packages/bmad-speckit/src/commands/eval-question-generate.js`.
+- `scripts/eval-question-generate.ts` MUST migrate to `packages/bmad-speckit/src/commands/eval-question-generate.ts`.
 - `packages/bmad-speckit/bin/bmad-speckit.js` MUST expose a consumer-visible `eval-question-generate` command that loads `../src/commands/eval-question-generate`.
 - `packages/bmad-speckit/bin/bmad-speckit.js` MUST NOT route `eval-question-generate` through `emitDeprecatedAlias`.
-- `packages/bmad-speckit/src/commands/eval-question-generate.js` MUST import scoring package code through `@bmad-speckit/scoring` package exports. Vendoring or copying scoring source/dist files directly into `packages/bmad-speckit/src/commands/eval-question-generate.js` or another package-local command helper is outside Wave 3.11 scope and MUST NOT be used as the consumer proof route. The allowed and required consumer proof route is the installed `@bmad-speckit/scoring` package dependency staged from the current workspace and resolved through package exports.
+- `packages/bmad-speckit/src/commands/eval-question-generate.ts` MUST import scoring package code through `@bmad-speckit/scoring` package exports. Vendoring or copying scoring source/dist files directly into `packages/bmad-speckit/src/commands/eval-question-generate.ts` or another package-local command helper is outside Wave 3.11 scope and MUST NOT be used as the consumer proof route. The allowed and required consumer proof route is the installed `@bmad-speckit/scoring` package dependency staged from the current workspace and resolved through package exports.
 - `packages/scoring/package.json` MUST expose `./eval-questions/template-generator` and `./eval-questions/manifest-loader` as mandatory Wave 3.11 package exports.
 - `packages/scoring/package.json` MUST include package file coverage for the mandatory eval-question dist modules and every eval-question asset required by the installed `eval-question-generate` command.
 - `npm run build:scoring` MUST produce `packages/scoring/dist/eval-questions/template-generator.js` and `packages/scoring/dist/eval-questions/manifest-loader.js`.
@@ -219,7 +219,7 @@ Canonical semantic-to-registry mapping for Wave 3.11:
 - Eval question generation MUST preserve the existing scoring manifest format: generated output uses `manifest.yaml` and MUST be loadable through the scoring `loadManifest(versionDir)` contract from `@bmad-speckit/scoring/eval-questions/manifest-loader`. Wave 3.11 MUST NOT require `manifest.json` or JSON manifest parsing as acceptance evidence.
 - Wave 3.11 consumer proof for `eval-question-generate` is limited to the explicit `--input <coach-report.json> --outputDir <dir> --version <version>` path. The `--run-id` argument is retained as package-command compatibility only and MUST NOT be used as install-matrix consumer proof.
 - The retained `--run-id` compatibility path MUST resolve scoring data only through package scoring APIs and package-supported data path resolution such as `SCORING_DATA_PATH` or the current working directory. If the scoring data path or run record cannot be resolved, it MUST fail closed with a nonzero exit code and a clear error, rather than falling back to root repository source, root `scripts/*.ts`, `tsx`, `ts-node`, or compiled fallback.
-- `packages/bmad-speckit/src/commands/check-score.js` MUST remain the package action authority for `bmad-speckit check-score`.
+- `packages/bmad-speckit/src/commands/check-score.ts` MUST remain the package action authority for `bmad-speckit check-score`.
 - `scripts/check-story-score-written.ts` MUST remain retained legacy root source and MUST NOT be classified as true no-migration internal.
 
 ### D005 Registry And Evidence Addendum
@@ -246,8 +246,8 @@ Canonical semantic-to-registry mapping for Wave 3.11:
 - Registry entry `originalClassBeforeMigration` MUST equal the D001 expected audit semantic classification for that original script, not the older Wave 3.10 `repo_internal_reclassify_possible` value.
 - Runtime module registry entries MUST express the package-runtime migration through `migrationStrategy: package_runtime_module`, `migrationStatus: validated`, `callerSwitchStatus: switched`, `oldPathDisposition: retained_source_root_legacy_package_runtime_module`, `publicCommandsBeforeMigration: ["source repository <originalPath>"]`, `publicCommandsAfterMigration: []`, and `targetPaths` set to the two D002 source/dist paths for that entry.
 - Helper registry entries MUST express the helper migration through `migrationStrategy: durable_helper_copy`, `migrationStatus: validated`, `callerSwitchStatus: not_applicable`, `oldPathDisposition: retained_source_root_legacy_package_local_helper`, `publicCommandsBeforeMigration: ["source repository <originalPath>"]`, `publicCommandsAfterMigration: []`, and `targetPaths` set to the two D003 source/dist paths for that entry.
-- `scripts/eval-question-generate.ts` MUST express the public CLI package action through `migrationStrategy: public_cli_de_surface`, `migrationStatus: validated`, `callerSwitchStatus: switched`, `oldPathDisposition: retained_legacy_root_public_cli_replaced`, `targetPaths: ["packages/bmad-speckit/bin/bmad-speckit.js", "packages/bmad-speckit/src/commands/eval-question-generate.js"]`, `publicCommandsBeforeMigration: ["source repository scripts/eval-question-generate.ts"]`, and `publicCommandsAfterMigration: ["bmad-speckit eval-question-generate"]`.
-- `scripts/check-story-score-written.ts` MUST express the existing package action closure through `migrationStrategy: public_cli_de_surface`, `migrationStatus: validated`, `callerSwitchStatus: switched_existing_package_runtime`, `oldPathDisposition: retained_legacy_root_public_cli_replaced`, `targetPaths: ["packages/bmad-speckit/bin/bmad-speckit.js", "packages/bmad-speckit/src/commands/check-score.js"]`, `publicCommandsBeforeMigration: ["source repository scripts/check-story-score-written.ts"]`, and `publicCommandsAfterMigration: ["bmad-speckit check-score"]`.
+- `scripts/eval-question-generate.ts` MUST express the public CLI package action through `migrationStrategy: public_cli_de_surface`, `migrationStatus: validated`, `callerSwitchStatus: switched`, `oldPathDisposition: retained_legacy_root_public_cli_replaced`, `targetPaths: ["packages/bmad-speckit/bin/bmad-speckit.js", "packages/bmad-speckit/src/commands/eval-question-generate.ts"]`, `publicCommandsBeforeMigration: ["source repository scripts/eval-question-generate.ts"]`, and `publicCommandsAfterMigration: ["bmad-speckit eval-question-generate"]`.
+- `scripts/check-story-score-written.ts` MUST express the existing package action closure through `migrationStrategy: public_cli_de_surface`, `migrationStatus: validated`, `callerSwitchStatus: switched_existing_package_runtime`, `oldPathDisposition: retained_legacy_root_public_cli_replaced`, `targetPaths: ["packages/bmad-speckit/bin/bmad-speckit.js", "packages/bmad-speckit/src/commands/check-score.ts"]`, `publicCommandsBeforeMigration: ["source repository scripts/check-story-score-written.ts"]`, and `publicCommandsAfterMigration: ["bmad-speckit check-score"]`.
 - `scripts/create-second-story.ts` MUST express the narrow no-migration decision through `migrationStrategy: repo_internal_reclassify`, `migrationStatus: validated`, `callerSwitchStatus: not_applicable`, `oldPathDisposition: retained_source_repo_internal_test_seed_only`, `targetPaths: ["scripts/create-second-story.ts"]`, `publicCommandsBeforeMigration: ["source repository scripts/create-second-story.ts"]`, and `publicCommandsAfterMigration: []`.
 - `scripts/verify-score-auto-scoped-bundle.cjs` MUST express the narrow no-migration decision through `migrationStrategy: repo_internal_reclassify`, `migrationStatus: validated`, `callerSwitchStatus: not_applicable`, `oldPathDisposition: retained_source_repo_internal_verification_harness`, `targetPaths: ["scripts/verify-score-auto-scoped-bundle.cjs"]`, `publicCommandsBeforeMigration: ["source repository scripts/verify-score-auto-scoped-bundle.cjs"]`, and `publicCommandsAfterMigration: []`.
 
@@ -257,15 +257,15 @@ The executor MUST implement these CommonJS exports and tests MUST assert them.
 
 | Original script | Package target | Required CommonJS exports |
 | --- | --- | --- |
-| `scripts/host-runtime-mode.ts` | `packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js` | `normalizeRuntimeHost`, `selectExecutionRuntimeMode`, `runtimeModeDir`, `writeExecutionRuntimeModeSelection`, `validateNativeGoalReadiness`, `writeRuntimeBlocker`, `writeNativeGoalInvocationReceipt`, `validateNativeGoalInvocationReceipt` |
-| `scripts/supervised-worker-runtime.ts` | `packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js` | `appendTaskProgress`, `readTaskProgress`, `evaluateSupervisedWorker` |
-| `scripts/diagnose-bmad-state.ts` | `packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js` | `collectReviewerProjectionDiagnosis`, `collectReadinessProjectionDiagnosis`, `diagnoseBmadState` |
-| `scripts/parallel-mission-control.ts` | `packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js` | `DEFAULT_PROTECTED_WRITE_PATHS`, `evaluateParallelMissionEvidenceIntegration`, `buildParallelMissionPlan`, `buildPrTopology`, `validatePrTopologyForReleaseGate` |
-| `scripts/bmad-state-reader.ts` | `packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js` | `readBmadProgress`, `readStoryState`, `getCurrentStoryState`, `buildPaths` |
-| `scripts/e2e-verify-paths.ts` | `packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js` | `runE2eVerifyPaths`, `main` |
-| `scripts/query-validate.ts` | `packages/bmad-speckit/src/main-agent/helpers/query-validate.js` | `runQueryValidation`, `main` |
-| `scripts/runtime-step-state.ts` | `packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js` | `resolveRuntimeStepState`, `persistRuntimeStepState` |
-| `scripts/verify-agent-files.ts` | `packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js` | `verifyAgentFiles`, `REQUIRED_AGENTS`, `REQUIRED_SPECKIT_ALIASES`, `REQUIRED_AUDITORS`, `main` |
+| `scripts/host-runtime-mode.ts` | `packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts` | `normalizeRuntimeHost`, `selectExecutionRuntimeMode`, `runtimeModeDir`, `writeExecutionRuntimeModeSelection`, `validateNativeGoalReadiness`, `writeRuntimeBlocker`, `writeNativeGoalInvocationReceipt`, `validateNativeGoalInvocationReceipt` |
+| `scripts/supervised-worker-runtime.ts` | `packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts` | `appendTaskProgress`, `readTaskProgress`, `evaluateSupervisedWorker` |
+| `scripts/diagnose-bmad-state.ts` | `packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts` | `collectReviewerProjectionDiagnosis`, `collectReadinessProjectionDiagnosis`, `diagnoseBmadState` |
+| `scripts/parallel-mission-control.ts` | `packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts` | `DEFAULT_PROTECTED_WRITE_PATHS`, `evaluateParallelMissionEvidenceIntegration`, `buildParallelMissionPlan`, `buildPrTopology`, `validatePrTopologyForReleaseGate` |
+| `scripts/bmad-state-reader.ts` | `packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts` | `readBmadProgress`, `readStoryState`, `getCurrentStoryState`, `buildPaths` |
+| `scripts/e2e-verify-paths.ts` | `packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts` | `runE2eVerifyPaths`, `main` |
+| `scripts/query-validate.ts` | `packages/bmad-speckit/src/main-agent/helpers/query-validate.ts` | `runQueryValidation`, `main` |
+| `scripts/runtime-step-state.ts` | `packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts` | `resolveRuntimeStepState`, `persistRuntimeStepState` |
+| `scripts/verify-agent-files.ts` | `packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts` | `verifyAgentFiles`, `REQUIRED_AGENTS`, `REQUIRED_SPECKIT_ALIASES`, `REQUIRED_AUDITORS`, `main` |
 
 Minimum behavioral assertions:
 
@@ -331,7 +331,7 @@ Required matrix rows:
 | `IM001` | Four runtime module entries | Installed package direct `require('bmad-speckit/dist/main-agent/runtime/*.js')` probe | All D006 runtime exports exist and fixture-backed calls succeed without root script, `tsx`, `ts-node`, or compiled fallback. |
 | `IM002` | Five helper entries | Installed package direct `require('bmad-speckit/dist/main-agent/helpers/*.js')` probe | All D006 helper exports exist and fixture-backed calls succeed without root script, `tsx`, `ts-node`, or compiled fallback. |
 | `IM003` | `scripts/eval-question-generate.ts` | Installed `bmad-speckit eval-question-generate --input <fixture> --outputDir <tmp> --version v1` | Generated question files exist; generated `manifest.yaml` is loadable through installed `@bmad-speckit/scoring/eval-questions/manifest-loader.loadManifest(versionDir)`; every loaded question entry has `id`, `title`, `path`, and an existing generated question file; command does not execute root `scripts/eval-question-generate.ts`; installed `@bmad-speckit/scoring/eval-questions/*` resolves from the current workspace-derived scoring package and hash-matches D008 scoring proof. |
-| `IM004` | `scripts/check-story-score-written.ts` | Installed `bmad-speckit check-score --epic <fixture> --story <fixture> --dataPath <fixture>` | Command loads `packages/bmad-speckit/src/commands/check-score.js` or installed package equivalent and does not execute root `scripts/check-story-score-written.ts`. |
+| `IM004` | `scripts/check-story-score-written.ts` | Installed `bmad-speckit check-score --epic <fixture> --story <fixture> --dataPath <fixture>` | Command loads `packages/bmad-speckit/src/commands/check-score.ts` or installed package equivalent and does not execute root `scripts/check-story-score-written.ts`. |
 
 Every row in every applicable mode MUST record `usedRootScript: false`, `usedTsx: false`, `usedTsNode: false`, and `usedCompiledFallback: false`. If a mode cannot execute a row, the row MUST be recorded with `status: blocked`, a concrete reason, and the run MUST stop with `blocked_by_contract_ambiguity:install_matrix_command_surface`.
 
@@ -383,8 +383,8 @@ ACC001-ACC012 Status Update Table:
 | ACC003 | `cmd-test-runtime-modules` | `packages/bmad-speckit/tests/main-agent-wave-3-11-runtime-modules.test.js` |
 | ACC004 | `cmd-test-runtime-acceptance-import-switches` | Seven G003 acceptance test files |
 | ACC005 | `cmd-build-main-agent-dist`, `cmd-test-helpers` | Five D003 helper source files, five D003 helper dist files, `packages/bmad-speckit/tests/main-agent-wave-3-11-helpers.test.js` |
-| ACC006 | `cmd-build-scoring`, `cmd-test-scoring-eval-questions`, `cmd-test-eval-question-generate`, `cmd-smoke-eval-question-generate-source-tree`, `cmd-run-install-matrix` | `packages/bmad-speckit/src/commands/eval-question-generate.js`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/fixtures/coach-report.json`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix.json` |
-| ACC007 | `cmd-test-check-score`, `cmd-assert-public-cli-dispatch`, `cmd-validate-registry` | `packages/bmad-speckit/src/commands/check-score.js`, `packages/bmad-speckit/bin/bmad-speckit.js`, `repo-governance/script-migration-registry.yaml` |
+| ACC006 | `cmd-build-scoring`, `cmd-test-scoring-eval-questions`, `cmd-test-eval-question-generate`, `cmd-smoke-eval-question-generate-source-tree`, `cmd-run-install-matrix` | `packages/bmad-speckit/src/commands/eval-question-generate.ts`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/fixtures/coach-report.json`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/install-matrix.json` |
+| ACC007 | `cmd-test-check-score`, `cmd-assert-public-cli-dispatch`, `cmd-validate-registry` | `packages/bmad-speckit/src/commands/check-score.ts`, `packages/bmad-speckit/bin/bmad-speckit.js`, `repo-governance/script-migration-registry.yaml` |
 | ACC008 | `cmd-assert-no-migration-internal-exact` | `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json` |
 | ACC009 | `cmd-validate-registry` | `repo-governance/script-migration-registry.yaml`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/registry-evidence.json`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json` |
 | ACC010 | `cmd-closure-audit-write`, `cmd-assert-closure-audit-exact-wave-3-11` | `repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json`, `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/classification-evidence.json` |
@@ -455,10 +455,10 @@ Files:
 - `scripts/supervised-worker-runtime.ts`
 - `scripts/diagnose-bmad-state.ts`
 - `scripts/parallel-mission-control.ts`
-- `packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js`
-- `packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js`
-- `packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js`
-- `packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js`
+- `packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts`
+- `packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts`
+- `packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts`
+- `packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts`
 - `packages/bmad-speckit/scripts/build-main-agent-dist.cjs`
 
 Steps:
@@ -523,11 +523,11 @@ Files:
 - `scripts/query-validate.ts`
 - `scripts/runtime-step-state.ts`
 - `scripts/verify-agent-files.ts`
-- `packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js`
-- `packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js`
-- `packages/bmad-speckit/src/main-agent/helpers/query-validate.js`
-- `packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js`
-- `packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js`
+- `packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts`
+- `packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts`
+- `packages/bmad-speckit/src/main-agent/helpers/query-validate.ts`
+- `packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts`
+- `packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts`
 - `packages/bmad-speckit/scripts/build-main-agent-dist.cjs`
 
 Steps:
@@ -579,7 +579,7 @@ Purpose: Replace source-root eval question generation with a package CLI command
 Files:
 
 - `scripts/eval-question-generate.ts`
-- `packages/bmad-speckit/src/commands/eval-question-generate.js`
+- `packages/bmad-speckit/src/commands/eval-question-generate.ts`
 - `packages/bmad-speckit/bin/bmad-speckit.js`
 - `packages/scoring/package.json`
 - `packages/scoring/eval-questions/manifest-loader.ts`
@@ -594,7 +594,7 @@ Files:
 
 Steps:
 
-- Add `packages/bmad-speckit/src/commands/eval-question-generate.js` as a CommonJS package command.
+- Add `packages/bmad-speckit/src/commands/eval-question-generate.ts` as a CommonJS package command.
 - Add a `bmad-speckit eval-question-generate` command in `packages/bmad-speckit/bin/bmad-speckit.js`.
 - Preserve `--run-id`, `--input`, `--version`, `--outputDir`, and `--output-dir` CLI arguments.
 - Implement `--input` mode without executing root `scripts/eval-question-generate.ts`.
@@ -623,7 +623,7 @@ Purpose: Record `scripts/check-story-score-written.ts` as a retained legacy root
 Files:
 
 - `scripts/check-story-score-written.ts`
-- `packages/bmad-speckit/src/commands/check-score.js`
+- `packages/bmad-speckit/src/commands/check-score.ts`
 - `packages/bmad-speckit/bin/bmad-speckit.js`
 - `packages/bmad-speckit/tests/check-score-command.test.js`
 
@@ -719,8 +719,8 @@ Files:
 - `tools/script-migration/write-main-agent-wave-3-11-evidence.cjs`
 - `tools/script-migration/run-main-agent-wave-3-11-install-matrix.cjs`
 - `tests/acceptance/main-agent-runtime-migration-wave-3-11-contract.test.ts`
-- `packages/bmad-speckit/src/commands/check.js`
-- `packages/bmad-speckit/src/services/sync-service.js`
+- `packages/bmad-speckit/src/commands/check.ts`
+- `packages/bmad-speckit/src/services/sync-service.ts`
 - `packages/bmad-speckit/tests/sync-service.test.js`
 - `packages/bmad-speckit/tests/main-agent-build-dist.test.js`
 - `packages/bmad-speckit/tests/main-agent-no-root-ts-dispatch.test.js`
@@ -865,8 +865,8 @@ Every checkbox must have direct command or artifact evidence before completion i
 - [ ] ACC003: `packages/bmad-speckit/tests/main-agent-wave-3-11-runtime-modules.test.js` passes, imports no root `scripts/*.ts` file, asserts every D006 runtime export exists, executes every pure or fixture-backed runtime function export, and includes required negative/error-path assertions.
 - [ ] ACC004: The seven listed acceptance tests in G003 pass after their runtime-contract imports are switched to package runtime modules.
 - [ ] ACC005: The five helper source files and five helper dist files listed in D003 exist, and `packages/bmad-speckit/tests/main-agent-wave-3-11-helpers.test.js` passes while asserting every D006 helper export exists, executing every pure or fixture-backed helper function export, and including required negative/error-path assertions.
-- [ ] ACC006: `bmad-speckit eval-question-generate` exists as a package CLI command, loads `packages/bmad-speckit/src/commands/eval-question-generate.js`, creates eval question output from a fixture coach report in source-tree smoke, loads generated `manifest.yaml` through `loadManifest(versionDir)`, and creates eval question output plus a loadable `manifest.yaml` from an installed consumer fixture without executing `scripts/eval-question-generate.ts` while resolving current workspace-derived `@bmad-speckit/scoring/eval-questions/*`. This ACC006 installed consumer proof is limited to `--input`; `--run-id` is retained compatibility scope only and package-command fail-closed tests must prove the controlled `SCORING_DATA_PATH=<empty-dir> --run-id wave-3-11-missing-run` case exits nonzero with `EVAL_QUESTION_RUN_ID_UNRESOLVED`.
-- [ ] ACC007: `bmad-speckit check-score` remains wired to `packages/bmad-speckit/src/commands/check-score.js`, and `scripts/check-story-score-written.ts` is recorded as retained legacy root public CLI replaced.
+- [ ] ACC006: `bmad-speckit eval-question-generate` exists as a package CLI command, loads `packages/bmad-speckit/src/commands/eval-question-generate.ts`, creates eval question output from a fixture coach report in source-tree smoke, loads generated `manifest.yaml` through `loadManifest(versionDir)`, and creates eval question output plus a loadable `manifest.yaml` from an installed consumer fixture without executing `scripts/eval-question-generate.ts` while resolving current workspace-derived `@bmad-speckit/scoring/eval-questions/*`. This ACC006 installed consumer proof is limited to `--input`; `--run-id` is retained compatibility scope only and package-command fail-closed tests must prove the controlled `SCORING_DATA_PATH=<empty-dir> --run-id wave-3-11-missing-run` case exits nonzero with `EVAL_QUESTION_RUN_ID_UNRESOLVED`.
+- [ ] ACC007: `bmad-speckit check-score` remains wired to `packages/bmad-speckit/src/commands/check-score.ts`, and `scripts/check-story-score-written.ts` is recorded as retained legacy root public CLI replaced.
 - [ ] ACC008: `repo-governance/script-migrations/main-agent-runtime-migration-wave-3.11/no-migration-internal.json` contains exactly `scripts/create-second-story.ts` and `scripts/verify-score-auto-scoped-bundle.cjs` with validator-compatible `currentClassification` values.
 - [ ] ACC009: `repo-governance/script-migration-registry.yaml` contains a Wave 3.11 registry wave with exactly thirteen entries, `refinesWaveId: main-agent-runtime-migration-wave-3.10`, wave `status: blocked` while strict package parity is missing, package/runtime entry `migrationStatus: blocked`, package/runtime entry `validationStatus: partial`, true repo-internal no-migration entries `validated/passed`, `deletionAllowed: false`, and `deletionApprovalRef: null` on every entry; every Wave 3.11 entry references `registry-evidence.json`; `registry-evidence.json` satisfies the fail-closed registry evidence schema with the same thirteen entries; and `classification-evidence.json` records the same thirteen entries with D010 schema fields.
 - [ ] ACC010: `repo-governance/script-migrations/consumer-reachable-closure-audit/audit-report.json` classifies all thirteen Wave 3.11 entries exactly according to the D001 expected audit semantic classification table, `classification-evidence.json` mirrors those current classifications, and no current Wave 3.11 entry remains classified as `repo_internal_reclassify_possible` or any follow-up-only state.
@@ -1075,7 +1075,7 @@ Executor-visible invocation: `node tools/script-migration/write-main-agent-wave-
 Produce explicit command evidence for every scenario. MAN001 through MAN004 are mandatory evidence checks and MUST be recorded in `evidence.json` command rows and mirrored into `final-evidence-packet.json`. Prose-only inspection is not acceptable evidence.
 
 - MAN001: Verified by `cmd-assert-root-scripts-not-deleted`. Pass condition is that the command exits `0`, all thirteen original paths exist, none has deleted or rename/delete worktree status, and every modified original root script is covered by `root-script-regression-proof.json` with accepted command IDs and all required preserved-behavior flags. The command row MUST include `manualScenarioIds: ["MAN001"]`.
-- MAN002: Verified by `cmd-assert-public-cli-dispatch`. Pass condition is that the command exits `0`, `eval-question-generate` dispatches to `packages/bmad-speckit/src/commands/eval-question-generate.js`, and `check-score` dispatches to `packages/bmad-speckit/src/commands/check-score.js`. The command row MUST include `manualScenarioIds: ["MAN002"]`.
+- MAN002: Verified by `cmd-assert-public-cli-dispatch`. Pass condition is that the command exits `0`, `eval-question-generate` dispatches to `packages/bmad-speckit/src/commands/eval-question-generate.ts`, and `check-score` dispatches to `packages/bmad-speckit/src/commands/check-score.ts`. The command row MUST include `manualScenarioIds: ["MAN002"]`.
 - MAN003: Verified by `cmd-assert-closure-audit-exact-wave-3-11`. Pass condition is that the command exits `0`, the thirteen current Wave 3.11 entries match the D001 expected audit semantic classification table, and no current entry remains `repo_internal_reclassify_possible` or follow-up-only. The command row MUST include `manualScenarioIds: ["MAN003"]`.
 - MAN004: Verified by `cmd-assert-final-closeout-language`. Pass condition is that the command exits `0`, `summary.md` states Wave 3.11 covers only the thirteen declared entries, states no root script deletion, and contains no direct-consumer-execution overclaim. The command row MUST include `manualScenarioIds: ["MAN004"]` before `final-evidence-packet.json` is sealed.
 
@@ -1111,7 +1111,7 @@ The final implementation response must include the rendered evidence packet fiel
 - Stop with `compiled_fallback_claim_forbidden` when a covered Wave 3.11 command uses compiled fallback and the implementation attempts to record `usedCompiledFallback: false`.
 - Stop with `registry_validation_failed` when `node tools/script-migration/validate-registry.cjs` exits nonzero after one repair attempt.
 - Stop with `closure_audit_validation_failed` when `node tools/script-migration/audit-consumer-reachable-closure.cjs --write --pretty --quiet` exits nonzero after one repair attempt.
-- Stop with `blocked_by_contract_ambiguity:scoring_eval_exports` when `packages/scoring/package.json` cannot expose the eval-question modules required by `packages/bmad-speckit/src/commands/eval-question-generate.js` without changing the scoring package build contract.
+- Stop with `blocked_by_contract_ambiguity:scoring_eval_exports` when `packages/scoring/package.json` cannot expose the eval-question modules required by `packages/bmad-speckit/src/commands/eval-question-generate.ts` without changing the scoring package build contract.
 - Stop with `blocked_by_contract_ambiguity:install_matrix_command_surface` when the install matrix cannot execute any D008 required package CLI or package runtime row for a covered migrated entry.
 - Stop with `install_matrix_wrong_package_source` when the install matrix packs or installs the root `bmad-speckit-sdd-flow` package instead of `packages/bmad-speckit` for Wave 3.11 consumer probes.
 - Stop with `install_matrix_stale_scoring_dependency` when IM003 resolves `@bmad-speckit/scoring/eval-questions/*` from a stale registry package, repo source path, workspace link, or any installed package whose hashes do not match the current workspace scoring build.

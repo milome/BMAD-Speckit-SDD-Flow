@@ -17,7 +17,7 @@
       "originalPath": "scripts/host-runtime-mode.ts",
       "semanticClassification": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.js",
+        "packages/bmad-speckit/src/main-agent/runtime/host-runtime-mode.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/host-runtime-mode.js"
       ],
       "evidenceBasis": [
@@ -33,7 +33,7 @@
       "originalPath": "scripts/supervised-worker-runtime.ts",
       "semanticClassification": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.js",
+        "packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/supervised-worker-runtime.js"
       ],
       "evidenceBasis": [
@@ -50,7 +50,7 @@
       "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/runtime/bmad-help-renderer.js"
+        "packages/bmad-speckit/src/runtime/bmad-help-renderer.ts"
       ],
       "evidenceBasis": [
         "root script path is absent",
@@ -65,7 +65,7 @@
       "originalPath": "scripts/bmad-state-reader.ts",
       "semanticClassification": "package_local_helper",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.js",
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state-reader.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/bmad-state-reader.js"
       ],
       "evidenceBasis": [
@@ -82,7 +82,7 @@
       "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/runtime/bmads-renderer.js"
+        "packages/bmad-speckit/src/runtime/bmads-renderer.ts"
       ],
       "evidenceBasis": [
         "root script path is absent",
@@ -98,10 +98,10 @@
       "semanticClassification": "public_cli_package_action_existing_root_legacy",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/check-score.js"
+        "packages/bmad-speckit/src/commands/check-score.ts"
       ],
       "evidenceBasis": [
-        "packages/bmad-speckit/src/commands/check-score.js is ported from this script",
+        "packages/bmad-speckit/src/commands/check-score.ts is ported from this script",
         "docs/reference/source-code.md maps this script to npx bmad-speckit check-score"
       ],
       "commands": [],
@@ -128,7 +128,7 @@
       "originalPath": "scripts/diagnose-bmad-state.ts",
       "semanticClassification": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.js",
+        "packages/bmad-speckit/src/main-agent/runtime/diagnose-bmad-state.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/diagnose-bmad-state.js"
       ],
       "evidenceBasis": [
@@ -144,7 +144,7 @@
       "originalPath": "scripts/e2e-verify-paths.ts",
       "semanticClassification": "package_local_helper",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.js",
+        "packages/bmad-speckit/src/main-agent/helpers/e2e-verify-paths.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/e2e-verify-paths.js"
       ],
       "evidenceBasis": [
@@ -160,7 +160,7 @@
       "originalPath": "scripts/parallel-mission-control.ts",
       "semanticClassification": "package_runtime_module",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js",
+        "packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts",
         "packages/bmad-speckit/dist/main-agent/runtime/parallel-mission-control.js"
       ],
       "evidenceBasis": [
@@ -177,7 +177,7 @@
       "originalPath": "scripts/query-validate.ts",
       "semanticClassification": "package_local_helper",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/query-validate.js",
+        "packages/bmad-speckit/src/main-agent/helpers/query-validate.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/query-validate.js"
       ],
       "evidenceBasis": [
@@ -193,7 +193,7 @@
       "originalPath": "scripts/runtime-step-state.ts",
       "semanticClassification": "package_local_helper",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.js",
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-step-state.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/runtime-step-state.js"
       ],
       "evidenceBasis": [
@@ -209,7 +209,7 @@
       "originalPath": "scripts/verify-agent-files.ts",
       "semanticClassification": "package_local_helper",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.js",
+        "packages/bmad-speckit/src/main-agent/helpers/verify-agent-files.ts",
         "packages/bmad-speckit/dist/main-agent/helpers/verify-agent-files.js"
       ],
       "evidenceBasis": [

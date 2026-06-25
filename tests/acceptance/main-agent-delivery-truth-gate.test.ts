@@ -6,7 +6,7 @@ import { evaluateDeliveryTruthGate } from '../../scripts/main-agent-delivery-tru
 import {
   buildPrTopology,
   buildParallelMissionPlan,
-} from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.js';
+} from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts';
 
 const evidenceProvenance = {
   runId: 'main-agent-run-loop-1',

@@ -525,7 +525,7 @@
       "queueIndex": 4,
       "originalPath": "scripts/analytics-sft-extract.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js"
+        "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -579,7 +579,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.js": "sha256:72f9d78a9629941e1384ca03b2bf1f57f859d027083e46d3737f35aa0e3d335b"
+          "packages/bmad-speckit/src/main-agent/actions/analytics-sft-extract.ts": "sha256:72f9d78a9629941e1384ca03b2bf1f57f859d027083e46d3737f35aa0e3d335b"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/analytics-sft-extract.js": "sha256:72f9d78a9629941e1384ca03b2bf1f57f859d027083e46d3737f35aa0e3d335b"
@@ -651,7 +651,7 @@
       "queueIndex": 5,
       "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js"
+        "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -715,7 +715,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.js": "sha256:48ca2ec574849be8173a62a2390f220abeb6229373054dba721e4b0c35d702f5"
+          "packages/bmad-speckit/src/main-agent/helpers/architecture-confirmation-hash-recipe.ts": "sha256:48ca2ec574849be8173a62a2390f220abeb6229373054dba721e4b0c35d702f5"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/architecture-confirmation-hash-recipe.js": "sha256:48ca2ec574849be8173a62a2390f220abeb6229373054dba721e4b0c35d702f5"
@@ -788,7 +788,7 @@
       "originalPath": "scripts/architecture-drift-check.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/architecture-drift-check.js"
+        "packages/bmad-speckit/src/commands/architecture-drift-check.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -841,7 +841,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/architecture-drift-check.js": "sha256:3e76453e43ca149019987766d0a7904203a2a536fd13cc2c9ec62b835349032b"
+          "packages/bmad-speckit/src/commands/architecture-drift-check.ts": "sha256:3e76453e43ca149019987766d0a7904203a2a536fd13cc2c9ec62b835349032b"
         },
         "buildOutputs": {}
       },
@@ -903,7 +903,7 @@
       "queueIndex": 7,
       "originalPath": "scripts/assert-implementation-entry.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js"
+        "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -942,7 +942,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.js": "sha256:4d502d27ee44816922578ea961aa926eded8e6313bc03792825ee09d0da18e50"
+          "packages/bmad-speckit/src/main-agent/actions/assert-implementation-entry.ts": "sha256:4d502d27ee44816922578ea961aa926eded8e6313bc03792825ee09d0da18e50"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/assert-implementation-entry.js": "sha256:4d502d27ee44816922578ea961aa926eded8e6313bc03792825ee09d0da18e50"
@@ -1002,7 +1002,7 @@
       "queueIndex": 8,
       "originalPath": "scripts/bmad-config.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/bmad-config.js"
+        "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1041,7 +1041,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/bmad-config.js": "sha256:23d12739d965454c57b66841fe0a343377b4a17b6ae7c6ba161b9db779c42c86"
+          "packages/bmad-speckit/src/main-agent/actions/bmad-config.ts": "sha256:23d12739d965454c57b66841fe0a343377b4a17b6ae7c6ba161b9db779c42c86"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/bmad-config.js": "sha256:23d12739d965454c57b66841fe0a343377b4a17b6ae7c6ba161b9db779c42c86"
@@ -1101,7 +1101,7 @@
       "queueIndex": 9,
       "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1150,7 +1150,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.js": "sha256:d62f6659512a7c6a7fb7b3ecd9b45fc62d82ae641dd4a59d5c337944a0ff6d45"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-five-layer-progress-marker.ts": "sha256:d62f6659512a7c6a7fb7b3ecd9b45fc62d82ae641dd4a59d5c337944a0ff6d45"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-help-five-layer-progress-marker.js": "sha256:d62f6659512a7c6a7fb7b3ecd9b45fc62d82ae641dd4a59d5c337944a0ff6d45"
@@ -1210,7 +1210,7 @@
       "queueIndex": 10,
       "originalPath": "scripts/bmad-help-routing-state.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1259,7 +1259,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.js": "sha256:86433860d72917620c37edac867eee3142422dabfa1ecb75df8ef7237982afaa"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-help-routing-state.ts": "sha256:86433860d72917620c37edac867eee3142422dabfa1ecb75df8ef7237982afaa"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-help-routing-state.js": "sha256:86433860d72917620c37edac867eee3142422dabfa1ecb75df8ef7237982afaa"
@@ -1319,7 +1319,7 @@
       "queueIndex": 11,
       "originalPath": "scripts/bmad-state.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1368,7 +1368,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.js": "sha256:f3f4af0bc4a21a6c7e3f769dc38fa9354d9d472cd10a226d524c6473be05ab3f"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-state.ts": "sha256:f3f4af0bc4a21a6c7e3f769dc38fa9354d9d472cd10a226d524c6473be05ab3f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-state.js": "sha256:f3f4af0bc4a21a6c7e3f769dc38fa9354d9d472cd10a226d524c6473be05ab3f"
@@ -1428,7 +1428,7 @@
       "queueIndex": 12,
       "originalPath": "scripts/bmad-sync-from-v6.ps1",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1477,7 +1477,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js": "sha256:40ed2b504c4f91fe79834af55f8d3df822be872854b41a8a645ef917bac34eb8"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts": "sha256:40ed2b504c4f91fe79834af55f8d3df822be872854b41a8a645ef917bac34eb8"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-sync-from-v6.js": "sha256:40ed2b504c4f91fe79834af55f8d3df822be872854b41a8a645ef917bac34eb8"
@@ -1537,7 +1537,7 @@
       "queueIndex": 13,
       "originalPath": "scripts/bmad-sync-from-v6.sh",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js"
+        "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1586,7 +1586,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.js": "sha256:40ed2b504c4f91fe79834af55f8d3df822be872854b41a8a645ef917bac34eb8"
+          "packages/bmad-speckit/src/main-agent/helpers/bmad-sync-from-v6.ts": "sha256:40ed2b504c4f91fe79834af55f8d3df822be872854b41a8a645ef917bac34eb8"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/bmad-sync-from-v6.js": "sha256:40ed2b504c4f91fe79834af55f8d3df822be872854b41a8a645ef917bac34eb8"
@@ -1646,7 +1646,7 @@
       "queueIndex": 14,
       "originalPath": "scripts/check-sprint-ready.ps1",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1685,7 +1685,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js": "sha256:2ccaa557d8df08d2eb0e2066c4034672bf074c576e2503cff8e2e8d271cc1271"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts": "sha256:2ccaa557d8df08d2eb0e2066c4034672bf074c576e2503cff8e2e8d271cc1271"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/check-sprint-ready.js": "sha256:2ccaa557d8df08d2eb0e2066c4034672bf074c576e2503cff8e2e8d271cc1271"
@@ -1745,7 +1745,7 @@
       "queueIndex": 15,
       "originalPath": "scripts/check-sprint-ready.sh",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js"
+        "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1784,7 +1784,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.js": "sha256:2ccaa557d8df08d2eb0e2066c4034672bf074c576e2503cff8e2e8d271cc1271"
+          "packages/bmad-speckit/src/main-agent/actions/check-sprint-ready.ts": "sha256:2ccaa557d8df08d2eb0e2066c4034672bf074c576e2503cff8e2e8d271cc1271"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/check-sprint-ready.js": "sha256:2ccaa557d8df08d2eb0e2066c4034672bf074c576e2503cff8e2e8d271cc1271"
@@ -1844,7 +1844,7 @@
       "queueIndex": 16,
       "originalPath": "scripts/cleanup-packed-bmad.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1893,7 +1893,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.js": "sha256:2340bb3f170192e4ce32125b0f832cd18b0762a373d0ba70d27ae5f0c117679f"
+          "packages/bmad-speckit/src/main-agent/helpers/cleanup-packed-bmad.ts": "sha256:2340bb3f170192e4ce32125b0f832cd18b0762a373d0ba70d27ae5f0c117679f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/cleanup-packed-bmad.js": "sha256:2340bb3f170192e4ce32125b0f832cd18b0762a373d0ba70d27ae5f0c117679f"
@@ -1954,7 +1954,7 @@
       "originalPath": "scripts/coach-diagnose.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/coach-diagnose.js"
+        "packages/bmad-speckit/src/commands/coach-diagnose.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -1992,7 +1992,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/coach-diagnose.js": "sha256:5c30be4c831144e9b0fc28566551941cf352464bdd3ac5c040e1551e101b52b2"
+          "packages/bmad-speckit/src/commands/coach-diagnose.ts": "sha256:5c30be4c831144e9b0fc28566551941cf352464bdd3ac5c040e1551e101b52b2"
         },
         "buildOutputs": {}
       },
@@ -2042,7 +2042,7 @@
       "queueIndex": 18,
       "originalPath": "scripts/continue-state-contract.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js"
+        "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2091,7 +2091,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.js": "sha256:c552a77bd686d28afb8f671157c4715bf1fe392c8c2d0720035d3ec8b71cc3b0"
+          "packages/bmad-speckit/src/main-agent/helpers/continue-state-contract.ts": "sha256:c552a77bd686d28afb8f671157c4715bf1fe392c8c2d0720035d3ec8b71cc3b0"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/continue-state-contract.js": "sha256:c552a77bd686d28afb8f671157c4715bf1fe392c8c2d0720035d3ec8b71cc3b0"
@@ -2151,7 +2151,7 @@
       "queueIndex": 19,
       "originalPath": "scripts/control-event-log-rebaseline.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js"
+        "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2200,7 +2200,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.js": "sha256:612fe2b8d8797e92e48aa9067d06a901ca579d1ee24b094062cd6742190d0d87"
+          "packages/bmad-speckit/src/main-agent/helpers/control-event-log-rebaseline.ts": "sha256:612fe2b8d8797e92e48aa9067d06a901ca579d1ee24b094062cd6742190d0d87"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/control-event-log-rebaseline.js": "sha256:612fe2b8d8797e92e48aa9067d06a901ca579d1ee24b094062cd6742190d0d87"
@@ -2260,7 +2260,7 @@
       "queueIndex": 20,
       "originalPath": "scripts/controlled-ingest-atomic-committer.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js"
+        "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2309,7 +2309,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.js": "sha256:fccddfbec01b56fc2da9511be52cee276a328c5d166a095ff15af03326fdd807"
+          "packages/bmad-speckit/src/main-agent/helpers/controlled-ingest-atomic-committer.ts": "sha256:fccddfbec01b56fc2da9511be52cee276a328c5d166a095ff15af03326fdd807"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/controlled-ingest-atomic-committer.js": "sha256:fccddfbec01b56fc2da9511be52cee276a328c5d166a095ff15af03326fdd807"
@@ -2369,7 +2369,7 @@
       "queueIndex": 21,
       "originalPath": "scripts/dashboard-generate.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js"
+        "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2408,7 +2408,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.js": "sha256:6ca61e6d6f7821411456fc2178879ccb273c5d0b78eae29359675c014dd1ed46"
+          "packages/bmad-speckit/src/main-agent/actions/dashboard-generate.ts": "sha256:6ca61e6d6f7821411456fc2178879ccb273c5d0b78eae29359675c014dd1ed46"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/dashboard-generate.js": "sha256:6ca61e6d6f7821411456fc2178879ccb273c5d0b78eae29359675c014dd1ed46"
@@ -2580,7 +2580,7 @@
       "queueIndex": 23,
       "originalPath": "scripts/deferred-gap-governance.cjs",
       "targetPaths": [
-        "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js"
+        "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2627,7 +2627,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.js": "sha256:e9b227ac31d57fc5deea797a08efd53d81b2216338678cde1123a748f3c15f12"
+          "packages/bmad-speckit/src/utils/deferred-gap-governance-loader.ts": "sha256:e9b227ac31d57fc5deea797a08efd53d81b2216338678cde1123a748f3c15f12"
         },
         "buildOutputs": {}
       },
@@ -2677,7 +2677,7 @@
       "originalPath": "scripts/emit-runtime-policy.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/emit-runtime-policy.js"
+        "packages/bmad-speckit/src/commands/emit-runtime-policy.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2715,7 +2715,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/emit-runtime-policy.js": "sha256:0adacf6f937cef7f6d50f0432308ad1d209b380394bb9cd8a0c70d84e05a51e0"
+          "packages/bmad-speckit/src/commands/emit-runtime-policy.ts": "sha256:0adacf6f937cef7f6d50f0432308ad1d209b380394bb9cd8a0c70d84e05a51e0"
         },
         "buildOutputs": {}
       },
@@ -2765,7 +2765,7 @@
       "queueIndex": 25,
       "originalPath": "scripts/ensure-runtime-dashboard-server.cjs",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js"
+        "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2814,7 +2814,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.js": "sha256:87a66ab4a2519a2fb69ba2c062f16bd9e4224be025df3dd94bc40a4e1f18febb"
+          "packages/bmad-speckit/src/main-agent/helpers/ensure-runtime-dashboard-server.ts": "sha256:87a66ab4a2519a2fb69ba2c062f16bd9e4224be025df3dd94bc40a4e1f18febb"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/ensure-runtime-dashboard-server.js": "sha256:87a66ab4a2519a2fb69ba2c062f16bd9e4224be025df3dd94bc40a4e1f18febb"
@@ -2874,7 +2874,7 @@
       "queueIndex": 26,
       "originalPath": "scripts/evidence-provenance.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js"
+        "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -2923,7 +2923,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.js": "sha256:455d374060863de871f9064e5bbd751766a17cd05c0458a1219bba5a22811a42"
+          "packages/bmad-speckit/src/main-agent/helpers/evidence-provenance.ts": "sha256:455d374060863de871f9064e5bbd751766a17cd05c0458a1219bba5a22811a42"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/evidence-provenance.js": "sha256:455d374060863de871f9064e5bbd751766a17cd05c0458a1219bba5a22811a42"
@@ -2983,7 +2983,7 @@
       "queueIndex": 27,
       "originalPath": "scripts/execution-discipline-profiles.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js"
+        "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3032,7 +3032,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.js": "sha256:455ebfaf433e61cef35ef3a7232e0f3fb771590a69535d03ac5a3ff7a09e0d00"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-discipline-profiles.ts": "sha256:455ebfaf433e61cef35ef3a7232e0f3fb771590a69535d03ac5a3ff7a09e0d00"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/execution-discipline-profiles.js": "sha256:455ebfaf433e61cef35ef3a7232e0f3fb771590a69535d03ac5a3ff7a09e0d00"
@@ -3092,7 +3092,7 @@
       "queueIndex": 28,
       "originalPath": "scripts/execution-intent-schema.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js"
+        "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3141,7 +3141,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.js": "sha256:2b1853fd1344d47ea19d6f91ac29d675bb9ae05e2386b45f81beb91207b888ac"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-intent-schema.ts": "sha256:2b1853fd1344d47ea19d6f91ac29d675bb9ae05e2386b45f81beb91207b888ac"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/execution-intent-schema.js": "sha256:2b1853fd1344d47ea19d6f91ac29d675bb9ae05e2386b45f81beb91207b888ac"
@@ -3201,7 +3201,7 @@
       "queueIndex": 29,
       "originalPath": "scripts/execution-strategy-selection.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js"
+        "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3250,7 +3250,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.js": "sha256:3a446962b981ca31c070a587373498349d3fda31eb4f5542a1a06f67d0c51dfb"
+          "packages/bmad-speckit/src/main-agent/helpers/execution-strategy-selection.ts": "sha256:3a446962b981ca31c070a587373498349d3fda31eb4f5542a1a06f67d0c51dfb"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/execution-strategy-selection.js": "sha256:3a446962b981ca31c070a587373498349d3fda31eb4f5542a1a06f67d0c51dfb"
@@ -3310,7 +3310,7 @@
       "queueIndex": 30,
       "originalPath": "scripts/facilitator-registry.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js"
+        "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3359,7 +3359,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.js": "sha256:c4b2b378a2438d41cdee85517dacd0946367e5bb64b6bf893293106f7b9d37ba"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-registry.ts": "sha256:c4b2b378a2438d41cdee85517dacd0946367e5bb64b6bf893293106f7b9d37ba"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/facilitator-registry.js": "sha256:c4b2b378a2438d41cdee85517dacd0946367e5bb64b6bf893293106f7b9d37ba"
@@ -3419,7 +3419,7 @@
       "queueIndex": 31,
       "originalPath": "scripts/facilitator-runtime-definition.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js"
+        "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3468,7 +3468,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.js": "sha256:f3adcb4e4d367700daf42c33a8b254d0fee38c4d1b4b38bc52be341fee4263d3"
+          "packages/bmad-speckit/src/main-agent/helpers/facilitator-runtime-definition.ts": "sha256:f3adcb4e4d367700daf42c33a8b254d0fee38c4d1b4b38bc52be341fee4263d3"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/facilitator-runtime-definition.js": "sha256:f3adcb4e4d367700daf42c33a8b254d0fee38c4d1b4b38bc52be341fee4263d3"
@@ -3528,7 +3528,7 @@
       "queueIndex": 32,
       "originalPath": "scripts/generate-codex-agents-from-claude.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3577,7 +3577,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.js": "sha256:7c9a412e49feef4d647c30828d348f8e3c1efcdb6db109d5a5256b9a3da186a9"
+          "packages/bmad-speckit/src/main-agent/helpers/generate-codex-agents-from-claude.ts": "sha256:7c9a412e49feef4d647c30828d348f8e3c1efcdb6db109d5a5256b9a3da186a9"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/generate-codex-agents-from-claude.js": "sha256:7c9a412e49feef4d647c30828d348f8e3c1efcdb6db109d5a5256b9a3da186a9"
@@ -3637,7 +3637,7 @@
       "queueIndex": 33,
       "originalPath": "scripts/governance-execution-result-ingestor.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3676,7 +3676,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.js": "sha256:aa43ab974d5cdea0a68bfb77022ad9e76316bc327c85a59f6b1d29fb8a2ee189"
+          "packages/bmad-speckit/src/main-agent/actions/governance-execution-result-ingestor.ts": "sha256:aa43ab974d5cdea0a68bfb77022ad9e76316bc327c85a59f6b1d29fb8a2ee189"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/governance-execution-result-ingestor.js": "sha256:aa43ab974d5cdea0a68bfb77022ad9e76316bc327c85a59f6b1d29fb8a2ee189"
@@ -3736,7 +3736,7 @@
       "queueIndex": 34,
       "originalPath": "scripts/governance-hook-types.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3775,7 +3775,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.js": "sha256:abe4eda2cf7b804f44f417828a5c07d523fd5da5c6a5cffc44db8229e1ab8f87"
+          "packages/bmad-speckit/src/main-agent/actions/governance-hook-types.ts": "sha256:abe4eda2cf7b804f44f417828a5c07d523fd5da5c6a5cffc44db8229e1ab8f87"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/governance-hook-types.js": "sha256:abe4eda2cf7b804f44f417828a5c07d523fd5da5c6a5cffc44db8229e1ab8f87"
@@ -3835,7 +3835,7 @@
       "queueIndex": 35,
       "originalPath": "scripts/governance-provider-adapter.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3874,7 +3874,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.js": "sha256:0e7b1a10ba7c7fb68103fda8afcb52cd97537263870db8df39560f372db42f1d"
+          "packages/bmad-speckit/src/main-agent/actions/governance-provider-adapter.ts": "sha256:0e7b1a10ba7c7fb68103fda8afcb52cd97537263870db8df39560f372db42f1d"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/governance-provider-adapter.js": "sha256:0e7b1a10ba7c7fb68103fda8afcb52cd97537263870db8df39560f372db42f1d"
@@ -3934,7 +3934,7 @@
       "queueIndex": 36,
       "originalPath": "scripts/governance-runtime-queue.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -3973,7 +3973,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.js": "sha256:52dcf0f1fb6830d9a71e601674a23971a0e862f770c094299a1545231f5f974b"
+          "packages/bmad-speckit/src/main-agent/actions/governance-runtime-queue.ts": "sha256:52dcf0f1fb6830d9a71e601674a23971a0e862f770c094299a1545231f5f974b"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/governance-runtime-queue.js": "sha256:52dcf0f1fb6830d9a71e601674a23971a0e862f770c094299a1545231f5f974b"
@@ -4033,7 +4033,7 @@
       "queueIndex": 37,
       "originalPath": "scripts/governance-stage-event-emitter.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js"
+        "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4072,7 +4072,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.js": "sha256:226e030bef7d5b6cecfa5e49f6148bee4e15a12705b5867d2a424c03f764e58f"
+          "packages/bmad-speckit/src/main-agent/actions/governance-stage-event-emitter.ts": "sha256:226e030bef7d5b6cecfa5e49f6148bee4e15a12705b5867d2a424c03f764e58f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/governance-stage-event-emitter.js": "sha256:226e030bef7d5b6cecfa5e49f6148bee4e15a12705b5867d2a424c03f764e58f"
@@ -4132,7 +4132,7 @@
       "queueIndex": 38,
       "originalPath": "scripts/governance-transport-envelope.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js"
+        "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4181,7 +4181,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.js": "sha256:000328b4fe8a7e04e4475f13ac61bfb4d7cb2e6fbc24d789d58083cafe12bf36"
+          "packages/bmad-speckit/src/main-agent/helpers/governance-transport-envelope.ts": "sha256:000328b4fe8a7e04e4475f13ac61bfb4d7cb2e6fbc24d789d58083cafe12bf36"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/governance-transport-envelope.js": "sha256:000328b4fe8a7e04e4475f13ac61bfb4d7cb2e6fbc24d789d58083cafe12bf36"
@@ -4241,7 +4241,7 @@
       "queueIndex": 39,
       "originalPath": "scripts/i18n/agent-manifest.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4290,7 +4290,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.js": "sha256:03dfa92a8744ac83f62d750d6a72737d284e38db5c3eb2a1e86eafb08b8a74fb"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-agent-manifest.ts": "sha256:03dfa92a8744ac83f62d750d6a72737d284e38db5c3eb2a1e86eafb08b8a74fb"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-agent-manifest.js": "sha256:03dfa92a8744ac83f62d750d6a72737d284e38db5c3eb2a1e86eafb08b8a74fb"
@@ -4350,7 +4350,7 @@
       "queueIndex": 40,
       "originalPath": "scripts/i18n/detect-language.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4399,7 +4399,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.js": "sha256:5aea610548ee1431ca17d47a5d0077d6f33492b69ceddfa529d4ed2092f05798"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-detect-language.ts": "sha256:5aea610548ee1431ca17d47a5d0077d6f33492b69ceddfa529d4ed2092f05798"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-detect-language.js": "sha256:5aea610548ee1431ca17d47a5d0077d6f33492b69ceddfa529d4ed2092f05798"
@@ -4459,7 +4459,7 @@
       "queueIndex": 41,
       "originalPath": "scripts/i18n/field-meta-types.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4508,7 +4508,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.js": "sha256:3fa1140f318dc70a379b234247f5ac50f98e21c225aa86d2e73f3906dbedcb3c"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-field-meta-types.ts": "sha256:3fa1140f318dc70a379b234247f5ac50f98e21c225aa86d2e73f3906dbedcb3c"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-field-meta-types.js": "sha256:3fa1140f318dc70a379b234247f5ac50f98e21c225aa86d2e73f3906dbedcb3c"
@@ -4568,7 +4568,7 @@
       "queueIndex": 42,
       "originalPath": "scripts/i18n/language-policy.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4617,7 +4617,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.js": "sha256:37c9e24a184b59766c7dacb4152224b52c84bc98f8920b571b9bd6cca3224115"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-language-policy.ts": "sha256:37c9e24a184b59766c7dacb4152224b52c84bc98f8920b571b9bd6cca3224115"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-language-policy.js": "sha256:37c9e24a184b59766c7dacb4152224b52c84bc98f8920b571b9bd6cca3224115"
@@ -4677,7 +4677,7 @@
       "queueIndex": 43,
       "originalPath": "scripts/i18n/materialize-facilitator-definition.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4726,7 +4726,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.js": "sha256:12dfec89cf09695eaa898bb8dd3a6038f4038a5269fa3add3608a481c9fc9b17"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-materialize-facilitator-definition.ts": "sha256:12dfec89cf09695eaa898bb8dd3a6038f4038a5269fa3add3608a481c9fc9b17"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-materialize-facilitator-definition.js": "sha256:12dfec89cf09695eaa898bb8dd3a6038f4038a5269fa3add3608a481c9fc9b17"
@@ -4786,7 +4786,7 @@
       "queueIndex": 44,
       "originalPath": "scripts/i18n/placeholder-types.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4835,7 +4835,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.js": "sha256:9f1300edb64965eebe62a50ce8d4bafd3e75f1419dad6a9615d8affee0e2fd6c"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-placeholder-types.ts": "sha256:9f1300edb64965eebe62a50ce8d4bafd3e75f1419dad6a9615d8affee0e2fd6c"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-placeholder-types.js": "sha256:9f1300edb64965eebe62a50ce8d4bafd3e75f1419dad6a9615d8affee0e2fd6c"
@@ -4895,7 +4895,7 @@
       "queueIndex": 45,
       "originalPath": "scripts/i18n/protected-token-check.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -4944,7 +4944,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.js": "sha256:df3174aefcd4ae68fe75af469afb5a884494c05f646bc9d9dadecc8d58f82c44"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-protected-token-check.ts": "sha256:df3174aefcd4ae68fe75af469afb5a884494c05f646bc9d9dadecc8d58f82c44"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-protected-token-check.js": "sha256:df3174aefcd4ae68fe75af469afb5a884494c05f646bc9d9dadecc8d58f82c44"
@@ -5004,7 +5004,7 @@
       "queueIndex": 46,
       "originalPath": "scripts/i18n/render-field-view.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5053,7 +5053,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.js": "sha256:07988ad83b001a2b9855ab7624ff5bf4673102503b7f1e555c55fc58a9131e5c"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-render-field-view.ts": "sha256:07988ad83b001a2b9855ab7624ff5bf4673102503b7f1e555c55fc58a9131e5c"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-render-field-view.js": "sha256:07988ad83b001a2b9855ab7624ff5bf4673102503b7f1e555c55fc58a9131e5c"
@@ -5113,7 +5113,7 @@
       "queueIndex": 47,
       "originalPath": "scripts/i18n/render-template.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js"
+        "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5152,7 +5152,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.js": "sha256:b2626069a0ec81db231611d555d4ae43e05bdb9c9aef1970edea9b9112029043"
+          "packages/bmad-speckit/src/main-agent/actions/i18n-render-template.ts": "sha256:b2626069a0ec81db231611d555d4ae43e05bdb9c9aef1970edea9b9112029043"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/i18n-render-template.js": "sha256:b2626069a0ec81db231611d555d4ae43e05bdb9c9aef1970edea9b9112029043"
@@ -5212,7 +5212,7 @@
       "queueIndex": 48,
       "originalPath": "scripts/i18n/resolve-for-session-cli.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5261,7 +5261,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.js": "sha256:67ac8d72181a719b488e7d54f4b5827dea1faf0240f5a725c8aa24cb1c5e586f"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session-cli.ts": "sha256:67ac8d72181a719b488e7d54f4b5827dea1faf0240f5a725c8aa24cb1c5e586f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-for-session-cli.js": "sha256:67ac8d72181a719b488e7d54f4b5827dea1faf0240f5a725c8aa24cb1c5e586f"
@@ -5321,7 +5321,7 @@
       "queueIndex": 49,
       "originalPath": "scripts/i18n/resolve-for-session.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5370,7 +5370,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.js": "sha256:8b37c097270025e3e04569fdc060657f98f70776be81cd26aa58ca4943def809"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-for-session.ts": "sha256:8b37c097270025e3e04569fdc060657f98f70776be81cd26aa58ca4943def809"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-for-session.js": "sha256:8b37c097270025e3e04569fdc060657f98f70776be81cd26aa58ca4943def809"
@@ -5430,7 +5430,7 @@
       "queueIndex": 50,
       "originalPath": "scripts/i18n/resolve-localized-markdown-path.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5479,7 +5479,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.js": "sha256:74473d0f659f7070315a4e0bf7d3bec8594cb61c725627e47521f44c079f5040"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-resolve-localized-markdown-path.ts": "sha256:74473d0f659f7070315a4e0bf7d3bec8594cb61c725627e47521f44c079f5040"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-resolve-localized-markdown-path.js": "sha256:74473d0f659f7070315a4e0bf7d3bec8594cb61c725627e47521f44c079f5040"
@@ -5539,7 +5539,7 @@
       "queueIndex": 51,
       "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5588,7 +5588,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.js": "sha256:d6c16ccdb90074341df657fcc6a22a12f2b56d6e7f9c3bd3b45c77de19599a4f"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-sync-party-mode-mirrors.ts": "sha256:d6c16ccdb90074341df657fcc6a22a12f2b56d6e7f9c3bd3b45c77de19599a4f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-sync-party-mode-mirrors.js": "sha256:d6c16ccdb90074341df657fcc6a22a12f2b56d6e7f9c3bd3b45c77de19599a4f"
@@ -5648,7 +5648,7 @@
       "queueIndex": 52,
       "originalPath": "scripts/i18n/validate-template-manifest.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5697,7 +5697,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.js": "sha256:fbc26651865500af09031636622e78426ec9a56a0d96f39c37d7132265f1ce86"
+          "packages/bmad-speckit/src/main-agent/helpers/i18n-validate-template-manifest.ts": "sha256:fbc26651865500af09031636622e78426ec9a56a0d96f39c37d7132265f1ce86"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/i18n-validate-template-manifest.js": "sha256:fbc26651865500af09031636622e78426ec9a56a0d96f39c37d7132265f1ce86"
@@ -5757,7 +5757,7 @@
       "queueIndex": 53,
       "originalPath": "scripts/ingest-architecture-confirmation.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js"
+        "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5796,7 +5796,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.js": "sha256:8cc134569a68dc2948492c37e5ca5be83b20309a3c70d141eedd380513abc004"
+          "packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts": "sha256:8cc134569a68dc2948492c37e5ca5be83b20309a3c70d141eedd380513abc004"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/ingest-architecture-confirmation.js": "sha256:8cc134569a68dc2948492c37e5ca5be83b20309a3c70d141eedd380513abc004"
@@ -5857,7 +5857,7 @@
       "originalPath": "scripts/init-to-root.js",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/init-to-root.js"
+        "packages/bmad-speckit/src/commands/init-to-root.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5895,7 +5895,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/init-to-root.js": "sha256:f04746310f015fdb5a506d0804a8e97b3ed798357d9d16269d9bb9e2b57a7b41"
+          "packages/bmad-speckit/src/commands/init-to-root.ts": "sha256:f04746310f015fdb5a506d0804a8e97b3ed798357d9d16269d9bb9e2b57a7b41"
         },
         "buildOutputs": {}
       },
@@ -5946,7 +5946,7 @@
       "originalPath": "scripts/live-smoke-speckit-workflow.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.js"
+        "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -5984,7 +5984,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.js": "sha256:67696cf1510ade33af52f1b8befb7404af35e3202788ca81bb5846ba5fc76418"
+          "packages/bmad-speckit/src/commands/live-smoke-speckit-workflow.ts": "sha256:67696cf1510ade33af52f1b8befb7404af35e3202788ca81bb5846ba5fc76418"
         },
         "buildOutputs": {}
       },
@@ -6034,7 +6034,7 @@
       "queueIndex": 56,
       "originalPath": "scripts/long-run-runtime-policy.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js"
+        "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6083,7 +6083,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.js": "sha256:1fb6cf47d78a0752f3833816a8336c41898ba6ec14490a3a20c70d7579030c88"
+          "packages/bmad-speckit/src/main-agent/helpers/long-run-runtime-policy.ts": "sha256:1fb6cf47d78a0752f3833816a8336c41898ba6ec14490a3a20c70d7579030c88"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/long-run-runtime-policy.js": "sha256:1fb6cf47d78a0752f3833816a8336c41898ba6ec14490a3a20c70d7579030c88"
@@ -6143,7 +6143,7 @@
       "queueIndex": 57,
       "originalPath": "scripts/mcp/consumer/install-consumer-mcp.ps1",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6182,7 +6182,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js": "sha256:1bcfc8c682f0e3e09626aee63e1336d301a5af25fcb57e774ead6462f347f4bd"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts": "sha256:1bcfc8c682f0e3e09626aee63e1336d301a5af25fcb57e774ead6462f347f4bd"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-install-consumer-mcp.js": "sha256:1bcfc8c682f0e3e09626aee63e1336d301a5af25fcb57e774ead6462f347f4bd"
@@ -6242,7 +6242,7 @@
       "queueIndex": 58,
       "originalPath": "scripts/mcp/consumer/install-consumer-mcp.sh",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6281,7 +6281,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.js": "sha256:1bcfc8c682f0e3e09626aee63e1336d301a5af25fcb57e774ead6462f347f4bd"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-install-consumer-mcp.ts": "sha256:1bcfc8c682f0e3e09626aee63e1336d301a5af25fcb57e774ead6462f347f4bd"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-install-consumer-mcp.js": "sha256:1bcfc8c682f0e3e09626aee63e1336d301a5af25fcb57e774ead6462f347f4bd"
@@ -6341,7 +6341,7 @@
       "queueIndex": 59,
       "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.ps1",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6380,7 +6380,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js": "sha256:cc03f71178309f7786f4254ff6aab956344090c4506bebf7bbbbcc860082fa2e"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts": "sha256:cc03f71178309f7786f4254ff6aab956344090c4506bebf7bbbbcc860082fa2e"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-verify-consumer-mcp.js": "sha256:cc03f71178309f7786f4254ff6aab956344090c4506bebf7bbbbcc860082fa2e"
@@ -6440,7 +6440,7 @@
       "queueIndex": 60,
       "originalPath": "scripts/mcp/consumer/verify-consumer-mcp.sh",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js"
+        "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6479,7 +6479,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.js": "sha256:cc03f71178309f7786f4254ff6aab956344090c4506bebf7bbbbcc860082fa2e"
+          "packages/bmad-speckit/src/main-agent/actions/mcp-consumer-verify-consumer-mcp.ts": "sha256:cc03f71178309f7786f4254ff6aab956344090c4506bebf7bbbbcc860082fa2e"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/mcp-consumer-verify-consumer-mcp.js": "sha256:cc03f71178309f7786f4254ff6aab956344090c4506bebf7bbbbcc860082fa2e"
@@ -6539,7 +6539,7 @@
       "queueIndex": 61,
       "originalPath": "scripts/model-governance-hint-resolver.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js"
+        "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6578,7 +6578,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.js": "sha256:81c1d10844ccd829bdd93692aafee4a4ae746c34537dfe2214a7cd78e0dd784e"
+          "packages/bmad-speckit/src/main-agent/actions/model-governance-hint-resolver.ts": "sha256:81c1d10844ccd829bdd93692aafee4a4ae746c34537dfe2214a7cd78e0dd784e"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/model-governance-hint-resolver.js": "sha256:81c1d10844ccd829bdd93692aafee4a4ae746c34537dfe2214a7cd78e0dd784e"
@@ -6638,7 +6638,7 @@
       "queueIndex": 62,
       "originalPath": "scripts/model-governance-hints-schema.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js"
+        "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6687,7 +6687,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.js": "sha256:debd9ed37ffba5e88e0ebfda4b685e8937781e05c503c252cc01d59564231bcd"
+          "packages/bmad-speckit/src/main-agent/helpers/model-governance-hints-schema.ts": "sha256:debd9ed37ffba5e88e0ebfda4b685e8937781e05c503c252cc01d59564231bcd"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/model-governance-hints-schema.js": "sha256:debd9ed37ffba5e88e0ebfda4b685e8937781e05c503c252cc01d59564231bcd"
@@ -6747,7 +6747,7 @@
       "queueIndex": 63,
       "originalPath": "scripts/monitor-push.sh",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js"
+        "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6796,7 +6796,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.js": "sha256:e24d18574c6e140a48be8fcec255f71ddde5b5523dead1718d3beac5c8affca1"
+          "packages/bmad-speckit/src/main-agent/helpers/monitor-push.ts": "sha256:e24d18574c6e140a48be8fcec255f71ddde5b5523dead1718d3beac5c8affca1"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/monitor-push.js": "sha256:e24d18574c6e140a48be8fcec255f71ddde5b5523dead1718d3beac5c8affca1"
@@ -6856,7 +6856,7 @@
       "queueIndex": 64,
       "originalPath": "scripts/parse-and-write-score.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js"
+        "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -6895,7 +6895,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.js": "sha256:f4a64570887c8db4a3c438f98403ccb2bcf45f9eadebfc4ef6e5e2a14a1cfe9b"
+          "packages/bmad-speckit/src/main-agent/actions/parse-and-write-score.ts": "sha256:f4a64570887c8db4a3c438f98403ccb2bcf45f9eadebfc4ef6e5e2a14a1cfe9b"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/parse-and-write-score.js": "sha256:f4a64570887c8db4a3c438f98403ccb2bcf45f9eadebfc4ef6e5e2a14a1cfe9b"
@@ -6955,7 +6955,7 @@
       "queueIndex": 65,
       "originalPath": "scripts/prepublish-check.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7004,7 +7004,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.js": "sha256:2c9cd43cf837af62beb8f3ba1d06efa00c174f49ccbdb8c32ec00c96fe930889"
+          "packages/bmad-speckit/src/main-agent/helpers/prepublish-check.ts": "sha256:2c9cd43cf837af62beb8f3ba1d06efa00c174f49ccbdb8c32ec00c96fe930889"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/prepublish-check.js": "sha256:2c9cd43cf837af62beb8f3ba1d06efa00c174f49ccbdb8c32ec00c96fe930889"
@@ -7064,7 +7064,7 @@
       "queueIndex": 66,
       "originalPath": "scripts/real-development-tick-worker.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7113,7 +7113,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.js": "sha256:02dea151d0c86b9f27a4072afe30a3a7f3102b8b7951fedf4793eff15914895e"
+          "packages/bmad-speckit/src/main-agent/helpers/real-development-tick-worker.ts": "sha256:02dea151d0c86b9f27a4072afe30a3a7f3102b8b7951fedf4793eff15914895e"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/real-development-tick-worker.js": "sha256:02dea151d0c86b9f27a4072afe30a3a7f3102b8b7951fedf4793eff15914895e"
@@ -7173,7 +7173,7 @@
       "queueIndex": 67,
       "originalPath": "scripts/requirement-record-event-reducer.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js"
+        "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7222,7 +7222,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.js": "sha256:42c6a4ca2cdc6c40152c4f22264a6122f195b7f047f1c4449fc521c4f8a63333"
+          "packages/bmad-speckit/src/main-agent/helpers/requirement-record-event-reducer.ts": "sha256:42c6a4ca2cdc6c40152c4f22264a6122f195b7f047f1c4449fc521c4f8a63333"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/requirement-record-event-reducer.js": "sha256:42c6a4ca2cdc6c40152c4f22264a6122f195b7f047f1c4449fc521c4f8a63333"
@@ -7282,7 +7282,7 @@
       "queueIndex": 68,
       "originalPath": "scripts/reviewer-shared-core.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js"
+        "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7331,7 +7331,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.js": "sha256:e4e8de580169ffe88ac4bd39737a118d7e649d6dfa51ef8ccf1f94aa38f3d5fc"
+          "packages/bmad-speckit/src/main-agent/helpers/reviewer-shared-core.ts": "sha256:e4e8de580169ffe88ac4bd39737a118d7e649d6dfa51ef8ccf1f94aa38f3d5fc"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/reviewer-shared-core.js": "sha256:e4e8de580169ffe88ac4bd39737a118d7e649d6dfa51ef8ccf1f94aa38f3d5fc"
@@ -7391,7 +7391,7 @@
       "queueIndex": 69,
       "originalPath": "scripts/run-confirmed-final-required-commands.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7440,7 +7440,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.js": "sha256:6b6b737f38e444c22d7167dcc2654e1a9857e66746e2ee504e97e13cc442bb78"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-final-required-commands.ts": "sha256:6b6b737f38e444c22d7167dcc2654e1a9857e66746e2ee504e97e13cc442bb78"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/run-confirmed-final-required-commands.js": "sha256:6b6b737f38e444c22d7167dcc2654e1a9857e66746e2ee504e97e13cc442bb78"
@@ -7500,7 +7500,7 @@
       "queueIndex": 70,
       "originalPath": "scripts/run-confirmed-trace-slice.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7549,7 +7549,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.js": "sha256:e6e5bb987ef1cd822f33408e2b1fde8ee228b0484f872afab53e146dfc4a546d"
+          "packages/bmad-speckit/src/main-agent/helpers/run-confirmed-trace-slice.ts": "sha256:e6e5bb987ef1cd822f33408e2b1fde8ee228b0484f872afab53e146dfc4a546d"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/run-confirmed-trace-slice.js": "sha256:e6e5bb987ef1cd822f33408e2b1fde8ee228b0484f872afab53e146dfc4a546d"
@@ -7609,7 +7609,7 @@
       "queueIndex": 71,
       "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7658,7 +7658,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js": "sha256:7a8454d04d1bd72dbd597b2d08e2610361946ecd572cfa00cb334aee960c2793"
+          "packages/bmad-speckit/src/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.ts": "sha256:7a8454d04d1bd72dbd597b2d08e2610361946ecd572cfa00cb334aee960c2793"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/run-required-commands-from-ai-tdd-manifest.js": "sha256:7a8454d04d1bd72dbd597b2d08e2610361946ecd572cfa00cb334aee960c2793"
@@ -7718,7 +7718,7 @@
       "queueIndex": 72,
       "originalPath": "scripts/run-runtime-dashboard-forever.cjs",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js"
+        "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -7767,7 +7767,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.js": "sha256:06d4f4555c0593a6d190a7b88e1296dc643cb46c88ea06bae1e97c4754b07c5e"
+          "packages/bmad-speckit/src/main-agent/helpers/run-runtime-dashboard-forever.ts": "sha256:06d4f4555c0593a6d190a7b88e1296dc643cb46c88ea06bae1e97c4754b07c5e"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/run-runtime-dashboard-forever.js": "sha256:06d4f4555c0593a6d190a7b88e1296dc643cb46c88ea06bae1e97c4754b07c5e"
@@ -8023,7 +8023,7 @@
       "queueIndex": 75,
       "originalPath": "scripts/runtime-dashboard-server-state.cjs",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js"
+        "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8072,7 +8072,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.js": "sha256:912738bab37ee89663a7aa727142b2723a61ba09a2c92821932bf920c7a74877"
+          "packages/bmad-speckit/src/main-agent/helpers/runtime-dashboard-server-state.ts": "sha256:912738bab37ee89663a7aa727142b2723a61ba09a2c92821932bf920c7a74877"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/runtime-dashboard-server-state.js": "sha256:912738bab37ee89663a7aa727142b2723a61ba09a2c92821932bf920c7a74877"
@@ -8132,7 +8132,7 @@
       "queueIndex": 76,
       "originalPath": "scripts/runtime-governance-registry.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js"
+        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8171,7 +8171,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.js": "sha256:6e4c15a6301dd11806cedc3f6355754caf9d70580fbdbb2bff23d343b7eeb217"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-registry.ts": "sha256:6e4c15a6301dd11806cedc3f6355754caf9d70580fbdbb2bff23d343b7eeb217"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/runtime-governance-registry.js": "sha256:6e4c15a6301dd11806cedc3f6355754caf9d70580fbdbb2bff23d343b7eeb217"
@@ -8231,7 +8231,7 @@
       "queueIndex": 77,
       "originalPath": "scripts/runtime-governance-template-schema.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js"
+        "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8270,7 +8270,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.js": "sha256:4d5dcf481f5ecd8c06049435df5d29cf522323c1337d519ed60c2b2f131ba462"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance-template-schema.ts": "sha256:4d5dcf481f5ecd8c06049435df5d29cf522323c1337d519ed60c2b2f131ba462"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/runtime-governance-template-schema.js": "sha256:4d5dcf481f5ecd8c06049435df5d29cf522323c1337d519ed60c2b2f131ba462"
@@ -8330,7 +8330,7 @@
       "queueIndex": 78,
       "originalPath": "scripts/runtime-governance.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js"
+        "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8369,7 +8369,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.js": "sha256:dcc16aac7a359ebe0f7342b0014a702a902db0f5591de408760ec4177d35e63f"
+          "packages/bmad-speckit/src/main-agent/actions/runtime-governance.ts": "sha256:dcc16aac7a359ebe0f7342b0014a702a902db0f5591de408760ec4177d35e63f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/runtime-governance.js": "sha256:dcc16aac7a359ebe0f7342b0014a702a902db0f5591de408760ec4177d35e63f"
@@ -8541,7 +8541,7 @@
       "queueIndex": 80,
       "originalPath": "scripts/sdd-artifact-manifest.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js"
+        "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8590,7 +8590,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.js": "sha256:183d49d7afd05f9026b619af02ff376f3df90ee12958df4e01b9660745839c4f"
+          "packages/bmad-speckit/src/main-agent/helpers/sdd-artifact-manifest.ts": "sha256:183d49d7afd05f9026b619af02ff376f3df90ee12958df4e01b9660745839c4f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/sdd-artifact-manifest.js": "sha256:183d49d7afd05f9026b619af02ff376f3df90ee12958df4e01b9660745839c4f"
@@ -8651,7 +8651,7 @@
       "originalPath": "scripts/setup.ps1",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/setup.js"
+        "packages/bmad-speckit/src/commands/setup.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8689,7 +8689,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/setup.js": "sha256:d1a1638ce65d7db5923f3a73b06fc7bf9fff36bc80631cfe8dd1500dd3d045ce"
+          "packages/bmad-speckit/src/commands/setup.ts": "sha256:d1a1638ce65d7db5923f3a73b06fc7bf9fff36bc80631cfe8dd1500dd3d045ce"
         },
         "buildOutputs": {}
       },
@@ -8740,7 +8740,7 @@
       "originalPath": "scripts/setup.sh",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/setup.js"
+        "packages/bmad-speckit/src/commands/setup.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8778,7 +8778,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/setup.js": "sha256:d1a1638ce65d7db5923f3a73b06fc7bf9fff36bc80631cfe8dd1500dd3d045ce"
+          "packages/bmad-speckit/src/commands/setup.ts": "sha256:d1a1638ce65d7db5923f3a73b06fc7bf9fff36bc80631cfe8dd1500dd3d045ce"
         },
         "buildOutputs": {}
       },
@@ -8828,7 +8828,7 @@
       "queueIndex": 83,
       "originalPath": "scripts/sft-extract.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/sft-extract.js"
+        "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8867,7 +8867,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/sft-extract.js": "sha256:6a717f5270daa7f446f5fe3fcb834699d8247396d01746440e217f3365a3d471"
+          "packages/bmad-speckit/src/main-agent/actions/sft-extract.ts": "sha256:6a717f5270daa7f446f5fe3fcb834699d8247396d01746440e217f3365a3d471"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/sft-extract.js": "sha256:6a717f5270daa7f446f5fe3fcb834699d8247396d01746440e217f3365a3d471"
@@ -8927,7 +8927,7 @@
       "queueIndex": 84,
       "originalPath": "scripts/skill-semantic-features-config.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js"
+        "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -8976,7 +8976,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.js": "sha256:dc524bc06f4d4d3b6efeaf9b57523eefb45965cf28d78702ebae91cdbf55783f"
+          "packages/bmad-speckit/src/main-agent/helpers/skill-semantic-features-config.ts": "sha256:dc524bc06f4d4d3b6efeaf9b57523eefb45965cf28d78702ebae91cdbf55783f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/skill-semantic-features-config.js": "sha256:dc524bc06f4d4d3b6efeaf9b57523eefb45965cf28d78702ebae91cdbf55783f"
@@ -9037,7 +9037,7 @@
       "originalPath": "scripts/speckit-cli.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/speckit-cli.js"
+        "packages/bmad-speckit/src/commands/speckit-cli.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9075,7 +9075,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/speckit-cli.js": "sha256:b0cc5bdb5f8b743cedb6af5c2640781198ca138eb6be1b1c0cc080412e315231"
+          "packages/bmad-speckit/src/commands/speckit-cli.ts": "sha256:b0cc5bdb5f8b743cedb6af5c2640781198ca138eb6be1b1c0cc080412e315231"
         },
         "buildOutputs": {}
       },
@@ -9125,7 +9125,7 @@
       "queueIndex": 86,
       "originalPath": "scripts/sprint-status-authorized-update.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js"
+        "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9174,7 +9174,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.js": "sha256:108079de70cb52b78f69f2a23582f320c4f49ca2e761c0266d7f561b3c97d3b0"
+          "packages/bmad-speckit/src/main-agent/helpers/sprint-status-authorized-update.ts": "sha256:108079de70cb52b78f69f2a23582f320c4f49ca2e761c0266d7f561b3c97d3b0"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/sprint-status-authorized-update.js": "sha256:108079de70cb52b78f69f2a23582f320c4f49ca2e761c0266d7f561b3c97d3b0"
@@ -9234,7 +9234,7 @@
       "queueIndex": 87,
       "originalPath": "scripts/stable-runtime-policy-json.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js"
+        "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9283,7 +9283,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.js": "sha256:5ecaae16fa640b69682fdbe7bf2cc92fd2395a5135aad716cd3dde855e66fe9d"
+          "packages/bmad-speckit/src/main-agent/helpers/stable-runtime-policy-json.ts": "sha256:5ecaae16fa640b69682fdbe7bf2cc92fd2395a5135aad716cd3dde855e66fe9d"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/stable-runtime-policy-json.js": "sha256:5ecaae16fa640b69682fdbe7bf2cc92fd2395a5135aad716cd3dde855e66fe9d"
@@ -9561,7 +9561,7 @@
       "queueIndex": 90,
       "originalPath": "scripts/strict-command-resolution-preflight.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js"
+        "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9610,7 +9610,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.js": "sha256:e608d34d0748377022c0339f22d00ce66da6c73c82735f703b5b15d8d72cf49f"
+          "packages/bmad-speckit/src/main-agent/helpers/strict-command-resolution-preflight.ts": "sha256:e608d34d0748377022c0339f22d00ce66da6c73c82735f703b5b15d8d72cf49f"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/strict-command-resolution-preflight.js": "sha256:e608d34d0748377022c0339f22d00ce66da6c73c82735f703b5b15d8d72cf49f"
@@ -9670,7 +9670,7 @@
       "queueIndex": 91,
       "originalPath": "scripts/subagent-current-attempt-revalidation.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js"
+        "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9719,7 +9719,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.js": "sha256:c74e7abebda53c5ad6c3767ce0e3c2ac7ebfc2b224f045c738e10c6b8ce349a0"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-current-attempt-revalidation.ts": "sha256:c74e7abebda53c5ad6c3767ce0e3c2ac7ebfc2b224f045c738e10c6b8ce349a0"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/subagent-current-attempt-revalidation.js": "sha256:c74e7abebda53c5ad6c3767ce0e3c2ac7ebfc2b224f045c738e10c6b8ce349a0"
@@ -9779,7 +9779,7 @@
       "queueIndex": 92,
       "originalPath": "scripts/subagent-surface-inventory.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js"
+        "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9828,7 +9828,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.js": "sha256:1613857ab1b61301d598c0fa71a2b0010d4d747f5fe2f540a746f890b410664a"
+          "packages/bmad-speckit/src/main-agent/helpers/subagent-surface-inventory.ts": "sha256:1613857ab1b61301d598c0fa71a2b0010d4d747f5fe2f540a746f890b410664a"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/subagent-surface-inventory.js": "sha256:1613857ab1b61301d598c0fa71a2b0010d4d747f5fe2f540a746f890b410664a"
@@ -9888,7 +9888,7 @@
       "queueIndex": 93,
       "originalPath": "scripts/trace-closure-matrix.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js"
+        "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -9937,7 +9937,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.js": "sha256:c39825eed0b415d59eedbf7d22ccb2fd73916b78ca83c691f2ae96efc8f00b64"
+          "packages/bmad-speckit/src/main-agent/helpers/trace-closure-matrix.ts": "sha256:c39825eed0b415d59eedbf7d22ccb2fd73916b78ca83c691f2ae96efc8f00b64"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/trace-closure-matrix.js": "sha256:c39825eed0b415d59eedbf7d22ccb2fd73916b78ca83c691f2ae96efc8f00b64"
@@ -9997,7 +9997,7 @@
       "queueIndex": 94,
       "originalPath": "scripts/update-specify-passed.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js"
+        "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10046,7 +10046,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.js": "sha256:95c931af93ee34851c5f754d4311887a991beeb9c1d7b03a5ef72a87fde5468a"
+          "packages/bmad-speckit/src/main-agent/helpers/update-specify-passed.ts": "sha256:95c931af93ee34851c5f754d4311887a991beeb9c1d7b03a5ef72a87fde5468a"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/update-specify-passed.js": "sha256:95c931af93ee34851c5f754d4311887a991beeb9c1d7b03a5ef72a87fde5468a"
@@ -10106,7 +10106,7 @@
       "queueIndex": 95,
       "originalPath": "scripts/user-story-mapping.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js"
+        "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10145,7 +10145,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.js": "sha256:dee7eba4040f8959a160f4c5e86e2d9d9dd0296e794f65e6fdb93befeb4286c4"
+          "packages/bmad-speckit/src/main-agent/actions/user-story-mapping.ts": "sha256:dee7eba4040f8959a160f4c5e86e2d9d9dd0296e794f65e6fdb93befeb4286c4"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/user-story-mapping.js": "sha256:dee7eba4040f8959a160f4c5e86e2d9d9dd0296e794f65e6fdb93befeb4286c4"
@@ -10205,7 +10205,7 @@
       "queueIndex": 96,
       "originalPath": "scripts/validate-consumer-governance.ps1",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js"
+        "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10244,7 +10244,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.js": "sha256:eb25839a4bcd9a8cb0e6663f7177187e896f25f6f8acf61a7f1f3a376501d243"
+          "packages/bmad-speckit/src/main-agent/actions/validate-consumer-governance.ts": "sha256:eb25839a4bcd9a8cb0e6663f7177187e896f25f6f8acf61a7f1f3a376501d243"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/validate-consumer-governance.js": "sha256:eb25839a4bcd9a8cb0e6663f7177187e896f25f6f8acf61a7f1f3a376501d243"
@@ -10305,7 +10305,7 @@
       "originalPath": "scripts/validate-single-source-whitelist.ts",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/commands/validate-single-source-whitelist.js"
+        "packages/bmad-speckit/src/commands/validate-single-source-whitelist.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10343,7 +10343,7 @@
       "artifactHashRefs": {
         "sourceTargets": {
           "packages/bmad-speckit/bin/bmad-speckit.js": "sha256:3399abee4ea44015eb6800bae8a8f3227813cb22964b138ea1821a140cd36fd4",
-          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.js": "sha256:132fde16131cd75983f011f0e32dbbb1d3f9f1db12b62b1161214c03549ef851"
+          "packages/bmad-speckit/src/commands/validate-single-source-whitelist.ts": "sha256:132fde16131cd75983f011f0e32dbbb1d3f9f1db12b62b1161214c03549ef851"
         },
         "buildOutputs": {}
       },
@@ -10393,7 +10393,7 @@
       "queueIndex": 98,
       "originalPath": "scripts/verify-hooks-no-ts-node.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js"
+        "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10432,7 +10432,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.js": "sha256:bdf4c68102008617e28270a728b4d789dbd319ce27b7318edd84bc7a9f286373"
+          "packages/bmad-speckit/src/main-agent/actions/verify-hooks-no-ts-node.ts": "sha256:bdf4c68102008617e28270a728b4d789dbd319ce27b7318edd84bc7a9f286373"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/verify-hooks-no-ts-node.js": "sha256:bdf4c68102008617e28270a728b4d789dbd319ce27b7318edd84bc7a9f286373"
@@ -10492,7 +10492,7 @@
       "queueIndex": 99,
       "originalPath": "scripts/verify-story-mode.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js"
+        "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10541,7 +10541,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.js": "sha256:b72e7db25a50beca87dad7896874d04e10431d93911a72c3536f5fc4614d3e1e"
+          "packages/bmad-speckit/src/main-agent/helpers/verify-story-mode.ts": "sha256:b72e7db25a50beca87dad7896874d04e10431d93911a72c3536f5fc4614d3e1e"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/verify-story-mode.js": "sha256:b72e7db25a50beca87dad7896874d04e10431d93911a72c3536f5fc4614d3e1e"
@@ -10601,7 +10601,7 @@
       "queueIndex": 100,
       "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10640,7 +10640,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js": "sha256:a9d0e76ade9c35b45fd3c92a90417809d042f8bf931573758b85643a9e230888"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts": "sha256:a9d0e76ade9c35b45fd3c92a90417809d042f8bf931573758b85643a9e230888"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js": "sha256:a9d0e76ade9c35b45fd3c92a90417809d042f8bf931573758b85643a9e230888"
@@ -10700,7 +10700,7 @@
       "queueIndex": 101,
       "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js"
+        "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10739,7 +10739,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js": "sha256:a9d0e76ade9c35b45fd3c92a90417809d042f8bf931573758b85643a9e230888"
+          "packages/bmad-speckit/src/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.ts": "sha256:a9d0e76ade9c35b45fd3c92a90417809d042f8bf931573758b85643a9e230888"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/actions/write-runtime-policy-snapshot-and-recovery-context.js": "sha256:a9d0e76ade9c35b45fd3c92a90417809d042f8bf931573758b85643a9e230888"
@@ -10799,7 +10799,7 @@
       "queueIndex": 102,
       "originalPath": "scripts/write-runtime-registry.js",
       "targetPaths": [
-        "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts"
       ],
       "callerSwitchStatus": "switched",
       "migrationStatus": "validated",
@@ -10848,7 +10848,7 @@
       },
       "artifactHashRefs": {
         "sourceTargets": {
-          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.js": "sha256:bd419d794573c6b6e77e0c80f32e73d9b1e1a7bf7ccc470c7be79870ad6e7ac8"
+          "packages/bmad-speckit/src/main-agent/helpers/write-runtime-registry.ts": "sha256:bd419d794573c6b6e77e0c80f32e73d9b1e1a7bf7ccc470c7be79870ad6e7ac8"
         },
         "buildOutputs": {
           "packages/bmad-speckit/dist/main-agent/helpers/write-runtime-registry.js": "sha256:bd419d794573c6b6e77e0c80f32e73d9b1e1a7bf7ccc470c7be79870ad6e7ac8"

@@ -90,7 +90,7 @@
       "startedFrom": "G003 failed strict source-kind parity because packageImplementationSet pointed at generated CommonJS .js instead of package TypeScript source authority.",
       "changes": [
         "Separated G003 package source authority from runtime entry: packageImplementationSet and behavior matrix packageEntryPoint now point to packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts.",
-        "Kept package replay command on the Node-executable runtime entry packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.js.",
+        "Kept package replay command on the Node-executable runtime entry packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts.",
         "Regenerated G003 package source authority so the TypeScript source mirror is byte/LOC equivalent to scripts/main-agent-orchestration.ts.",
         "Regenerated G003 behaviorEquivalenceMatrix and replay evidence with 25 scenarios before G009 aggregation."
       ],
@@ -109,7 +109,7 @@
         "packageImplementationSet": [
           "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
-        "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.js",
+        "packageRuntimeEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "originalBytes": 440347,
         "originalLoc": 11936,
         "packageBytes": 440347,

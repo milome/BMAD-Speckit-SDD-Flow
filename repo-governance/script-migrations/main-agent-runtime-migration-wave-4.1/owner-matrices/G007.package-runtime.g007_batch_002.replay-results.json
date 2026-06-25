@@ -651,7 +651,7 @@
           "comparison": {
             "scenarioId": "g007_generate_codex_agents_from_claude_js_no_args",
             "originalEntryPoint": "scripts/generate-codex-agents-from-claude.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -691,7 +691,7 @@
           "comparison": {
             "scenarioId": "g007_generate_codex_agents_from_claude_js_flag_check",
             "originalEntryPoint": "scripts/generate-codex-agents-from-claude.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

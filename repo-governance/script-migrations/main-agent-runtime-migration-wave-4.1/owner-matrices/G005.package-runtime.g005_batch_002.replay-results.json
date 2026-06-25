@@ -91,7 +91,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_no_args",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -131,7 +131,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_flag_agent",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -171,7 +171,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_flag_full",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -211,7 +211,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_flag_no_package_json",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -251,7 +251,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_flag_with_mcp",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -291,7 +291,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_flag_with_package_json",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -331,7 +331,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_env_bmad_skip_consumer_mcp_install",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -371,7 +371,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_env_init_cwd",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -411,7 +411,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_env_node_env",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,
@@ -451,7 +451,7 @@
           "comparison": {
             "scenarioId": "g005_init_to_root_js_env_vitest",
             "originalEntryPoint": "scripts/init-to-root.js",
-            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.js",
+            "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/init-to-root.ts",
             "stdoutMatches": true,
             "stderrMatches": true,
             "exitCodeMatches": true,

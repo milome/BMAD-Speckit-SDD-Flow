@@ -61,7 +61,7 @@ Which claims are already backed by real evidence, and which claims are still blo
 
 - Status: `passed` for stub path
 - Evidence:
-  - [provider-smoke.js](/D:/Dev/BMAD-Speckit-SDD-Flow/packages/bmad-speckit/src/commands/provider-smoke.js)
+  - [provider-smoke.js](/D:/Dev/BMAD-Speckit-SDD-Flow/packages/bmad-speckit/src/commands/provider-smoke.ts)
   - [provider-smoke.test.js](/D:/Dev/BMAD-Speckit-SDD-Flow/packages/bmad-speckit/tests/provider-smoke.test.js)
   - [provider-smoke-cli.test.ts](/D:/Dev/BMAD-Speckit-SDD-Flow/tests/acceptance/provider-smoke-cli.test.ts)
 - Notes:

@@ -3394,7 +3394,7 @@
       "originalPath": "scripts/prepublish-check.js",
       "entryId": "prepublish-check-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
       "scenarioCoverageProof": {
@@ -3442,7 +3442,7 @@
           "scenarioId": "g007_prepublish_check_js_no_args",
           "originalEntryPoint": "scripts/prepublish-check.js",
           "originalEntryCommand": "node scripts/prepublish-check.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -3500,7 +3500,7 @@
                 "to": "scripts/prepublish-check.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
                 "to": "scripts/prepublish-check.js"
               },
               {
@@ -3560,7 +3560,7 @@
           "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session",
           "originalEntryPoint": "scripts/prepublish-check.js",
           "originalEntryCommand": "node scripts/prepublish-check.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
           "argumentCombination": "env BMAD_PACK_SESSION=<source-derived-safe-value>",
           "args": [],
@@ -3620,7 +3620,7 @@
                 "to": "scripts/prepublish-check.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
                 "to": "scripts/prepublish-check.js"
               },
               {
@@ -3680,7 +3680,7 @@
           "scenarioId": "g007_prepublish_check_js_env_bmad_pack_session_lock_timeout_ms",
           "originalEntryPoint": "scripts/prepublish-check.js",
           "originalEntryCommand": "node scripts/prepublish-check.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
           "argumentCombination": "env BMAD_PACK_SESSION_LOCK_TIMEOUT_MS=<source-derived-safe-value>",
           "args": [],
@@ -3740,7 +3740,7 @@
                 "to": "scripts/prepublish-check.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
                 "to": "scripts/prepublish-check.js"
               },
               {
@@ -3800,7 +3800,7 @@
           "scenarioId": "g007_prepublish_check_js_env_bmad_prepublish_silent",
           "originalEntryPoint": "scripts/prepublish-check.js",
           "originalEntryCommand": "node scripts/prepublish-check.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
           "argumentCombination": "env BMAD_PREPUBLISH_SILENT=<source-derived-safe-value>",
           "args": [],
@@ -3860,7 +3860,7 @@
                 "to": "scripts/prepublish-check.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
                 "to": "scripts/prepublish-check.js"
               },
               {

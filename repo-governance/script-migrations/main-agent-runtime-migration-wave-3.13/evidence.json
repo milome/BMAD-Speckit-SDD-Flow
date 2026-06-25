@@ -67,7 +67,7 @@
       "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/runtime/bmad-help-renderer.js"
+        "packages/bmad-speckit/src/runtime/bmad-help-renderer.ts"
       ],
       "publicCommandsAfterMigration": [
         "bmad-speckit bmad-help"
@@ -108,7 +108,7 @@
       "semanticClassification": "already_migrated_package_runtime_deprecated_root_path",
       "targetPaths": [
         "packages/bmad-speckit/bin/bmad-speckit.js",
-        "packages/bmad-speckit/src/runtime/bmads-renderer.js"
+        "packages/bmad-speckit/src/runtime/bmads-renderer.ts"
       ],
       "publicCommandsAfterMigration": [
         "bmad-speckit bmads",

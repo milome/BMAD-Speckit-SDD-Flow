@@ -103,7 +103,7 @@ describe('E13-S2 T6.3: exit code 3 (network/template, --offline hint)', () => {
     const helper = path.join(__dirname, 'run-init-exit3-helper.js');
     const tmpDir = path.join(os.tmpdir(), `e13s2-ex3-${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
-    const r = spawnSync('node', [helper, tmpDir], {
+    const r = spawnSync(process.execPath, ['-r', path.join(__dirname, 'register-ts-source.cjs'), helper, tmpDir], {
       cwd: ROOT,
       encoding: 'utf8',
       timeout: INIT_SPAWN_TIMEOUT_MS,

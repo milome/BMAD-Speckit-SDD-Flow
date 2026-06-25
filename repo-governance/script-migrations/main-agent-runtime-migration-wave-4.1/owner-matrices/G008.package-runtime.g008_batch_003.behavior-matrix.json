@@ -920,7 +920,7 @@
       "originalPath": "scripts/normalize-pack-manifests.js",
       "entryId": "normalize-pack-manifests-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
       "scenarioCoverageProof": {
@@ -957,7 +957,7 @@
           "scenarioId": "g008_normalize_pack_manifests_js_no_args",
           "originalEntryPoint": "scripts/normalize-pack-manifests.js",
           "originalEntryCommand": "node scripts/normalize-pack-manifests.js",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/normalize-pack-manifests.js",
           "argumentCombination": "<no-args>",
           "args": [],
@@ -1020,7 +1020,7 @@
                 "to": "scripts/normalize-pack-manifests.js"
               },
               {
-                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.js",
+                "from": "packages/bmad-speckit/src/main-agent/source-authority/scripts/normalize-pack-manifests.ts",
                 "to": "scripts/normalize-pack-manifests.js"
               },
               {

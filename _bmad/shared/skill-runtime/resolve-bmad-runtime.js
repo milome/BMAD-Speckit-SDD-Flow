@@ -177,7 +177,7 @@ function requireBmadSpeckit(subpath = '') {
 }
 
 function requireLargeDocumentWriter() {
-  return requireBmadSpeckit('src/utils/large-document-writer');
+  return requireBmadSpeckit('dist/utils/large-document-writer');
 }
 
 function requireJsYaml() {

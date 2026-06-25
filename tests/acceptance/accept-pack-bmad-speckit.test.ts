@@ -86,9 +86,9 @@ describe('npm pack root package → clean install → CLI', () => {
       ).toBe(true);
       expect(
         expectFirstExistingPath([
-          join(rootInstallDir, 'node_modules', 'bmad-speckit', 'src', 'commands', 'large-doc.js'),
-          join(rootInstallDir, 'packages', 'bmad-speckit', 'src', 'commands', 'large-doc.js'),
-          join(rootInstallDir, 'src', 'commands', 'large-doc.js'),
+          join(rootInstallDir, 'node_modules', 'bmad-speckit', 'dist', 'commands', 'large-doc.js'),
+          join(rootInstallDir, 'packages', 'bmad-speckit', 'dist', 'commands', 'large-doc.js'),
+          join(rootInstallDir, 'dist', 'commands', 'large-doc.js'),
         ])
       ).toBeTruthy();
       expectFirstExistingPath([
@@ -96,7 +96,7 @@ describe('npm pack root package → clean install → CLI', () => {
           rootInstallDir,
           'node_modules',
           'bmad-speckit',
-          'src',
+          'dist',
           'utils',
           'large-document-writer',
           'index.js'
@@ -105,12 +105,12 @@ describe('npm pack root package → clean install → CLI', () => {
           rootInstallDir,
           'packages',
           'bmad-speckit',
-          'src',
+          'dist',
           'utils',
           'large-document-writer',
           'index.js'
         ),
-        join(rootInstallDir, 'src', 'utils', 'large-document-writer', 'index.js'),
+        join(rootInstallDir, 'dist', 'utils', 'large-document-writer', 'index.js'),
       ]);
       expect(run('npx bmad-speckit large-doc --help', consumer)).toContain('large-doc');
       expect(existsSync(join(consumer, 'scripts'))).toBe(false);

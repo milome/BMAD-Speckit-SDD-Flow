@@ -255,8 +255,11 @@ function buildArtifacts(root: string): JsonObject[] {
     artifact({
       artifactType: 'source_implementation',
       sourceOfTruthRole: 'evidence',
-      path: 'scripts/main-agent-orchestration.ts',
-      contentHash: hashFile(root, 'scripts/main-agent-orchestration.ts'),
+      path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+      contentHash: hashFile(
+        root,
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
+      ),
       producer: 'codex-execution',
       purpose:
         'inspect diagnostics, controlled readiness audit action, completed_no_dispatch, drift baseline surface',

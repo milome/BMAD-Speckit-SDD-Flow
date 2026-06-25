@@ -1,4 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { validateCriticalAuditorProfile } from '../../_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile';
 import {
   createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
@@ -15,7 +18,94 @@ import {
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
 
+const REQUIREMENTS_CONTRACT_DIMENSIONS = [
+  'requirement_coverage_completeness',
+  'controlled_must_atomicity',
+  'target_authority_correctness',
+  'validation_command_authority',
+  'behavior_edge_failure_path_coverage',
+  'packet_source_reconciliation',
+  'no_fallback_no_synthetic_receipt',
+  'hash_binding',
+  'current_id_namespace',
+  'source_materialization_safety',
+  'user_confirmability_gate',
+] as const;
+
+const REQUIREMENTS_CONTRACT_REQUIRED_RESPONSE_FIELDS = [
+  'schemaVersion',
+  'requestHash',
+  'recordId',
+  'roundIndex',
+  'transactionId',
+  'namespaceVersion',
+  'sourceHash',
+  'sourceDocumentHash',
+  'implementationConfirmationHash',
+  'packetHash',
+  'gateDryRunHash',
+  'reconciliationIssueCount',
+  'checkedProjectionGroups',
+  'verdict',
+  'reviewedMustRefs',
+  'reviewedProjectionRefs',
+  'priorFindingsDisposition',
+  'falsePositiveProofs',
+  'gapCandidates',
+  'validatedGaps',
+  'rejectedGapCandidates',
+  'rationale',
+] as const;
+
+const REQUIREMENTS_CONTRACT_SURFACE_PATHS = [
+  '_bmad/codex/agents/auditors/requirements-contract-critical-auditor.toml',
+  '_bmad/claude/agents/auditors/requirements-contract-critical-auditor.md',
+  '.codex/agents/auditors/requirements-contract-critical-auditor.toml',
+  '.claude/agents/auditors/requirements-contract-critical-auditor.md',
+] as const;
+
+function readRepoText(relativePath: string): string {
+  return fs.readFileSync(path.join(process.cwd(), relativePath), 'utf8');
+}
+
 describe('Main Agent CriticalAuditorProfile consumption', () => {
+  it('binds requirements-contract profile and installed auditor surfaces to every D007 dimension', () => {
+    const profilePath = path.join(
+      process.cwd(),
+      '_bmad',
+      'shared',
+      'critical-auditor-profile',
+      'requirements-contract-critical-auditor-profile.json'
+    );
+    expect(fs.existsSync(profilePath)).toBe(true);
+
+    const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    expect(profile.metadata.profileId).toBe('requirements-contract-critical-auditor');
+    expect(validateCriticalAuditorProfile({ profile })).toEqual({ ok: true, blockingReasons: [] });
+
+    const profileText = JSON.stringify(profile);
+    for (const dimension of REQUIREMENTS_CONTRACT_DIMENSIONS) {
+      expect(profile.dimensionContractBinding.dimensions).toContain(dimension);
+      expect(profileText).toContain(dimension);
+    }
+
+    for (const surfacePath of REQUIREMENTS_CONTRACT_SURFACE_PATHS) {
+      const surfaceText = readRepoText(surfacePath);
+      const normalizedSurfaceText = surfaceText.toLowerCase();
+      for (const dimension of REQUIREMENTS_CONTRACT_DIMENSIONS) {
+        expect(surfaceText, `${surfacePath} missing ${dimension}`).toContain(dimension);
+      }
+      for (const field of REQUIREMENTS_CONTRACT_REQUIRED_RESPONSE_FIELDS) {
+        expect(surfaceText, `${surfacePath} missing response field ${field}`).toContain(field);
+      }
+      expect(normalizedSurfaceText).toContain('read-only');
+      expect(normalizedSurfaceText).toContain('must not write source');
+      expect(normalizedSurfaceText).toContain('must not declare convergence');
+      expect(normalizedSurfaceText).toContain('source-materialization');
+      expect(normalizedSurfaceText).toContain('critical-auditor-round-response/v1');
+    }
+  });
+
   it('blocks stale stage profile hashes and binds triad convergence to current check item hash', () => {
     const fixture = materializeRequirementFixture();
     try {

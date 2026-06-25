@@ -821,7 +821,7 @@
       "originalPath": "scripts/cleanup-packed-bmad.js",
       "entryId": "cleanup-packed-bmad-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
       "behaviorEquivalenceMatrix": [
@@ -829,7 +829,7 @@
           "scenarioId": "g007_cleanup_packed_bmad_js_no_args",
           "originalEntryPoint": "scripts/cleanup-packed-bmad.js",
           "originalEntryCommand": "node scripts/cleanup-packed-bmad.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/cleanup-packed-bmad.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/cleanup-packed-bmad.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -2114,7 +2114,7 @@
       "originalPath": "scripts/generate-codex-agents-from-claude.js",
       "entryId": "generate-codex-agents-from-claude-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
       "behaviorEquivalenceMatrix": [
@@ -2122,7 +2122,7 @@
           "scenarioId": "g007_generate_codex_agents_from_claude_js_no_args",
           "originalEntryPoint": "scripts/generate-codex-agents-from-claude.js",
           "originalEntryCommand": "node scripts/generate-codex-agents-from-claude.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/generate-codex-agents-from-claude.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/generate-codex-agents-from-claude.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -5230,7 +5230,7 @@
       "originalPath": "scripts/prepublish-check.js",
       "entryId": "prepublish-check-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js",
       "behaviorEquivalenceMatrix": [
@@ -5238,7 +5238,7 @@
           "scenarioId": "g007_prepublish_check_js_no_args",
           "originalEntryPoint": "scripts/prepublish-check.js",
           "originalEntryCommand": "node scripts/prepublish-check.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prepublish-check.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/prepublish-check.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -5774,7 +5774,7 @@
       "originalPath": "scripts/real-development-tick-worker.js",
       "entryId": "real-development-tick-worker-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js",
       "behaviorEquivalenceMatrix": [
@@ -5782,7 +5782,7 @@
           "scenarioId": "g007_real_development_tick_worker_js_no_args",
           "originalEntryPoint": "scripts/real-development-tick-worker.js",
           "originalEntryCommand": "node scripts/real-development-tick-worker.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/real-development-tick-worker.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/real-development-tick-worker.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -6111,7 +6111,7 @@
       "originalPath": "scripts/run-confirmed-final-required-commands.js",
       "entryId": "run-confirmed-final-required-commands-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
       "behaviorEquivalenceMatrix": [
@@ -6119,7 +6119,7 @@
           "scenarioId": "g007_run_confirmed_final_required_commands_js_no_args",
           "originalEntryPoint": "scripts/run-confirmed-final-required-commands.js",
           "originalEntryCommand": "node scripts/run-confirmed-final-required-commands.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-final-required-commands.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -6225,7 +6225,7 @@
       "originalPath": "scripts/run-confirmed-trace-slice.js",
       "entryId": "run-confirmed-trace-slice-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
       "behaviorEquivalenceMatrix": [
@@ -6233,7 +6233,7 @@
           "scenarioId": "g007_run_confirmed_trace_slice_js_no_args",
           "originalEntryPoint": "scripts/run-confirmed-trace-slice.js",
           "originalEntryCommand": "node scripts/run-confirmed-trace-slice.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-confirmed-trace-slice.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [
@@ -8287,7 +8287,7 @@
       "originalPath": "scripts/write-runtime-registry.js",
       "entryId": "write-runtime-registry-js",
       "packageImplementationSet": [
-        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js"
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts"
       ],
       "packageRuntimeEntryPoint": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js",
       "behaviorEquivalenceMatrix": [
@@ -8295,7 +8295,7 @@
           "scenarioId": "g007_write_runtime_registry_js_no_args",
           "originalEntryPoint": "scripts/write-runtime-registry.js",
           "originalEntryCommand": "node scripts/write-runtime-registry.js --cwd <fixture-root>",
-          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.js",
+          "packageEntryPoint": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-registry.ts",
           "packageEntryCommand": "node packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-registry.js --cwd <fixture-root>",
           "argumentCombination": "--cwd <fixture-root>",
           "args": [

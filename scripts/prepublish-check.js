@@ -9,9 +9,23 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script for prepublish */
 const fs = require('node:fs');
 const path = require('node:path');
-const { checkGoalContractReleaseGate } = require('../packages/bmad-speckit/src/utils/goal-contract/release-gate');
 
 const ROOT = path.resolve(__dirname, '..');
+const RELEASE_GATE_RUNTIME = path.join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'dist',
+  'utils',
+  'goal-contract',
+  'release-gate.js'
+);
+if (!fs.existsSync(RELEASE_GATE_RUNTIME)) {
+  throw new Error(
+    `Missing built goal-contract release gate runtime: ${RELEASE_GATE_RUNTIME}. Run npm run build:main-agent-dist before prepublish.`
+  );
+}
+const { checkGoalContractReleaseGate } = require(RELEASE_GATE_RUNTIME);
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
 const SPECKIT_BMAD_MIRROR = path.join(SPECKIT_DIR, '_bmad');
 const SPECKIT_SCOPED_NODE_MODULES = path.join(SPECKIT_DIR, 'node_modules', '@bmad-speckit');

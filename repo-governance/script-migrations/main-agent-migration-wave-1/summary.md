@@ -3,7 +3,7 @@
 ## Migrated
 
 - `scripts/main-agent-orchestration.ts` consumer-facing CLI entry was migrated to package-local runtime facade files under `packages/bmad-speckit/src/main-agent/`.
-- Legacy public commands `main-agent-orchestration`, `confirm-scope`, and `main-agent:confirm-scope` now call `packages/bmad-speckit/src/main-agent/index.js` instead of root TypeScript dispatch.
+- Legacy public commands `main-agent-orchestration`, `confirm-scope`, and `main-agent:confirm-scope` now call `packages/bmad-speckit/src/main-agent/index.ts` instead of root TypeScript dispatch.
 - Stable grouped commands are exposed as `bmad-speckit main-agent inspect`, `bmad-speckit main-agent confirm-scope`, `bmad-speckit main-agent dispatch-plan`, and `bmad-speckit main-agent run-loop`.
 
 ## Strategy

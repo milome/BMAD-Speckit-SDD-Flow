@@ -392,6 +392,45 @@ function semanticConfirmationForHash(confirmation) {
       semantic[key] = value;
     }
   }
+  if (
+    semantic.preConfirmationDrilldown &&
+    typeof semantic.preConfirmationDrilldown === 'object' &&
+    !Array.isArray(semantic.preConfirmationDrilldown)
+  ) {
+    const drilldown = { ...semantic.preConfirmationDrilldown };
+    if (
+      drilldown.semanticKernelRef &&
+      typeof drilldown.semanticKernelRef === 'object' &&
+      !Array.isArray(drilldown.semanticKernelRef)
+    ) {
+      const semanticKernelRef = { ...drilldown.semanticKernelRef };
+      delete semanticKernelRef.hash;
+      drilldown.semanticKernelRef = semanticKernelRef;
+    }
+    if (
+      drilldown.mustDecompositionPacketRef &&
+      typeof drilldown.mustDecompositionPacketRef === 'object' &&
+      !Array.isArray(drilldown.mustDecompositionPacketRef)
+    ) {
+      const mustDecompositionPacketRef = { ...drilldown.mustDecompositionPacketRef };
+      delete mustDecompositionPacketRef.hash;
+      drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
+    }
+    const criticalAuditor =
+      drilldown.criticalAuditor &&
+      typeof drilldown.criticalAuditor === 'object' &&
+      !Array.isArray(drilldown.criticalAuditor)
+        ? { ...drilldown.criticalAuditor }
+        : null;
+    if (criticalAuditor) {
+      delete criticalAuditor.consecutiveNoNewGapRounds;
+      delete criticalAuditor.latestReceiptHash;
+      delete criticalAuditor.convergenceVerdict;
+      drilldown.criticalAuditor = criticalAuditor;
+      semantic.preConfirmationDrilldown = drilldown;
+    }
+    semantic.preConfirmationDrilldown = drilldown;
+  }
   return semantic;
 }
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Bundles repo-root CLIs into dist/*.cjs:
- * - scripts/emit-runtime-policy.ts ->emit-runtime-policy.cjs
- * - scripts/i18n/resolve-for-session-cli.ts ->resolve-for-session.cjs
- * - scripts/i18n/render-audit-block-cli.ts ->render-audit-block.cjs
+ * Bundles package source-authority CLIs into dist/*.cjs:
+ * - packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts ->emit-runtime-policy.cjs
+ * - packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.ts ->resolve-for-session.cjs
+ * - packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-audit-block-cli.ts ->render-audit-block.cjs
  * Invoked by prepare/prepublishOnly and `npm run build` from this package.
  */
 'use strict';
@@ -84,22 +84,31 @@ const governanceRuntimeConsumerPathPlugin = {
 const pkgDir = __dirname;
 const repoRoot = path.resolve(pkgDir, '../..');
 const outDir = path.join(pkgDir, 'dist');
+const sourceAuthorityScriptsRoot = path.join(
+  repoRoot,
+  'packages',
+  'bmad-speckit',
+  'src',
+  'main-agent',
+  'source-authority',
+  'scripts'
+);
 const auditIndexEntry = path.join(repoRoot, 'scripts', 'update-runtime-audit-index.ts');
 const auditorPostActionsEntry = path.join(repoRoot, 'scripts', 'auditor-post-actions.ts');
 const auditorHostEntry = path.join(repoRoot, 'scripts', 'run-auditor-host.ts');
 const bundles = [
   {
-    entry: path.join(repoRoot, 'scripts', 'emit-runtime-policy.ts'),
+    entry: path.join(sourceAuthorityScriptsRoot, 'emit-runtime-policy.ts'),
     outfile: path.join(outDir, 'emit-runtime-policy.cjs'),
     label: 'emit-runtime-policy',
   },
   {
-    entry: path.join(repoRoot, 'scripts', 'i18n', 'resolve-for-session-cli.ts'),
+    entry: path.join(sourceAuthorityScriptsRoot, 'i18n', 'resolve-for-session-cli.ts'),
     outfile: path.join(outDir, 'resolve-for-session.cjs'),
     label: 'resolve-for-session',
   },
   {
-    entry: path.join(repoRoot, 'scripts', 'i18n', 'render-audit-block-cli.ts'),
+    entry: path.join(sourceAuthorityScriptsRoot, 'i18n', 'render-audit-block-cli.ts'),
     outfile: path.join(outDir, 'render-audit-block.cjs'),
     label: 'render-audit-block',
   },

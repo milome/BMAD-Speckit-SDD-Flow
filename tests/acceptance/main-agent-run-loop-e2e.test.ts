@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   runMainAgentAutomaticLoop,
   writeMainAgentRunLoopTaskReport,
-} from '../../scripts/main-agent-orchestration';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
 import {
   cleanupRequirementWorkspace,
@@ -54,6 +54,20 @@ function cliRecordArgs(fixture: RequirementFixture): string[] {
     '--stage',
     'implement',
   ];
+}
+
+function packageMainAgentCliArgs(args: string[]): string[] {
+  return [
+    path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+    'main-agent-orchestration',
+    '--json',
+    ...args,
+  ];
+}
+
+function parsePackageOrLegacyJson<T>(stdout: string): T {
+  const parsed = JSON.parse(stdout) as { data?: unknown };
+  return (parsed && typeof parsed === 'object' && 'data' in parsed ? parsed.data : parsed) as T;
 }
 
 function writeCodexImplementationWorker(root: string): void {
@@ -261,20 +275,16 @@ describe('main-agent automatic run-loop', () => {
     try {
       const dispatchOutput = execFileSync(
         process.execPath,
-        [
-          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
-          '--project',
-          'tsconfig.node.json',
-          '--transpile-only',
-          'scripts/main-agent-orchestration.ts',
+        packageMainAgentCliArgs([
+          '--action',
           'dispatch-plan',
           '--cwd',
           root,
           ...cliRecordArgs(fixture),
-        ],
+        ]),
         { cwd: process.cwd(), encoding: 'utf8' }
       );
-      const dispatch = JSON.parse(dispatchOutput) as { taskType: string; packetId: string };
+      const dispatch = parsePackageOrLegacyJson<{ taskType: string; packetId: string }>(dispatchOutput);
 
       expect(dispatch.taskType).toBe('implement');
       expect(dispatch.packetId).toMatch(/^implement-/);
@@ -416,21 +426,16 @@ describe('main-agent automatic run-loop', () => {
 
       const dispatchOutput = execFileSync(
         process.execPath,
-        [
-          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
-          '--project',
-          'tsconfig.node.json',
-          '--transpile-only',
-          'scripts/main-agent-orchestration.ts',
+        packageMainAgentCliArgs([
           '--cwd',
           root,
           '--action',
           'dispatch-plan',
           ...cliRecordArgs(fixture),
-        ],
+        ]),
         { cwd: process.cwd(), encoding: 'utf8' }
       );
-      const dispatch = JSON.parse(dispatchOutput) as { packetId: string };
+      const dispatch = parsePackageOrLegacyJson<{ packetId: string }>(dispatchOutput);
       const reportPath = path.join(
         root,
         '_bmad-output',
@@ -458,12 +463,7 @@ describe('main-agent automatic run-loop', () => {
 
       const resultProcess = spawnSync(
         process.execPath,
-        [
-          path.join(process.cwd(), 'node_modules', 'ts-node', 'dist', 'bin.js'),
-          '--project',
-          'tsconfig.node.json',
-          '--transpile-only',
-          'scripts/main-agent-orchestration.ts',
+        packageMainAgentCliArgs([
           '--cwd',
           root,
           '--action',
@@ -471,14 +471,14 @@ describe('main-agent automatic run-loop', () => {
           ...cliRecordArgs(fixture),
           '--taskReportPath',
           reportPath,
-        ],
+        ]),
         { cwd: process.cwd(), encoding: 'utf8' }
       );
       expect(resultProcess.status).toBe(0);
-      const result = JSON.parse(resultProcess.stdout) as {
+      const result = parsePackageOrLegacyJson<{
         status: string;
         taskReport: { validationsRun: string[]; evidence: string[] };
-      };
+      }>(resultProcess.stdout);
       const after = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
         validationsRun: string[];
         evidence: string[];
@@ -521,12 +521,7 @@ describe('main-agent automatic run-loop', () => {
 
       const resultProcess = spawnSync(
         process.execPath,
-        [
-          'node_modules/ts-node/dist/bin.js',
-          '--project',
-          'tsconfig.node.json',
-          '--transpile-only',
-          'scripts/main-agent-orchestration.ts',
+        packageMainAgentCliArgs([
           '--cwd',
           root,
           '--action',
@@ -534,14 +529,14 @@ describe('main-agent automatic run-loop', () => {
           ...cliRecordArgs(fixture),
           '--taskReportPath',
           reportPath,
-        ],
+        ]),
         { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8' }
       );
       expect(resultProcess.status).toBe(1);
-      const result = JSON.parse(resultProcess.stdout) as {
+      const result = parsePackageOrLegacyJson<{
         status: string;
         taskReport?: { status: string; driftFlags?: string[] };
-      };
+      }>(resultProcess.stdout);
       expect(result.status).toBe('blocked');
       expect(result.taskReport?.status).toBe('blocked');
       expect(result.taskReport?.driftFlags).toContain('external-task-report-denied');
