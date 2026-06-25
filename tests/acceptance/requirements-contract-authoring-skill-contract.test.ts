@@ -431,6 +431,12 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('--retry-receipt');
       expect(skill).toContain('--promotion-stage confirmation-ready');
       expect(skill).toContain('--promotion-stage authoring-draft');
+      expect(skill).toContain('--scale-assessment <authoring-dir>/scale-assessment-initial.json');
+      expect(skill).toContain('--scale-routing-decision <authoring-dir>/scale-routing-decision.json');
+      expect(skill).toContain('--source-mutation-decision <authoring-dir>/source-mutation-decision.json');
+      expect(skill).toContain('--encoding-report <authoring-dir>/encoding-report.json');
+      expect(skill).toContain('--receipt-out <authoring-dir>/promotion-receipt.json');
+      expect(skill).toContain('--auto-repair');
       expect(skill).toContain('--preflight-only');
       expect(skill).toContain('--dry-run');
       expect(skill).toContain('normalize-draft-markdown.js');
@@ -448,6 +454,21 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('`confirmationReady: false`');
       expect(skill).toContain('`safePromotionAsDraft: true`');
       expect(skill).toContain('`requiresUserConfirmationBeforeExecution: true`');
+      expect(skill).toContain('`authoringPromotionGate`');
+      expect(skill).toContain('`receiptPath`');
+      expect(skill).toContain('Authoring-draft promotion is guarded');
+      expect(skill).toContain('`authoring_promotion_gate_failed`');
+      expect(skill).toContain('`nextRequiredActions[]`');
+      expect(skill).toContain('The target document must not be created or modified');
+      expect(skill).toContain('may generate missing `scale-assessment-initial.json`');
+      expect(skill).toContain('MUST NOT synthesize `source-mutation-decision.json`');
+      expect(skill).toContain('Critical Auditor convergence');
+      expect(skill).toContain('checkpoint persistence');
+      expect(skill).toContain('sourceDocumentHashBefore` bound to the current target document hash');
+      expect(skill).toContain('sourceDocumentHashAfter` bound to the current draft manifest hash');
+      expect(skill).toContain('sourceDocumentExistedBefore: false');
+      expect(skill).toContain('currentTargetState');
+      expect(skill).toContain('expectedDraftHash');
       expect(skill).toContain('allows only `status: user_confirmed`');
       expect(skill).toContain('The write flow must work when the current project root has no `scripts` directory');
     }
@@ -554,7 +575,9 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('blockingStage: "critical_auditor_provider_mode_required"');
       expect(content).toContain('nextRequiredAction: "run_main_session_critical_auditor_round"');
       expect(content).toContain('sourceMutationPerformed: false');
+      expect(content).toContain('promotion-receipt.json');
       expect(content).toContain('source-materialization-receipt.json');
+      expect(content).toContain('Legacy `source-materialization-receipt.json` is not a valid current source write receipt');
 
       expect(content).toContain(
         '/goal main session owns Critical Auditor response generation, staging rework, receipt writing, and source promotion'

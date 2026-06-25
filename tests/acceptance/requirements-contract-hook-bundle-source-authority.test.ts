@@ -28,6 +28,16 @@ const BUNDLE_FORBIDDEN_STRINGS = [
     text: 'source_materialization_before_deep_audit',
   },
 ];
+const BUNDLE_FORBIDDEN_PATTERNS = [
+  {
+    id: 'legacy-source-materialization-receipt-write',
+    pattern: /writeJsonUtf8\d*\([^;\n]*sourceMaterializationReceipt/u,
+  },
+  {
+    id: 'legacy-source-materialization-receipt-read-gate',
+    pattern: /const receiptPath = input\.paths\.sourceMaterializationReceipt/u,
+  },
+];
 
 function collectTextFiles(relativePath: string): string[] {
   const absolute = path.join(ROOT, relativePath);
@@ -71,6 +81,22 @@ describe('requirements contract hook bundle source authority', () => {
         const content = fs.readFileSync(file, 'utf8');
         for (const rule of BUNDLE_FORBIDDEN_STRINGS) {
           if (content.includes(rule.text)) hits.push(`${relativeFile}: ${rule.id}`);
+        }
+      }
+    }
+
+    expect(hits).toEqual([]);
+  });
+
+  it('rejects hook bundles with active legacy source materialization receipt paths', () => {
+    const hits: string[] = [];
+
+    for (const scanPath of BUNDLE_SCAN_PATHS) {
+      for (const file of collectTextFiles(scanPath)) {
+        const relativeFile = path.relative(ROOT, file).replace(/\\/g, '/');
+        const content = fs.readFileSync(file, 'utf8');
+        for (const rule of BUNDLE_FORBIDDEN_PATTERNS) {
+          if (rule.pattern.test(content)) hits.push(`${relativeFile}: ${rule.id}`);
         }
       }
     }

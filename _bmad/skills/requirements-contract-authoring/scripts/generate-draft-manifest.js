@@ -108,6 +108,8 @@ function buildManifest(options) {
   let confirmation = null;
   let implementationConfirmationPresent = /^implementationConfirmation:\s*$/mu.test(content);
   let statusValue = null;
+  let recordId = null;
+  let requirementSetId = null;
   let mustIds = [];
   let implementationConfirmationParseError = null;
   try {
@@ -115,6 +117,9 @@ function buildManifest(options) {
     confirmation = extracted.confirmation;
     implementationConfirmationPresent = true;
     statusValue = confirmation?.status === undefined ? null : String(confirmation.status);
+    recordId = confirmation?.recordId === undefined ? null : String(confirmation.recordId);
+    requirementSetId =
+      confirmation?.requirementSetId === undefined ? null : String(confirmation.requirementSetId);
     mustIds = collectMustIds(confirmation);
   } catch (error) {
     implementationConfirmationParseError = error instanceof Error ? error.message : String(error);
@@ -136,6 +141,8 @@ function buildManifest(options) {
     lines,
     requiredTextChecks,
     statusValue,
+    recordId,
+    requirementSetId,
     implementationConfirmationPresent,
     implementationConfirmationParseError,
     mustIds,

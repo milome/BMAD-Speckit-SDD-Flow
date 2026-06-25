@@ -15,7 +15,6 @@ import {
   sourcePromotionDecisionPath,
   stagingTransactionDir,
   writeConsumerRequirement,
-  writeCheckpointPersistenceEvidence,
   writeMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
@@ -52,7 +51,7 @@ describe('requirements contract staging transaction', () => {
     }
   });
 
-  it('promotes source and writes source-materialization receipt only after three validated no-gap rounds', () => {
+  it('promotes source and writes promotion receipt only after three validated no-gap rounds', () => {
     const root = createTempRoot('requirements-contract-staging-promote-');
     try {
       const source = writeMinimalConsumerRequirement(root);
@@ -62,31 +61,46 @@ describe('requirements contract staging transaction', () => {
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
-      expect(issueCodes(result)).toContain('checkpoint_required_before_source_materialization');
-      const evidencePath = writeCheckpointPersistenceEvidence(root, 'REQ-STAGING-PROMOTE');
-
-      const promoted = runAuthoring(root, source, 'REQ-STAGING-PROMOTE', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-        criticalAuditorRound: cleanCriticalAuditorRound,
-        checkpointPersistenceEvidencePath: evidencePath,
-      });
       const paths = artifacts(root, 'REQ-STAGING-PROMOTE', 'REQ-STAGING-PROMOTE-SET');
       const decision = readJson<Record<string, unknown>>(
         sourcePromotionDecisionPath(root, 'REQ-STAGING-PROMOTE')
       );
-      const receipt = readJson<Record<string, unknown>>(paths.sourceMaterializationReceipt);
+      const promotionState = {
+        issueCodes: issueCodes(result),
+        blockingStage: result.blockingStage,
+        promotionReceiptExists: existsSync(paths.promotionReceipt),
+        blockingIssues: result.blockingIssues,
+      };
+      if (!promotionState.promotionReceiptExists) {
+        throw new Error(JSON.stringify(promotionState, null, 2));
+      }
+      const route = readJson<Record<string, unknown>>(paths.scaleRoutingDecision);
+      const checkpointEvidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
+      const promotionReceipt = readJson<Record<string, unknown>>(paths.promotionReceipt);
       const confirmation = readImplementationConfirmation(source);
 
-      expect(promoted.ok).toBe(false);
-      expect(promoted.blockingStage).toBeNull();
+      expect(result.ok).toBe(false);
+      expect(result.blockingStage).toBeNull();
+      expect(issueCodes(result)).toContain('language_required_before_render');
+      expect(issueCodes(result)).not.toContain('checkpoint_required_before_source_materialization');
+      expect(route.decision).toBe('single_pass_final_allowed');
+      expect(route.checkpointPersistenceSatisfied).toBe(true);
+      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
       expect(decision.finalDecision).toBe('allow_source_promotion');
-      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(true);
-      expect(receipt.transactionId).toBe(decision.transactionId);
-      expect(receipt.sourceStartHash).toBe(decision.sourceStartHash);
-      expect(receipt.sourceDocumentHashPrePromote).toBe(decision.currentSourceHash);
-      expect(Array.isArray(receipt.criticalAuditorReceiptHashes)).toBe(true);
-      expect((receipt.criticalAuditorReceiptHashes as unknown[]).length).toBe(3);
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+      expect(promotionReceipt).toMatchObject({
+        ok: true,
+        promotionStage: 'authoring-draft',
+        safePromotionAsDraft: true,
+      });
+      expect(String(promotionReceipt.receiptPath).replace(/\\/g, '/')).toMatch(
+        /_bmad-output\/runtime\/requirement-records\/REQ-STAGING-PROMOTE\/authoring\/promotion-receipt\.json$/u
+      );
+      expect(promotionReceipt.targetHash).toBe(sha256File(source));
+      expect(result.receiptPath).toBe(
+        paths.promotionReceipt.replace(`${root}\\`, '').replace(/\\/g, '/')
+      );
+      expect(result.receiptHash).toBe(sha256File(paths.promotionReceipt));
       expect(confirmation.preConfirmationDrilldown).toMatchObject({
         criticalAuditor: {
           consecutiveNoNewGapRounds: 3,

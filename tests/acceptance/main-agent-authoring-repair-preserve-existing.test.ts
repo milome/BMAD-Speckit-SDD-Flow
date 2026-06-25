@@ -458,6 +458,7 @@ function authoringPaths(root: string, recordId: string) {
     dir,
     kernel: path.join(dir, 'semantic-kernel.json'),
     packet: path.join(dir, 'must_decomposition_packet.json'),
+    promotionReceipt: path.join(dir, 'promotion-receipt.json'),
     sourceMaterializationReceipt: path.join(dir, 'source-materialization-receipt.json'),
     request: (round: number) => path.join(dir, `critical-auditor-round-request-${round}.json`),
     response: (round: number) => path.join(dir, `critical-auditor-round-response-${round}.json`),
@@ -468,49 +469,73 @@ function authoringPaths(root: string, recordId: string) {
   };
 }
 
-function writeSourceMaterializationReceipt(
+function writePromotionReceipt(
   root: string,
   source: string,
   recordId: string,
   requirementSetId = `${recordId}-SET`
 ): string {
+  void requirementSetId;
   const receiptDir = path.join(
     root,
     '_bmad-output',
     'runtime',
     'requirement-records',
-    requirementSetId,
+    recordId,
     'authoring'
   );
-  const receiptPath = path.join(receiptDir, 'source-materialization-receipt.json');
+  const receiptPath = path.join(receiptDir, 'promotion-receipt.json');
   mkdirSync(receiptDir, { recursive: true });
   const hashes = currentSourceHashes(source);
+  const targetHash = sha256Text(readFileSync(source, 'utf8'));
+  const sourceRel = rootRelative(root, source);
   const receipt: Record<string, unknown> = {
-    schemaVersion: 'source-materialization-receipt/v1',
-    sourcePath: rootRelative(root, source),
-    requirementSetId,
-    recordId,
-    sourceDocumentHashBefore: hashes.sourceDocumentHash,
-    sourceDocumentHashAfter: hashes.sourceDocumentHash,
-    implementationConfirmationHash: hashes.implementationConfirmationHash,
-    writtenIdRanges: [
-      'ACC-001',
-      'ART-001',
-      'CMD-001',
-      'E2E-001',
-      'EVD-001',
-      'FAIL-001',
-      'TARGET-MOD-001',
-      'TRACE-001',
-    ],
-    draftStatus: 'confirmation_ready',
-    nextAuditCommand:
-      'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts',
-    createdAt: '2026-06-01T00:00:00.000Z',
-    createdBy: 'main-agent-source-materialization',
-    receiptHash: null,
+    ok: true,
+    dryRun: false,
+    preflightOnly: false,
+    draftPath: sourceRel,
+    targetPath: sourceRel,
+    promotionStage: 'authoring-draft',
+    allowedStatuses: ['draft'],
+    statusValue: 'draft',
+    confirmationReady: false,
+    safePromotionAsDraft: true,
+    requiresUserConfirmationBeforeExecution: true,
+    manifestPath: `${sourceRel}.manifest.json`,
+    targetHash,
+    writeReceipt: {
+      backupPath: null,
+      finalHash: targetHash,
+    },
+    receiptPath: rootRelative(root, receiptPath),
+    backupPath: null,
+    audit: {
+      status: null,
+      ok: true,
+      skipped: true,
+      reason: 'authoring_draft_is_not_confirmation_ready',
+    },
+    preflight: {
+      manifest: {
+        ok: true,
+        draftHash: targetHash,
+        statusValue: 'draft',
+      },
+    },
+    authoringPromotionGate: {
+      required: true,
+      ok: true,
+      decisions: {
+        sourceMutation: {
+          finalDecision: 'allow_source_materialization',
+          sourceDocumentHashAfter: targetHash,
+        },
+      },
+    },
+    failureClass: null,
+    warnings: [],
+    residualRisks: ['reverse_audit_not_run_authoring_draft'],
   };
-  receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
   return receiptPath;
 }
@@ -652,7 +677,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -751,7 +776,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -969,7 +994,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         ].join('\n')
       );
       writeFileSync(source, enriched, 'utf8');
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -1010,7 +1035,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1052,7 +1077,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1099,7 +1124,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const original = readFileSync(source, 'utf8');
       const result = runMainAgentAuthoringRepair(root, {
         source,
@@ -1135,7 +1160,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const original = readFileSync(source, 'utf8');
       const paths = authoringPaths(root, recordId);
 
@@ -1212,7 +1237,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1234,12 +1259,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result).toMatchObject({
         ok: false,
         status: 'blocked',
-        blockingStage: 'source_materialization_required_before_audit',
-        nextRequiredAction: 'materialize_source_document_before_deep_audit',
+        blockingStage: 'promotion_receipt_required_before_audit',
+        nextRequiredAction: 'promote_source_document_through_authoring_draft_before_deep_audit',
         consecutiveNoNewGapRounds: 0,
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'source_materialization_receipt_source_hash_stale'
+        'promotion_receipt_source_hash_stale'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
       expect(existsSync(paths.request(2))).toBe(false);
@@ -1253,7 +1278,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1315,7 +1340,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         .replace(/^ {6,8}derivedFromPacketHash: sha256:a{64}\n/gm, '')
         .replace(/^ {6,8}projectionStatus: synchronized\n/gm, '');
       writeFileSync(source, corrupted, 'utf8');
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1349,7 +1374,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1388,7 +1413,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const exitCode = mainMainAgentOrchestration([
         '--cwd',
         root,
@@ -1417,7 +1442,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeFileSync(path.join(root, '.gitignore'), 'docs/requirements/\n', 'utf8');
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      writeSourceMaterializationReceipt(root, source, recordId);
+      writePromotionReceipt(root, source, recordId);
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,

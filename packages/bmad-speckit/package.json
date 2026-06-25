@@ -22,7 +22,8 @@
     "prepack": "npm run build:scoring --prefix ../.. && npm run build:runtime-context --prefix ../.. && npm run build:runtime-emit --prefix ../.. && npm run build:ralph-method --prefix ../.. && npm run build:main-agent-dist && node scripts/prepublish-check.cjs --pack-session --silent",
     "postpack": "node scripts/cleanup-packed-bmad.cjs",
     "prepublishOnly": "node scripts/prepublish-check.cjs",
-    "test": "node scripts/run-node-tests.cjs"
+    "test": "node scripts/run-node-tests.cjs",
+    "verify:requirements-contract-source-writes": "node dist/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.js"
   },
   "keywords": [
     "bmad",

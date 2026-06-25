@@ -54,12 +54,43 @@ const TEXT_EXTENSIONS = new Set([
   '.yml',
 ]);
 
+function normalizeScope(scope) {
+  return scope.replace(/\\/gu, '/').replace(/^\.\/+/u, '').replace(/\/+$/u, '');
+}
+
 function listGitFiles() {
   const result = spawnSync('git', ['ls-files'], { encoding: 'utf8' });
   if (result.status !== 0) {
-    throw new Error(result.stderr || 'git ls-files failed');
+    return null;
   }
   return result.stdout.split(/\r?\n/u).filter(Boolean);
+}
+
+function listFilesystemFiles(scopes) {
+  const files = new Set();
+  const visit = (relativePath) => {
+    if (!relativePath || !fs.existsSync(relativePath)) {
+      return;
+    }
+    const stat = fs.statSync(relativePath);
+    if (stat.isFile()) {
+      files.add(relativePath.replace(/\\/gu, '/'));
+      return;
+    }
+    if (!stat.isDirectory()) {
+      return;
+    }
+    for (const entry of fs.readdirSync(relativePath, { withFileTypes: true })) {
+      if (entry.name === '.git' || entry.name === 'node_modules') {
+        continue;
+      }
+      visit(path.join(relativePath, entry.name));
+    }
+  };
+  for (const scope of scopes) {
+    visit(scope);
+  }
+  return [...files].sort();
 }
 
 function parseArgs(argv) {
@@ -76,7 +107,7 @@ function parseArgs(argv) {
 }
 
 function isInScope(file, scopes) {
-  return scopes.some((scope) => file === scope || file.startsWith(`${scope.replace(/\\/gu, '/')}/`));
+  return scopes.some((scope) => file === normalizeScope(scope) || file.startsWith(`${normalizeScope(scope)}/`));
 }
 
 function isTextFile(file) {
@@ -107,7 +138,9 @@ function scanFile(file) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const files = listGitFiles()
+  const gitFiles = listGitFiles();
+  const source = gitFiles ? 'git' : 'filesystem';
+  const files = (gitFiles ?? listFilesystemFiles(options.paths))
     .filter((file) => isInScope(file, options.paths))
     .filter(isTextFile)
     .filter((file) => fs.existsSync(file));
@@ -117,7 +150,7 @@ function main() {
     if (hits.length > 0) findings.push({ file, hits });
   }
   if (options.json) {
-    process.stdout.write(`${JSON.stringify({ checkedFiles: files.length, findings }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ checkedFiles: files.length, findings, source }, null, 2)}\n`);
   } else {
     for (const finding of findings) {
       for (const hit of finding.hits.slice(0, 5)) {
@@ -127,7 +160,7 @@ function main() {
         process.stdout.write(`${finding.file}: ... ${finding.hits.length - 5} more hits\n`);
       }
     }
-    process.stdout.write(`checkedFiles=${files.length} findings=${findings.length}\n`);
+    process.stdout.write(`checkedFiles=${files.length} findings=${findings.length} source=${source}\n`);
   }
   return findings.length === 0 ? 0 : 1;
 }

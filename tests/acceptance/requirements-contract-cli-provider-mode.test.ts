@@ -25,7 +25,11 @@ describe('requirements contract provider mode', () => {
       expect(result.nextRequiredAction).toBe('run_main_session_critical_auditor_round');
       expect(result.sourceMutationPerformed).toBe(false);
       expect(result.allowedArtifacts).toEqual(['advisory', 'staging']);
-      expect(result.forbiddenArtifacts).toEqual(['source-materialization-receipt', 'source mutation']);
+      expect(result.forbiddenArtifacts).toEqual([
+        'promotion-receipt',
+        'source-materialization-receipt',
+        'source mutation',
+      ]);
       expect(result.criticalAuditorContinuation).toMatchObject({
         providerMode: 'main_session_inline',
         roundIndex: 1,

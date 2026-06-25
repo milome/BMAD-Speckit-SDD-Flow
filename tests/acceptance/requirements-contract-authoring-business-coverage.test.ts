@@ -164,7 +164,7 @@ function expectTextContainsAll(value: unknown, tokens: string[]): void {
   }
 }
 
-function writeSourceMaterializationReceiptForDraft(input: {
+function writePromotionReceiptForDraft(input: {
   root: string;
   sourcePath: string;
   recordId: string;
@@ -175,30 +175,60 @@ function writeSourceMaterializationReceiptForDraft(input: {
     '_bmad-output',
     'runtime',
     'requirement-records',
-    input.requirementSetId,
+    input.recordId,
     'authoring',
-    'source-materialization-receipt.json'
+    'promotion-receipt.json'
   );
   mkdirSync(path.dirname(receiptPath), { recursive: true });
   const hashes = currentSourceHashes(input.sourcePath);
+  const targetHash = sha256PrefixedText(readFileSync(input.sourcePath, 'utf8'));
+  const sourcePath = path.relative(input.root, input.sourcePath).replace(/\\/g, '/');
   const receipt: Record<string, unknown> = {
-    schemaVersion: 'source-materialization-receipt/v1',
-    sourcePath: path.relative(input.root, input.sourcePath).replace(/\\/g, '/'),
-    requirementSetId: input.requirementSetId,
-    recordId: input.recordId,
-    sourceDocumentHashBefore: hashes.sourceDocumentHash,
-    sourceDocumentHashAfter: hashes.sourceDocumentHash,
-    implementationConfirmationHash: hashes.implementationConfirmationHash,
-    criticalAuditorReceiptHashes: [],
-    writtenIdRanges: ['MUST-001', 'TRACE-001', 'EVD-001', 'ACC-001', 'E2E-001'],
-    draftStatus: 'confirmation_ready',
-    nextAuditCommand:
-      'npx vitest run tests/acceptance/requirements-contract-authoring-business-coverage.test.ts',
-    createdAt: '2026-06-25T00:00:00.000Z',
-    createdBy: 'main-agent-source-materialization',
-    receiptHash: null,
+    ok: true,
+    dryRun: false,
+    preflightOnly: false,
+    draftPath: `_bmad-output/runtime/requirement-records/${input.recordId}/authoring/draft-source-preview.md`,
+    targetPath: sourcePath,
+    promotionStage: 'authoring-draft',
+    allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
+    statusValue: 'draft',
+    confirmationReady: false,
+    safePromotionAsDraft: true,
+    requiresUserConfirmationBeforeExecution: true,
+    manifestPath: `_bmad-output/runtime/requirement-records/${input.recordId}/authoring/draft-manifest.json`,
+    targetHash,
+    writeReceipt: {
+      schemaVersion: 'large-document-writer-safe-write/v1',
+      targetPath: sourcePath,
+      finalHash: targetHash,
+      mode: 'replace',
+    },
+    backupPath: `_bmad-output/runtime/requirement-records/${input.recordId}/authoring/promotion-backup.md`,
+    preflight: {
+      manifest: {
+        targetPath: sourcePath,
+        draftHash: targetHash,
+        statusValue: 'draft',
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+      },
+    },
+    authoringPromotionGate: {
+      required: true,
+      ok: true,
+      decisions: {
+        sourceMutation: {
+          finalDecision: 'allow_source_materialization',
+          sourceMutationAllowed: true,
+          sourceDocumentExistedBefore: true,
+          sourceDocumentHashBefore: hashes.sourceDocumentHash,
+          sourceDocumentHashAfter: targetHash,
+        },
+      },
+    },
+    receiptPath: path.relative(input.root, receiptPath).replace(/\\/g, '/'),
+    failureClass: null,
   };
-  receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
   return receiptPath;
 }
@@ -543,7 +573,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const authoringPaths = artifacts(root, recordId, requirementSetId);
       const draftPreview = readFileSync(authoringPaths.draftSourcePreview, 'utf8');
       writeFileSync(source, draftPreview, 'utf8');
-      writeSourceMaterializationReceiptForDraft({
+      writePromotionReceiptForDraft({
         root,
         sourcePath: source,
         recordId,

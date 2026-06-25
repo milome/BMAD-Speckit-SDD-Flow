@@ -78,8 +78,11 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
     validationAuthorityReport: path.join(authoring, 'validation-authority-report.json'),
     projectionDomainSanityReport: path.join(authoring, 'projection-domain-sanity-report.json'),
     sourceMutationDecision: path.join(authoring, 'source-mutation-decision.json'),
+    authoringTransaction: path.join(authoring, 'authoring-transaction.json'),
     draftSourcePreview: path.join(authoring, 'draft-source-preview.md'),
+    promotionReceipt: path.join(authoring, 'promotion-receipt.json'),
     draftImplementationConfirmation: path.join(authoring, 'draft-implementation-confirmation.json'),
+    encodingReport: path.join(authoring, 'encoding-report.json'),
     receipt1: path.join(authoring, 'critical-auditor-receipt-round-1.json'),
     receipt2: path.join(authoring, 'critical-auditor-receipt-round-2.json'),
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
@@ -319,6 +322,22 @@ export function runAuthoring(
 ) {
   return runMainAgentPreConfirmationDrilldown(root, {
     source,
+    recordId,
+    requirementSetId: `${recordId}-SET`,
+    ...options,
+  });
+}
+
+export function runIntakeAuthoring(
+  root: string,
+  intakeSource: string,
+  targetSource: string,
+  recordId: string,
+  options: Record<string, unknown> = {}
+) {
+  return runMainAgentPreConfirmationDrilldown(root, {
+    intakeSource,
+    targetSource,
     recordId,
     requirementSetId: `${recordId}-SET`,
     ...options,

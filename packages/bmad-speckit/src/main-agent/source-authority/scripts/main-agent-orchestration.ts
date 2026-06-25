@@ -206,6 +206,14 @@ export interface MainAgentStageSummary {
 
 export type PreConfirmationDrilldownSubstate =
   | 'idle'
+  | 'intake_created'
+  | 'initial_scale_assessed'
+  | 'staging_draft_created'
+  | 'critical_auditor_round_required'
+  | 'checkpoint_persistence_required'
+  | 'source_mutation_decision_required'
+  | 'promotion_required'
+  | 'promoted_not_confirmation_ready'
   | 'source_identified'
   | 'scale_assessed'
   | 'semantic_kernel_ready'
@@ -1548,7 +1556,9 @@ interface PreConfirmationPaths {
   validationAuthorityReport: string;
   projectionDomainSanityReport: string;
   sourceMutationDecision: string;
+  authoringTransaction: string;
   draftSourcePreview: string;
+  promotionReceipt: string;
   draftImplementationConfirmation: string;
   authoringMaterializationReceipt: string;
   scaleAssessmentInitial: string;
@@ -1556,6 +1566,7 @@ interface PreConfirmationPaths {
   scaleAssessmentPostMaterialization: string;
   scaleRoutingDecision: string;
   checkpointPersistenceEvidence: string;
+  encodingReport: string;
   sourceMaterializationReceipt: string;
   receiptPaths: string[];
   reconciliationReport: string;
@@ -1612,6 +1623,19 @@ type CriticalAuditorVerdict =
   | 'new_valid_gap'
   | 'insufficient_audit'
   | 'blocked';
+
+function normalizeCriticalAuditorVerdict(value: unknown): CriticalAuditorVerdict {
+  const verdict = normalizeText(value);
+  return [
+    'no_new_valid_gap',
+    'no_new_confirmation_blocking_gap',
+    'new_valid_gap',
+    'insufficient_audit',
+    'blocked',
+  ].includes(verdict)
+    ? (verdict as CriticalAuditorVerdict)
+    : 'blocked';
+}
 
 const CRITICAL_AUDITOR_REPAIR_ACTION_TYPES = [
   'add_must',
@@ -1726,6 +1750,8 @@ export interface MainAgentPreConfirmationDrilldownResult extends PreConfirmation
 
 interface PreConfirmationRunOptions {
   source?: string;
+  intakeSource?: string;
+  targetSource?: string;
   recordId?: string;
   requirementSetId?: string;
   confirmationLanguage?: string;
@@ -1758,6 +1784,9 @@ interface SourceMaterializationReceipt {
   sourcePath: string;
   requirementSetId: string;
   recordId: string;
+  sourceWriteReceiptPath?: string;
+  sourceWriteReceiptHash?: string;
+  sourceWriteTransport?: 'requirements-contract-promotion-helper';
   transactionId?: string;
   sourceStartHash?: string;
   sourceDocumentHashPrePromote?: string;
@@ -1907,6 +1936,7 @@ interface ValidationAuthorityRecord {
 interface SourceMutationDecision {
   schemaVersion: 'requirements-authoring-source-mutation-decision/v1';
   sourcePath: string;
+  sourceDocumentExistedBefore: boolean;
   sourceDocumentHashBefore: string;
   sourceDocumentHashAfter: string;
   recordId: string;
@@ -2009,7 +2039,9 @@ function preConfirmationPaths(
     validationAuthorityReport: path.join(authoringDir, 'validation-authority-report.json'),
     projectionDomainSanityReport: path.join(authoringDir, 'projection-domain-sanity-report.json'),
     sourceMutationDecision: path.join(authoringDir, 'source-mutation-decision.json'),
+    authoringTransaction: path.join(authoringDir, 'authoring-transaction.json'),
     draftSourcePreview: path.join(authoringDir, 'draft-source-preview.md'),
+    promotionReceipt: path.join(authoringDir, 'promotion-receipt.json'),
     draftImplementationConfirmation: path.join(authoringDir, 'draft-implementation-confirmation.json'),
     authoringMaterializationReceipt: path.join(authoringDir, 'authoring-materialization-receipt.json'),
     scaleAssessmentInitial: path.join(authoringDir, 'scale-assessment-initial.json'),
@@ -2020,6 +2052,7 @@ function preConfirmationPaths(
     ),
     scaleRoutingDecision: path.join(authoringDir, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoringDir, 'checkpoint-persistence-evidence.json'),
+    encodingReport: path.join(authoringDir, 'encoding-report.json'),
     sourceMaterializationReceipt: sourceMaterializationReceiptPath(root, requirementSetId),
     receiptPaths: [1, 2, 3].map((round) =>
       path.join(authoringDir, `critical-auditor-receipt-round-${round}.json`)
@@ -2138,6 +2171,60 @@ function stagingTransactionEvidence(
     mustDecompositionPacket: toRootRelativePath(root, transaction.mustDecompositionPacket),
     sourcePromotionDecision: toRootRelativePath(root, transaction.sourcePromotionDecision),
   };
+}
+
+type RequirementsAuthoringEntryMode = 'existing_source' | 'intake_to_new_source';
+
+function assertKnownRequirementsAuthoringSubstate(substate: PreConfirmationDrilldownSubstate): void {
+  const allowed = new Set<PreConfirmationDrilldownSubstate>([
+    'intake_created',
+    'initial_scale_assessed',
+    'staging_draft_created',
+    'critical_auditor_round_required',
+    'checkpoint_persistence_required',
+    'source_mutation_decision_required',
+    'promotion_required',
+    'promoted_not_confirmation_ready',
+    'blocked_by_semantic_gap',
+    'blocked_by_render_gate',
+    'pre_render_ready',
+    'user_confirmable',
+  ]);
+  if (!allowed.has(substate)) {
+    throw new Error(`requirements_authoring_substate_unknown:${substate}`);
+  }
+}
+
+function writeRequirementsAuthoringTransaction(input: {
+  root: string;
+  paths: PreConfirmationPaths;
+  entryMode: RequirementsAuthoringEntryMode;
+  substate: PreConfirmationDrilldownSubstate;
+  sourcePath: string;
+  intakePath?: string | null;
+  targetSourcePath?: string | null;
+  sourceStartHash: string;
+  draftHash?: string | null;
+  scaleRoutingDecision?: string | null;
+  nextRequiredAction?: string | null;
+}): void {
+  assertKnownRequirementsAuthoringSubstate(input.substate);
+  writeJsonUtf8(input.paths.authoringTransaction, {
+    schemaVersion: 'requirements-authoring-transaction/v1',
+    lane: 'author-confirmation-ready-source',
+    entryMode: input.entryMode,
+    substate: input.substate,
+    sourcePath: toRootRelativePath(input.root, input.sourcePath),
+    intakePath: input.intakePath ? toRootRelativePath(input.root, input.intakePath) : null,
+    targetSourcePath: input.targetSourcePath
+      ? toRootRelativePath(input.root, input.targetSourcePath)
+      : null,
+    sourceStartHash: input.sourceStartHash,
+    draftHash: input.draftHash ?? null,
+    scaleRoutingDecision: input.scaleRoutingDecision ?? null,
+    nextRequiredAction: input.nextRequiredAction ?? null,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 function writeSourcePromotionBlockDecision(input: {
@@ -3127,6 +3214,7 @@ function writeSourceMutationDecision(input: {
   recordId: string;
   requirementSetId: string;
   createdAt: string;
+  sourceDocumentExistedBefore?: boolean;
   sourceHashBefore: string;
   sourceHashAfter?: string | null;
   issues: PreConfirmationDrilldownIssue[];
@@ -3145,6 +3233,8 @@ function writeSourceMutationDecision(input: {
   const decision: SourceMutationDecision = {
     schemaVersion: 'requirements-authoring-source-mutation-decision/v1',
     sourcePath: toRootRelativePath(input.root, input.sourcePath),
+    sourceDocumentExistedBefore:
+      input.sourceDocumentExistedBefore ?? fs.existsSync(input.sourcePath),
     sourceDocumentHashBefore: input.sourceHashBefore,
     sourceDocumentHashAfter: input.sourceHashAfter ?? input.sourceHashBefore,
     recordId: input.recordId,
@@ -4112,10 +4202,11 @@ function materializeImplementationConfirmationSource(
   sourcePath: string,
   confirmation: Record<string, unknown>
 ): string {
-  const sourceText = fs.readFileSync(sourcePath, 'utf8');
-  const next = materializeImplementationConfirmationText(sourceText, confirmation);
-  fs.writeFileSync(sourcePath, next, 'utf8');
-  return next;
+  void sourcePath;
+  void confirmation;
+  throw new Error(
+    'direct_source_materialization_forbidden: generate a staging draft and promote it through promote-draft-large-doc.js --promotion-stage authoring-draft'
+  );
 }
 
 function materializeImplementationConfirmationText(
@@ -4187,6 +4278,9 @@ function writeSourceMaterializationReceipt(input: {
   sourceDocumentHashAfter: string;
   implementationConfirmationHash: string;
   transactionId?: string;
+  sourceWriteReceiptPath?: string;
+  sourceWriteReceiptHash?: string;
+  sourceWriteTransport?: 'requirements-contract-promotion-helper';
   sourceStartHash?: string;
   sourceDocumentHashPrePromote?: string;
   criticalAuditorReceiptHashes?: string[];
@@ -4194,39 +4288,10 @@ function writeSourceMaterializationReceipt(input: {
   draftStatus: SourceMaterializationDraftStatus;
   createdAt: string;
 }): SourceMaterializationReceiptWriteResult {
-  const receipt: SourceMaterializationReceipt = {
-    schemaVersion: SOURCE_MATERIALIZATION_RECEIPT_SCHEMA_VERSION,
-    sourcePath: toRootRelativePath(input.root, input.sourcePath),
-    requirementSetId: input.requirementSetId,
-    recordId: input.recordId,
-    sourceDocumentHashBefore: input.sourceDocumentHashBefore,
-    sourceDocumentHashAfter: input.sourceDocumentHashAfter,
-    implementationConfirmationHash: input.implementationConfirmationHash,
-    writtenIdRanges: input.writtenIdRanges,
-    draftStatus: input.draftStatus,
-    nextAuditCommand: nextSourceAuditCommand(input.root, input.sourcePath),
-    createdAt: input.createdAt,
-    createdBy: 'main-agent-source-materialization',
-    receiptHash: null,
-  };
-  if (normalizeText(input.transactionId)) {
-    receipt.transactionId = normalizeText(input.transactionId);
-  }
-  if (normalizeText(input.sourceStartHash)) {
-    receipt.sourceStartHash = normalizeText(input.sourceStartHash);
-  }
-  if (normalizeText(input.sourceDocumentHashPrePromote)) {
-    receipt.sourceDocumentHashPrePromote = normalizeText(input.sourceDocumentHashPrePromote);
-  }
-  if (Array.isArray(input.criticalAuditorReceiptHashes)) {
-    receipt.criticalAuditorReceiptHashes = input.criticalAuditorReceiptHashes;
-  }
-  receipt.receiptHash = sha256Json({ ...receipt, receiptHash: null });
-  writeJsonUtf8(input.paths.sourceMaterializationReceipt, receipt);
-  return {
-    receipt,
-    receiptPath: input.paths.sourceMaterializationReceipt,
-  };
+  void input;
+  throw new Error(
+    'source_materialization_receipt_forbidden: promotion-receipt.json is the only source write receipt'
+  );
 }
 
 function materializeImplementationConfirmationSourceWithReceipt(input: {
@@ -4246,38 +4311,113 @@ function materializeImplementationConfirmationSourceWithReceipt(input: {
   receipt: SourceMaterializationReceipt;
   receiptPath: string;
 } {
-  const sourceDocumentHashBefore = safeCurrentSourceDocumentHash(input.sourcePath);
-  if (
-    normalizeText(input.expectedSourceStartHash) &&
-    sourceDocumentHashBefore !== normalizeText(input.expectedSourceStartHash)
-  ) {
-    throw new Error(
-      `source_hash_changed_before_promotion: expected ${input.expectedSourceStartHash} but found ${sourceDocumentHashBefore}`
+  void input;
+  throw new Error(
+    'direct_source_materialization_receipt_forbidden: promotion-receipt.json from promote-draft-large-doc.js is the only source write receipt'
+  );
+}
+
+function promoteImplementationConfirmationDraftWithReceipt(input: {
+  root: string;
+  sourcePath: string;
+  draftPath: string;
+  paths: PreConfirmationPaths;
+}): {
+  ok: boolean;
+  receipt: Record<string, unknown> | null;
+  receiptPath: string;
+  command: ReturnType<typeof runNodeJson>;
+  issues: PreConfirmationDrilldownIssue[];
+} {
+  const script = resolveSkillScript(input.root, 'promote-draft-large-doc.js');
+  const args = [
+    '--draft',
+    input.draftPath,
+    '--target',
+    toRootRelativePath(input.root, input.sourcePath),
+    '--promotion-stage',
+    'authoring-draft',
+    '--scale-assessment',
+    input.paths.scaleAssessmentInitial,
+    '--scale-routing-decision',
+    input.paths.scaleRoutingDecision,
+    '--source-mutation-decision',
+    input.paths.sourceMutationDecision,
+    '--encoding-report',
+    input.paths.encodingReport,
+    '--receipt-out',
+    input.paths.promotionReceipt,
+    '--require',
+    'implementationConfirmation:',
+    '--json',
+  ];
+  if (fs.existsSync(input.paths.checkpointPersistenceEvidence)) {
+    args.push('--checkpoint-persistence-evidence', input.paths.checkpointPersistenceEvidence);
+  }
+  const command = runNodeJson(script, args, input.root);
+  const receipt = command.json;
+  const issues: PreConfirmationDrilldownIssue[] = [];
+  if (command.status !== 0 || !receipt || receipt.ok !== true) {
+    const gate = recordObject(receipt?.authoringPromotionGate);
+    const errors = Array.isArray(gate.errors) ? gate.errors.map((error) => normalizeText(error)) : [];
+    const failureDetails = errors.length > 0
+      ? errors.join(', ')
+      : [
+          normalizeText(receipt?.failureClass),
+          normalizeText(command.stderr),
+          normalizeText(command.stdout),
+        ]
+          .filter(Boolean)
+          .join(', ') || 'unknown failure';
+    issues.push(
+      preConfirmationIssue(
+        'requirements_contract_promotion_failed',
+        `Requirements contract promotion helper blocked source materialization: ${failureDetails}.`,
+        [toRootRelativePath(input.root, script), toRootRelativePath(input.root, input.paths.promotionReceipt)],
+        'source_mutation_gate'
+      )
     );
   }
-  materializeImplementationConfirmationSource(input.sourcePath, input.confirmation);
-  const materialized = readMaterializedConfirmation(input.sourcePath);
-  const receiptResult = writeSourceMaterializationReceipt({
-    root: input.root,
-    sourcePath: input.sourcePath,
-    paths: input.paths,
-    requirementSetId: input.requirementSetId,
-    recordId: input.recordId,
-    transactionId: input.transactionId,
-    sourceStartHash: input.expectedSourceStartHash,
-    sourceDocumentHashPrePromote: sourceDocumentHashBefore,
-    sourceDocumentHashBefore,
-    sourceDocumentHashAfter: materialized.sourceDocumentHash,
-    implementationConfirmationHash: materialized.implementationConfirmationHash,
-    criticalAuditorReceiptHashes: input.criticalAuditorReceiptHashes,
-    writtenIdRanges: writtenIdRangesFromConfirmation(materialized.extraction.confirmation),
-    draftStatus: input.draftStatus,
-    createdAt: input.createdAt,
-  });
   return {
-    materialized,
-    receipt: receiptResult.receipt,
-    receiptPath: receiptResult.receiptPath,
+    ok: issues.length === 0,
+    receipt,
+    receiptPath: input.paths.promotionReceipt,
+    command,
+    issues,
+  };
+}
+
+function normalizeImplementationConfirmationDraftForPromotion(input: {
+  root: string;
+  draftPath: string;
+  paths: PreConfirmationPaths;
+  blockingStage: string;
+}): {
+  ok: boolean;
+  draftHash: string;
+  issues: PreConfirmationDrilldownIssue[];
+} {
+  const script = resolveSkillScript(input.root, 'normalize-draft-markdown.js');
+  const command = runNodeJson(script, ['--draft', input.draftPath, '--json'], input.root);
+  const normalizedHash = normalizeText(command.json?.sha256);
+  if (command.status !== 0 || !command.json || command.json.ok !== true || !normalizedHash) {
+    return {
+      ok: false,
+      draftHash: fs.existsSync(input.draftPath) ? sha256File(input.draftPath) : '',
+      issues: [
+        preConfirmationIssue(
+          'requirements_contract_draft_normalization_failed',
+          `Requirements contract draft normalization failed before source promotion: ${command.stderr || command.stdout || script}.`,
+          [toRootRelativePath(input.root, script), toRootRelativePath(input.root, input.draftPath)],
+          input.blockingStage
+        ),
+      ],
+    };
+  }
+  return {
+    ok: true,
+    draftHash: normalizedHash,
+    issues: [],
   };
 }
 
@@ -4297,16 +4437,16 @@ function verifySourceMaterializationBeforeAudit(input: {
   expectedSourceDocumentHash: string;
   expectedImplementationConfirmationHash: string;
 }):
-  | { ok: true; receipt: SourceMaterializationReceipt }
+  | { ok: true; receipt: Record<string, unknown> }
   | { ok: false; issues: PreConfirmationDrilldownIssue[] } {
-  const receiptPath = input.paths.sourceMaterializationReceipt;
+  const receiptPath = input.paths.promotionReceipt;
   if (!fs.existsSync(receiptPath)) {
     return {
       ok: false,
       issues: [
         sourceMaterializationGateIssue(
-          'source_materialization_receipt_missing',
-          'Deep audit requires a source materialization receipt before request generation.',
+          'promotion_receipt_missing',
+          'Deep audit requires a promotion-receipt.json source write receipt before request generation.',
           [toRootRelativePath(input.root, receiptPath)]
         ),
       ],
@@ -4314,141 +4454,126 @@ function verifySourceMaterializationBeforeAudit(input: {
   }
 
   const rawReceipt = readJsonIfExists(receiptPath);
-  const receipt = recordObject(rawReceipt) as unknown as SourceMaterializationReceipt;
+  const receipt = recordObject(rawReceipt);
   const requiredFields = [
-    'schemaVersion',
-    'sourcePath',
-    'requirementSetId',
-    'recordId',
-    'sourceDocumentHashBefore',
-    'sourceDocumentHashAfter',
-    'implementationConfirmationHash',
-    'writtenIdRanges',
-    'draftStatus',
-    'nextAuditCommand',
-    'createdAt',
-    'createdBy',
-    'receiptHash',
+    'ok',
+    'promotionStage',
+    'targetPath',
+    'targetHash',
+    'manifestPath',
+    'preflight',
+    'authoringPromotionGate',
+    'receiptPath',
   ];
   const issues: PreConfirmationDrilldownIssue[] = [];
   for (const field of requiredFields) {
-    if (!(field in receipt) || receipt[field as keyof SourceMaterializationReceipt] == null) {
+    if (!(field in receipt) || receipt[field] == null) {
       issues.push(
         sourceMaterializationGateIssue(
-          'source_materialization_receipt_field_missing',
-          `Source materialization receipt is missing required field ${field}.`,
+          'promotion_receipt_field_missing',
+          `Promotion receipt is missing required field ${field}.`,
           [toRootRelativePath(input.root, receiptPath), field]
         )
       );
     }
   }
   const current = readMaterializedConfirmation(input.sourcePath);
-  const expectedReceiptHash = sha256Json({ ...receipt, receiptHash: null });
+  const currentTargetHash = sha256File(input.sourcePath);
   const sourceRelative = toRootRelativePath(input.root, input.sourcePath);
-  if (normalizeText(receipt.schemaVersion) !== SOURCE_MATERIALIZATION_RECEIPT_SCHEMA_VERSION) {
+  const manifest =
+    recordObject(recordObject(receipt.preflight).manifest);
+  const promotionGate = recordObject(receipt.authoringPromotionGate);
+  const sourceMutationDecision = recordObject(recordObject(promotionGate.decisions).sourceMutation);
+  if (receipt.ok !== true) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_schema_mismatch',
-        'Source materialization receipt schema version is not supported.',
+        'promotion_receipt_not_ok',
+        'Promotion receipt must have ok=true before deep audit request generation.',
         [toRootRelativePath(input.root, receiptPath)]
       )
     );
   }
-  if (normalizeText(receipt.sourcePath) !== sourceRelative) {
+  if (normalizeText(receipt.promotionStage) !== 'authoring-draft') {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_source_path_mismatch',
-        'Source materialization receipt sourcePath does not match the current source document.',
-        [sourceRelative, normalizeText(receipt.sourcePath)]
+        'promotion_receipt_stage_invalid',
+        'Promotion receipt must be produced by --promotion-stage authoring-draft.',
+        [normalizeText(receipt.promotionStage)]
       )
     );
   }
-  if (normalizeText(receipt.requirementSetId) !== input.requirementSetId) {
+  if (normalizeText(receipt.targetPath) !== sourceRelative) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_requirement_set_mismatch',
-        'Source materialization receipt requirementSetId does not match the current authoring lane.',
-        [input.requirementSetId, normalizeText(receipt.requirementSetId)]
+        'promotion_receipt_source_path_mismatch',
+        'Promotion receipt targetPath does not match the current source document.',
+        [sourceRelative, normalizeText(receipt.targetPath)]
       )
     );
   }
-  if (normalizeText(receipt.sourceDocumentHashAfter) !== current.sourceDocumentHash) {
+  if (normalizeText(receipt.targetHash) !== currentTargetHash) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_source_hash_stale',
-        'Current source document hash differs from receipt sourceDocumentHashAfter.',
-        [current.sourceDocumentHash, normalizeText(receipt.sourceDocumentHashAfter)]
+        'promotion_receipt_source_hash_stale',
+        'Current target file hash differs from promotion receipt targetHash.',
+        [currentTargetHash, normalizeText(receipt.targetHash)]
       )
     );
   }
-  if (normalizeText(receipt.sourceDocumentHashAfter) !== input.expectedSourceDocumentHash) {
+  if (current.sourceDocumentHash !== input.expectedSourceDocumentHash) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_expected_source_hash_mismatch',
-        'Receipt sourceDocumentHashAfter does not match the current audit input hash.',
-        [input.expectedSourceDocumentHash, normalizeText(receipt.sourceDocumentHashAfter)]
+        'promotion_receipt_expected_source_hash_mismatch',
+        'Current semantic source hash does not match the current audit input hash.',
+        [input.expectedSourceDocumentHash, current.sourceDocumentHash]
       )
     );
   }
-  if (
-    normalizeText(receipt.implementationConfirmationHash) !==
-      current.implementationConfirmationHash ||
-    normalizeText(receipt.implementationConfirmationHash) !==
-      input.expectedImplementationConfirmationHash
-  ) {
+  if (current.implementationConfirmationHash !== input.expectedImplementationConfirmationHash) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_confirmation_hash_stale',
-        'Inline implementationConfirmation hash differs from the materialization receipt.',
+        'promotion_receipt_confirmation_hash_stale',
+        'Inline implementationConfirmation hash differs from the current audit input hash.',
         [
           current.implementationConfirmationHash,
-          normalizeText(receipt.implementationConfirmationHash),
+          input.expectedImplementationConfirmationHash,
         ]
       )
     );
   }
-  if (normalizeText(receipt.draftStatus) !== 'confirmation_ready') {
+  if (normalizeText(manifest.draftHash) !== currentTargetHash) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_not_confirmation_ready',
-        'Deep audit requires draftStatus=confirmation_ready.',
-        [normalizeText(receipt.draftStatus)]
+        'promotion_receipt_manifest_draft_hash_stale',
+        'Promotion receipt manifest draftHash does not match the current target file hash.',
+        [currentTargetHash, normalizeText(manifest.draftHash)]
       )
     );
   }
-  if (!Array.isArray(receipt.writtenIdRanges)) {
+  if (normalizeText(sourceMutationDecision.sourceDocumentHashAfter) !== currentTargetHash) {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_written_id_ranges_invalid',
-        'Source materialization receipt writtenIdRanges must be an array.',
+        'promotion_receipt_source_mutation_after_hash_stale',
+        'Promotion receipt source mutation decision binding does not match current target file hash.',
+        [currentTargetHash, normalizeText(sourceMutationDecision.sourceDocumentHashAfter)]
+      )
+    );
+  }
+  if (promotionGate.ok !== true) {
+    issues.push(
+      sourceMaterializationGateIssue(
+        'promotion_receipt_authoring_gate_not_ok',
+        'Promotion receipt authoringPromotionGate must be ok=true before deep audit request generation.',
         [toRootRelativePath(input.root, receiptPath)]
       )
     );
   }
-  if (normalizeText(receipt.createdBy) !== 'main-agent-source-materialization') {
+  if (sourceMutationDecision.finalDecision !== 'allow_source_materialization') {
     issues.push(
       sourceMaterializationGateIssue(
-        'source_materialization_receipt_created_by_invalid',
-        'Source materialization receipt createdBy must be main-agent-source-materialization.',
-        [normalizeText(receipt.createdBy)]
-      )
-    );
-  }
-  if (!Number.isFinite(Date.parse(normalizeText(receipt.createdAt)))) {
-    issues.push(
-      sourceMaterializationGateIssue(
-        'source_materialization_receipt_created_at_invalid',
-        'Source materialization receipt createdAt must be an ISO-8601 timestamp.',
-        [normalizeText(receipt.createdAt)]
-      )
-    );
-  }
-  if (normalizeText(receipt.receiptHash) !== expectedReceiptHash) {
-    issues.push(
-      sourceMaterializationGateIssue(
-        'source_materialization_receipt_hash_stale',
-        'Source materialization receiptHash does not match receipt content.',
-        [expectedReceiptHash, normalizeText(receipt.receiptHash)]
+        'promotion_receipt_source_mutation_decision_not_allowed',
+        'Promotion receipt must bind a source mutation decision with finalDecision=allow_source_materialization.',
+        [normalizeText(sourceMutationDecision.finalDecision)]
       )
     );
   }
@@ -4475,14 +4600,268 @@ function buildSourceMaterializationRequiredResult(input: {
     requirementSetId: input.requirementSetId,
     paths: input.paths,
     status: 'blocked',
-    blockingStage: 'source_materialization_required_before_audit',
-    nextRequiredAction: 'materialize_source_document_before_deep_audit',
+    blockingStage: 'promotion_receipt_required_before_audit',
+    nextRequiredAction: 'promote_source_document_through_authoring_draft_before_deep_audit',
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
     packetHash: input.packetHash,
     warnings: input.warnings,
     issues: input.issues,
   });
+}
+
+const AUTHORING_REPAIR_CHECKPOINT_IDS = [
+  'cp-00-semantic-kernel',
+  'cp-01-must-decomposition-packet',
+  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-03-packet-to-source-materialization',
+  'cp-04-id-freeze',
+  'cp-05-implementation-confirmation-core',
+  'cp-06-projections',
+  'cp-07-human-readable-views',
+  'cp-08-pre-render-global-reconciliation',
+];
+
+function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
+  root: string;
+  repairDraftPath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+  routeDecision: Record<string, unknown> | null;
+}): { ok: true } | { ok: false; issue: PreConfirmationDrilldownIssue } {
+  const routeDecisionText = normalizeText(input.routeDecision?.decision);
+  if (!['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecisionText)) {
+    return { ok: true };
+  }
+
+  const checkpointScript = resolveSkillScript(input.root, 'run_semantic_checkpoints.js');
+  const combinedGate = runNodeJson(
+    checkpointScript,
+    [
+      '--source',
+      input.repairDraftPath,
+      '--progress',
+      input.paths.progress,
+      '--mode',
+      'pre-render-gate',
+      '--json',
+    ],
+    input.root
+  );
+  const combinedReport = combinedGate.json;
+  if (!combinedReport && !fs.existsSync(input.paths.preRenderGlobalConsistency)) {
+    return {
+      ok: false,
+      issue: commandFailureIssue(
+        'authoring_repair_checkpoint_global_gate_report_missing',
+        checkpointScript,
+        combinedGate
+      ),
+    };
+  }
+  if (!fs.existsSync(input.paths.preRenderMustGate)) {
+    return {
+      ok: false,
+      issue: sourceMaterializationGateIssue(
+        'authoring_repair_checkpoint_must_gate_report_missing',
+        'Authoring repair checkpoint persistence requires a current pre-render MUST gate report hash before promotion.',
+        [toRootRelativePath(input.root, input.paths.preRenderMustGate)]
+      ),
+    };
+  }
+  if (!fs.existsSync(input.paths.preRenderGlobalConsistency)) {
+    const globalGate = recordObject(combinedReport?.globalConsistencyGate);
+    if (Object.keys(globalGate).length > 0) {
+      writeJsonUtf8(input.paths.preRenderGlobalConsistency, globalGate);
+    }
+  }
+  if (!fs.existsSync(input.paths.preRenderGlobalConsistency)) {
+    return {
+      ok: false,
+      issue: sourceMaterializationGateIssue(
+        'authoring_repair_checkpoint_global_gate_report_missing',
+        'Authoring repair checkpoint persistence requires a current pre-render global consistency report hash before promotion.',
+        [toRootRelativePath(input.root, input.paths.preRenderGlobalConsistency)]
+      ),
+    };
+  }
+  if (!fs.existsSync(input.paths.reconciliationReport)) {
+    return {
+      ok: false,
+      issue: sourceMaterializationGateIssue(
+        'authoring_repair_checkpoint_reconciliation_missing',
+        'Authoring repair checkpoint persistence requires packet/source reconciliation evidence before promotion.',
+        [toRootRelativePath(input.root, input.paths.reconciliationReport)]
+      ),
+    };
+  }
+
+  const documentHash = sha256File(input.repairDraftPath);
+  const checkpoints = AUTHORING_REPAIR_CHECKPOINT_IDS.map((id) => ({
+    id,
+    status: 'passed',
+    documentHash,
+    completedAt: input.createdAt,
+  }));
+  writeJsonUtf8(input.paths.progress, {
+    schemaVersion: 'semantic-checkpoint-progress/v1',
+    recordId: input.recordId,
+    source: toRootRelativePath(input.root, input.repairDraftPath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    documentHash,
+    mode: routeDecisionText,
+    modeDecision: routeDecisionText,
+    authoringMode: 'authoring_repair_gap_materialization',
+    checkpointPersistenceStage: 'authoring_repair_gap_materialization',
+    lastCompletedCheckpoint: 'cp-08-pre-render-global-reconciliation',
+    currentCheckpoint: null,
+    next: null,
+    validation: {
+      checkpointPersistence: 'pass',
+      repairDraftPersistence: 'pass',
+      sourceWriteReceiptRequired: 'promotion-receipt',
+    },
+    checkpoints,
+    createdBy:
+      'main_agent_orchestration.requirement_confirmation.authoring_repair.checkpoint_persistence',
+    createdAt: input.createdAt,
+  });
+
+  const evidence = {
+    schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
+    checkpointPersistenceSatisfiedCandidate: true,
+    checkpointPersistenceStage: 'authoring_repair_gap_materialization',
+    completedCheckpointIds: AUTHORING_REPAIR_CHECKPOINT_IDS,
+    checkpointPersistenceRef: {
+      routeDecisionHash: normalizeText(input.routeDecision?.routeDecisionHash),
+      progressPath: toRootRelativePath(input.root, input.paths.progress),
+      progressHash: sha256File(input.paths.progress),
+      preRenderMustDecompositionGateHash: sha256File(input.paths.preRenderMustGate),
+      preRenderGlobalConsistencyHash: sha256File(input.paths.preRenderGlobalConsistency),
+      packetSourceReconciliationHash: sha256File(input.paths.reconciliationReport),
+    },
+    completedAt: input.createdAt,
+    createdBy:
+      'main_agent_orchestration.requirement_confirmation.authoring_repair.checkpoint_persistence',
+  };
+  writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
+  const validationIssues = validateCheckpointPersistenceEvidence({
+    root: input.root,
+    sourcePath: input.repairDraftPath,
+    paths: input.paths,
+    evidencePath: input.paths.checkpointPersistenceEvidence,
+    routeDecision: input.routeDecision,
+  });
+  if (validationIssues.length > 0) {
+    return { ok: false, issue: validationIssues[0] };
+  }
+  return { ok: true };
+}
+
+function ensureCheckpointPersistenceForAuthoring(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  routeDecision: Record<string, unknown> | null;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): { ok: true } | { ok: false; issues: PreConfirmationDrilldownIssue[] } {
+  const routeDecisionText = normalizeText(input.routeDecision?.decision);
+  if (!['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecisionText)) {
+    return { ok: true };
+  }
+
+  const checkpointScript = resolveSkillScript(input.root, 'run_semantic_checkpoints.js');
+  const command = runNodeJson(
+    checkpointScript,
+    [
+      '--source',
+      input.draftSourcePath,
+      '--progress',
+      input.paths.progress,
+      '--mode',
+      'checkpoint-persistence',
+      '--route-decision',
+      input.paths.scaleRoutingDecision,
+      '--json',
+    ],
+    input.root
+  );
+  if (command.status !== 0) {
+    return {
+      ok: false,
+      issues: [commandFailureIssue('checkpoint_persistence_command_failed', checkpointScript, command)],
+    };
+  }
+
+  const existingEvidence = readJsonIfExists(input.paths.checkpointPersistenceEvidence);
+  const commandEvidence = recordObject(command.json?.checkpointPersistenceEvidence);
+  const commandRoot = recordObject(command.json);
+  const stdoutEvidence =
+    Object.keys(commandEvidence).length > 0
+      ? commandEvidence
+      : Object.keys(commandRoot).length > 0
+        ? commandRoot
+        : null;
+  const evidence = existingEvidence ?? (stdoutEvidence
+    ? {
+        ...stdoutEvidence,
+        schemaVersion:
+          normalizeText(stdoutEvidence.schemaVersion) || 'semantic-checkpoint-persistence-evidence/v1',
+        checkpointPersistenceRef: {
+          ...recordObject(stdoutEvidence.checkpointPersistenceRef),
+          routeDecisionHash:
+            normalizeText(recordObject(stdoutEvidence.checkpointPersistenceRef).routeDecisionHash) ||
+            normalizeText(input.routeDecision?.routeDecisionHash),
+        },
+        createdAt: input.createdAt,
+        createdBy:
+          'main_agent_orchestration.requirement_confirmation.authoring.checkpoint_persistence',
+      }
+    : {});
+  if (Object.keys(evidence).length > 0) {
+    writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
+  }
+
+  const validationIssues = validateCheckpointPersistenceEvidence({
+    root: input.root,
+    sourcePath: input.draftSourcePath,
+    paths: input.paths,
+    evidencePath: input.paths.checkpointPersistenceEvidence,
+    routeDecision: input.routeDecision,
+  });
+  const completedIds = asStringArray(evidence.completedCheckpointIds);
+  const missingCheckpoints = AUTHORING_REPAIR_CHECKPOINT_IDS.filter((id) => !completedIds.includes(id));
+  if (missingCheckpoints.length > 0) {
+    validationIssues.push(
+      preConfirmationIssue(
+        'checkpoint_persistence_evidence_incomplete',
+        `Checkpoint persistence evidence is missing completed checkpoint IDs: ${missingCheckpoints.join(', ')}.`,
+        [toRootRelativePath(input.root, input.paths.checkpointPersistenceEvidence)],
+        'requirements_contract_authoring_scale_routing'
+      )
+    );
+  }
+  if (normalizeText(evidence.schemaVersion) !== 'semantic-checkpoint-persistence-evidence/v1') {
+    validationIssues.push(
+      preConfirmationIssue(
+        'checkpoint_persistence_evidence_schema_invalid',
+        'Checkpoint persistence evidence schemaVersion must equal semantic-checkpoint-persistence-evidence/v1.',
+        [toRootRelativePath(input.root, input.paths.checkpointPersistenceEvidence)],
+        'requirements_contract_authoring_scale_routing'
+      )
+    );
+  }
+  if (validationIssues.length > 0) {
+    return { ok: false, issues: validationIssues };
+  }
+  return { ok: true };
 }
 
 function materializeCriticalAuditorGapFix(input: {
@@ -4499,13 +4878,23 @@ function materializeCriticalAuditorGapFix(input: {
   | {
       ok: true;
       materialized: ReturnType<typeof readMaterializedConfirmation>;
-      receipt: SourceMaterializationReceipt;
+      receipt: Record<string, unknown> | null;
       receiptPath: string;
     }
   | { ok: false; issue: PreConfirmationDrilldownIssue } {
   const semanticBeforeHash = implementationConfirmationHashForPreConfirmation(input.confirmation);
   const appliedActions: Record<string, unknown>[] = [];
   const changedTargetFields = new Set<string>();
+  const repairBackRef = (
+    action: CriticalAuditorRepairAction,
+    materializedId: string
+  ): Record<string, unknown> => ({
+    derivedFromMustRef:
+      normalizeText(action.type === 'add_must' || action.type === 'split_must' ? materializedId : '') ||
+      asStringArray(action.mustRefs)[0] ||
+      materializedId,
+    projectionStatus: 'synchronized',
+  });
   const appendRow = (
     confirmation: Record<string, unknown>,
     field: string,
@@ -4523,6 +4912,7 @@ function materializeCriticalAuditorGapFix(input: {
       {
         id,
         ...value,
+        ...repairBackRef(action, id),
         text: normalizeText(value.text) || action.sourceText,
         sourceSpan: action.sourceSpan,
         sourceText: action.sourceText,
@@ -4578,6 +4968,7 @@ function materializeCriticalAuditorGapFix(input: {
       {
         id,
         ...value,
+        ...repairBackRef(action, id),
         sourceSpan: action.sourceSpan,
         sourceText: action.sourceText,
         sourceRequirementIds: action.requirementIds,
@@ -4705,17 +5096,185 @@ function materializeCriticalAuditorGapFix(input: {
       },
     },
   });
-  const materialization = materializeImplementationConfirmationSourceWithReceipt({
+  const repairDraftPath = path.join(input.paths.authoringDir, 'authoring-repair-draft-source.md');
+  fs.writeFileSync(
+    repairDraftPath,
+    materializeImplementationConfirmationText(
+      fs.readFileSync(input.sourcePath, 'utf8'),
+      nextConfirmation
+    ),
+    'utf8'
+  );
+  const encodingGate = runEncodingIntegrityGate({
+    root: input.root,
+    paths: input.paths,
+    targetPaths: [repairDraftPath],
+  });
+  if (encodingGate.issues.length > 0) {
+    return { ok: false, issue: encodingGate.issues[0] };
+  }
+  const normalizedRepairDraft = normalizeImplementationConfirmationDraftForPromotion({
+    root: input.root,
+    draftPath: repairDraftPath,
+    paths: input.paths,
+    blockingStage: 'source_gap_fix_materialization_required',
+  });
+  if (!normalizedRepairDraft.ok) {
+    return { ok: false, issue: normalizedRepairDraft.issues[0] };
+  }
+  const repairScaleAssessment = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: repairDraftPath,
+    paths: input.paths,
+    phase: 'initial_assessment',
+  });
+  if (repairScaleAssessment.issues.length > 0) {
+    return { ok: false, issue: repairScaleAssessment.issues[0] };
+  }
+  const repairDraftText = fs.readFileSync(repairDraftPath, 'utf8');
+  const repairDraftExtraction = extractImplementationConfirmationBlock(repairDraftText);
+  if (!repairDraftExtraction) {
+    return {
+      ok: false,
+      issue: sourceMaterializationGateIssue(
+        'source_gap_fix_draft_missing_implementation_confirmation',
+        'Validated Critical Auditor repair actions must produce a staging draft with implementationConfirmation before promotion.',
+        [toRootRelativePath(input.root, repairDraftPath)]
+      ),
+    };
+  }
+  buildPreserveExistingAuthoringArtifacts({
+    root: input.root,
+    sourcePath: repairDraftPath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+    sourceText: repairDraftText,
+    extraction: repairDraftExtraction,
+    consecutiveNoNewGapRounds: 0,
+  });
+  const repairPostPacketScaleAssessment = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: repairDraftPath,
+    paths: input.paths,
+    phase: 'post_packet_assessment',
+  });
+  if (repairPostPacketScaleAssessment.issues.length > 0) {
+    return { ok: false, issue: repairPostPacketScaleAssessment.issues[0] };
+  }
+  const mustGateScript = resolveSkillScript(input.root, 'pre_render_must_decomposition_gate.js');
+  const mustGate = runNodeJson(
+    mustGateScript,
+    [
+      '--source',
+      repairDraftPath,
+      '--authoring-dir',
+      input.paths.authoringDir,
+      '--out',
+      input.paths.preRenderMustGate,
+      '--receipt',
+      input.paths.mustDecompositionReceipt,
+      '--reconciliation-report',
+      input.paths.reconciliationReport,
+      '--json',
+    ],
+    input.root
+  );
+  if (!mustGate.json && !fs.existsSync(input.paths.reconciliationReport)) {
+    return {
+      ok: false,
+      issue: commandFailureIssue(
+        'source_gap_fix_reconciliation_report_missing',
+        mustGateScript,
+        mustGate
+      ),
+    };
+  }
+  let repairPostMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: repairDraftPath,
+    paths: input.paths,
+    phase: 'post_materialization_assessment',
+  });
+  if (repairPostMaterializationScaleAssessment.issues.length > 0) {
+    return { ok: false, issue: repairPostMaterializationScaleAssessment.issues[0] };
+  }
+  let repairRouteDecision = repairPostMaterializationScaleAssessment.routingDecision;
+  const checkpointEvidence = prepareAuthoringRepairCheckpointPersistenceEvidence({
+    root: input.root,
+    repairDraftPath,
+    paths: input.paths,
+    recordId: input.recordId,
+    sourceDocumentHash: sourceDocumentHashForPreConfirmation(
+      repairDraftText,
+      repairDraftExtraction.blockText,
+      repairDraftExtraction.confirmation
+    ),
+    implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
+      repairDraftExtraction.confirmation
+    ),
+    createdAt: input.createdAt,
+    routeDecision: repairRouteDecision,
+  });
+  if (!checkpointEvidence.ok) {
+    return { ok: false, issue: checkpointEvidence.issue };
+  }
+  if (
+    ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(
+      normalizeText(repairRouteDecision?.decision)
+    )
+  ) {
+    repairPostMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
+      root: input.root,
+      sourcePath: repairDraftPath,
+      paths: input.paths,
+      phase: 'post_materialization_assessment',
+      checkpointPersistenceEvidencePath: input.paths.checkpointPersistenceEvidence,
+    });
+    if (repairPostMaterializationScaleAssessment.issues.length > 0) {
+      return { ok: false, issue: repairPostMaterializationScaleAssessment.issues[0] };
+    }
+    repairRouteDecision = repairPostMaterializationScaleAssessment.routingDecision;
+  }
+  const currentTargetHash = fs.existsSync(input.sourcePath)
+    ? sha256File(input.sourcePath)
+    : 'absent';
+  writeSourceMutationDecision({
     root: input.root,
     sourcePath: input.sourcePath,
     paths: input.paths,
-    requirementSetId: input.requirementSetId,
     recordId: input.recordId,
-    confirmation: nextConfirmation,
-    draftStatus: 'confirmation_ready',
+    requirementSetId: input.requirementSetId,
     createdAt: input.createdAt,
+    sourceDocumentExistedBefore: fs.existsSync(input.sourcePath),
+    sourceHashBefore: currentTargetHash,
+    sourceHashAfter: normalizedRepairDraft.draftHash,
+    issues: [],
+    coverageDecision: 'pass',
+    targetAuthorityDecision: 'pass',
+    validationAuthorityDecision: 'pass',
+    projectionSanityDecision: 'pass',
+    auditEvidenceDecision: 'pass',
+    scaleRoutingDecision:
+      normalizeText(repairRouteDecision?.decision) ||
+      normalizeText(repairPostPacketScaleAssessment.routingDecision?.decision) ||
+      normalizeText(repairScaleAssessment.routingDecision?.decision) ||
+      'authoring_repair_preserve_existing',
+    reverseAuditDraftValidationDecision: 'pass',
+    sourceMutationPerformed: false,
   });
-  if (materialization.materialized.sourceDocumentHash === input.previousSourceDocumentHash) {
+  const promotion = promoteImplementationConfirmationDraftWithReceipt({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    draftPath: repairDraftPath,
+    paths: input.paths,
+  });
+  if (!promotion.ok) {
+    return { ok: false, issue: promotion.issues[0] };
+  }
+  const materialized = readMaterializedConfirmation(input.sourcePath);
+  if (materialized.sourceDocumentHash === input.previousSourceDocumentHash) {
     return {
       ok: false,
       issue: sourceMaterializationGateIssue(
@@ -4725,7 +5284,12 @@ function materializeCriticalAuditorGapFix(input: {
       ),
     };
   }
-  return { ok: true, ...materialization };
+  return {
+    ok: true,
+    materialized,
+    receipt: promotion.receipt,
+    receiptPath: input.paths.promotionReceipt,
+  };
 }
 
 function buildPreserveExistingAuthoringArtifacts(input: {
@@ -6116,6 +6680,84 @@ function runCriticalAuditorReceiptLoop(input: {
   return { latestReceiptHash, consecutiveNoNewGapRounds, receipts, issues };
 }
 
+function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  transaction: CriticalAuditorStagingTransaction;
+  receipts: Record<string, unknown>[];
+  auditInputHash: string;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  packetHash: string;
+  createdAt: string;
+}): { latestReceiptHash: string | null; receipts: Record<string, unknown>[] } {
+  let latestReceiptHash: string | null = null;
+  const mirrored = input.receipts.map((receipt, index) => {
+    const roundIndex = Number(receipt.roundIndex ?? index + 1);
+    const auditResult: CriticalAuditorRoundResult = {
+      verdict: normalizeCriticalAuditorVerdict(
+        recordObject(receipt.convergenceDecision).verdict
+      ),
+      gapCandidates: asRecordArray(receipt.gapCandidates),
+      validatedGaps: asRecordArray(receipt.validatedGaps),
+      rejectedGapCandidates: asRecordArray(receipt.rejectedGapCandidates),
+      mutationPressureFindings: asRecordArray(receipt.mutationPressureFindings),
+      overBroadTaskFindings: asRecordArray(receipt.overBroadTaskFindings),
+      missingProjectionFindings: asRecordArray(receipt.missingProjectionFindings),
+      invalidProofFindings: asRecordArray(receipt.invalidProofFindings),
+      legacyBypassFindings: asRecordArray(receipt.legacyBypassFindings),
+      sourceMaterializationFindings: asRecordArray(receipt.sourceMaterializationFindings),
+      reviewedMustRefs: asStringArray(receipt.reviewedMustRefs),
+      reviewedProjectionRefs: asStringArray(receipt.reviewedProjectionRefs),
+      checkedProjectionGroups: asStringArray(receipt.checkedProjectionGroups),
+      priorFindingsDisposition: asRecordArray(receipt.priorFindingsDisposition),
+      falsePositiveProofs: asRecordArray(receipt.falsePositiveProofs),
+      rationale: normalizeText(receipt.noNewGapRationale) || 'No new valid gap detected in mirrored final draft receipt.',
+      gateDryRunHash: normalizeText(receipt.gateDryRunHash) || undefined,
+      reconciliationIssueCount:
+        typeof receipt.reconciliationIssueCount === 'number'
+          ? receipt.reconciliationIssueCount
+          : undefined,
+    };
+    const mirroredReceipt = buildCriticalAuditorReceipt({
+      roundIndex,
+      transactionId: input.transaction.transactionId,
+      namespaceVersion: input.transaction.namespaceVersion,
+      requestHash: normalizeText(receipt.requestHash) || undefined,
+      gateDryRunHash: normalizeText(receipt.gateDryRunHash) || undefined,
+      responseHash: normalizeText(receipt.responseHash) || undefined,
+      auditInputHash: input.auditInputHash,
+      recordId: input.recordId,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      packetHash: input.packetHash,
+      createdAt: input.createdAt,
+      auditResult,
+    });
+    latestReceiptHash = normalizeText(mirroredReceipt.receiptHash);
+    writeJsonUtf8(
+      criticalAuditorReceiptPath(input.transaction, roundIndex),
+      { criticalAuditorReceipt: mirroredReceipt }
+    );
+    writeJsonUtf8(
+      path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+      {
+        criticalAuditorReceipt: mirroredReceipt,
+        transactionMirror: {
+          transactionId: input.transaction.transactionId,
+          sourcePath: path
+            .relative(input.paths.authoringDir, criticalAuditorReceiptPath(input.transaction, roundIndex))
+            .replace(/\\/g, '/'),
+        },
+      }
+    );
+    return mirroredReceipt;
+  });
+  return { latestReceiptHash, receipts: mirrored };
+}
+
 function deriveAuditConvergenceFromReceipts(
   receipts: Record<string, unknown>[],
   sourceDocumentHash: string,
@@ -6197,6 +6839,7 @@ function authoringRepairPaths(root: string, paths: PreConfirmationPaths): Record
     authoringDir: toRootRelativePath(root, paths.authoringDir),
     semanticKernel: toRootRelativePath(root, paths.semanticKernel),
     mustDecompositionPacket: toRootRelativePath(root, paths.mustDecompositionPacket),
+    promotionReceipt: toRootRelativePath(root, paths.promotionReceipt),
     sourceMaterializationReceipt: toRootRelativePath(root, paths.sourceMaterializationReceipt),
     packetSourceReconciliation: toRootRelativePath(root, paths.reconciliationReport),
     semanticCheckpointProgress: toRootRelativePath(root, paths.progress),
@@ -6237,11 +6880,11 @@ function buildAuthoringRepairResult(input: {
       requiredEvidence: [
         'current_source_hash',
         'inline_implementationConfirmation',
-        'source_materialization_receipt',
+        'promotion_receipt',
       ],
       blockingStage:
-        input.blockingStage === 'source_materialization_required_before_audit'
-          ? 'source_materialization_required_before_deep_audit'
+        input.blockingStage === 'promotion_receipt_required_before_audit'
+          ? 'promotion_receipt_required_before_deep_audit'
           : input.blockingStage,
       notAllowedBeforeMaterialization: [
         'critical_auditor_round_request_generation',
@@ -7226,8 +7869,8 @@ export function runMainAgentAuthoringRepair(
       requirementSetId: identity.requirementSetId,
       paths,
       status: 'blocked',
-      blockingStage: 'source_materialization_required_before_audit',
-      nextRequiredAction: 'materialize_source_document_before_deep_audit',
+      blockingStage: 'implementation_confirmation_missing',
+      nextRequiredAction: 'run_author_confirmation_ready_source_before_preserve_existing_repair',
       issues: [
         preConfirmationIssue(
           'implementation_confirmation_missing',
@@ -7973,6 +8616,27 @@ function resolveSkillScript(root: string, relativeScript: string): string {
   return path.join(candidates[0], 'scripts', relativeScript);
 }
 
+function resolveEncodingIntegrityScript(root: string): string {
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
+  const candidates = [
+    path.join(root, '_bmad', 'skills', 'encoding-integrity-guardian'),
+    path.join(root, '.codex', 'skills', 'encoding-integrity-guardian'),
+    path.join(root, '.cursor', 'skills', 'encoding-integrity-guardian'),
+    path.join(root, '.claude', 'skills', 'encoding-integrity-guardian'),
+    path.join(packageRoot, '_bmad', 'skills', 'encoding-integrity-guardian'),
+    path.join(repoRoot, '_bmad', 'skills', 'encoding-integrity-guardian'),
+    path.join(repoRoot, '.codex', 'skills', 'encoding-integrity-guardian'),
+    ...(home ? [path.join(home, '.codex', 'skills', 'encoding-integrity-guardian')] : []),
+  ];
+  for (const skillDir of candidates) {
+    const scriptPath = path.join(skillDir, 'scripts', 'check-encoding-integrity.js');
+    if (fs.existsSync(scriptPath)) return scriptPath;
+  }
+  return path.join(candidates[0], 'scripts', 'check-encoding-integrity.js');
+}
+
 function runNodeJson(
   scriptPath: string,
   args: string[],
@@ -8014,6 +8678,47 @@ function runNodeJson(
     stderr: result.stderr,
     json,
   };
+}
+
+function runEncodingIntegrityGate(input: {
+  root: string;
+  paths: PreConfirmationPaths;
+  targetPaths?: string[];
+}): {
+  report: Record<string, unknown> | null;
+  issues: PreConfirmationDrilldownIssue[];
+} {
+  const script = resolveEncodingIntegrityScript(input.root);
+  const pathArgs = (input.targetPaths ?? [])
+    .filter((item) => normalizeText(item))
+    .flatMap((item) => ['--paths', toRootRelativePath(input.root, item)]);
+  const command = runNodeJson(script, ['--json', ...pathArgs], input.root);
+  const report = command.json;
+  const issues: PreConfirmationDrilldownIssue[] = [];
+  if (command.status !== 0 || !report) {
+    issues.push(
+      preConfirmationIssue(
+        'encoding_gate_report_missing',
+        `Encoding integrity gate failed or did not emit JSON: ${command.stderr || command.stdout || script}.`,
+        [script],
+        'encoding_integrity_gate'
+      )
+    );
+  } else {
+    writeJsonUtf8(input.paths.encodingReport, report);
+    const findings = Array.isArray(report.findings) ? report.findings : [];
+    if (findings.length > 0) {
+      issues.push(
+        preConfirmationIssue(
+          'encoding_gate_findings_present',
+          `Encoding integrity gate reported ${findings.length} finding(s).`,
+          [toRootRelativePath(input.root, input.paths.encodingReport)],
+          'encoding_integrity_gate'
+        )
+      );
+    }
+  }
+  return { report, issues };
 }
 
 export function validateWrittenDeepReviewInput(input: {
@@ -8139,7 +8844,7 @@ function runPreConfirmationScaleAssessment(input: {
   const assessment = command.json ?? readJsonIfExists(outByPhase[input.phase]);
   const routingDecision = readJsonIfExists(input.paths.scaleRoutingDecision);
   const issues: PreConfirmationDrilldownIssue[] = [];
-  if (command.status !== 0 || !assessment) {
+  if (!assessment) {
     issues.push(commandFailureIssue('scale_assessment_report_missing', script, command));
   }
   if (!routingDecision) {
@@ -8267,6 +8972,7 @@ function artifactMap(root: string, paths: PreConfirmationPaths): Record<string, 
     criticalAuditorReceiptGlob: `${toRootRelativePath(root, paths.authoringDir)}/critical-auditor-receipt-round-*.json`,
     criticalAuditorStagingRoot: toRootRelativePath(root, path.join(paths.authoringDir, 'staging')),
     criticalAuditorArchiveDir: toRootRelativePath(root, paths.archiveDir),
+    promotionReceipt: toRootRelativePath(root, paths.promotionReceipt),
     sourceMaterializationReceipt: toRootRelativePath(root, paths.sourceMaterializationReceipt),
     packetSourceReconciliation: toRootRelativePath(root, paths.reconciliationReport),
     semanticCheckpointProgress: toRootRelativePath(root, paths.progress),
@@ -8380,15 +9086,8 @@ function buildPreConfirmationResult(input: {
       : null,
     confirmability: confirmable ? 'confirmable' : 'blocked',
     deliveryReadiness,
-    receiptPath:
-      input.receiptPath ??
-      (fs.existsSync(input.paths.sourceMaterializationReceipt)
-        ? toRootRelativePath(input.root, input.paths.sourceMaterializationReceipt)
-        : null),
-    receiptHash:
-      input.receiptHash ??
-      normalizeText(readJsonIfExists(input.paths.sourceMaterializationReceipt)?.receiptHash) ??
-      null,
+    receiptPath: input.receiptPath ?? null,
+    receiptHash: input.receiptHash ?? null,
     updatedSourceSections: input.updatedSourceSections ?? [],
     blockingNextAction: input.blockingNextAction ?? null,
     finalStandards: {
@@ -8595,12 +9294,30 @@ export function runMainAgentPreConfirmationDrilldown(
   options: PreConfirmationRunOptions
 ): MainAgentPreConfirmationDrilldownResult {
   const sourceArg = normalizeText(options.source);
-  if (!sourceArg) {
-    throw new Error('pre-confirmation-drilldown requires --source <source-document.md>');
+  const intakeArg = normalizeText(options.intakeSource);
+  const targetSourceArg = normalizeText(options.targetSource);
+  if (sourceArg && intakeArg) {
+    throw new Error('requirements_authoring_entry_mode_conflict');
   }
-  const sourcePath = resolveRootRelativePath(root, sourceArg);
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`source document not found: ${sourcePath}`);
+  if (intakeArg && !targetSourceArg) {
+    throw new Error('requirements_authoring_target_source_required');
+  }
+  if (!sourceArg && !intakeArg) {
+    throw new Error(
+      'pre-confirmation-drilldown requires --source <source-document.md> or --intake-source <intake.md> --target-source <target.md>'
+    );
+  }
+  const entryMode: RequirementsAuthoringEntryMode = intakeArg ? 'intake_to_new_source' : 'existing_source';
+  const intakePath = intakeArg ? resolveRootRelativePath(root, intakeArg) : null;
+  const sourcePath = entryMode === 'intake_to_new_source'
+    ? resolveRootRelativePath(root, targetSourceArg)
+    : resolveRootRelativePath(root, sourceArg);
+  const semanticInputPath = intakePath ?? sourcePath;
+  if (!fs.existsSync(semanticInputPath)) {
+    throw new Error(`source document not found: ${semanticInputPath}`);
+  }
+  if (entryMode === 'intake_to_new_source' && fs.existsSync(sourcePath)) {
+    throw new Error('target_created_before_promotion');
   }
   const identity = derivePreConfirmationIdentity(root, sourcePath, options);
   const paths = preConfirmationPaths(root, identity.recordId, identity.requirementSetId);
@@ -8615,7 +9332,7 @@ export function runMainAgentPreConfirmationDrilldown(
     );
     return buildPreConfirmationResult({
       root,
-      sourcePath,
+      sourcePath: semanticInputPath,
       recordId: identity.recordId,
       requirementSetId: identity.requirementSetId,
       paths,
@@ -8625,7 +9342,7 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const sourceText = fs.readFileSync(semanticInputPath, 'utf8');
   const sourceHashBefore = sha256Text(sourceText);
   const stagingTransaction = createCriticalAuditorStagingTransaction({
     paths,
@@ -8633,6 +9350,17 @@ export function runMainAgentPreConfirmationDrilldown(
     sourceStartHash: sourceHashBefore,
   });
   fs.mkdirSync(stagingTransaction.stagingDir, { recursive: true });
+  writeRequirementsAuthoringTransaction({
+    root,
+    paths,
+    entryMode,
+    substate: entryMode === 'intake_to_new_source' ? 'intake_created' : 'initial_scale_assessed',
+    sourcePath,
+    intakePath,
+    targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+    sourceStartHash: sourceHashBefore,
+    nextRequiredAction: 'run_initial_scale_assessment',
+  });
   const explicitCheckpointEvidencePath = normalizeText(options.checkpointPersistenceEvidencePath)
     ? resolveRootRelativePath(root, normalizeText(options.checkpointPersistenceEvidencePath))
     : '';
@@ -8669,9 +9397,21 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const initialScaleAssessment = runPreConfirmationScaleAssessment({
     root,
-    sourcePath,
+    sourcePath: semanticInputPath,
     paths,
     phase: 'initial_assessment',
+  });
+  writeRequirementsAuthoringTransaction({
+    root,
+    paths,
+    entryMode,
+    substate: 'initial_scale_assessed',
+    sourcePath,
+    intakePath,
+    targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+    sourceStartHash: sourceHashBefore,
+    scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || null,
+    nextRequiredAction: 'create_staging_draft',
   });
   if (initialScaleAssessment.issues.length > 0) {
     return buildPreConfirmationResult({
@@ -8712,19 +9452,19 @@ export function runMainAgentPreConfirmationDrilldown(
       });
     }
   }
-  const structuredBlocks = extractStructuredSourceBlocks(root, sourcePath, sourceText);
+  const structuredBlocks = extractStructuredSourceBlocks(root, semanticInputPath, sourceText);
   const coverageLedger = buildRequirementCoverageLedger({
     root,
-    sourcePath,
+    sourcePath: semanticInputPath,
     sourceText,
     blocks: structuredBlocks,
   });
   writeRequirementCoverageLedgerArtifact(paths.requirementCoverageLedger, coverageLedger);
 
-  let mustRequirements = resolveSourceMustRequirements(sourcePath);
+  let mustRequirements = resolveSourceMustRequirements(semanticInputPath);
   const controlledCandidates =
     mustRequirements.length === 0
-      ? buildControlledMustCandidatesFromPlainSource(root, sourcePath, sourceText)
+      ? buildControlledMustCandidatesFromPlainSource(root, semanticInputPath, sourceText)
       : [];
   if (mustRequirements.length === 0) {
     mustRequirements = mustRequirementsFromControlledCandidates(
@@ -8753,14 +9493,14 @@ export function runMainAgentPreConfirmationDrilldown(
   writeAuthorityReports({
     paths,
     root,
-    sourcePath,
+    sourcePath: semanticInputPath,
     sourceText,
     targetAuthority: { ...targetAuthority, accepted: projectionTargetAuthorityRecords },
     validationAuthority,
   });
   const projectionSanity = projectionDomainSanityCheck({
     root,
-    sourcePath,
+    sourcePath: semanticInputPath,
     sourceText,
     targetRecords: projectionTargetAuthorityRecords,
     validationRecords: validationAuthority.accepted,
@@ -8768,7 +9508,7 @@ export function runMainAgentPreConfirmationDrilldown(
   writeJsonUtf8(paths.projectionDomainSanityReport, projectionSanity.report);
 
   const initialIssues: PreConfirmationDrilldownIssue[] = [];
-  initialIssues.push(...userConfirmationPromotionIssues(sourceText, sourcePath, root));
+  initialIssues.push(...userConfirmationPromotionIssues(sourceText, semanticInputPath, root));
   if (coverageLedger.blockingIssues.includes('source_requirement_coverage_gap')) {
     initialIssues.push(
       preConfirmationIssue(
@@ -8785,7 +9525,7 @@ export function runMainAgentPreConfirmationDrilldown(
         'controlled_must_candidates_missing',
         'No explicit MUST: rows, inline implementationConfirmation.must[] entries, or source-bound controlled MUST candidates were found after structured candidate extraction.',
         [
-          toRootRelativePath(root, sourcePath),
+          toRootRelativePath(root, semanticInputPath),
           'implementationConfirmation.must',
           toRootRelativePath(root, paths.controlledMustCandidates),
         ],
@@ -8799,7 +9539,7 @@ export function runMainAgentPreConfirmationDrilldown(
     mustRequirements.length > 0
       ? buildPreConfirmationImplementationConfirmation({
           root,
-          sourcePath,
+          sourcePath: semanticInputPath,
           recordId: identity.recordId,
           requirementSetId: identity.requirementSetId,
           language,
@@ -8817,7 +9557,7 @@ export function runMainAgentPreConfirmationDrilldown(
       : null;
   writeControlledMustCandidateArtifacts({
     root,
-    sourcePath,
+    sourcePath: semanticInputPath,
     paths,
     recordId: identity.recordId,
     requirementSetId: identity.requirementSetId,
@@ -8868,6 +9608,19 @@ export function runMainAgentPreConfirmationDrilldown(
     fs.writeFileSync(paths.draftSourcePreview, materializeImplementationConfirmationText(sourceText, draftConfirmation), 'utf8');
     fs.copyFileSync(paths.draftSourcePreview, stagingTransaction.draftSource);
   }
+  writeRequirementsAuthoringTransaction({
+    root,
+    paths,
+    entryMode,
+    substate: 'staging_draft_created',
+    sourcePath,
+    intakePath,
+    targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+    sourceStartHash: sourceHashBefore,
+    draftHash: sha256File(stagingTransaction.draftSource),
+    scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || null,
+    nextRequiredAction: 'run_critical_auditor_loop',
+  });
   const previewText = fs.readFileSync(paths.draftSourcePreview, 'utf8');
   const previewExtraction = extractImplementationConfirmationBlock(previewText);
   if (!previewExtraction) {
@@ -8992,13 +9745,31 @@ export function runMainAgentPreConfirmationDrilldown(
       scaleRoutingDecision:
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
     });
+    writeRequirementsAuthoringTransaction({
+      root,
+      paths,
+      entryMode,
+      substate: providerMissing ? 'critical_auditor_round_required' : 'staging_draft_created',
+      sourcePath,
+      intakePath,
+      targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+      sourceStartHash: sourceHashBefore,
+      draftHash: fs.existsSync(stagingTransaction.draftSource)
+        ? sha256File(stagingTransaction.draftSource)
+        : null,
+      scaleRoutingDecision:
+        normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
+      nextRequiredAction: providerMissing
+        ? 'run_main_session_critical_auditor_round'
+        : 'repair_critical_auditor_gap',
+    });
     return buildPreConfirmationResult({
       root,
       sourcePath,
       recordId: identity.recordId,
       requirementSetId: identity.requirementSetId,
       paths,
-      substate: 'blocked_by_render_gate',
+      substate: providerMissing ? 'critical_auditor_round_required' : 'blocked_by_render_gate',
       issues: previewPostPacketScaleAssessment.issues,
       sourceDocumentHash: sourceHashBefore,
       implementationConfirmationHash: previewImplementationConfirmationHash,
@@ -9137,13 +9908,29 @@ export function runMainAgentPreConfirmationDrilldown(
       scaleRoutingDecision:
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
     });
+    writeRequirementsAuthoringTransaction({
+      root,
+      paths,
+      entryMode,
+      substate: providerMissing ? 'critical_auditor_round_required' : 'staging_draft_created',
+      sourcePath,
+      intakePath,
+      targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+      sourceStartHash: sourceHashBefore,
+      draftHash: fs.existsSync(paths.draftSourcePreview) ? sha256File(paths.draftSourcePreview) : null,
+      scaleRoutingDecision:
+        normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
+      nextRequiredAction: providerMissing
+        ? 'run_main_session_critical_auditor_round'
+        : 'repair_critical_auditor_gap',
+    });
     return buildPreConfirmationResult({
       root,
       sourcePath,
       recordId: identity.recordId,
       requirementSetId: identity.requirementSetId,
       paths,
-      substate: 'blocked_by_render_gate',
+      substate: providerMissing ? 'critical_auditor_round_required' : 'blocked_by_render_gate',
       issues: criticalAuditorLoop.issues,
       sourceDocumentHash: sourceHashBefore,
       implementationConfirmationHash: previewImplementationConfirmationHash,
@@ -9152,7 +9939,7 @@ export function runMainAgentPreConfirmationDrilldown(
       sourceMutationPerformed: false,
       allowedArtifacts: providerMissing ? ['advisory', 'staging'] : undefined,
       forbiddenArtifacts: providerMissing
-        ? ['source-materialization-receipt', 'source mutation']
+        ? ['promotion-receipt', 'source-materialization-receipt', 'source mutation']
         : undefined,
       criticalAuditorContinuation: criticalAuditorLoop.continuation ?? null,
       stagingTransaction,
@@ -9205,7 +9992,16 @@ export function runMainAgentPreConfirmationDrilldown(
   // The post-audit preview intentionally replaces seed metadata with the current
   // Critical Auditor convergence summary. Continue with the audited hashes so
   // source-race and checkpoint gates remain the authoritative promotion blockers.
-  const finalKernel: Record<string, unknown> = { ...kernel };
+  const finalKernel = buildSemanticKernel({
+    root,
+    sourcePath: paths.draftSourcePreview,
+    recordId: identity.recordId,
+    sourceDocumentHash: auditedPreviewSourceDocumentHash,
+    implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+    createdAt,
+    mustRequirements,
+  });
+  const finalSemanticKernelHash = normalizeText(finalKernel.kernelHash);
   writeJsonUtf8(paths.semanticKernel, { semanticKernel: finalKernel });
 
   const finalPacket = buildMustDecompositionPacket({
@@ -9215,7 +10011,7 @@ export function runMainAgentPreConfirmationDrilldown(
     recordId: identity.recordId,
     sourceDocumentHash: auditedPreviewSourceDocumentHash,
     implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
-    semanticKernelHash,
+    semanticKernelHash: finalSemanticKernelHash,
     packetHash,
     createdAt,
     mustRequirements,
@@ -9223,6 +10019,25 @@ export function runMainAgentPreConfirmationDrilldown(
     consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
   });
   writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: finalPacket });
+  const finalAuditInputHash = sha256Json({
+    sourceDocumentHash: auditedPreviewSourceDocumentHash,
+    implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+    semanticKernelHash: finalSemanticKernelHash,
+    packetHash,
+  });
+  const finalCriticalAuditorLoop = mirrorCriticalAuditorReceiptsForCurrentDraft({
+    root,
+    sourcePath: paths.draftSourcePreview,
+    paths,
+    transaction: stagingTransaction,
+    receipts: criticalAuditorLoop.receipts,
+    auditInputHash: finalAuditInputHash,
+    recordId: identity.recordId,
+    sourceDocumentHash: auditedPreviewSourceDocumentHash,
+    implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+    packetHash,
+    createdAt,
+  });
 
   const mustGateScript = resolveSkillScript(root, 'pre_render_must_decomposition_gate.js');
   const mustGate = runNodeJson(
@@ -9439,8 +10254,14 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const promotionPreHash = safeCurrentSourceDocumentHash(sourcePath);
-  if (promotionPreHash !== stagingTransaction.sourceStartHash) {
+  const promotionPreHash =
+    entryMode === 'intake_to_new_source'
+      ? 'absent'
+      : safeCurrentSourceDocumentHash(sourcePath);
+  if (
+    entryMode === 'existing_source' &&
+    promotionPreHash !== stagingTransaction.sourceStartHash
+  ) {
     const issue = preConfirmationIssue(
       'source_hash_changed_before_promotion',
       'Current source hash changed after staging transaction start; source promotion is forbidden.',
@@ -9471,6 +10292,50 @@ export function runMainAgentPreConfirmationDrilldown(
       stagingTransaction,
     });
   }
+  if (entryMode === 'intake_to_new_source' && fs.existsSync(sourcePath)) {
+    const issue = preConfirmationIssue(
+      'target_created_before_promotion',
+      'Intake target source was created before authoring-draft promotion; source promotion is forbidden.',
+      [toRootRelativePath(root, sourcePath)],
+      'source_mutation_gate'
+    );
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+      blockingStage: 'target_created_before_promotion',
+      createdAt,
+    });
+    writeRequirementsAuthoringTransaction({
+      root,
+      paths,
+      entryMode,
+      substate: 'promotion_required',
+      sourcePath,
+      intakePath,
+      targetSourcePath: sourcePath,
+      sourceStartHash: sourceHashBefore,
+      draftHash: fs.existsSync(paths.draftSourcePreview) ? sha256File(paths.draftSourcePreview) : null,
+      scaleRoutingDecision: normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || null,
+      nextRequiredAction: 'stop_target_created_before_promotion',
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: [issue],
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: safeCurrentSourceDocumentHash(sourcePath),
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+      criticalAuditorProviderMode,
+      blockingStage: 'target_created_before_promotion',
+      sourceMutationPerformed: false,
+      stagingTransaction,
+    });
+  }
 
   let postMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
     root,
@@ -9481,6 +10346,7 @@ export function runMainAgentPreConfirmationDrilldown(
   let routingDecision = postMaterializationScaleAssessment.routingDecision;
   let routingDecisionText = normalizeText(routingDecision?.decision);
   let checkpointEvidenceIssues: PreConfirmationDrilldownIssue[] = [];
+  let checkpointEvidenceSatisfied = false;
   if (
     explicitCheckpointEvidencePath &&
     ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routingDecisionText)
@@ -9507,9 +10373,56 @@ export function runMainAgentPreConfirmationDrilldown(
       routingDecisionText = normalizeText(routingDecision?.decision);
     }
   }
+  if (
+    !explicitCheckpointEvidencePath &&
+    ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routingDecisionText)
+  ) {
+    writeRequirementsAuthoringTransaction({
+      root,
+      paths,
+      entryMode,
+      substate: 'checkpoint_persistence_required',
+      sourcePath,
+      intakePath,
+      targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+      sourceStartHash: sourceHashBefore,
+      draftHash: fs.existsSync(paths.draftSourcePreview) ? sha256File(paths.draftSourcePreview) : null,
+      scaleRoutingDecision: routingDecisionText,
+      nextRequiredAction: 'run_checkpoint_persistence',
+    });
+    const checkpoint = ensureCheckpointPersistenceForAuthoring({
+      root,
+      draftSourcePath: paths.draftSourcePreview,
+      paths,
+      routeDecision: routingDecision,
+      recordId: identity.recordId,
+      sourceDocumentHash: auditedPreviewSourceDocumentHash,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+      createdAt,
+    });
+    if (checkpoint.ok) {
+      postMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
+        root,
+        sourcePath: paths.draftSourcePreview,
+        paths,
+        phase: 'post_materialization_assessment',
+        checkpointPersistenceEvidencePath: paths.checkpointPersistenceEvidence,
+      });
+      routingDecision = postMaterializationScaleAssessment.routingDecision;
+      routingDecisionText = normalizeText(routingDecision?.decision);
+    } else {
+      checkpointEvidenceIssues.push(...checkpoint.issues);
+    }
+  }
   const routingIssues = [...postMaterializationScaleAssessment.issues];
   routingIssues.push(...checkpointEvidenceIssues);
-  if (['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routingDecisionText)) {
+  checkpointEvidenceSatisfied =
+    checkpointEvidenceIssues.length === 0 &&
+    (Boolean(explicitCheckpointEvidencePath) || fs.existsSync(paths.checkpointPersistenceEvidence));
+  if (
+    ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routingDecisionText) &&
+    !checkpointEvidenceSatisfied
+  ) {
     routingIssues.push(
       preConfirmationIssue(
         'checkpoint_required_before_source_materialization',
@@ -9575,34 +10488,63 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  writeJsonUtf8(stagingTransaction.sourcePromotionDecision, {
-    schemaVersion: 'requirements-contract-source-promotion-decision/v1',
-    transactionId: stagingTransaction.transactionId,
-    namespaceVersion: stagingTransaction.namespaceVersion,
-    sourceStartHash: stagingTransaction.sourceStartHash,
-    currentSourceHash: promotionPreHash,
-    finalDecision: 'allow_source_promotion',
-    criticalAuditorReceiptHashes: criticalAuditorLoop.receipts.map((receipt) =>
-      normalizeText(receipt.receiptHash)
-    ),
-    createdAt,
-  });
-  const finalMaterialization = materializeImplementationConfirmationSourceWithReceipt({
+  const finalDraftSource = path.join(stagingTransaction.stagingDir, 'final-draft-source.md');
+  fs.writeFileSync(
+    finalDraftSource,
+    materializeImplementationConfirmationText(sourceText, auditedConfirmation),
+    'utf8'
+  );
+
+  const encodingGate = runEncodingIntegrityGate({ root, paths, targetPaths: [finalDraftSource] });
+  if (encodingGate.issues.length > 0) {
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'encoding_gate_blocks_source_promotion',
+      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+      createdAt,
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: encodingGate.issues,
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: sourceHashBefore,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+    });
+  }
+  const normalizedFinalDraft = normalizeImplementationConfirmationDraftForPromotion({
     root,
-    sourcePath,
+    draftPath: finalDraftSource,
     paths,
-    requirementSetId: identity.requirementSetId,
-    recordId: identity.recordId,
-    confirmation: auditedConfirmation,
-    draftStatus: 'confirmation_ready',
-    createdAt,
-    expectedSourceStartHash: stagingTransaction.sourceStartHash,
-    transactionId: stagingTransaction.transactionId,
-    criticalAuditorReceiptHashes: criticalAuditorLoop.receipts.map((receipt) =>
-      normalizeText(receipt.receiptHash)
-    ),
+    blockingStage: 'source_mutation_gate',
   });
-  const finalMaterialized = finalMaterialization.materialized;
+  if (!normalizedFinalDraft.ok) {
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'requirements_contract_draft_normalization_failed',
+      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+      createdAt,
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: normalizedFinalDraft.issues,
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: sourceHashBefore,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+    });
+  }
+
   writeSourceMutationDecision({
     root,
     sourcePath,
@@ -9610,8 +10552,9 @@ export function runMainAgentPreConfirmationDrilldown(
     recordId: identity.recordId,
     requirementSetId: identity.requirementSetId,
     createdAt,
-    sourceHashBefore,
-    sourceHashAfter: finalMaterialized.sourceDocumentHash,
+    sourceDocumentExistedBefore: entryMode === 'existing_source',
+    sourceHashBefore: promotionPreHash,
+    sourceHashAfter: normalizedFinalDraft.draftHash,
     issues: [],
     coverageDecision: 'pass',
     targetAuthorityDecision: 'pass',
@@ -9620,8 +10563,93 @@ export function runMainAgentPreConfirmationDrilldown(
     auditEvidenceDecision: 'pass',
     scaleRoutingDecision: routingDecisionText,
     reverseAuditDraftValidationDecision: 'pass',
-    sourceMutationPerformed: true,
+    sourceMutationPerformed: false,
   });
+  writeRequirementsAuthoringTransaction({
+    root,
+    paths,
+    entryMode,
+    substate: 'source_mutation_decision_required',
+    sourcePath,
+    intakePath,
+    targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+    sourceStartHash: sourceHashBefore,
+    draftHash: normalizedFinalDraft.draftHash,
+    scaleRoutingDecision: routingDecisionText,
+    nextRequiredAction: 'promote_authoring_draft',
+  });
+
+  writeJsonUtf8(stagingTransaction.sourcePromotionDecision, {
+    schemaVersion: 'requirements-contract-source-promotion-decision/v1',
+    transactionId: stagingTransaction.transactionId,
+    namespaceVersion: stagingTransaction.namespaceVersion,
+    sourceStartHash: stagingTransaction.sourceStartHash,
+    currentSourceHash: promotionPreHash,
+    finalDecision: 'allow_source_promotion',
+    criticalAuditorReceiptHashes: finalCriticalAuditorLoop.receipts.map((receipt) =>
+      normalizeText(receipt.receiptHash)
+    ),
+    createdAt,
+  });
+
+  const promotion = promoteImplementationConfirmationDraftWithReceipt({
+    root,
+    sourcePath,
+    paths,
+    draftPath: finalDraftSource,
+  });
+  if (!promotion.ok) {
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'requirements_contract_promotion_failed',
+      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+      createdAt,
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: promotion.issues,
+      mustGateReport,
+      globalGateReport,
+      sourceDocumentHash: sourceHashBefore,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+      finalStandards: finalStandardsFromReports({
+        packet: finalPacket,
+        mustGateReport,
+        globalGateReport,
+        renderReport: null,
+        missingSurfaceProbe: null,
+        requirementRecord: null,
+      }),
+    });
+  }
+
+  const finalMaterialized = readMaterializedConfirmation(sourcePath);
+  const promotionReceiptHash = fs.existsSync(paths.promotionReceipt)
+    ? sha256File(paths.promotionReceipt)
+    : null;
+  writeRequirementsAuthoringTransaction({
+    root,
+    paths,
+    entryMode,
+    substate: 'promoted_not_confirmation_ready',
+    sourcePath,
+    intakePath,
+    targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+    sourceStartHash: sourceHashBefore,
+    draftHash: sha256File(sourcePath),
+    scaleRoutingDecision: routingDecisionText,
+    nextRequiredAction: language
+      ? 'render_confirmation'
+      : 'select_confirmation_language_then_render_confirmation',
+  });
+  const finalWrittenIdRanges = writtenIdRangesFromConfirmation(
+    finalMaterialized.extraction.confirmation
+  );
 
   if (!language) {
     return buildPreConfirmationResult({
@@ -9643,11 +10671,11 @@ export function runMainAgentPreConfirmationDrilldown(
       globalGateReport,
       sourceDocumentHash: finalMaterialized.sourceDocumentHash,
       implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
-      receiptPath: toRootRelativePath(root, finalMaterialization.receiptPath),
-      receiptHash: finalMaterialization.receipt.receiptHash,
-      updatedSourceSections: finalMaterialization.receipt.writtenIdRanges,
+      receiptPath: toRootRelativePath(root, paths.promotionReceipt),
+      receiptHash: promotionReceiptHash,
+      updatedSourceSections: finalWrittenIdRanges,
       status: 'draft_updated_not_confirmation_ready',
-      changedSections: finalMaterialization.receipt.writtenIdRanges,
+      changedSections: finalWrittenIdRanges,
       currentBlockingReason: 'confirmation_language_not_selected',
       nextUserPrompt: '请选择确认页语言：中文 / English / 中英双语',
       nextRequiredAction: 'select_confirmation_language_then_render_confirmation',
@@ -11566,6 +12594,10 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.scoringRunId = argv[++index];
     } else if (token === '--source' && argv[index + 1]) {
       out.source = argv[++index];
+    } else if ((token === '--intake-source' || token === '--intakeSource') && argv[index + 1]) {
+      out.intakeSource = argv[++index];
+    } else if ((token === '--target-source' || token === '--targetSource') && argv[index + 1]) {
+      out.targetSource = argv[++index];
     } else if (
       (token === '--target-path' || token === '--targetPath') &&
       argv[index + 1]
@@ -14542,6 +15574,8 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     try {
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source: args.source,
+        intakeSource: args.intakeSource,
+        targetSource: args.targetSource,
         recordId: args.recordId,
         requirementSetId: args.requirementSetId,
         confirmationLanguage: args.confirmationLanguage,

@@ -97,6 +97,9 @@ jobs:
       - name: Build Main Agent dist runtime
         run: npm run build:main-agent-dist
 
+      - name: Verify requirements contract source writes
+        run: npm run verify:requirements-contract-source-writes
+
       - name: Vitest suite
         id: vitest
         continue-on-error: true

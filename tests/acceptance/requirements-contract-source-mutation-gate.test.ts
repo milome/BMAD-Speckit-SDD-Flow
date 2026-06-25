@@ -67,7 +67,7 @@ describe('requirements contract source mutation gate', () => {
     }
   });
 
-  it('blocks source mutation when scale routing requires checkpoint persistence', () => {
+  it('automatically persists checkpoint evidence before guarded source promotion', () => {
     const root = createTempRoot('requirements-contract-checkpoint-mutation-');
     try {
       const source = largeCheckpointRequirement(root);
@@ -81,12 +81,23 @@ describe('requirements contract source mutation gate', () => {
       const paths = artifacts(root, 'REQ-CHECKPOINT-MUTATION', 'REQ-CHECKPOINT-MUTATION-SET');
       const decision = readJson(paths.sourceMutationDecision);
       const route = readJson(paths.scaleRoutingDecision);
+      const checkpointEvidence = readJson(paths.checkpointPersistenceEvidence);
+      const promotionReceipt = readJson(paths.promotionReceipt);
 
-      expect(issueCodes(result)).toContain('checkpoint_required_before_source_materialization');
-      expect(route.decision).toMatch(/^checkpoint_required/u);
-      expect(decision.finalDecision).toBe('block_source_materialization');
+      expect(issueCodes(result)).toContain('language_required_before_render');
+      expect(issueCodes(result)).not.toContain('checkpoint_required_before_source_materialization');
+      expect(route.decision).toBe('single_pass_final_allowed');
+      expect(route.checkpointPersistenceSatisfied).toBe(true);
+      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
+      expect(decision.finalDecision).toBe('allow_source_materialization');
       expect(decision.sourceMutationPerformed).toBe(false);
-      expectSourceHashUnchanged(source, beforeHash);
+      expect(promotionReceipt).toMatchObject({
+        ok: true,
+        promotionStage: 'authoring-draft',
+        safePromotionAsDraft: true,
+      });
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+      expect(sha256File(source)).not.toBe(beforeHash);
     } finally {
       removeTempRoot(root);
     }

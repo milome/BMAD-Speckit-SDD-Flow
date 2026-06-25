@@ -39,6 +39,13 @@ function usage() {
     "  --min-bytes <n>         Minimum UTF-8 byte count.",
     "  --retry-receipt <path>  Retry receipt JSON path.",
     "  --promotion-stage <stage> Promotion stage: confirmation-ready (default) or authoring-draft.",
+    "  --scale-assessment <path> Required authoring scale assessment JSON for guarded source writes.",
+    "  --scale-routing-decision <path> Required scale routing decision JSON for guarded source writes.",
+    "  --source-mutation-decision <path> Required source mutation decision JSON for guarded source writes.",
+    "  --checkpoint-persistence-evidence <path> Required when routing requires checkpoints.",
+    "  --encoding-report <path> Required encoding gate JSON with zero findings for guarded source writes.",
+    "  --receipt-out <path>     Persist the final promotion receipt JSON.",
+    "  --auto-repair            Generate deterministic missing gate artifacts before deciding.",
     "  --preflight-only        Stop after normalization and manifest preflight.",
     "  --dry-run               Run all checks without replacing the target.",
     "  --json                  Emit JSON receipt.",
@@ -72,6 +79,10 @@ function parseArgs(argv) {
       args.preflightOnly = true;
       continue;
     }
+    if (arg === "--auto-repair") {
+      args.autoRepair = true;
+      continue;
+    }
     if (arg === "--require") {
       const value = argv[index + 1];
       if (!value) throw new Error(`missing value for ${arg}`);
@@ -79,7 +90,21 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
-    if (["--draft", "--target", "--min-bytes", "--retry-receipt", "--promotion-stage"].includes(arg)) {
+    if (
+      [
+        "--draft",
+        "--target",
+        "--min-bytes",
+        "--retry-receipt",
+        "--promotion-stage",
+        "--scale-assessment",
+        "--scale-routing-decision",
+        "--source-mutation-decision",
+        "--checkpoint-persistence-evidence",
+        "--encoding-report",
+        "--receipt-out",
+      ].includes(arg)
+    ) {
       const value = argv[index + 1];
       if (!value) throw new Error(`missing value for ${arg}`);
       args[arg.slice(2).replace(/-([a-z])/gu, (_, char) => char.toUpperCase())] = value;
@@ -95,8 +120,47 @@ function normalizePathForReport(filePath) {
   return filePath ? path.resolve(filePath).replace(/\\/gu, "/") : null;
 }
 
+function normalizeTargetPathForReceipt(filePath) {
+  if (!filePath) return null;
+  const absolute = path.resolve(filePath);
+  const relative = path.relative(process.cwd(), absolute);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    return relative.replace(/\\/gu, "/");
+  }
+  return normalizePathForReport(absolute);
+}
+
 function sha256(content) {
   return `sha256:${crypto.createHash("sha256").update(Buffer.from(content, "utf8")).digest("hex")}`;
+}
+
+function currentTargetState(targetPath) {
+  const absolute = path.resolve(targetPath);
+  if (!fs.existsSync(absolute)) {
+    return {
+      exists: false,
+      hash: "absent",
+      path: normalizePathForReport(absolute),
+    };
+  }
+  return {
+    exists: true,
+    hash: sha256(fs.readFileSync(absolute, "utf8")),
+    path: normalizePathForReport(absolute),
+  };
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  return `{${Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+    .join(",")}}`;
+}
+
+function sha256Json(value) {
+  return `sha256:${crypto.createHash("sha256").update(stableStringify(value), "utf8").digest("hex")}`;
 }
 
 function timestamp() {
@@ -112,13 +176,21 @@ function writeReceipt(result, json) {
   }
 }
 
+function persistReceipt(receiptPath, result) {
+  if (!receiptPath) return null;
+  const absolute = path.resolve(receiptPath);
+  fs.mkdirSync(path.dirname(absolute), { recursive: true });
+  fs.writeFileSync(absolute, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+  return normalizePathForReport(absolute);
+}
+
 function baseReceipt(args) {
   return {
     ok: false,
     dryRun: Boolean(args.dryRun),
     preflightOnly: Boolean(args.preflightOnly),
     draftPath: normalizePathForReport(args.draft),
-    targetPath: normalizePathForReport(args.target),
+    targetPath: args.targetReportPath || normalizeTargetPathForReceipt(args.target),
     promotionStage: args.promotionStage,
     allowedStatuses: [],
     statusValue: null,
@@ -128,9 +200,11 @@ function baseReceipt(args) {
     manifestPath: null,
     targetHash: null,
     writeReceipt: null,
+    receiptPath: null,
     backupPath: null,
     audit: null,
     preflight: null,
+    authoringPromotionGate: null,
     failureClass: null,
     warnings: [],
     residualRisks: [],
@@ -147,6 +221,51 @@ function classifyManifestError(errors) {
 function readRetryReceipt(receiptPath) {
   if (!receiptPath || !fs.existsSync(receiptPath)) return null;
   return JSON.parse(fs.readFileSync(receiptPath, "utf8"));
+}
+
+function readJsonFile(filePath) {
+  if (!filePath) return null;
+  const absolute = path.resolve(filePath);
+  if (!fs.existsSync(absolute)) {
+    const error = new Error(`missing_json_file:${filePath}`);
+    error.code = "missing_json_file";
+    throw error;
+  }
+  return JSON.parse(fs.readFileSync(absolute, "utf8"));
+}
+
+function writeJsonFile(filePath, value) {
+  const absolute = path.resolve(filePath);
+  fs.mkdirSync(path.dirname(absolute), { recursive: true });
+  fs.writeFileSync(absolute, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  return absolute;
+}
+
+function runNodeJson(scriptPath, args) {
+  const result = spawnSync(process.execPath, [scriptPath, ...args], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  const output = `${result.stdout || ""}${result.stderr || ""}`.trim();
+  let parsed = null;
+  try {
+    parsed = result.stdout ? JSON.parse(result.stdout) : null;
+  } catch (error) {
+    parsed = {
+      parseError: error instanceof Error ? error.message : String(error),
+      stdoutPreview: String(result.stdout || "").slice(0, 2000),
+      stderrPreview: String(result.stderr || "").slice(0, 2000),
+    };
+  }
+  return {
+    ok: result.status === 0,
+    status: result.status,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    output,
+    parsed,
+  };
 }
 
 function updateRetryReceipt(receiptPath, context) {
@@ -242,6 +361,401 @@ function promoteDraftWithSafeWriter(draftPath, targetPath) {
   };
 }
 
+function isDocsPlansTarget(targetPath) {
+  return /(^|\/)docs\/plans\/[^/]+\.md$/u.test(normalizePathForReport(targetPath));
+}
+
+function guardedPromotionRequired(args, targetPath) {
+  return args.promotionStage === "authoring-draft" || isDocsPlansTarget(targetPath);
+}
+
+function defaultAuthoringDir(manifest) {
+  const recordId =
+    String(manifest?.recordId ?? "").trim() ||
+    path.basename(String(manifest?.targetPath ?? "requirements-draft"), path.extname(String(manifest?.targetPath ?? "")));
+  return path.join(process.cwd(), "_bmad-output", "runtime", "requirement-records", recordId, "authoring");
+}
+
+function defaultGuardPaths(manifest) {
+  const authoringDir = defaultAuthoringDir(manifest);
+  return {
+    authoringDir,
+    scaleAssessment: path.join(authoringDir, "scale-assessment-initial.json"),
+    scaleRoutingDecision: path.join(authoringDir, "scale-routing-decision.json"),
+    sourceMutationDecision: path.join(authoringDir, "source-mutation-decision.json"),
+    checkpointPersistenceEvidence: path.join(authoringDir, "checkpoint-persistence-evidence.json"),
+    encodingReport: path.join(authoringDir, "encoding-report.json"),
+    receiptOut: path.join(authoringDir, "promotion-receipt.json"),
+  };
+}
+
+function findEncodingIntegrityScript() {
+  const candidates = [
+    path.join(process.cwd(), "_bmad", "skills", "encoding-integrity-guardian", "scripts", "check-encoding-integrity.js"),
+    path.join(process.cwd(), ".codex", "skills", "encoding-integrity-guardian", "scripts", "check-encoding-integrity.js"),
+    path.join(process.cwd(), ".claude", "skills", "encoding-integrity-guardian", "scripts", "check-encoding-integrity.js"),
+    path.join(process.cwd(), ".cursor", "skills", "encoding-integrity-guardian", "scripts", "check-encoding-integrity.js"),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
+function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
+  const actions = [];
+  const failures = [];
+  const defaults = defaultGuardPaths(manifest);
+  const repairedArgs = { ...args };
+
+  for (const key of ["scaleAssessment", "scaleRoutingDecision", "encodingReport", "receiptOut"]) {
+    if (!repairedArgs[key]) repairedArgs[key] = defaults[key];
+  }
+
+  if (!fs.existsSync(path.resolve(repairedArgs.scaleAssessment)) || !fs.existsSync(path.resolve(repairedArgs.scaleRoutingDecision))) {
+    const assessScript = path.join(__dirname, "assess_contract_authoring_scale.js");
+    const result = runNodeJson(assessScript, [
+      "--source",
+      manifest.draftPath,
+      "--phase",
+      "initial_assessment",
+      "--out",
+      repairedArgs.scaleAssessment,
+      "--routing-decision-out",
+      repairedArgs.scaleRoutingDecision,
+      "--json",
+    ]);
+    actions.push({
+      action: "run_initial_scale_assessment",
+      script: normalizePathForReport(assessScript),
+      out: normalizePathForReport(repairedArgs.scaleAssessment),
+      routingDecisionOut: normalizePathForReport(repairedArgs.scaleRoutingDecision),
+      ok: result.ok,
+      stderrTrace: result.stderr,
+    });
+    if (!result.ok) failures.push("auto_repair_scale_assessment_failed");
+  }
+
+  if (!fs.existsSync(path.resolve(repairedArgs.encodingReport))) {
+    const encodingScript = findEncodingIntegrityScript();
+    if (!encodingScript) {
+      failures.push("auto_repair_encoding_script_missing");
+    } else {
+      const result = runNodeJson(encodingScript, ["--json"]);
+      actions.push({
+        action: "run_encoding_integrity_gate",
+        script: normalizePathForReport(encodingScript),
+        out: normalizePathForReport(repairedArgs.encodingReport),
+        ok: result.ok,
+      });
+      if (result.parsed) writeJsonFile(repairedArgs.encodingReport, result.parsed);
+      if (!result.ok) failures.push("auto_repair_encoding_gate_failed");
+    }
+  }
+
+  if (!args.sourceMutationDecision) {
+    repairedArgs.sourceMutationDecision = fs.existsSync(defaults.sourceMutationDecision)
+      ? defaults.sourceMutationDecision
+      : "";
+    actions.push({
+      action: "source_mutation_decision_required",
+      status: "manual_or_orchestrator_semantic_step_required",
+      path: normalizePathForReport(defaults.sourceMutationDecision),
+      command:
+        "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+    });
+  }
+
+  if (!args.receiptOut && repairedArgs.receiptOut) {
+    actions.push({
+      action: "default_promotion_receipt_path_selected",
+      path: normalizePathForReport(repairedArgs.receiptOut),
+      ok: true,
+    });
+  }
+
+  return {
+    args: repairedArgs,
+    report: {
+      enabled: true,
+      actions,
+      failures,
+      defaultAuthoringDir: normalizePathForReport(defaults.authoringDir),
+      targetPath: normalizePathForReport(targetPath),
+    },
+  };
+}
+
+const REQUIRED_CHECKPOINT_IDS = [
+  "cp-00-semantic-kernel",
+  "cp-01-must-decomposition-packet",
+  "cp-02-atomic-decomposition-loop-convergence",
+  "cp-03-packet-to-source-materialization",
+  "cp-04-id-freeze",
+  "cp-05-implementation-confirmation-core",
+  "cp-06-projections",
+  "cp-07-human-readable-views",
+  "cp-08-pre-render-global-reconciliation",
+];
+
+function validateScaleAssessment(assessment) {
+  const issues = [];
+  if (!assessment || typeof assessment !== "object") issues.push("scale_assessment_missing_or_invalid");
+  if (assessment?.schemaVersion !== "contract-authoring-scale-assessment/v1") {
+    issues.push("scale_assessment_schema_invalid");
+  }
+  if (assessment?.phase !== "initial_assessment") issues.push("scale_assessment_initial_phase_required");
+  const trace = assessment?.assessmentTrace;
+  if (trace?.visibleOutputStream !== "stderr") issues.push("scale_assessment_visible_stderr_trace_missing");
+  if (!trace?.start) issues.push("scale_assessment_trace_start_missing");
+  if (!trace?.process?.scoreBreakdown) issues.push("scale_assessment_trace_score_breakdown_missing");
+  if (!trace?.process?.hardTriggerBreakdown) issues.push("scale_assessment_trace_hard_trigger_breakdown_missing");
+  if (!trace?.result?.decision) issues.push("scale_assessment_trace_routing_decision_missing");
+  return issues;
+}
+
+function validateScaleRoutingDecision(route, assessment, assessmentPath) {
+  const issues = [];
+  if (!route || typeof route !== "object") issues.push("scale_routing_decision_missing_or_invalid");
+  if (route?.schemaVersion !== "contract-authoring-scale-routing-decision/v1") {
+    issues.push("scale_routing_decision_schema_invalid");
+  }
+  if (!route?.decision) issues.push("scale_routing_decision_missing_decision");
+  if (!route?.initialAssessmentRef?.path) issues.push("scale_routing_decision_initial_assessment_ref_path_missing");
+  if (!route?.initialAssessmentRef?.hash) issues.push("scale_routing_decision_initial_assessment_ref_hash_missing");
+  if (
+    route?.initialAssessmentRef?.path &&
+    normalizePathForReport(route.initialAssessmentRef.path) !== normalizePathForReport(assessmentPath)
+  ) {
+    issues.push("scale_routing_decision_initial_assessment_ref_path_mismatch");
+  }
+  if (assessment && route?.initialAssessmentRef?.hash && route.initialAssessmentRef.hash !== sha256Json(assessment)) {
+    issues.push("scale_routing_decision_initial_assessment_ref_hash_mismatch");
+  }
+  return issues;
+}
+
+function checkpointEvidenceRequired(route) {
+  return (
+    route?.decision === "checkpoint_required" ||
+    route?.decision === "checkpoint_required_with_amendment"
+  );
+}
+
+function validateCheckpointPersistenceEvidence(evidence) {
+  const issues = [];
+  if (!evidence || typeof evidence !== "object") {
+    return ["checkpoint_persistence_evidence_missing_or_invalid"];
+  }
+  if (evidence.checkpointPersistenceSatisfiedCandidate !== true) {
+    issues.push("checkpoint_persistence_satisfied_candidate_required");
+  }
+  const completed = Array.isArray(evidence.completedCheckpointIds) ? evidence.completedCheckpointIds : [];
+  for (const checkpointId of REQUIRED_CHECKPOINT_IDS) {
+    if (!completed.includes(checkpointId)) issues.push(`checkpoint_missing:${checkpointId}`);
+  }
+  const ref = evidence.checkpointPersistenceRef;
+  if (!ref || typeof ref !== "object") issues.push("checkpoint_persistence_ref_missing");
+  for (const key of [
+    "progressPath",
+    "progressHash",
+    "preRenderMustDecompositionGateHash",
+    "preRenderGlobalConsistencyHash",
+    "packetSourceReconciliationHash",
+  ]) {
+    if (!ref?.[key]) issues.push(`checkpoint_persistence_ref_${key}_missing`);
+  }
+  return issues;
+}
+
+function validateSourceMutationDecision(decision, context) {
+  const issues = [];
+  if (!decision || typeof decision !== "object") issues.push("source_mutation_decision_missing_or_invalid");
+  if (decision?.schemaVersion !== "requirements-authoring-source-mutation-decision/v1") {
+    issues.push("source_mutation_decision_schema_invalid");
+  }
+  if (decision?.finalDecision !== "allow_source_materialization") {
+    issues.push("source_mutation_decision_not_allow_source_materialization");
+  }
+  if (decision?.sourceMutationAllowed !== true) issues.push("source_mutation_allowed_true_required");
+  if (!decision?.sourceDocumentHashBefore) issues.push("source_mutation_source_hash_before_missing");
+  if (!decision?.sourceDocumentHashAfter) issues.push("source_mutation_source_hash_after_missing");
+  if (context) {
+    const sourceDocumentHashBefore = String(decision?.sourceDocumentHashBefore ?? "");
+    const sourceDocumentHashAfter = String(decision?.sourceDocumentHashAfter ?? "");
+    if (context.targetState.exists && decision?.sourceDocumentExistedBefore === false) {
+      issues.push("source_mutation_target_existence_mismatch");
+    }
+    if (!context.targetState.exists && decision?.sourceDocumentExistedBefore !== false) {
+      issues.push("source_mutation_target_absence_not_authorized");
+    }
+    if (sourceDocumentHashBefore && sourceDocumentHashBefore !== context.targetState.hash) {
+      issues.push("source_mutation_source_hash_before_mismatch");
+    }
+    if (sourceDocumentHashAfter && sourceDocumentHashAfter !== context.expectedDraftHash) {
+      issues.push("source_mutation_source_hash_after_mismatch");
+    }
+  }
+  return issues;
+}
+
+function validateEncodingReport(report) {
+  const issues = [];
+  if (!report || typeof report !== "object") issues.push("encoding_report_missing_or_invalid");
+  if (!Number.isInteger(report?.checkedFiles) || report.checkedFiles <= 0) {
+    issues.push("encoding_report_checked_files_missing");
+  }
+  if (!Array.isArray(report?.findings)) issues.push("encoding_report_findings_array_missing");
+  else if (report.findings.length > 0) issues.push("encoding_report_findings_not_empty");
+  return issues;
+}
+
+function addNextRequiredActionsForErrors(result) {
+  const errorSet = new Set(result.errors);
+  const hasSourceMutationDrift = [
+    "source_mutation_target_existence_mismatch",
+    "source_mutation_target_absence_not_authorized",
+    "source_mutation_source_hash_before_mismatch",
+    "source_mutation_source_hash_after_mismatch",
+  ].some((error) => errorSet.has(error));
+  if (hasSourceMutationDrift) {
+    result.nextRequiredActions.push({
+      action: "rerun_authoring_orchestrator_for_current_hashes",
+      command:
+        "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+      reason:
+        "source-mutation-decision.json is stale or not bound to the current target hash and draft manifest hash.",
+    });
+  }
+}
+
+function validateAuthoringPromotionGate(args, targetPath, manifest) {
+  const required = guardedPromotionRequired(args, targetPath);
+  const targetState = currentTargetState(targetPath);
+  const result = {
+    required,
+    ok: true,
+    errors: [],
+    refs: {
+      scaleAssessment: normalizePathForReport(args.scaleAssessment),
+      scaleRoutingDecision: normalizePathForReport(args.scaleRoutingDecision),
+      sourceMutationDecision: normalizePathForReport(args.sourceMutationDecision),
+      checkpointPersistenceEvidence: normalizePathForReport(args.checkpointPersistenceEvidence),
+      encodingReport: normalizePathForReport(args.encodingReport),
+    },
+    decisions: {},
+    currentTargetState: {
+      exists: targetState.exists,
+      hash: targetState.hash,
+      path: targetState.path,
+    },
+    expectedDraftHash: manifest?.draftHash ?? null,
+    nextRequiredActions: [],
+  };
+  if (!required) return result;
+
+  for (const [key, value] of Object.entries({
+    scaleAssessment: args.scaleAssessment,
+    scaleRoutingDecision: args.scaleRoutingDecision,
+    sourceMutationDecision: args.sourceMutationDecision,
+    encodingReport: args.encodingReport,
+    receiptOut: args.receiptOut,
+  })) {
+    if (!value) result.errors.push(`${key}_required`);
+  }
+  if (result.errors.length > 0) {
+    for (const error of result.errors) {
+      if (error === "scaleAssessment_required" || error === "scaleRoutingDecision_required") {
+        result.nextRequiredActions.push({
+          action: "run_initial_scale_assessment",
+          command:
+            "node <skill-dir>/scripts/assess_contract_authoring_scale.js --source <intake-source.md> --phase initial_assessment --out <authoring-dir>/scale-assessment-initial.json --routing-decision-out <authoring-dir>/scale-routing-decision.json --json",
+        });
+      }
+      if (error === "sourceMutationDecision_required") {
+        result.nextRequiredActions.push({
+          action: "run_authoring_orchestrator_until_source_mutation_decision",
+          command:
+            "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+        });
+      }
+      if (error === "encodingReport_required") {
+        result.nextRequiredActions.push({
+          action: "run_encoding_integrity_gate",
+          command: "node _bmad/skills/encoding-integrity-guardian/scripts/check-encoding-integrity.js --json",
+        });
+      }
+    }
+    result.ok = false;
+    return result;
+  }
+
+  try {
+    const scaleAssessment = readJsonFile(args.scaleAssessment);
+    const scaleRoutingDecision = readJsonFile(args.scaleRoutingDecision);
+    const sourceMutationDecision = readJsonFile(args.sourceMutationDecision);
+    const encodingReport = readJsonFile(args.encodingReport);
+
+    result.decisions.scaleAssessment = {
+      phase: scaleAssessment.phase ?? null,
+      decision: scaleAssessment.decision ?? null,
+      visibleTrace: scaleAssessment.assessmentTrace?.visibleOutputStream ?? null,
+      hash: sha256Json(scaleAssessment),
+    };
+    result.decisions.scaleRouting = {
+      decision: scaleRoutingDecision.decision ?? null,
+      nextAction: scaleRoutingDecision.nextAction ?? null,
+      checkpointPersistenceSatisfied: scaleRoutingDecision.checkpointPersistenceSatisfied === true,
+      hash: sha256Json(scaleRoutingDecision),
+    };
+    result.decisions.sourceMutation = {
+      finalDecision: sourceMutationDecision.finalDecision ?? null,
+      sourceMutationAllowed: sourceMutationDecision.sourceMutationAllowed === true,
+      sourceDocumentExistedBefore: sourceMutationDecision.sourceDocumentExistedBefore ?? null,
+      sourceDocumentHashBefore: sourceMutationDecision.sourceDocumentHashBefore ?? null,
+      sourceDocumentHashAfter: sourceMutationDecision.sourceDocumentHashAfter ?? null,
+      currentTargetHash: targetState.hash,
+      expectedDraftHash: manifest?.draftHash ?? null,
+    };
+    result.decisions.encoding = {
+      checkedFiles: encodingReport.checkedFiles ?? null,
+      findingCount: Array.isArray(encodingReport.findings) ? encodingReport.findings.length : null,
+    };
+
+    result.errors.push(...validateScaleAssessment(scaleAssessment));
+    result.errors.push(...validateScaleRoutingDecision(scaleRoutingDecision, scaleAssessment, args.scaleAssessment));
+    result.errors.push(
+      ...validateSourceMutationDecision(sourceMutationDecision, {
+        targetState,
+        expectedDraftHash: manifest?.draftHash ?? "",
+      })
+    );
+    result.errors.push(...validateEncodingReport(encodingReport));
+    addNextRequiredActionsForErrors(result);
+
+    if (checkpointEvidenceRequired(scaleRoutingDecision)) {
+      if (!args.checkpointPersistenceEvidence) {
+        result.errors.push("checkpoint_persistence_evidence_required");
+        result.nextRequiredActions.push({
+          action: "run_semantic_checkpoints_until_pre_render_ready",
+          command:
+            "node <skill-dir>/scripts/run_semantic_checkpoints.js --source <source-document.md> --mode checkpoint-persistence --route-decision <authoring-dir>/scale-routing-decision.json --json",
+        });
+      } else {
+        const checkpointEvidence = readJsonFile(args.checkpointPersistenceEvidence);
+        result.decisions.checkpointPersistence = {
+          satisfied: checkpointEvidence.checkpointPersistenceSatisfiedCandidate === true,
+          completedCheckpointCount: Array.isArray(checkpointEvidence.completedCheckpointIds)
+            ? checkpointEvidence.completedCheckpointIds.length
+            : 0,
+        };
+        result.errors.push(...validateCheckpointPersistenceEvidence(checkpointEvidence));
+      }
+    }
+  } catch (error) {
+    result.errors.push(error instanceof Error ? error.message : String(error));
+  }
+  result.ok = result.errors.length === 0;
+  return result;
+}
+
 function fail(receipt, failureClass, details, args, manifest, exitCode = 1) {
   receipt.failureClass = failureClass;
   if (details) receipt.details = details;
@@ -283,7 +797,8 @@ function main() {
 
   const draftPath = path.resolve(args.draft);
   const targetPath = path.resolve(args.target);
-  const receipt = baseReceipt({ ...args, draft: draftPath, target: targetPath });
+  const targetReportPath = normalizeTargetPathForReceipt(args.target);
+  const receipt = baseReceipt({ ...args, draft: draftPath, target: targetPath, targetReportPath });
   const promotionPolicy = promotionPolicyFor(args.promotionStage);
   if (!promotionPolicy) {
     receipt.failureClass = "draft_syntax_error";
@@ -361,6 +876,34 @@ function main() {
       return failed.exitCode;
     }
 
+    let effectiveArgs = args;
+    if (args.autoRepair && guardedPromotionRequired(args, targetPath)) {
+      const autoRepair = autoRepairDeterministicGateArtifacts(args, manifest, targetPath);
+      effectiveArgs = autoRepair.args;
+      receipt.autoRepair = autoRepair.report;
+      receipt.draftPath = normalizePathForReport(draftPath);
+      receipt.targetPath = targetReportPath;
+    }
+
+    const authoringPromotionGate = validateAuthoringPromotionGate(effectiveArgs, targetPath, manifest);
+    receipt.authoringPromotionGate = authoringPromotionGate;
+    if (!authoringPromotionGate.ok) {
+      const failed = fail(
+        receipt,
+        "authoring_promotion_gate_failed",
+        {
+          errors: authoringPromotionGate.errors,
+          refs: authoringPromotionGate.refs,
+          nextRequiredActions: authoringPromotionGate.nextRequiredActions,
+          autoRepair: receipt.autoRepair ?? null,
+        },
+        { ...effectiveArgs, draft: draftPath, target: targetPath },
+        manifest
+      );
+      writeReceipt(failed.receipt, args.json);
+      return failed.exitCode;
+    }
+
     if (args.preflightOnly) {
       receipt.ok = true;
       receipt.failureClass = null;
@@ -429,6 +972,13 @@ function main() {
     receipt.confirmationReady = promotionPolicy.confirmationReadyOnSuccess;
     receipt.requiresUserConfirmationBeforeExecution = !promotionPolicy.confirmationReadyOnSuccess;
     receipt.failureClass = null;
+    receipt.receiptPath = persistReceipt(effectiveArgs.receiptOut, receipt);
+    if (receipt.receiptPath) {
+      const withReceiptPath = { ...receipt, receiptPath: receipt.receiptPath };
+      persistReceipt(effectiveArgs.receiptOut, withReceiptPath);
+      writeReceipt(withReceiptPath, args.json);
+      return 0;
+    }
     writeReceipt(receipt, args.json);
     return 0;
   } catch (error) {

@@ -312,7 +312,7 @@ function renderAliasToml(name, relativePath, markdown, description) {
     '',
     'BMAD runtime metadata:',
     '- host_role: codex-no-hooks',
-    `- alias_for_dispatch_role: ${name}`,
+    `- dispatch alias: ${name}`,
     '',
     `Alias name: ${name}`,
     `Source behavior contract: ${sourcePath}`,
