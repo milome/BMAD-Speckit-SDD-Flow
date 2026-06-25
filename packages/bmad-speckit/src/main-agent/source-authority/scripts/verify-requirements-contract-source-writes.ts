@@ -6,6 +6,7 @@ import path from 'node:path';
 interface Args {
   cwd: string;
   paths: string[];
+  baseRef: string;
   json: boolean;
 }
 
@@ -16,7 +17,7 @@ interface GuardIssue {
 }
 
 function parseArgs(argv: string[]): Args {
-  const out: Args = { cwd: process.cwd(), paths: [], json: false };
+  const out: Args = { cwd: process.cwd(), paths: [], baseRef: '', json: false };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if ((token === '--cwd' || token === '--root') && argv[index + 1]) {
@@ -28,6 +29,11 @@ function parseArgs(argv: string[]): Args {
           .map((value) => value.trim())
           .filter(Boolean)
       );
+    } else if (
+      (token === '--base-ref' || token === '--baseRef' || token === '--compare-ref') &&
+      argv[index + 1]
+    ) {
+      out.baseRef = argv[++index];
     } else if (token === '--json') {
       out.json = true;
     }
@@ -48,19 +54,90 @@ function toRootRelative(root: string, filePath: string): string {
   );
 }
 
-function gitChangedDocsPlans(root: string): string[] {
+function splitGitPaths(output: string): string[] {
+  return output
+    .split(/\r?\n/u)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function gitOutput(root: string, args: string[]): string {
+  return cp.execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+}
+
+function gitRefExists(root: string, ref: string): boolean {
   try {
-    const output = cp.execFileSync(
-      'git',
-      ['diff', '--name-only', '--diff-filter=ACMRTUXB', '--', 'docs/plans/*.md'],
-      { cwd: root, encoding: 'utf8' }
-    );
-    return output
-      .split(/\r?\n/u)
-      .map((value) => value.trim())
-      .filter(Boolean);
+    gitOutput(root, ['rev-parse', '--verify', `${ref}^{commit}`]);
+    return true;
   } catch {
-    return [];
+    return false;
+  }
+}
+
+function resolveBaseRef(root: string, baseRef: string): string {
+  const normalized = baseRef.trim();
+  if (!normalized) return '';
+  const candidates = normalized.startsWith('origin/')
+    ? [normalized]
+    : [`origin/${normalized}`, `refs/remotes/origin/${normalized}`, normalized];
+  return candidates.find((candidate) => gitRefExists(root, candidate)) ?? '';
+}
+
+function envBaseRef(): string {
+  return (
+    process.env.REQUIREMENTS_CONTRACT_SOURCE_WRITE_BASE ||
+    process.env.GITHUB_BASE_REF ||
+    ''
+  );
+}
+
+function gitChangedDocsPlans(
+  root: string,
+  baseRef: string
+): { paths: string[]; issues: GuardIssue[] } {
+  const issues: GuardIssue[] = [];
+  try {
+    const requestedBase = baseRef.trim() || envBaseRef();
+    const resolvedBase = requestedBase ? resolveBaseRef(root, requestedBase) : '';
+    if (requestedBase && !resolvedBase) {
+      return {
+        paths: [],
+        issues: [
+          {
+            code: 'requirements_contract_source_write_base_ref_missing',
+            message: `Unable to resolve base ref for requirements contract source write guard: ${requestedBase}.`,
+          },
+        ],
+      };
+    }
+
+    const changed = splitGitPaths(
+      resolvedBase
+        ? gitOutput(root, [
+            'diff',
+            '--name-only',
+            '--diff-filter=ACMRTUXB',
+            `${resolvedBase}...HEAD`,
+            '--',
+            'docs/plans/*.md',
+          ])
+        : gitOutput(root, [
+            'diff',
+            '--name-only',
+            '--diff-filter=ACMRTUXB',
+            'HEAD',
+            '--',
+            'docs/plans/*.md',
+          ])
+    );
+    const untracked = resolvedBase
+      ? []
+      : splitGitPaths(
+          gitOutput(root, ['ls-files', '--others', '--exclude-standard', '--', 'docs/plans/*.md'])
+        );
+    return { paths: Array.from(new Set([...changed, ...untracked])), issues };
+  } catch {
+    return { paths: [], issues };
   }
 }
 
@@ -167,15 +244,10 @@ function verifyPath(root: string, inputPath: string): GuardIssue[] {
 function main(): number {
   const args = parseArgs(process.argv.slice(2));
   const explicit = args.paths;
-  const changed = gitChangedDocsPlans(args.cwd);
+  const changedResult = gitChangedDocsPlans(args.cwd, args.baseRef);
+  const changed = changedResult.paths;
   const paths = Array.from(new Set([...changed, ...explicit]));
-  const issues: GuardIssue[] = [];
-  if (paths.length === 0) {
-    issues.push({
-      code: 'requirements_contract_source_write_path_required',
-      message: 'No tracked docs/plans/*.md diff paths and no explicit --paths were provided.',
-    });
-  }
+  const issues: GuardIssue[] = [...changedResult.issues];
   for (const target of paths) {
     issues.push(...verifyPath(args.cwd, target));
   }

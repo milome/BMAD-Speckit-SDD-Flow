@@ -13,12 +13,31 @@ function sha256Text(value: string): string {
   return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
 
-function runGuard(root: string, args: string[] = []) {
+function runGuard(root: string, args: string[] = [], env: Record<string, string> = {}) {
   return cp.spawnSync('npx', ['tsx', guard, '--cwd', root, '--json', ...args], {
     cwd: path.resolve('.'),
     encoding: 'utf8',
+    env: { ...process.env, ...env },
     shell: process.platform === 'win32',
   });
+}
+
+function runGit(root: string, args: string[]): void {
+  cp.execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+}
+
+function initRepo(root: string): void {
+  try {
+    runGit(root, ['init', '--initial-branch=master']);
+  } catch {
+    runGit(root, ['init']);
+    runGit(root, ['checkout', '-B', 'master']);
+  }
+  runGit(root, ['config', 'user.email', 'guard@example.invalid']);
+  runGit(root, ['config', 'user.name', 'Guard Test']);
+  writeFileSync(path.join(root, 'README.md'), '# Guard test\n', 'utf8');
+  runGit(root, ['add', 'README.md']);
+  runGit(root, ['commit', '-m', 'base']);
 }
 
 function writeRequirement(root: string, relativePath = 'docs/plans/guarded.md'): string {
@@ -58,12 +77,66 @@ function writeReceipt(root: string, targetRelative: string, overrides: Record<st
 }
 
 describe('requirements contract source write guard', () => {
-  it('fails when no tracked docs/plans diff and no explicit paths exist', () => {
+  it('passes when no docs/plans diff and no explicit paths exist', () => {
     const root = createTempRoot('requirements-contract-guard-empty-');
     try {
       const result = runGuard(root);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('"ok": true');
+      expect(result.stdout).toContain('"checkedPaths": []');
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('detects local untracked docs/plans implementationConfirmation paths', () => {
+    const root = createTempRoot('requirements-contract-guard-untracked-');
+    try {
+      initRepo(root);
+      writeRequirement(root);
+      const result = runGuard(root);
       expect(result.status).toBe(1);
-      expect(result.stdout).toContain('requirements_contract_source_write_path_required');
+      expect(result.stdout).toContain('requirements_contract_promotion_receipt_missing');
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('uses pull request base diff when a base ref is available', () => {
+    const root = createTempRoot('requirements-contract-guard-base-');
+    try {
+      initRepo(root);
+      runGit(root, ['checkout', '-b', 'feature']);
+      writeRequirement(root);
+      runGit(root, ['add', 'docs/plans/guarded.md']);
+      runGit(root, ['commit', '-m', 'add guarded contract']);
+
+      const result = runGuard(root, [], {
+        GITHUB_BASE_REF: 'master',
+        GITHUB_EVENT_NAME: 'pull_request',
+      });
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain('requirements_contract_promotion_receipt_missing');
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('passes pull request base diff when docs/plans is unchanged', () => {
+    const root = createTempRoot('requirements-contract-guard-base-empty-');
+    try {
+      initRepo(root);
+      runGit(root, ['checkout', '-b', 'feature']);
+      writeFileSync(path.join(root, 'README.md'), '# Guard test\n\nchanged\n', 'utf8');
+      runGit(root, ['add', 'README.md']);
+      runGit(root, ['commit', '-m', 'change readme']);
+
+      const result = runGuard(root, [], {
+        GITHUB_BASE_REF: 'master',
+        GITHUB_EVENT_NAME: 'pull_request',
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('"ok": true');
     } finally {
       removeTempRoot(root);
     }

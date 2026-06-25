@@ -570,6 +570,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
         targetPath: metadata.requiredBusinessAnchors.targetPaths,
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
       });
+      expect(authoring.blockingStage).toBe('critical_auditor_provider_mode_required');
       const authoringPaths = artifacts(root, recordId, requirementSetId);
       const draftPreview = readFileSync(authoringPaths.draftSourcePreview, 'utf8');
       writeFileSync(source, draftPreview, 'utf8');

@@ -580,17 +580,37 @@ function validateSourceMutationDecision(decision, context) {
   if (context) {
     const sourceDocumentHashBefore = String(decision?.sourceDocumentHashBefore ?? "");
     const sourceDocumentHashAfter = String(decision?.sourceDocumentHashAfter ?? "");
+    const targetRawHashBefore = String(
+      decision?.targetRawHashBefore ?? decision?.sourceDocumentHashBefore ?? ""
+    );
+    const targetRawHashAfter = String(
+      decision?.targetRawHashAfter ?? decision?.sourceDocumentHashAfter ?? ""
+    );
     if (context.targetState.exists && decision?.sourceDocumentExistedBefore === false) {
       issues.push("source_mutation_target_existence_mismatch");
     }
     if (!context.targetState.exists && decision?.sourceDocumentExistedBefore !== false) {
       issues.push("source_mutation_target_absence_not_authorized");
     }
-    if (sourceDocumentHashBefore && sourceDocumentHashBefore !== context.targetState.hash) {
+    if (targetRawHashBefore && targetRawHashBefore !== context.targetState.hash) {
       issues.push("source_mutation_source_hash_before_mismatch");
     }
-    if (sourceDocumentHashAfter && sourceDocumentHashAfter !== context.expectedDraftHash) {
+    if (targetRawHashAfter && targetRawHashAfter !== context.expectedDraftHash) {
       issues.push("source_mutation_source_hash_after_mismatch");
+    }
+    if (
+      decision?.targetRawHashBefore &&
+      sourceDocumentHashBefore &&
+      decision.targetRawHashBefore !== sourceDocumentHashBefore
+    ) {
+      issues.push("source_mutation_source_hash_before_raw_alias_mismatch");
+    }
+    if (
+      decision?.targetRawHashAfter &&
+      sourceDocumentHashAfter &&
+      decision.targetRawHashAfter !== sourceDocumentHashAfter
+    ) {
+      issues.push("source_mutation_source_hash_after_raw_alias_mismatch");
     }
   }
   return issues;
@@ -711,6 +731,10 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
       sourceDocumentExistedBefore: sourceMutationDecision.sourceDocumentExistedBefore ?? null,
       sourceDocumentHashBefore: sourceMutationDecision.sourceDocumentHashBefore ?? null,
       sourceDocumentHashAfter: sourceMutationDecision.sourceDocumentHashAfter ?? null,
+      targetRawHashBefore: sourceMutationDecision.targetRawHashBefore ?? null,
+      targetRawHashAfter: sourceMutationDecision.targetRawHashAfter ?? null,
+      semanticSourceHashBefore: sourceMutationDecision.semanticSourceHashBefore ?? null,
+      semanticSourceHashAfter: sourceMutationDecision.semanticSourceHashAfter ?? null,
       currentTargetHash: targetState.hash,
       expectedDraftHash: manifest?.draftHash ?? null,
     };

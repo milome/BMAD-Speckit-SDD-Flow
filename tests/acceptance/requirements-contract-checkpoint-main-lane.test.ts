@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
@@ -11,6 +12,21 @@ import {
 } from './helpers/requirements-contract-authoring-fixture';
 
 describe('requirements contract checkpoint main lane', () => {
+  it('wires checkpoint persistence evidence through the CLI parser', () => {
+    const source = readFileSync(
+      path.resolve(
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
+      ),
+      'utf8'
+    );
+
+    expect(source).toContain('--checkpoint-persistence-evidence');
+    expect(source).toContain('out.checkpointPersistenceEvidencePath = argv[++index]');
+    expect(source).toContain(
+      'checkpointPersistenceEvidencePath: args.checkpointPersistenceEvidencePath'
+    );
+  });
+
   it('automatically persists checkpoint evidence for checkpoint_required routes', () => {
     const root = createTempRoot('requirements-contract-checkpoint-main-');
     try {

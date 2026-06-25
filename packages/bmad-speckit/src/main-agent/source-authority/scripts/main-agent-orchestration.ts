@@ -1939,6 +1939,10 @@ interface SourceMutationDecision {
   sourceDocumentExistedBefore: boolean;
   sourceDocumentHashBefore: string;
   sourceDocumentHashAfter: string;
+  targetRawHashBefore?: string;
+  targetRawHashAfter?: string;
+  semanticSourceHashBefore?: string;
+  semanticSourceHashAfter?: string;
   recordId: string;
   requirementSetId: string;
   attemptId: string;
@@ -3217,6 +3221,10 @@ function writeSourceMutationDecision(input: {
   sourceDocumentExistedBefore?: boolean;
   sourceHashBefore: string;
   sourceHashAfter?: string | null;
+  targetRawHashBefore?: string | null;
+  targetRawHashAfter?: string | null;
+  semanticSourceHashBefore?: string | null;
+  semanticSourceHashAfter?: string | null;
   issues: PreConfirmationDrilldownIssue[];
   coverageDecision: string;
   targetAuthorityDecision: string;
@@ -3237,6 +3245,12 @@ function writeSourceMutationDecision(input: {
       input.sourceDocumentExistedBefore ?? fs.existsSync(input.sourcePath),
     sourceDocumentHashBefore: input.sourceHashBefore,
     sourceDocumentHashAfter: input.sourceHashAfter ?? input.sourceHashBefore,
+    targetRawHashBefore: input.targetRawHashBefore ?? input.sourceHashBefore,
+    targetRawHashAfter:
+      input.targetRawHashAfter ?? input.sourceHashAfter ?? input.sourceHashBefore,
+    semanticSourceHashBefore: input.semanticSourceHashBefore ?? input.sourceHashBefore,
+    semanticSourceHashAfter:
+      input.semanticSourceHashAfter ?? input.sourceHashAfter ?? input.sourceHashBefore,
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
     attemptId: sha256Json({
@@ -4224,8 +4238,7 @@ function materializeImplementationConfirmationText(
   return next.endsWith('\n') ? next : `${next}\n`;
 }
 
-function safeCurrentSourceDocumentHash(sourcePath: string): string {
-  const sourceText = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, 'utf8') : '';
+function semanticSourceDocumentHashForText(sourceText: string): string {
   const extraction = extractImplementationConfirmationBlock(sourceText);
   if (!extraction) {
     return sha256Text(sourceText);
@@ -4235,6 +4248,11 @@ function safeCurrentSourceDocumentHash(sourcePath: string): string {
     extraction.blockText,
     extraction.confirmation
   );
+}
+
+function safeCurrentSourceDocumentHash(sourcePath: string): string {
+  const sourceText = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, 'utf8') : '';
+  return semanticSourceDocumentHashForText(sourceText);
 }
 
 function writtenIdRangesFromConfirmation(confirmation: Record<string, unknown>): string[] {
@@ -9343,7 +9361,7 @@ export function runMainAgentPreConfirmationDrilldown(
   }
 
   const sourceText = fs.readFileSync(semanticInputPath, 'utf8');
-  const sourceHashBefore = sha256Text(sourceText);
+  const sourceHashBefore = semanticSourceDocumentHashForText(sourceText);
   const stagingTransaction = createCriticalAuditorStagingTransaction({
     paths,
     recordId: identity.recordId,
@@ -10254,23 +10272,31 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const promotionPreHash =
+  const promotionPreSemanticHash =
     entryMode === 'intake_to_new_source'
       ? 'absent'
       : safeCurrentSourceDocumentHash(sourcePath);
+  const promotionPreRawHash =
+    entryMode === 'intake_to_new_source'
+      ? 'absent'
+      : sha256Text(fs.readFileSync(sourcePath, 'utf8'));
   if (
     entryMode === 'existing_source' &&
-    promotionPreHash !== stagingTransaction.sourceStartHash
+    promotionPreSemanticHash !== stagingTransaction.sourceStartHash
   ) {
     const issue = preConfirmationIssue(
       'source_hash_changed_before_promotion',
       'Current source hash changed after staging transaction start; source promotion is forbidden.',
-      [toRootRelativePath(root, sourcePath), stagingTransaction.sourceStartHash, promotionPreHash],
+      [
+        toRootRelativePath(root, sourcePath),
+        stagingTransaction.sourceStartHash,
+        promotionPreSemanticHash,
+      ],
       'source_mutation_gate'
     );
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
-      currentSourceHash: promotionPreHash,
+      currentSourceHash: promotionPreSemanticHash,
       blockingStage: 'source_hash_changed_before_promotion',
       createdAt,
     });
@@ -10284,7 +10310,7 @@ export function runMainAgentPreConfirmationDrilldown(
       issues: [issue],
       mustGateReport,
       globalGateReport,
-      sourceDocumentHash: promotionPreHash,
+      sourceDocumentHash: promotionPreSemanticHash,
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       criticalAuditorProviderMode,
       blockingStage: 'source_hash_changed_before_promotion',
@@ -10544,6 +10570,9 @@ export function runMainAgentPreConfirmationDrilldown(
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
     });
   }
+  const normalizedFinalDraftText = fs.readFileSync(finalDraftSource, 'utf8');
+  const normalizedFinalDraftSemanticHash =
+    semanticSourceDocumentHashForText(normalizedFinalDraftText);
 
   writeSourceMutationDecision({
     root,
@@ -10553,8 +10582,12 @@ export function runMainAgentPreConfirmationDrilldown(
     requirementSetId: identity.requirementSetId,
     createdAt,
     sourceDocumentExistedBefore: entryMode === 'existing_source',
-    sourceHashBefore: promotionPreHash,
+    sourceHashBefore: promotionPreRawHash,
     sourceHashAfter: normalizedFinalDraft.draftHash,
+    targetRawHashBefore: promotionPreRawHash,
+    targetRawHashAfter: normalizedFinalDraft.draftHash,
+    semanticSourceHashBefore: promotionPreSemanticHash,
+    semanticSourceHashAfter: normalizedFinalDraftSemanticHash,
     issues: [],
     coverageDecision: 'pass',
     targetAuthorityDecision: 'pass',
@@ -10584,7 +10617,7 @@ export function runMainAgentPreConfirmationDrilldown(
     transactionId: stagingTransaction.transactionId,
     namespaceVersion: stagingTransaction.namespaceVersion,
     sourceStartHash: stagingTransaction.sourceStartHash,
-    currentSourceHash: promotionPreHash,
+    currentSourceHash: promotionPreSemanticHash,
     finalDecision: 'allow_source_promotion',
     criticalAuditorReceiptHashes: finalCriticalAuditorLoop.receipts.map((receipt) =>
       normalizeText(receipt.receiptHash)
@@ -12648,6 +12681,12 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       argv[index + 1]
     ) {
       out.criticalAuditorExternalAdapterCommand = argv[++index];
+    } else if (
+      (token === '--checkpoint-persistence-evidence' ||
+        token === '--checkpointPersistenceEvidence') &&
+      argv[index + 1]
+    ) {
+      out.checkpointPersistenceEvidencePath = argv[++index];
     } else if (token === '--skip-drilldown-artifacts') {
       out.skipDrilldownArtifacts = 'true';
     } else if (token === '--runtime-root' && argv[index + 1]) {
@@ -15586,6 +15625,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         criticalAuditorProviderMode: args.criticalAuditorProviderMode,
         criticalAuditorResponseFile: args.criticalAuditorResponseFile,
         criticalAuditorExternalAdapterCommand: args.criticalAuditorExternalAdapterCommand,
+        checkpointPersistenceEvidencePath: args.checkpointPersistenceEvidencePath,
       });
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return result.ok ? 0 : 1;

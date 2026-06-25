@@ -13,108 +13,12 @@ function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
 }
 
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-  }
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map(
-      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
-    )
-    .join(',')}}`;
-}
-
 function sha256Text(value: string): string {
   return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
 
-function sha256Json(value: unknown): string {
-  return sha256Text(stableStringify(value));
-}
-
 function readJson(file: string): any {
   return JSON.parse(readFileSync(file, 'utf8'));
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  const bookkeeping = new Set([
-    'status',
-    'confirmedAt',
-    'confirmedBy',
-    'sourceDocumentHash',
-    'implementationConfirmationHash',
-    'reconfirmationRequest',
-    'confirmationRender',
-  ]);
-  const semantic = Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key))
-  );
-  const drilldown =
-    semantic.preConfirmationDrilldown &&
-    typeof semantic.preConfirmationDrilldown === 'object' &&
-    !Array.isArray(semantic.preConfirmationDrilldown)
-      ? { ...(semantic.preConfirmationDrilldown as Record<string, unknown>) }
-      : {};
-  const semanticKernelRef =
-    drilldown.semanticKernelRef &&
-    typeof drilldown.semanticKernelRef === 'object' &&
-    !Array.isArray(drilldown.semanticKernelRef)
-      ? { ...(drilldown.semanticKernelRef as Record<string, unknown>) }
-      : {};
-  const mustDecompositionPacketRef =
-    drilldown.mustDecompositionPacketRef &&
-    typeof drilldown.mustDecompositionPacketRef === 'object' &&
-    !Array.isArray(drilldown.mustDecompositionPacketRef)
-      ? { ...(drilldown.mustDecompositionPacketRef as Record<string, unknown>) }
-      : {};
-  if (Object.keys(semanticKernelRef).length > 0) {
-    delete semanticKernelRef.hash;
-    drilldown.semanticKernelRef = semanticKernelRef;
-  }
-  if (Object.keys(mustDecompositionPacketRef).length > 0) {
-    delete mustDecompositionPacketRef.hash;
-    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
-  }
-  const criticalAuditor =
-    drilldown.criticalAuditor &&
-    typeof drilldown.criticalAuditor === 'object' &&
-    !Array.isArray(drilldown.criticalAuditor)
-      ? { ...(drilldown.criticalAuditor as Record<string, unknown>) }
-      : {};
-  if (Object.keys(criticalAuditor).length > 0) {
-    delete criticalAuditor.consecutiveNoNewGapRounds;
-    delete criticalAuditor.latestReceiptHash;
-    delete criticalAuditor.convergenceVerdict;
-    drilldown.criticalAuditor = criticalAuditor;
-  }
-  if (Object.keys(drilldown).length > 0) {
-    semantic.preConfirmationDrilldown = drilldown;
-  }
-  return semantic;
-}
-
-function currentSourceHashes(source: string): {
-  sourceDocumentHash: string;
-  implementationConfirmationHash: string;
-} {
-  const text = readFileSync(source, 'utf8');
-  const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
-  if (!match) {
-    throw new Error('implementationConfirmation block missing');
-  }
-  const confirmation = (yaml.load(match[0]) as any).implementationConfirmation;
-  const semantic = semanticConfirmationForHash(confirmation);
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
-  return {
-    sourceDocumentHash: sha256Text(text.replace(match[0], normalizedBlock)),
-    implementationConfirmationHash: sha256Json(semantic),
-  };
 }
 
 function readInlineConfirmation(source: string): any {
@@ -486,7 +390,6 @@ function writePromotionReceipt(
   );
   const receiptPath = path.join(receiptDir, 'promotion-receipt.json');
   mkdirSync(receiptDir, { recursive: true });
-  const hashes = currentSourceHashes(source);
   const targetHash = sha256Text(readFileSync(source, 'utf8'));
   const sourceRel = rootRelative(root, source);
   const receipt: Record<string, unknown> = {
