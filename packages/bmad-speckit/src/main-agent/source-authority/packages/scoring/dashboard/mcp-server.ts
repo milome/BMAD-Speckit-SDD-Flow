@@ -27,7 +27,7 @@ interface ToolDefinition {
 
 const SERVER_INFO = {
   name: 'bmad-runtime-dashboard',
-  version: '2.0.3',
+  version: '2.0.6',
 };
 
 function writeMessage(payload: Record<string, unknown>): void {
