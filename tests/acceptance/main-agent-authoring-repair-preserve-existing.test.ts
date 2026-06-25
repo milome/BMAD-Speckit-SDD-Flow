@@ -117,6 +117,15 @@ function currentSourceHashes(source: string): {
   };
 }
 
+function readInlineConfirmation(source: string): any {
+  const text = readFileSync(source, 'utf8');
+  const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
+  if (!match) {
+    throw new Error('implementationConfirmation block missing');
+  }
+  return (yaml.load(match[0]) as any).implementationConfirmation;
+}
+
 function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE'): string {
   const source = path.join(root, 'docs', 'requirements', 'rich-source.md');
   mkdirSync(path.dirname(source), { recursive: true });
@@ -550,7 +559,541 @@ function writeNoNewGapResponse(
   return responsePath;
 }
 
+function writeNewValidGapResponse(
+  requestPath: string,
+  responsePath: string,
+  overrides: Record<string, unknown> = {}
+) {
+  const request = readJson(requestPath);
+  const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
+  const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const body = {
+    schemaVersion: 'critical-auditor-round-response/v1',
+    requestHash: request.requestHash,
+    recordId: request.recordId,
+    roundIndex: request.roundIndex,
+    sourceDocumentHash: request.sourceDocumentHash,
+    implementationConfirmationHash: request.implementationConfirmationHash,
+    packetHash: request.packetHash,
+    gateDryRunHash: request.gateDryRun.gateDryRunHash,
+    reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
+    checkedProjectionGroups,
+    verdict: 'new_valid_gap',
+    reviewedMustRefs: request.mustRefs,
+    reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
+    priorFindingsDisposition: [
+      {
+        findingRef: `ROUND-${request.roundIndex}-GAP`,
+        disposition: 'new',
+        evidenceRefs: [request.gateDryRun.reportPath],
+      },
+    ],
+    gapCandidates: [{ id: `GAP-CANDIDATE-${request.roundIndex}` }],
+    validatedGaps: [
+      {
+        id: `VALID-GAP-${request.roundIndex}`,
+        status: 'open',
+        repairActions: [
+          {
+            actionId: `REPAIR-${request.roundIndex}-001`,
+            type: 'add_must',
+            sourceSpan: { startLine: 1, endLine: 1 },
+            sourceText: 'Add source-bound missing requirement.',
+            targetField: 'implementationConfirmation.must',
+            newValue: {
+              id: 'MUST-REPAIR-001',
+              text: 'Add source-bound missing requirement.',
+            },
+            reason: 'Critical Auditor found an omitted requirement.',
+            mustRefs: request.mustRefs?.length ? [request.mustRefs[0]] : ['MUST-001'],
+            requirementIds: ['REQ-REPAIR-001'],
+          },
+        ],
+      },
+    ],
+    rejectedGapCandidates: [],
+    rationale: `Round ${request.roundIndex} found a valid repairable gap.`,
+    ...overrides,
+  };
+  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  return responsePath;
+}
+
+function writeSingleMustRepairResponse(requestPath: string, responsePath: string) {
+  return writeNewValidGapResponse(requestPath, responsePath, {
+    validatedGaps: [
+      {
+        id: 'VALID-GAP-SINGLE-MUST',
+        status: 'open',
+        repairActions: [
+          {
+            actionId: 'REPAIR-SINGLE-MUST',
+            type: 'add_must',
+            sourceSpan: { startLine: 1, endLine: 1 },
+            sourceText: 'Repair must rebuild the packet.',
+            targetField: 'implementationConfirmation.must',
+            newValue: {
+              id: 'MUST-REBUILT-001',
+              text: 'Repair must rebuild the packet.',
+            },
+            reason: 'Validated gap requires packet rebuild.',
+            mustRefs: ['MUST-001'],
+            requirementIds: ['REQ-REBUILT-001'],
+          },
+        ],
+      },
+    ],
+  });
+}
+
 describe('main-agent authoring-repair preserve-existing lane', () => {
+  it('rejects invalid Critical Auditor repair actions', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-action-schema-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [{ id: 'VALID-GAP-NO-ACTIONS', status: 'open' }],
+      });
+      let result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_repair_action_field_missing'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-UNKNOWN-TYPE',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-UNKNOWN-TYPE',
+                type: 'invent_semantics',
+                sourceSpan: { startLine: 1, endLine: 1 },
+                sourceText: 'Invalid action type.',
+                targetField: 'implementationConfirmation.must',
+                newValue: { id: 'MUST-INVALID', text: 'Invalid action type.' },
+                reason: 'Unknown type must fail closed.',
+                mustRefs: ['MUST-001'],
+                requirementIds: ['REQ-INVALID'],
+              },
+            ],
+          },
+        ],
+      });
+      result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_repair_action_type_unknown'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-MISSING-FIELD',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-MISSING-FIELD',
+                type: 'add_must',
+                sourceSpan: { startLine: 1, endLine: 1 },
+                sourceText: 'Missing reason should fail.',
+                targetField: 'implementationConfirmation.must',
+                newValue: { id: 'MUST-MISSING-FIELD', text: 'Missing reason should fail.' },
+                mustRefs: ['MUST-001'],
+                requirementIds: ['REQ-MISSING-FIELD'],
+              },
+            ],
+          },
+        ],
+      });
+      result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_repair_action_field_missing'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes Critical Auditor repair actions into semantic contract fields', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-materialize-actions-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      const request = readJson(paths.request(1));
+      const actionBase = {
+        sourceSpan: { startLine: 10, endLine: 11 },
+        sourceText: 'Materialize every semantic field from a Critical Auditor gap.',
+        reason: 'Semantic materialization must update contract fields.',
+        mustRefs: ['MUST-001'],
+        requirementIds: ['REQ-SEMANTIC-REPAIR'],
+      };
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-SEMANTIC',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-ADD-MUST',
+                type: 'add_must',
+                targetField: 'implementationConfirmation.must',
+                newValue: { id: 'MUST-REPAIR-001', text: 'Repair adds a business MUST.' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-SPLIT-MUST',
+                type: 'split_must',
+                targetField: 'implementationConfirmation.must',
+                newValue: { id: 'MUST-REPAIR-002', text: 'Repair splits a broad MUST.' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-NEG',
+                type: 'add_neg',
+                targetField: 'implementationConfirmation.negativeRequirements',
+                newValue: { id: 'NEG-REPAIR-001', text: 'Repair adds a negative requirement.' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-OUT',
+                type: 'add_out',
+                targetField: 'implementationConfirmation.outOfScope',
+                newValue: { id: 'OUT-REPAIR-001', text: 'Repair adds an out-of-scope boundary.' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-EVD',
+                type: 'add_evidence',
+                targetField: 'implementationConfirmation.evidence',
+                newValue: { id: 'EVD-REPAIR-001', text: 'Repair adds evidence.' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-TRACE',
+                type: 'add_trace',
+                targetField: 'implementationConfirmation.traceRows',
+                newValue: { id: 'TRACE-REPAIR-001', covers: ['MUST-REPAIR-001'] },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-ACC',
+                type: 'add_acc',
+                targetField: 'implementationConfirmation.acceptanceCriteria',
+                newValue: { id: 'ACC-REPAIR-001', file: 'tests/acceptance/repair.test.ts' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-E2E',
+                type: 'add_e2e',
+                targetField: 'implementationConfirmation.e2eScenarios',
+                newValue: { id: 'E2E-REPAIR-001', file: 'tests/e2e/repair.e2e.ts' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-ADD-BUSINESS',
+                type: 'add_business_view',
+                targetField: 'implementationConfirmation.businessViews',
+                newValue: { id: 'BUSINESS-VIEW-REPAIR-001', title: 'Repair business view' },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-TARGET',
+                type: 'replace_target_path',
+                targetField: 'implementationConfirmation.targetModificationPaths',
+                newValue: {
+                  id: 'TARGET-MOD-REPAIR-001',
+                  path: 'src/repair-target.ts',
+                  coverageRole: 'modify',
+                },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-COMMAND',
+                type: 'replace_validation_command',
+                targetField: 'implementationConfirmation.requiredCommands',
+                newValue: {
+                  id: 'CMD-REPAIR-001',
+                  command: 'npm run repair:test',
+                  targetFiles: ['src/repair-target.ts'],
+                },
+                ...actionBase,
+              },
+            ],
+          },
+        ],
+        reviewedProjectionRefs: request.packetProjectionSummary.projectionRefs.length
+          ? [request.packetProjectionSummary.projectionRefs[0]]
+          : [],
+      });
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+      expect(result).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_round_required',
+        nextRequiredAction: 'write_critical_auditor_round_response',
+        consecutiveNoNewGapRounds: 0,
+      });
+      const confirmation = readInlineConfirmation(source);
+      expect(confirmation.must.map((row: any) => row.id)).toEqual(
+        expect.arrayContaining(['MUST-REPAIR-001', 'MUST-REPAIR-002'])
+      );
+      expect(confirmation.notDone.map((row: any) => row.id)).toContain('NEG-REPAIR-001');
+      expect(confirmation.negativeRequirements.map((row: any) => row.id)).toContain(
+        'NEG-REPAIR-001'
+      );
+      expect(confirmation.mustNot.map((row: any) => row.id)).toContain('OUT-REPAIR-001');
+      expect(confirmation.outOfScope.map((row: any) => row.id)).toContain('OUT-REPAIR-001');
+      expect(confirmation.evidence.map((row: any) => row.id)).toContain('EVD-REPAIR-001');
+      expect(confirmation.traceRows.map((row: any) => row.id)).toContain('TRACE-REPAIR-001');
+      expect(confirmation.acceptanceTests.map((row: any) => row.id)).toContain('ACC-REPAIR-001');
+      expect(confirmation.acceptanceCriteria.map((row: any) => row.id)).toContain(
+        'ACC-REPAIR-001'
+      );
+      expect(confirmation.e2eSuites.map((row: any) => row.id)).toContain('E2E-REPAIR-001');
+      expect(confirmation.e2eScenarios.map((row: any) => row.id)).toContain('E2E-REPAIR-001');
+      expect(confirmation.businessViews.map((row: any) => row.id)).toContain(
+        'BUSINESS-VIEW-REPAIR-001'
+      );
+      expect(confirmation.targetModificationPaths.map((row: any) => row.path)).toContain(
+        'src/repair-target.ts'
+      );
+      expect(confirmation.requiredCommands.map((row: any) => row.command)).toContain(
+        'npm run repair:test'
+      );
+      expect(confirmation.sourceGapFixes).toHaveLength(1);
+      expect(confirmation.sourceGapFixes[0].appliedActions).toHaveLength(11);
+      expect(confirmation.sourceGapFixes[0].targetFieldsChanged).toEqual(
+        expect.arrayContaining([
+          'must',
+          'notDone',
+          'negativeRequirements',
+          'mustNot',
+          'outOfScope',
+          'evidence',
+          'traceRows',
+          'acceptanceTests',
+          'acceptanceCriteria',
+          'e2eSuites',
+          'e2eScenarios',
+          'businessViews',
+          'targetModificationPaths',
+          'requiredCommands',
+        ])
+      );
+      expect(confirmation.sourceGapFixes[0].semanticHashBefore).not.toBe(
+        confirmation.sourceGapFixes[0].semanticHashAfter
+      );
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'semantic_repair_transaction_restarted'
+      );
+      expect(existsSync(paths.request(1))).toBe(true);
+      const restartedRequest = readJson(paths.request(1));
+      const rebuiltPacket = readJson(paths.packet).must_decomposition_packet;
+      expect(restartedRequest.roundIndex).toBe(1);
+      expect(restartedRequest.packetHash).toBe(rebuiltPacket.packetHash);
+      expect(restartedRequest.sourceDocumentHash).toBe(result.sourceDocumentHash);
+      expect(restartedRequest.implementationConfirmationHash).toBe(
+        result.implementationConfirmationHash
+      );
+      expect(result.artifacts.some((artifact: string) => artifact.includes('/archive/'))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('runs source-bound extraction during preserve-existing repair', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-source-bound-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const original = readFileSync(source, 'utf8');
+      const enriched = original.replace(
+        '## Custom Semantic Notes\n\nCUSTOM-SECTION-MUST-STAY',
+        [
+          '## Custom Semantic Notes',
+          '',
+          '### Source-bound business requirements',
+          '',
+          '- 系统必须保留源文档中的新增业务需求，不得只审计 inline MUST。',
+          '- 验收：repair packet 必须包含源文档新增需求。',
+          '',
+          'CUSTOM-SECTION-MUST-STAY',
+        ].join('\n')
+      );
+      writeFileSync(source, enriched, 'utf8');
+      writeSourceMaterializationReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_round_required',
+      });
+      const kernel = readJson(paths.kernel).semanticKernel;
+      const packet = readJson(paths.packet).must_decomposition_packet;
+      expect(kernel.mustCandidates).toContain('MUST-001');
+      expect(kernel.sourceRequirementTexts).toContain(
+        'Preserve existing rich source contract and block confirmation until authoring repair converges.'
+      );
+      expect(kernel.sourceRequirementTexts).toEqual(
+        expect.arrayContaining([
+          '系统必须保留源文档中的新增业务需求，不得只审计 inline MUST。',
+          '验收：repair packet 必须包含源文档新增需求。',
+        ])
+      );
+      expect(packet.mustRefs).toContain('MUST-001');
+      expect(packet.mustRefs.length).toBeGreaterThan(1);
+      expect(packet.sourceRequirementTexts).toEqual(kernel.sourceRequirementTexts);
+      expect(readFileSync(source, 'utf8')).toBe(enriched);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rebuilds packet source reconciliation after semantic repair', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-packet-rebuild-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      const originalRequest = readJson(paths.request(1));
+      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+      const repairedConfirmation = readInlineConfirmation(source);
+      const rebuiltPacket = readJson(paths.packet).must_decomposition_packet;
+      const restartedRequest = readJson(paths.request(1));
+
+      expect(repairedConfirmation.must.map((row: any) => row.id)).toContain('MUST-REBUILT-001');
+      expect(rebuiltPacket.mustRefs).toContain('MUST-REBUILT-001');
+      expect(rebuiltPacket.packetHash).not.toBe(originalRequest.packetHash);
+      expect(rebuiltPacket.implementationConfirmationHash).toBe(
+        result.implementationConfirmationHash
+      );
+      expect(restartedRequest.packetHash).toBe(rebuiltPacket.packetHash);
+      expect(restartedRequest.mustRefs).toContain('MUST-REBUILT-001');
+      expect(restartedRequest.previousReceipts).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('archives stale Critical Auditor artifacts and restarts round one after semantic repair', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-semantic-restart-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writeSourceMaterializationReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      const archiveArtifact = result.artifacts.find((artifact: string) => artifact.includes('/archive/'));
+      expect(archiveArtifact).toBeTruthy();
+      const archiveDir = path.join(root, archiveArtifact as string);
+      const archiveManifest = readJson(path.join(archiveDir, 'archive-manifest.json'));
+      expect(archiveManifest.reason).toBe('semantic_repair_transaction_restart');
+      expect(archiveManifest.artifacts).toEqual(
+        expect.arrayContaining([
+          'critical-auditor-round-request-1.json',
+          'critical-auditor-round-response-1.json',
+          'critical-auditor-receipt-round-1.json',
+        ])
+      );
+      expect(existsSync(paths.request(1))).toBe(true);
+      expect(existsSync(paths.response(1))).toBe(false);
+      expect(existsSync(paths.receipt(1))).toBe(false);
+      const restartedRequest = readJson(paths.request(1));
+      expect(restartedRequest.roundIndex).toBe(1);
+      expect(restartedRequest.previousReceipts).toEqual([]);
+      expect(result.consecutiveNoNewGapRounds).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('preserves a rich implementationConfirmation and blocks with a Critical Auditor request when no response exists', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-preserve-'));
     try {
