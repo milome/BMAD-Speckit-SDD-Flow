@@ -3575,6 +3575,15 @@ function buildPreConfirmationImplementationConfirmation(input: {
       : [];
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
   const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
+  const acceptanceTestFile =
+    validationAuthorityRecords
+      .flatMap((record) => record.commandFileRefs)
+      .find((fileRef) => /(?:^|\/)tests?\//iu.test(fileRef.replace(/\\/g, '/'))) ??
+    validationAuthorityRecords
+      .map((record) => extractCommandFileRefs(record.command))
+      .flat()
+      .find((fileRef) => /(?:^|\/)tests?\//iu.test(fileRef.replace(/\\/g, '/'))) ??
+    'source_authorized_validation_command';
   const targetPathRows = [
     ...targetAuthorityRecords.map((record, index) => ({
       id: `TARGET-MOD-${requirementOrdinal(index)}`,
@@ -3690,13 +3699,6 @@ function buildPreConfirmationImplementationConfirmation(input: {
       },
     ];
   });
-  const acceptanceTestFile = path.resolve(
-    __dirname,
-    '..',
-    'tests',
-    'acceptance',
-    'main-agent-pre-confirmation-drilldown-lane.test.ts'
-  );
   return {
     contractSchemaVersion: 1,
     status: 'draft',
