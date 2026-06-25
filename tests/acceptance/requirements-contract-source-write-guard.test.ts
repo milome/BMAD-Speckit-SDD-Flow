@@ -14,10 +14,16 @@ function sha256Text(value: string): string {
 }
 
 function runGuard(root: string, args: string[] = [], env: Record<string, string> = {}) {
+  const childEnv = { ...process.env };
+  delete childEnv.GITHUB_BASE_REF;
+  delete childEnv.GITHUB_EVENT_NAME;
+  delete childEnv.GITHUB_HEAD_REF;
+  delete childEnv.GITHUB_REF;
+  delete childEnv.REQUIREMENTS_CONTRACT_SOURCE_WRITE_BASE;
   return cp.spawnSync('npx', ['tsx', guard, '--cwd', root, '--json', ...args], {
     cwd: path.resolve('.'),
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: { ...childEnv, ...env },
     shell: process.platform === 'win32',
   });
 }

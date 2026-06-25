@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
@@ -98,7 +99,7 @@ describe('requirements contract staging transaction', () => {
       );
       expect(promotionReceipt.targetHash).toBe(sha256File(source));
       expect(result.receiptPath).toBe(
-        paths.promotionReceipt.replace(`${root}\\`, '').replace(/\\/g, '/')
+        path.relative(root, paths.promotionReceipt).replace(/\\/g, '/')
       );
       expect(result.receiptHash).toBe(sha256File(paths.promotionReceipt));
       expect(confirmation.preConfirmationDrilldown).toMatchObject({

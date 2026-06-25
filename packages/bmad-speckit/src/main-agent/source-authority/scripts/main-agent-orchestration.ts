@@ -184,7 +184,6 @@ const SIX_MENTAL_MODEL_SEQUENCE = [
 
 type SixMentalModel = (typeof SIX_MENTAL_MODEL_SEQUENCE)[number];
 
-export const SOURCE_MATERIALIZATION_RECEIPT_SCHEMA_VERSION = 'source-materialization-receipt/v1';
 export const SHORT_FEEDBACK_WINDOW_MS = 300000;
 
 export interface MainAgentStageSummary {
@@ -1773,38 +1772,6 @@ interface MainAgentAuthoringRepairOptions {
   requirementSetId?: string;
   mode?: string;
   criticalAuditorResponse?: string;
-}
-
-type SourceMaterializationDraftStatus =
-  | 'confirmation_ready'
-  | 'draft_updated_not_confirmation_ready';
-
-interface SourceMaterializationReceipt {
-  schemaVersion: typeof SOURCE_MATERIALIZATION_RECEIPT_SCHEMA_VERSION;
-  sourcePath: string;
-  requirementSetId: string;
-  recordId: string;
-  sourceWriteReceiptPath?: string;
-  sourceWriteReceiptHash?: string;
-  sourceWriteTransport?: 'requirements-contract-promotion-helper';
-  transactionId?: string;
-  sourceStartHash?: string;
-  sourceDocumentHashPrePromote?: string;
-  sourceDocumentHashBefore: string;
-  sourceDocumentHashAfter: string;
-  implementationConfirmationHash: string;
-  criticalAuditorReceiptHashes?: string[];
-  writtenIdRanges: string[];
-  draftStatus: SourceMaterializationDraftStatus;
-  nextAuditCommand: string;
-  createdAt: string;
-  createdBy: 'main-agent-source-materialization';
-  receiptHash: string | null;
-}
-
-interface SourceMaterializationReceiptWriteResult {
-  receipt: SourceMaterializationReceipt;
-  receiptPath: string;
 }
 
 export interface MainAgentAuthoringRepairResult {
@@ -4212,17 +4179,6 @@ function buildPreConfirmationImplementationConfirmation(input: {
   };
 }
 
-function materializeImplementationConfirmationSource(
-  sourcePath: string,
-  confirmation: Record<string, unknown>
-): string {
-  void sourcePath;
-  void confirmation;
-  throw new Error(
-    'direct_source_materialization_forbidden: generate a staging draft and promote it through promote-draft-large-doc.js --promotion-stage authoring-draft'
-  );
-}
-
 function materializeImplementationConfirmationText(
   sourceText: string,
   confirmation: Record<string, unknown>
@@ -4278,61 +4234,6 @@ function writtenIdRangesFromConfirmation(confirmation: Record<string, unknown>):
   };
   collect(confirmation);
   return [...ranges].sort();
-}
-
-function nextSourceAuditCommand(root: string, sourcePath: string): string {
-  const source = toRootRelativePath(root, sourcePath);
-  const testCommand = 'npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts; npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts';
-  return `${testCommand} # audits written source: ${source}`;
-}
-
-function writeSourceMaterializationReceipt(input: {
-  root: string;
-  sourcePath: string;
-  paths: PreConfirmationPaths;
-  requirementSetId: string;
-  recordId: string;
-  sourceDocumentHashBefore: string;
-  sourceDocumentHashAfter: string;
-  implementationConfirmationHash: string;
-  transactionId?: string;
-  sourceWriteReceiptPath?: string;
-  sourceWriteReceiptHash?: string;
-  sourceWriteTransport?: 'requirements-contract-promotion-helper';
-  sourceStartHash?: string;
-  sourceDocumentHashPrePromote?: string;
-  criticalAuditorReceiptHashes?: string[];
-  writtenIdRanges: string[];
-  draftStatus: SourceMaterializationDraftStatus;
-  createdAt: string;
-}): SourceMaterializationReceiptWriteResult {
-  void input;
-  throw new Error(
-    'source_materialization_receipt_forbidden: promotion-receipt.json is the only source write receipt'
-  );
-}
-
-function materializeImplementationConfirmationSourceWithReceipt(input: {
-  root: string;
-  sourcePath: string;
-  paths: PreConfirmationPaths;
-  requirementSetId: string;
-  recordId: string;
-  confirmation: Record<string, unknown>;
-  draftStatus: SourceMaterializationDraftStatus;
-  createdAt: string;
-  expectedSourceStartHash?: string;
-  transactionId?: string;
-  criticalAuditorReceiptHashes?: string[];
-}): {
-  materialized: ReturnType<typeof readMaterializedConfirmation>;
-  receipt: SourceMaterializationReceipt;
-  receiptPath: string;
-} {
-  void input;
-  throw new Error(
-    'direct_source_materialization_receipt_forbidden: promotion-receipt.json from promote-draft-large-doc.js is the only source write receipt'
-  );
 }
 
 function promoteImplementationConfirmationDraftWithReceipt(input: {
