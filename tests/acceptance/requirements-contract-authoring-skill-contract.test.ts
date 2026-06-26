@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
@@ -22,6 +23,42 @@ function readSkillSurface(relativePath: string): string[] {
 }
 
 describe('requirements-contract-authoring published contract', () => {
+  it('keeps repository-local requirements-contract-authoring skill surfaces byte-synchronized', () => {
+    const verifier = path.join(
+      SKILL_DIR,
+      'scripts',
+      'verify-requirements-contract-authoring-skill-sync.js'
+    );
+    const output = execFileSync(process.execPath, [verifier, '--repo-only'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    const report = JSON.parse(output);
+
+    expect(report.ok).toBe(true);
+    expect(report.source.fileCount).toBeGreaterThan(0);
+    expect(report.surfaces.map((surface: any) => surface.path)).toEqual(
+      expect.arrayContaining([
+        path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
+        path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
+        path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
+        path
+          .join(ROOT, 'packages', 'bmad-speckit', '_bmad', 'skills', 'requirements-contract-authoring')
+          .replace(/\\/g, '/'),
+      ])
+    );
+    for (const surface of report.surfaces) {
+      expect(surface.ok, surface.path).toBe(true);
+      expect(surface.fileCount, surface.path).toBe(report.source.fileCount);
+      expect(surface.directoryHash, surface.path).toBe(report.source.directoryHash);
+      expect(surface.missingFiles, surface.path).toEqual([]);
+      expect(surface.extraFiles, surface.path).toEqual([]);
+      expect(surface.mismatchedFiles, surface.path).toEqual([]);
+      expect(surface.issues, surface.path).toEqual([]);
+    }
+  });
+
   it('documents governanceEventTypeRegistryPolicy as mandatory when governance events apply', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));

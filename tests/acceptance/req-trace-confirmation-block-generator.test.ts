@@ -86,7 +86,39 @@ function semanticConfirmationForHash(
   for (const [key, value] of Object.entries(confirmation)) {
     if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
   }
+  normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
+}
+
+function normalizePreConfirmationDrilldownForHash(semantic: Record<string, unknown>): void {
+  const value = semantic.preConfirmationDrilldown;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+  const drilldown = { ...(value as Record<string, unknown>) };
+  const semanticKernelRef = drilldown.semanticKernelRef;
+  if (semanticKernelRef && typeof semanticKernelRef === 'object' && !Array.isArray(semanticKernelRef)) {
+    const next = { ...(semanticKernelRef as Record<string, unknown>) };
+    delete next.hash;
+    drilldown.semanticKernelRef = next;
+  }
+  const mustDecompositionPacketRef = drilldown.mustDecompositionPacketRef;
+  if (
+    mustDecompositionPacketRef &&
+    typeof mustDecompositionPacketRef === 'object' &&
+    !Array.isArray(mustDecompositionPacketRef)
+  ) {
+    const next = { ...(mustDecompositionPacketRef as Record<string, unknown>) };
+    delete next.hash;
+    drilldown.mustDecompositionPacketRef = next;
+  }
+  const criticalAuditor = drilldown.criticalAuditor;
+  if (criticalAuditor && typeof criticalAuditor === 'object' && !Array.isArray(criticalAuditor)) {
+    const next = { ...(criticalAuditor as Record<string, unknown>) };
+    delete next.consecutiveNoNewGapRounds;
+    delete next.latestReceiptHash;
+    delete next.convergenceVerdict;
+    drilldown.criticalAuditor = next;
+  }
+  semantic.preConfirmationDrilldown = drilldown;
 }
 
 function extractConfirmation(sourceText: string): {
@@ -1128,6 +1160,47 @@ describe('req trace generator confirmation block gate', () => {
     expect(receipt.decision).toBe('pass');
     const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
     expect(packet.preConfirmationDrilldown.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
+  });
+
+  it('ignores pre-confirmation drilldown bookkeeping when validating confirmation record hashes', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        / {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u,
+        `  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: authoring/semantic-kernel.json
+      hash: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    mustDecompositionPacketRef:
+      path: authoring/must_decomposition_packet.json
+      hash: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      latestReceiptHash: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: authoring/must_packet_source_reconciliation_report.json
+      verdict: pass
+    preRenderGateReportPath: authoring/pre-render-must-decomposition-gate-report.json
+  must:\n`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'drilldown-bookkeeping-hash-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
   });
 
   it('blocks missing AI-TDD/currentTargetMap applicability and missing E2E suites', () => {

@@ -1750,6 +1750,7 @@ interface CriticalAuditorRoundResult {
   gateDryRunHash?: string;
   reconciliationIssueCount?: number;
   checkedProjectionGroups?: string[];
+  checkedProjectionQualityRuleCodes?: string[];
   priorFindingsDisposition?: Record<string, unknown>[];
   falsePositiveProofs?: Record<string, unknown>[];
   rationale?: string;
@@ -6911,6 +6912,7 @@ function buildCriticalAuditorReceipt(input: {
     responseHash: input.responseHash ?? null,
     reconciliationIssueCount: auditResult.reconciliationIssueCount ?? null,
     checkedProjectionGroups: auditResult.checkedProjectionGroups ?? [],
+    checkedProjectionQualityRuleCodes: auditResult.checkedProjectionQualityRuleCodes ?? [],
     priorFindingsDisposition: auditResult.priorFindingsDisposition ?? [],
     falsePositiveProofs: auditResult.falsePositiveProofs ?? [],
     noNewGapRationale:
@@ -7004,6 +7006,15 @@ const CRITICAL_AUDITOR_PROJECTION_GROUPS = [
   'mustArtifactProjection',
   'mustCommandProjection',
   'mustCloseoutBoundaryProjection',
+];
+
+const PROJECTION_QUALITY_RULE_CODES = [
+  'projection_per_must_acceptance_not_independent',
+  'projection_shared_evidence_without_per_must_oracle',
+  'required_command_all_cover_all_without_per_must_assertions',
+  'target_modification_path_all_cover_all',
+  'current_target_map_not_product_specific',
+  'business_visual_generic_or_compressed',
 ];
 
 const CRITICAL_AUDITOR_ACTIONABLE_DRY_RUN_EXCLUSIONS = new Set([
@@ -7116,7 +7127,7 @@ function criticalAuditorRoundPerspective(roundIndex: number): Record<string, unk
     return {
       id: 'round_2_projection_materialization',
       focus:
-        'EVD / TRACE / ACC / E2E / FAIL / EDGE / artifact / command / AI-TDD projection materialization',
+        'EVD / TRACE / ACC / E2E / FAIL / EDGE / artifact / command / AI-TDD projection materialization and per-MUST projection quality',
       requiredAttackSurface: [
         'missing_evidence_projection',
         'missing_trace_projection',
@@ -7125,6 +7136,7 @@ function criticalAuditorRoundPerspective(roundIndex: number): Record<string, unk
         'missing_artifact_or_command_projection',
         'missing_ai_tdd_manifest_projection',
         'source_row_independently_invented',
+        ...PROJECTION_QUALITY_RULE_CODES,
       ],
     };
   }
@@ -7568,6 +7580,7 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
       reviewedMustRefs: asStringArray(receipt.reviewedMustRefs),
       reviewedProjectionRefs: asStringArray(receipt.reviewedProjectionRefs),
       checkedProjectionGroups: asStringArray(receipt.checkedProjectionGroups),
+      checkedProjectionQualityRuleCodes: asStringArray(receipt.checkedProjectionQualityRuleCodes),
       priorFindingsDisposition: asRecordArray(receipt.priorFindingsDisposition),
       falsePositiveProofs: asRecordArray(receipt.falsePositiveProofs),
       rationale: normalizeText(receipt.noNewGapRationale) || 'No new valid gap detected in mirrored final draft receipt.',
@@ -7855,6 +7868,11 @@ function buildCriticalAuditorRoundRequest(input: {
       projectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
       projectionRefs: allProjectionRefs,
     },
+    projectionQualityGate: {
+      requiredRuleCodes: PROJECTION_QUALITY_RULE_CODES,
+      policy:
+        'Every business MUST needs an independent ACC/E2E boundary or explicit per-MUST assertion mapping; shared EVD/CMD/path/currentTarget/business visual rows must declare per-MUST oracle, assertion, or responsibility mappings.',
+    },
     previousReceipts: input.previousReceipts,
     roundPerspective,
     gateDryRun: {
@@ -7876,6 +7894,8 @@ function buildCriticalAuditorRoundRequest(input: {
       'Consume gateDryRun before giving a verdict; no_new_* is forbidden when actionable gate dry-run blockers exist unless falsePositiveProofs[] provides machine-verifiable proof for every blocker.',
       'Find under-split MUST rows and over-broad atomic tasks.',
       'Find missing packet/source projections for EVD, TRACE, ACC, E2E, failure paths, edge cases, currentTargetMap, AI TDD manifest, commands, and closeout semantics.',
+      'Find per-MUST independent acceptance gaps: every business MUST must have a distinct ACC/E2E boundary or explicit per-MUST assertions.',
+      'Reject shared EVD, command, target path, currentTargetMap, or business visual rows that cover all MUST rows without per-MUST oracle, assertion, or responsibility mapping.',
       'Reject synthetic clean receipts; response must be authored by the main agent or LLM.',
       'Do not write source, packet, receipts, or control state from the response artifact.',
       'Convergence requires three consecutive no-new-valid-gap receipts, deterministic gate PASS, and packet/source reconciliation pass.',
@@ -7894,6 +7914,7 @@ function buildCriticalAuditorRoundRequest(input: {
       gateDryRunHash: input.gateDryRun.hash,
       reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
       checkedProjectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
+      checkedProjectionQualityRuleCodes: PROJECTION_QUALITY_RULE_CODES,
       verdict:
         'no_new_valid_gap | no_new_confirmation_blocking_gap | new_valid_gap | insufficient_audit | blocked',
       reviewedMustRefs: input.mustRequirements.map((requirement) => requirement.id),
@@ -8432,6 +8453,21 @@ function validateCriticalAuditorResponse(input: {
       );
     }
   }
+  const checkedProjectionQualityRuleCodes = new Set(
+    asStringArray(parsed.checkedProjectionQualityRuleCodes)
+  );
+  for (const ruleCode of PROJECTION_QUALITY_RULE_CODES) {
+    if (!checkedProjectionQualityRuleCodes.has(ruleCode)) {
+      issues.push(
+        preConfirmationIssue(
+          'critical_auditor_response_checked_projection_quality_rule_missing',
+          `Critical Auditor response did not check projection quality rule ${ruleCode}`,
+          [ruleCode],
+          'critical_auditor'
+        )
+      );
+    }
+  }
   const priorFindingsDisposition = asRecordArray(parsed.priorFindingsDisposition);
   if (priorFindingsDisposition.length === 0) {
     issues.push(
@@ -8623,6 +8659,7 @@ function validateCriticalAuditorResponse(input: {
       gateDryRunHash: normalizeText(parsed.gateDryRunHash),
       reconciliationIssueCount: Number(parsed.reconciliationIssueCount),
       checkedProjectionGroups: asStringArray(parsed.checkedProjectionGroups),
+      checkedProjectionQualityRuleCodes: asStringArray(parsed.checkedProjectionQualityRuleCodes),
       priorFindingsDisposition,
       falsePositiveProofs: asRecordArray(parsed.falsePositiveProofs),
       rationale: normalizeText(parsed.rationale),
@@ -8691,6 +8728,21 @@ function validateCriticalAuditorRoundResultBinding(input: {
           'critical_auditor_response_checked_projection_group_missing',
           `Critical Auditor provider round ${input.roundIndex} did not check projection group ${group}`,
           [group],
+          'critical_auditor'
+        )
+      );
+    }
+  }
+  const checkedProjectionQualityRuleCodes = new Set(
+    result.checkedProjectionQualityRuleCodes ?? []
+  );
+  for (const ruleCode of PROJECTION_QUALITY_RULE_CODES) {
+    if (!checkedProjectionQualityRuleCodes.has(ruleCode)) {
+      issues.push(
+        preConfirmationIssue(
+          'critical_auditor_response_checked_projection_quality_rule_missing',
+          `Critical Auditor provider round ${input.roundIndex} did not check projection quality rule ${ruleCode}`,
+          [ruleCode],
           'critical_auditor'
         )
       );

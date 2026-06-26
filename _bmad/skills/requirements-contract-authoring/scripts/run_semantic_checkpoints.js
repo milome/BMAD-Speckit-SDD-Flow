@@ -18,6 +18,7 @@ const {
   evaluateTargetModificationPathCoverage,
 } = require('./target_modification_path_coverage');
 const mustDecompositionGate = require('./pre_render_must_decomposition_gate');
+const { collectProjectionQualityIssues } = require('./projection_quality_gate');
 
 const CHECKPOINTS = [
   {
@@ -1260,6 +1261,13 @@ function buildPreRenderGlobalConsistencyReport({ sourcePath, progressPath }) {
     checkViewRefs(confirmation, sets, issues);
     checkCurrentTargetMapGate(confirmation, issues);
     checkTargetModificationPathCoverageGate(confirmation, issues);
+    issues.push(
+      ...collectProjectionQualityIssues(confirmation, {
+        codePrefix: 'global_',
+        source: 'pre_render_global_consistency',
+        makeIssue: gateIssue,
+      })
+    );
 
     const definitionReport = buildDefinitionReportFromSource({ sourcePath: target, rootDir: process.cwd() });
     for (const finding of asArray(definitionReport.findings).filter((item) => item.severity !== 'warning')) {

@@ -37,6 +37,34 @@ function createRequestForResponseFile(root: string, recordId: string) {
 }
 
 describe('requirements contract Critical Auditor provider modes', () => {
+  it('round requests require Critical Auditor to check per-MUST projection quality rules', () => {
+    const root = createTempRoot('requirements-contract-critical-auditor-projection-quality-');
+    try {
+      const recordId = 'REQ-CRITICAL-AUDITOR-PROJECTION-QUALITY';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const request = fixture.request as Record<string, any>;
+
+      expect(request.projectionQualityGate).toMatchObject({
+        requiredRuleCodes: expect.arrayContaining([
+          'projection_per_must_acceptance_not_independent',
+          'projection_shared_evidence_without_per_must_oracle',
+          'required_command_all_cover_all_without_per_must_assertions',
+          'target_modification_path_all_cover_all',
+          'current_target_map_not_product_specific',
+          'business_visual_generic_or_compressed',
+        ]),
+      });
+      expect(request.auditStandards.join('\n')).toContain(
+        'per-MUST independent acceptance'
+      );
+      expect(request.requiredResponseSchema.checkedProjectionQualityRuleCodes).toEqual(
+        request.projectionQualityGate.requiredRuleCodes
+      );
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('response_file accepts one valid response and writes receipt through the orchestrator only', () => {
     const root = createTempRoot('requirements-contract-response-file-');
     try {
@@ -50,6 +78,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
           {
             ...response,
             falsePositiveProofs: [
+              ...((response.falsePositiveProofs as Record<string, unknown>[] | undefined) ?? []),
               {
                 blockerCode: 'synthetic_gate_blocker',
                 proofType: 'current_source_packet_hash_match',
@@ -126,6 +155,33 @@ describe('requirements contract Critical Auditor provider modes', () => {
     }
   });
 
+  it('response_file rejects responses that omit per-MUST projection quality rule checks', () => {
+    const root = createTempRoot('requirements-contract-response-file-missing-projection-quality-');
+    try {
+      const recordId = 'REQ-RESPONSE-FILE-MISSING-PROJECTION-QUALITY';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const responsePath = roundArtifact(root, recordId, 'response', 1);
+      const response = buildValidResponseFromRequest(fixture.request, fixture.packet);
+      delete response.checkedProjectionQualityRuleCodes;
+      writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
+
+      const result = runAuthoring(root, fixture.source, recordId, {
+        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
+        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        criticalAuditorProviderMode: 'response_file',
+        criticalAuditorResponseFile: responsePath,
+      });
+
+      expect(issueCodes(result)).toContain(
+        'critical_auditor_response_checked_projection_quality_rule_missing'
+      );
+      expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(false);
+      expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('falsePositiveProofs no_new_valid_gap response survives parsing and binding', () => {
     const root = createTempRoot('requirements-contract-false-positive-proof-');
     try {
@@ -139,6 +195,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
           {
             ...response,
             falsePositiveProofs: [
+              ...((response.falsePositiveProofs as Record<string, unknown>[] | undefined) ?? []),
               {
                 blockerCode: 'synthetic_gate_blocker',
                 proofType: 'current_source_packet_hash_match',
@@ -190,6 +247,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
             ...response,
             verdict: 'no_new_confirmation_blocking_gap',
             falsePositiveProofs: [
+              ...((response.falsePositiveProofs as Record<string, unknown>[] | undefined) ?? []),
               {
                 blockerCode: 'synthetic_gate_blocker',
                 proofType: 'current_source_packet_hash_match',

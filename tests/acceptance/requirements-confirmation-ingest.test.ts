@@ -742,6 +742,61 @@ describe('controlled confirmation ingest', () => {
     });
   });
 
+  it('ignores pre-confirmation drilldown bookkeeping when confirming rendered hashes', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(
+        '  governanceEventTypeRegistryPolicy:',
+        `  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: authoring/semantic-kernel.json
+      hash: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    mustDecompositionPacketRef:
+      path: authoring/must_decomposition_packet.json
+      hash: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      latestReceiptHash: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: authoring/must_packet_source_reconciliation_report.json
+      verdict: pass
+    preRenderGateReportPath: authoring/pre-render-must-decomposition-gate-report.json
+  governanceEventTypeRegistryPolicy:`
+      ),
+      'utf8'
+    );
+    const { reportPath, report } = render(source);
+    const result = runNode(CONFIRM_SCOPE, [
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text',
+      report.confirmInstruction,
+      '--confirmed-by',
+      'test-user',
+      '--runtime-root',
+      path.join(tempDir, '_bmad-output/runtime/requirement-records'),
+      '--confirmed-at',
+      '2026-05-18T06:00:00.000Z',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const output = JSON.parse(result.stdout);
+    const record = JSON.parse(fs.readFileSync(output.requirementRecordPath, 'utf8'));
+    expect(record.confirmationHistory.at(-1)).toMatchObject({
+      eventType: 'confirmation_recorded',
+      sourceDocumentHash: report.sourceDocumentHash,
+      implementationConfirmationHash: report.implementationConfirmationHash,
+    });
+  });
+
   it('blocks req-trace prompt before ingest and allows it after controlled confirmation ingest', () => {
     const source = writeSource();
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);

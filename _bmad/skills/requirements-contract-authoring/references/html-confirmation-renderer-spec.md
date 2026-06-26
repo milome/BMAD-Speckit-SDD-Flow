@@ -188,6 +188,15 @@ Strict mode must block if any core field is missing:
 - `applicability.scriptsAndHooks`
 - `activeRequirementResolution`
 
+Strict mode must also block projection compression:
+
+- Every business `MUST-*` must have independent `ACC-*` / `E2E-*` coverage or explicit per-MUST assertions in the shared acceptance row.
+- Shared `EVD-*` rows must expose per-MUST oracles/assertions.
+- Shared `CMD-*` rows must expose per-MUST command assertions.
+- Shared `targetModificationPaths[]` rows must expose per-MUST responsibilities.
+- `currentTargetMap` must describe product-specific current/target states when business requirements exist.
+- Business visuals must render product/business flows for concrete MUST IDs; generic source-derived diagrams are blockers.
+
 Every `applicability.*` domain must include:
 
 - `applies: true|false`

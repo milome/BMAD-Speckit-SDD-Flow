@@ -19,6 +19,7 @@ const {
   STALE_BOOKKEEPING_REPAIR_REQUIRED,
   PROJECTION_REFRESH_REQUIRED,
 } = require('./confirmation_drift_classifier');
+const { collectProjectionQualityIssues } = require('./projection_quality_gate');
 
 const CORE_REPORT_SECTIONS = [
   'implementationConfirmation Findings',
@@ -1506,6 +1507,12 @@ function main(argv) {
   findings.push(...collectReportShapeIssues(text, renderReport));
   const traceability = collectTraceabilityIssues(text, confirmation);
   findings.push(...traceability.findings);
+  findings.push(
+    ...collectProjectionQualityIssues(confirmation, {
+      source: 'reverse_audit',
+      makeIssue: issue,
+    })
+  );
   findings.push(...collectAntiSmokeIssues(text, confirmation, renderReport));
   const definitionDrilldown = collectDefinitionDrilldownIssues({
     confirmation,

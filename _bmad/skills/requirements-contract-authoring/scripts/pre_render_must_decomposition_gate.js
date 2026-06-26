@@ -12,6 +12,7 @@ const {
   stringList,
   unique,
 } = require('./pre_render_definition_drilldown_lib');
+const { collectProjectionQualityIssues } = require('./projection_quality_gate');
 
 const SOURCE_ROW_GROUPS = [
   { sourceKey: 'atomicImplementationTaskList', projectionKey: 'mustAtomicTasks' },
@@ -508,6 +509,10 @@ function runGate(args) {
     ...(packetRead.ok ? [] : [issue(packetRead.missing ? 'missing_must_decomposition_packet' : 'must_packet_unreadable', packetRead.error ?? 'must_decomposition_packet.json is missing or unreadable', [packetPath])]),
     ...collectKernelIssues({ kernel, kernelPath, sourceDocumentHash }),
     ...collectPacketIssues({ packet, packetPath, kernel, sourceDocumentHash, confirmation }),
+    ...collectProjectionQualityIssues(confirmation, {
+      source: 'must_decomposition_gate',
+      makeIssue: issue,
+    }),
   ];
 
   const auditor = collectCriticalAuditorIssues({ receiptReads, auditInputHash });

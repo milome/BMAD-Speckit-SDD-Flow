@@ -65,6 +65,21 @@ Every row in these source arrays must have a packet projection back-reference or
 - `requiredCommands[]`
 - `closeoutReadinessPreview`
 
+## Projection Quality Rules
+
+Per-MUST closure is stronger than ID existence. A source document fails confirmation when it only proves that a `MUST-*` appears somewhere in `TRACE-*`.
+
+Hard blockers:
+
+- `projection_per_must_acceptance_not_independent`: each business `MUST-*` must have an independent `ACC-*` / `E2E-*` row, or the shared row must define explicit per-MUST assertions or oracles.
+- `projection_shared_evidence_without_per_must_oracle`: an `EVD-*` row shared by multiple `MUST-*` IDs must define per-MUST oracle/assertion mappings.
+- `required_command_all_cover_all_without_per_must_assertions`: a command that covers all `MUST-*` rows must define per-MUST command assertions.
+- `target_modification_path_all_cover_all`: a target path row that binds all `MUST-*` rows must define per-MUST responsibilities.
+- `current_target_map_not_product_specific`: product/business sources must describe product-specific current and target states, not generic governance or source-derived rows.
+- `business_visual_generic_or_compressed`: business visuals must show product actors, flows, state, or data behavior for concrete business MUST IDs; a generic "source-derived business requirement scenario" is not enough.
+
+These checks run in `projection_quality_gate.js` and are consumed by the pre-render MUST decomposition gate, the pre-render global consistency gate, reverse audit, and Critical Auditor round requests.
+
 ## Reverse Coverage Checklist
 
 - `implementationConfirmation` exists.
