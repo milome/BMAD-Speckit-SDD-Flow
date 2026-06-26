@@ -182,18 +182,35 @@ function writeAuthoringPromotionGuard(
     paths.receiptOutPath,
   ];
   if (options.includeCheckpointEvidence) {
+    const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId) => {
+      const receiptPayload = {
+        schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
+        checkpointId,
+        status: 'passed',
+      };
+      const receiptPath = writeJson(`${name}-${checkpointId}-receipt.json`, {
+        ...receiptPayload,
+        receiptHash: sha256Json(receiptPayload),
+      });
+      return {
+        checkpointId,
+        path: receiptPath.replace(/\\/g, '/'),
+        hash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
+        status: 'passed',
+      };
+    });
     paths.checkpointPersistenceEvidencePath = writeJson(`${name}-checkpoint-persistence-evidence.json`, {
       checkpointPersistenceSatisfiedCandidate: true,
       checkpointPersistenceRef: {
         routeDecisionHash: `sha256:${'3'.repeat(64)}`,
         progressPath: path.join(tempDir, `${name}-semantic-checkpoint-progress.json`).replace(/\\/g, '/'),
         progressHash: `sha256:${'4'.repeat(64)}`,
+        checkpointReceiptRefs,
         completedCheckpointIds: REQUIRED_CHECKPOINT_IDS,
         preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
         preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
         packetSourceReconciliationHash: `sha256:${'7'.repeat(64)}`,
       },
-      completedCheckpointIds: REQUIRED_CHECKPOINT_IDS,
       progressHash: `sha256:${'4'.repeat(64)}`,
       preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
       preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,

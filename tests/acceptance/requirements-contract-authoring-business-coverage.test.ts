@@ -1,13 +1,15 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
+  cleanCriticalAuditorRound,
   createTempRoot,
   issueCodes,
   readJson,
+  readImplementationConfirmation,
 } from './helpers/requirements-contract-authoring-fixture';
 import {
   runMainAgentAuthoringRepair,
@@ -18,6 +20,17 @@ const fixtureRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md';
 const metadataRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.metadata.json';
+const requiredCheckpointIds = [
+  'cp-00-semantic-kernel',
+  'cp-01-must-decomposition-packet',
+  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-03-packet-to-source-materialization',
+  'cp-04-id-freeze',
+  'cp-05-implementation-confirmation-core',
+  'cp-06-projections',
+  'cp-07-human-readable-views',
+  'cp-08-pre-render-global-reconciliation',
+];
 
 function readUtf8(relativePath: string): string {
   return readFileSync(path.join(process.cwd(), relativePath), 'utf8');
@@ -540,6 +553,168 @@ describe('requirements contract sanitized real fixture coverage', () => {
       }
       expect(stringify(draft)).not.toContain('node_modules/bmad-speckit-sdd-flow');
       expect(stringify(draft)).not.toContain('tests/acceptance/main-agent');
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
+  it('runs author-confirmation-ready-source end-to-end with checkpoint receipts, summary, promotion, and real fixture coverage', () => {
+    const root = createTempRoot('requirements-contract-real-e2e-');
+    try {
+      const fixture = readUtf8(fixtureRelativePath);
+      const metadata = JSON.parse(readUtf8(metadataRelativePath)) as {
+        requiredBusinessAnchors: {
+          frIds: string[];
+          hiddenByDefaultPeriods: string[];
+          outOfScopeTimeline: string;
+          targetPaths: string[];
+        };
+      };
+      const recordId = 'REQ-REAL-BUSINESS-E2E';
+      const requirementSetId = `${recordId}-SET`;
+      const source = writeRealFixtureToTempRoot(root, fixture);
+      let stderr = '';
+      let result: ReturnType<typeof runMainAgentPreConfirmationDrilldown> | null = null;
+      const originalStderrWrite = process.stderr.write;
+      process.stderr.write = ((chunk: string | Uint8Array) => {
+        stderr += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        result = runMainAgentPreConfirmationDrilldown(root, {
+          source,
+          recordId,
+          requirementSetId,
+          targetPath: metadata.requiredBusinessAnchors.targetPaths,
+          requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        });
+      } finally {
+        process.stderr.write = originalStderrWrite;
+      }
+
+      const paths = artifacts(root, recordId, requirementSetId);
+      const progress = readJson<Record<string, unknown>>(paths.progress);
+      const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
+      const summary = evidence.checkpointPersistenceRef as Record<string, unknown>;
+      const promotion = readJson<Record<string, unknown>>(paths.promotionReceipt);
+      const confirmation = readImplementationConfirmation(source);
+      const targetAuthority = readJson<{ accepted: Array<{ path: string }> }>(
+        paths.targetAuthorityReport
+      );
+
+      expect(result?.sourceMutationPerformed).toBe(true);
+      expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+        'critical_auditor_provider_mode_required'
+      );
+      expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+        'checkpoint_required_before_source_materialization'
+      );
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+
+      expect(progress.resumeLedger).toMatchObject({
+        schemaVersion: 'requirements-contract-checkpoint-resume-ledger/v1',
+        completedCheckpointIds: requiredCheckpointIds,
+      });
+      expect(progress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
+      expect(progress.currentCheckpoint).toBe(null);
+      expect(progress.next).toBe(null);
+
+      expect(evidence).toMatchObject({
+        schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
+        checkpointPersistenceSatisfiedCandidate: true,
+      });
+      expect(evidence).not.toHaveProperty('completedCheckpointIds');
+      expect(summary.completedCheckpointIds).toEqual(requiredCheckpointIds);
+      expect(summary.checkpointReceiptRefs).toHaveLength(requiredCheckpointIds.length);
+      expect(String(summary.progressHash)).toMatch(/^sha256:/u);
+      expect(String(summary.preRenderMustDecompositionGateHash)).toMatch(/^sha256:/u);
+      expect(String(summary.preRenderGlobalConsistencyHash)).toMatch(/^sha256:/u);
+      expect(String(summary.packetSourceReconciliationHash)).toMatch(/^sha256:/u);
+
+      for (const [index, checkpointId] of requiredCheckpointIds.entries()) {
+        const receiptPath = paths.checkpointReceiptPaths[index];
+        expect(existsSync(receiptPath)).toBe(true);
+        const receipt = readJson<Record<string, unknown>>(receiptPath);
+        expect(receipt).toMatchObject({
+          schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
+          checkpointId,
+          status: 'passed',
+          recordId,
+        });
+        expect(String(receipt.receiptHash)).toMatch(/^sha256:/u);
+      }
+
+      expect(promotion).toMatchObject({
+        ok: true,
+        promotionStage: 'authoring-draft',
+        statusValue: 'draft',
+        confirmationReady: false,
+        safePromotionAsDraft: true,
+        requiresUserConfirmationBeforeExecution: true,
+      });
+      expect((promotion.authoringPromotionGate as Record<string, unknown>).ok).toBe(true);
+      expect(promotion.targetHash).toBe(sha256PrefixedText(readFileSync(source, 'utf8')));
+      expect(stringify(promotion)).toContain('checkpointPersistence');
+
+      const businessRequirementIds =
+        ((confirmation.requirementBoundary as any).business.requirementIds as string[]) ?? [];
+      const businessViews = (confirmation.businessViews as Array<Record<string, unknown>>) ?? [];
+      const mustRows = confirmation.must as Array<{
+        sourcePath?: string;
+        sourceSpan?: { startLine: number };
+        headingPath?: string[];
+      }>;
+      for (const frId of metadata.requiredBusinessAnchors.frIds) {
+        expect(businessRequirementIds).toContain(frId);
+        expect(stringify(businessViews)).toContain(frId);
+        expect(
+          mustRows.some(
+            (row) =>
+              row.headingPath?.some((heading) => heading.includes(frId)) &&
+              row.sourcePath?.endsWith('multi-timeframe-display-settings.real.md') &&
+              (row.sourceSpan?.startLine ?? 0) > 0
+          ),
+          `${frId} must stay source-span bound after promotion`
+        ).toBe(true);
+      }
+      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(true);
+      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(true);
+      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(true);
+
+      for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
+        expectTextContainsAll(confirmation.must, [period]);
+        expectTextContainsAll(confirmation.evidence, [period]);
+        expectTextContainsAll(confirmation.traceRows, [period]);
+        expectTextContainsAll(confirmation.acceptanceCriteria, [period]);
+        expectTextContainsAll(confirmation.e2eScenarios, [period]);
+      }
+
+      expect(stringify(confirmation.outOfScope)).toContain(
+        metadata.requiredBusinessAnchors.outOfScopeTimeline
+      );
+      expect(stringify(confirmation.outOfScope)).toContain('主时间轴语义');
+      expect(
+        ((confirmation.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
+          row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
+        )
+      ).toBe(false);
+
+      for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
+        expect(targetAuthority.accepted.map((row) => row.path)).toContain(targetPath);
+        expect(stringify(confirmation)).toContain(targetPath);
+      }
+      expect(stringify(confirmation.requiredCommands)).toContain(
+        'pytest tests/test_multi_timeframe_settings.py'
+      );
+      expect(stringify(confirmation)).not.toContain('node_modules/bmad-speckit-sdd-flow');
+      expect(stringify(confirmation)).not.toContain('tests/acceptance/main-agent');
+      expect(stderr).toContain('[requirements-contract-authoring] checkpoint trace start');
+      for (const checkpointId of requiredCheckpointIds) {
+        expect(stderr).toContain(`checkpoint phase=start id=${checkpointId}`);
+        expect(stderr).toContain(`checkpoint phase=result id=${checkpointId} result=passed`);
+      }
+      expect(stderr).toContain('checkpoint-persistence summary');
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }

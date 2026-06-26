@@ -1660,7 +1660,6 @@ function checkpointPersistenceEvidence({ sourcePath, progressPath, routeDecision
       preRenderGlobalConsistencyHash,
       packetSourceReconciliationHash,
     },
-    completedCheckpointIds,
     progressHash,
     preRenderMustDecompositionGateHash,
     preRenderGlobalConsistencyHash,

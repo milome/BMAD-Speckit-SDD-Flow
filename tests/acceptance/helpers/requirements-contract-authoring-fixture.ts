@@ -88,6 +88,9 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
     scaleRoutingDecision: path.join(authoring, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoring, 'checkpoint-persistence-evidence.json'),
+    checkpointReceiptPaths: Array.from({ length: 9 }, (_item, index) =>
+      path.join(authoring, `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`)
+    ),
     progress: path.join(authoring, 'semantic-checkpoint-progress.json'),
     reconciliationReport: path.join(authoring, 'must_packet_source_reconciliation_report.json'),
     preRenderMustGate: path.join(authoring, 'pre-render-must-decomposition-gate-report.json'),

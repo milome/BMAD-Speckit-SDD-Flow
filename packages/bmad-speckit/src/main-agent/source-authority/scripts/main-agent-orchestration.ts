@@ -1565,6 +1565,7 @@ interface PreConfirmationPaths {
   scaleAssessmentPostMaterialization: string;
   scaleRoutingDecision: string;
   checkpointPersistenceEvidence: string;
+  checkpointReceiptPaths: string[];
   encodingReport: string;
   sourceMaterializationReceipt: string;
   receiptPaths: string[];
@@ -2023,6 +2024,9 @@ function preConfirmationPaths(
     ),
     scaleRoutingDecision: path.join(authoringDir, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoringDir, 'checkpoint-persistence-evidence.json'),
+    checkpointReceiptPaths: Array.from({ length: 9 }, (_item, index) =>
+      path.join(authoringDir, `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`)
+    ),
     encodingReport: path.join(authoringDir, 'encoding-report.json'),
     sourceMaterializationReceipt: sourceMaterializationReceiptPath(root, requirementSetId),
     receiptPaths: [1, 2, 3].map((round) =>
@@ -4534,6 +4538,7 @@ function buildSourceMaterializationRequiredResult(input: {
 interface AuthoringCheckpointDefinition {
   id: string;
   name: string;
+  index: number;
   artifacts: (input: { draftSourcePath: string; paths: PreConfirmationPaths }) => string[];
 }
 
@@ -4541,46 +4546,55 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
   {
     id: 'cp-00-semantic-kernel',
     name: 'semantic kernel',
+    index: 0,
     artifacts: ({ paths }) => [paths.semanticKernel],
   },
   {
     id: 'cp-01-must-decomposition-packet',
     name: 'must decomposition packet',
+    index: 1,
     artifacts: ({ paths }) => [paths.mustDecompositionPacket],
   },
   {
     id: 'cp-02-atomic-decomposition-loop-convergence',
     name: 'atomic decomposition loop convergence',
-    artifacts: ({ paths }) => (paths.receiptPaths.length > 0 ? paths.receiptPaths : [paths.progress]),
+    index: 2,
+    artifacts: ({ paths }) => [paths.mustDecompositionReceipt],
   },
   {
     id: 'cp-03-packet-to-source-materialization',
     name: 'packet to source materialization',
+    index: 3,
     artifacts: ({ draftSourcePath, paths }) => [paths.authoringMaterializationReceipt, draftSourcePath],
   },
   {
     id: 'cp-04-id-freeze',
     name: 'ID freeze',
-    artifacts: ({ paths }) => [paths.progress],
+    index: 4,
+    artifacts: ({ draftSourcePath }) => [draftSourcePath],
   },
   {
     id: 'cp-05-implementation-confirmation-core',
     name: 'implementationConfirmation core',
+    index: 5,
     artifacts: ({ draftSourcePath, paths }) => [paths.draftImplementationConfirmation, draftSourcePath],
   },
   {
     id: 'cp-06-projections',
     name: 'EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD projections',
+    index: 6,
     artifacts: ({ paths }) => [paths.mustDecompositionPacket],
   },
   {
     id: 'cp-07-human-readable-views',
     name: 'human-readable views',
+    index: 7,
     artifacts: ({ draftSourcePath }) => [draftSourcePath],
   },
   {
     id: 'cp-08-pre-render-global-reconciliation',
     name: 'pre-render global reconciliation',
+    index: 8,
     artifacts: ({ paths }) => [
       paths.preRenderMustGate,
       paths.preRenderGlobalConsistency,
@@ -4590,6 +4604,16 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
 ];
 
 const AUTHORING_REPAIR_CHECKPOINT_IDS = AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => checkpoint.id);
+
+function checkpointReceiptPath(paths: PreConfirmationPaths, checkpoint: AuthoringCheckpointDefinition): string {
+  return paths.checkpointReceiptPaths[checkpoint.index];
+}
+
+function readCurrentCheckpointReceipts(paths: PreConfirmationPaths): Record<string, unknown>[] {
+  return paths.checkpointReceiptPaths
+    .map((receiptPath) => readJsonIfExists(receiptPath))
+    .filter((receipt): receipt is Record<string, unknown> => Boolean(receipt));
+}
 
 function checkpointTraceValue(values: string[]): string {
   return values.length > 0 ? values.join(',') : 'missing';
@@ -4607,7 +4631,7 @@ function emitAuthoringCheckpointTrace(input: {
   routeDecision: string;
   evidence: Record<string, unknown>;
 }): void {
-  const completedIds = asStringArray(input.evidence.completedCheckpointIds);
+  const completedIds = asStringArray(recordObject(input.evidence.checkpointPersistenceRef).completedCheckpointIds);
   process.stderr.write(
     `[requirements-contract-authoring] checkpoint trace start record=${input.recordId} route=${input.routeDecision} source=${toRootRelativePath(input.root, input.draftSourcePath)}\n`
   );
@@ -4633,6 +4657,434 @@ function emitAuthoringCheckpointTrace(input: {
   process.stderr.write(
     `[requirements-contract-authoring] checkpoint-persistence summary artifact=${toRootRelativePath(input.root, input.paths.checkpointPersistenceEvidence)} hash=${summaryHash} next=promotion_required\n`
   );
+}
+
+function checkpointArtifactRefs(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  checkpoint: AuthoringCheckpointDefinition;
+}): Array<{ path: string; hash: string }> {
+  return uniqueNonEmpty(
+    input.checkpoint.artifacts({ draftSourcePath: input.draftSourcePath, paths: input.paths })
+  ).map((artifactPath) => ({
+    path: toRootRelativePath(input.root, artifactPath),
+    hash: checkpointTraceHash(artifactPath),
+  }));
+}
+
+function isCurrentCheckpointReceipt(input: {
+  root: string;
+  receipt: Record<string, unknown> | null;
+  checkpoint: AuthoringCheckpointDefinition;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  draftSourcePath: string;
+}): boolean {
+  if (!input.receipt || input.receipt.status !== 'passed') return false;
+  if (normalizeText(input.receipt.checkpointId) !== input.checkpoint.id) return false;
+  if (normalizeText(input.receipt.sourceDocumentHash) !== input.sourceDocumentHash) return false;
+  if (normalizeText(input.receipt.implementationConfirmationHash) !== input.implementationConfirmationHash) {
+    return false;
+  }
+  if (normalizeText(input.receipt.documentHash) !== checkpointTraceHash(input.draftSourcePath)) {
+    return false;
+  }
+  const artifactRefs = Array.isArray(input.receipt.artifactRefs) ? input.receipt.artifactRefs : [];
+  if (artifactRefs.length === 0) return false;
+  return artifactRefs.every((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+    const artifactPath = normalizeText((item as Record<string, unknown>).path);
+    const artifactHash = normalizeText((item as Record<string, unknown>).hash);
+    if (!artifactPath || !artifactHash.startsWith('sha256:')) return false;
+    const absoluteArtifactPath = path.isAbsolute(artifactPath)
+      ? artifactPath
+      : path.resolve(input.root, artifactPath);
+    return fs.existsSync(absoluteArtifactPath) && sha256File(absoluteArtifactPath) === artifactHash;
+  });
+}
+
+function checkpointProgressFromReceipts(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  routeDecision: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): Record<string, unknown> {
+  const receipts = readCurrentCheckpointReceipts(input.paths);
+  const receiptByCheckpoint = new Map(
+    receipts.map((receipt) => [normalizeText(receipt.checkpointId), receipt])
+  );
+  const completedIds = AUTHORING_REPAIR_CHECKPOINTS.filter((checkpoint) =>
+    isCurrentCheckpointReceipt({
+      root: input.root,
+      receipt: receiptByCheckpoint.get(checkpoint.id) ?? null,
+      checkpoint,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      draftSourcePath: input.draftSourcePath,
+    })
+  ).map((checkpoint) => checkpoint.id);
+  const nextCheckpoint =
+    AUTHORING_REPAIR_CHECKPOINTS.find((checkpoint) => !completedIds.includes(checkpoint.id))?.id ?? null;
+  const lastCompletedCheckpoint = completedIds[completedIds.length - 1] ?? null;
+  const progress = {
+    schemaVersion: 'semantic-checkpoint-progress/v1',
+    recordId: input.recordId,
+    lane: 'pre_confirmation_drilldown',
+    mode: 'checkpoint_required',
+    modeDecision: input.routeDecision,
+    source: toRootRelativePath(input.root, input.draftSourcePath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    documentHash: sha256File(input.draftSourcePath),
+    currentCheckpoint: nextCheckpoint,
+    lastCompletedCheckpoint,
+    next: nextCheckpoint,
+    resumeLedger: {
+      schemaVersion: 'requirements-contract-checkpoint-resume-ledger/v1',
+      completedCheckpointIds: completedIds,
+      checkpointReceiptRefs: AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => {
+        const receiptPath = checkpointReceiptPath(input.paths, checkpoint);
+        return {
+          checkpointId: checkpoint.id,
+          path: toRootRelativePath(input.root, receiptPath),
+          hash: fs.existsSync(receiptPath) ? sha256File(receiptPath) : null,
+        };
+      }),
+    },
+    checkpoints: AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => ({
+      id: checkpoint.id,
+      name: checkpoint.name,
+      status: completedIds.includes(checkpoint.id) ? 'passed' : 'pending',
+      receiptPath: toRootRelativePath(input.root, checkpointReceiptPath(input.paths, checkpoint)),
+      receiptHash: fs.existsSync(checkpointReceiptPath(input.paths, checkpoint))
+        ? sha256File(checkpointReceiptPath(input.paths, checkpoint))
+        : null,
+    })),
+    createdBy: 'main_agent_orchestration.requirement_confirmation.checkpoint_driven_execution',
+    createdAt: input.createdAt,
+    updatedAt: input.createdAt,
+  };
+  return {
+    ...progress,
+    progressHash: sha256Json(progress),
+  };
+}
+
+function writeCheckpointProgressFromReceipts(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  routeDecision: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): Record<string, unknown> {
+  const progress = checkpointProgressFromReceipts(input);
+  writeJsonUtf8(input.paths.progress, progress);
+  return progress;
+}
+
+function resolveCheckpointResumeStartIndex(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+}): number {
+  const progress = readJsonIfExists(input.paths.progress);
+  if (!progress) return 0;
+  if (normalizeText(progress.schemaVersion) !== 'semantic-checkpoint-progress/v1') return 0;
+  if (normalizeText(progress.sourceDocumentHash) !== input.sourceDocumentHash) return 0;
+  if (
+    normalizeText(progress.implementationConfirmationHash) !==
+    input.implementationConfirmationHash
+  ) {
+    return 0;
+  }
+  if (normalizeText(progress.documentHash) !== checkpointTraceHash(input.draftSourcePath)) {
+    return 0;
+  }
+  const ledger = recordObject(progress.resumeLedger);
+  if (normalizeText(ledger.schemaVersion) !== 'requirements-contract-checkpoint-resume-ledger/v1') {
+    return 0;
+  }
+  const completedIds = asStringArray(ledger.completedCheckpointIds);
+  if (completedIds.length > AUTHORING_REPAIR_CHECKPOINT_IDS.length) return 0;
+  for (const [index, checkpointId] of completedIds.entries()) {
+    const checkpoint = AUTHORING_REPAIR_CHECKPOINTS[index];
+    if (!checkpoint || checkpoint.id !== checkpointId) return 0;
+    const receipt = readJsonIfExists(checkpointReceiptPath(input.paths, checkpoint));
+    if (
+      !isCurrentCheckpointReceipt({
+        root: input.root,
+        receipt,
+        checkpoint,
+        sourceDocumentHash: input.sourceDocumentHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        draftSourcePath: input.draftSourcePath,
+      })
+    ) {
+      return 0;
+    }
+  }
+  const expectedNext = AUTHORING_REPAIR_CHECKPOINTS[completedIds.length]?.id ?? '';
+  const actualNext = normalizeText(progress.next ?? progress.currentCheckpoint);
+  if (actualNext !== expectedNext) return 0;
+  return completedIds.length;
+}
+
+function runAuthoringCheckpoint(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  routeDecision: string;
+  checkpoint: AuthoringCheckpointDefinition;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): { ok: true; receipt: Record<string, unknown> } | { ok: false; issue: PreConfirmationDrilldownIssue } {
+  const previousCheckpoint = AUTHORING_REPAIR_CHECKPOINTS[input.checkpoint.index - 1] ?? null;
+  if (previousCheckpoint) {
+    const previousReceipt = readJsonIfExists(checkpointReceiptPath(input.paths, previousCheckpoint));
+    if (
+      !isCurrentCheckpointReceipt({
+        root: input.root,
+        receipt: previousReceipt,
+        checkpoint: previousCheckpoint,
+        sourceDocumentHash: input.sourceDocumentHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        draftSourcePath: input.draftSourcePath,
+      })
+    ) {
+      return {
+        ok: false,
+        issue: preConfirmationIssue(
+          'checkpoint_prerequisite_receipt_missing',
+          `Checkpoint ${input.checkpoint.id} requires current receipt for ${previousCheckpoint.id}.`,
+          [toRootRelativePath(input.root, checkpointReceiptPath(input.paths, previousCheckpoint))],
+          'requirements_contract_authoring_checkpoint_driven_execution'
+        ),
+      };
+    }
+  }
+  const existingReceiptPath = checkpointReceiptPath(input.paths, input.checkpoint);
+  const existingReceipt = readJsonIfExists(existingReceiptPath);
+  if (
+    isCurrentCheckpointReceipt({
+      root: input.root,
+      receipt: existingReceipt,
+      checkpoint: input.checkpoint,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      draftSourcePath: input.draftSourcePath,
+    })
+  ) {
+    return { ok: true, receipt: existingReceipt };
+  }
+  process.stderr.write(
+    `[requirements-contract-authoring] checkpoint execution start id=${input.checkpoint.id} receipt=${toRootRelativePath(input.root, existingReceiptPath)}\n`
+  );
+  const artifactRefs = checkpointArtifactRefs({
+    root: input.root,
+    draftSourcePath: input.draftSourcePath,
+    paths: input.paths,
+    checkpoint: input.checkpoint,
+  });
+  const missingArtifacts = artifactRefs.filter((artifact) => artifact.hash === 'missing');
+  if (missingArtifacts.length > 0) {
+    return {
+      ok: false,
+      issue: preConfirmationIssue(
+        'checkpoint_artifact_missing',
+        `Checkpoint ${input.checkpoint.id} is missing required artifacts before receipt.`,
+        missingArtifacts.map((artifact) => artifact.path),
+        'requirements_contract_authoring_checkpoint_driven_execution'
+      ),
+    };
+  }
+  const nextCheckpoint =
+    AUTHORING_REPAIR_CHECKPOINTS[input.checkpoint.index + 1]?.id ?? 'checkpoint-persistence-summary';
+  const receipt = {
+    schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
+    checkpointId: input.checkpoint.id,
+    checkpointName: input.checkpoint.name,
+    status: 'passed',
+    recordId: input.recordId,
+    routeDecision: input.routeDecision,
+    source: toRootRelativePath(input.root, input.draftSourcePath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    documentHash: sha256File(input.draftSourcePath),
+    artifactRefs,
+    previousCheckpointId: previousCheckpoint?.id ?? null,
+    nextCheckpointId: nextCheckpoint,
+    createdBy: 'main_agent_orchestration.requirement_confirmation.checkpoint_driven_execution',
+    createdAt: input.createdAt,
+  };
+  writeJsonUtf8(existingReceiptPath, {
+    ...receipt,
+    receiptHash: sha256Json(receipt),
+  });
+  writeCheckpointProgressFromReceipts(input);
+  process.stderr.write(
+    `[requirements-contract-authoring] checkpoint execution result id=${input.checkpoint.id} result=passed receipt=${toRootRelativePath(input.root, existingReceiptPath)} hash=${sha256File(existingReceiptPath)} next=${nextCheckpoint}\n`
+  );
+  return { ok: true, receipt: readJsonIfExists(existingReceiptPath) ?? receipt };
+}
+
+function runCp00SemanticKernel(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[0] });
+}
+
+function runCp01MustDecompositionPacket(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[1] });
+}
+
+function runCp02AtomicDecompositionLoopConvergence(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[2] });
+}
+
+function runCp03PacketToSourceMaterialization(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[3] });
+}
+
+function runCp04IdFreeze(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[4] });
+}
+
+function runCp05ImplementationConfirmationCore(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[5] });
+}
+
+function runCp06Projections(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[6] });
+}
+
+function runCp07HumanReadableViews(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[7] });
+}
+
+function runCp08Reconciliation(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+  return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[8] });
+}
+
+function runAuthoringCheckpointExecution(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  routeDecision: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): { ok: true } | { ok: false; issues: PreConfirmationDrilldownIssue[] } {
+  const runners = [
+    runCp00SemanticKernel,
+    runCp01MustDecompositionPacket,
+    runCp02AtomicDecompositionLoopConvergence,
+    runCp03PacketToSourceMaterialization,
+    runCp04IdFreeze,
+    runCp05ImplementationConfirmationCore,
+    runCp06Projections,
+    runCp07HumanReadableViews,
+    runCp08Reconciliation,
+  ];
+  const resumeStartIndex = resolveCheckpointResumeStartIndex(input);
+  if (resumeStartIndex > 0) {
+    const nextCheckpoint =
+      AUTHORING_REPAIR_CHECKPOINTS[resumeStartIndex]?.id ?? 'checkpoint-persistence-summary';
+    process.stderr.write(
+      `[requirements-contract-authoring] checkpoint resume progress=${toRootRelativePath(input.root, input.paths.progress)} completed=${resumeStartIndex} next=${nextCheckpoint}\n`
+    );
+  }
+  for (const runner of runners.slice(resumeStartIndex)) {
+    const result = runner(input);
+    if (!result.ok) {
+      writeCheckpointProgressFromReceipts(input);
+      return { ok: false, issues: [result.issue] };
+    }
+  }
+  writeCheckpointProgressFromReceipts(input);
+  return { ok: true };
+}
+
+function buildCheckpointPersistenceEvidenceFromReceipts(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  routeDecision: Record<string, unknown> | null;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  createdAt: string;
+}): Record<string, unknown> {
+  const routeDecisionHash = normalizeText(input.routeDecision?.routeDecisionHash);
+  const checkpointReceiptRefs = AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => {
+    const receiptPath = checkpointReceiptPath(input.paths, checkpoint);
+    const receipt = readJsonIfExists(receiptPath);
+    const current = isCurrentCheckpointReceipt({
+      root: input.root,
+      receipt,
+      checkpoint,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      draftSourcePath: input.draftSourcePath,
+    });
+    return {
+      checkpointId: checkpoint.id,
+      path: toRootRelativePath(input.root, receiptPath),
+      hash: fs.existsSync(receiptPath) ? sha256File(receiptPath) : null,
+      status: current ? 'passed' : 'missing_or_stale',
+    };
+  });
+  const completedCheckpointIds = checkpointReceiptRefs
+    .filter((receipt) => receipt.status === 'passed')
+    .map((receipt) => receipt.checkpointId);
+  const checkpointPersistenceSatisfiedCandidate =
+    AUTHORING_REPAIR_CHECKPOINT_IDS.every((id) => completedCheckpointIds.includes(id)) &&
+    fs.existsSync(input.paths.progress) &&
+    fs.existsSync(input.paths.preRenderMustGate) &&
+    fs.existsSync(input.paths.preRenderGlobalConsistency) &&
+    fs.existsSync(input.paths.reconciliationReport);
+  const evidence = {
+    schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
+    checkpointPersistenceSatisfiedCandidate,
+    checkpointPersistenceStage: 'checkpoint_driven_execution_summary',
+    recordId: input.recordId,
+    source: toRootRelativePath(input.root, input.draftSourcePath),
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    checkpointPersistenceRef: {
+      routeDecisionHash,
+      progressPath: toRootRelativePath(input.root, input.paths.progress),
+      progressHash: fs.existsSync(input.paths.progress) ? sha256File(input.paths.progress) : null,
+      checkpointReceiptRefs,
+      completedCheckpointIds,
+      preRenderMustDecompositionGateHash: fs.existsSync(input.paths.preRenderMustGate)
+        ? sha256File(input.paths.preRenderMustGate)
+        : null,
+      preRenderGlobalConsistencyHash: fs.existsSync(input.paths.preRenderGlobalConsistency)
+        ? sha256File(input.paths.preRenderGlobalConsistency)
+        : null,
+      packetSourceReconciliationHash: fs.existsSync(input.paths.reconciliationReport)
+        ? sha256File(input.paths.reconciliationReport)
+        : null,
+    },
+    completedAt: input.createdAt,
+    createdBy:
+      'main_agent_orchestration.requirement_confirmation.authoring.checkpoint_persistence_summary',
+  };
+  return {
+    ...evidence,
+    evidenceHash: sha256Json(evidence),
+  };
 }
 
 function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
@@ -4712,55 +5164,29 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     };
   }
 
-  const documentHash = sha256File(input.repairDraftPath);
-  const checkpoints = AUTHORING_REPAIR_CHECKPOINT_IDS.map((id) => ({
-    id,
-    status: 'passed',
-    documentHash,
-    completedAt: input.createdAt,
-  }));
-  writeJsonUtf8(input.paths.progress, {
-    schemaVersion: 'semantic-checkpoint-progress/v1',
+  const checkpointRun = runAuthoringCheckpointExecution({
+    root: input.root,
+    draftSourcePath: input.repairDraftPath,
+    paths: input.paths,
     recordId: input.recordId,
-    source: toRootRelativePath(input.root, input.repairDraftPath),
+    routeDecision: routeDecisionText,
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
-    documentHash,
-    mode: routeDecisionText,
-    modeDecision: routeDecisionText,
-    authoringMode: 'authoring_repair_gap_materialization',
-    checkpointPersistenceStage: 'authoring_repair_gap_materialization',
-    lastCompletedCheckpoint: 'cp-08-pre-render-global-reconciliation',
-    currentCheckpoint: null,
-    next: null,
-    validation: {
-      checkpointPersistence: 'pass',
-      repairDraftPersistence: 'pass',
-      sourceWriteReceiptRequired: 'promotion-receipt',
-    },
-    checkpoints,
-    createdBy:
-      'main_agent_orchestration.requirement_confirmation.authoring_repair.checkpoint_persistence',
     createdAt: input.createdAt,
   });
-
-  const evidence = {
-    schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
-    checkpointPersistenceSatisfiedCandidate: true,
-    checkpointPersistenceStage: 'authoring_repair_gap_materialization',
-    completedCheckpointIds: AUTHORING_REPAIR_CHECKPOINT_IDS,
-    checkpointPersistenceRef: {
-      routeDecisionHash: normalizeText(input.routeDecision?.routeDecisionHash),
-      progressPath: toRootRelativePath(input.root, input.paths.progress),
-      progressHash: sha256File(input.paths.progress),
-      preRenderMustDecompositionGateHash: sha256File(input.paths.preRenderMustGate),
-      preRenderGlobalConsistencyHash: sha256File(input.paths.preRenderGlobalConsistency),
-      packetSourceReconciliationHash: sha256File(input.paths.reconciliationReport),
-    },
-    completedAt: input.createdAt,
-    createdBy:
-      'main_agent_orchestration.requirement_confirmation.authoring_repair.checkpoint_persistence',
-  };
+  if (!checkpointRun.ok) {
+    return { ok: false, issue: checkpointRun.issues[0] };
+  }
+  const evidence = buildCheckpointPersistenceEvidenceFromReceipts({
+    root: input.root,
+    draftSourcePath: input.repairDraftPath,
+    paths: input.paths,
+    routeDecision: input.routeDecision,
+    recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    createdAt: input.createdAt,
+  });
   writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
   const validationIssues = validateCheckpointPersistenceEvidence({
     root: input.root,
@@ -4790,57 +5216,30 @@ function ensureCheckpointPersistenceForAuthoring(input: {
     return { ok: true };
   }
 
-  const checkpointScript = resolveSkillScript(input.root, 'run_semantic_checkpoints.js');
-  const command = runNodeJson(
-    checkpointScript,
-    [
-      '--source',
-      input.draftSourcePath,
-      '--progress',
-      input.paths.progress,
-      '--mode',
-      'checkpoint-persistence',
-      '--route-decision',
-      input.paths.scaleRoutingDecision,
-      '--json',
-    ],
-    input.root
-  );
-  if (command.status !== 0) {
-    return {
-      ok: false,
-      issues: [commandFailureIssue('checkpoint_persistence_command_failed', checkpointScript, command)],
-    };
+  const checkpointRun = runAuthoringCheckpointExecution({
+    root: input.root,
+    draftSourcePath: input.draftSourcePath,
+    paths: input.paths,
+    recordId: input.recordId,
+    routeDecision: routeDecisionText,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    createdAt: input.createdAt,
+  });
+  if (!checkpointRun.ok) {
+    return checkpointRun;
   }
-
-  const existingEvidence = readJsonIfExists(input.paths.checkpointPersistenceEvidence);
-  const commandEvidence = recordObject(command.json?.checkpointPersistenceEvidence);
-  const commandRoot = recordObject(command.json);
-  const stdoutEvidence =
-    Object.keys(commandEvidence).length > 0
-      ? commandEvidence
-      : Object.keys(commandRoot).length > 0
-        ? commandRoot
-        : null;
-  const evidence = existingEvidence ?? (stdoutEvidence
-    ? {
-        ...stdoutEvidence,
-        schemaVersion:
-          normalizeText(stdoutEvidence.schemaVersion) || 'semantic-checkpoint-persistence-evidence/v1',
-        checkpointPersistenceRef: {
-          ...recordObject(stdoutEvidence.checkpointPersistenceRef),
-          routeDecisionHash:
-            normalizeText(recordObject(stdoutEvidence.checkpointPersistenceRef).routeDecisionHash) ||
-            normalizeText(input.routeDecision?.routeDecisionHash),
-        },
-        createdAt: input.createdAt,
-        createdBy:
-          'main_agent_orchestration.requirement_confirmation.authoring.checkpoint_persistence',
-      }
-    : {});
-  if (Object.keys(evidence).length > 0) {
-    writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
-  }
+  const evidence = buildCheckpointPersistenceEvidenceFromReceipts({
+    root: input.root,
+    draftSourcePath: input.draftSourcePath,
+    paths: input.paths,
+    routeDecision: input.routeDecision,
+    recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    createdAt: input.createdAt,
+  });
+  writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
 
   const validationIssues = validateCheckpointPersistenceEvidence({
     root: input.root,
@@ -4849,7 +5248,7 @@ function ensureCheckpointPersistenceForAuthoring(input: {
     evidencePath: input.paths.checkpointPersistenceEvidence,
     routeDecision: input.routeDecision,
   });
-  const completedIds = asStringArray(evidence.completedCheckpointIds);
+  const completedIds = asStringArray(recordObject(evidence.checkpointPersistenceRef).completedCheckpointIds);
   emitAuthoringCheckpointTrace({
     root: input.root,
     draftSourcePath: input.draftSourcePath,
@@ -5394,6 +5793,45 @@ function buildPreserveExistingAuthoringArtifacts(input: {
     consecutiveNoNewGapRounds: input.consecutiveNoNewGapRounds,
   });
   writeJsonUtf8(input.paths.mustDecompositionPacket, { must_decomposition_packet: packet });
+  const preserveExistingCandidates: ControlledMustCandidate[] = mustRequirements.map(
+    (requirement, index) => {
+      const sourceLine = requirement.sourceLine ?? 1;
+      return {
+        candidateId: requirement.candidateId ?? `PRESERVE-${requirementOrdinal(index)}`,
+        sourcePath:
+          requirement.sourcePath ?? toRootRelativePath(input.root, input.sourcePath),
+        sourceHash: sha256Text(input.sourceText),
+        sourceDocumentHash: requirement.sourceDocumentHash ?? sourceDocumentHash,
+        sourceSpan: requirement.sourceSpan ?? { startLine: sourceLine, endLine: sourceLine },
+        headingPath: Array.isArray(requirement.headingPath) ? requirement.headingPath : [],
+        blockKind: 'paragraph',
+        requirementType: 'positive',
+        coverageDecision: 'mapped_to_must',
+        coverageReason: 'preserve-existing repair retained this requirement for checkpoint handoff',
+        confidence: 1,
+        tableContext: null,
+        groupId: requirement.id,
+        originalText: requirement.text,
+        normalizedRequirement: requirement.text,
+        decision: 'accepted_for_draft',
+        decisionReason: 'preserve-existing repair retained requirement as controlled candidate',
+        requiresHumanReview: false,
+      };
+    }
+  );
+  writeControlledMustCandidateArtifacts({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+    sourceText: input.sourceText,
+    candidates: preserveExistingCandidates,
+    mustRequirements,
+    draftConfirmation: input.extraction.confirmation,
+    decision: 'draft_materialization_allowed',
+  });
   const auditInputHash = sha256Json({
     sourceDocumentHash,
     implementationConfirmationHash,
@@ -6169,6 +6607,66 @@ function buildCriticalAuditorReceipt(input: {
   return receipt;
 }
 
+function criticalAuditorReceiptMatchesCurrent(input: {
+  receipt: Record<string, unknown> | null;
+  roundIndex: number;
+  transaction: CriticalAuditorStagingTransaction;
+  auditInputHash: string;
+  recordId: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  packetHash: string;
+  requestHash: string;
+  gateDryRunHash: string;
+}): boolean {
+  const receipt = input.receipt;
+  if (!receipt) return false;
+  const receiptHash = normalizeText(receipt.receiptHash);
+  const receiptForHash = { ...receipt };
+  delete receiptForHash.receiptHash;
+  if (!receiptHash || receiptHash !== sha256Json(receiptForHash)) return false;
+  if (normalizeText(receipt.schemaVersion) !== 'critical-auditor-receipt/v1') return false;
+  if (Number(receipt.roundIndex) !== input.roundIndex) return false;
+  if (normalizeText(receipt.transactionId) !== input.transaction.transactionId) return false;
+  if (normalizeText(receipt.namespaceVersion) !== input.transaction.namespaceVersion) return false;
+  if (normalizeText(receipt.recordId) !== input.recordId) return false;
+  if (normalizeText(receipt.inputHash) !== input.auditInputHash) return false;
+  if (normalizeText(receipt.sourceDocumentHash) !== input.sourceDocumentHash) return false;
+  if (normalizeText(receipt.implementationConfirmationHash) !== input.implementationConfirmationHash) {
+    return false;
+  }
+  if (normalizeText(receipt.packetHash) !== input.packetHash) return false;
+  if (normalizeText(receipt.contentHash) !== input.packetHash) return false;
+  if (normalizeText(receipt.requestHash) !== input.requestHash) return false;
+  if (normalizeText(receipt.gateDryRunHash) !== input.gateDryRunHash) return false;
+  return true;
+}
+
+function writeCriticalAuditorReceiptMirror(input: {
+  rootReceiptPath: string;
+  mirrorPath: string;
+  transaction: CriticalAuditorStagingTransaction;
+  authoringDir: string;
+  receipt: Record<string, unknown>;
+}): void {
+  const payload = { criticalAuditorReceipt: input.receipt };
+  const existingRoot = readJsonIfExists(input.rootReceiptPath);
+  if (sha256Json(existingRoot ?? {}) !== sha256Json(payload)) {
+    writeJsonUtf8(input.rootReceiptPath, payload);
+  }
+  const mirrorPayload = {
+    criticalAuditorReceipt: input.receipt,
+    transactionMirror: {
+      transactionId: input.transaction.transactionId,
+      sourcePath: path.relative(input.authoringDir, input.rootReceiptPath).replace(/\\/g, '/'),
+    },
+  };
+  const existingMirror = readJsonIfExists(input.mirrorPath);
+  if (sha256Json(existingMirror ?? {}) !== sha256Json(mirrorPayload)) {
+    writeJsonUtf8(input.mirrorPath, mirrorPayload);
+  }
+}
+
 function isNoNewGapVerdict(verdict: CriticalAuditorVerdict): boolean {
   return verdict === 'no_new_valid_gap' || verdict === 'no_new_confirmation_blocking_gap';
 }
@@ -6563,78 +7061,92 @@ function runCriticalAuditorReceiptLoop(input: {
       candidate: candidateRequest,
     });
     const frozenGateDryRun = criticalAuditorGateDryRunSummaryFromRequest(request, gateDryRun);
-    let auditResult: CriticalAuditorRoundResult;
-    try {
-      auditResult = provider({
+    const receiptPath = criticalAuditorReceiptPath(input.transaction, roundIndex);
+    const mirrorPath = path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`);
+    const existingReceipt = unwrapCriticalAuditorReceipt(readJsonIfExists(receiptPath));
+    let receipt: Record<string, unknown>;
+    if (
+      criticalAuditorReceiptMatchesCurrent({
+        receipt: existingReceipt,
         roundIndex,
-        transactionId: input.transaction.transactionId,
-        namespaceVersion: input.transaction.namespaceVersion,
+        transaction: input.transaction,
         auditInputHash: input.auditInputHash,
         recordId: input.recordId,
         sourceDocumentHash: input.sourceDocumentHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
-        roundPerspective,
+        requestHash: normalizeText(request.requestHash),
+        gateDryRunHash: frozenGateDryRun.hash,
+      })
+    ) {
+      receipt = existingReceipt;
+    } else {
+      let auditResult: CriticalAuditorRoundResult;
+      try {
+        auditResult = provider({
+          roundIndex,
+          transactionId: input.transaction.transactionId,
+          namespaceVersion: input.transaction.namespaceVersion,
+          auditInputHash: input.auditInputHash,
+          recordId: input.recordId,
+          sourceDocumentHash: input.sourceDocumentHash,
+          implementationConfirmationHash: input.implementationConfirmationHash,
+          packetHash: input.packetHash,
+          roundPerspective,
+          gateDryRun: frozenGateDryRun,
+          packetProjectionSummary: {
+            projectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
+            projectionRefs,
+          },
+          mustRefs: input.mustRefs,
+          sourceRequirementTexts: input.sourceRequirementTexts,
+          mustPacketCount: input.mustPacketCount,
+          consecutiveNoNewGapRounds,
+          previousReceipts: receipts,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
+        issues.push(preConfirmationIssue(code, message, [`round-${roundIndex}`], 'critical_auditor'));
+        break;
+      }
+      const bindingIssues = validateCriticalAuditorRoundResultBinding({
+        roundIndex,
+        auditResult,
         gateDryRun: frozenGateDryRun,
-        packetProjectionSummary: {
-          projectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
-          projectionRefs,
-        },
-        mustRefs: input.mustRefs,
-        sourceRequirementTexts: input.sourceRequirementTexts,
-        mustPacketCount: input.mustPacketCount,
-        consecutiveNoNewGapRounds,
-        previousReceipts: receipts,
+        packet: input.packet,
       });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
-      issues.push(preConfirmationIssue(code, message, [`round-${roundIndex}`], 'critical_auditor'));
-      break;
+      if (bindingIssues.length > 0) {
+        issues.push(...bindingIssues);
+        break;
+      }
+      receipt = buildCriticalAuditorReceipt({
+        roundIndex,
+        transactionId: input.transaction.transactionId,
+        namespaceVersion: input.transaction.namespaceVersion,
+        requestHash: normalizeText(request.requestHash),
+        gateDryRunHash: frozenGateDryRun.hash,
+        responseHash: sha256Json(auditResult),
+        auditInputHash: input.auditInputHash,
+        recordId: input.recordId,
+        sourceDocumentHash: input.sourceDocumentHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        packetHash: input.packetHash,
+        createdAt: input.createdAt,
+        auditResult,
+      });
     }
-    const bindingIssues = validateCriticalAuditorRoundResultBinding({
-      roundIndex,
-      auditResult,
-      gateDryRun: frozenGateDryRun,
-      packet: input.packet,
-    });
-    if (bindingIssues.length > 0) {
-      issues.push(...bindingIssues);
-      break;
-    }
-    const receipt = buildCriticalAuditorReceipt({
-      roundIndex,
-      transactionId: input.transaction.transactionId,
-      namespaceVersion: input.transaction.namespaceVersion,
-      requestHash: normalizeText(request.requestHash),
-      gateDryRunHash: frozenGateDryRun.hash,
-      responseHash: sha256Json(auditResult),
-      auditInputHash: input.auditInputHash,
-      recordId: input.recordId,
-      sourceDocumentHash: input.sourceDocumentHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      createdAt: input.createdAt,
-      auditResult,
-    });
     latestReceiptHash = normalizeText(receipt.receiptHash);
     receipts.push(receipt);
-    writeJsonUtf8(
-      criticalAuditorReceiptPath(input.transaction, roundIndex),
-      { criticalAuditorReceipt: receipt }
-    );
-    writeJsonUtf8(
-      path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
-      {
-        criticalAuditorReceipt: receipt,
-        transactionMirror: {
-          transactionId: input.transaction.transactionId,
-          sourcePath: path.relative(input.paths.authoringDir, criticalAuditorReceiptPath(input.transaction, roundIndex)).replace(/\\/g, '/'),
-        },
-      }
-    );
+    writeCriticalAuditorReceiptMirror({
+      rootReceiptPath: receiptPath,
+      mirrorPath,
+      transaction: input.transaction,
+      authoringDir: input.paths.authoringDir,
+      receipt,
+    });
 
-    const verdict = auditResult.verdict;
+    const verdict = normalizeCriticalAuditorVerdict(recordObject(receipt.convergenceDecision).verdict);
     if (verdict === 'blocked' || verdict === 'insufficient_audit') {
       issues.push(
         preConfirmationIssue(
@@ -6647,7 +7159,7 @@ function runCriticalAuditorReceiptLoop(input: {
       break;
     }
 
-    const unresolvedGaps = (auditResult.validatedGaps ?? []).filter((gap) => {
+    const unresolvedGaps = asRecordArray(receipt.validatedGaps).filter((gap) => {
       const status = normalizeText(gap.status ?? gap.resolutionStatus);
       return ![
         'resolved',
@@ -6712,10 +7224,13 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
+  mustRequirements: SourceMustRequirement[];
+  packet: Record<string, unknown>;
   createdAt: string;
 }): { latestReceiptHash: string | null; receipts: Record<string, unknown>[] } {
   let latestReceiptHash: string | null = null;
-  const mirrored = input.receipts.map((receipt, index) => {
+  const mirrored: Record<string, unknown>[] = [];
+  for (const [index, receipt] of input.receipts.entries()) {
     const roundIndex = Number(receipt.roundIndex ?? index + 1);
     const auditResult: CriticalAuditorRoundResult = {
       verdict: normalizeCriticalAuditorVerdict(
@@ -6742,12 +7257,56 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
           ? receipt.reconciliationIssueCount
           : undefined,
     };
-    const mirroredReceipt = buildCriticalAuditorReceipt({
+    const gateDryRun = buildCriticalAuditorGateDryRunSummary({
+      root: input.root,
+      sourcePath: input.sourcePath,
+      paths: input.paths,
+      roundIndex,
+    });
+    const candidateRequest = buildCriticalAuditorRoundRequest({
+      root: input.root,
+      sourcePath: input.sourcePath,
+      recordId: input.recordId,
       roundIndex,
       transactionId: input.transaction.transactionId,
       namespaceVersion: input.transaction.namespaceVersion,
-      requestHash: normalizeText(receipt.requestHash) || undefined,
-      gateDryRunHash: normalizeText(receipt.gateDryRunHash) || undefined,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      packetHash: input.packetHash,
+      auditInputHash: input.auditInputHash,
+      mustRequirements: input.mustRequirements,
+      packet: input.packet,
+      previousReceipts: mirrored,
+      gateDryRun,
+      createdAt: input.createdAt,
+    });
+    const request = writeOrReuseCriticalAuditorRoundRequest({
+      requestPath: criticalAuditorRequestPath(input.transaction, roundIndex),
+      candidate: candidateRequest,
+    });
+    const frozenGateDryRun = criticalAuditorGateDryRunSummaryFromRequest(request, gateDryRun);
+    const receiptPath = criticalAuditorReceiptPath(input.transaction, roundIndex);
+    const existingReceipt = unwrapCriticalAuditorReceipt(readJsonIfExists(receiptPath));
+    const currentReceipt = criticalAuditorReceiptMatchesCurrent({
+      receipt: existingReceipt,
+      roundIndex,
+      transaction: input.transaction,
+      auditInputHash: input.auditInputHash,
+      recordId: input.recordId,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      packetHash: input.packetHash,
+      requestHash: normalizeText(request.requestHash),
+      gateDryRunHash: frozenGateDryRun.hash,
+    })
+      ? existingReceipt
+      : null;
+    const mirroredReceipt = currentReceipt ?? buildCriticalAuditorReceipt({
+      roundIndex,
+      transactionId: input.transaction.transactionId,
+      namespaceVersion: input.transaction.namespaceVersion,
+      requestHash: normalizeText(request.requestHash),
+      gateDryRunHash: frozenGateDryRun.hash,
       responseHash: normalizeText(receipt.responseHash) || undefined,
       auditInputHash: input.auditInputHash,
       recordId: input.recordId,
@@ -6758,24 +7317,15 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
       auditResult,
     });
     latestReceiptHash = normalizeText(mirroredReceipt.receiptHash);
-    writeJsonUtf8(
-      criticalAuditorReceiptPath(input.transaction, roundIndex),
-      { criticalAuditorReceipt: mirroredReceipt }
-    );
-    writeJsonUtf8(
-      path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
-      {
-        criticalAuditorReceipt: mirroredReceipt,
-        transactionMirror: {
-          transactionId: input.transaction.transactionId,
-          sourcePath: path
-            .relative(input.paths.authoringDir, criticalAuditorReceiptPath(input.transaction, roundIndex))
-            .replace(/\\/g, '/'),
-        },
-      }
-    );
-    return mirroredReceipt;
-  });
+    writeCriticalAuditorReceiptMirror({
+      rootReceiptPath: receiptPath,
+      mirrorPath: path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+      transaction: input.transaction,
+      authoringDir: input.paths.authoringDir,
+      receipt: mirroredReceipt,
+    });
+    mirrored.push(mirroredReceipt);
+  }
   return { latestReceiptHash, receipts: mirrored };
 }
 
@@ -6864,6 +7414,7 @@ function authoringRepairPaths(root: string, paths: PreConfirmationPaths): Record
     sourceMaterializationReceipt: toRootRelativePath(root, paths.sourceMaterializationReceipt),
     packetSourceReconciliation: toRootRelativePath(root, paths.reconciliationReport),
     semanticCheckpointProgress: toRootRelativePath(root, paths.progress),
+    semanticCheckpointReceiptGlob: `${toRootRelativePath(root, paths.authoringDir)}/checkpoint-receipt-cp-*.json`,
     preRenderMustDecompositionGate: toRootRelativePath(root, paths.preRenderMustGate),
   };
 }
@@ -8929,6 +9480,47 @@ function validateCheckpointPersistenceEvidence(input: {
       addIssue(`${field} mismatch`);
     }
   }
+  const receiptRefs = Array.isArray(ref.checkpointReceiptRefs)
+    ? (ref.checkpointReceiptRefs as Record<string, unknown>[])
+    : [];
+  if (receiptRefs.length !== AUTHORING_REPAIR_CHECKPOINT_IDS.length) {
+    addIssue('checkpointReceiptRefs must contain one receipt ref per checkpoint');
+  }
+  const completedIds = asStringArray(ref.completedCheckpointIds);
+  for (const checkpoint of AUTHORING_REPAIR_CHECKPOINTS) {
+    if (!completedIds.includes(checkpoint.id)) {
+      addIssue(`completedCheckpointIds missing ${checkpoint.id}`);
+    }
+    const receiptPath = checkpointReceiptPath(input.paths, checkpoint);
+    const refRow = receiptRefs.find((item) => normalizeText(item.checkpointId) === checkpoint.id);
+    if (!refRow) {
+      addIssue(`checkpoint receipt ref missing ${checkpoint.id}`);
+      continue;
+    }
+    if (normalizeText(refRow.path) !== toRootRelativePath(input.root, receiptPath)) {
+      addIssue(`checkpoint receipt path mismatch ${checkpoint.id}`);
+    }
+    if (!fs.existsSync(receiptPath)) {
+      addIssue(`checkpoint receipt file missing ${checkpoint.id}`);
+      continue;
+    }
+    if (normalizeText(refRow.hash) !== sha256File(receiptPath)) {
+      addIssue(`checkpoint receipt hash mismatch ${checkpoint.id}`);
+    }
+    const receipt = readJsonIfExists(receiptPath);
+    if (
+      !isCurrentCheckpointReceipt({
+        root: input.root,
+        receipt,
+        checkpoint,
+        sourceDocumentHash: normalizeText(evidence.sourceDocumentHash),
+        implementationConfirmationHash: normalizeText(evidence.implementationConfirmationHash),
+        draftSourcePath: input.sourcePath,
+      })
+    ) {
+      addIssue(`checkpoint receipt stale or invalid ${checkpoint.id}`);
+    }
+  }
   return issues;
 }
 
@@ -9977,26 +10569,64 @@ export function runMainAgentPreConfirmationDrilldown(
   }
 
   const latestReceiptHash = criticalAuditorLoop.latestReceiptHash ?? receiptHashSeed;
-  const auditedConfirmation = buildPreConfirmationImplementationConfirmation({
+  const existingCriticalAuditorState = recordObject(
+    recordObject(previewExtraction.confirmation.preConfirmationDrilldown).criticalAuditor
+  );
+  const existingDraftAlreadyConverged =
+    Number(existingCriticalAuditorState.consecutiveNoNewGapRounds ?? 0) >= 3 &&
+    normalizeText(existingCriticalAuditorState.convergenceVerdict) === 'bounded_no_new_gap' &&
+    criticalAuditorLoop.consecutiveNoNewGapRounds >= 3;
+  if (!existingDraftAlreadyConverged) {
+    const auditedConfirmation = buildPreConfirmationImplementationConfirmation({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      language,
+      paths,
+      packetHash,
+      semanticKernelHash,
+      latestReceiptHash,
+      mustRequirements,
+      structuredBlocks,
+      targetAuthorityRecords: projectionTargetAuthorityRecords,
+      validationAuthorityRecords: validationAuthority.accepted,
+      consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
+      auditConvergenceVerdict:
+        criticalAuditorLoop.consecutiveNoNewGapRounds >= 3 ? 'bounded_no_new_gap' : 'blocked',
+    });
+    fs.writeFileSync(paths.draftSourcePreview, materializeImplementationConfirmationText(sourceText, auditedConfirmation), 'utf8');
+    fs.writeFileSync(stagingTransaction.draftSource, fs.readFileSync(paths.draftSourcePreview, 'utf8'), 'utf8');
+  }
+  const finalDraftSource = path.join(stagingTransaction.stagingDir, 'final-draft-source.md');
+  fs.copyFileSync(paths.draftSourcePreview, finalDraftSource);
+  const normalizedFinalDraft = normalizeImplementationConfirmationDraftForPromotion({
     root,
-    sourcePath,
-    recordId: identity.recordId,
-    requirementSetId: identity.requirementSetId,
-    language,
+    draftPath: finalDraftSource,
     paths,
-    packetHash,
-    semanticKernelHash,
-    latestReceiptHash,
-    mustRequirements,
-    structuredBlocks,
-    targetAuthorityRecords: projectionTargetAuthorityRecords,
-    validationAuthorityRecords: validationAuthority.accepted,
-    consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
-    auditConvergenceVerdict:
-      criticalAuditorLoop.consecutiveNoNewGapRounds >= 3 ? 'bounded_no_new_gap' : 'blocked',
+    blockingStage: 'source_mutation_gate',
   });
-  fs.writeFileSync(paths.draftSourcePreview, materializeImplementationConfirmationText(sourceText, auditedConfirmation), 'utf8');
-  fs.writeFileSync(stagingTransaction.draftSource, fs.readFileSync(paths.draftSourcePreview, 'utf8'), 'utf8');
+  if (!normalizedFinalDraft.ok) {
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'requirements_contract_draft_normalization_failed',
+      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+      createdAt,
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: normalizedFinalDraft.issues,
+      sourceDocumentHash: sourceHashBefore,
+      implementationConfirmationHash: previewImplementationConfirmationHash,
+    });
+  }
+  fs.copyFileSync(finalDraftSource, paths.draftSourcePreview);
+  fs.copyFileSync(finalDraftSource, stagingTransaction.draftSource);
   const auditedPreviewText = fs.readFileSync(paths.draftSourcePreview, 'utf8');
   const auditedPreviewExtraction = extractImplementationConfirmationBlock(auditedPreviewText);
   if (!auditedPreviewExtraction) {
@@ -10013,33 +10643,60 @@ export function runMainAgentPreConfirmationDrilldown(
   // The post-audit preview intentionally replaces seed metadata with the current
   // Critical Auditor convergence summary. Continue with the audited hashes so
   // source-race and checkpoint gates remain the authoritative promotion blockers.
-  const finalKernel = buildSemanticKernel({
-    root,
-    sourcePath: paths.draftSourcePreview,
-    recordId: identity.recordId,
-    sourceDocumentHash: auditedPreviewSourceDocumentHash,
-    implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
-    createdAt,
-    mustRequirements,
-  });
+  const stagedFinalKernel = recordObject(readJsonIfExists(stagingTransaction.semanticKernel)?.semanticKernel);
+  const finalKernel =
+    normalizeText(stagedFinalKernel.sourceDocumentHash) === auditedPreviewSourceDocumentHash &&
+    normalizeText(stagedFinalKernel.implementationConfirmationHash) === auditedPreviewImplementationConfirmationHash
+      ? stagedFinalKernel
+      : buildSemanticKernel({
+          root,
+          sourcePath: paths.draftSourcePreview,
+          recordId: identity.recordId,
+          sourceDocumentHash: auditedPreviewSourceDocumentHash,
+          implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+          createdAt,
+          mustRequirements,
+        });
   const finalSemanticKernelHash = normalizeText(finalKernel.kernelHash);
   writeJsonUtf8(paths.semanticKernel, { semanticKernel: finalKernel });
-
-  const finalPacket = buildMustDecompositionPacket({
-    root,
-    sourcePath: paths.draftSourcePreview,
-    paths,
-    recordId: identity.recordId,
-    sourceDocumentHash: auditedPreviewSourceDocumentHash,
-    implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
-    semanticKernelHash: finalSemanticKernelHash,
-    packetHash,
-    createdAt,
-    mustRequirements,
-    targetAuthorityRecords: projectionTargetAuthorityRecords,
-    consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
+  writeJsonUtf8(stagingTransaction.semanticKernel, {
+    semanticKernel: {
+      ...finalKernel,
+      transactionId: stagingTransaction.transactionId,
+      namespaceVersion: stagingTransaction.namespaceVersion,
+    },
   });
+
+  const stagedFinalPacket = recordObject(
+    readJsonIfExists(stagingTransaction.mustDecompositionPacket)?.must_decomposition_packet
+  );
+  const finalPacket =
+    normalizeText(stagedFinalPacket.sourceDocumentHash) === auditedPreviewSourceDocumentHash &&
+    normalizeText(stagedFinalPacket.implementationConfirmationHash) === auditedPreviewImplementationConfirmationHash &&
+    normalizeText(stagedFinalPacket.semanticKernelHash) === finalSemanticKernelHash
+      ? stagedFinalPacket
+      : buildMustDecompositionPacket({
+          root,
+          sourcePath: paths.draftSourcePreview,
+          paths,
+          recordId: identity.recordId,
+          sourceDocumentHash: auditedPreviewSourceDocumentHash,
+          implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+          semanticKernelHash: finalSemanticKernelHash,
+          packetHash,
+          createdAt,
+          mustRequirements,
+          targetAuthorityRecords: projectionTargetAuthorityRecords,
+          consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
+        });
   writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: finalPacket });
+  writeJsonUtf8(stagingTransaction.mustDecompositionPacket, {
+    must_decomposition_packet: {
+      ...finalPacket,
+      transactionId: stagingTransaction.transactionId,
+      namespaceVersion: stagingTransaction.namespaceVersion,
+    },
+  });
   const finalAuditInputHash = sha256Json({
     sourceDocumentHash: auditedPreviewSourceDocumentHash,
     implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
@@ -10057,6 +10714,8 @@ export function runMainAgentPreConfirmationDrilldown(
     sourceDocumentHash: auditedPreviewSourceDocumentHash,
     implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
     packetHash,
+    mustRequirements,
+    packet: finalPacket,
     createdAt,
   });
 
@@ -10517,13 +11176,6 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const finalDraftSource = path.join(stagingTransaction.stagingDir, 'final-draft-source.md');
-  fs.writeFileSync(
-    finalDraftSource,
-    materializeImplementationConfirmationText(sourceText, auditedConfirmation),
-    'utf8'
-  );
-
   const encodingGate = runEncodingIntegrityGate({ root, paths, targetPaths: [finalDraftSource] });
   if (encodingGate.issues.length > 0) {
     writeSourcePromotionBlockDecision({
@@ -10540,33 +11192,6 @@ export function runMainAgentPreConfirmationDrilldown(
       paths,
       substate: 'blocked_by_render_gate',
       issues: encodingGate.issues,
-      mustGateReport,
-      globalGateReport,
-      sourceDocumentHash: sourceHashBefore,
-      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
-    });
-  }
-  const normalizedFinalDraft = normalizeImplementationConfirmationDraftForPromotion({
-    root,
-    draftPath: finalDraftSource,
-    paths,
-    blockingStage: 'source_mutation_gate',
-  });
-  if (!normalizedFinalDraft.ok) {
-    writeSourcePromotionBlockDecision({
-      transaction: stagingTransaction,
-      blockingStage: 'requirements_contract_draft_normalization_failed',
-      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
-      createdAt,
-    });
-    return buildPreConfirmationResult({
-      root,
-      sourcePath,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      paths,
-      substate: 'blocked_by_render_gate',
-      issues: normalizedFinalDraft.issues,
       mustGateReport,
       globalGateReport,
       sourceDocumentHash: sourceHashBefore,
@@ -10709,6 +11334,7 @@ export function runMainAgentPreConfirmationDrilldown(
       implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
       receiptPath: toRootRelativePath(root, paths.promotionReceipt),
       receiptHash: promotionReceiptHash,
+      sourceMutationPerformed: true,
       updatedSourceSections: finalWrittenIdRanges,
       status: 'draft_updated_not_confirmation_ready',
       changedSections: finalWrittenIdRanges,
@@ -10786,6 +11412,7 @@ export function runMainAgentPreConfirmationDrilldown(
       globalGateReport,
       sourceDocumentHash: finalMaterialized.sourceDocumentHash,
       implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+      sourceMutationPerformed: true,
     });
   }
   const renderIssues = collectBlockingIssuesFromReports(renderReport);
@@ -10840,6 +11467,7 @@ export function runMainAgentPreConfirmationDrilldown(
     globalGateReport,
     sourceDocumentHash: finalMaterialized.sourceDocumentHash,
     implementationConfirmationHash: finalMaterialized.implementationConfirmationHash,
+    sourceMutationPerformed: true,
     finalStandards: finalStandardsFromReports({
       packet: finalPacket,
       mustGateReport,

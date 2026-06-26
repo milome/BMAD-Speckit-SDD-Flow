@@ -134,6 +134,10 @@ function sha256(content) {
   return `sha256:${crypto.createHash("sha256").update(Buffer.from(content, "utf8")).digest("hex")}`;
 }
 
+function sha256File(filePath) {
+  return sha256(fs.readFileSync(path.resolve(filePath), "utf8"));
+}
+
 function currentTargetState(targetPath) {
   const absolute = path.resolve(targetPath);
   if (!fs.existsSync(absolute)) {
@@ -547,12 +551,56 @@ function validateCheckpointPersistenceEvidence(evidence) {
   if (evidence.checkpointPersistenceSatisfiedCandidate !== true) {
     issues.push("checkpoint_persistence_satisfied_candidate_required");
   }
-  const completed = Array.isArray(evidence.completedCheckpointIds) ? evidence.completedCheckpointIds : [];
+  if (Array.isArray(evidence.completedCheckpointIds)) {
+    issues.push("checkpoint_persistence_top_level_completed_ids_forbidden");
+  }
   for (const checkpointId of REQUIRED_CHECKPOINT_IDS) {
+    const completed = Array.isArray(evidence.checkpointPersistenceRef?.completedCheckpointIds)
+      ? evidence.checkpointPersistenceRef.completedCheckpointIds
+      : [];
     if (!completed.includes(checkpointId)) issues.push(`checkpoint_missing:${checkpointId}`);
   }
   const ref = evidence.checkpointPersistenceRef;
   if (!ref || typeof ref !== "object") issues.push("checkpoint_persistence_ref_missing");
+  const receiptRefs = Array.isArray(ref?.checkpointReceiptRefs) ? ref.checkpointReceiptRefs : [];
+  if (receiptRefs.length !== REQUIRED_CHECKPOINT_IDS.length) {
+    issues.push("checkpoint_receipt_refs_required");
+  }
+  for (const checkpointId of REQUIRED_CHECKPOINT_IDS) {
+    const receiptRef = receiptRefs.find((item) => item?.checkpointId === checkpointId);
+    if (!receiptRef) {
+      issues.push(`checkpoint_receipt_ref_missing:${checkpointId}`);
+      continue;
+    }
+    if (!receiptRef.path) issues.push(`checkpoint_receipt_ref_path_missing:${checkpointId}`);
+    if (!receiptRef.hash) issues.push(`checkpoint_receipt_ref_hash_missing:${checkpointId}`);
+    if (receiptRef.status !== "passed") issues.push(`checkpoint_receipt_ref_not_passed:${checkpointId}`);
+    if (receiptRef.path) {
+      const receiptPath = path.resolve(receiptRef.path);
+      if (!fs.existsSync(receiptPath)) {
+        issues.push(`checkpoint_receipt_file_missing:${checkpointId}`);
+      } else if (receiptRef.hash && sha256File(receiptPath) !== receiptRef.hash) {
+        issues.push(`checkpoint_receipt_file_hash_mismatch:${checkpointId}`);
+      } else {
+        const receipt = readJsonFile(receiptPath);
+        if (receipt?.schemaVersion !== "requirements-contract-checkpoint-receipt/v1") {
+          issues.push(`checkpoint_receipt_schema_invalid:${checkpointId}`);
+        }
+        if (receipt?.checkpointId !== checkpointId) {
+          issues.push(`checkpoint_receipt_checkpoint_id_mismatch:${checkpointId}`);
+        }
+        if (receipt?.status !== "passed") {
+          issues.push(`checkpoint_receipt_status_not_passed:${checkpointId}`);
+        }
+        const { receiptHash, ...receiptPayload } = receipt || {};
+        if (!receiptHash) {
+          issues.push(`checkpoint_receipt_hash_missing:${checkpointId}`);
+        } else if (receiptHash !== sha256Json(receiptPayload)) {
+          issues.push(`checkpoint_receipt_hash_invalid:${checkpointId}`);
+        }
+      }
+    }
+  }
   for (const key of [
     "progressPath",
     "progressHash",
@@ -764,10 +812,18 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
         });
       } else {
         const checkpointEvidence = readJsonFile(args.checkpointPersistenceEvidence);
+        const checkpointCompleted = Array.isArray(
+          checkpointEvidence.checkpointPersistenceRef?.completedCheckpointIds
+        )
+          ? checkpointEvidence.checkpointPersistenceRef.completedCheckpointIds
+          : [];
         result.decisions.checkpointPersistence = {
           satisfied: checkpointEvidence.checkpointPersistenceSatisfiedCandidate === true,
-          completedCheckpointCount: Array.isArray(checkpointEvidence.completedCheckpointIds)
-            ? checkpointEvidence.completedCheckpointIds.length
+          completedCheckpointCount: checkpointCompleted.length,
+          checkpointReceiptCount: Array.isArray(
+            checkpointEvidence.checkpointPersistenceRef?.checkpointReceiptRefs
+          )
+            ? checkpointEvidence.checkpointPersistenceRef.checkpointReceiptRefs.length
             : 0,
         };
         result.errors.push(...validateCheckpointPersistenceEvidence(checkpointEvidence));
