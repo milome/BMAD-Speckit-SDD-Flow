@@ -4531,17 +4531,109 @@ function buildSourceMaterializationRequiredResult(input: {
   });
 }
 
-const AUTHORING_REPAIR_CHECKPOINT_IDS = [
-  'cp-00-semantic-kernel',
-  'cp-01-must-decomposition-packet',
-  'cp-02-atomic-decomposition-loop-convergence',
-  'cp-03-packet-to-source-materialization',
-  'cp-04-id-freeze',
-  'cp-05-implementation-confirmation-core',
-  'cp-06-projections',
-  'cp-07-human-readable-views',
-  'cp-08-pre-render-global-reconciliation',
+interface AuthoringCheckpointDefinition {
+  id: string;
+  name: string;
+  artifacts: (input: { draftSourcePath: string; paths: PreConfirmationPaths }) => string[];
+}
+
+const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
+  {
+    id: 'cp-00-semantic-kernel',
+    name: 'semantic kernel',
+    artifacts: ({ paths }) => [paths.semanticKernel],
+  },
+  {
+    id: 'cp-01-must-decomposition-packet',
+    name: 'must decomposition packet',
+    artifacts: ({ paths }) => [paths.mustDecompositionPacket],
+  },
+  {
+    id: 'cp-02-atomic-decomposition-loop-convergence',
+    name: 'atomic decomposition loop convergence',
+    artifacts: ({ paths }) => (paths.receiptPaths.length > 0 ? paths.receiptPaths : [paths.progress]),
+  },
+  {
+    id: 'cp-03-packet-to-source-materialization',
+    name: 'packet to source materialization',
+    artifacts: ({ draftSourcePath, paths }) => [paths.authoringMaterializationReceipt, draftSourcePath],
+  },
+  {
+    id: 'cp-04-id-freeze',
+    name: 'ID freeze',
+    artifacts: ({ paths }) => [paths.progress],
+  },
+  {
+    id: 'cp-05-implementation-confirmation-core',
+    name: 'implementationConfirmation core',
+    artifacts: ({ draftSourcePath, paths }) => [paths.draftImplementationConfirmation, draftSourcePath],
+  },
+  {
+    id: 'cp-06-projections',
+    name: 'EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD projections',
+    artifacts: ({ paths }) => [paths.mustDecompositionPacket],
+  },
+  {
+    id: 'cp-07-human-readable-views',
+    name: 'human-readable views',
+    artifacts: ({ draftSourcePath }) => [draftSourcePath],
+  },
+  {
+    id: 'cp-08-pre-render-global-reconciliation',
+    name: 'pre-render global reconciliation',
+    artifacts: ({ paths }) => [
+      paths.preRenderMustGate,
+      paths.preRenderGlobalConsistency,
+      paths.reconciliationReport,
+    ],
+  },
 ];
+
+const AUTHORING_REPAIR_CHECKPOINT_IDS = AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => checkpoint.id);
+
+function checkpointTraceValue(values: string[]): string {
+  return values.length > 0 ? values.join(',') : 'missing';
+}
+
+function checkpointTraceHash(filePath: string): string {
+  return fs.existsSync(filePath) ? sha256File(filePath) : 'missing';
+}
+
+function emitAuthoringCheckpointTrace(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  routeDecision: string;
+  evidence: Record<string, unknown>;
+}): void {
+  const completedIds = asStringArray(input.evidence.completedCheckpointIds);
+  process.stderr.write(
+    `[requirements-contract-authoring] checkpoint trace start record=${input.recordId} route=${input.routeDecision} source=${toRootRelativePath(input.root, input.draftSourcePath)}\n`
+  );
+  AUTHORING_REPAIR_CHECKPOINTS.forEach((checkpoint, index) => {
+    const artifactPaths = uniqueNonEmpty(
+      checkpoint.artifacts({ draftSourcePath: input.draftSourcePath, paths: input.paths })
+    );
+    const artifactRefs = artifactPaths.map((artifactPath) => toRootRelativePath(input.root, artifactPath));
+    const artifactHashes = artifactPaths.map(checkpointTraceHash);
+    const nextCheckpoint =
+      AUTHORING_REPAIR_CHECKPOINTS[index + 1]?.id ?? 'checkpoint-persistence-summary';
+    const artifactValue = checkpointTraceValue(artifactRefs);
+    const hashValue = checkpointTraceValue(artifactHashes);
+    const result = completedIds.includes(checkpoint.id) ? 'passed' : 'missing';
+    process.stderr.write(
+      `[requirements-contract-authoring] checkpoint phase=start id=${checkpoint.id} name="${checkpoint.name}" artifact=${artifactValue} hash=${hashValue} next=${nextCheckpoint}\n`
+    );
+    process.stderr.write(
+      `[requirements-contract-authoring] checkpoint phase=result id=${checkpoint.id} result=${result} artifact=${artifactValue} hash=${hashValue} next=${nextCheckpoint}\n`
+    );
+  });
+  const summaryHash = checkpointTraceHash(input.paths.checkpointPersistenceEvidence);
+  process.stderr.write(
+    `[requirements-contract-authoring] checkpoint-persistence summary artifact=${toRootRelativePath(input.root, input.paths.checkpointPersistenceEvidence)} hash=${summaryHash} next=promotion_required\n`
+  );
+}
 
 function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
   root: string;
@@ -4758,6 +4850,14 @@ function ensureCheckpointPersistenceForAuthoring(input: {
     routeDecision: input.routeDecision,
   });
   const completedIds = asStringArray(evidence.completedCheckpointIds);
+  emitAuthoringCheckpointTrace({
+    root: input.root,
+    draftSourcePath: input.draftSourcePath,
+    paths: input.paths,
+    recordId: input.recordId,
+    routeDecision: routeDecisionText,
+    evidence,
+  });
   const missingCheckpoints = AUTHORING_REPAIR_CHECKPOINT_IDS.filter((id) => !completedIds.includes(id));
   if (missingCheckpoints.length > 0) {
     validationIssues.push(

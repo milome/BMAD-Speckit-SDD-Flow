@@ -125,6 +125,47 @@ describe('root package bmad-speckit bin', () => {
     }
   }, 240_000);
 
+  it('legacy init entry help and version delegate to the main CLI without mutating the target', () => {
+    const target = mkdtempSync(join(tmpdir(), 'accept-root-init-help-'));
+    try {
+      const packageJsonPath = join(target, 'package.json');
+      const packageLockPath = join(target, 'package-lock.json');
+      const packageJson = JSON.stringify(
+        { name: 'consumer-root-init-help', version: '1.0.0', private: true },
+        null,
+        2
+      );
+      const packageLock = JSON.stringify(
+        { name: 'consumer-root-init-help', lockfileVersion: 3 },
+        null,
+        2
+      );
+      writeFileSync(packageJsonPath, packageJson, 'utf8');
+      writeFileSync(packageLockPath, packageLock, 'utf8');
+
+      const initEntry = join(PKG_ROOT, 'scripts', 'init-to-root.js').replace(/\\/g, '/');
+      const help = run(
+        `"${process.execPath}" "${initEntry}" --help`,
+        target
+      );
+      const version = run(
+        `"${process.execPath}" "${initEntry}" --version`,
+        target
+      );
+
+      expect(help).toContain('Initialize a new bmad-speckit project');
+      expect(help).toContain('--ai <name>');
+      expect(version.trim()).toBe(ROOT_PACKAGE_VERSION);
+      expect(readFileSync(packageJsonPath, 'utf8')).toBe(packageJson);
+      expect(readFileSync(packageLockPath, 'utf8')).toBe(packageLock);
+      expect(existsSync(join(target, '_bmad'))).toBe(false);
+      expect(existsSync(join(target, '.cursor'))).toBe(false);
+      expect(existsSync(join(target, '_bmad-output'))).toBe(false);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 60_000);
+
   it('npx --package root tgz exposes ralph subcommands without requiring source-repo ts-node paths', () => {
     const packDir = mkdtempSync(join(tmpdir(), 'accept-root-ralph-pack-'));
     const target = mkdtempSync(join(tmpdir(), 'accept-root-ralph-tgz-'));
