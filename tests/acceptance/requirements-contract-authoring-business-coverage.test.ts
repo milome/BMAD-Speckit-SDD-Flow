@@ -267,6 +267,7 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: request.packetProjectionSummary?.projectionGroups ?? [],
+    checkedProjectionQualityRuleCodes: request.projectionQualityGate?.requiredRuleCodes ?? [],
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
@@ -537,6 +538,78 @@ describe('requirements contract sanitized real fixture coverage', () => {
         expectTextContainsAll(draft.acceptanceCriteria, [period]);
         expectTextContainsAll(draft.e2eScenarios, [period]);
       }
+
+      const traceRows = (draft.traceRows as Array<Record<string, unknown>>) ?? [];
+      const mustToAtomicTaskMap = draft.mustToAtomicTaskMap as Record<string, string[]>;
+      const atomicTaskToTraceMap = draft.atomicTaskToTraceMap as Record<string, string[]>;
+      const atomicTaskToAcceptanceMap = draft.atomicTaskToAcceptanceMap as Record<string, string[]>;
+      const atomicTaskToEvidenceMap = draft.atomicTaskToEvidenceMap as Record<string, string[]>;
+      const atomicTaskToTargetPathMap = draft.atomicTaskToTargetPathMap as Record<string, string[]>;
+      const atomicTaskToCommandMap = draft.atomicTaskToCommandMap as Record<string, string[]>;
+      const manifest = draft.aiTddContractExecutionManifestProjection as Record<string, any>;
+
+      expect(traceRows.length).toBeGreaterThanOrEqual(mustRows.length);
+      expect(
+        traceRows.some((row) => row.id === 'TRACE-001' && (row.covers as string[]).length === mustRows.length + 1)
+      ).toBe(false);
+      for (const must of mustRows) {
+        const coveringRows = traceRows.filter((row) => ((row.covers as string[]) ?? []).includes(must.id));
+        expect(coveringRows.length, `${must.id} requires an independent TRACE row`).toBeGreaterThanOrEqual(1);
+        expect(coveringRows.some((row) => ((row.covers as string[]) ?? []).length < mustRows.length)).toBe(
+          true
+        );
+        expect(mustToAtomicTaskMap[must.id]?.length, `${must.id} mustToAtomicTaskMap`).toBeGreaterThan(0);
+      }
+      for (const trace of traceRows) {
+        expect((trace.failurePathRefs as string[])?.length, `${trace.id} failurePathRefs`).toBeGreaterThan(0);
+        expect((trace.edgeCaseRefs as string[])?.length, `${trace.id} edgeCaseRefs`).toBeGreaterThan(0);
+      }
+      for (const taskId of Object.values(mustToAtomicTaskMap).flat()) {
+        expect(atomicTaskToTraceMap[taskId]?.length, `${taskId} atomicTaskToTraceMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToAcceptanceMap[taskId]?.length,
+          `${taskId} atomicTaskToAcceptanceMap`
+        ).toBeGreaterThan(0);
+        expect(atomicTaskToEvidenceMap[taskId]?.length, `${taskId} atomicTaskToEvidenceMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToTargetPathMap[taskId]?.length,
+          `${taskId} atomicTaskToTargetPathMap`
+        ).toBeGreaterThan(0);
+        expect(atomicTaskToCommandMap[taskId]?.length, `${taskId} atomicTaskToCommandMap`).toBeGreaterThan(0);
+      }
+      for (const acceptanceRow of [
+        ...((draft.acceptanceTests as Array<Record<string, unknown>>) ?? []),
+        ...((draft.e2eSuites as Array<Record<string, unknown>>) ?? []),
+      ]) {
+        expect(String(acceptanceRow.redProofPlan ?? '').trim(), `${acceptanceRow.id} redProofPlan`).not.toBe('');
+      }
+      expect(manifest.requiredSections).toEqual(
+        expect.arrayContaining([
+          'atomicImplementationTaskLineage',
+          'finalGateMatrix',
+          'executionLoopProtocol',
+          'semanticGapPolicy',
+          'hostExecutionHints',
+          'commandTargetCollection',
+          'traceClosureAssertions',
+          'currentTargetMap',
+          'targetModificationPathCoverage',
+          'canonicalSurfaceReconciliation',
+          'legacyDenial',
+          'closeoutProof',
+          'evidenceTrustStates',
+        ])
+      );
+      expect(manifest.atomicImplementationTaskLineage.requiredMaps).toEqual(
+        expect.arrayContaining([
+          'mustToAtomicTaskMap',
+          'atomicTaskToTraceMap',
+          'atomicTaskToAcceptanceMap',
+          'atomicTaskToEvidenceMap',
+          'atomicTaskToTargetPathMap',
+          'atomicTaskToCommandMap',
+        ])
+      );
 
       const outOfScopeRows = (draft.outOfScope as Array<Record<string, unknown>>) ?? [];
       expect(stringify(outOfScopeRows)).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);

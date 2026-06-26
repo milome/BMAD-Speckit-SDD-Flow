@@ -148,6 +148,10 @@ function writeResponse(
   const request = readJson(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const checkedProjectionQualityRuleCodes =
+    request.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
+    request.projectionQualityGate?.requiredRuleCodes ??
+    [];
   const base = {
     schemaVersion: 'critical-auditor-round-response/v1',
     requestHash: request.requestHash,
@@ -159,6 +163,7 @@ function writeResponse(
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
+    checkedProjectionQualityRuleCodes,
     verdict,
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],

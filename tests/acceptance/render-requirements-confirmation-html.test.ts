@@ -1174,6 +1174,100 @@ function writeEsmMermaidBundle(): string {
 }
 
 describe('render-requirements-confirmation-html', () => {
+  it('extracts Python target paths and prioritizes source-defined business Mermaid views', () => {
+    const source = writeSource();
+    fs.writeFileSync(
+      source,
+      fs
+        .readFileSync(source, 'utf8')
+        .replace(
+          'command: "npx vitest run ',
+          'command: "pytest tests/test_multi_timeframe_settings.py && npx vitest run '
+        )
+        .replaceAll('targetPathOrField: "src/upload.ts"', 'targetPathOrField: "vnpy/chart/multi_timeframe_widget.py"')
+        .replaceAll('path: "src/upload.ts"', 'path: "vnpy/chart/multi_timeframe_widget.py"')
+        .replaceAll('targetFiles: ["src/upload.ts"]', 'targetFiles: ["vnpy/chart/multi_timeframe_widget.py"]')
+        .replace('id: SEQ-001', 'id: SEQ-BUSINESS-SOURCE-001')
+        .replace('title: "Valid upload persisted"', 'title: "Business source-defined timeframe settings"')
+        .replace(
+          'User->>UI: Select valid file [MUST-001]',
+          'User->>Settings: Toggle 15m visibility [MUST-001][EVD-001]'
+        )
+        .replace(
+          '      covers: ["MUST-001", "EVD-001"]',
+          `      covers: ["MUST-001", "EVD-001"]
+      mermaid: |-
+        sequenceDiagram
+          actor User
+          participant Settings
+          User->>Settings: Toggle 15m visibility [MUST-001][EVD-001]`
+        )
+        .replace('id: FLOW-001', 'id: FLOW-BUSINESS-SOURCE-001')
+        .replace('title: "Upload state and closeout flow"', 'title: "Business source-defined visibility flow"')
+        .replace(
+          `      title: "Business source-defined visibility flow"
+      covers: ["MUST-001", "NEG-001"]`,
+          `      title: "Business source-defined visibility flow"
+      covers: ["MUST-001", "NEG-001"]
+      mermaid: |-
+        stateDiagram-v2
+          Hidden15m --> Toggle15m: user enables 15m [MUST-001][EVD-001]
+          Toggle15m --> Visible15m: 15m overlay visible [MUST-001][EVD-001]`
+        )
+        .replace(
+          'Selected --> Persisted: store record [MUST-001]',
+          'Hidden15m --> Toggle15m: user enables 15m [MUST-001][EVD-001]\\n          Toggle15m --> Visible15m: 15m overlay visible [MUST-001][EVD-001]'
+        ),
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-business-source-views.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--json',
+    ]);
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    const businessVisuals = html.slice(
+      html.indexOf('id="business-visuals"'),
+      html.indexOf('id="governance-visuals"')
+    );
+
+    expect(html).toContain('vnpy/chart/multi_timeframe_widget.py');
+    expect(JSON.stringify(report.aiTddContractManifestCoverage.sections.commandTargetCollection)).toContain(
+      'tests/test_multi_timeframe_settings.py'
+    );
+    expect(JSON.stringify(report.targetModificationPathCoverage)).toContain(
+      'vnpy/chart/multi_timeframe_widget.py'
+    );
+    expect(businessVisuals).toContain('SEQ-BUSINESS-SOURCE-001');
+    expect(businessVisuals).toContain('FLOW-BUSINESS-SOURCE-001');
+    expect(businessVisuals.indexOf('data-diagram-id="SEQ-BUSINESS-SOURCE-001"')).toBeLessThan(
+      businessVisuals.indexOf('data-diagram-id="DERIVED-HAPPY-001"')
+    );
+    expect(businessVisuals.indexOf('data-diagram-id="FLOW-BUSINESS-SOURCE-001"')).toBeLessThan(
+      businessVisuals.indexOf('data-diagram-id="DERIVED-HAPPY-001"')
+    );
+    expect(JSON.stringify(report.requirementBoundary.business.diagramRefs)).toContain(
+      'SEQ-BUSINESS-SOURCE-001'
+    );
+  });
+
   it('renders current controlled execution state only when hashes and current attempt match', () => {
     const source = writeSource();
     const mermaidBundle = writeMockMermaidBundle();

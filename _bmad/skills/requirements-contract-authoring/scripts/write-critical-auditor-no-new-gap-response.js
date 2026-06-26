@@ -118,6 +118,12 @@ function selectCheckedProjectionGroups(request) {
   return stringArray(request.packetProjectionSummary?.projectionGroups);
 }
 
+function selectCheckedProjectionQualityRuleCodes(request) {
+  const required = stringArray(request.requiredResponseSchema?.checkedProjectionQualityRuleCodes);
+  if (required.length > 0) return uniqueStrings(required);
+  return uniqueStrings(request.projectionQualityGate?.requiredRuleCodes);
+}
+
 function selectReviewedProjectionRefs(request, explicitRefs) {
   const projectionRefs = stringArray(request.packetProjectionSummary?.projectionRefs);
   const selected = explicitRefs.length > 0 ? explicitRefs : projectionRefs.slice(0, 50);
@@ -129,6 +135,7 @@ function buildResponse({ request, requestPath, roundIndex, reviewedProjectionRef
   const gateDryRun = request.gateDryRun || {};
   const reconciliation = gateDryRun.reconciliation || {};
   const checkedProjectionGroups = selectCheckedProjectionGroups(request);
+  const checkedProjectionQualityRuleCodes = selectCheckedProjectionQualityRuleCodes(request);
   const gateDryRunHash = gateDryRun.gateDryRunHash || gateDryRun.hash || null;
   const reconciliationReportPath = gateDryRun.reconciliationReportPath
     ? String(gateDryRun.reconciliationReportPath).replace(/\\/gu, "/")
@@ -145,6 +152,7 @@ function buildResponse({ request, requestPath, roundIndex, reviewedProjectionRef
     gateDryRunHash,
     reconciliationIssueCount: numberValue(reconciliation.issueCount),
     checkedProjectionGroups,
+    checkedProjectionQualityRuleCodes,
     verdict: "no_new_valid_gap",
     reviewedMustRefs: stringArray(request.mustRefs),
     reviewedProjectionRefs,
@@ -202,6 +210,9 @@ function validateRequestForNoNewGap(request, roundIndex, reviewedProjectionRefs)
   }
   if (selectCheckedProjectionGroups(request).length === 0) {
     issues.push("critical_auditor_checked_projection_groups_missing");
+  }
+  if (selectCheckedProjectionQualityRuleCodes(request).length === 0) {
+    issues.push("critical_auditor_checked_projection_quality_rule_codes_missing");
   }
   if (reviewedProjectionRefs.length === 0) {
     issues.push("critical_auditor_reviewed_projection_refs_missing");

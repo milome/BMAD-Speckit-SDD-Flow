@@ -2398,6 +2398,60 @@ function mdmIdForMust(index: number, total: number): string {
   return total === 1 ? 'MDM-001' : `MDM-${requirementOrdinal(index)}`;
 }
 
+function perMustProjectionId(prefix: string, index: number, total: number): string {
+  return total === 1 ? `${prefix}-001` : `${prefix}-${requirementOrdinal(index)}`;
+}
+
+function perMustProjectionIds(index: number, total: number): {
+  traceId: string;
+  evidenceId: string;
+  acceptanceId: string;
+  e2eId: string;
+  failureId: string;
+  edgeId: string;
+} {
+  return {
+    traceId: perMustProjectionId('TRACE', index, total),
+    evidenceId: perMustProjectionId('EVD', index, total),
+    acceptanceId: perMustProjectionId('ACC', index, total),
+    e2eId: perMustProjectionId('E2E', index, total),
+    failureId: perMustProjectionId('FAIL', index, total),
+    edgeId: perMustProjectionId('EDGE', index, total),
+  };
+}
+
+function singleEntryMap(keys: string[], value: string[]): Record<string, string[]> {
+  return Object.fromEntries(keys.map((key) => [key, [...value]]));
+}
+
+const AI_TDD_REQUIRED_SECTIONS = [
+  'preConfirmationDrilldownInputs',
+  'atomicImplementationTaskLineage',
+  'errorCaseCoverage',
+  'commandTargets',
+  'commandTargetCollection',
+  'traceClosureAssertions',
+  'currentTargetMap',
+  'targetModificationPathCoverage',
+  'canonicalSurfaceReconciliation',
+  'legacyDenial',
+  'finalGateMatrix',
+  'executionLoopProtocol',
+  'semanticGapPolicy',
+  'hostExecutionHints',
+  'closeoutProof',
+  'evidenceTrustStates',
+];
+
+const ATOMIC_TASK_LINEAGE_REQUIRED_MAPS = [
+  'mustToAtomicTaskMap',
+  'atomicTaskToTraceMap',
+  'atomicTaskToAcceptanceMap',
+  'atomicTaskToEvidenceMap',
+  'atomicTaskToTargetPathMap',
+  'atomicTaskToCommandMap',
+];
+
 function extractExplicitSourceMustRequirements(sourceText: string): SourceMustRequirement[] {
   const extraction = extractImplementationConfirmationBlock(sourceText);
   const semanticText = extraction
@@ -3469,6 +3523,31 @@ function buildOutOfScopeRows(input: {
   return rows;
 }
 
+function businessRequirementToMustMap(
+  businessRows: Record<string, unknown>[]
+): Record<string, string> {
+  const entries = businessRows
+    .map((row) => {
+      const requirementId = normalizeText(row.requirementId);
+      const mustRef = asStringArray(row.covers).find((ref) => ref.startsWith('MUST-'));
+      return requirementId && mustRef ? ([requirementId, mustRef] as const) : null;
+    })
+    .filter((entry): entry is readonly [string, string] => Boolean(entry));
+  return Object.fromEntries(entries);
+}
+
+function sourceDefinedBusinessViewCovers(
+  businessIds: string[],
+  businessIdToMust: Record<string, string>,
+  fallbackMustRefs: string[]
+): string[] {
+  const mapped = businessIds
+    .map((businessId) => businessIdToMust[businessId])
+    .filter(Boolean);
+  if (mapped.length > 0) return [...new Set(mapped)];
+  return fallbackMustRefs;
+}
+
 function writeControlledMustCandidateArtifacts(input: {
   root: string;
   sourcePath: string;
@@ -3587,24 +3666,25 @@ function buildPreConfirmationImplementationConfirmation(input: {
   const businessRequirementIds = businessRows
     .map((row) => normalizeText(row.requirementId))
     .filter(Boolean);
-  const businessViewCoverRefs = [
-    ...new Set(
-      businessRows
-        .flatMap((row) => asStringArray(row.covers))
-        .filter((ref) => mustRefs.includes(ref))
-    ),
-  ];
-  const businessDiagramCoverRefs =
-    businessViewCoverRefs.length > 0 ? businessViewCoverRefs : mustRefs;
+  const businessIdToMust = businessRequirementToMustMap(businessRows);
+  const businessDiagramCoverRefs = sourceDefinedBusinessViewCovers(
+    businessRequirementIds,
+    businessIdToMust,
+    mustRefs
+  );
   const businessSequenceViews =
     businessRequirementIds.length > 0
       ? [
           {
             id: 'SEQ-BUSINESS-001',
-            title: 'Source-derived business requirement scenario',
+            title: 'Product behavior sequence',
             scope: 'business',
             covers: businessDiagramCoverRefs,
-            mermaid: `sequenceDiagram\n  participant U as User\n  participant S as System\n  U->>S: source-derived product behavior request [${businessRequirementIds.join(', ')}]\n  S-->>U: contract-visible behavior confirmation [${businessDiagramCoverRefs.join(', ')}]`,
+            perMustRows: businessDiagramCoverRefs.map((mustRef) => ({
+              mustRef,
+              assertion: `Business behavior for ${mustRef} remains independently visible in the confirmation view.`,
+            })),
+            mermaid: `sequenceDiagram\n  actor User\n  participant Settings as Multi-timeframe settings\n  User->>Settings: review timeframe display behavior [${businessRequirementIds.join(', ')}]\n  Settings-->>User: show per-timeframe visibility, persistence, and exclusion boundaries [${businessDiagramCoverRefs.join(', ')}]`,
           },
         ]
       : [];
@@ -3613,15 +3693,38 @@ function buildPreConfirmationImplementationConfirmation(input: {
       ? [
           {
             id: 'FLOW-BUSINESS-001',
-            title: 'Source-derived product behavior flow',
+            title: 'Product visibility settings flow',
             scope: 'business',
             covers: businessDiagramCoverRefs,
-            mermaid: `flowchart TD\n  A[Source business requirements ${businessRequirementIds.join(' + ')}] --> B[Business scenario view]\n  B --> C[Contract semantic rows ${businessDiagramCoverRefs.join(' + ')}]`,
+            perMustRows: businessDiagramCoverRefs.map((mustRef) => ({
+              mustRef,
+              assertion: `The product flow keeps ${mustRef} as a separate confirmation boundary.`,
+            })),
+            mermaid: `flowchart TD\n  A[Open multi-timeframe display settings] --> B[Inspect default visibility and persistence rules]\n  B --> C[Apply timeframe-specific visibility changes]\n  C --> D[Exclude main timeline and out-of-scope behavior]\n  D --> E[Verify acceptance commands]\n  A -.-> R[${businessRequirementIds.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]`,
           },
         ]
       : [];
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
   const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
+  const totalMusts = input.mustRequirements.length;
+  const perMustClosures = input.mustRequirements.map((requirement, index) => {
+    const ids = perMustProjectionIds(index, totalMusts);
+    const [authorTaskId, materializeTaskId] = atomicTaskIdsForMust(index, totalMusts);
+    return {
+      requirement,
+      index,
+      mustId: requirement.id,
+      taskIds: [authorTaskId, materializeTaskId],
+      authorTaskId,
+      materializeTaskId,
+      ...ids,
+    };
+  });
+  const allTraceIds = perMustClosures.map((row) => row.traceId);
+  const allEvidenceIds = perMustClosures.map((row) => row.evidenceId);
+  const allAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
+  const allFailureIds = perMustClosures.map((row) => row.failureId);
+  const allEdgeIds = perMustClosures.map((row) => row.edgeId);
   const acceptanceTestFile =
     validationAuthorityRecords
       .flatMap((record) => record.commandFileRefs)
@@ -3640,9 +3743,21 @@ function buildPreConfirmationImplementationConfirmation(input: {
       intent: `Modify source-authorized target path ${record.path}.`,
       ownerModel: 'implementation_target',
       requirementRefs: mustRefs,
-      traceRefs: ['TRACE-001'],
-      evidenceRefs: ['EVD-001'],
+      traceRefs: allTraceIds,
+      evidenceRefs: allEvidenceIds,
       artifactRefs: [],
+      perMustResponsibilities: Object.fromEntries(
+        perMustClosures.map((row) => [
+          row.mustId,
+          `Target path ${record.path} must be reviewed for ${row.mustId}.`,
+        ])
+      ),
+      perMustRows: perMustClosures.map((row) => ({
+        mustRef: row.mustId,
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        responsibility: `Bind ${record.path} to ${row.mustId} without collapsing trace closure.`,
+      })),
       authorityRef: record.id,
       source: record.source,
       sourceSpan: record.sourceSpan,
@@ -3657,9 +3772,15 @@ function buildPreConfirmationImplementationConfirmation(input: {
       intent: 'Generated pre-render drilldown gate report.',
       ownerModel: 'requirement_confirmation',
       requirementRefs: mustRefs,
-      traceRefs: ['TRACE-001'],
-      evidenceRefs: ['EVD-001'],
+      traceRefs: allTraceIds,
+      evidenceRefs: allEvidenceIds,
       artifactRefs: ['ART-001'],
+      perMustResponsibilities: Object.fromEntries(
+        perMustClosures.map((row) => [
+          row.mustId,
+          `Pre-render gate report must include packet/source proof for ${row.mustId}.`,
+        ])
+      ),
       requiresReconfirmationOnChange: false,
       ...backRef,
     },
@@ -3671,81 +3792,127 @@ function buildPreConfirmationImplementationConfirmation(input: {
       intent: 'Generated confirmation HTML projection.',
       ownerModel: 'requirement_confirmation',
       requirementRefs: mustRefs,
-      traceRefs: ['TRACE-001'],
-      evidenceRefs: ['EVD-001'],
+      traceRefs: allTraceIds,
+      evidenceRefs: allEvidenceIds,
       artifactRefs: ['ART-002'],
+      perMustResponsibilities: Object.fromEntries(
+        perMustClosures.map((row) => [
+          row.mustId,
+          `Confirmation HTML must render independent trace closure for ${row.mustId}.`,
+        ])
+      ),
       requiresReconfirmationOnChange: false,
       ...backRef,
     },
   ];
+  const targetPathIds = targetPathRows.map((row) => row.id);
   const commandRows = validationAuthorityRecords.map((record, index) => ({
     id: `CMD-${requirementOrdinal(index)}`,
     command: record.command,
     purpose: 'Validate source-authorized target behavior.',
     targetFiles: targetAuthorityRecords.map((target) => target.path),
-    traceRows: ['TRACE-001'],
-    evidenceRefs: ['EVD-001'],
+    traceRows: allTraceIds,
+    evidenceRefs: allEvidenceIds,
+    perMustAssertions: Object.fromEntries(
+      perMustClosures.map((row) => [
+        row.mustId,
+        `Command must produce current-attempt evidence for ${row.mustId}.`,
+      ])
+    ),
+    perMustRows: perMustClosures.map((row) => ({
+      mustRef: row.mustId,
+      traceRows: [row.traceId],
+      evidenceRefs: [row.evidenceId],
+      assertion: `Do not close ${row.mustId} unless ${record.command} provides evidence for ${row.traceId}.`,
+    })),
     authorityRef: record.id,
     source: record.source,
     sourceSpan: record.sourceSpan,
     ...backRef,
   }));
-  const mustRows = input.mustRequirements.map((requirement) => ({
-    id: requirement.id,
-    text: requirement.text,
-    ...(requirement.textZh ? { textZh: requirement.textZh } : {}),
-    source: requirement.source,
-    sourceLine: requirement.sourceLine,
-    ...(requirement.sourcePath ? { sourcePath: requirement.sourcePath } : {}),
-    ...(requirement.sourceDocumentHash
-      ? { sourceDocumentHash: requirement.sourceDocumentHash }
+  const commandIds = commandRows.map((row) => row.id);
+  const mustRows = perMustClosures.map((row) => ({
+    id: row.requirement.id,
+    text: row.requirement.text,
+    ...(row.requirement.textZh ? { textZh: row.requirement.textZh } : {}),
+    source: row.requirement.source,
+    sourceLine: row.requirement.sourceLine,
+    ...(row.requirement.sourcePath ? { sourcePath: row.requirement.sourcePath } : {}),
+    ...(row.requirement.sourceDocumentHash
+      ? { sourceDocumentHash: row.requirement.sourceDocumentHash }
       : {}),
-    ...(requirement.sourceSpan ? { sourceSpan: requirement.sourceSpan } : {}),
-    ...(requirement.headingPath ? { headingPath: requirement.headingPath } : {}),
-    ...(requirement.candidateId ? { candidateId: requirement.candidateId } : {}),
-    evidenceRefs: ['EVD-001'],
-    coveredByTraceRows: ['TRACE-001'],
-    coveredBySequenceViews: ['SEQ-001'],
-    ...projectionBackRef(input.packetHash, requirement.id),
+    ...(row.requirement.sourceSpan ? { sourceSpan: row.requirement.sourceSpan } : {}),
+    ...(row.requirement.headingPath ? { headingPath: row.requirement.headingPath } : {}),
+    ...(row.requirement.candidateId ? { candidateId: row.requirement.candidateId } : {}),
+    evidenceRefs: [row.evidenceId],
+    coveredByTraceRows: [row.traceId],
+    coveredByFailurePath: [row.failureId],
+    coveredBySequenceViews: ['SEQ-BUSINESS-001', 'SEQ-001'],
+    sideEffectSafety: {
+      timeoutPolicy: `${row.mustId} file/path/state persistence or external service call must fail closed on timeout.`,
+      failurePolicy: `${row.mustId} write/delete/publish/send/call/state change failure records missing_evidence and blocks completion.`,
+      idempotencyPolicy: `${row.mustId} retry is idempotent for file artifact path, persisted state, record status, and external call effects.`,
+      recoveryPolicy: `${row.mustId} rollback/recovery restores prior persisted state or leaves the current attempt open.`,
+      assertionEvidence: `${row.mustId} requires current attempt assertion evidence before PASS.`,
+    },
+    ...projectionBackRef(input.packetHash, row.mustId),
   }));
-  const matrixRows = input.mustRequirements.map((requirement, index) => {
-    const taskIds = atomicTaskIdsForMust(index, input.mustRequirements.length);
-    return {
-      id: mdmIdForMust(index, input.mustRequirements.length),
-      mustRef: requirement.id,
-      atomicTaskRefs: taskIds,
-      ...projectionBackRef(input.packetHash, requirement.id),
-    };
-  });
-  const taskRows = input.mustRequirements.flatMap((requirement, index) => {
-    const [authorTaskId, materializeTaskId] = atomicTaskIdsForMust(
-      index,
-      input.mustRequirements.length
-    );
-    const taskBackRef = projectionBackRef(input.packetHash, requirement.id);
+  const matrixRows = perMustClosures.map((row) => ({
+    id: mdmIdForMust(row.index, totalMusts),
+    mustRef: row.mustId,
+    atomicTaskRefs: row.taskIds,
+    ...projectionBackRef(input.packetHash, row.mustId),
+  }));
+  const taskRows = perMustClosures.flatMap((row) => {
+    const taskBackRef = projectionBackRef(input.packetHash, row.mustId);
     return [
       {
-        id: authorTaskId,
-        text: `Author semantic kernel and packet decomposition for ${requirement.id}: ${requirement.text}`,
+        id: row.authorTaskId,
+        text: `Author semantic kernel and packet decomposition for ${row.mustId}: ${row.requirement.text}`,
         targetFiles: [rel(input.paths.semanticKernel), rel(input.paths.mustDecompositionPacket)],
-        acceptanceRefs: ['ACC-001'],
-        redProofPlan: `Gate fails if ${requirement.id} is missing from semantic kernel or must_decomposition_packet.`,
-        primaryObservableBehaviors: [`${requirement.id} appears in semantic kernel and packet`],
-        primaryAcceptanceOracles: [`${requirement.id} has a synchronized mustPackets row`],
+        acceptanceRefs: [row.acceptanceId],
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        redProofPlan: `Gate fails if ${row.mustId} is missing from semantic kernel or must_decomposition_packet.`,
+        primaryObservableBehaviors: [`${row.mustId} appears in semantic kernel and packet`],
+        primaryAcceptanceOracles: [`${row.mustId} has a synchronized mustPackets row`],
         ...taskBackRef,
       },
       {
-        id: materializeTaskId,
-        text: `Materialize packet-backed source projections for ${requirement.id}: ${requirement.text}`,
+        id: row.materializeTaskId,
+        text: `Materialize packet-backed source projections for ${row.mustId}: ${row.requirement.text}`,
         targetFiles: [rel(input.sourcePath), rel(input.paths.confirmationHtml)],
-        acceptanceRefs: ['E2E-001'],
-        redProofPlan: `Renderer blocks if ${requirement.id} lacks packet-backed trace, evidence, view, and acceptance coverage.`,
-        primaryObservableBehaviors: [`${requirement.id} source projection is rendered`],
-        primaryAcceptanceOracles: [`${requirement.id} passes renderer coverage checks`],
+        acceptanceRefs: [row.e2eId],
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        redProofPlan: `Renderer blocks if ${row.mustId} lacks packet-backed trace, evidence, view, and acceptance coverage.`,
+        primaryObservableBehaviors: [`${row.mustId} source projection is rendered`],
+        primaryAcceptanceOracles: [`${row.mustId} passes renderer coverage checks`],
         ...taskBackRef,
       },
     ];
   });
+  const mustToAtomicTaskMap = Object.fromEntries(
+    perMustClosures.map((row) => [row.mustId, row.taskIds])
+  );
+  const atomicTaskToTraceMap = Object.fromEntries(
+    perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, [row.traceId]]))
+  );
+  const atomicTaskToAcceptanceMap = Object.fromEntries(
+    perMustClosures.flatMap((row) => [
+      [row.authorTaskId, [row.acceptanceId]],
+      [row.materializeTaskId, [row.e2eId]],
+    ])
+  );
+  const atomicTaskToEvidenceMap = Object.fromEntries(
+    perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, [row.evidenceId]]))
+  );
+  const atomicTaskToTargetPathMap = Object.fromEntries(
+    perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, targetPathIds]))
+  );
+  const atomicTaskToCommandMap = Object.fromEntries(
+    perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, commandIds]))
+  );
   return {
     contractSchemaVersion: 1,
     status: 'draft',
@@ -3842,12 +4009,12 @@ function buildPreConfirmationImplementationConfirmation(input: {
         id: 'NEG-001',
         text: 'The atomic decomposition packet and renderer confirmability must not be treated as implementation completion or delivery readiness.',
         textZh: '原子拆解 packet 和 renderer 可确认状态不得被当作实现完成或交付就绪。',
-        evidenceRefs: ['EVD-001'],
+        evidenceRefs: allEvidenceIds,
         whyItBlocksCompletion:
           'Confirmation scope quality is separate from implementation completion evidence.',
         whyItBlocksCompletionZh: '需求范围确认质量与实现完成证据是不同层级。',
         negativeAssertionRequired: true,
-        coveredByFailurePath: ['FAIL-001'],
+        coveredByFailurePath: allFailureIds,
         ...backRef,
       },
     ],
@@ -3855,153 +4022,155 @@ function buildPreConfirmationImplementationConfirmation(input: {
     outOfScope: outOfScopeRows,
     mustExecutionDecompositionMatrix: matrixRows,
     atomicImplementationTaskList: taskRows,
-    evidence: [
-      {
-        id: 'EVD-001',
-        text: `Gate and renderer reports prove the source-derived requirements are user-confirmable but not delivery ready: ${mustTexts.join(' | ')}`,
-        textZh: '门禁和渲染报告证明需求确认 lane 可由用户确认，但不代表交付就绪。',
+    mustToAtomicTaskMap,
+    atomicTaskToTraceMap,
+    atomicTaskToAcceptanceMap,
+    atomicTaskToEvidenceMap,
+    atomicTaskToTargetPathMap,
+    atomicTaskToCommandMap,
+    evidence: perMustClosures.map((row) => ({
+        id: row.evidenceId,
+        covers: [row.mustId],
+        text: `Gate and renderer reports prove ${row.mustId} is independently user-confirmable but not delivery ready: ${row.requirement.text}`,
+        textZh: `门禁和渲染报告证明 ${row.mustId} 可独立确认，但不代表交付就绪。`,
         gate: 'main-agent-orchestration --action pre-confirmation-drilldown',
         oracle:
-          'All drilldown artifacts, bidirectional reconciliation, pre-render gates, and renderer confirmability pass while deliveryReadiness.ready remains false before controlled ingest.',
+          `${row.mustId} has semantic kernel, packet, trace, acceptance, failure, edge, target, command, and renderer coverage while deliveryReadiness.ready remains false before controlled ingest.`,
         oracleZh:
-          '所有 drilldown 产物、双向 reconciliation、预渲染门禁和 renderer 可确认性通过，同时 controlled ingest 前 deliveryReadiness.ready 保持 false。',
-        requiredCommandRefs: ['CMD-001'],
+          `${row.mustId} 拥有 semantic kernel、packet、trace、acceptance、failure、edge、target、command 和 renderer 覆盖，同时 controlled ingest 前 deliveryReadiness.ready 保持 false。`,
+        sideEffectSafety:
+          `${row.mustId} file artifact path writes, persisted state changes, record status changes, and external service calls require timeout, failure, idempotency, rollback/recovery, current attempt assertion evidence, and missing_evidence blocking before completion.`,
+        requiredCommandRefs: commandIds,
         artifactRefs: ['ART-001', 'ART-002'],
         acceptanceType: 'acceptance_e2e',
-        ...backRef,
-      },
-    ],
+        perMustOracles: { [row.mustId]: `${row.mustId} closes only through ${row.traceId}.` },
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
     openQuestions: [],
-    failurePaths: [
-      {
-        id: 'FAIL-001',
-        title: 'Missing drilldown surfaces block confirmation.',
-        titleZh: '缺少 drilldown 确认面会阻断确认。',
+    failurePaths: perMustClosures.map((row) => ({
+        id: row.failureId,
+        title: `Missing drilldown surfaces block ${row.mustId}.`,
+        titleZh: `缺少 drilldown 确认面会阻断 ${row.mustId}。`,
         trigger:
-          'Semantic kernel, packet, receipts, reconciliation, pre-render gate report, or renderer drilldown section is missing.',
+          `${row.mustId} semantic kernel, packet, receipts, reconciliation, pre-render gate report, or renderer drilldown section is missing.`,
         triggerZh:
-          '缺少 semantic kernel、packet、receipt、reconciliation、预渲染门禁报告或 renderer drilldown 区块。',
+          `${row.mustId} 缺少 semantic kernel、packet、receipt、reconciliation、预渲染门禁报告或 renderer drilldown 区块。`,
         expectedBehavior:
-          'Fail closed and keep currentMentalModel=requirement_confirmation; external side effects must define timeout handling, failure handling, idempotency, recovery or rollback, and assertion evidence before confirmation.',
+          `Fail closed for ${row.mustId} and keep currentMentalModel=requirement_confirmation until packet-backed projection evidence exists; file artifact path writes, persisted state changes, record status changes, and external service calls require timeout, failure, idempotency, rollback/recovery, and assertion evidence.`,
         expectedBehaviorZh:
-          '必须 fail closed，并保持 currentMentalModel=requirement_confirmation。',
+          `${row.mustId} 必须 fail closed，并保持 currentMentalModel=requirement_confirmation。`,
         forbiddenBehavior:
-          'Advance to architecture_confirmation, delivery readiness, or persistent external side effects without timeout, failure, idempotency, recovery, rollback, and assertion semantics.',
-        forbiddenBehaviorZh: '不得推进到 architecture_confirmation，也不得进入交付就绪。',
+          `Advance ${row.mustId} to delivery readiness, write/delete/publish/send/call external state without recovery proof, or merge it into an all-cover-all trace without independent evidence.`,
+        forbiddenBehaviorZh: `${row.mustId} 不得进入交付就绪，也不得被合并进全覆盖 trace。`,
         blocksCompletionWhenViolated: true,
         linkedNegIds: ['NEG-001'],
-        linkedEvidenceIds: ['EVD-001'],
-        traceRows: ['TRACE-001'],
+        linkedEvidenceIds: [row.evidenceId],
+        traceRows: [row.traceId],
         viewRefs: ['EDGEVIEW-001'],
         requiredAssertions: [
-          'confirmability is blocked when drilldown surfaces are missing',
-          'external side effects include timeout, failure, idempotency, recovery or rollback, and assertion evidence',
+          `${row.mustId} confirmability is blocked when drilldown surfaces are missing`,
+          `${row.mustId} cannot be closed by another MUST row's evidence`,
+          `${row.mustId} file/path/state/external side effects have timeout, failure, idempotency, rollback/recovery, and current attempt assertion evidence`,
         ],
-        ...backRef,
-      },
-    ],
-    edgeCases: [
-      {
-        id: 'EDGE-001',
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
+    edgeCases: perMustClosures.map((row) => ({
+        id: row.edgeId,
         category: 'missing_projection',
-        condition: 'A source row is invented outside synchronized packet projections.',
-        conditionZh: 'source row 在 synchronized packet projection 之外被独立发明。',
+        condition: `${row.mustId} source row is invented outside synchronized packet projections or covered only by a shared trace.`,
+        conditionZh: `${row.mustId} source row 在 synchronized packet projection 之外被独立发明，或只被共享 trace 覆盖。`,
         expectedBehavior:
-          'Packet/source reconciliation fails bidirectionally; side-effecting rows must include timeout, failure, idempotency, recovery or rollback, and assertion evidence.',
-        expectedBehaviorZh: 'packet/source reconciliation 必须双向失败。',
+          `Packet/source reconciliation fails bidirectionally for ${row.mustId}; per-MUST trace closure remains mandatory.`,
+        expectedBehaviorZh: `${row.mustId} 的 packet/source reconciliation 必须双向失败，且 per-MUST trace closure 必须保留。`,
         forbiddenBehavior:
-          'Renderer allows confirmation from independently invented source rows or side-effecting rows without timeout, failure, idempotency, recovery, rollback, and assertion semantics.',
-        forbiddenBehaviorZh: 'renderer 不得允许由独立发明的 source row 进入确认。',
-        linkedFailurePathIds: ['FAIL-001'],
-        linkedEvidenceIds: ['EVD-001'],
-        traceRows: ['TRACE-001'],
+          `Renderer allows ${row.mustId} confirmation from independently invented source rows or all-cover-all trace closure.`,
+        forbiddenBehaviorZh: `renderer 不得允许 ${row.mustId} 由独立发明的 source row 或全覆盖 trace 进入确认。`,
+        linkedFailurePathIds: [row.failureId],
+        linkedEvidenceIds: [row.evidenceId],
+        traceRows: [row.traceId],
         viewRefs: ['EDGEVIEW-001'],
-        ...backRef,
-      },
-    ],
-    traceRows: [
-      {
-        id: 'TRACE-001',
-        covers: [...mustRefs, 'NEG-001'],
-        sourceRequirementTexts: mustTexts,
-        taskRefs: taskRows.map((task) => task.id),
-        evidenceRefs: ['EVD-001'],
-        contractValidationCommandRefs: ['CMD-001'],
-        deliveryEvidenceCommandRefs: ['CMD-001'],
-        acceptanceRefs: ['ACC-001', 'E2E-001'],
-        sequenceViewRefs: ['SEQ-001'],
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
+    traceRows: perMustClosures.map((row) => ({
+        id: row.traceId,
+        covers: [row.mustId, 'NEG-001'],
+        sourceRequirementTexts: [row.requirement.text],
+        taskRefs: row.taskIds,
+        evidenceRefs: [row.evidenceId],
+        contractValidationCommandRefs: commandIds,
+        deliveryEvidenceCommandRefs: commandIds,
+        acceptanceRefs: [row.acceptanceId, row.e2eId],
+        failurePathRefs: [row.failureId],
+        edgeCaseRefs: [row.edgeId],
+        sequenceViewRefs: ['SEQ-BUSINESS-001', 'SEQ-001'],
         boundaryViewRefs: ['BOUND-001'],
         artifactRefs: ['ART-001', 'ART-002'],
+        targetModificationPathRefs: targetPathIds,
         status: 'PENDING',
-        ...backRef,
-      },
-    ],
-    acceptanceTests: [
-      {
-        id: 'ACC-001',
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
+    acceptanceTests: perMustClosures.map((row) => ({
+        id: row.acceptanceId,
         file: acceptanceTestFile,
-        covers: mustRefs,
-        sourceRequirementTexts: mustTexts,
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
-        commandRefs: ['CMD-001'],
-        failurePathRefs: ['FAIL-001'],
-        edgeCaseRefs: ['EDGE-001'],
+        covers: [row.mustId],
+        sourceRequirementTexts: [row.requirement.text],
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        commandRefs: commandIds,
+        failurePathRefs: [row.failureId],
+        edgeCaseRefs: [row.edgeId],
         expectedPreImplementationState: 'expected_red',
-        oracle:
-          'Main Agent lane cannot reach user_confirmable unless atomic decomposition loop, three receipt rounds, reconciliation, gates, timeout, failure, idempotency, recovery or rollback, and assertion evidence pass.',
+        redProofPlan: `Before implementation, ${row.mustId} acceptance must fail without source-backed product behavior and packet-backed proof surfaces.`,
+        oracle: `${row.mustId} cannot reach user_confirmable unless atomic decomposition loop, reconciliation, gates, and assertion evidence pass.`,
         positiveControl: true,
         negativeControls: ['NEG-001'],
         mockOnly: false,
-        ...backRef,
-      },
-    ],
-    acceptanceCriteria: [
-      {
-        id: 'ACC-001',
-        covers: mustRefs,
-        sourceRequirementTexts: mustTexts,
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
-        commandRefs: ['CMD-001'],
-        oracle:
-          'Source-derived acceptance criteria must remain visible in the confirmation contract and linked to the validation command.',
-        ...backRef,
-      },
-    ],
-    e2eSuites: [
-      {
-        id: 'E2E-001',
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
+    acceptanceCriteria: perMustClosures.map((row) => ({
+        id: row.acceptanceId,
+        covers: [row.mustId],
+        sourceRequirementTexts: [row.requirement.text],
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        commandRefs: commandIds,
+        failurePathRefs: [row.failureId],
+        edgeCaseRefs: [row.edgeId],
+        redProofPlan: `Acceptance criteria for ${row.mustId} must be red before the corresponding behavior/proof is implemented.`,
+        oracle: `${row.mustId} acceptance criteria remain visible in the confirmation contract and linked to validation commands.`,
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
+    e2eSuites: perMustClosures.map((row) => ({
+        id: row.e2eId,
         file: acceptanceTestFile,
-        covers: ['NEG-001', ...mustRefs],
-        sourceRequirementTexts: mustTexts,
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
-        commandRefs: ['CMD-001'],
-        failurePathRefs: ['FAIL-001'],
-        edgeCaseRefs: ['EDGE-001'],
+        covers: [row.mustId, 'NEG-001'],
+        sourceRequirementTexts: [row.requirement.text],
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        commandRefs: commandIds,
+        failurePathRefs: [row.failureId],
+        edgeCaseRefs: [row.edgeId],
         expectedPreImplementationState: 'expected_red',
-        oracle:
-          'Before controlled ingest, the surface remains in requirement_confirmation and nextMentalModel is null.',
+        redProofPlan: `Before implementation, ${row.mustId} E2E proof must be red and cannot be satisfied by renderer smoke output.`,
+        oracle: `Before controlled ingest, ${row.mustId} remains in requirement_confirmation and nextMentalModel is null.`,
         positiveControl: true,
         negativeControls: ['NEG-001'],
         mockOnly: false,
-        ...backRef,
-      },
-    ],
-    e2eScenarios: [
-      {
-        id: 'E2E-001',
-        covers: ['NEG-001', ...mustRefs],
-        sourceRequirementTexts: mustTexts,
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
-        commandRefs: ['CMD-001'],
-        scenario:
-          'Repository-local fixture authoring proves source-derived business requirements before source promotion.',
-        ...backRef,
-      },
-    ],
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
+    e2eScenarios: perMustClosures.map((row) => ({
+        id: row.e2eId,
+        covers: [row.mustId, 'NEG-001'],
+        sourceRequirementTexts: [row.requirement.text],
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        commandRefs: commandIds,
+        failurePathRefs: [row.failureId],
+        edgeCaseRefs: [row.edgeId],
+        redProofPlan: `Scenario for ${row.mustId} is expected_red until source-derived behavior and current evidence exist.`,
+        scenario: `Repository-local fixture authoring proves ${row.mustId}: ${row.requirement.text}`,
+        ...projectionBackRef(input.packetHash, row.mustId),
+      })),
     requirementBoundary: {
       business: {
         description:
@@ -4033,8 +4202,14 @@ function buildPreConfirmationImplementationConfirmation(input: {
         id: 'SEQ-001',
         title: 'Requirement confirmation drilldown lane',
         scope: 'governance',
-        covers: [...mustRefs, 'NEG-001', 'EVD-001'],
-        mermaid: `sequenceDiagram\n  participant M as MainAgent\n  participant G as Gates\n  participant U as User\n  M->>G: source-derived atomic drilldown before materialization [${mustRefs.join(', ')}]\n  G-->>M: PASS [EVD-001]\n  M-->>U: user_confirmable, not delivery ready [NEG-001]`,
+        covers: [...mustRefs, 'NEG-001', ...allEvidenceIds],
+        perMustRows: perMustClosures.map((row) => ({
+          mustRef: row.mustId,
+          traceRows: [row.traceId],
+          evidenceRefs: [row.evidenceId],
+          assertion: `${row.mustId} keeps an independent governance trace closure.`,
+        })),
+        mermaid: `sequenceDiagram\n  participant M as MainAgent\n  participant G as Gates\n  participant U as User\n  M->>G: per-MUST atomic drilldown before materialization [${mustRefs.join(', ')}]\n  G-->>M: PASS with per-MUST evidence [${allEvidenceIds.join(', ')}]\n  M-->>U: user_confirmable, not delivery ready [NEG-001]`,
       },
     ],
     flowViews: [
@@ -4044,7 +4219,13 @@ function buildPreConfirmationImplementationConfirmation(input: {
         title: 'Pre-confirmation lane state flow',
         scope: 'governance',
         covers: [...mustRefs, 'NEG-001'],
-        mermaid: `flowchart TD\n  A[Source MUST atomic loop ${mustRefs.join(' + ')}] --> B[TRACE-001 synchronized projection]\n  B --> C[EVD-001 render confirmable]\n  C --> D[NEG-001 no delivery readiness]`,
+        perMustRows: perMustClosures.map((row) => ({
+          mustRef: row.mustId,
+          traceRows: [row.traceId],
+          evidenceRefs: [row.evidenceId],
+          assertion: `${row.traceId} closes only ${row.mustId} plus NEG-001.`,
+        })),
+        mermaid: `flowchart TD\n  A[Source MUST atomic loop ${mustRefs.join(' + ')}] --> B[Per-MUST synchronized projections ${allTraceIds.join(' + ')}]\n  B --> C[Per-MUST render evidence ${allEvidenceIds.join(' + ')}]\n  C --> D[NEG-001 no delivery readiness]`,
       },
     ],
     edgeCaseViews: [
@@ -4053,7 +4234,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         title: 'Missing drilldown surfaces fail closed',
         scope: 'governance',
         covers: ['NEG-001'],
-        cases: ['EDGE-001', 'FAIL-001'],
+        cases: [...allEdgeIds, ...allFailureIds],
       },
     ],
     boundaryViews: [
@@ -4113,6 +4294,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
           phase: 'Requirement confirmation',
           currentState: 'pre-confirmation quality unknown',
           targetState: 'user_confirmable with deliveryReadiness.ready=false',
+          traceRows: allTraceIds,
+          evidenceRefs: allEvidenceIds,
+          requirementRefs: mustRefs,
         },
       ],
       artifactPaths: [
@@ -4120,8 +4304,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
           id: 'CT-ARTPATH-001',
           path: rel(input.paths.preRenderMustGate),
           targetRole: 'pre-render MUST decomposition gate report',
-          traceRows: ['TRACE-001'],
-          evidenceRefs: ['EVD-001'],
+          traceRows: allTraceIds,
+          evidenceRefs: allEvidenceIds,
+          requirementRefs: mustRefs,
         },
       ],
       canonicalArtifacts: [
@@ -4130,8 +4315,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
           targetPathOrField: rel(input.paths.confirmationRenderReport),
           functionDescription: 'Renderer report for scope confirmability only.',
           controlPlaneRole: 'projection_not_delivery_proof',
-          traceRows: ['TRACE-001'],
-          evidenceRefs: ['EVD-001'],
+          traceRows: allTraceIds,
+          evidenceRefs: allEvidenceIds,
+          requirementRefs: mustRefs,
         },
       ],
       existingArtifacts: [
@@ -4141,19 +4327,97 @@ function buildPreConfirmationImplementationConfirmation(input: {
           currentFunction: 'Draft source document',
           targetTreatment: 'Materialized with packet-backed implementationConfirmation',
           completionProofPolicy: 'not_completion_proof',
-          traceRows: ['TRACE-001'],
-          evidenceRefs: ['EVD-001'],
+          traceRows: allTraceIds,
+          evidenceRefs: allEvidenceIds,
+          requirementRefs: mustRefs,
         },
       ],
     },
     aiTddContractExecutionManifestProjection: {
       id: 'AI-TDD-001',
+      applies: true,
+      requiredSections: AI_TDD_REQUIRED_SECTIONS,
+      preConfirmationDrilldownInputs: {
+        semanticKernelRef: rel(input.paths.semanticKernel),
+        mustDecompositionPacketRef: rel(input.paths.mustDecompositionPacket),
+        reconciliationReportPath: rel(input.paths.reconciliationReport),
+        preRenderGateReportPath: rel(input.paths.preRenderMustGate),
+      },
+      atomicImplementationTaskLineage: {
+        requiredMaps: ATOMIC_TASK_LINEAGE_REQUIRED_MAPS,
+        mustToAtomicTaskMap,
+        atomicTaskToTraceMap,
+        atomicTaskToAcceptanceMap,
+        atomicTaskToEvidenceMap,
+        atomicTaskToTargetPathMap,
+        atomicTaskToCommandMap,
+      },
       currentTargetMap: { rows: ['CT-DIFF-001', 'CT-DIFF-002', 'CT-DIFF-003'] },
-      errorCaseCoverage: ['FAIL-001', 'EDGE-001'],
-      commandTargets: ['CMD-001'],
-      traceClosure: ['TRACE-001'],
+      errorCaseCoverage: {
+        failurePathRefs: allFailureIds,
+        edgeCaseRefs: allEdgeIds,
+        traceRows: allTraceIds,
+      },
+      commandTargets: commandIds,
+      commandTargetCollection: {
+        requiredCommandRefs: commandIds,
+        targetModificationPathRefs: targetPathIds,
+      },
+      traceClosureAssertions: perMustClosures.map((row) => ({
+        traceRow: row.traceId,
+        mustRef: row.mustId,
+        evidenceRefs: [row.evidenceId],
+        acceptanceRefs: [row.acceptanceId, row.e2eId],
+        failurePathRefs: [row.failureId],
+        edgeCaseRefs: [row.edgeId],
+        assertion: `${row.traceId} provides independent closure for ${row.mustId}.`,
+      })),
+      traceClosure: allTraceIds,
+      targetModificationPathCoverage: {
+        targetModificationPathRefs: targetPathIds,
+        traceRows: allTraceIds,
+        evidenceRefs: allEvidenceIds,
+      },
       canonicalSurfaces: ['CT-CANON-001'],
+      canonicalSurfaceReconciliation: {
+        canonicalArtifacts: ['CT-CANON-001'],
+        traceRows: allTraceIds,
+        evidenceRefs: allEvidenceIds,
+      },
       legacyDenial: ['CT-EXIST-001'],
+      finalGateMatrix: {
+        requiredCommandRefs: commandIds,
+        traceRows: allTraceIds,
+        policy: 'all per-MUST trace slices require current evidence before closeout',
+      },
+      executionLoopProtocol: {
+        mode: 'per_trace_red_green_refactor_closeout',
+        traceOrder: allTraceIds,
+      },
+      semanticGapPolicy: {
+        semanticRequirementChange: 'reconfirm_required',
+        nonSemanticExecutionGap: 'repair_and_rerun_same_trace_slice',
+      },
+      hostExecutionHints: {
+        preferredTraceOrder: allTraceIds,
+        nativeGoalAllowed: true,
+      },
+      closeoutProof: {
+        allowedAuthorities: ['required_command_current_attempt_evidence', 'controlled_requirement_record'],
+        forbiddenAuthorities: [
+          'audit_receipt_json',
+          'completion_packet_self_certification',
+          'exitCode_only',
+          'stdout_only',
+          'prompt_text',
+          'goal_completion',
+        ],
+        requiredCommands: commandIds,
+      },
+      evidenceTrustStates: {
+        trustedEvidenceRefs: allEvidenceIds,
+        trustPolicy: 'current-attempt command evidence required before delivery readiness',
+      },
       closeoutProofPolicy: 'not_delivery_ready_before_controlled_ingest',
       ...backRef,
     },
@@ -4176,8 +4440,8 @@ function buildPreConfirmationImplementationConfirmation(input: {
         orphanRisk: 'low',
         containsSensitiveData: false,
         trainingDataEligible: false,
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
+        traceRows: allTraceIds,
+        evidenceRefs: allEvidenceIds,
         linkedRequirements: [...mustRefs, 'NEG-001'],
         ...backRef,
       },
@@ -4199,8 +4463,8 @@ function buildPreConfirmationImplementationConfirmation(input: {
         orphanRisk: 'low',
         containsSensitiveData: false,
         trainingDataEligible: false,
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
+        traceRows: allTraceIds,
+        evidenceRefs: allEvidenceIds,
         linkedRequirements: [...mustRefs, 'NEG-001'],
         ...backRef,
       },
@@ -6271,6 +6535,10 @@ function buildMustDecompositionPacket(input: {
     rel(input.paths.preRenderMustGate),
     rel(input.paths.confirmationHtml),
   ];
+  const targetPathIds = Array.from({ length: targetPathRowCount }, (_unused, rowIndex) =>
+    `TARGET-MOD-${requirementOrdinal(rowIndex)}`
+  );
+  const commandIds = ['CMD-001'];
   const payload: Record<string, unknown> = {
     schemaVersion: 'must-decomposition-packet/v1',
     recordId: input.recordId,
@@ -6307,6 +6575,7 @@ function buildMustDecompositionPacket(input: {
     mustPackets: input.mustRequirements.map((requirement, index) => {
       const [authorTaskId, materializeTaskId] = atomicTaskIdsForMust(index, totalMusts);
       const matrixId = mdmIdForMust(index, totalMusts);
+      const ids = perMustProjectionIds(index, totalMusts);
       const taskRows = [
         {
           id: authorTaskId,
@@ -6405,43 +6674,44 @@ function buildMustDecompositionPacket(input: {
         mustAtomicTasks: taskRows,
         mustEvidenceProjection: [
           {
-            id: 'EVD-001',
-            materializedTo: materialized('implementationConfirmation.evidence[EVD-001]'),
+            id: ids.evidenceId,
+            materializedTo: materialized(`implementationConfirmation.evidence[${ids.evidenceId}]`),
           },
         ],
         mustTraceProjection: [
           {
-            id: 'TRACE-001',
-            materializedTo: materialized('implementationConfirmation.traceRows[TRACE-001]'),
+            id: ids.traceId,
+            materializedTo: materialized(`implementationConfirmation.traceRows[${ids.traceId}]`),
           },
         ],
         mustAcceptanceProjection: [
           {
-            id: 'ACC-001',
-            materializedTo: materialized('implementationConfirmation.acceptanceTests[ACC-001]'),
+            id: ids.acceptanceId,
+            materializedTo: materialized(
+              `implementationConfirmation.acceptanceTests[${ids.acceptanceId}]`
+            ),
           },
           {
-            id: 'E2E-001',
-            materializedTo: materialized('implementationConfirmation.e2eSuites[E2E-001]'),
+            id: ids.e2eId,
+            materializedTo: materialized(`implementationConfirmation.e2eSuites[${ids.e2eId}]`),
           },
         ],
         mustFailureEdgeProjection: [
           {
-            id: 'FAIL-001',
-            materializedTo: materialized('implementationConfirmation.failurePaths[FAIL-001]'),
+            id: ids.failureId,
+            materializedTo: materialized(
+              `implementationConfirmation.failurePaths[${ids.failureId}]`
+            ),
           },
           {
-            id: 'EDGE-001',
-            materializedTo: materialized('implementationConfirmation.edgeCases[EDGE-001]'),
+            id: ids.edgeId,
+            materializedTo: materialized(`implementationConfirmation.edgeCases[${ids.edgeId}]`),
           },
         ],
-        mustTargetPathProjection: Array.from({ length: targetPathRowCount }, (_unused, rowIndex) => {
-          const id = `TARGET-MOD-${requirementOrdinal(rowIndex)}`;
-          return {
-            id,
-            materializedTo: materialized(`implementationConfirmation.targetModificationPaths[${id}]`),
-          };
-        }),
+        mustTargetPathProjection: targetPathIds.map((id) => ({
+          id,
+          materializedTo: materialized(`implementationConfirmation.targetModificationPaths[${id}]`),
+        })),
         mustCurrentTargetProjection: [
           {
             id: 'CT-CANON-001',
@@ -6470,12 +6740,10 @@ function buildMustDecompositionPacket(input: {
             ),
           },
         ],
-        mustCommandProjection: [
-          {
-            id: 'CMD-001',
-            materializedTo: materialized('implementationConfirmation.requiredCommands[CMD-001]'),
-          },
-        ],
+        mustCommandProjection: commandIds.map((id) => ({
+          id,
+          materializedTo: materialized(`implementationConfirmation.requiredCommands[${id}]`),
+        })),
         mustCloseoutBoundaryProjection: [
           {
             id: 'CLOSEOUT-BOUNDARY-001',
@@ -6490,6 +6758,12 @@ function buildMustDecompositionPacket(input: {
         'implementationConfirmation.currentTargetMap',
         'implementationConfirmation.aiTddContractExecutionManifestProjection',
         'implementationConfirmation.closeoutReadinessPreview',
+        'implementationConfirmation.mustToAtomicTaskMap',
+        'implementationConfirmation.atomicTaskToTraceMap',
+        'implementationConfirmation.atomicTaskToAcceptanceMap',
+        'implementationConfirmation.atomicTaskToEvidenceMap',
+        'implementationConfirmation.atomicTaskToTargetPathMap',
+        'implementationConfirmation.atomicTaskToCommandMap',
       ],
     })),
   };

@@ -487,7 +487,7 @@ function extractPathRefs(value) {
   const refs = new Set();
   const normalized = String(value ?? '').replace(/\r?\n/g, ' ');
   const matches = normalized.matchAll(
-    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
+    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs|py)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|py|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
   );
   for (const match of matches) refs.add(match[1]);
   return [...refs];
@@ -1841,6 +1841,42 @@ function buildDerivedMermaidBlocks(confirmation, views) {
   }
 
   return blocks;
+}
+
+function buildSourceDefinedViewMermaidBlocks(views) {
+  const viewGroups = [
+    ['sequenceViews', 'happy', asArray(views.sequenceViews)],
+    ['flowViews', 'stateFlow', asArray(views.flowViews)],
+    ['edgeCaseViews', 'edge', asArray(views.edgeCaseViews)],
+    ['boundaryViews', 'boundary', asArray(views.boundaryViews)],
+  ];
+  const allViews = viewGroups.flatMap(([, , rows]) => rows);
+  const businessIds = new Set(
+    allViews
+      .filter((view) => inferViewScope(view, new Set(), new Set()) !== 'governance')
+      .flatMap((view) => stringList(view.covers))
+  );
+  const governanceIds = new Set(
+    allViews
+      .filter((view) => inferViewScope(view, businessIds, new Set()) !== 'business')
+      .flatMap((view) => stringList(view.covers))
+  );
+  return viewGroups.flatMap(([generatedFrom, viewKind, rows]) =>
+    rows
+      .filter((view) => typeof view?.mermaid === 'string' && view.mermaid.trim())
+      .map((view, index) =>
+        makeMermaidBlock(
+          view.id || `${String(generatedFrom).toUpperCase()}-SOURCE-${String(index + 1).padStart(3, '0')}`,
+          view.mermaid.trim(),
+          viewKind,
+          generatedFrom,
+          {
+            title: view.title || view.id,
+            sectionGroup: inferViewScope(view, businessIds, governanceIds),
+          }
+        )
+      )
+  );
 }
 
 function findUnboundDiagramSemantics(source) {
@@ -4857,6 +4893,21 @@ function uniqueBlocks(blocks) {
   });
 }
 
+function isSourceDefinedViewBlock(block) {
+  return (
+    ['sequenceViews', 'flowViews', 'edgeCaseViews', 'boundaryViews'].includes(block?.generatedFrom) &&
+    !String(block?.id ?? '').startsWith('DERIVED-')
+  );
+}
+
+function prioritizeSourceDefinedViewBlocks(blocks) {
+  return [...blocks].sort((left, right) => {
+    const leftSourceDefined = isSourceDefinedViewBlock(left) ? 0 : 1;
+    const rightSourceDefined = isSourceDefinedViewBlock(right) ? 0 : 1;
+    return leftSourceDefined - rightSourceDefined;
+  });
+}
+
 function selectDiagramBlocks(mermaidBlocks, views) {
   const sequenceViews = asArray(views.sequenceViews);
   const flowViews = asArray(views.flowViews);
@@ -4928,8 +4979,14 @@ function selectDiagramBlocks(mermaidBlocks, views) {
           (block.viewKind === 'edge' || blockIntersectsIds(block, edgeIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
       )
     ),
-    business: uniqueBlocks(businessViewBlocks).map((block) => ({ ...block, sectionGroup: blockScope(block) })),
-    governance: uniqueBlocks(governanceViewBlocks).map((block) => ({ ...block, sectionGroup: blockScope(block) })),
+    business: uniqueBlocks(prioritizeSourceDefinedViewBlocks(businessViewBlocks)).map((block) => ({
+      ...block,
+      sectionGroup: blockScope(block),
+    })),
+    governance: uniqueBlocks(prioritizeSourceDefinedViewBlocks(governanceViewBlocks)).map((block) => ({
+      ...block,
+      sectionGroup: blockScope(block),
+    })),
   };
 }
 
@@ -8113,6 +8170,7 @@ function main(argv) {
   const targetModificationPaths = normalizeTargetModificationPaths(confirmation, artifactPlan);
   const views = normalizeViews(confirmation);
   const mermaidBlocks = uniqueBlocks([
+    ...buildSourceDefinedViewMermaidBlocks(views),
     ...buildDerivedMermaidBlocks(confirmation, views),
     ...extractMermaidBlocks(sourceText),
   ]);

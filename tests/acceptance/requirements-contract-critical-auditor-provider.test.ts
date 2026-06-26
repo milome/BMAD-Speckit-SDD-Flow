@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
@@ -37,6 +38,62 @@ function createRequestForResponseFile(root: string, recordId: string) {
 }
 
 describe('requirements contract Critical Auditor provider modes', () => {
+  it('no-new-gap response writer echoes required projection quality rule codes', () => {
+    const root = createTempRoot('requirements-contract-critical-auditor-writer-quality-');
+    try {
+      const recordId = 'REQ-CRITICAL-AUDITOR-WRITER-QUALITY';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const responsePath = roundArtifact(root, recordId, 'response', 1);
+      const requestForWriter = {
+        ...(fixture.request as any),
+        gateDryRun: {
+          ...((fixture.request as any).gateDryRun ?? {}),
+          actionableBlockingIssueCount: 0,
+        },
+      };
+      const requestForWriterPath = path.join(path.dirname(fixture.requestPath), 'critical-auditor-round-request-writer-fixture.json');
+      writeFileSync(requestForWriterPath, `${JSON.stringify(requestForWriter, null, 2)}\n`, 'utf8');
+      const script = path.join(
+        process.cwd(),
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'write-critical-auditor-no-new-gap-response.js'
+      );
+
+      const result = spawnSync(
+        process.execPath,
+        [
+          script,
+          '--authoring-dir',
+          path.dirname(fixture.requestPath),
+          '--request',
+          requestForWriterPath,
+          '--response-out',
+          responsePath,
+          '--round',
+          '1',
+          '--reviewed-projection-ref',
+          String((fixture.request as any).packetProjectionSummary.projectionRefs[0]),
+          '--json',
+        ],
+        { cwd: process.cwd(), encoding: 'utf8' }
+      );
+
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      const response = JSON.parse(readFileSync(responsePath, 'utf8'));
+      expect(response.checkedProjectionQualityRuleCodes).toEqual(
+        (fixture.request as any).requiredResponseSchema.checkedProjectionQualityRuleCodes
+      );
+      expect(response.checkedProjectionQualityRuleCodes).toEqual(
+        (fixture.request as any).projectionQualityGate.requiredRuleCodes
+      );
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('round requests require Critical Auditor to check per-MUST projection quality rules', () => {
     const root = createTempRoot('requirements-contract-critical-auditor-projection-quality-');
     try {
