@@ -464,8 +464,11 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('MUST NOT synthesize `source-mutation-decision.json`');
       expect(skill).toContain('Critical Auditor convergence');
       expect(skill).toContain('checkpoint persistence');
-      expect(skill).toContain('sourceDocumentHashBefore` bound to the current target document hash');
-      expect(skill).toContain('sourceDocumentHashAfter` bound to the current draft manifest hash');
+      expect(skill).toContain('sourceDocumentHashBefore` bound to the current target raw document hash');
+      expect(skill).toContain('sourceDocumentHashAfter` bound to the current draft manifest raw hash');
+      expect(skill).toContain('semanticSourceHashAfter` bound to the current draft semantic `sourceDocumentHash`');
+      expect(skill).toContain('write-critical-auditor-no-new-gap-response.js');
+      expect(skill).toContain('never writes receipt files');
       expect(skill).toContain('sourceDocumentExistedBefore: false');
       expect(skill).toContain('currentTargetState');
       expect(skill).toContain('expectedDraftHash');

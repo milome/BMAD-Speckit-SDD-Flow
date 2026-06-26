@@ -10,6 +10,7 @@ const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.c
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
 const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
 const SRC_JS_ALLOWLIST = path.join(PACKAGE_ROOT, 'scripts', 'src-js-allowlist.json');
+const PACKAGE_DIST_ROOT = path.join(PACKAGE_ROOT, 'dist');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
 const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
 const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
@@ -74,7 +75,7 @@ const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
     forbidden: '../../../../../../_bmad/shared/critical-auditor-profile',
     required: '../../../../_bmad/shared/critical-auditor-profile',
     runtimeTarget: '_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
-    runtimeTargetBase: 'package',
+    runtimeTargetBase: 'packageDist',
   },
   {
     file: 'source-authority/scripts/query-validate.js',
@@ -103,6 +104,12 @@ const EXPECTED_SOURCE_AUTHORITY_ASSETS = [
 const GENERATED_SOURCE_AUTHORITY_ASSETS = EXPECTED_SOURCE_AUTHORITY_ASSETS.filter((relativePath) =>
   relativePath.startsWith('_bmad-output/')
 );
+
+function runtimeTargetBasePath(base) {
+  if (base === 'package') return PACKAGE_ROOT;
+  if (base === 'packageDist') return PACKAGE_DIST_ROOT;
+  return DIST_ROOT;
+}
 
 function isTypeScriptRuntimeSourcePath(relativePath) {
   return TYPE_SCRIPT_FAMILY_SOURCE_RE.test(relativePath) && !TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(relativePath);
@@ -389,12 +396,7 @@ describe('main-agent dist build', () => {
         `${expectedImport.file} must require package dist JS`
       );
       assert.equal(
-        fs.existsSync(
-          path.join(
-            expectedImport.runtimeTargetBase === 'package' ? PACKAGE_ROOT : DIST_ROOT,
-            expectedImport.runtimeTarget
-          )
-        ),
+        fs.existsSync(path.join(runtimeTargetBasePath(expectedImport.runtimeTargetBase), expectedImport.runtimeTarget)),
         true,
         `missing rewritten runtime target ${expectedImport.runtimeTarget}`
       );
@@ -448,15 +450,35 @@ describe('main-agent dist build', () => {
 
     for (const relativePath of EXPECTED_PACKAGE_RUNTIME_ASSETS) {
       const packageAsset = path.join(PACKAGE_ROOT, relativePath);
+      const packageDistAsset = path.join(PACKAGE_DIST_ROOT, relativePath);
       const repoAsset = path.join(REPO_ROOT, relativePath);
 
       assert.equal(fs.existsSync(packageAsset), true, `missing package runtime asset ${relativePath}`);
+      assert.equal(
+        fs.existsSync(packageDistAsset),
+        true,
+        `missing package dist runtime asset ${relativePath}`
+      );
       assert.equal(
         fs.readFileSync(packageAsset, 'utf8'),
         fs.readFileSync(repoAsset, 'utf8'),
         `package runtime asset drifted from canonical source: ${relativePath}`
       );
+      assert.equal(
+        fs.readFileSync(packageDistAsset, 'utf8'),
+        fs.readFileSync(repoAsset, 'utf8'),
+        `package dist runtime asset drifted from canonical source: ${relativePath}`
+      );
     }
+
+    const criticalAuditorProfileRuntime = require(path.join(
+      DIST_ROOT,
+      'source-authority',
+      'scripts',
+      'critical-auditor-profile.js'
+    ));
+    const profile = criticalAuditorProfileRuntime.resolveCriticalAuditorProfile(REPO_ROOT);
+    assert.equal(profile.schemaVersion, 'critical-auditor-profile/v1');
   });
 
   it('auto-provisions source-authority governance fixture for clean dist builds', () => {

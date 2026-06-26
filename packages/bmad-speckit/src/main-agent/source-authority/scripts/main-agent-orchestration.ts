@@ -4289,6 +4289,7 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
   sourcePath: string;
   draftPath: string;
   paths: PreConfirmationPaths;
+  autoRepair?: boolean;
 }): {
   ok: boolean;
   receipt: Record<string, unknown> | null;
@@ -4318,6 +4319,9 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
     'implementationConfirmation:',
     '--json',
   ];
+  if (input.autoRepair === true) {
+    args.push('--auto-repair');
+  }
   if (fs.existsSync(input.paths.checkpointPersistenceEvidence)) {
     args.push('--checkpoint-persistence-evidence', input.paths.checkpointPersistenceEvidence);
   }
@@ -4575,6 +4579,228 @@ function buildSourceMaterializationRequiredResult(input: {
     warnings: input.warnings,
     issues: input.issues,
   });
+}
+
+const CURRENT_SOURCE_PROMOTION_REFRESHABLE_ISSUES = new Set([
+  'promotion_receipt_source_hash_stale',
+  'promotion_receipt_confirmation_hash_stale',
+  'promotion_receipt_manifest_draft_hash_stale',
+  'promotion_receipt_source_mutation_after_hash_stale',
+]);
+
+function shouldAttemptCurrentSourcePromotionReceiptRefresh(
+  issues: PreConfirmationDrilldownIssue[]
+): boolean {
+  return (
+    issues.length > 0 &&
+    issues.every((issue) => CURRENT_SOURCE_PROMOTION_REFRESHABLE_ISSUES.has(issue.code))
+  );
+}
+
+function buildCurrentSourcePromotionRefreshFailedResult(input: {
+  root: string;
+  sourcePath: string;
+  recordId: string;
+  requirementSetId: string;
+  paths: PreConfirmationPaths;
+  sourceDocumentHash?: string | null;
+  implementationConfirmationHash?: string | null;
+  packetHash?: string | null;
+  warnings?: Array<Record<string, string>>;
+  staleReceiptIssues: PreConfirmationDrilldownIssue[];
+  refreshIssues: PreConfirmationDrilldownIssue[];
+  artifacts?: string[];
+}): MainAgentAuthoringRepairResult {
+  return buildAuthoringRepairResult({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    paths: input.paths,
+    status: 'blocked',
+    blockingStage: 'current_source_promotion_refresh_failed_before_audit',
+    nextRequiredAction: 'rerun_skill_local_current_source_promotion_or_fix_promotion_gate_blockers',
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    packetHash: input.packetHash,
+    warnings: input.warnings,
+    artifacts: input.artifacts,
+    issues: [...input.staleReceiptIssues, ...input.refreshIssues],
+  });
+}
+
+function runSkillLocalCurrentSourcePromotionRefresh(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  requirementSetId: string;
+}): {
+  ok: true;
+  receipt: Record<string, unknown>;
+  artifacts: string[];
+} | {
+  ok: false;
+  issues: PreConfirmationDrilldownIssue[];
+  artifacts: string[];
+} {
+  const artifacts: string[] = [];
+  const prepareScript = resolveSkillScript(input.root, 'prepare-current-source-promotion.js');
+  const prepare = runNodeJson(
+    prepareScript,
+    [
+      '--source',
+      input.sourcePath,
+      '--authoring-dir',
+      input.paths.authoringDir,
+      '--draft-out',
+      input.paths.draftSourcePreview,
+      '--encoding-report-out',
+      input.paths.encodingReport,
+      '--source-mutation-decision-out',
+      input.paths.sourceMutationDecision,
+      '--draft-implementation-confirmation-out',
+      input.paths.draftImplementationConfirmation,
+      '--authoring-materialization-receipt-out',
+      input.paths.authoringMaterializationReceipt,
+      '--record-id',
+      input.recordId,
+      '--requirement-set-id',
+      input.requirementSetId,
+      '--json',
+    ],
+    input.root
+  );
+  artifacts.push(
+    input.paths.draftSourcePreview,
+    input.paths.encodingReport,
+    input.paths.sourceMutationDecision,
+    input.paths.draftImplementationConfirmation,
+    input.paths.authoringMaterializationReceipt
+  );
+  if (prepare.status !== 0 || !prepare.json || prepare.json.ok !== true) {
+    const failureClass = normalizeText(prepare.json?.failureClass);
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        preConfirmationIssue(
+          failureClass || 'current_source_promotion_prep_failed',
+          'Skill-local current-source promotion prep failed before promotion receipt refresh.',
+          [
+            toRootRelativePath(input.root, prepareScript),
+            normalizeText(prepare.stderr) || normalizeText(prepare.stdout),
+          ].filter(Boolean),
+          'source_materialization'
+        ),
+      ],
+    };
+  }
+
+  let routeDecision = readJsonIfExists(input.paths.scaleRoutingDecision);
+  if (!routeDecision || !fs.existsSync(input.paths.scaleAssessmentInitial)) {
+    const scale = runPreConfirmationScaleAssessment({
+      root: input.root,
+      sourcePath: input.paths.draftSourcePreview,
+      paths: input.paths,
+      phase: 'initial_assessment',
+    });
+    artifacts.push(input.paths.scaleAssessmentInitial, input.paths.scaleRoutingDecision);
+    if (scale.issues.length > 0 || !scale.routingDecision) {
+      return {
+        ok: false,
+        artifacts,
+        issues: [
+          preConfirmationIssue(
+            'current_source_promotion_scale_routing_refresh_failed',
+            'Skill-local current-source promotion could not refresh scale routing before promotion receipt refresh.',
+            [toRootRelativePath(input.root, input.paths.scaleRoutingDecision)],
+            'source_materialization'
+          ),
+          ...scale.issues,
+        ],
+      };
+    }
+    routeDecision = scale.routingDecision;
+  }
+  const routeDecisionText = normalizeText(routeDecision?.decision);
+  if (['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecisionText)) {
+    const sourceDocumentHash = normalizeText(prepare.json.semanticSourceHash);
+    const implementationConfirmationHash = normalizeText(prepare.json.implementationConfirmationHash);
+    if (!sourceDocumentHash || !implementationConfirmationHash) {
+      return {
+        ok: false,
+        artifacts,
+        issues: [
+          preConfirmationIssue(
+            'current_source_promotion_checkpoint_hash_binding_missing',
+            'Skill-local current-source promotion prep did not return semantic source and implementationConfirmation hashes required for checkpoint persistence refresh.',
+            [toRootRelativePath(input.root, prepareScript)],
+            'source_materialization'
+          ),
+        ],
+      };
+    }
+    const checkpointRefresh = prepareAuthoringRepairCheckpointPersistenceEvidence({
+      root: input.root,
+      repairDraftPath: input.paths.draftSourcePreview,
+      paths: input.paths,
+      recordId: input.recordId,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      createdAt: new Date().toISOString(),
+      routeDecision,
+    });
+    artifacts.push(
+      input.paths.progress,
+      input.paths.checkpointPersistenceEvidence,
+      ...input.paths.checkpointReceiptPaths
+    );
+    if (checkpointRefresh.ok === false) {
+      return {
+        ok: false,
+        artifacts,
+        issues: [
+          preConfirmationIssue(
+            'current_source_promotion_checkpoint_persistence_refresh_failed',
+            'Skill-local current-source promotion could not refresh checkpoint persistence evidence before promotion receipt refresh.',
+            [toRootRelativePath(input.root, input.paths.checkpointPersistenceEvidence)],
+            'source_materialization'
+          ),
+          checkpointRefresh.issue,
+        ],
+      };
+    }
+  }
+
+  const promotion = promoteImplementationConfirmationDraftWithReceipt({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    draftPath: input.paths.draftSourcePreview,
+    paths: input.paths,
+    autoRepair: true,
+  });
+  artifacts.push(input.paths.promotionReceipt);
+  if (promotion.ok !== true || !promotion.receipt || promotion.receipt.ok !== true) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        ...promotion.issues,
+        preConfirmationIssue(
+          'current_source_promotion_receipt_refresh_failed',
+          'Skill-local promotion could not refresh promotion-receipt.json for the current source.',
+          [
+            toRootRelativePath(input.root, input.paths.promotionReceipt),
+            normalizeText(promotion.command.stderr) || normalizeText(promotion.command.stdout),
+          ].filter(Boolean),
+          'source_materialization'
+        ),
+      ],
+    };
+  }
+
+  return { ok: true, receipt: promotion.receipt, artifacts };
 }
 
 interface AuthoringCheckpointDefinition {
@@ -5720,6 +5946,11 @@ function materializeCriticalAuditorGapFix(input: {
   const currentTargetHash = fs.existsSync(input.sourcePath)
     ? sha256File(input.sourcePath)
     : 'absent';
+  const repairDraftSemanticSourceHash = sourceDocumentHashForPreConfirmation(
+    repairDraftText,
+    repairDraftExtraction.blockText,
+    repairDraftExtraction.confirmation
+  );
   writeSourceMutationDecision({
     root: input.root,
     sourcePath: input.sourcePath,
@@ -5730,6 +5961,10 @@ function materializeCriticalAuditorGapFix(input: {
     sourceDocumentExistedBefore: fs.existsSync(input.sourcePath),
     sourceHashBefore: currentTargetHash,
     sourceHashAfter: normalizedRepairDraft.draftHash,
+    targetRawHashBefore: currentTargetHash,
+    targetRawHashAfter: normalizedRepairDraft.draftHash,
+    semanticSourceHashBefore: input.previousSourceDocumentHash,
+    semanticSourceHashAfter: repairDraftSemanticSourceHash,
     issues: [],
     coverageDecision: 'pass',
     targetAuthorityDecision: 'pass',
@@ -8773,18 +9008,68 @@ export function runMainAgentAuthoringRepair(
     expectedImplementationConfirmationHash: implementationConfirmationHash,
   });
   if (materializationGate.ok === false) {
-    return buildSourceMaterializationRequiredResult({
-      root,
-      sourcePath,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      paths,
-      sourceDocumentHash,
-      implementationConfirmationHash,
-      packetHash,
-      warnings,
-      issues: materializationGate.issues,
-    });
+    if (shouldAttemptCurrentSourcePromotionReceiptRefresh(materializationGate.issues)) {
+      const refresh = runSkillLocalCurrentSourcePromotionRefresh({
+        root,
+        sourcePath,
+        paths,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+      });
+      if (refresh.ok === false) {
+        return buildCurrentSourcePromotionRefreshFailedResult({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          paths,
+          sourceDocumentHash,
+          implementationConfirmationHash,
+          packetHash,
+          warnings,
+          staleReceiptIssues: materializationGate.issues,
+          refreshIssues: refresh.issues,
+          artifacts: refresh.artifacts,
+        });
+      }
+      const refreshedGate = verifySourceMaterializationBeforeAudit({
+        root,
+        sourcePath,
+        paths,
+        requirementSetId: identity.requirementSetId,
+        expectedSourceDocumentHash: sourceDocumentHash,
+        expectedImplementationConfirmationHash: implementationConfirmationHash,
+      });
+      if (refreshedGate.ok === false) {
+        return buildCurrentSourcePromotionRefreshFailedResult({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          paths,
+          sourceDocumentHash,
+          implementationConfirmationHash,
+          packetHash,
+          warnings,
+          staleReceiptIssues: materializationGate.issues,
+          refreshIssues: refreshedGate.issues,
+          artifacts: refresh.artifacts,
+        });
+      }
+    } else {
+      return buildSourceMaterializationRequiredResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        packetHash,
+        warnings,
+        issues: materializationGate.issues,
+      });
+    }
   }
   const staleArtifactIssues = collectStaleCriticalAuditorArtifactIssues({
     authoringDir: paths.authoringDir,
@@ -10482,12 +10767,15 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  if (fs.existsSync(stagingTransaction.draftSource)) {
-    fs.copyFileSync(stagingTransaction.draftSource, paths.draftSourcePreview);
-  } else {
-    fs.writeFileSync(paths.draftSourcePreview, materializeImplementationConfirmationText(sourceText, draftConfirmation), 'utf8');
-    fs.copyFileSync(paths.draftSourcePreview, stagingTransaction.draftSource);
+  const materializedDraftText = materializeImplementationConfirmationText(sourceText, draftConfirmation);
+  const stagedDraftText = fs.existsSync(stagingTransaction.draftSource)
+    ? fs.readFileSync(stagingTransaction.draftSource, 'utf8')
+    : null;
+  const stagingDraftRefreshed = stagedDraftText !== materializedDraftText;
+  if (stagingDraftRefreshed) {
+    fs.writeFileSync(stagingTransaction.draftSource, materializedDraftText, 'utf8');
   }
+  fs.copyFileSync(stagingTransaction.draftSource, paths.draftSourcePreview);
   writeRequirementsAuthoringTransaction({
     root,
     paths,
@@ -10547,7 +10835,7 @@ export function runMainAgentPreConfirmationDrilldown(
     previewExtraction.confirmation
   );
   let kernel: Record<string, unknown>;
-  if (fs.existsSync(stagingTransaction.semanticKernel)) {
+  if (!stagingDraftRefreshed && fs.existsSync(stagingTransaction.semanticKernel)) {
     const stagedKernel = readJsonIfExists(stagingTransaction.semanticKernel);
     kernel = recordObject(stagedKernel?.semanticKernel);
     writeJsonUtf8(paths.semanticKernel, { semanticKernel: kernel });
@@ -10572,7 +10860,7 @@ export function runMainAgentPreConfirmationDrilldown(
   }
   const semanticKernelHash = normalizeText(kernel.kernelHash);
   let previewPacket: Record<string, unknown>;
-  if (fs.existsSync(stagingTransaction.mustDecompositionPacket)) {
+  if (!stagingDraftRefreshed && fs.existsSync(stagingTransaction.mustDecompositionPacket)) {
     const stagedPacket = readJsonIfExists(stagingTransaction.mustDecompositionPacket);
     previewPacket = recordObject(stagedPacket?.must_decomposition_packet);
     writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: previewPacket });

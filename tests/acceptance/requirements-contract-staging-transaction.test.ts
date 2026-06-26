@@ -52,6 +52,53 @@ describe('requirements contract staging transaction', () => {
     }
   });
 
+  it('refreshes existing staging draft when non-semantic confirmation inputs change', () => {
+    const root = createTempRoot('requirements-contract-staging-refresh-');
+    try {
+      const source = writeConsumerRequirement(root);
+
+      const initial = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
+        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
+        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+      });
+      const stagingDir = stagingTransactionDir(root, 'REQ-STAGING-REFRESH');
+      const initialDraft = readFileSync(path.join(stagingDir, 'draft-source.md'), 'utf8');
+      expect(issueCodes(initial)).toContain('critical_auditor_provider_mode_required');
+      expect(initialDraft).toContain('confirmationLanguage: not_selected');
+
+      const refreshed = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
+        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
+        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        confirmationLanguage: 'zh-CN',
+      });
+      const refreshedDraft = readFileSync(path.join(stagingDir, 'draft-source.md'), 'utf8');
+      const refreshedRequest = readJson<Record<string, unknown>>(
+        path.join(stagingDir, 'critical-auditor-round-request-1.json')
+      );
+      const refreshedKernel = readJson<{ semanticKernel?: Record<string, unknown> }>(
+        path.join(stagingDir, 'semantic-kernel.json')
+      );
+      const refreshedPacket = readJson<{ must_decomposition_packet?: Record<string, unknown> }>(
+        path.join(stagingDir, 'must_decomposition_packet.json')
+      );
+
+      expect(issueCodes(refreshed)).toContain('critical_auditor_provider_mode_required');
+      expect(refreshedDraft).toContain('confirmationLanguage: zh-CN');
+      expect(refreshedDraft).not.toContain('confirmationLanguage: not_selected');
+      expect(refreshedKernel.semanticKernel?.implementationConfirmationHash).toBe(
+        refreshed.implementationConfirmationHash
+      );
+      expect(refreshedPacket.must_decomposition_packet?.implementationConfirmationHash).toBe(
+        refreshed.implementationConfirmationHash
+      );
+      expect(refreshedRequest.implementationConfirmationHash).toBe(
+        refreshed.implementationConfirmationHash
+      );
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('promotes source and writes promotion receipt only after three validated no-gap rounds', () => {
     const root = createTempRoot('requirements-contract-staging-promote-');
     try {

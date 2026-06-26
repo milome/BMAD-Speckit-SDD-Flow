@@ -226,7 +226,25 @@ describe('install to consumer ->CLI acceptance', () => {
         'scripts',
         'promote-draft-large-doc.js'
       );
+      const prepareCurrentSourcePromotionScript = join(
+        target,
+        '.cursor',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'prepare-current-source-promotion.js'
+      );
+      const writeCriticalAuditorNoNewGapResponseScript = join(
+        target,
+        '.cursor',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'write-critical-auditor-no-new-gap-response.js'
+      );
       expect(existsSync(promoteScript)).toBe(true);
+      expect(existsSync(prepareCurrentSourcePromotionScript)).toBe(true);
+      expect(existsSync(writeCriticalAuditorNoNewGapResponseScript)).toBe(true);
       const draftPath = join(target, 'draft-requirements.md');
       const targetPath = join(target, 'requirements.md');
       writeFileSync(

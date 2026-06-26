@@ -1,7 +1,16 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import * as crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
@@ -9,12 +18,39 @@ import {
   runMainAgentAuthoringRepair,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
+const requireForTest = createRequire(import.meta.url);
+const SKILL_SCRIPTS = path.join(
+  process.cwd(),
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts'
+);
+const {
+  extractImplementationConfirmation: extractImplementationConfirmationForHash,
+  implementationConfirmationHashFor: implementationConfirmationHashForContract,
+  sourceDocumentHashFor: sourceDocumentHashForContract,
+} = requireForTest(path.join(SKILL_SCRIPTS, 'pre_render_definition_drilldown_lib.js'));
+
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
 }
 
 function sha256Text(value: string): string {
   return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .join(',')}}`;
+}
+
+function sha256Json(value: unknown): string {
+  return sha256Text(stableStringify(value));
 }
 
 function readJson(file: string): any {
@@ -370,6 +406,9 @@ function authoringPaths(root: string, recordId: string) {
     gate: path.join(dir, 'pre-render-must-decomposition-gate-report.json'),
     reconciliation: path.join(dir, 'must_packet_source_reconciliation_report.json'),
     progress: path.join(dir, 'semantic-checkpoint-progress.json'),
+    checkpointReceipt: (index: number) =>
+      path.join(dir, `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`),
+    checkpointPersistenceEvidence: path.join(dir, 'checkpoint-persistence-evidence.json'),
   };
 }
 
@@ -407,7 +446,17 @@ function writePromotionReceipt(
   );
   const receiptPath = path.join(receiptDir, 'promotion-receipt.json');
   mkdirSync(receiptDir, { recursive: true });
-  const targetHash = sha256Text(readFileSync(source, 'utf8'));
+  const sourceText = readFileSync(source, 'utf8');
+  const targetHash = sha256Text(sourceText);
+  const extracted = extractImplementationConfirmationForHash(sourceText);
+  const semanticSourceHash = sourceDocumentHashForContract(
+    sourceText,
+    extracted.blockText,
+    extracted.confirmation
+  );
+  const implementationConfirmationHash = implementationConfirmationHashForContract(
+    extracted.confirmation
+  );
   const sourceRel = rootRelative(root, source);
   const receipt: Record<string, unknown> = {
     ok: true,
@@ -448,10 +497,17 @@ function writePromotionReceipt(
       decisions: {
         sourceMutation: {
           finalDecision: 'allow_source_materialization',
+          sourceDocumentHashBefore: targetHash,
           sourceDocumentHashAfter: targetHash,
+          targetRawHashBefore: targetHash,
+          targetRawHashAfter: targetHash,
+          semanticSourceHashBefore: semanticSourceHash,
+          semanticSourceHashAfter: semanticSourceHash,
         },
       },
     },
+    sourceDocumentHash: semanticSourceHash,
+    implementationConfirmationHash,
     failureClass: null,
     warnings: [],
     residualRisks: ['reverse_audit_not_run_authoring_draft'],
@@ -462,6 +518,90 @@ function writePromotionReceipt(
 
 function rootRelative(root: string, filePath: string): string {
   return path.relative(root, filePath).replace(/\\/g, '/');
+}
+
+function writeSinglePassScaleArtifacts(root: string, source: string, recordId: string): void {
+  const paths = authoringPaths(root, recordId);
+  mkdirSync(paths.dir, { recursive: true });
+  const assessment = {
+    schemaVersion: 'contract-authoring-scale-assessment/v1',
+    phase: 'initial_assessment',
+    target: rootRelative(root, source),
+    decision: 'single_pass_allowed',
+    assessmentTrace: {
+      visibleOutputStream: 'stderr',
+      stdoutContract: 'json_only',
+      start: {
+        phase: 'initial_assessment',
+        source: rootRelative(root, source),
+        progressPath: rootRelative(root, paths.progress),
+      },
+      process: {
+        scoreReason: 'single-pass fixture for current-source receipt refresh',
+        triggeredHardTriggers: [],
+        scoreBreakdown: [],
+        hardTriggerBreakdown: [],
+      },
+      result: {
+        phase: 'initial_assessment',
+        decision: 'single_pass_final_allowed',
+        authoringMode: 'semantic_kernel_then_packet',
+        riskLevel: 'low',
+        checkpointRequired: false,
+        recommendedCheckpointCount: 0,
+      },
+    },
+  };
+  const assessmentPath = path.join(paths.dir, 'scale-assessment-initial.json');
+  writeFileSync(assessmentPath, `${JSON.stringify(assessment, null, 2)}\n`, 'utf8');
+  const route = {
+    schemaVersion: 'contract-authoring-scale-routing-decision/v1',
+    latestCompletedPhase: 'initial_assessment',
+    decision: 'single_pass_final_allowed',
+    decisionSource: 'initial_assessment',
+    nextAction: 'continue_pre_render_readiness',
+    checkpointPersistenceSatisfied: false,
+    initialAssessmentRef: {
+      path: path.resolve(assessmentPath).replace(/\\/g, '/'),
+      hash: sha256Json(assessment),
+    },
+  };
+  writeFileSync(
+    path.join(paths.dir, 'scale-routing-decision.json'),
+    `${JSON.stringify(route, null, 2)}\n`,
+    'utf8'
+  );
+}
+
+function makePromotionReceiptStale(receiptPath: string): void {
+  const receipt = readJson(receiptPath);
+  const staleHash = fixedHash('9');
+  receipt.targetHash = staleHash;
+  receipt.writeReceipt.finalHash = staleHash;
+  receipt.preflight.manifest.draftHash = staleHash;
+  receipt.authoringPromotionGate.decisions.sourceMutation.sourceDocumentHashAfter = staleHash;
+  writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+}
+
+function makeCheckpointReceiptsStale(paths: ReturnType<typeof authoringPaths>): void {
+  for (let index = 0; index < 9; index += 1) {
+    const receiptPath = paths.checkpointReceipt(index);
+    if (!existsSync(receiptPath)) continue;
+    const receipt = readJson(receiptPath);
+    receipt.sourceDocumentHash = fixedHash('7');
+    receipt.implementationConfirmationHash = fixedHash('8');
+    const { receiptHash, ...receiptPayload } = receipt;
+    void receiptHash;
+    receipt.receiptHash = sha256Json(receiptPayload);
+    writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  }
+}
+
+function authoringExecutableHelpers(authoringDir: string): string[] {
+  if (!existsSync(authoringDir)) return [];
+  return readdirSync(authoringDir)
+    .filter((name) => /\.(?:cjs|js|mjs|ps1)$/iu.test(name))
+    .sort();
 }
 
 function writeNoNewGapResponse(
@@ -1325,7 +1465,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
-
       expect(result).toMatchObject({
         ok: false,
         status: 'blocked',
@@ -1560,6 +1699,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
+      writeSinglePassScaleArtifacts(root, source, recordId);
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1581,15 +1721,122 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result).toMatchObject({
         ok: false,
         status: 'blocked',
-        blockingStage: 'promotion_receipt_required_before_audit',
-        nextRequiredAction: 'promote_source_document_through_authoring_draft_before_deep_audit',
+        blockingStage: 'critical_auditor_round_required',
+        nextRequiredAction: 'write_critical_auditor_round_response',
         consecutiveNoNewGapRounds: 0,
       });
-      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'promotion_receipt_source_hash_stale'
+      const issueCodes = result.blockingIssues.map((issue: any) => issue.code);
+      expect(
+        issueCodes.some((code: string) =>
+          code.endsWith('critical_auditor_round_request_1_json_sourceDocumentHash_stale')
+        )
+      ).toBe(true);
+      expect(
+        issueCodes.some((code: string) =>
+          code.endsWith('critical_auditor_round_response_1_json_sourceDocumentHash_stale')
+        )
+      ).toBe(true);
+      expect(readJson(paths.promotionReceipt).targetHash).toBe(
+        sha256Text(readFileSync(source, 'utf8'))
       );
+      expect(readJson(path.join(paths.dir, 'source-mutation-decision.json'))).toMatchObject({
+        sourceDocumentHashAfter: sha256Text(readFileSync(source, 'utf8')),
+        targetRawHashAfter: sha256Text(readFileSync(source, 'utf8')),
+        semanticSourceHashAfter: result.sourceDocumentHash,
+      });
       expect(existsSync(paths.receipt(1))).toBe(false);
+      expect(existsSync(paths.request(1))).toBe(true);
       expect(existsSync(paths.request(2))).toBe(false);
+      expect(authoringExecutableHelpers(paths.dir)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refreshes current-source checkpoint receipts before stale promotion receipt refresh', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-checkpoint-receipt-refresh-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const receiptPath = writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      makePromotionReceiptStale(receiptPath);
+      makeCheckpointReceiptsStale(paths);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(result).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_round_required',
+        nextRequiredAction: 'write_critical_auditor_round_response',
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+        'current_source_promotion_receipt_refresh_failed'
+      );
+      const refreshedPromotionReceipt = readJson(paths.promotionReceipt);
+      expect(refreshedPromotionReceipt.targetHash).toBe(sha256Text(readFileSync(source, 'utf8')));
+      const checkpointEvidence = readJson(paths.checkpointPersistenceEvidence);
+      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
+      for (let index = 0; index < 9; index += 1) {
+        const checkpointReceipt = readJson(paths.checkpointReceipt(index));
+        expect(checkpointReceipt.sourceDocumentHash).toBe(result.sourceDocumentHash);
+        expect(checkpointReceipt.implementationConfirmationHash).toBe(
+          result.implementationConfirmationHash
+        );
+      }
+      expect(authoringExecutableHelpers(paths.dir)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when current-source stale receipt refresh finds authoring helper scripts', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-helper-denied-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const receiptPath = writePromotionReceipt(root, source, recordId);
+      writeSinglePassScaleArtifacts(root, source, recordId);
+      makePromotionReceiptStale(receiptPath);
+      const paths = authoringPaths(root, recordId);
+      writeFileSync(
+        path.join(paths.dir, 'prepare-current-source-promotion.cjs'),
+        'module.exports = {};\n',
+        'utf8'
+      );
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'current_source_promotion_refresh_failed_before_audit',
+        nextRequiredAction: 'rerun_skill_local_current_source_promotion_or_fix_promotion_gate_blockers',
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'authoring_temporary_executable_helper_present'
+      );
+      expect(existsSync(paths.request(1))).toBe(false);
+      expect(authoringExecutableHelpers(paths.dir)).toEqual([
+        'prepare-current-source-promotion.cjs',
+      ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

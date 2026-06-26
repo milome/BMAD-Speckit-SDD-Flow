@@ -84,6 +84,11 @@ const CHECKPOINTS = [
     allowedSections: ['packetSourceReconciliation', 'preRenderGates', 'reverseAuditReport'],
   },
 ];
+const EVIDENCE_ONLY_CHECKPOINT_IDS = new Set(
+  CHECKPOINTS
+    .filter((checkpoint) => checkpoint.id !== 'cp-00-semantic-kernel')
+    .map((checkpoint) => checkpoint.id)
+);
 const LEGACY_CHECKPOINT_ID_MAP = new Map(CHECKPOINTS.filter((checkpoint) => checkpoint.legacyId).map((checkpoint) => [checkpoint.legacyId, checkpoint.id]));
 const CURRENT_TARGET_SCHEMA_VERSION = 'current-target-map/v1';
 const CURRENT_TARGET_DISPLAY_PROFILE = 'closed_loop_current_target_map';
@@ -761,7 +766,17 @@ function findProgressCheckpoint(progress, checkpointId) {
   return (progress?.checkpoints ?? []).find((item) => canonicalCheckpointId(item.id) === canonicalId && item.status === 'passed') ?? null;
 }
 
-function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, documentHash, priorProgress, assessment = null }) {
+function updateProgress({
+  progressPath,
+  sourcePath,
+  checkpoint,
+  commitHash,
+  documentHash,
+  priorProgress,
+  assessment = null,
+  evidenceOnly = false,
+  evidenceReason = null,
+}) {
   const previous = priorProgress ?? {};
   const checkpoints = Array.isArray(previous.checkpoints) ? previous.checkpoints.filter((item) => item.id !== checkpoint.id) : [];
   const authoringMode = resolveAuthoringMode({ assessment, progress: previous });
@@ -774,6 +789,11 @@ function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, docu
     idempotencyKey: checkpointIdempotencyKey({ checkpoint, documentHash, commitHash }),
     completedAt: new Date().toISOString(),
   };
+  if (evidenceOnly) {
+    entry.evidenceOnly = true;
+    entry.sourceDiffRequired = false;
+    entry.evidenceReason = evidenceReason;
+  }
   const progress = {
     schemaVersion: 'semantic-checkpoint-progress/v1',
     source: normalizePathForReport(sourcePath),
@@ -796,6 +816,73 @@ function updateProgress({ progressPath, sourcePath, checkpoint, commitHash, docu
   };
   writeProgressAtomic(progressPath, progress);
   return progress;
+}
+
+function currentProgressMatchesDocument({ priorProgress, currentDocumentHash }) {
+  return priorProgress?.documentHash === currentDocumentHash;
+}
+
+function currentPreRenderEvidenceAllowsCheckpoint({ sourcePath, progressPath, checkpoint, priorProgress, currentDocumentHash }) {
+  if (!EVIDENCE_ONLY_CHECKPOINT_IDS.has(checkpoint.id)) {
+    return { ok: false, reason: 'checkpoint_requires_source_diff' };
+  }
+  if (!currentProgressMatchesDocument({ priorProgress, currentDocumentHash })) {
+    return { ok: false, reason: 'progress_document_hash_not_current' };
+  }
+  const gate = buildCombinedPreRenderGateReport({ sourcePath, progressPath });
+  if (gate.report.verdict !== 'PASS') {
+    return { ok: false, reason: 'pre_render_gate_not_pass', gateReport: gate.report };
+  }
+  return { ok: true, gateReport: gate.report };
+}
+
+function recordEvidenceOnlyCheckpoint({
+  sourcePath,
+  checkpoint,
+  progressPath,
+  assessment,
+  priorProgress,
+  currentCommitHash,
+  currentDocumentHash,
+  gateReport,
+}) {
+  let progress;
+  try {
+    progress = updateProgress({
+      progressPath,
+      sourcePath,
+      checkpoint,
+      commitHash: currentCommitHash,
+      documentHash: currentDocumentHash,
+      priorProgress,
+      assessment,
+      evidenceOnly: true,
+      evidenceReason: 'current_pre_render_authoring_evidence',
+    });
+  } catch (error) {
+    return fail('progress_write_failed', 'checkpoint evidence was current but progress write failed; stop before continuing', {
+      commitHash: currentCommitHash,
+      documentHash: currentDocumentHash,
+      progressPath: normalizePathForReport(progressPath),
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  return {
+    ok: true,
+    checkpoint: checkpoint.id,
+    commitHash: currentCommitHash,
+    documentHash: currentDocumentHash,
+    progressPath: normalizePathForReport(progressPath),
+    progress,
+    evidenceOnly: true,
+    sourceDiffNoOp: true,
+    reason: 'checkpoint_recorded_from_current_pre_render_authoring_evidence',
+    preRenderGate: {
+      verdict: gateReport?.verdict ?? null,
+      issueCount: gateReport?.issueCount ?? null,
+      failedChecks: gateReport?.failedChecks ?? [],
+    },
+  };
 }
 
 function gateIssue(code, message, refs = []) {
@@ -1368,6 +1455,25 @@ function commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment =
   }
   const authoringEvidence = validateCheckpointAuthoringEvidence({ sourcePath, checkpoint });
   if (!authoringEvidence.ok) return authoringEvidence;
+  const evidenceOnly = currentPreRenderEvidenceAllowsCheckpoint({
+    sourcePath,
+    progressPath,
+    checkpoint,
+    priorProgress,
+    currentDocumentHash,
+  });
+  if (evidenceOnly.ok) {
+    return recordEvidenceOnlyCheckpoint({
+      sourcePath,
+      checkpoint,
+      progressPath,
+      assessment,
+      priorProgress,
+      currentCommitHash,
+      currentDocumentHash,
+      gateReport: evidenceOnly.gateReport,
+    });
+  }
 
   const add = git(['add', '-f', '--', targetRel]);
   if (add.status !== 0) return fail('git_add_failed', add.stderr || 'git add failed');
@@ -1808,7 +1914,7 @@ function main(argv) {
     return result.ok ? 0 : 1;
   }
   const plan = buildPlan({ sourcePath, assessment, progress });
-  const checkpointId = args.checkpoint || recoveredStatus?.nextCheckpoint || plan.nextCheckpoint || CHECKPOINTS[0].id;
+  const checkpointId = args.checkpoint || recoveredStatus?.nextCheckpoint || plan.nextCheckpoint;
   const result = args.checkpoint
     ? commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment, priorProgressOverride: recoveredStatus?.progress ?? null })
     : runCheckpointLoop({

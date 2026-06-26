@@ -195,11 +195,13 @@ Required automation behavior:
 - `plan` and `status` are read-only.
 - `plan` and `status` must show semantic kernel status, packet status, Critical Auditor rounds, convergence counter, packet/source reconciliation, and next action.
 - `run` without `--checkpoint` starts at the first incomplete checkpoint and continues until `pre-render-ready`.
+- `run` without `--checkpoint` is idempotent when cp-00 through cp-08 are already passed and `next: null`: it must rerun the hard pre-render gates and return `pre_render_ready` on `PASS` instead of falling back to cp-00.
+- If upstream authoring has already materialized the current source and the current progress hash matches the active document hash, cp-01 through cp-08 may be recorded as evidence-only checkpoints when the combined pre-render gate returns `PASS`. The runner must not require or manufacture an additional source diff in this state.
 - `resume` starts from the progress record's next checkpoint when the current document hash matches the progress record.
 - `resume` must reload semantic kernel, must_decomposition_packet, Critical Auditor receipts, packet/source reconciliation, and checkpoint progress instead of restarting.
 - Explicit `--checkpoint` records only that checkpoint after controlled manual repair or upstream source materialization has already changed the active source document.
-- Every completed checkpoint creates a separate single-file commit.
-- A checkpoint commit must contain a real source materialization diff. If the target document has no staged or stageable source edit for the checkpoint, the runner must fail closed before commit.
+- A completed checkpoint either creates a separate single-file source commit or records current-hash evidence-only progress for cp-01 through cp-08 after pre-render gates pass.
+- A checkpoint commit must contain a real source materialization diff. If the target document has no staged or stageable source edit and current pre-render evidence is not sufficient for evidence-only progress, the runner must fail closed before commit.
 - The runner must stop before commit if staged paths contain anything other than the active target requirements document.
 - The runner must not silently overwrite manual edits when the current document hash differs from the latest progress record.
 - The runner must fail closed when source hash and progress hash mismatch.

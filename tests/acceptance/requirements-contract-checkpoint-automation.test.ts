@@ -1941,11 +1941,11 @@ describe('requirements contract checkpoint automation', () => {
     expect(status.result.stderr).toContain('机器信息：');
 
     const resume = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
-    expect(resume.result.status).toBe(1);
+    expect(resume.result.status).toBe(0);
     expect(() => JSON.parse(resume.result.stdout)).not.toThrow();
     expect(resume.result.stderr).toContain('[需求契约]');
     expect(resume.result.stderr).toContain('现在在做什么：');
-    expect(resume.result.stderr).toContain('为什么停在这里：');
+    expect(resume.result.stderr).toContain('为什么继续：');
     expect(resume.result.stderr).toContain('下一安全动作：');
     expect(resume.result.stderr).toContain('机器信息：');
   });
@@ -1953,24 +1953,50 @@ describe('requirements contract checkpoint automation', () => {
   it('explains checkpoint_source_edit_missing in human language and suppresses it with --quiet', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
-    const progress = path.join(tempDir, 'progress.json');
-    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
-    runNode(
-      CHECKPOINTS,
-      [
-        '--source',
-        source,
-        '--progress',
-        progress,
-        '--mode',
-        'run',
-        '--checkpoint',
-        'cp-01-header-scope-decisions',
-      ],
-      tempDir
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    for (const receiptPath of [
+      path.join(authoringDir, 'critical-auditor-receipt-round-1.json'),
+      path.join(authoringDir, 'critical-auditor-receipt-round-2.json'),
+      path.join(authoringDir, 'critical-auditor-receipt-round-3.json'),
+    ]) {
+      fs.rmSync(receiptPath, { force: true });
+    }
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    });
+    const documentHash = fileHash(source);
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source,
+          documentHash,
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          lastCompletedCheckpoint: 'cp-00-semantic-kernel',
+          currentCheckpoint: 'cp-01-must-decomposition-packet',
+          next: 'cp-01-must-decomposition-packet',
+          checkpoints: [
+            {
+              id: 'cp-00-semantic-kernel',
+              name: 'semantic kernel',
+              status: 'passed',
+              documentHash,
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
     );
 
-    const blocked = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
+    const blocked = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
     expect(blocked.result.status).toBe(1);
     expect(blocked.json.code).toBe('checkpoint_source_edit_missing');
     expect(blocked.result.stderr).toContain('当前源文档还没有写入本 checkpoint 需要保存的内容');
@@ -1980,7 +2006,7 @@ describe('requirements contract checkpoint automation', () => {
 
     const quiet = spawnSync(
       process.execPath,
-      [CHECKPOINTS, '--source', source, '--progress', progress, '--mode', 'resume', '--json', '--quiet'],
+      [CHECKPOINTS, '--source', source, '--progress', progress, '--mode', 'run', '--json', '--quiet'],
       {
         cwd: tempDir,
         encoding: 'utf8',
@@ -2168,7 +2194,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
   });
 
-  it('continues run from recovered progress instead of replaying completed checkpoints', () => {
+  it('continues run from recovered progress using current evidence instead of replaying completed checkpoints', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
@@ -2200,9 +2226,8 @@ describe('requirements contract checkpoint automation', () => {
       encoding: 'utf8',
     }).stdout.trim();
 
-    expect(result.status).toBe(1);
-    expect(json.code).toBe('checkpoint_source_edit_missing');
-    expect(json.failedCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
     expect(commitCount).toBe('1');
   });
 
@@ -2456,7 +2481,141 @@ describe('requirements contract checkpoint automation', () => {
     expect(after).toBe(before);
   });
 
-  it('resumes from progress next checkpoint and runs remaining checkpoints separately', () => {
+  it('records remaining checkpoints from current pre-render evidence when no source diff remains', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    });
+    const documentHash = fileHash(source);
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source,
+          documentHash,
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          lastCompletedCheckpoint: 'cp-00-semantic-kernel',
+          currentCheckpoint: 'cp-01-must-decomposition-packet',
+          next: 'cp-01-must-decomposition-packet',
+          checkpoints: [
+            {
+              id: 'cp-00-semantic-kernel',
+              name: 'semantic kernel',
+              status: 'passed',
+              documentHash,
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const beforeCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const afterCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+    const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
+    expect(afterCommitCount).toBe(beforeCommitCount);
+    expect(savedProgress.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(
+      SEMANTIC_CHECKPOINT_IDS
+    );
+    expect(
+      savedProgress.checkpoints
+        .filter((checkpoint: any) => checkpoint.id !== 'cp-00-semantic-kernel')
+        .every((checkpoint: any) => checkpoint.evidenceOnly === true)
+    ).toBe(true);
+  });
+
+  it('does not restart cp-00 when run sees completed progress with next checkpoint null', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    });
+    const documentHash = fileHash(source);
+    const commitHash = spawnSync('git', ['rev-parse', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source,
+          documentHash,
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          lastCompletedCheckpoint: 'cp-08-pre-render-global-reconciliation',
+          currentCheckpoint: null,
+          next: null,
+          checkpoints: SEMANTIC_CHECKPOINT_IDS.map((id) => ({
+            id,
+            name: id,
+            status: 'passed',
+            commitHash,
+            documentHash,
+            evidenceOnly: id !== 'cp-00-semantic-kernel',
+          })),
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const beforeCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const afterCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+    const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
+    expect(json.completedCheckpoints).toEqual([]);
+    expect(afterCommitCount).toBe(beforeCommitCount);
+    expect(savedProgress.next).toBe(null);
+  });
+
+  it('resumes from progress next checkpoint and records remaining checkpoints from current evidence', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
@@ -2487,12 +2646,13 @@ describe('requirements contract checkpoint automation', () => {
     }).stdout.trim();
     const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
-    expect(result.status).toBe(1);
-    expect(json.ok).toBe(false);
-    expect(json.code).toBe('checkpoint_source_edit_missing');
-    expect(json.failedCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
     expect(commitCount).toBe('1');
-    expect(savedProgress.next).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(savedProgress.next).toBe(null);
+    expect(savedProgress.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(
+      SEMANTIC_CHECKPOINT_IDS.slice(1)
+    );
   });
 
   it('fails the pre-render gate for eighteen trace rows that reference missing evidence', () => {

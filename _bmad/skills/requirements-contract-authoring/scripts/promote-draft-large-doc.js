@@ -7,6 +7,11 @@ const { spawnSync } = require("node:child_process");
 const { buildManifest } = require("./generate-draft-manifest");
 const { normalizeMarkdown } = require("./normalize-draft-markdown");
 const { requireLargeDocumentWriter } = require("./resolve-bmad-runtime");
+const {
+  extractImplementationConfirmation,
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} = require("./pre_render_definition_drilldown_lib");
 
 const { safeWriteText } = requireLargeDocumentWriter();
 
@@ -165,6 +170,24 @@ function stableStringify(value) {
 
 function sha256Json(value) {
   return `sha256:${crypto.createHash("sha256").update(stableStringify(value), "utf8").digest("hex")}`;
+}
+
+function semanticBindingForFile(filePath) {
+  try {
+    const text = fs.readFileSync(path.resolve(filePath), "utf8");
+    const extracted = extractImplementationConfirmation(text);
+    return {
+      sourceDocumentHash: sourceDocumentHashFor(text, extracted.blockText, extracted.confirmation),
+      implementationConfirmationHash: implementationConfirmationHashFor(extracted.confirmation),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      sourceDocumentHash: null,
+      implementationConfirmationHash: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function timestamp() {
@@ -408,6 +431,7 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
   const failures = [];
   const defaults = defaultGuardPaths(manifest);
   const repairedArgs = { ...args };
+  const targetState = currentTargetState(targetPath);
 
   for (const key of ["scaleAssessment", "scaleRoutingDecision", "encodingReport", "receiptOut"]) {
     if (!repairedArgs[key]) repairedArgs[key] = defaults[key];
@@ -437,6 +461,35 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
     if (!result.ok) failures.push("auto_repair_scale_assessment_failed");
   }
 
+  if (!args.sourceMutationDecision && targetState.exists && targetState.hash === manifest.draftHash) {
+    const prepareScript = path.join(__dirname, "prepare-current-source-promotion.js");
+    const result = runNodeJson(prepareScript, [
+      "--source",
+      targetPath,
+      "--authoring-dir",
+      defaults.authoringDir,
+      "--encoding-report-out",
+      repairedArgs.encodingReport,
+      "--source-mutation-decision-out",
+      defaults.sourceMutationDecision,
+      "--json",
+    ]);
+    actions.push({
+      action: "prepare_current_source_promotion",
+      script: normalizePathForReport(prepareScript),
+      out: {
+        encodingReport: normalizePathForReport(repairedArgs.encodingReport),
+        sourceMutationDecision: normalizePathForReport(defaults.sourceMutationDecision),
+      },
+      ok: result.ok,
+      failureClass: result.parsed?.failureClass ?? null,
+    });
+    if (fs.existsSync(defaults.sourceMutationDecision)) {
+      repairedArgs.sourceMutationDecision = defaults.sourceMutationDecision;
+    }
+    if (!result.ok) failures.push("auto_repair_current_source_promotion_prep_failed");
+  }
+
   if (!fs.existsSync(path.resolve(repairedArgs.encodingReport))) {
     const encodingScript = findEncodingIntegrityScript();
     if (!encodingScript) {
@@ -454,7 +507,7 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
     }
   }
 
-  if (!args.sourceMutationDecision) {
+  if (!args.sourceMutationDecision && !repairedArgs.sourceMutationDecision) {
     repairedArgs.sourceMutationDecision = fs.existsSync(defaults.sourceMutationDecision)
       ? defaults.sourceMutationDecision
       : "";
@@ -543,7 +596,7 @@ function checkpointEvidenceRequired(route) {
   );
 }
 
-function validateCheckpointPersistenceEvidence(evidence) {
+function validateCheckpointPersistenceEvidence(evidence, context = {}) {
   const issues = [];
   if (!evidence || typeof evidence !== "object") {
     return ["checkpoint_persistence_evidence_missing_or_invalid"];
@@ -592,6 +645,20 @@ function validateCheckpointPersistenceEvidence(evidence) {
         if (receipt?.status !== "passed") {
           issues.push(`checkpoint_receipt_status_not_passed:${checkpointId}`);
         }
+        if (context.sourceDocumentHash) {
+          if (!receipt?.sourceDocumentHash) {
+            issues.push(`checkpoint_receipt_source_hash_missing:${checkpointId}`);
+          } else if (receipt.sourceDocumentHash !== context.sourceDocumentHash) {
+            issues.push(`checkpoint_receipt_source_hash_mismatch:${checkpointId}`);
+          }
+        }
+        if (context.implementationConfirmationHash) {
+          if (!receipt?.implementationConfirmationHash) {
+            issues.push(`checkpoint_receipt_implementation_hash_missing:${checkpointId}`);
+          } else if (receipt.implementationConfirmationHash !== context.implementationConfirmationHash) {
+            issues.push(`checkpoint_receipt_implementation_hash_mismatch:${checkpointId}`);
+          }
+        }
         const { receiptHash, ...receiptPayload } = receipt || {};
         if (!receiptHash) {
           issues.push(`checkpoint_receipt_hash_missing:${checkpointId}`);
@@ -634,6 +701,8 @@ function validateSourceMutationDecision(decision, context) {
     const targetRawHashAfter = String(
       decision?.targetRawHashAfter ?? decision?.sourceDocumentHashAfter ?? ""
     );
+    const semanticSourceHashBefore = String(decision?.semanticSourceHashBefore ?? "");
+    const semanticSourceHashAfter = String(decision?.semanticSourceHashAfter ?? "");
     if (context.targetState.exists && decision?.sourceDocumentExistedBefore === false) {
       issues.push("source_mutation_target_existence_mismatch");
     }
@@ -659,6 +728,20 @@ function validateSourceMutationDecision(decision, context) {
       decision.targetRawHashAfter !== sourceDocumentHashAfter
     ) {
       issues.push("source_mutation_source_hash_after_raw_alias_mismatch");
+    }
+    if (context.expectedSemanticSourceHash) {
+      if (!semanticSourceHashAfter) {
+        issues.push("source_mutation_semantic_source_hash_after_missing");
+      } else if (semanticSourceHashAfter !== context.expectedSemanticSourceHash) {
+        issues.push("source_mutation_semantic_source_hash_after_mismatch");
+      }
+    }
+    if (context.currentSemanticSourceHash) {
+      if (!semanticSourceHashBefore) {
+        issues.push("source_mutation_semantic_source_hash_before_missing");
+      } else if (semanticSourceHashBefore !== context.currentSemanticSourceHash) {
+        issues.push("source_mutation_semantic_source_hash_before_mismatch");
+      }
     }
   }
   return issues;
@@ -694,9 +777,47 @@ function addNextRequiredActionsForErrors(result) {
   }
 }
 
+function uniqueStrings(values) {
+  return [...new Set(values)];
+}
+
+function authoringArtifactDirectories(args) {
+  return uniqueStrings(
+    [
+      args.scaleAssessment,
+      args.scaleRoutingDecision,
+      args.sourceMutationDecision,
+      args.checkpointPersistenceEvidence,
+      args.encodingReport,
+      args.receiptOut,
+    ]
+      .filter(Boolean)
+      .map((value) => path.dirname(path.resolve(value)))
+  );
+}
+
+function listTemporaryExecutableHelpers(args) {
+  const forbidden = /\.(?:cjs|mjs|js|ps1)$/iu;
+  const files = [];
+  for (const dir of authoringArtifactDirectories(args)) {
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isFile() || !forbidden.test(entry.name)) continue;
+      files.push(normalizePathForReport(path.join(dir, entry.name)));
+    }
+  }
+  return files.sort();
+}
+
 function validateAuthoringPromotionGate(args, targetPath, manifest) {
   const required = guardedPromotionRequired(args, targetPath);
   const targetState = currentTargetState(targetPath);
+  const semanticBinding = manifest?.draftPath
+    ? semanticBindingForFile(manifest.draftPath)
+    : { sourceDocumentHash: null, implementationConfirmationHash: null, error: null };
+  const currentTargetSemanticBinding = targetState.exists
+    ? semanticBindingForFile(targetPath)
+    : { sourceDocumentHash: null, implementationConfirmationHash: null, error: null };
   const result = {
     required,
     ok: true,
@@ -715,6 +836,9 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
       path: targetState.path,
     },
     expectedDraftHash: manifest?.draftHash ?? null,
+    expectedSemanticSourceHash: semanticBinding.sourceDocumentHash,
+    expectedImplementationConfirmationHash: semanticBinding.implementationConfirmationHash,
+    currentSemanticSourceHash: currentTargetSemanticBinding.sourceDocumentHash,
     nextRequiredActions: [],
   };
   if (!required) return result;
@@ -751,6 +875,24 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
         });
       }
     }
+    result.ok = false;
+    return result;
+  }
+
+  const temporaryExecutableHelpers = listTemporaryExecutableHelpers(args);
+  result.decisions.temporaryExecutableHelpers = {
+    forbiddenExtensions: [".cjs", ".js", ".mjs", ".ps1"],
+    files: temporaryExecutableHelpers,
+  };
+  if (temporaryExecutableHelpers.length > 0) {
+    result.errors.push("authoring_temporary_executable_helper_present");
+    result.nextRequiredActions.push({
+      action: "archive_authoring_temporary_executable_helpers",
+      command:
+        "move temporary .cjs/.js/.mjs/.ps1 helper files out of <authoring-dir> and rerun the skill-local authoring/promotion scripts",
+      reason:
+        "Requirement-record authoring directories may contain evidence JSON/Markdown only; executable helper scripts indicate an ad hoc repair path and are not authoritative.",
+    });
     result.ok = false;
     return result;
   }
@@ -797,6 +939,8 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
       ...validateSourceMutationDecision(sourceMutationDecision, {
         targetState,
         expectedDraftHash: manifest?.draftHash ?? "",
+        expectedSemanticSourceHash: semanticBinding.sourceDocumentHash,
+        currentSemanticSourceHash: currentTargetSemanticBinding.sourceDocumentHash,
       })
     );
     result.errors.push(...validateEncodingReport(encodingReport));
@@ -826,7 +970,12 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
             ? checkpointEvidence.checkpointPersistenceRef.checkpointReceiptRefs.length
             : 0,
         };
-        result.errors.push(...validateCheckpointPersistenceEvidence(checkpointEvidence));
+        result.errors.push(
+          ...validateCheckpointPersistenceEvidence(checkpointEvidence, {
+            sourceDocumentHash: semanticBinding.sourceDocumentHash,
+            implementationConfirmationHash: semanticBinding.implementationConfirmationHash,
+          })
+        );
       }
     }
   } catch (error) {
