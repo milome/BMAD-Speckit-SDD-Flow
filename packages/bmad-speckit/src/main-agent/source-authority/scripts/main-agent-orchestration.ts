@@ -1666,6 +1666,47 @@ interface CriticalAuditorRepairAction {
   requirementIds: string[];
 }
 
+const CRITICAL_AUDITOR_REPAIR_ACTION_TARGET_FIELDS: Record<
+  CriticalAuditorRepairActionType,
+  string[]
+> = {
+  add_must: ['must', 'implementationConfirmation.must'],
+  split_must: ['must', 'implementationConfirmation.must'],
+  add_neg: [
+    'notDone',
+    'negativeRequirements',
+    'implementationConfirmation.notDone',
+    'implementationConfirmation.negativeRequirements',
+  ],
+  add_out: [
+    'mustNot',
+    'outOfScope',
+    'implementationConfirmation.mustNot',
+    'implementationConfirmation.outOfScope',
+  ],
+  add_evidence: ['evidence', 'implementationConfirmation.evidence'],
+  add_trace: ['traceRows', 'implementationConfirmation.traceRows'],
+  add_acc: [
+    'acceptanceTests',
+    'acceptanceCriteria',
+    'implementationConfirmation.acceptanceTests',
+    'implementationConfirmation.acceptanceCriteria',
+  ],
+  add_e2e: ['e2eSuites', 'e2eScenarios', 'implementationConfirmation.e2eSuites', 'implementationConfirmation.e2eScenarios'],
+  add_business_view: ['businessViews', 'implementationConfirmation.businessViews'],
+  replace_target_path: [
+    'targetModificationPaths',
+    'implementationConfirmation.targetModificationPaths',
+  ],
+  replace_validation_command: ['requiredCommands', 'implementationConfirmation.requiredCommands'],
+};
+
+function criticalAuditorRepairActionTargetFields(
+  actionType: CriticalAuditorRepairActionType
+): string[] {
+  return CRITICAL_AUDITOR_REPAIR_ACTION_TARGET_FIELDS[actionType] ?? [];
+}
+
 interface CriticalAuditorRoundInput {
   roundIndex: number;
   transactionId?: string;
@@ -1761,6 +1802,7 @@ interface PreConfirmationRunOptions {
   requiredCommand?: string | string[];
   criticalAuditorProviderMode?: CriticalAuditorProviderMode | string;
   criticalAuditorResponseFile?: string;
+  criticalAuditorResponseDir?: string;
   criticalAuditorExternalAdapterCommand?: string;
   checkpointPersistenceEvidencePath?: string;
   criticalAuditorRound?: (input: CriticalAuditorRoundInput) => CriticalAuditorRoundResult;
@@ -5405,6 +5447,18 @@ function materializeCriticalAuditorGapFix(input: {
   for (const gap of asRecordArray(input.response.validatedGaps)) {
     const repairActions = asRecordArray(gap.repairActions) as unknown as CriticalAuditorRepairAction[];
     for (const action of repairActions) {
+      const targetField = normalizeText(action.targetField);
+      const allowedTargetFields = criticalAuditorRepairActionTargetFields(action.type);
+      if (allowedTargetFields.length > 0 && !allowedTargetFields.includes(targetField)) {
+        return {
+          ok: false,
+          issue: sourceMaterializationGateIssue(
+            'critical_auditor_repair_action_target_field_mismatch',
+            `Critical Auditor repair action ${action.actionId} targets ${targetField || '<missing>'}, which cannot be materialized by action type ${action.type}.`,
+            [action.actionId, action.type, targetField || '<missing>', ...allowedTargetFields]
+          ),
+        };
+      }
       let materializedRef = '';
       switch (action.type) {
         case 'add_must':
@@ -6716,7 +6770,7 @@ function validateCriticalAuditorRepairActions(
     if (actions.length === 0) {
       issues.push(
         preConfirmationIssue(
-          'critical_auditor_repair_action_field_missing',
+          'critical_auditor_validated_gap_repair_actions_missing',
           `Validated gap ${gapId} must include non-empty repairActions[]`,
           [`${gapId}.repairActions`],
           'critical_auditor'
@@ -7611,8 +7665,6 @@ function criticalAuditorRoundRequestMatchesCurrent(
   existing: Record<string, unknown>,
   candidate: Record<string, unknown>
 ): boolean {
-  const existingGateDryRun = recordObject(existing.gateDryRun);
-  const candidateGateDryRun = recordObject(candidate.gateDryRun);
   const comparableScalarKeys = [
     'schemaVersion',
     'recordId',
@@ -7630,12 +7682,10 @@ function criticalAuditorRoundRequestMatchesCurrent(
       return false;
     }
   }
-  if (
-    normalizeText(existingGateDryRun.gateDryRunHash) !==
-    normalizeText(candidateGateDryRun.gateDryRunHash)
-  ) {
-    return false;
-  }
+  // A published round request is the hash authority for response-file recovery.
+  // Gate dry-run noise can change between retries without changing the source,
+  // packet, or implementationConfirmation hashes, so keep the original request
+  // frozen until the transaction identity changes.
   const comparableArrayKeys = ['mustRefs', 'sourceRequirementTexts'];
   for (const key of comparableArrayKeys) {
     if (sha256Json(asStringArray(existing[key])) !== sha256Json(asStringArray(candidate[key]))) {
@@ -8063,6 +8113,26 @@ function validateCriticalAuditorResponse(input: {
       )
     );
   }
+  if (verdict === 'blocked' && !hasCriticalAuditorBlockedEvidence(parsed)) {
+    issues.push(
+      preConfirmationIssue(
+        'critical_auditor_blocked_evidence_missing',
+        'Critical Auditor response verdict blocked requires source materialization, missing projection, source/projection invalid proof, or gate dry-run blocker evidence',
+        ['sourceMaterializationFindings', 'missingProjectionFindings', 'invalidProofFindings', 'gateDryRunBlockers'],
+        'critical_auditor'
+      )
+    );
+  }
+  if (verdict === 'insufficient_audit' && !hasCriticalAuditorInsufficientAuditEvidence(parsed)) {
+    issues.push(
+      preConfirmationIssue(
+        'critical_auditor_insufficient_audit_evidence_missing',
+        'Critical Auditor response verdict insufficient_audit requires invalidProofFindings that explicitly describe incomplete audit evidence',
+        ['invalidProofFindings'],
+        'critical_auditor'
+      )
+    );
+  }
   if (normalizeText(parsed.gateDryRunHash) !== input.gateDryRun.hash) {
     issues.push(
       preConfirmationIssue(
@@ -8245,9 +8315,25 @@ function validateCriticalAuditorResponse(input: {
       )
     );
   }
-  const repairActionValidation = !isNoNewGapVerdict(verdict)
-    ? validateCriticalAuditorRepairActions(unresolvedGaps)
-    : { gaps: parsedValidatedGaps as Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>, issues: [] };
+  const repairActionValidation =
+    verdict === 'new_valid_gap'
+      ? unresolvedGaps.length === 0
+        ? {
+            gaps: [] as Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>,
+            issues: [
+              preConfirmationIssue(
+                'critical_auditor_new_valid_gap_missing_validated_gap',
+                'Critical Auditor response verdict new_valid_gap requires at least one unresolved validated gap',
+                ['validatedGaps'],
+                'critical_auditor'
+              ),
+            ],
+          }
+        : validateCriticalAuditorRepairActions(unresolvedGaps)
+      : {
+          gaps: parsedValidatedGaps as Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>,
+          issues: [],
+        };
   if (repairActionValidation.issues.length > 0) {
     issues.push(...repairActionValidation.issues);
   }
@@ -8272,6 +8358,7 @@ function validateCriticalAuditorResponse(input: {
       reconciliationIssueCount: Number(parsed.reconciliationIssueCount),
       checkedProjectionGroups: asStringArray(parsed.checkedProjectionGroups),
       priorFindingsDisposition,
+      falsePositiveProofs: asRecordArray(parsed.falsePositiveProofs),
       rationale: normalizeText(parsed.rationale),
     },
     issues: [],
@@ -8387,6 +8474,80 @@ function validateCriticalAuditorRoundResultBinding(input: {
     }
   }
   return issues;
+}
+
+function criticalAuditorFindingText(value: Record<string, unknown>): string {
+  return [
+    normalizeText(value.code),
+    normalizeText(value.issueCode),
+    normalizeText(value.findingCode),
+    normalizeText(value.category),
+    normalizeText(value.type),
+    normalizeText(value.message),
+    normalizeText(value.reason),
+    normalizeText(value.description),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function isAuditInsufficiencyFinding(value: Record<string, unknown>): boolean {
+  const text = criticalAuditorFindingText(value);
+  const hasAuditContext =
+    text.includes('audit') ||
+    text.includes('reviewed') ||
+    text.includes('rationale') ||
+    text.includes('evidence');
+  const hasInsufficiencySignal =
+    text.includes('insufficient') ||
+    text.includes('incomplete') ||
+    text.includes('missing') ||
+    text.includes('lacks') ||
+    text.includes('lack ') ||
+    text.includes('without');
+  return hasAuditContext && hasInsufficiencySignal;
+}
+
+function hasCriticalAuditorBlockedEvidence(parsed: Record<string, unknown>): boolean {
+  const sourceMaterializationFindings = asRecordArray(parsed.sourceMaterializationFindings);
+  const missingProjectionFindings = asRecordArray(parsed.missingProjectionFindings);
+  const gateDryRunBlockers = [
+    ...asRecordArray(parsed.gateDryRunBlockers),
+    ...asRecordArray(parsed.gateDryRunFindings),
+  ];
+  const invalidSourceOrProjectionProofFindings = asRecordArray(parsed.invalidProofFindings).filter(
+    (finding) => !isAuditInsufficiencyFinding(finding)
+  );
+  return (
+    sourceMaterializationFindings.length > 0 ||
+    missingProjectionFindings.length > 0 ||
+    gateDryRunBlockers.length > 0 ||
+    invalidSourceOrProjectionProofFindings.length > 0
+  );
+}
+
+function hasCriticalAuditorInsufficientAuditEvidence(parsed: Record<string, unknown>): boolean {
+  return asRecordArray(parsed.invalidProofFindings).some(isAuditInsufficiencyFinding);
+}
+
+function isPacketSourceProjectionMetadataDrift(response: CriticalAuditorRoundResult): boolean {
+  const findings = [
+    ...(response.sourceMaterializationFindings ?? []),
+    ...(response.missingProjectionFindings ?? []),
+    ...(response.invalidProofFindings ?? []),
+    ...(response.gapCandidates ?? []),
+    ...(response.rejectedGapCandidates ?? []),
+  ];
+  return findings.some((finding) => {
+    const text = criticalAuditorFindingText(finding);
+    return (
+      (text.includes('source') && text.includes('packet') && text.includes('projection')) ||
+      (text.includes('metadata') && text.includes('drift')) ||
+      text.includes('packet_source_projection') ||
+      text.includes('source_packet_projection')
+    );
+  });
 }
 
 function detectIgnoredRequirementSource(
@@ -8677,6 +8838,9 @@ export function runMainAgentAuthoringRepair(
     }
     const receipt = buildCriticalAuditorReceipt({
       roundIndex,
+      requestHash: normalizeText(request.requestHash),
+      gateDryRunHash: responseGateDryRun.hash,
+      responseHash: sha256Json(validation.response),
       auditInputHash,
       recordId: identity.recordId,
       sourceDocumentHash,
@@ -8691,7 +8855,72 @@ export function runMainAgentAuthoringRepair(
         criticalAuditorReceipt: receipt,
       }
     );
-    if (!isNoNewGapVerdict(validation.response.verdict)) {
+    if (validation.response.verdict === 'blocked') {
+      const metadataDrift = isPacketSourceProjectionMetadataDrift(validation.response);
+      const blockingStage = metadataDrift
+        ? 'packet_source_projection_resynchronization_required'
+        : 'critical_auditor_blocked';
+      const nextRequiredAction = metadataDrift
+        ? 'run_packet_source_projection_resynchronization'
+        : 'resolve_critical_auditor_blocker';
+      return buildAuthoringRepairResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        status: 'blocked',
+        blockingStage,
+        nextRequiredAction,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        packetHash,
+        artifacts: [
+          path.join(paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+        ],
+        warnings,
+        issues: [
+          preConfirmationIssue(
+            blockingStage,
+            metadataDrift
+              ? 'Critical Auditor blocked on source and packet projection metadata drift; controlled resynchronization is required.'
+              : 'Critical Auditor returned blocked; resolve the audit blocker before continuing authoring repair.',
+            [responsePath],
+            'critical_auditor'
+          ),
+        ],
+        consecutiveNoNewGapRounds: 0,
+      });
+    }
+    if (validation.response.verdict === 'insufficient_audit') {
+      return buildAuthoringRepairResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_insufficient_audit',
+        nextRequiredAction: 'rewrite_current_critical_auditor_round_response',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        packetHash,
+        artifacts: [
+          path.join(paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+        ],
+        warnings,
+        issues: [
+          preConfirmationIssue(
+            'critical_auditor_insufficient_audit',
+            'Critical Auditor response is insufficient for convergence; rewrite the current round response with complete audit evidence.',
+            [responsePath],
+            'critical_auditor'
+          ),
+        ],
+        consecutiveNoNewGapRounds: 0,
+      });
+    }
+    if (validation.response.verdict === 'new_valid_gap') {
       const gapFix = materializeCriticalAuditorGapFix({
         root,
         sourcePath,
@@ -8720,7 +8949,14 @@ export function runMainAgentAuthoringRepair(
             path.join(paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
           ],
           warnings,
-          issues: [gapFix.issue],
+          issues: [
+            sourceMaterializationGateIssue(
+              'source_gap_fix_materialization_required',
+              'Critical Auditor new_valid_gap repair actions could not be materialized into the source contract.',
+              gapFix.issue.refs
+            ),
+            gapFix.issue,
+          ],
           consecutiveNoNewGapRounds: 0,
         });
       }
@@ -10398,20 +10634,45 @@ export function runMainAgentPreConfirmationDrilldown(
   const responseFilePath = normalizeText(options.criticalAuditorResponseFile)
     ? resolveRootRelativePath(root, normalizeText(options.criticalAuditorResponseFile))
     : '';
+  const responseDirPath = normalizeText(options.criticalAuditorResponseDir)
+    ? resolveRootRelativePath(root, normalizeText(options.criticalAuditorResponseDir))
+    : '';
   const fileBackedProvider =
-    responseFilePath &&
+    (responseFilePath || responseDirPath) &&
     ['response_file', 'codex_subagent_readonly', 'claude_subagent_readonly'].includes(
       criticalAuditorProviderMode
     )
-      ? (round: CriticalAuditorRoundInput): CriticalAuditorRoundResult => {
+      ? (() => {
+          let responseFileConsumed = false;
+          return (round: CriticalAuditorRoundInput): CriticalAuditorRoundResult => {
           const requestPath = criticalAuditorRequestPath(stagingTransaction, round.roundIndex);
           const request = readJsonIfExists(requestPath);
           if (!request) {
             throw new Error(`critical_auditor_request_missing_for_response: ${requestPath}`);
           }
           const gateDryRun = round.gateDryRun;
+          const responseTargetPath = criticalAuditorResponsePath(stagingTransaction, round.roundIndex);
+          const responseDirRoundPath = responseDirPath
+            ? path.join(responseDirPath, `critical-auditor-round-response-${round.roundIndex}.json`)
+            : '';
+          const stagedResponseExists = fs.existsSync(responseTargetPath);
+          const responseDirRoundExists = Boolean(
+            responseDirRoundPath && fs.existsSync(responseDirRoundPath)
+          );
+          const selectedResponsePath = stagedResponseExists
+            ? responseTargetPath
+            : responseDirRoundExists
+              ? responseDirRoundPath
+              : responseFilePath && !responseFileConsumed
+                ? responseFilePath
+                : '';
+          if (!selectedResponsePath || !fs.existsSync(selectedResponsePath)) {
+            throw new Error(
+              `critical_auditor_response_file_missing: ${responseTargetPath}`
+            );
+          }
           const validation = validateCriticalAuditorResponse({
-            responsePath: responseFilePath,
+            responsePath: selectedResponsePath,
             request,
             transaction: stagingTransaction,
             roundIndex: round.roundIndex,
@@ -10424,14 +10685,17 @@ export function runMainAgentPreConfirmationDrilldown(
           });
           if (!validation.response) {
             const code = validation.issues[0]?.code ?? 'critical_auditor_response_invalid';
-            throw new Error(`${code}: ${responseFilePath}`);
+            throw new Error(`${code}: ${selectedResponsePath}`);
           }
-          const responseTargetPath = criticalAuditorResponsePath(stagingTransaction, round.roundIndex);
-          if (path.resolve(responseFilePath) !== path.resolve(responseTargetPath)) {
-            fs.copyFileSync(responseFilePath, responseTargetPath);
+          if (path.resolve(selectedResponsePath) !== path.resolve(responseTargetPath)) {
+            fs.copyFileSync(selectedResponsePath, responseTargetPath);
+          }
+          if (responseFilePath && path.resolve(selectedResponsePath) === path.resolve(responseFilePath)) {
+            responseFileConsumed = true;
           }
           return validation.response;
-        }
+        };
+      })()
       : undefined;
   const criticalAuditorLoop = runCriticalAuditorReceiptLoop({
     root,
@@ -13306,6 +13570,11 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       argv[index + 1]
     ) {
       out.criticalAuditorResponseFile = argv[++index];
+    } else if (
+      (token === '--critical-auditor-response-dir' || token === '--criticalAuditorResponseDir') &&
+      argv[index + 1]
+    ) {
+      out.criticalAuditorResponseDir = argv[++index];
     } else if (
       (token === '--critical-auditor-external-adapter-command' ||
         token === '--criticalAuditorExternalAdapterCommand') &&
@@ -16255,6 +16524,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         requiredCommand: args.requiredCommand,
         criticalAuditorProviderMode: args.criticalAuditorProviderMode,
         criticalAuditorResponseFile: args.criticalAuditorResponseFile,
+        criticalAuditorResponseDir: args.criticalAuditorResponseDir,
         criticalAuditorExternalAdapterCommand: args.criticalAuditorExternalAdapterCommand,
         checkpointPersistenceEvidencePath: args.checkpointPersistenceEvidencePath,
       });

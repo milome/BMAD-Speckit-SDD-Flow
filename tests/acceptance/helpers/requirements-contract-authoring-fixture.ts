@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
@@ -126,9 +127,10 @@ export function stagingTransactionDir(root: string, recordId: string): string {
     ? readdirSync(stagingRoot, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .map((entry) => path.join(stagingRoot, entry.name))
+        .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs)
     : [];
-  if (entries.length !== 1) {
-    throw new Error(`expected exactly one staging transaction under ${stagingRoot}, found ${entries.length}`);
+  if (entries.length === 0) {
+    throw new Error(`expected at least one staging transaction under ${stagingRoot}, found 0`);
   }
   return entries[0];
 }

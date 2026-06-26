@@ -373,6 +373,23 @@ function authoringPaths(root: string, recordId: string) {
   };
 }
 
+function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, round: number, verdict: string) {
+  const request = readJson(paths.request(round));
+  const receiptEnvelope = readJson(paths.receipt(round));
+  const receipt = receiptEnvelope.criticalAuditorReceipt;
+  expect(receipt).toMatchObject({
+    roundIndex: round,
+    requestHash: request.requestHash,
+    sourceDocumentHash: request.sourceDocumentHash,
+    implementationConfirmationHash: request.implementationConfirmationHash,
+    packetHash: request.packetHash,
+    gateDryRunHash: request.gateDryRun.gateDryRunHash,
+  });
+  expect(receipt.responseHash).toEqual(expect.stringMatching(/^sha256:[a-f0-9]{64}$/));
+  expect((receipt.convergenceDecision as any).verdict).toBe(verdict);
+  expect(receipt.sourceGapFixes ?? []).toEqual([]);
+}
+
 function writePromotionReceipt(
   root: string,
   source: string,
@@ -547,6 +564,92 @@ function writeNewValidGapResponse(
   return responsePath;
 }
 
+function writeBlockedResponse(
+  requestPath: string,
+  responsePath: string,
+  overrides: Record<string, unknown> = {}
+) {
+  const request = readJson(requestPath);
+  const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
+  const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const body = {
+    schemaVersion: 'critical-auditor-round-response/v1',
+    requestHash: request.requestHash,
+    recordId: request.recordId,
+    roundIndex: request.roundIndex,
+    sourceDocumentHash: request.sourceDocumentHash,
+    implementationConfirmationHash: request.implementationConfirmationHash,
+    packetHash: request.packetHash,
+    gateDryRunHash: request.gateDryRun.gateDryRunHash,
+    reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
+    checkedProjectionGroups,
+    verdict: 'blocked',
+    reviewedMustRefs: request.mustRefs,
+    reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
+    priorFindingsDisposition: [
+      {
+        findingRef: `ROUND-${request.roundIndex}-BLOCKED`,
+        disposition: 'new',
+        evidenceRefs: [request.gateDryRun.reportPath],
+      },
+    ],
+    validatedGaps: [],
+        sourceMaterializationFindings: [
+          {
+            code: 'audit_dependency_unavailable',
+            message: 'Audit dependency unavailable; this blocker is not a projection metadata synchronization issue.',
+          },
+        ],
+    rationale: `Round ${request.roundIndex} blocked on non-semantic audit dependency.`,
+    ...overrides,
+  };
+  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  return responsePath;
+}
+
+function writeInsufficientAuditResponse(
+  requestPath: string,
+  responsePath: string,
+  overrides: Record<string, unknown> = {}
+) {
+  const request = readJson(requestPath);
+  const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
+  const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const body = {
+    schemaVersion: 'critical-auditor-round-response/v1',
+    requestHash: request.requestHash,
+    recordId: request.recordId,
+    roundIndex: request.roundIndex,
+    sourceDocumentHash: request.sourceDocumentHash,
+    implementationConfirmationHash: request.implementationConfirmationHash,
+    packetHash: request.packetHash,
+    gateDryRunHash: request.gateDryRun.gateDryRunHash,
+    reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
+    checkedProjectionGroups,
+    verdict: 'insufficient_audit',
+    reviewedMustRefs: request.mustRefs,
+    reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
+    priorFindingsDisposition: [
+      {
+        findingRef: `ROUND-${request.roundIndex}-INSUFFICIENT`,
+        disposition: 'new',
+        evidenceRefs: [request.gateDryRun.reportPath],
+      },
+    ],
+    validatedGaps: [],
+    invalidProofFindings: [
+      {
+        code: 'audit_evidence_incomplete',
+        message: 'Audit response lacks enough evidence for convergence.',
+      },
+    ],
+    rationale: `Round ${request.roundIndex} did not provide enough audit evidence.`,
+    ...overrides,
+  };
+  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  return responsePath;
+}
+
 function writeSingleMustRepairResponse(requestPath: string, responsePath: string) {
   return writeNewValidGapResponse(requestPath, responsePath, {
     validatedGaps: [
@@ -575,6 +678,322 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
 }
 
 describe('main-agent authoring-repair preserve-existing lane', () => {
+  it('authoring-repair accepts blocked auditor response without gap materialization', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-blocked-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const before = sha256Text(readFileSync(source, 'utf8'));
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeBlockedResponse(paths.request(1), paths.response(1));
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_blocked');
+      expect(result.nextRequiredAction).toBe('resolve_critical_auditor_blocker');
+      expect(existsSync(paths.receipt(1))).toBe(true);
+      expectReceiptBinding(paths, 1, 'blocked');
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+        'source_gap_fix_materialization_required'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('authoring-repair accepts insufficient audit without repair actions', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-insufficient-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const before = sha256Text(readFileSync(source, 'utf8'));
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeInsufficientAuditResponse(paths.request(1), paths.response(1));
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_insufficient_audit');
+      expect(result.nextRequiredAction).toBe('rewrite_current_critical_auditor_round_response');
+      expect(existsSync(paths.receipt(1))).toBe(true);
+      expectReceiptBinding(paths, 1, 'insufficient_audit');
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+        'source_gap_fix_materialization_required'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocked and insufficient audit require verdict-specific evidence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-verdict-evidence-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const before = sha256Text(readFileSync(source, 'utf8'));
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeBlockedResponse(paths.request(1), paths.response(1), {
+        sourceMaterializationFindings: [],
+        falsePositiveProofs: [
+          {
+            blockerCode: 'synthetic_gate_blocker',
+            proofType: 'current_source_packet_hash_match',
+            evidenceRefs: ['gate-dry-run'],
+          },
+        ],
+      });
+
+      const blockedResult = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(blockedResult.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_blocked_evidence_missing'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+
+      writeInsufficientAuditResponse(paths.request(1), paths.response(1), {
+        invalidProofFindings: [],
+        sourceMaterializationFindings: [
+          {
+            code: 'source_packet_projection_metadata_drift',
+            message: 'source packet projection metadata drift is a blocker, not audit incompleteness.',
+          },
+        ],
+      });
+
+      const insufficientResult = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(insufficientResult.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_insufficient_audit_evidence_missing'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('new_valid_gap still requires unresolved validated gap', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-new-gap-empty-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const before = sha256Text(readFileSync(source, 'utf8'));
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeNewValidGapResponse(paths.request(1), paths.response(1), { validatedGaps: [] });
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_new_valid_gap_missing_validated_gap'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('new_valid_gap still requires repair actions', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-new-gap-no-actions-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const before = sha256Text(readFileSync(source, 'utf8'));
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [{ id: 'VALID-GAP-NO-ACTIONS', status: 'open' }],
+      });
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'critical_auditor_validated_gap_repair_actions_missing'
+      );
+      expect(existsSync(paths.receipt(1))).toBe(false);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('projection metadata blocker routes to resync not semantic repair', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-metadata-drift-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const before = sha256Text(readFileSync(source, 'utf8'));
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeBlockedResponse(paths.request(1), paths.response(1), {
+        sourceMaterializationFindings: [
+          {
+            code: 'packet_source_projection_metadata_drift',
+            message: 'source packet projection metadata drift requires resynchronization',
+          },
+        ],
+      });
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingStage).toBe('packet_source_projection_resynchronization_required');
+      expect(result.nextRequiredAction).toBe('run_packet_source_projection_resynchronization');
+      expect(existsSync(paths.receipt(1))).toBe(true);
+      expectReceiptBinding(paths, 1, 'blocked');
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(existsSync(paths.kernel)).toBe(true);
+      expect(existsSync(paths.packet)).toBe(true);
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+      expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+        'source_gap_fix_materialization_required'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('source gap fix materialization required only applies to new valid gap', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-gap-fix-scope-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-INVALID-TARGET',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-INVALID-TARGET',
+                type: 'add_must',
+                sourceSpan: { startLine: 1, endLine: 1 },
+                sourceText: 'Invalid target field should fail materialization.',
+                targetField: 'implementationConfirmation.unknownField',
+                newValue: { id: 'MUST-INVALID-TARGET', text: 'Invalid target field.' },
+                reason: 'The materializer must reject target fields that do not match the action type.',
+                mustRefs: ['MUST-001'],
+                requirementIds: ['REQ-INVALID-TARGET'],
+              },
+            ],
+          },
+        ],
+      });
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingStage).toBe('source_gap_fix_materialization_required');
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'source_gap_fix_materialization_required'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects invalid Critical Auditor repair actions', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-action-schema-'));
     try {
@@ -601,7 +1020,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'critical_auditor_repair_action_field_missing'
+        'critical_auditor_validated_gap_repair_actions_missing'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
 
