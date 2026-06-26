@@ -4780,6 +4780,12 @@ function checkpointProgressFromReceipts(input: {
     mode: 'checkpoint_required',
     modeDecision: input.routeDecision,
     source: toRootRelativePath(input.root, input.draftSourcePath),
+    inputRefs: [
+      toRootRelativePath(input.root, input.draftSourcePath),
+      ...AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) =>
+        toRootRelativePath(input.root, checkpointReceiptPath(input.paths, checkpoint))
+      ),
+    ],
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
     documentHash: sha256File(input.draftSourcePath),
@@ -6266,6 +6272,31 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
+}
+
+function packetWithCriticalAuditorConvergence(
+  packet: Record<string, unknown>,
+  consecutiveNoNewGapRounds: number
+): Record<string, unknown> {
+  const criticDisposition =
+    consecutiveNoNewGapRounds >= 3
+      ? 'accepted_no_new_valid_gap'
+      : 'pending_critical_auditor_response';
+  return {
+    ...packet,
+    consecutiveNoNewValidGapRounds: consecutiveNoNewGapRounds,
+    authorClaims: asRecordArray(packet.authorClaims).map((claim) => ({
+      ...claim,
+      criticDisposition,
+    })),
+    mustPackets: asRecordArray(packet.mustPackets).map((mustPacket) => ({
+      ...mustPacket,
+      authorClaims: asRecordArray(mustPacket.authorClaims).map((claim) => ({
+        ...claim,
+        criticDisposition,
+      })),
+    })),
+  };
 }
 
 function projectionBackRefForRepair(packetHash: string, mustRef: string): Record<string, unknown> {
@@ -10934,7 +10965,7 @@ export function runMainAgentPreConfirmationDrilldown(
   const stagedFinalPacket = recordObject(
     readJsonIfExists(stagingTransaction.mustDecompositionPacket)?.must_decomposition_packet
   );
-  const finalPacket =
+  const baseFinalPacket =
     normalizeText(stagedFinalPacket.sourceDocumentHash) === auditedPreviewSourceDocumentHash &&
     normalizeText(stagedFinalPacket.implementationConfirmationHash) === auditedPreviewImplementationConfirmationHash &&
     normalizeText(stagedFinalPacket.semanticKernelHash) === finalSemanticKernelHash
@@ -10953,6 +10984,10 @@ export function runMainAgentPreConfirmationDrilldown(
           targetAuthorityRecords: projectionTargetAuthorityRecords,
           consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
         });
+  const finalPacket = packetWithCriticalAuditorConvergence(
+    baseFinalPacket,
+    criticalAuditorLoop.consecutiveNoNewGapRounds
+  );
   writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: finalPacket });
   writeJsonUtf8(stagingTransaction.mustDecompositionPacket, {
     must_decomposition_packet: {

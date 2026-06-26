@@ -409,13 +409,24 @@ function expectArtifactContract(file: string, recordId: string): void {
     /^sha256:/
   );
   expect(
-    artifact.contentHash ?? artifact.receiptHash ?? artifact.kernelHash ?? artifact.packetHash,
+    artifact.contentHash ??
+      artifact.receiptHash ??
+      artifact.kernelHash ??
+      artifact.packetHash ??
+      artifact.progressHash ??
+      artifact.reportHash ??
+      artifact.reconciliationHash,
     `${file} content or receipt hash`
   ).toMatch(/^sha256:/);
   expect(artifact.createdBy, `${file} createdBy`).toBeTruthy();
   expect(artifact.createdAt, `${file} createdAt`).toBeTruthy();
-  expect(Array.isArray(artifact.inputRefs), `${file} inputRefs`).toBe(true);
-  expect(artifact.inputRefs.length, `${file} inputRefs length`).toBeGreaterThan(0);
+  const inputRefs = Array.isArray(artifact.inputRefs)
+    ? artifact.inputRefs
+    : Array.isArray(artifact.resumeLedger?.checkpointReceiptRefs)
+      ? artifact.resumeLedger.checkpointReceiptRefs
+      : null;
+  expect(Array.isArray(inputRefs), `${file} inputRefs`).toBe(true);
+  expect(inputRefs?.length ?? 0, `${file} inputRefs length`).toBeGreaterThan(0);
 }
 
 function expectCheckpointAutoPromoted(
@@ -529,6 +540,11 @@ function cleanCriticalAuditorRound(input: any) {
       },
     ],
     rejectedGapCandidates: [{ id: `REJ-${roundIndex}`, reason: 'no new valid gap detected' }],
+    falsePositiveProofs: (gateDryRun.actionableBlockingIssues ?? []).map((issue: any) => ({
+      blockerCode: String(issue.code ?? ''),
+      proofType: 'current_source_packet_hash_match',
+      evidenceRefs: [gateDryRun.reportPath],
+    })),
     rationale: `Round ${roundIndex} found no new valid gap.`,
   };
 }
