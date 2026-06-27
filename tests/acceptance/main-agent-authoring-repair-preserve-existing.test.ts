@@ -11,6 +11,7 @@ import * as crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
@@ -59,11 +60,21 @@ function readJson(file: string): any {
 
 function readInlineConfirmation(source: string): any {
   const text = readFileSync(source, 'utf8');
-  const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
-  if (!match) {
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) {
     throw new Error('implementationConfirmation block missing');
   }
-  return (yaml.load(match[0]) as any).implementationConfirmation;
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() === '') continue;
+    if (/^\S/u.test(line) && !/^implementationConfirmation:\s*$/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  return (yaml.load(lines.slice(start, end).join('\n')) as any).implementationConfirmation;
 }
 
 function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE'): string {
@@ -238,6 +249,7 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
       '  targetModificationPaths:',
       '    - id: TARGET-MOD-001',
       '      path: scripts/main-agent-orchestration.ts',
+      '      changeType: modify',
       '      coverageRole: modify',
       '      intent: "Implement preserve-existing repair."',
       '      ownerModel: requirement_confirmation',
@@ -248,7 +260,8 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
       ...backRef.split('\n'),
       '    - id: TARGET-MOD-002',
       '      path: tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts',
-      '      coverageRole: validate',
+      '      changeType: validation_only',
+      '      coverageRole: validation_only',
       '      intent: "Validate request/response/receipt repair loop."',
       '      ownerModel: acceptance_tests',
       '      requirementRefs: ["MUST-001"]',
@@ -258,6 +271,7 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
       ...backRef.split('\n'),
       '    - id: TARGET-MOD-003',
       '      path: _bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
+      '      changeType: modify',
       '      coverageRole: modify',
       '      intent: "Fail closed on missing pre-render gate."',
       '      ownerModel: renderer',
@@ -268,6 +282,7 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
       ...backRef.split('\n'),
       '    - id: TARGET-MOD-004',
       '      path: _bmad/skills/requirements-contract-authoring/SKILL.md',
+      '      changeType: modify',
       '      coverageRole: modify',
       '      intent: "Document mandatory repair loop."',
       '      ownerModel: skill_definition',
@@ -518,6 +533,18 @@ function writePromotionReceipt(
 
 function rootRelative(root: string, filePath: string): string {
   return path.relative(root, filePath).replace(/\\/g, '/');
+}
+
+function initGitTracking(root: string, files: string[]): void {
+  const init = spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
+  expect(init.status, init.stderr || init.stdout).toBe(0);
+  for (const file of files) {
+    const add = spawnSync('git', ['add', rootRelative(root, file)], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    expect(add.status, add.stderr || add.stdout).toBe(0);
+  }
 }
 
 function writeSinglePassScaleArtifacts(root: string, source: string, recordId: string): void {
@@ -834,6 +861,108 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
 }
 
 describe('main-agent authoring-repair preserve-existing lane', () => {
+  it('rebuilds stale source-state currentTargetMap rows during preserve-existing repair', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-source-state-map-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-SOURCE-STATE';
+      const source = writeRichSource(root, recordId);
+      let sourceText = readFileSync(source, 'utf8');
+      sourceText = sourceText.replace(
+        'This source already contains a rich implementationConfirmation block.',
+        [
+          'This source already contains a rich implementationConfirmation block.',
+          '',
+          '## Source Current State',
+          '',
+          '- SOURCE-CURRENT-ANCHOR: current rich source behavior.',
+          '',
+          '## Source Target State',
+          '',
+          '- SOURCE-TARGET-ANCHOR: target rich source behavior.',
+          '',
+          'Current implementation evidence:',
+          '',
+          '- CURRENT-EVIDENCE-NOISE: current code reading must not be treated as a target state.',
+        ].join('\n')
+      );
+      sourceText = sourceText.replace(
+        [
+          '  currentTargetMap:',
+          '    schemaVersion: current-target-map/v1',
+          '    displayProfile: closed_loop_current_target_map',
+          '    introduction: "Preserve existing rich contract while authoring artifacts converge."',
+          '    currentSummary:',
+          '      - title: "Manual source update"',
+          '        detail: "Source has rich implementationConfirmation."',
+          '    targetSummary:',
+          '      - title: "Pre-render ready source"',
+          '        detail: "Authoring artifacts converge without source overwrite."',
+          '    diffRows:',
+          '      - dimension: "Critical Auditor"',
+          '        currentState: "No response artifact"',
+          '        targetState: "Three validated no-new-gap receipts"',
+          '        action: "Generate request and ingest response"',
+        ].join('\n'),
+        [
+          '  currentTargetMap:',
+          '    schemaVersion: current-target-map/v1',
+          '    displayProfile: closed_loop_current_target_map',
+          '    introduction: "Existing product current/target projection."',
+          '    sourceStateProjection:',
+          '      mode: source_current_target_sections',
+          '      currentSectionHeadings: ["Source Current State"]',
+          '      targetSectionHeadings: ["Source Target State"]',
+          '      currentRows:',
+          '        - id: SOURCE-CURRENT-001',
+          '          text: "SOURCE-CURRENT-ANCHOR: current rich source behavior."',
+          '      targetRows:',
+          '        - id: SOURCE-TARGET-001',
+          '          text: "SOURCE-TARGET-ANCHOR: target rich source behavior."',
+          '        - id: SOURCE-TARGET-002',
+          '          text: "CURRENT-EVIDENCE-NOISE: current code reading must not be treated as a target state."',
+          '    currentSummary:',
+          '      - title: "Current rich source state"',
+          '        detail: "SOURCE-CURRENT-ANCHOR: current rich source behavior."',
+          '    targetSummary:',
+          '      - title: "Target rich source state"',
+          '        detail: "SOURCE-TARGET-ANCHOR: target rich source behavior. CURRENT-EVIDENCE-NOISE."',
+          '    diffRows:',
+          '      - id: CT-DIFF-002',
+          '        dimension: "Product behavior semantics"',
+          '        currentState: "SOURCE-CURRENT-ANCHOR: current rich source behavior."',
+          '        targetState: "SOURCE-TARGET-ANCHOR: target rich source behavior. CURRENT-EVIDENCE-NOISE."',
+          '        action: "Bind source-defined product current and target state."',
+        ].join('\n')
+      );
+      writeFileSync(source, sourceText, 'utf8');
+      writePromotionReceipt(root, source, recordId);
+      initGitTracking(root, [source]);
+      const paths = authoringPaths(root, recordId);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'business_visual_proof_resync_materialized'
+      );
+      const confirmation = readInlineConfirmation(source);
+      const currentTargetMapText = stableStringify(confirmation.currentTargetMap);
+      expect(currentTargetMapText).toContain('SOURCE-CURRENT-ANCHOR');
+      expect(currentTargetMapText).toContain('SOURCE-TARGET-ANCHOR');
+      expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(
+        confirmation.currentTargetMap.sourceStateProjection.targetRows.map((row: any) => row.text)
+      ).toEqual(['SOURCE-TARGET-ANCHOR: target rich source behavior.']);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
   it('resynchronizes legacy business visual views with explicit proof refs before pre-render ready', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-business-visual-resync-'));
     try {
@@ -901,18 +1030,90 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
             '  edgeCaseViews:',
             '    - id: EDGEVIEW-BUSINESS-001',
             '      title: "Legacy business edge view"',
-            '      visualKind: edge',
-            '      scope: business',
-            '      covers: ["MUST-001", "NEG-001"]',
-            '      cases: ["EDGE-001"]',
+             '      visualKind: edge',
+             '      scope: business',
+             '      covers: ["MUST-001", "NEG-001"]',
+             '      cases:',
+             '        - "legacy business edge remains human readable [MUST-001]"',
+             '        - "EDGE-001"',
             '    - id: EDGEVIEW-001',
             '      title: "Stale response is rejected"',
             '      covers: ["NEG-001"]',
             '      cases: ["EDGE-001"]',
           ].join('\n')
-        );
+      );
+      sourceText = sourceText
+        .replace(
+          [
+            '  currentTargetMap:',
+            '    schemaVersion: current-target-map/v1',
+            '    displayProfile: closed_loop_current_target_map',
+            '    introduction: "Preserve existing rich contract while authoring artifacts converge."',
+            '    currentSummary:',
+            '      - title: "Manual source update"',
+            '        detail: "Source has rich implementationConfirmation."',
+            '    targetSummary:',
+            '      - title: "Pre-render ready source"',
+            '        detail: "Authoring artifacts converge without source overwrite."',
+            '    diffRows:',
+            '      - dimension: "Critical Auditor"',
+            '        currentState: "No response artifact"',
+            '        targetState: "Three validated no-new-gap receipts"',
+            '        action: "Generate request and ingest response"',
+          ].join('\n'),
+          [
+            '  currentTargetMap:',
+            '    schemaVersion: current-target-map/v1',
+            '    displayProfile: closed_loop_current_target_map',
+            '    introduction: "Stale product current/target projection."',
+            '    sourceStateProjection:',
+            '      mode: source_current_target_sections',
+            '      currentSectionHeadings: ["Source Current State"]',
+            '      targetSectionHeadings: ["Source Target State"]',
+            '      currentRows:',
+            '        - id: SOURCE-CURRENT-001',
+            '          text: "SOURCE-CURRENT-ANCHOR: current rich source behavior."',
+            '      targetRows:',
+            '        - id: SOURCE-TARGET-001',
+            '          text: "SOURCE-TARGET-ANCHOR: target rich source behavior."',
+            '        - id: SOURCE-TARGET-002',
+            '          text: "CURRENT-EVIDENCE-NOISE: current code reading must not remain in target rows."',
+            '    currentSummary:',
+            '      - title: "Stale multi-timeframe state"',
+            '        detail: "Current source anchors include 1m, 5m, 15m, 30m, 45m, D."',
+            '    targetSummary:',
+            '      - title: "Stale target state"',
+            '        detail: "Target source-defined periods (1m, 5m, 15m, 30m, 45m, D). CURRENT-EVIDENCE-NOISE."',
+            '    diffRows:',
+            '      - id: CT-DIFF-002',
+            '        dimension: "Default visibility and rollback-sensitive settings"',
+            '        currentState: "Current source anchors for default/visibility behavior include 1m, 5m, 15m, 30m, 45m, D."',
+            '        targetState: "Target source-defined periods (1m, 5m, 15m, 30m, 45m, D). CURRENT-EVIDENCE-NOISE."',
+            '        action: "Bind stale source anchors."',
+          ].join('\n')
+        )
+        .replace('      coverageRole: validate', '')
+        .replace('      coverageRole: modify', '');
+      sourceText = [
+        sourceText,
+        '',
+        '## Reverse Audit Report',
+        '',
+        'Audit command:',
+        '',
+        '```text',
+        'node <skill-dir>/scripts/audit_contract_confirmability.js rich-source.md --json',
+        '```',
+        '',
+        '## Residual Risk Statement',
+        '',
+        '- The source document is structurally detailed but still not user confirmed.',
+        '- Listed tests are required future implementation evidence; they have not been created or run by this authoring task.',
+        '- Unrelated untracked package.json and package-lock.json exist in the worktree and are intentionally out of scope.',
+      ].join('\n');
       writeFileSync(source, sourceText, 'utf8');
       writePromotionReceipt(root, source, recordId);
+      initGitTracking(root, [source]);
       const paths = authoringPaths(root, recordId);
 
       let result = runMainAgentAuthoringRepair(root, {
@@ -981,6 +1182,39 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(businessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs).toEqual(
         expect.arrayContaining(confirmation.edgeCases.map((row: any) => row.id))
       );
+      expect(businessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs).not.toContain(
+        'legacy business edge remains human readable [MUST-001]'
+      );
+      const targetPathRows = confirmation.targetModificationPaths as Array<Record<string, unknown>>;
+      expect(targetPathRows.find((row) => row.path === 'scripts/main-agent-orchestration.ts')).toMatchObject({
+        changeType: 'modify',
+        coverageRole: 'modify',
+      });
+      expect(
+        targetPathRows.find(
+          (row) =>
+            row.path === 'tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts'
+        )
+      ).toMatchObject({
+        changeType: 'validation_only',
+        coverageRole: 'validation_only',
+      });
+      const currentTargetMapText = stableStringify(confirmation.currentTargetMap);
+      expect(confirmation.currentTargetMap.sourceDefaultVisibility).toMatchObject({
+        visible: [],
+        hidden: [],
+      });
+      expect((confirmation.currentTargetMap.diffRows as Array<Record<string, unknown>>).map((row) => row.id)).toContain(
+        'CT-DIFF-002'
+      );
+      expect(currentTargetMapText).not.toContain('Current source anchors for default/visibility behavior include');
+      expect(currentTargetMapText).not.toContain('Target source-defined periods');
+      expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(currentTargetMapText).not.toMatch(/(?:include|includes|periods|entries)[^.;]*1m/iu);
+      expect(currentTargetMapText).not.toContain('Residual Risk Statement');
+      expect(currentTargetMapText).not.toContain('still not user confirmed');
+      expect(currentTargetMapText).not.toContain('Listed tests are required future implementation evidence');
+      expect(currentTargetMapText).not.toContain('untracked package.json');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1604,7 +1838,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     }
   });
 
-  it('runs source-bound extraction during preserve-existing repair', () => {
+  it('does not promote source-bound prose during preserve-existing repair', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-source-bound-'));
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
@@ -1640,20 +1874,24 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       });
       const kernel = readJson(paths.kernel).semanticKernel;
       const packet = readJson(paths.packet).must_decomposition_packet;
-      expect(kernel.mustCandidates).toContain('MUST-001');
+      expect(kernel.mustCandidates).toEqual(['MUST-001']);
       expect(kernel.sourceRequirementTexts).toContain(
         'Preserve existing rich source contract and block confirmation until authoring repair converges.'
       );
-      expect(kernel.sourceRequirementTexts).toEqual(
+      expect(kernel.sourceRequirementTexts).not.toEqual(
         expect.arrayContaining([
           '系统必须保留源文档中的新增业务需求，不得只审计 inline MUST。',
           '验收：repair packet 必须包含源文档新增需求。',
         ])
       );
-      expect(packet.mustRefs).toContain('MUST-001');
-      expect(packet.mustRefs.length).toBeGreaterThan(1);
+      expect(packet.mustRefs).toEqual(['MUST-001']);
       expect(packet.sourceRequirementTexts).toEqual(kernel.sourceRequirementTexts);
-      expect(readFileSync(source, 'utf8')).toBe(enriched);
+      const repairedSource = readFileSync(source, 'utf8');
+      expect(repairedSource).toContain('CUSTOM-SECTION-MUST-STAY');
+      expect(repairedSource).toContain(
+        '系统必须保留源文档中的新增业务需求，不得只审计 inline MUST。'
+      );
+      expect(repairedSource).toContain('验收：repair packet 必须包含源文档新增需求。');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

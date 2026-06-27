@@ -28,6 +28,102 @@ afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
+const requiredArchitectureDiagramTypes = [
+  'system_architecture',
+  'deployment',
+  'class',
+  'swimlane',
+  'state_machine',
+  'sequence',
+  'activity',
+];
+
+function defaultArchitectureDiagrams(scope = 'business_architecture'): Array<Record<string, unknown>> {
+  const isBusiness = scope === 'business_architecture';
+  return [
+    {
+      id: 'ARCH-VIEW-SYSTEM',
+      type: 'system_architecture',
+      scope,
+      title: isBusiness ? 'Display Settings System Architecture Diagram' : 'Governance System Architecture Diagram',
+      description: isBusiness
+        ? 'Business system boundary for display settings.'
+        : 'Requirement-scoped governance system architecture boundary.',
+      mermaid:
+        isBusiness
+          ? 'flowchart LR\n  User[User] --> Widget[DisplaySettingsWidget]\n  Widget --> Dialog[DisplaySettingsDialog]\n  Dialog --> Settings[DisplaySettingsSnapshot]'
+          : 'flowchart LR\n  Source[Source Document] --> Artifact[Architecture Artifact]\n  Artifact --> Html[Confirmation HTML]',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['_bmad/_schemas/requirement-record.schema.json'],
+    },
+    {
+      id: 'ARCH-VIEW-DEPLOYMENT',
+      type: 'deployment',
+      scope,
+      title: 'Deployment Diagram',
+      description: 'Runtime and artifact placement.',
+      mermaid:
+        'flowchart TB\n  Workspace[Consumer Workspace] --> Output[_bmad-output]\n  Package[Installed Package] --> Workspace',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['src/product/display_settings_widget.py'],
+    },
+    {
+      id: 'ARCH-VIEW-CLASS',
+      type: 'class',
+      scope,
+      title: 'Class Diagram',
+      description: 'Core data contracts.',
+      mermaid:
+        'classDiagram\n  class RequirementRecord\n  class ArchitectureConfirmationArtifact\n  RequirementRecord --> ArchitectureConfirmationArtifact',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['_bmad/_schemas/requirement-record.schema.json'],
+    },
+    {
+      id: 'ARCH-VIEW-SWIMLANE',
+      type: 'swimlane',
+      scope,
+      title: 'Swimlane Diagram',
+      description: 'Responsibilities across user, agent, scripts, and record.',
+      mermaid:
+        'flowchart LR\n  subgraph UserLane[User]\n    UserConfirm[Review And Confirm]\n  end\n  subgraph AgentLane[Main Agent]\n    Prepare[Prepare Page]\n  end\n  UserConfirm --> Prepare',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['src/product/display_settings_widget.py'],
+    },
+    {
+      id: 'ARCH-VIEW-STATE',
+      type: 'state_machine',
+      scope,
+      title: 'State Machine Diagram',
+      description: 'Architecture confirmation states.',
+      mermaid: 'stateDiagram-v2\n  [*] --> Missing\n  Missing --> Draft\n  Draft --> Active',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['_bmad/_schemas/requirement-record.schema.json'],
+    },
+    {
+      id: 'ARCH-VIEW-SEQUENCE',
+      type: 'sequence',
+      scope,
+      title: 'Sequence Diagram',
+      description: 'Prepare and render sequence.',
+      mermaid:
+        'sequenceDiagram\n  participant Agent\n  participant Producer\n  participant Renderer\n  Agent->>Producer: Generate artifact\n  Producer->>Renderer: Render HTML',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['src/product/display_settings_widget.py'],
+    },
+    {
+      id: 'ARCH-VIEW-ACTIVITY',
+      type: 'activity',
+      scope,
+      title: 'Activity Diagram',
+      description: 'Confirmation activity flow.',
+      mermaid:
+        'flowchart TD\n  Start([Start]) --> Validate[Validate Inputs]\n  Validate --> Render[Render Confirmation]\n  Render --> Stop([Stop])',
+      evidenceRefs: ['EVD-036', 'EVD-037'],
+      targetPathRefs: ['src/product/display_settings_widget.py'],
+    },
+  ];
+}
+
 function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}): string {
   const recipe = resolveArchitectureConfirmationHashRecipe();
   const file = path.join(tempDir, 'architecture-confirmation.json');
@@ -47,7 +143,7 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
     resolvedRecipeHash: recipe.resolvedRecipeHash,
     targetPaths: [
       '_bmad/_schemas/requirement-record.schema.json',
-      'scripts/main-agent-implementation-readiness-gate.ts',
+      'src/product/display_settings_widget.py',
     ],
     targetPathsHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     consumerImpactScan: [
@@ -84,6 +180,9 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
     riskStatement: 'Fixture architecture risk statement.',
     rollbackPlan: 'Fixture rollback plan.',
     evidenceRefs: ['EVD-036', 'EVD-037'],
+    businessArchitectureDiagrams: defaultArchitectureDiagrams('business_architecture'),
+    governanceArchitectureDiagrams: defaultArchitectureDiagrams('governance_architecture'),
+    architectureDiagrams: defaultArchitectureDiagrams('business_architecture'),
     staleInputs: {
       sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
       implementationConfirmationHash:
@@ -157,12 +256,61 @@ describe('render-architecture-confirmation-html', () => {
     expect(html).toContain('消费项目影响扫描');
     expect(html).toContain('治理系统影响扫描');
     expect(html).toContain('完整架构触发矩阵');
+    expect(html).toContain('id="business-architecture-diagrams"');
+    expect(html).toContain('id="governance-architecture-diagrams"');
+    expect(html).toContain('业务架构图谱');
+    expect(html).toContain('治理架构图谱');
+    expect(html).toContain('Display Settings System Architecture Diagram');
+    expect(html).toContain('系统架构图');
+    expect(html).toContain('部署图');
+    expect(html).toContain('类图');
+    expect(html).toContain('泳道图');
+    expect(html).toContain('状态机图');
+    expect(html).toContain('时序图');
+    expect(html).toContain('活动图');
+    expect(html.match(/data-diagram-viewer/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html.match(/class="diagram-tab/g)?.length).toBeGreaterThanOrEqual(
+      requiredArchitectureDiagramTypes.length * 2
+    );
+    expect(html.match(/class="diagram-card/g)?.length).toBeGreaterThanOrEqual(
+      requiredArchitectureDiagramTypes.length * 2
+    );
+    expect(html).not.toContain('architecture-diagram-grid');
+    expect(html).toContain('startOnLoad: false');
+    expect(html).toContain('data-mermaid-source');
+    expect(html).toContain('data-mermaid-render');
+    expect(html).toContain('class="mermaid-source-native"');
+    expect(html).toContain('class="mermaid-native-render"');
+    expect(html).toContain('class="mermaid-runtime-status ok"');
+    expect(html).toContain('fallback-diagram');
+    expect(html).toContain('Mermaid 源码和 diagramHash');
+    expect(html).toContain('renderNativeMermaid');
+    expect(html).toContain('window.mermaid.render(');
+    expect(html).toContain('split(/\\s+/)');
+    expect(html).not.toContain('split(/s+/)');
+    expect(html).toContain("svg.setAttribute('width', String(naturalWidth))");
+    expect(html).toContain("svg.setAttribute('height', String(naturalHeight))");
+    expect(html).not.toContain('pre.architecture-mermaid:not([data-processed])');
+    expect(html).not.toContain('class="mermaid architecture-mermaid"');
+    expect(html).not.toContain('window.mermaid.run({ nodes })');
     expect(html).toContain('确认架构确认进入实施准备');
     expect(html).toContain('data-copy-target="architecture-confirmation-phrase"');
     expect(html).toContain('id="architecture-confirmation-phrase"');
     expect(html).toContain('复制确认口令');
     expect(html).toContain('data-copy-status');
     expect(html).toContain('--shadow:none');
+    expect(html).toContain('.mermaid-native-render{display:block;min-width:max-content;min-height:210px');
+    expect(html).toContain('.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}');
+    expect(html).toContain('function inferMermaidDiagramKind(source)');
+    expect(html).toContain("target.dataset.diagramKind = diagramKind");
+    expect(html).toContain("svg.classList.add('normalized-mermaid-svg')");
+    expect(html).toContain('.mermaid-native-render[data-diagram-kind="flowchart"]');
+    expect(html).toContain('.mermaid-native-render[data-diagram-kind="class"]');
+    expect(html).toContain('.mermaid-native-render[data-diagram-kind="state"]');
+    expect(html).toContain('.rendered-mermaid{background:transparent;border-radius:0}');
+    expect(html).toContain('class="rendered-mermaid compact-flow"');
+    expect(html).toContain('class="flow-step-card');
+    expect(html).toContain('data-density="compact-card-flow"');
     expect(html).toContain('main.layout{display:grid;grid-template-columns:280px minmax(0,1fr)');
     expect(html).toContain(
       '.hero,.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none'
@@ -209,7 +357,15 @@ describe('render-architecture-confirmation-html', () => {
       consumerImpactScan: 2,
       governanceImpactScan: 1,
       fullArchitectureTriggerMatrix: 2,
+      businessArchitectureDiagrams: requiredArchitectureDiagramTypes.length,
+      governanceArchitectureDiagrams: requiredArchitectureDiagramTypes.length,
     });
+    expect(
+      summary.businessArchitectureDiagrams.map((view: Record<string, unknown>) => view.type)
+    ).toEqual(requiredArchitectureDiagramTypes);
+    expect(
+      summary.governanceArchitectureDiagrams.map((view: Record<string, unknown>) => view.type)
+    ).toEqual(requiredArchitectureDiagramTypes);
     expect(summary.architectureDelta.counts).toMatchObject({
       targetPaths: 2,
       triggeredConsumerImpacts: 1,
@@ -262,6 +418,16 @@ describe('render-architecture-confirmation-html', () => {
     const html = fs.readFileSync(out, 'utf8');
     expect(html).toContain('Architecture Confirmation Draft');
     expect(html).toContain('Architecture Review Focus');
+    expect(html).toContain('Business Architecture Diagrams');
+    expect(html).toContain('Governance Architecture Diagrams');
+    expect(html).toContain('Display Settings System Architecture Diagram');
+    expect(html).toContain('System Architecture Diagram');
+    expect(html).toContain('Deployment Diagram');
+    expect(html).toContain('Class Diagram');
+    expect(html).toContain('Swimlane Diagram');
+    expect(html).toContain('State Machine Diagram');
+    expect(html).toContain('Sequence Diagram');
+    expect(html).toContain('Activity Diagram');
     expect(html).toContain('Focus Rows');
     expect(html).toContain('Target Path Samples');
     expect(html).toContain('Consumer Impact Scan');
@@ -270,5 +436,29 @@ describe('render-architecture-confirmation-html', () => {
     expect(html).not.toContain('本次架构确认重点');
     expect(html).not.toContain('重点影响行');
     expect(html).not.toContain('复制确认口令');
+  });
+
+  it('blocks when required architecture diagrams are missing', () => {
+    const source = writeArchitectureConfirmation({ businessArchitectureDiagrams: [] });
+    const out = path.join(tempDir, 'architecture-confirmation-missing-diagrams.html');
+    const result = runRenderer([
+      '--architecture-confirmation',
+      source,
+      '--out',
+      out,
+      '--language',
+      'zh-CN',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(1);
+    const report = JSON.parse(
+      fs.readFileSync(
+        path.join(tempDir, 'architecture-confirmation-missing-diagrams.render-report.json'),
+        'utf8'
+      )
+    );
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues).toContain('missing_businessArchitectureDiagrams');
   });
 });

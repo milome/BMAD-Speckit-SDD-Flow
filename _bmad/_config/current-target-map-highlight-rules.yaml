@@ -1,0 +1,60 @@
+schemaVersion: current-target-map-highlight-rules/v1
+limits:
+  current: 10
+  target: 12
+  control: 6
+structuredDefaults:
+  tableContext:
+    - "\\b(defaults?|default\\s+state|default\\s+visibility|visibility|visible|display|enabled|shown|show|state|setting|settings)\\b"
+    - "默认|默认状态|默认显示|默认策略|显示|启用|可见|开关|状态|设置|策略"
+  entryHeader:
+    - "\\b(item|entry|option|target|period|timeframe|name|label|surface|feature)\\b"
+    - "项目|条目|选项|目标|周期|名称|标签|功能|对象"
+  stateHeader:
+    - "\\b(default|visibility|visible|display|enabled|shown|show|state|checked|selected|active)\\b"
+    - "默认|显示|启用|可见|开关|状态|选中|激活"
+  enabledValues:
+    - "^(?:是|yes|true|visible|enabled|show|shown|on|1|✓|✔|checked|selected|active)$"
+  disabledValues:
+    - "^(?:否|no|false|hidden|disabled|hide|off|0|□|☐|unchecked|unselected|inactive)$"
+  fallbackEntryColumnIndex: 0
+categories:
+  current:
+    preferContextListItems: true
+    maxContextListItems: 8
+    headingContext:
+      - "\\b(current|existing|as-is|today|before|problem|issue|risk|limitation|pain)\\b"
+      - "当前|现有|现状|当前问题|问题|局限|不足|风险|痛点|背景"
+    lineMatch:
+      - "\\b(problem|issue|risk|limitation|pain|overload|overflow|incomplete|compressed|short|crowded|clutter|unclear|inaccurate)\\b"
+      - "\\b(hard to|cannot|can't|unable to|inconsistent|scattered)\\b"
+      - "问题|局限|不足|风险|痛点|过载|溢出|不完整|压缩|难以|无法|过短|不精确|挤压|干扰|不一致|分散"
+    priority:
+      - "\\b(problem|issue|risk|limitation|pain|overload|overflow|incomplete|compressed|unclear|inaccurate)\\b"
+      - "问题|局限|不足|风险|痛点|过载|溢出|不完整|压缩|难以|无法|过短|不精确|挤压|干扰|不一致|分散"
+  target:
+    preferContextListItems: true
+    maxContextListItems: 8
+    headingContext:
+      - "\\b(target|goal|desired|to-be|future|requirement|scope|acceptance)\\b"
+      - "目标|目标态|产品目标|UX 目标|工程目标|范围|需求|验收|MUST"
+    lineMatch:
+      - "\\b(target|goal|desired|to-be|future|should|shall|must|support|preserve|ensure|requirement)\\b"
+      - "目标|目标态|需要|应当|必须|支持|保持|确保|需求|验收"
+      - "^MUST-\\d+"
+    priority:
+      - "^MUST-\\d+"
+      - "\\b(should|shall|must|support|preserve|ensure|target|goal|desired|to-be)\\b"
+      - "需要|应当|必须|支持|保持|确保|目标|目标态|需求"
+  control:
+    preferContextListItems: true
+    maxContextListItems: 4
+    headingContext:
+      - "\\b(validation|verification|test|acceptance|rollback|restore|cancel|failure|edge|boundary)\\b"
+      - "验证|校验|测试|验收|回滚|取消|恢复|默认|失败|边界"
+    lineMatch:
+      - "\\b(acceptance|test|verify|validation|rollback|cancel|restore|default|failure|edge|boundary)\\b"
+      - "验收|测试|验证|校验|回滚|取消|恢复|默认|失败|边界"
+    priority:
+      - "\\b(acceptance|test|verify|validation|rollback|cancel|restore|failure|edge|boundary)\\b"
+      - "验收|测试|验证|校验|回滚|取消|恢复|失败|边界"

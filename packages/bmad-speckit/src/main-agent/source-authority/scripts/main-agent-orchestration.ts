@@ -1944,6 +1944,63 @@ interface ValidationAuthorityRecord {
   blocksSourceMutationWhenMissing: boolean;
 }
 
+interface CurrentTargetMapBuildResult {
+  map: Record<string, unknown>;
+  diffRowIds: string[];
+  canonicalArtifactIds: string[];
+  legacyArtifactIds: string[];
+}
+
+type CurrentTargetMapHighlightCategoryName = 'current' | 'target' | 'control';
+
+interface CurrentTargetMapHighlightCategoryRules {
+  headingContext: RegExp[];
+  lineMatch: RegExp[];
+  priority: RegExp[];
+  preferContextListItems: boolean;
+  maxContextListItems: number;
+}
+
+interface CurrentTargetMapStructuredDefaultRules {
+  tableContext: RegExp[];
+  entryHeader: RegExp[];
+  stateHeader: RegExp[];
+  enabledValues: RegExp[];
+  disabledValues: RegExp[];
+  fallbackEntryColumnIndex: number;
+}
+
+interface CurrentTargetMapHighlightRules {
+  limits: Record<CurrentTargetMapHighlightCategoryName, number>;
+  categories: Record<CurrentTargetMapHighlightCategoryName, CurrentTargetMapHighlightCategoryRules>;
+  structuredDefaults: CurrentTargetMapStructuredDefaultRules;
+}
+
+interface CurrentTargetMapHighlightCandidate {
+  text: string;
+  headingPath: string[];
+  isHeading: boolean;
+  isListItem: boolean;
+  sourceIndex: number;
+}
+
+type CurrentTargetMapSourceStateKind = 'current' | 'target';
+
+interface CurrentTargetMapSourceStateRow {
+  id: string;
+  text: string;
+  sourceLine: number;
+  headingPath: string[];
+}
+
+interface CurrentTargetMapSourceStateProjection {
+  mode: 'source_current_target_sections' | 'heuristic_highlights_fallback';
+  currentSectionHeadings: string[];
+  targetSectionHeadings: string[];
+  currentRows: CurrentTargetMapSourceStateRow[];
+  targetRows: CurrentTargetMapSourceStateRow[];
+}
+
 interface SourceMutationDecision {
   schemaVersion: 'requirements-authoring-source-mutation-decision/v1';
   sourcePath: string;
@@ -2590,11 +2647,11 @@ function markdownTableCells(line: string): string[] {
 
 function sourceBlockDomainTerms(text: string): string[] {
   const terms: Array<[string, RegExp]> = [
-    ['ui', /(?:UI|UX|界面|面板|设置|显示|主图|窗口|弹窗|布局|预览)/iu],
+    ['ui', /(?:UI|UX|界面|面板|设置|显示|窗口|弹窗|布局|预览)/iu],
     ['data', /(?:数据|存储|DB|database|cache|queue|默认显示|持久化)/iu],
     ['operation', /(?:批量|取消|回滚|OK|保存|apply|preview|操作|流程)/iu],
     ['validation', /(?:验收|测试|pytest|vitest|command|验证|校验|检查)/iu],
-    ['target', /(?:target|path|file|路径|文件|vnpy|scripts\/|tests\/)/iu],
+    ['target', /(?:target|path|file|路径|文件|scripts\/|tests\/)/iu],
     ['constraint', /(?:\d{3,4}x\d{3,4}|性能|兼容|约束|限制|不得|禁止|不能)/iu],
   ];
   return terms.filter(([, pattern]) => pattern.test(text)).map(([term]) => term);
@@ -2619,7 +2676,7 @@ function hasMandatoryRequirementLanguage(text: string): boolean {
 
 function headingImpliesRequirement(headingPath: string[]): boolean {
   return headingPath.some((heading) =>
-    /(?:requirements?|acceptance|behavior|scope|scenario|constraints?|defaults?|settings?|display|overview|验收|需求|行为|场景|约束|默认|设置|显示|主图|功能)/iu.test(
+    /(?:requirements?|acceptance|behavior|scope|scenario|constraints?|defaults?|settings?|display|overview|验收|需求|行为|场景|约束|默认|设置|显示|功能)/iu.test(
       heading
     )
   );
@@ -2628,6 +2685,55 @@ function headingImpliesRequirement(headingPath: string[]): boolean {
 function headingImpliesNonGoal(headingPath: string[]): boolean {
   return headingPath.some((heading) =>
     /(?:non-?goals?|out of scope|not done|不做|非目标|排除|禁止)/iu.test(heading)
+  );
+}
+
+function normalizedHeadingLabel(value: string): string {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[`*_()[\]{}:：'"“”‘’]/gu, ' ')
+    .replace(/[\s_-]+/gu, ' ')
+    .trim();
+}
+
+function currentTargetMapSourceStateSectionKind(
+  heading: string
+): CurrentTargetMapSourceStateKind | null {
+  const normalized = normalizedHeadingLabel(heading);
+  if (!normalized) return null;
+  if (
+    /^(?:source )?(?:current|existing|as is) (?:state|behavior|limitations?|implementation|product state)$/iu.test(
+      normalized
+    ) ||
+    /^(?:当前|现状|已有|既有)(?:状态|行为|功能局限|实现状态|产品状态|能力边界)?$/u.test(
+      normalized
+    ) ||
+    /^(?:当前功能局限|当前实现状态|现状与局限|已有行为)$/u.test(normalized)
+  ) {
+    return 'current';
+  }
+  if (
+    /^(?:source )?(?:target|to be|desired) (?:state|behavior|implementation|product state|outcome)$/iu.test(
+      normalized
+    ) ||
+    /^(?:目标态|目标状态|目标行为|目标实现状态|目标产品状态|目标能力|期望状态)$/u.test(
+      normalized
+    )
+  ) {
+    return 'target';
+  }
+  return null;
+}
+
+function headingPathContainsCurrentTargetStateSection(headingPath: string[]): boolean {
+  return headingPath.some((heading) => currentTargetMapSourceStateSectionKind(heading) !== null);
+}
+
+function headingPathImpliesCommentaryOnly(headingPath: string[]): boolean {
+  return headingPath.some((heading) =>
+    /(?:notes?|commentary|rationale|background|context|discussion|说明|备注|背景|上下文|讨论)/iu.test(
+      heading
+    )
   );
 }
 
@@ -2651,6 +2757,14 @@ function classifyStructuredSourceBlock(input: {
 }): { decision: RequirementCoverageDecision; requirementSignal: string[] } {
   const normalized = normalizeText(input.text);
   const signal = new Set<string>();
+  if (headingPathContainsCurrentTargetStateSection(input.headingPath)) {
+    signal.add('current_target_state_projection_section');
+    return { decision: 'rejected_non_requirement', requirementSignal: [...signal] };
+  }
+  if (headingPathImpliesCommentaryOnly(input.headingPath)) {
+    signal.add('commentary_only_heading');
+    return { decision: 'rejected_non_requirement', requirementSignal: [...signal] };
+  }
   const requirementContext =
     headingImpliesRequirement(input.headingPath) ||
     (input.blockKind === 'table_row' &&
@@ -3041,6 +3155,40 @@ function isExecutableValidationCommand(command: string): boolean {
   );
 }
 
+function sourceAuthorityIdentifierTokens(value: string): string[] {
+  const stopWords = new Set([
+    'src',
+    'lib',
+    'test',
+    'tests',
+    'spec',
+    'unit',
+    'integration',
+    'acceptance',
+    'node',
+    'npx',
+    'pytest',
+    'vitest',
+    'run',
+    'python',
+    'json',
+    'yaml',
+    'yml',
+    'toml',
+    'tsx',
+    'jsx',
+    'cjs',
+    'mjs',
+  ]);
+  return uniqueStrings(
+    normalizeText(value)
+      .replace(/([a-z])([A-Z])/gu, '$1 $2')
+      .split(/[^A-Za-z0-9]+/u)
+      .map((token) => token.toLowerCase())
+      .filter((token) => token.length >= 3 && !stopWords.has(token))
+  );
+}
+
 function commandReferencesTarget(command: string, targetRecords: TargetAuthorityRecord[]): boolean {
   const normalizedCommand = command.replace(/\\/g, '/').toLowerCase();
   const directTargetMatch = targetRecords.some((record) => {
@@ -3054,17 +3202,9 @@ function commandReferencesTarget(command: string, targetRecords: TargetAuthority
   if (directTargetMatch) {
     return true;
   }
-  const targetDomains = new Set<string>();
-  for (const record of targetRecords) {
-    const normalized = record.path.replace(/\\/g, '/').toLowerCase();
-    if (normalized.includes('multi_timeframe') || normalized.includes('multi-timeframe')) {
-      targetDomains.add('multi_timeframe');
-    }
-  }
-  if (targetDomains.has('multi_timeframe') && /multi[_-]?timeframe/iu.test(normalizedCommand)) {
-    return true;
-  }
-  return false;
+  const targetTokens = targetRecords.flatMap((record) => sourceAuthorityIdentifierTokens(record.path));
+  const commandTokens = new Set(sourceAuthorityIdentifierTokens(normalizedCommand));
+  return targetTokens.some((token) => commandTokens.has(token));
 }
 
 function extractCommandFileRefs(command: string): string[] {
@@ -3246,7 +3386,7 @@ function projectionDomainSanityCheck(input: {
 }): { report: Record<string, unknown>; issues: PreConfirmationDrilldownIssue[] } {
   const sourceRel = toRootRelativePath(input.root, input.sourcePath);
   const sourceHintsConsumer =
-    /(?:vnpy|multi[_-]?timeframe|chart|trader|widget|settings|consumer|产品|界面|主图|设置)/iu.test(
+    /(?:chart|trader|widget|settings|consumer|产品|界面|设置)/iu.test(
       input.sourceText
     );
   const offendingTargets = input.targetRecords
@@ -3619,9 +3759,991 @@ function writeControlledMustCandidateArtifacts(input: {
   });
 }
 
+function isGeneratedRequirementArtifactPath(value: string): boolean {
+  const normalized = value.replace(/\\/g, '/').toLowerCase();
+  return (
+    normalized.includes('/_bmad-output/') ||
+    normalized.startsWith('_bmad-output/') ||
+    normalized.includes('/authoring/') ||
+    normalized.includes('/confirmation/') ||
+    normalized.includes('confirmation.html') ||
+    normalized.includes('confirmation-render-report') ||
+    normalized.includes('semantic-kernel') ||
+    normalized.includes('must_decomposition') ||
+    normalized.includes('pre-render')
+  );
+}
+
+function collectTargetPathsForCurrentTargetMap(input: {
+  targetAuthorityRecords?: TargetAuthorityRecord[];
+  targetPathRows?: Record<string, unknown>[];
+}): string[] {
+  const paths = uniqueStrings([
+    ...(input.targetAuthorityRecords ?? []).map((record) => record.path),
+    ...asRecordArray(input.targetPathRows).map((row) => normalizeText(row.path)),
+  ]).map((targetPath) => targetPath.replace(/\\/g, '/'));
+  const productTargets = paths.filter((targetPath) => !isGeneratedRequirementArtifactPath(targetPath));
+  return productTargets.length > 0 ? productTargets : paths;
+}
+
+function collectSourceTextForCurrentTargetMap(input: {
+  sourcePath: string;
+  sourceText?: string;
+  mustRequirements: SourceMustRequirement[];
+  businessRows?: Record<string, unknown>[];
+  outOfScopeRows?: Record<string, unknown>[];
+  targetPaths: string[];
+  commandRows?: Record<string, unknown>[];
+  validationAuthorityRecords?: ValidationAuthorityRecord[];
+}): string {
+  const diskText = fs.existsSync(input.sourcePath) ? fs.readFileSync(input.sourcePath, 'utf8') : '';
+  const authorityText = sourceAuthorityTextWithoutInlineConfirmation(input.sourceText || diskText);
+  return [
+    authorityText,
+    ...input.mustRequirements.map((requirement) => requirement.text),
+    ...input.targetPaths,
+    ...asRecordArray(input.commandRows).map((row) => normalizeText(row.command)),
+    ...(input.validationAuthorityRecords ?? []).map((record) => record.command),
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function sourceAuthorityTextWithoutInlineConfirmation(sourceText: string): string {
+  const normalized = sourceText.replace(/\r\n/g, '\n');
+  const extraction = extractImplementationConfirmationBlock(normalized);
+  if (!extraction) {
+    return normalized;
+  }
+  return extraction.lines.slice(0, extraction.start).join('\n');
+}
+
+function currentTargetMapStructuredDefaultState(
+  value: string,
+  rules: CurrentTargetMapStructuredDefaultRules
+): 'visible' | 'hidden' | '' {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  if (rules.enabledValues.some((pattern) => pattern.test(normalized))) return 'visible';
+  if (rules.disabledValues.some((pattern) => pattern.test(normalized))) return 'hidden';
+  return '';
+}
+
+function stripMarkdownCellDecorations(value: string): string {
+  return normalizeText(value)
+    .replace(/^`(.+)`$/u, '$1')
+    .replace(/[，,;；.。:：]$/u, '');
+}
+
+function currentTargetMapStructuredDefaultEntryCell(
+  cells: string[],
+  headers: string[],
+  rules: CurrentTargetMapStructuredDefaultRules
+): { value: string; index: number } {
+  const headerIndex = headers.findIndex((header) =>
+    rules.entryHeader.some((pattern) => pattern.test(stripMarkdownCellDecorations(header)))
+  );
+  const fallbackIndex = Math.max(0, Math.min(rules.fallbackEntryColumnIndex, cells.length - 1));
+  const index = headerIndex >= 0 ? headerIndex : fallbackIndex;
+  return { value: stripMarkdownCellDecorations(cells[index] ?? ''), index };
+}
+
+function currentTargetMapStructuredDefaultStateCell(
+  cells: string[],
+  headers: string[],
+  rules: CurrentTargetMapStructuredDefaultRules
+): { state: 'visible' | 'hidden' | ''; index: number } {
+  const candidateIndexes = headers
+    .map((header, index) => ({ header: stripMarkdownCellDecorations(header), index }))
+    .filter((entry) => rules.stateHeader.some((pattern) => pattern.test(entry.header)))
+    .map((entry) => entry.index);
+  const indexes = candidateIndexes.length > 0 ? candidateIndexes : cells.map((_, index) => index);
+  for (const index of indexes) {
+    const state = currentTargetMapStructuredDefaultState(cells[index] ?? '', rules);
+    if (state) return { state, index };
+  }
+  return { state: '', index: -1 };
+}
+
+function headerImpliesDefaultVisibility(
+  headers: string[],
+  headingPath: string[],
+  rules: CurrentTargetMapStructuredDefaultRules
+): boolean {
+  const text = `${headers.join(' ')} ${headingPath.join(' ')}`;
+  return rules.tableContext.some((pattern) => pattern.test(text));
+}
+
+function collectMarkdownDefaultVisibilityRowsForCurrentTargetMap(sourceText: string): Array<{
+  period: string;
+  visibility: 'visible' | 'hidden';
+  entry: string;
+  state: 'visible' | 'hidden';
+  rowText: string;
+  headingPath: string[];
+  headers: string[];
+}> {
+  const rows: Array<{
+    period: string;
+    visibility: 'visible' | 'hidden';
+    entry: string;
+    state: 'visible' | 'hidden';
+    rowText: string;
+    headingPath: string[];
+    headers: string[];
+  }> = [];
+  const rules = currentTargetMapHighlightRules().structuredDefaults;
+  const lines = sourceAuthorityTextWithoutInlineConfirmation(sourceText).split('\n');
+  const headingPath: string[] = [];
+  let inFence = false;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^\s*```/u.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) {
+      continue;
+    }
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*$/u);
+    if (heading) {
+      headingPath.splice(heading[1].length - 1);
+      headingPath[heading[1].length - 1] = normalizeText(heading[2]);
+      continue;
+    }
+    if (!isMarkdownTableSeparator(line) || index < 1 || !isMarkdownTableRow(lines[index - 1])) {
+      continue;
+    }
+    const headers = markdownTableCells(lines[index - 1]);
+    const hasDefaultVisibilityContext = headerImpliesDefaultVisibility(headers, headingPath, rules);
+    let rowIndex = index + 1;
+    for (; rowIndex < lines.length && isMarkdownTableRow(lines[rowIndex]); rowIndex += 1) {
+      if (isMarkdownTableSeparator(lines[rowIndex])) {
+        continue;
+      }
+      const cells = markdownTableCells(lines[rowIndex]);
+      const entry = currentTargetMapStructuredDefaultEntryCell(cells, headers, rules).value;
+      if (!entry) {
+        continue;
+      }
+      const visibility = currentTargetMapStructuredDefaultStateCell(cells, headers, rules).state;
+      if (!visibility || !hasDefaultVisibilityContext) {
+        continue;
+      }
+      rows.push({
+        period: entry,
+        visibility,
+        entry,
+        state: visibility,
+        rowText: cells.join(' | '),
+        headingPath: headingPath.filter(Boolean),
+        headers,
+      });
+    }
+    index = rowIndex - 1;
+  }
+  return rows;
+}
+
+function collectDefaultOverlayVisibilityForCurrentTargetMap(sourceText: string): {
+  visible: string[];
+  hidden: string[];
+  rows: Array<{
+    period: string;
+    visibility: 'visible' | 'hidden';
+    entry: string;
+    state: 'visible' | 'hidden';
+    rowText: string;
+    headingPath: string[];
+    headers: string[];
+  }>;
+} {
+  const rows = collectMarkdownDefaultVisibilityRowsForCurrentTargetMap(sourceText);
+  const visible = new Set<string>();
+  const hidden = new Set<string>();
+  for (const row of rows) {
+    if (row.visibility === 'visible') visible.add(row.period);
+    if (row.visibility === 'hidden') hidden.add(row.period);
+  }
+  return { visible: [...visible], hidden: [...hidden], rows };
+}
+
+function orderedPeriodList(values: string[]): string[] {
+  return uniqueStrings(values).filter(Boolean);
+}
+
+function sourceSpecificOverlaySummaryForCurrentTargetMap(sourceText: string): {
+  overlayPeriodAnchors: string[];
+  defaultVisibleOverlays: string[];
+  defaultHiddenOverlays: string[];
+  defaultVisibilityRows: Array<{
+    period: string;
+    visibility: 'visible' | 'hidden';
+    entry: string;
+    state: 'visible' | 'hidden';
+    rowText: string;
+    headingPath: string[];
+    headers: string[];
+  }>;
+  hasStructuredDefaultVisibility: boolean;
+  periodAnchorText: string;
+  defaultVisibilityText: string;
+} {
+  const defaults = collectDefaultOverlayVisibilityForCurrentTargetMap(sourceText);
+  const defaultVisibleOverlays = orderedPeriodList(defaults.visible);
+  const defaultHiddenOverlays = orderedPeriodList(defaults.hidden);
+  const overlayPeriodAnchors = orderedPeriodList(
+    defaults.rows.length > 0
+      ? defaults.rows.map((row) => row.period)
+      : []
+  );
+  const hasStructuredDefaultVisibility =
+    defaultVisibleOverlays.length > 0 || defaultHiddenOverlays.length > 0;
+  const periodAnchorText =
+    overlayPeriodAnchors.length > 0
+      ? overlayPeriodAnchors.join(', ')
+      : 'source-defined default entries';
+  const defaultVisibilityText = hasStructuredDefaultVisibility
+    ? [
+        defaultVisibleOverlays.length > 0
+          ? `default visible entries: ${defaultVisibleOverlays.join(', ')}`
+          : '',
+        defaultHiddenOverlays.length > 0
+          ? `default hidden entries: ${defaultHiddenOverlays.join(', ')}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('; ')
+    : `source-defined defaults: ${periodAnchorText}`;
+  return {
+    overlayPeriodAnchors,
+    defaultVisibleOverlays,
+    defaultHiddenOverlays,
+    defaultVisibilityRows: defaults.rows,
+    hasStructuredDefaultVisibility,
+    periodAnchorText,
+    defaultVisibilityText,
+  };
+}
+
+function sourceRequirementSampleForCurrentTargetMap(
+  mustRequirements: SourceMustRequirement[]
+): string {
+  const sample = mustRequirements
+    .slice(0, 5)
+    .map((requirement) => `${requirement.id}: ${requirement.text}`)
+    .join(' | ');
+  return sample || 'source-defined product behavior';
+}
+
+function sourceRequirementTargetDescriptionForCurrentTargetMap(
+  mustRequirements: SourceMustRequirement[]
+): string {
+  if (mustRequirements.length === 0) {
+    return 'source-defined product behavior';
+  }
+  const maxInlineMustDescriptions = 20;
+  const rows = mustRequirements
+    .slice(0, maxInlineMustDescriptions)
+    .map((requirement) => `${requirement.id}: ${requirement.text}`);
+  const remaining = mustRequirements.length - rows.length;
+  if (remaining > 0) {
+    rows.push(`... plus ${remaining} additional source-defined MUST rows`);
+  }
+  return rows.join(' | ');
+}
+
+function sourceRequirementDisplayRefsForCurrentTargetMap(
+  mustRequirements: SourceMustRequirement[]
+): Array<Record<string, unknown>> {
+  return mustRequirements
+    .filter(
+      (requirement) =>
+        !headingPathContainsCurrentTargetStateSection(requirement.headingPath ?? []) &&
+        !headingPathImpliesCommentaryOnly(requirement.headingPath ?? [])
+    )
+    .map((requirement, index) => ({
+    displayRef: `MUST-${requirementOrdinal(index)}`,
+    requirementRef: requirement.id,
+    text: requirement.text,
+    ...(requirement.sourceSpan ? { sourceSpan: requirement.sourceSpan } : {}),
+    ...(requirement.headingPath ? { headingPath: requirement.headingPath } : {}),
+  }));
+}
+
+function sourceTitleForCurrentTargetMap(sourceText: string, targetPaths: string[]): string {
+  const title = sourceAuthorityTextWithoutInlineConfirmation(sourceText).match(/^#\s+(.+?)\s*$/mu);
+  if (title) {
+    return normalizeText(title[1]);
+  }
+  const pathLabels = targetPaths
+    .map((targetPath) => path.basename(targetPath).replace(/\.[^.]+$/u, ''))
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(', ');
+  return pathLabels || 'source-defined product behavior';
+}
+
+function currentTargetMapLineIsConfirmationGovernance(line: string, headingPath: string[]): boolean {
+  const text = `${headingPath.join(' ')} ${line}`;
+  return (
+    /(?:implementationConfirmation|confirmationRender|sourceDocumentHash|implementationConfirmationHash|confirmationPageHash|actualHtmlFileHash|reconfirm_required|draft_updated_not_confirmation_ready|user_confirmed|confirmedAt|confirmedBy)/iu.test(
+      text
+    ) ||
+    /(?:req-trace|critical auditor|pre-render|semantic-kernel|must_decomposition|packet hash|auditInputHash|controlled confirm-scope ingest|confirm-scope|requirements-contract-authoring|implementation readiness|delivery readiness)/iu.test(
+      text
+    ) ||
+    /(?:本文档当前状态|本文档不是|权威要求集中|确认块|确认页|用户精确确认|源文档 hash|重新渲染|进入 implementation readiness|交付准出|受控确认|受控 ingest)/iu.test(
+      text
+    )
+  );
+}
+
+function currentTargetMapSourceStateBoundaryLine(line: string): boolean {
+  const text = normalizeText(line);
+  if (!text) return false;
+  const boundaryLabel = /[:：]\s*$/u.test(text);
+  const evidenceOrSource =
+    /(?:\bevidence\b|\bproof\b|\bprovenance\b|\bsource\s+refs?\b|\bcode\s+reading\b|\bimplementation\s+evidence\b|\bcurrent\s+evidence\b|\bexisting\s+evidence\b|证据|证明|来源|出处|代码读取|实现证据|现状证据|当前证据)/iu.test(
+      text
+    );
+  const currentEvidence =
+    /(?:\bcurrent\b|\bexisting\b|\bas-is\b|当前|现状|已有|既有)/iu.test(text) &&
+    /(?:\bevidence\b|\bproof\b|\bcode\b|\bimplementation\b|证据|证明|代码|实现)/iu.test(text);
+  return (boundaryLabel && evidenceOrSource) || currentEvidence;
+}
+
+function currentTargetMapHighlightRulePathCandidates(): string[] {
+  return uniqueStrings([
+    path.resolve(process.cwd(), '_bmad', '_config', 'current-target-map-highlight-rules.yaml'),
+    path.resolve(__dirname, '..', '_bmad', '_config', 'current-target-map-highlight-rules.yaml'),
+    path.resolve(__dirname, '..', '..', '..', '..', '_bmad', '_config', 'current-target-map-highlight-rules.yaml'),
+  ]);
+}
+
+function compileCurrentTargetMapPatterns(values: unknown, label: string): RegExp[] {
+  return asStringArray(values).map((pattern) => {
+    try {
+      return new RegExp(pattern, 'iu');
+    } catch (error) {
+      throw new Error(`invalid current-target-map highlight rule ${label}: ${pattern}`);
+    }
+  });
+}
+
+function loadCurrentTargetMapHighlightRules(): CurrentTargetMapHighlightRules {
+  const configPath = currentTargetMapHighlightRulePathCandidates().find((candidate) =>
+    fs.existsSync(candidate)
+  );
+  if (!configPath) {
+    throw new Error('current-target-map highlight rules config missing');
+  }
+  const parsed = yaml.load(fs.readFileSync(configPath, 'utf8')) as Record<string, unknown> | null;
+  const categories = recordObject(parsed?.categories);
+  const limits = recordObject(parsed?.limits);
+  const structuredDefaults = recordObject(parsed?.structuredDefaults);
+  const loadCategory = (
+    name: CurrentTargetMapHighlightCategoryName
+  ): CurrentTargetMapHighlightCategoryRules => {
+    const category = recordObject(categories[name]);
+    const categoryLimit = Number(limits[name] ?? 10);
+    const rules = {
+      headingContext: compileCurrentTargetMapPatterns(category.headingContext, `${name}.headingContext`),
+      lineMatch: compileCurrentTargetMapPatterns(category.lineMatch, `${name}.lineMatch`),
+      priority: compileCurrentTargetMapPatterns(category.priority, `${name}.priority`),
+      preferContextListItems: category.preferContextListItems !== false,
+      maxContextListItems: Number(
+        category.maxContextListItems ?? Math.max(1, Math.ceil(categoryLimit / 2))
+      ),
+    };
+    if (rules.headingContext.length === 0 || rules.lineMatch.length === 0) {
+      throw new Error(`current-target-map highlight rules category incomplete: ${name}`);
+    }
+    return rules;
+  };
+  const structuredDefaultRules: CurrentTargetMapStructuredDefaultRules = {
+    tableContext: compileCurrentTargetMapPatterns(
+      structuredDefaults.tableContext,
+      'structuredDefaults.tableContext'
+    ),
+    entryHeader: compileCurrentTargetMapPatterns(
+      structuredDefaults.entryHeader,
+      'structuredDefaults.entryHeader'
+    ),
+    stateHeader: compileCurrentTargetMapPatterns(
+      structuredDefaults.stateHeader,
+      'structuredDefaults.stateHeader'
+    ),
+    enabledValues: compileCurrentTargetMapPatterns(
+      structuredDefaults.enabledValues,
+      'structuredDefaults.enabledValues'
+    ),
+    disabledValues: compileCurrentTargetMapPatterns(
+      structuredDefaults.disabledValues,
+      'structuredDefaults.disabledValues'
+    ),
+    fallbackEntryColumnIndex: Math.max(0, Number(structuredDefaults.fallbackEntryColumnIndex ?? 0)),
+  };
+  if (
+    structuredDefaultRules.tableContext.length === 0 ||
+    structuredDefaultRules.enabledValues.length === 0 ||
+    structuredDefaultRules.disabledValues.length === 0
+  ) {
+    throw new Error('current-target-map structured default rules incomplete');
+  }
+  return {
+    limits: {
+      current: Number(limits.current ?? 10),
+      target: Number(limits.target ?? 12),
+      control: Number(limits.control ?? 6),
+    },
+    categories: {
+      current: loadCategory('current'),
+      target: loadCategory('target'),
+      control: loadCategory('control'),
+    },
+    structuredDefaults: structuredDefaultRules,
+  };
+}
+
+let cachedCurrentTargetMapHighlightRules: CurrentTargetMapHighlightRules | null = null;
+
+function currentTargetMapHighlightRules(): CurrentTargetMapHighlightRules {
+  cachedCurrentTargetMapHighlightRules ??= loadCurrentTargetMapHighlightRules();
+  return cachedCurrentTargetMapHighlightRules;
+}
+
+function currentTargetMapSourceStateLineText(rawLine: string): string {
+  if (isMarkdownTableSeparator(rawLine)) return '';
+  if (isMarkdownTableRow(rawLine)) {
+    return markdownTableCells(rawLine).join(' | ');
+  }
+  return stripMarkdownListMarker(rawLine);
+}
+
+function currentTargetMapSourceStateProjection(
+  sourceText: string
+): CurrentTargetMapSourceStateProjection {
+  const currentRows: CurrentTargetMapSourceStateRow[] = [];
+  const targetRows: CurrentTargetMapSourceStateRow[] = [];
+  const currentSectionHeadings: string[] = [];
+  const targetSectionHeadings: string[] = [];
+  const lines = sourceAuthorityTextWithoutInlineConfirmation(sourceText).split(/\r?\n/u);
+  const headingPath: string[] = [];
+  let activeKind: CurrentTargetMapSourceStateKind | null = null;
+  let activeLevel = 0;
+  let activeRowCount = 0;
+  let inFence = false;
+  let inHtmlComment = false;
+
+  for (const [index, rawLine] of lines.entries()) {
+    const lineNumber = index + 1;
+    const trimmed = rawLine.trim();
+    if (trimmed.includes('<!--')) inHtmlComment = true;
+    if (inHtmlComment) {
+      if (trimmed.includes('-->')) inHtmlComment = false;
+      continue;
+    }
+    if (/^\s*```/u.test(rawLine)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+
+    const heading = rawLine.match(/^(#{1,6})\s+(.+?)\s*$/u);
+    if (heading) {
+      const level = heading[1].length;
+      const headingText = normalizeText(heading[2]);
+      headingPath.splice(level - 1);
+      headingPath[level - 1] = headingText;
+      const sectionKind = currentTargetMapSourceStateSectionKind(headingText);
+      if (sectionKind) {
+        activeKind = sectionKind;
+        activeLevel = level;
+        activeRowCount = 0;
+        if (sectionKind === 'current') currentSectionHeadings.push(headingText);
+        if (sectionKind === 'target') targetSectionHeadings.push(headingText);
+        continue;
+      }
+      if (activeKind && level <= activeLevel) {
+        activeKind = null;
+        activeLevel = 0;
+        activeRowCount = 0;
+      }
+      continue;
+    }
+
+    if (!activeKind) continue;
+    const text = currentTargetMapSourceStateLineText(rawLine);
+    if (activeRowCount > 0 && currentTargetMapSourceStateBoundaryLine(text)) {
+      activeKind = null;
+      activeLevel = 0;
+      activeRowCount = 0;
+      continue;
+    }
+    if (!text || currentTargetMapLineIsConfirmationGovernance(text, headingPath)) {
+      continue;
+    }
+    const row: CurrentTargetMapSourceStateRow = {
+      id: `SOURCE-${activeKind.toUpperCase()}-${requirementOrdinal(
+        activeKind === 'current' ? currentRows.length : targetRows.length
+      )}`,
+      text,
+      sourceLine: lineNumber,
+      headingPath: headingPath.filter(Boolean),
+    };
+    if (activeKind === 'current') {
+      currentRows.push(row);
+    } else {
+      targetRows.push(row);
+    }
+    activeRowCount += 1;
+  }
+
+  return {
+    mode:
+      currentRows.length > 0 && targetRows.length > 0
+        ? 'source_current_target_sections'
+        : 'heuristic_highlights_fallback',
+    currentSectionHeadings: uniqueStrings(currentSectionHeadings),
+    targetSectionHeadings: uniqueStrings(targetSectionHeadings),
+    currentRows,
+    targetRows,
+  };
+}
+
+function currentTargetMapCandidateContextText(
+  candidate: CurrentTargetMapHighlightCandidate
+): string {
+  return `${candidate.headingPath.join(' ')} ${candidate.text}`;
+}
+
+function currentTargetMapCandidateHeadingContextText(
+  candidate: CurrentTargetMapHighlightCandidate
+): string {
+  return candidate.headingPath.length > 1 ? candidate.headingPath.slice(1).join(' ') : '';
+}
+
+function currentTargetMapPatternScore(text: string, patterns: RegExp[], weight: number): number {
+  return patterns.reduce((score, pattern) => score + (pattern.test(text) ? weight : 0), 0);
+}
+
+function currentTargetMapCategoryCandidateScore(
+  candidate: CurrentTargetMapHighlightCandidate,
+  rules: CurrentTargetMapHighlightCategoryRules
+): number {
+  const headingContextText = currentTargetMapCandidateHeadingContextText(candidate);
+  const lineScore = currentTargetMapPatternScore(candidate.text, rules.lineMatch, 4);
+  const contextScore = currentTargetMapPatternScore(headingContextText, rules.headingContext, 3);
+  const priorityScore = currentTargetMapPatternScore(candidate.text, rules.priority, 6);
+  const listScore = candidate.isListItem ? 2 : 0;
+  const contextualListScore =
+    candidate.isListItem && contextScore > 0 && lineScore === 0 ? 10 : 0;
+  const headingPenalty = candidate.isHeading ? -2 : 0;
+  return lineScore + contextScore + priorityScore + listScore + contextualListScore + headingPenalty;
+}
+
+function currentTargetMapCandidateHasHeadingContext(
+  candidate: CurrentTargetMapHighlightCandidate,
+  rules: CurrentTargetMapHighlightCategoryRules
+): boolean {
+  return currentTargetMapPatternScore(
+    currentTargetMapCandidateHeadingContextText(candidate),
+    rules.headingContext,
+    1
+  ) > 0;
+}
+
+function currentTargetMapHighlightCandidates(sourceText: string): CurrentTargetMapHighlightCandidate[] {
+  const lines = sourceAuthorityTextWithoutInlineConfirmation(sourceText).split(/\r?\n/u);
+  const headingPath: string[] = [];
+  const candidates: CurrentTargetMapHighlightCandidate[] = [];
+  let inFence = false;
+  let inHtmlComment = false;
+  for (const [sourceIndex, rawLine] of lines.entries()) {
+    const trimmed = rawLine.trim();
+    if (trimmed.includes('<!--')) inHtmlComment = true;
+    if (inHtmlComment) {
+      if (trimmed.includes('-->')) inHtmlComment = false;
+      continue;
+    }
+    if (/^\s*```/u.test(rawLine)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const heading = rawLine.match(/^(#{1,6})\s+(.+?)\s*$/u);
+    if (heading) {
+      const headingText = normalizeText(heading[2]);
+      headingPath.splice(heading[1].length - 1);
+      headingPath[heading[1].length - 1] = headingText;
+      if (!currentTargetMapLineIsConfirmationGovernance(headingText, headingPath)) {
+        candidates.push({
+          text: headingText,
+          headingPath: headingPath.filter(Boolean),
+          isHeading: true,
+          isListItem: false,
+          sourceIndex,
+        });
+      }
+      continue;
+    }
+    if (isMarkdownTableSeparator(rawLine) || rawLine.trim().startsWith('|')) {
+      continue;
+    }
+    const isListItem = /^[-*+]\s+/u.test(rawLine);
+    const line = normalizeText(rawLine.replace(/^[-*+]\s+/u, ''));
+    if (!line || currentTargetMapLineIsConfirmationGovernance(line, headingPath)) {
+      continue;
+    }
+    candidates.push({
+      text: line,
+      headingPath: headingPath.filter(Boolean),
+      isHeading: false,
+      isListItem,
+      sourceIndex,
+    });
+  }
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = candidate.text;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function pickCurrentTargetMapHighlights(
+  candidates: CurrentTargetMapHighlightCandidate[],
+  rules: CurrentTargetMapHighlightCategoryRules,
+  limit: number
+): string[] {
+  const scored = candidates
+    .map((candidate) => ({
+      candidate,
+      score: currentTargetMapCategoryCandidateScore(candidate, rules),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      if (left.candidate.isHeading !== right.candidate.isHeading) {
+        return left.candidate.isHeading ? 1 : -1;
+      }
+      return left.candidate.sourceIndex - right.candidate.sourceIndex;
+    });
+  const contextListItems = rules.preferContextListItems
+    ? scored
+        .filter(
+          (entry) =>
+            entry.candidate.isListItem &&
+            !entry.candidate.isHeading &&
+            currentTargetMapCandidateHasHeadingContext(entry.candidate, rules)
+        )
+        .sort((left, right) => left.candidate.sourceIndex - right.candidate.sourceIndex)
+        .slice(0, Math.min(limit, rules.maxContextListItems))
+    : [];
+  const selected = [...contextListItems];
+  const selectedText = new Set(selected.map((entry) => entry.candidate.text));
+  for (const entry of scored) {
+    if (selected.length >= limit) break;
+    if (selectedText.has(entry.candidate.text)) continue;
+    selected.push(entry);
+    selectedText.add(entry.candidate.text);
+  }
+  const selectedHeadingPathTexts = new Set(
+    selected.flatMap((entry) => entry.candidate.headingPath)
+  );
+  const contextualHeadings = scored.filter(
+    (entry) => entry.candidate.isHeading && selectedHeadingPathTexts.has(entry.candidate.text)
+  );
+  const merged = [...contextualHeadings, ...selected];
+  const seen = new Set<string>();
+  return merged
+    .filter((entry) => {
+      const key = entry.candidate.text;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => left.candidate.sourceIndex - right.candidate.sourceIndex)
+    .map((entry) => entry.candidate.text);
+}
+
+function currentTargetMapSourceHighlights(sourceText: string): {
+  currentHighlights: string[];
+  targetHighlights: string[];
+  controlHighlights: string[];
+} {
+  const candidates = currentTargetMapHighlightCandidates(sourceText);
+  const rules = currentTargetMapHighlightRules();
+  return {
+    currentHighlights: pickCurrentTargetMapHighlights(
+      candidates,
+      rules.categories.current,
+      rules.limits.current
+    ),
+    targetHighlights: pickCurrentTargetMapHighlights(
+      candidates,
+      rules.categories.target,
+      rules.limits.target
+    ),
+    controlHighlights: pickCurrentTargetMapHighlights(
+      candidates,
+      rules.categories.control,
+      rules.limits.control
+    ),
+  };
+}
+
+function formatSourceHighlightList(values: string[], fallback: string): string {
+  return values.length > 0 ? values.join(' | ') : fallback;
+}
+
+function buildSourceSpecificCurrentTargetMap(input: {
+  root: string;
+  sourcePath: string;
+  sourceText?: string;
+  paths?: PreConfirmationPaths;
+  packetHash?: string;
+  mustRequirements: SourceMustRequirement[];
+  businessRows?: Record<string, unknown>[];
+  outOfScopeRows?: Record<string, unknown>[];
+  targetAuthorityRecords?: TargetAuthorityRecord[];
+  validationAuthorityRecords?: ValidationAuthorityRecord[];
+  targetPathRows?: Record<string, unknown>[];
+  commandRows?: Record<string, unknown>[];
+  allTraceIds: string[];
+  allEvidenceIds: string[];
+  mustRefs: string[];
+}): CurrentTargetMapBuildResult {
+  const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
+  const targetPaths = collectTargetPathsForCurrentTargetMap({
+    targetAuthorityRecords: input.targetAuthorityRecords,
+    targetPathRows: input.targetPathRows,
+  });
+  const effectiveTargetPaths = targetPaths.length > 0 ? targetPaths : [rel(input.sourcePath)];
+  const sourceText = collectSourceTextForCurrentTargetMap({
+    sourcePath: input.sourcePath,
+    sourceText: input.sourceText,
+    mustRequirements: input.mustRequirements,
+    businessRows: input.businessRows,
+    outOfScopeRows: input.outOfScopeRows,
+    targetPaths: effectiveTargetPaths,
+    commandRows: input.commandRows,
+    validationAuthorityRecords: input.validationAuthorityRecords,
+  });
+  const productSurface = sourceTitleForCurrentTargetMap(sourceText, effectiveTargetPaths);
+  const overlaySummary = sourceSpecificOverlaySummaryForCurrentTargetMap(sourceText);
+  const sourceStateProjection = currentTargetMapSourceStateProjection(sourceText);
+  const hasSourceStateSections =
+    sourceStateProjection.mode === 'source_current_target_sections';
+  const sourceHighlights = currentTargetMapSourceHighlights(sourceText);
+  const sourceStateSectionTexts = new Set(
+    [...sourceStateProjection.currentRows, ...sourceStateProjection.targetRows].map((row) => row.text)
+  );
+  const currentHighlightValues = hasSourceStateSections
+    ? sourceStateProjection.currentRows.map((row) => row.text)
+    : sourceHighlights.currentHighlights;
+  const targetHighlightValues = hasSourceStateSections
+    ? sourceStateProjection.targetRows.map((row) => row.text)
+    : sourceHighlights.targetHighlights;
+  const controlHighlightValues = hasSourceStateSections
+    ? sourceHighlights.controlHighlights.filter((highlight) => sourceStateSectionTexts.has(highlight))
+    : sourceHighlights.controlHighlights;
+  const currentHighlightText = formatSourceHighlightList(
+    currentHighlightValues,
+    'source-defined current product behavior'
+  );
+  const targetHighlightText = formatSourceHighlightList(
+    targetHighlightValues,
+    'source-defined target product behavior'
+  );
+  const controlHighlightText = formatSourceHighlightList(
+    controlHighlightValues,
+    'source-defined validation and rollback controls'
+  );
+  const targetPathText = effectiveTargetPaths.join(', ');
+  const commandText = uniqueStrings([
+    ...asRecordArray(input.commandRows).map((row) => normalizeText(row.command)),
+    ...(input.validationAuthorityRecords ?? []).map((record) => record.command),
+  ]).join(' | ');
+  const outOfScopeText = asRecordArray(input.outOfScopeRows)
+    .map((row) => normalizeText(row.text ?? row.scopeBoundary ?? stableStringify(row)))
+    .filter(Boolean)
+    .slice(0, 4)
+    .join(' | ');
+  const requirementSample = sourceRequirementSampleForCurrentTargetMap(input.mustRequirements);
+  const requirementTargetDescription = sourceRequirementTargetDescriptionForCurrentTargetMap(
+    input.mustRequirements
+  );
+  const displayRequirementRefs = sourceRequirementDisplayRefsForCurrentTargetMap(
+    input.mustRequirements
+  );
+  const displayRequirementRefText = displayRequirementRefs
+    .slice(0, 20)
+    .map((row) => `${row.displayRef}: ${row.requirementRef}`)
+    .join(' | ');
+  const traceRows = input.allTraceIds;
+  const evidenceRefs = input.allEvidenceIds;
+  const requirementRefs = input.mustRefs;
+  const backRef = input.packetHash ? projectionBackRef(input.packetHash, requirementRefs[0]) : {};
+  const diffRows = [
+    {
+      id: 'CT-DIFF-001',
+      dimension: 'Product behavior semantics',
+      currentState: `Current ${productSurface} product limitations and existing behavior: ${currentHighlightText}.`,
+      targetState: `Target ${productSurface} after all confirmed MUST behavior is implemented in source-authorized product code targets (${targetPathText}): ${requirementTargetDescription}. Display refs: ${displayRequirementRefText}.`,
+      action: 'Implement only the source-authorized product behavior and keep each MUST bound to an independent TRACE/ACC/E2E proof row.',
+      traceRows,
+      evidenceRefs,
+      requirementRefs,
+      ...backRef,
+    },
+    {
+      id: 'CT-DIFF-002',
+      dimension: 'Source-defined default state and rollback-sensitive behavior',
+      currentState: `Current product default-state limitations and existing settings behavior: ${currentHighlightText}. Structured defaults: ${overlaySummary.defaultVisibilityText}.`,
+      targetState: `Target product settings behavior: ${targetHighlightText}. Preserve structured defaults: ${overlaySummary.defaultVisibilityText}.`,
+      action: `Bind source-declared defaults and rollback/control requirements to product tests: ${controlHighlightText}.`,
+      traceRows,
+      evidenceRefs,
+      requirementRefs,
+      ...backRef,
+    },
+    {
+      id: 'CT-DIFF-003',
+      dimension: 'Scope boundary',
+      currentState: `Current source boundary remains explicit: ${outOfScopeText || 'source-defined OUT rows apply'}.`,
+      targetState: 'Target implementation respects the source-declared boundary and does not widen scope without reconfirmation.',
+      action: 'Keep OUT rows out of trace covers while preserving boundary proof through boundary/current-target views.',
+      traceRows,
+      evidenceRefs,
+      requirementRefs,
+      ...backRef,
+    },
+    {
+      id: 'CT-DIFF-004',
+      dimension: 'Validation authority',
+      currentState: `Current validation authority is declared but not delivery evidence until the current attempt runs it: ${commandText || 'source-authorized validation command required'}.`,
+      targetState: `Target delivery proof comes from current-attempt commands tied to ${productSurface} targets and per-MUST oracles.`,
+      action: 'Require current-attempt validation output before any closeout or delivery-ready claim.',
+      traceRows,
+      evidenceRefs,
+      requirementRefs,
+      ...backRef,
+    },
+  ];
+  const artifactPaths = effectiveTargetPaths.map((targetPath, index) => ({
+    id: `CT-ARTPATH-${requirementOrdinal(index)}`,
+    path: targetPath,
+    targetRole: 'source-authorized product code target',
+    traceRows,
+    evidenceRefs,
+    requirementRefs,
+    ...backRef,
+  }));
+  const canonicalArtifacts = effectiveTargetPaths.map((targetPath, index) => ({
+    id: `CT-CANON-${requirementOrdinal(index)}`,
+    targetPathOrField: targetPath,
+    functionDescription: `Product surface for ${productSurface}; must not be replaced by confirmation-governance artifacts.`,
+    controlPlaneRole: 'product_behavior_source_target',
+    traceRows,
+    evidenceRefs,
+    requirementRefs,
+    ...backRef,
+  }));
+  const existingArtifacts = [
+    {
+      id: 'CT-EXIST-001',
+      currentPath: rel(input.sourcePath),
+      currentFunction: `Source authority for ${productSurface} current behavior, target behavior, exclusions, and evidence expectations.`,
+      targetTreatment: `Use as scope authority only; implementation changes belong in source-authorized product code targets: ${targetPathText}.`,
+      completionProofPolicy: 'not_completion_proof',
+      traceRows,
+      evidenceRefs,
+      requirementRefs,
+      ...backRef,
+    },
+  ];
+  return {
+    map: {
+      schemaVersion: 'current-target-map/v1',
+      displayProfile: 'closed_loop_current_target_map',
+      introduction: `source-authorized product code targets for ${productSurface}; this section compares product current state to target product behavior, not confirmation-governance state.`,
+      sourceStateProjection,
+      currentSummary: [
+        {
+          id: 'CT-CUR-001',
+          title: `Current ${productSurface} state`,
+          detail: `Current product limitations and existing behavior: ${currentHighlightText}. Structured defaults: ${overlaySummary.defaultVisibilityText}.`,
+          traceRows,
+          evidenceRefs,
+          requirementRefs,
+          ...backRef,
+        },
+        {
+          id: 'CT-CUR-002',
+          title: 'Current target path authority',
+          detail: `Source-authorized product code targets: ${targetPathText}.`,
+          traceRows,
+          evidenceRefs,
+          requirementRefs,
+          ...backRef,
+        },
+      ],
+      targetSummary: [
+        {
+          id: 'CT-TGT-001',
+          title: `Target ${productSurface} behavior`,
+          detail: `Implement all confirmed MUST behavior (${requirementTargetDescription}); display refs: ${displayRequirementRefText}; source target highlights: ${targetHighlightText}; preserve structured defaults (${overlaySummary.defaultVisibilityText}), and keep explicit out-of-scope boundaries.`,
+          traceRows,
+          evidenceRefs,
+          requirementRefs,
+          ...backRef,
+        },
+        {
+          id: 'CT-TGT-002',
+          title: 'Target proof boundary',
+          detail: 'Each MUST keeps independent trace, acceptance, E2E, failure, edge, target-path, and command evidence before delivery readiness.',
+          traceRows,
+          evidenceRefs,
+          requirementRefs,
+          ...backRef,
+        },
+      ],
+      diffRows,
+      displayRequirementRefs,
+      process: [
+        {
+          id: 'CT-PROC-001',
+          phase: 'Product implementation',
+          currentState: `${productSurface} currently has the source-described product limitations: ${currentHighlightText}.`,
+          targetState: `${productSurface} implements the confirmed MUST target behavior in ${targetPathText}.`,
+          traceRows,
+          evidenceRefs,
+          requirementRefs,
+          ...backRef,
+        },
+      ],
+      artifactPaths,
+      canonicalArtifacts,
+      existingArtifacts,
+      sourceDefaultVisibility: {
+        rows: overlaySummary.defaultVisibilityRows,
+        visible: overlaySummary.defaultVisibleOverlays,
+        hidden: overlaySummary.defaultHiddenOverlays,
+      },
+    },
+    diffRowIds: diffRows.map((row) => row.id),
+    canonicalArtifactIds: canonicalArtifacts.map((row) => row.id),
+    legacyArtifactIds: existingArtifacts.map((row) => row.id),
+  };
+}
+
 function buildPreConfirmationImplementationConfirmation(input: {
   root: string;
   sourcePath: string;
+  sourceText?: string;
   recordId: string;
   requirementSetId: string;
   language: string | null;
@@ -3674,6 +4796,10 @@ function buildPreConfirmationImplementationConfirmation(input: {
   );
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
   const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
+  const productSurfaceLabel = sourceTitleForCurrentTargetMap(
+    input.sourceText ?? '',
+    targetAuthorityRecords.map((record) => record.path)
+  );
   const totalMusts = input.mustRequirements.length;
   const perMustClosures = input.mustRequirements.map((requirement, index) => {
     const ids = perMustProjectionIds(index, totalMusts);
@@ -3718,7 +4844,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
             covers: businessDiagramCoverRefs,
             perMustRows: businessPerMustRows,
             ...businessProofClosure,
-            mermaid: `sequenceDiagram\n  actor User\n  participant Settings as Multi-timeframe settings\n  User->>Settings: review timeframe display behavior [${businessRequirementIds.join(', ')}]\n  Settings-->>User: show per-timeframe visibility, persistence, and exclusion boundaries [${businessDiagramCoverRefs.join(', ')}]\n  Settings-->>User: expose proof closure [${allTraceIds.join(', ')}][${allEvidenceIds.join(', ')}]`,
+            mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Proof as Trace evidence\n  User->>Product: review confirmed behavior [${businessRequirementIds.join(', ')}]\n  Product-->>User: expose source-authorized target state [${businessDiagramCoverRefs.join(', ')}]\n  Product-->>Proof: bind proof closure [${allTraceIds.join(', ')}][${allEvidenceIds.join(', ')}]`,
           },
           {
             id: 'SEQ-BUSINESS-FAILURE-001',
@@ -3729,7 +4855,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
             perMustRows: businessPerMustRows,
             ...businessProofClosure,
             failurePathRefs: allFailureIds,
-            mermaid: `sequenceDiagram\n  actor User\n  participant Settings as Multi-timeframe settings\n  User->>Settings: trigger invalid or missing proof condition [NEG-001]\n  Settings-->>User: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Settings-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
+            mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Gate as Delivery gate\n  User->>Product: trigger invalid or missing proof condition [NEG-001]\n  Product-->>Gate: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Gate-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
           },
         ]
       : [];
@@ -3754,7 +4880,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
             covers: businessDiagramCoverRefs,
             perMustRows: businessPerMustRows,
             ...businessProofClosure,
-            mermaid: `flowchart TD\n  A[Open multi-timeframe display settings] --> B[Inspect default visibility and persistence rules]\n  B --> C[Apply timeframe-specific visibility changes]\n  C --> D[Exclude main timeline and out-of-scope behavior]\n  D --> E[Verify acceptance commands]\n  A -.-> R[${businessRequirementIds.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${allTraceIds.join(' + ')}]`,
+            mermaid: `flowchart TD\n  A[Open ${productSurfaceLabel}] --> B[Inspect source-declared behavior]\n  B --> C[Apply source-authorized product change]\n  C --> D[Respect source-declared boundaries]\n  D --> E[Verify acceptance commands]\n  A -.-> R[${businessRequirementIds.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${allTraceIds.join(' + ')}]`,
           },
         ]
       : [];
@@ -3882,6 +5008,23 @@ function buildPreConfirmationImplementationConfirmation(input: {
     ...backRef,
   }));
   const commandIds = commandRows.map((row) => row.id);
+  const currentTargetMap = buildSourceSpecificCurrentTargetMap({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText: input.sourceText,
+    paths: input.paths,
+    packetHash: input.packetHash,
+    mustRequirements: input.mustRequirements,
+    businessRows,
+    outOfScopeRows,
+    targetAuthorityRecords,
+    validationAuthorityRecords,
+    targetPathRows,
+    commandRows,
+    allTraceIds,
+    allEvidenceIds,
+    mustRefs,
+  });
   const mustRows = perMustClosures.map((row) => ({
     id: row.requirement.id,
     text: row.requirement.text,
@@ -4299,94 +5442,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         covers: ['OUT-001'],
       },
     ],
-    currentTargetMap: {
-      schemaVersion: 'current-target-map/v1',
-      displayProfile: 'closed_loop_current_target_map',
-      introduction: 'Pre-confirmation drilldown remains inside requirement_confirmation.',
-      currentSummary: [
-        {
-          id: 'CT-CUR-001',
-          title: 'Draft requirement',
-          detail:
-            'The source is not yet user confirmed and cannot enter architecture confirmation.',
-        },
-      ],
-      targetSummary: [
-        {
-          id: 'CT-TGT-001',
-          title: 'User-confirmable requirement',
-          detail:
-            'Semantic kernel, atomic packet, receipts, reconciliation, gates, and HTML are synchronized.',
-        },
-      ],
-      diffRows: [
-        {
-          id: 'CT-DIFF-001',
-          dimension: 'Mental model',
-          currentState: 'requirement_confirmation draft',
-          targetState: 'requirement_confirmation user_confirmable',
-          action: 'run pre_confirmation_drilldown lane',
-        },
-        {
-          id: 'CT-DIFF-002',
-          dimension: 'Artifact source',
-          currentState: 'free-form draft',
-          targetState: 'packet-backed implementationConfirmation',
-          action: 'materialize packet projections only',
-        },
-        {
-          id: 'CT-DIFF-003',
-          dimension: 'Progression',
-          currentState: 'blocked before user confirmation',
-          targetState: 'await exact phrase and hashes',
-          action: 'require controlled ingest before architecture_confirmation',
-        },
-      ],
-      process: [
-        {
-          id: 'CT-PROC-001',
-          phase: 'Requirement confirmation',
-          currentState: 'pre-confirmation quality unknown',
-          targetState: 'user_confirmable with deliveryReadiness.ready=false',
-          traceRows: allTraceIds,
-          evidenceRefs: allEvidenceIds,
-          requirementRefs: mustRefs,
-        },
-      ],
-      artifactPaths: [
-        {
-          id: 'CT-ARTPATH-001',
-          path: rel(input.paths.preRenderMustGate),
-          targetRole: 'pre-render MUST decomposition gate report',
-          traceRows: allTraceIds,
-          evidenceRefs: allEvidenceIds,
-          requirementRefs: mustRefs,
-        },
-      ],
-      canonicalArtifacts: [
-        {
-          id: 'CT-CANON-001',
-          targetPathOrField: rel(input.paths.confirmationRenderReport),
-          functionDescription: 'Renderer report for scope confirmability only.',
-          controlPlaneRole: 'projection_not_delivery_proof',
-          traceRows: allTraceIds,
-          evidenceRefs: allEvidenceIds,
-          requirementRefs: mustRefs,
-        },
-      ],
-      existingArtifacts: [
-        {
-          id: 'CT-EXIST-001',
-          currentPath: rel(input.sourcePath),
-          currentFunction: 'Draft source document',
-          targetTreatment: 'Materialized with packet-backed implementationConfirmation',
-          completionProofPolicy: 'not_completion_proof',
-          traceRows: allTraceIds,
-          evidenceRefs: allEvidenceIds,
-          requirementRefs: mustRefs,
-        },
-      ],
-    },
+    currentTargetMap: currentTargetMap.map,
     aiTddContractExecutionManifestProjection: {
       id: 'AI-TDD-001',
       applies: true,
@@ -4406,7 +5462,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         atomicTaskToTargetPathMap,
         atomicTaskToCommandMap,
       },
-      currentTargetMap: { rows: ['CT-DIFF-001', 'CT-DIFF-002', 'CT-DIFF-003'] },
+      currentTargetMap: { rows: currentTargetMap.diffRowIds },
       errorCaseCoverage: {
         failurePathRefs: allFailureIds,
         edgeCaseRefs: allEdgeIds,
@@ -4432,13 +5488,13 @@ function buildPreConfirmationImplementationConfirmation(input: {
         traceRows: allTraceIds,
         evidenceRefs: allEvidenceIds,
       },
-      canonicalSurfaces: ['CT-CANON-001'],
+      canonicalSurfaces: currentTargetMap.canonicalArtifactIds,
       canonicalSurfaceReconciliation: {
-        canonicalArtifacts: ['CT-CANON-001'],
+        canonicalArtifacts: currentTargetMap.canonicalArtifactIds,
         traceRows: allTraceIds,
         evidenceRefs: allEvidenceIds,
       },
-      legacyDenial: ['CT-EXIST-001'],
+      legacyDenial: currentTargetMap.legacyArtifactIds,
       finalGateMatrix: {
         requiredCommandRefs: commandIds,
         traceRows: allTraceIds,
@@ -4890,7 +5946,15 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
       changedViewIds: string[];
     }
   | { ok: false; issues: PreConfirmationDrilldownIssue[]; artifacts: string[] } {
-  const resync = resyncExistingBusinessVisualProofClosure(input.confirmation);
+  const resync = resyncExistingBusinessVisualProofClosure(input.confirmation, {
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText: input.sourceText,
+    packetHash: normalizeText(
+      recordObject(recordObject(input.confirmation.preConfirmationDrilldown).mustDecompositionPacketRef)
+        .hash
+    ),
+  });
   if (!resync.changed) {
     return { ok: true, changed: false, artifacts: [], changedViewIds: [] };
   }
@@ -6581,15 +7645,7 @@ function buildPreserveExistingAuthoringArtifacts(input: {
   effectivePacket: Record<string, unknown>;
   auditInputHash: string;
 } {
-  const inlineMustRequirements = extractInlineMustRequirements(input.extraction.confirmation);
-  const sourceBoundMustRequirements = mustRequirementsFromControlledCandidates(
-    input.requirementSetId,
-    buildControlledMustCandidatesFromPlainSource(input.root, input.sourcePath, input.sourceText)
-  );
-  const mustRequirements = mergeSourceBoundMustRequirements(
-    inlineMustRequirements,
-    sourceBoundMustRequirements
-  );
+  const mustRequirements = extractInlineMustRequirements(input.extraction.confirmation);
   const sourceDocumentHash = sourceDocumentHashForPreConfirmation(
     input.sourceText,
     input.extraction.blockText,
@@ -7081,6 +8137,11 @@ function appendUniqueStrings(existing: unknown, additions: string[]): string[] {
   return uniqueStrings([...asStringArray(existing), ...additions]);
 }
 
+function appendKnownIdRefs(existing: unknown, additions: string[], knownIds: string[]): string[] {
+  const known = new Set(knownIds);
+  return appendUniqueStrings(existing, additions).filter((ref) => known.has(ref));
+}
+
 function normalizeVisualKindForProofClosure(value: unknown): string {
   const normalized = normalizeText(value)
     .toLowerCase()
@@ -7093,6 +8154,168 @@ function normalizeVisualKindForProofClosure(value: unknown): string {
   if (['edge', 'edgecase', 'edgecaseview'].includes(normalized)) return 'edge';
   if (['boundary', 'scopeboundary', 'out'].includes(normalized)) return 'boundary';
   return '';
+}
+
+function hasLegacyGovernanceCurrentTargetMap(value: unknown): boolean {
+  const text = stableStringify(value);
+  return [
+    'Pre-confirmation drilldown remains inside requirement_confirmation',
+    'Draft requirement',
+    'User-confirmable requirement',
+    'requirement_confirmation draft',
+    'requirement_confirmation user_confirmable',
+  ].some((token) => text.includes(token));
+}
+
+function hasStaleProductCurrentTargetMap(value: unknown, sourceText: string): boolean {
+  const text = stableStringify(value);
+  if (!text || text === '{}') return false;
+  const currentTargetMap = recordObject(value);
+  const sourceAuthorityText = sourceAuthorityTextWithoutInlineConfirmation(sourceText);
+  const sourceHasStructuredDefaultRows =
+    collectMarkdownDefaultVisibilityRowsForCurrentTargetMap(sourceAuthorityText).length > 0;
+  if (sourceHasStructuredDefaultRows && Object.keys(recordObject(currentTargetMap.sourceDefaultVisibility)).length === 0) {
+    return true;
+  }
+  const sourceStateProjection = currentTargetMapSourceStateProjection(sourceAuthorityText);
+  if (
+    sourceStateProjection.mode === 'source_current_target_sections' &&
+    normalizeText(recordObject(currentTargetMap.sourceStateProjection).mode) !==
+      'source_current_target_sections'
+  ) {
+    return true;
+  }
+  if (sourceStateProjection.mode === 'source_current_target_sections') {
+    const existingProjection = recordObject(currentTargetMap.sourceStateProjection);
+    const existingCurrentRows = asRecordArray(existingProjection.currentRows).map((row) =>
+      normalizeText(row.text)
+    );
+    const existingTargetRows = asRecordArray(existingProjection.targetRows).map((row) =>
+      normalizeText(row.text)
+    );
+    const expectedCurrentRows = sourceStateProjection.currentRows.map((row) => normalizeText(row.text));
+    const expectedTargetRows = sourceStateProjection.targetRows.map((row) => normalizeText(row.text));
+    if (
+      stableStringify(existingCurrentRows) !== stableStringify(expectedCurrentRows) ||
+      stableStringify(existingTargetRows) !== stableStringify(expectedTargetRows)
+    ) {
+      return true;
+    }
+  }
+  if (
+    /Current source anchors for default\/visibility behavior include/iu.test(text) ||
+    /Target source-defined periods \(/iu.test(text)
+  ) {
+    return true;
+  }
+  if (
+    /(?:reconfirm_required|req-trace|controlled confirm-scope ingest|source document hash|sourceDocumentHash|implementation readiness|本文档当前状态|用户精确确认|重新渲染确认页)/iu.test(
+      text
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function shouldRebuildExistingCurrentTargetMap(value: unknown, sourceText: string): boolean {
+  return hasLegacyGovernanceCurrentTargetMap(value) || hasStaleProductCurrentTargetMap(value, sourceText);
+}
+
+function inferredTargetModificationPathClassification(pathValue: unknown): string {
+  const normalized = normalizeText(pathValue).replace(/\\/g, '/').toLowerCase();
+  if (!normalized) return 'modify';
+  if (isGeneratedRequirementArtifactPath(normalized)) return 'generated_output';
+  if (/(?:^|\/)(?:tests?|e2e)\//iu.test(normalized) || /\.(?:test|spec)\.[cm]?[jt]sx?$/iu.test(normalized)) {
+    return 'validation_only';
+  }
+  return 'modify';
+}
+
+function normalizedTargetModificationPathClassification(row: Record<string, unknown>): string {
+  const existing = normalizeText(
+    row.coverageRole ??
+      row.changeType ??
+      row.targetPathRole ??
+      row.pathRole ??
+      row.classification ??
+      row.artifactType
+  )
+    .toLowerCase()
+    .replace(/-/gu, '_');
+  if (existing === 'validate' || existing === 'validation') return 'validation_only';
+  if (existing === 'generated' || existing === 'output' || existing === 'generated_output') return 'generated_output';
+  if (existing === 'runtime' || existing === 'runtime_output') return 'runtime_output';
+  if (['modify', 'add', 'create', 'delete', 'remove', 'update', 'replace'].includes(existing)) {
+    return 'modify';
+  }
+  if (['validation_only', 'generated_output', 'runtime_output'].includes(existing)) return existing;
+  return inferredTargetModificationPathClassification(row.path);
+}
+
+function resyncTargetModificationPathClassifications(
+  confirmation: Record<string, unknown>
+): { rows: Record<string, unknown>[]; changed: boolean } {
+  const rows = asRecordArray(confirmation.targetModificationPaths);
+  let changed = false;
+  const nextRows = rows.map((row) => {
+    const classification = normalizedTargetModificationPathClassification(row);
+    const nextRow: Record<string, unknown> = { ...row };
+    const before = stableStringify(nextRow);
+    nextRow.changeType = classification;
+    nextRow.coverageRole = classification;
+    if (stableStringify(nextRow) !== before) changed = true;
+    return nextRow;
+  });
+  return { rows: nextRows, changed };
+}
+
+function buildCurrentTargetMapFromExistingConfirmation(input: {
+  root: string;
+  sourcePath: string;
+  sourceText?: string;
+  packetHash?: string;
+  confirmation: Record<string, unknown>;
+  traceIds: string[];
+  evidenceIds: string[];
+  mustIds: string[];
+}): CurrentTargetMapBuildResult {
+  const mustRequirements: SourceMustRequirement[] = asRecordArray(input.confirmation.must)
+    .filter((row) => input.mustIds.includes(normalizeText(row.id)))
+    .map((row, index) => ({
+      id: normalizeText(row.id) || normalizeMustRef(row.id, index),
+      text: normalizeText(row.text) || normalizeText(row.description) || normalizeText(row.title),
+      textZh: normalizeText(row.textZh) || undefined,
+      source: 'inline_implementation_confirmation',
+      sourceLine: typeof row.sourceLine === 'number' ? row.sourceLine : null,
+      sourcePath: normalizeText(row.sourcePath) || undefined,
+      sourceDocumentHash: normalizeText(row.sourceDocumentHash) || undefined,
+      sourceSpan:
+        recordObject(row.sourceSpan).startLine || recordObject(row.sourceSpan).endLine
+          ? {
+              startLine: Number(recordObject(row.sourceSpan).startLine ?? 1),
+              endLine: Number(recordObject(row.sourceSpan).endLine ?? recordObject(row.sourceSpan).startLine ?? 1),
+            }
+          : undefined,
+      headingPath: asStringArray(row.headingPath),
+    }));
+  return buildSourceSpecificCurrentTargetMap({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText: input.sourceText,
+    packetHash: normalizeText(input.packetHash) || undefined,
+    mustRequirements,
+    businessRows: asRecordArray(input.confirmation.businessViews),
+    outOfScopeRows: [
+      ...asRecordArray(input.confirmation.outOfScope),
+      ...asRecordArray(input.confirmation.mustNot),
+    ],
+    targetPathRows: asRecordArray(input.confirmation.targetModificationPaths),
+    commandRows: asRecordArray(input.confirmation.requiredCommands),
+    allTraceIds: input.traceIds,
+    allEvidenceIds: input.evidenceIds,
+    mustRefs: input.mustIds,
+  });
 }
 
 function buildBusinessVisualPerMustProofRows(
@@ -7115,7 +8338,8 @@ function buildBusinessVisualPerMustProofRows(
 }
 
 function resyncExistingBusinessVisualProofClosure(
-  confirmation: Record<string, unknown>
+  confirmation: Record<string, unknown>,
+  context?: { root: string; sourcePath: string; sourceText: string; packetHash?: string }
 ): { confirmation: Record<string, unknown>; changed: boolean; changedViewIds: string[] } {
   const traceRows = asRecordArray(confirmation.traceRows);
   const traceIds = traceRows.map((row) => normalizeText(row.id)).filter(Boolean);
@@ -7149,6 +8373,14 @@ function resyncExistingBusinessVisualProofClosure(
   const nextConfirmation: Record<string, unknown> = { ...confirmation };
   const changedViewIds = new Set<string>();
   let changed = false;
+  const targetPathClassificationResync = resyncTargetModificationPathClassifications(
+    nextConfirmation
+  );
+  if (targetPathClassificationResync.changed) {
+    nextConfirmation.targetModificationPaths = targetPathClassificationResync.rows;
+    changed = true;
+    changedViewIds.add('targetModificationPaths');
+  }
   const viewRefsByTraceField: Record<string, Set<string>> = {
     sequenceViewRefs: new Set<string>(),
     flowViewRefs: new Set<string>(),
@@ -7183,7 +8415,7 @@ function resyncExistingBusinessVisualProofClosure(
         nextRow.failurePathRefs = appendUniqueStrings(nextRow.failurePathRefs, failurePathIds);
       }
       if (visualKind === 'edge') {
-        nextRow.edgeCaseRefs = appendUniqueStrings(nextRow.edgeCaseRefs ?? nextRow.cases, edgeCaseIds);
+        nextRow.edgeCaseRefs = appendKnownIdRefs(nextRow.edgeCaseRefs, edgeCaseIds, edgeCaseIds);
       }
       if (stableStringify(nextRow) !== before) {
         changed = true;
@@ -7198,6 +8430,46 @@ function resyncExistingBusinessVisualProofClosure(
   syncViewRows('sequenceViews', 'sequenceViewRefs');
   syncViewRows('flowViews', 'flowViewRefs');
   syncViewRows('edgeCaseViews', 'edgeCaseViewRefs');
+
+  if (
+    context &&
+    shouldRebuildExistingCurrentTargetMap(nextConfirmation.currentTargetMap, context.sourceText)
+  ) {
+    const rebuiltCurrentTargetMap = buildCurrentTargetMapFromExistingConfirmation({
+      root: context.root,
+      sourcePath: context.sourcePath,
+      sourceText: context.sourceText,
+      packetHash: context.packetHash,
+      confirmation: nextConfirmation,
+      traceIds,
+      evidenceIds,
+      mustIds,
+    });
+    nextConfirmation.currentTargetMap = rebuiltCurrentTargetMap.map;
+    const manifest = recordObject(nextConfirmation.aiTddContractExecutionManifestProjection);
+    if (Object.keys(manifest).length > 0) {
+      nextConfirmation.aiTddContractExecutionManifestProjection = {
+        ...manifest,
+        currentTargetMap: { rows: rebuiltCurrentTargetMap.diffRowIds },
+        canonicalSurfaces: rebuiltCurrentTargetMap.canonicalArtifactIds,
+        canonicalSurfaceReconciliation: {
+          ...recordObject(manifest.canonicalSurfaceReconciliation),
+          canonicalArtifacts: rebuiltCurrentTargetMap.canonicalArtifactIds,
+          traceRows: appendUniqueStrings(
+            recordObject(manifest.canonicalSurfaceReconciliation).traceRows,
+            traceIds
+          ),
+          evidenceRefs: appendUniqueStrings(
+            recordObject(manifest.canonicalSurfaceReconciliation).evidenceRefs,
+            evidenceIds
+          ),
+        },
+        legacyDenial: rebuiltCurrentTargetMap.legacyArtifactIds,
+      };
+    }
+    changed = true;
+    changedViewIds.add('currentTargetMap');
+  }
 
   const nextTraceRows = traceRows.map((row) => {
     const traceId = normalizeText(row.id);
@@ -9746,15 +11018,7 @@ export function runMainAgentAuthoringRepair(
       consecutiveNoNewGapRounds: 0,
     });
   }
-  const inlineMustRequirements = extractInlineMustRequirements(extraction.confirmation);
-  const sourceBoundMustRequirements = mustRequirementsFromControlledCandidates(
-    identity.requirementSetId,
-    buildControlledMustCandidatesFromPlainSource(root, sourcePath, sourceText)
-  );
-  const mustRequirements = mergeSourceBoundMustRequirements(
-    inlineMustRequirements,
-    sourceBoundMustRequirements
-  );
+  const mustRequirements = extractInlineMustRequirements(extraction.confirmation);
   if (mustRequirements.length === 0) {
     return buildAuthoringRepairResult({
       root,
@@ -11571,6 +12835,7 @@ export function runMainAgentPreConfirmationDrilldown(
       ? buildPreConfirmationImplementationConfirmation({
           root,
           sourcePath: semanticInputPath,
+          sourceText,
           recordId: identity.recordId,
           requirementSetId: identity.requirementSetId,
           language,
@@ -12029,6 +13294,7 @@ export function runMainAgentPreConfirmationDrilldown(
     const auditedConfirmation = buildPreConfirmationImplementationConfirmation({
       root,
       sourcePath,
+      sourceText,
       recordId: identity.recordId,
       requirementSetId: identity.requirementSetId,
       language,

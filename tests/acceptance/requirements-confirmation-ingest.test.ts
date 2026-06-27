@@ -656,6 +656,14 @@ describe('controlled confirmation ingest', () => {
       implementationConfirmationHash: report.implementationConfirmationHash,
       confirmationPageHash: report.confirmationPageHash,
     });
+    expect(record.controlStore).toMatchObject({
+      schemaVersion: 'control-store/v1',
+      reducer: 'canonical-requirement-record-reducer/v1',
+      atomicCommitter: 'requirement-record-control-store/v1',
+    });
+    expect(record.controlStore.eventLogPath).toMatch(
+      /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
+    );
   });
 
   it('uses the highest-level package confirm-scope entry without requiring the main-agent alias', () => {
@@ -695,6 +703,14 @@ describe('controlled confirmation ingest', () => {
       )
     );
     expect(record.status).toBe('user_confirmed');
+    expect(record.controlStore).toMatchObject({
+      schemaVersion: 'control-store/v1',
+      reducer: 'canonical-requirement-record-reducer/v1',
+      atomicCommitter: 'requirement-record-control-store/v1',
+    });
+    expect(record.controlStore.eventLogPath).toMatch(
+      /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
+    );
   });
 
   it('uses the post-confirmation entry to create requirement-record without manual ingest assembly', () => {
@@ -734,6 +750,14 @@ describe('controlled confirmation ingest', () => {
     ]);
     const record = JSON.parse(fs.readFileSync(output.requirementRecordPath, 'utf8'));
     expect(record.status).toBe('user_confirmed');
+    expect(record.controlStore).toMatchObject({
+      schemaVersion: 'control-store/v1',
+      reducer: 'canonical-requirement-record-reducer/v1',
+      atomicCommitter: 'requirement-record-control-store/v1',
+    });
+    expect(record.controlStore.eventLogPath).toMatch(
+      /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
+    );
     expect(record.confirmationHistory.at(-1)).toMatchObject({
       eventType: 'confirmation_recorded',
       sourceDocumentHash: report.sourceDocumentHash,
@@ -797,7 +821,7 @@ describe('controlled confirmation ingest', () => {
     });
   });
 
-  it('blocks req-trace prompt before ingest and allows it after controlled confirmation ingest', () => {
+  it('blocks req-trace prompt before ingest and allows it after controlled confirmation ingest with control store authority', () => {
     const source = writeSource();
     const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
     expect(blockedPrompt.status).toBe(3);
@@ -846,6 +870,14 @@ describe('controlled confirmation ingest', () => {
     );
 
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    expect(record.controlStore).toMatchObject({
+      schemaVersion: 'control-store/v1',
+      reducer: 'canonical-requirement-record-reducer/v1',
+      atomicCommitter: 'requirement-record-control-store/v1',
+    });
+    expect(record.controlStore.eventLogPath).toMatch(
+      /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
+    );
     expect(record.confirmationHistory.at(-1)).toMatchObject({
       eventType: 'confirmation_recorded',
       sourceDocumentHash: report.sourceDocumentHash,
@@ -920,6 +952,14 @@ describe('controlled confirmation ingest', () => {
       implementationConfirmationHash: report.implementationConfirmationHash,
       confirmationPageHash: report.confirmationPageHash,
     });
+    expect(record.controlStore).toMatchObject({
+      schemaVersion: 'control-store/v1',
+      reducer: 'canonical-requirement-record-reducer/v1',
+      atomicCommitter: 'requirement-record-control-store/v1',
+    });
+    expect(record.controlStore.eventLogPath).toMatch(
+      /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
+    );
     expect(events[0].eventType).toBe('confirmation_recorded');
     expect(indexRows[0]).toMatchObject({
       artifactType: 'requirement_record',

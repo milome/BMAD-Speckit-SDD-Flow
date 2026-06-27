@@ -12,6 +12,15 @@ const VALID_THEMES = new Set(['readable', 'compact', 'audit']);
 const DEFAULT_RECIPE_PATH = '_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml';
 const EXPECTED_SCHEMA_VERSION = 'architecture-confirmation-hash-recipe.contract/v1';
 const EXPECTED_RECIPE_VERSION = 'architecture-confirmation-hash/v1';
+const REQUIRED_ARCHITECTURE_DIAGRAM_TYPES = [
+  'system_architecture',
+  'deployment',
+  'class',
+  'swimlane',
+  'state_machine',
+  'sequence',
+  'activity',
+];
 
 function parseArgs(argv) {
   const args = { strict: true, language: 'zh-CN', theme: 'audit' };
@@ -48,6 +57,10 @@ function sha256Text(value) {
   return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
 
+function shortHash(value) {
+  return text(value).replace(/^sha256:/u, '').slice(0, 12);
+}
+
 function readJson(file) {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -81,6 +94,27 @@ function normalizeRepoPath(value, repoRoot = process.cwd()) {
     .normalize(withoutRoot.replace(/^[a-zA-Z]:\//u, (drive) => drive.toLowerCase()))
     .replace(/^\.\//u, '')
     .replace(/\/$/u, '');
+}
+
+function readMermaidRuntimeScript() {
+  const runtimePath = path.resolve(__dirname, '..', 'assets', 'mermaid', 'mermaid.min.js');
+  try {
+    const script = fs.readFileSync(runtimePath, 'utf8');
+    return {
+      available: true,
+      path: normalizeRepoPath(runtimePath),
+      hash: sha256Text(script),
+      script,
+    };
+  } catch (error) {
+    return {
+      available: false,
+      path: normalizeRepoPath(runtimePath),
+      hash: '',
+      script: '',
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function resolveRecipe(configPath = DEFAULT_RECIPE_PATH) {
@@ -190,6 +224,8 @@ function getUiText(language) {
     navTitle: '架构确认导航',
     navSummary: '确认摘要',
     navDelta: '确认重点',
+    navBusinessDiagrams: '业务架构图谱',
+    navGovernanceDiagrams: '治理架构图谱',
     navImpact: '影响扫描',
     navTriggers: '触发矩阵',
     navPaths: '目标路径',
@@ -216,6 +252,32 @@ function getUiText(language) {
     reviewRows: '重点 review 行',
     focusRows: '重点影响行',
     targetPathSamples: '有效路径样例',
+    businessArchitectureDiagrams: '业务架构图谱',
+    businessArchitectureDiagramsLead: '本区聚焦消费项目业务行为、用户界面、设置状态和验收路径；缺少任一必需业务视图都不能进入实施准备。',
+    governanceArchitectureDiagrams: '治理架构图谱',
+    governanceArchitectureDiagramsLead: '本区保留确认、ingest、record 和 hash recipe 的治理架构视图，用于审阅流程控制边界。',
+    diagramEvidenceRefs: '证据',
+    diagramTargetPathRefs: '目标路径',
+    diagramViewer: '架构图查看器',
+    previousDiagram: '上一图',
+    nextDiagram: '下一图',
+    expandDiagrams: '展开全部',
+    singleDiagram: '单图模式',
+    mermaidRuntimeMissing: 'Mermaid runtime 不可用；保留源码但不能渲染为图。',
+    mermaidRuntimeEmbedded: 'Mermaid runtime embedded',
+    businessMermaidVisual: '业务 Mermaid 图',
+    governanceMermaidVisual: '治理 Mermaid 图',
+    fallbackDiagram: '紧凑 fallback 图',
+    mermaidSource: 'Mermaid 源码和 diagramHash',
+    diagramLabels: {
+      system_architecture: '系统架构图',
+      deployment: '部署图',
+      class: '类图',
+      swimlane: '泳道图',
+      state_machine: '状态机图',
+      sequence: '时序图',
+      activity: '活动图',
+    },
     noTriggeredRows: '当前没有触发项。',
     noStaleInputs: '源工件未提供 staleInputs。',
     consumerImpactScan: '消费项目影响扫描',
@@ -240,6 +302,8 @@ function getUiText(language) {
     navTitle: 'Architecture Confirmation Navigation',
     navSummary: 'Summary',
     navDelta: 'Review Focus',
+    navBusinessDiagrams: 'Business Diagrams',
+    navGovernanceDiagrams: 'Governance Diagrams',
     navImpact: 'Impact Scan',
     navTriggers: 'Trigger Matrix',
     navPaths: 'Target Paths',
@@ -266,6 +330,32 @@ function getUiText(language) {
     reviewRows: 'Review-focus rows',
     focusRows: 'Focus Rows',
     targetPathSamples: 'Target Path Samples',
+    businessArchitectureDiagrams: 'Business Architecture Diagrams',
+    businessArchitectureDiagramsLead: 'This section focuses on consumer-project business behavior, UI surfaces, settings state, and acceptance paths. Missing any required business view blocks implementation readiness.',
+    governanceArchitectureDiagrams: 'Governance Architecture Diagrams',
+    governanceArchitectureDiagramsLead: 'This section preserves confirmation, ingest, record, and hash-recipe governance architecture views for process-control review.',
+    diagramEvidenceRefs: 'Evidence',
+    diagramTargetPathRefs: 'Target Paths',
+    diagramViewer: 'Architecture Diagram Viewer',
+    previousDiagram: 'Previous',
+    nextDiagram: 'Next',
+    expandDiagrams: 'Show All',
+    singleDiagram: 'Single Diagram',
+    mermaidRuntimeMissing: 'Mermaid runtime is unavailable; source is preserved but cannot be rendered as a diagram.',
+    mermaidRuntimeEmbedded: 'Mermaid runtime embedded',
+    businessMermaidVisual: 'Business Mermaid Diagram',
+    governanceMermaidVisual: 'Governance Mermaid Diagram',
+    fallbackDiagram: 'Compact fallback diagram',
+    mermaidSource: 'Mermaid source and diagramHash',
+    diagramLabels: {
+      system_architecture: 'System Architecture Diagram',
+      deployment: 'Deployment Diagram',
+      class: 'Class Diagram',
+      swimlane: 'Swimlane Diagram',
+      state_machine: 'State Machine Diagram',
+      sequence: 'Sequence Diagram',
+      activity: 'Activity Diagram',
+    },
     noTriggeredRows: 'No triggered rows.',
     noStaleInputs: 'The source artifact did not provide staleInputs.',
     consumerImpactScan: 'Consumer Impact Scan',
@@ -291,6 +381,24 @@ function getUiText(language) {
       Object.keys(zh).map((key) => {
         if (typeof zh[key] === 'function') {
           return [key, (value) => `${zh[key](value)} / ${en[key](value)}`];
+        }
+        if (
+          zh[key] &&
+          typeof zh[key] === 'object' &&
+          !Array.isArray(zh[key]) &&
+          en[key] &&
+          typeof en[key] === 'object' &&
+          !Array.isArray(en[key])
+        ) {
+          return [
+            key,
+            Object.fromEntries(
+              Object.keys(zh[key]).map((nestedKey) => [
+                nestedKey,
+                `${zh[key][nestedKey]} / ${en[key][nestedKey]}`,
+              ])
+            ),
+          ];
         }
         return [key, `${zh[key]} / ${en[key]}`];
       })
@@ -393,6 +501,201 @@ function renderArchitectureDelta(delta, ui) {
     </section>`;
 }
 
+function normalizeArchitectureDiagrams(confirmation, fieldName = 'architectureDiagrams', fallbackFieldName = '') {
+  const byType = new Map();
+  const hasPrimaryField = Object.prototype.hasOwnProperty.call(confirmation, fieldName);
+  const primaryRows = array(confirmation[fieldName]);
+  const sourceRows = hasPrimaryField ? primaryRows : array(fallbackFieldName ? confirmation[fallbackFieldName] : []);
+  for (const row of sourceRows.map((item) => object(item))) {
+    const type = text(row.type);
+    if (type && !byType.has(type)) byType.set(type, row);
+  }
+  return REQUIRED_ARCHITECTURE_DIAGRAM_TYPES.map((type) => {
+    const row = byType.get(type);
+    return row
+      ? {
+          id: text(row.id) || `ARCH-VIEW-${type.toUpperCase().replace(/[^A-Z0-9]+/gu, '-')}`,
+          type,
+          title: text(row.title),
+          description: text(row.description),
+          mermaid: text(row.mermaid),
+          evidenceRefs: array(row.evidenceRefs).map(text).filter(Boolean),
+          targetPathRefs: array(row.targetPathRefs).map(text).filter(Boolean),
+          triggerRefs: array(row.triggerRefs).map(text).filter(Boolean),
+        }
+      : {
+          id: `ARCH-VIEW-${type.toUpperCase().replace(/[^A-Z0-9]+/gu, '-')}`,
+          type,
+          title: '',
+          description: '',
+          mermaid: '',
+          evidenceRefs: [],
+          targetPathRefs: [],
+          triggerRefs: [],
+          missing: true,
+        };
+  });
+}
+
+function architectureDiagramLabel(ui, type) {
+  return text(ui.diagramLabels?.[type]) || type;
+}
+
+function inferMermaidDiagramKind(source) {
+  const normalized = text(source);
+  if (/^sequenceDiagram\b/iu.test(normalized)) return 'sequence';
+  if (/^classDiagram\b/iu.test(normalized)) return 'class';
+  if (/^stateDiagram(?:-v2)?\b/iu.test(normalized)) return 'state';
+  if (/^(?:flowchart|graph)\b/iu.test(normalized)) return 'flowchart';
+  return 'unknown';
+}
+
+function classifyCompactFallbackTone(label) {
+  const normalized = String(label ?? '').toLowerCase();
+  if (/block|fail|reject|missing|forbid|cannot|error|unsafe|mismatch|缺|阻断|失败|禁止|不能/u.test(normalized)) {
+    return 'warn';
+  }
+  if (/pass|ok|confirm|ready|persist|write|link|active|索引|确认|通过|关闭|写入/u.test(normalized)) {
+    return 'pass';
+  }
+  return '';
+}
+
+function simplifyMermaidLine(line) {
+  return String(line ?? '')
+    .replace(/^\s*(?:flowchart|graph|classDiagram|stateDiagram-v2|stateDiagram|sequenceDiagram)\b.*$/iu, '')
+    .replace(/^\s*(?:subgraph|end|classDef|style|linkStyle|direction)\b.*$/iu, '')
+    .replace(/^\s*(?:participant|actor)\s+/iu, '')
+    .replace(/\[\*\]/gu, 'Start')
+    .replace(/["[\]{}()]/gu, ' ')
+    .replace(/\|([^|]+)\|/gu, ' $1 ')
+    .replace(/\s*(?:-->|---|--|->>|->|<--|<-->|:|\.\.|==)\s*/gu, ' -> ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+function renderCompactMermaidFallback(diagram, mermaid) {
+  const items = String(mermaid ?? '')
+    .split(/\r?\n/u)
+    .map((line) => ({
+      text: simplifyMermaidLine(line),
+      tone: classifyCompactFallbackTone(line),
+    }))
+    .filter((item) => item.text);
+  if (!items.length) return `<pre>${escapeHtml(mermaid)}</pre>`;
+  const visibleItems = items.slice(0, 12);
+  const hiddenCount = items.length - visibleItems.length;
+  return `<div class="rendered-mermaid compact-flow" role="img" aria-label="${escapeHtml(
+    diagram.id
+  )} rendered compact architecture diagram" data-diagram-kind="${escapeHtml(
+    inferMermaidDiagramKind(mermaid)
+  )}" data-density="compact-card-flow">${visibleItems
+    .map(
+      (item, index) => `<div class="flow-step-card ${escapeHtml(item.tone)}">
+        <span class="step-index">${index + 1}</span>
+        <strong title="${escapeHtml(item.text)}">${escapeHtml(item.text)}</strong>
+      </div>`
+    )
+    .join('')}${
+    hiddenCount > 0
+      ? `<div class="flow-step-card muted-card"><strong>+${hiddenCount} more edges</strong></div>`
+      : ''
+  }</div>`;
+}
+
+function renderMermaidNativeBlock(diagram, mermaid) {
+  const diagramHash = sha256Text(mermaid);
+  const diagramKind = inferMermaidDiagramKind(mermaid);
+  return `<pre class="mermaid-source-native" data-mermaid-source data-mermaid-normalized="false">${escapeHtml(mermaid)}</pre>
+    <div class="mermaid-native-render" data-mermaid-render data-diagram-id="${escapeHtml(
+      diagram.id
+    )}" data-diagram-kind="${escapeHtml(diagramKind)}"></div>
+    <p class="mermaid-runtime-error blocked" data-mermaid-error hidden></p>
+    <details class="fallback-diagram"><summary>${escapeHtml(diagram.fallbackLabel)}</summary>${renderCompactMermaidFallback(
+      diagram,
+      mermaid
+    )}</details>
+    <details><summary>${escapeHtml(diagram.sourceLabel)}</summary><pre>${escapeHtml(mermaid)}</pre><code>${escapeHtml(diagramHash)}</code></details>`;
+}
+
+function renderArchitectureDiagrams({ sectionId, title, lead, diagrams, ui, mermaidRuntime }) {
+  const tabs = diagrams
+    .map((diagram, index) => {
+      const label = architectureDiagramLabel(ui, diagram.type);
+      return `<button type="button" class="diagram-tab ${index === 0 ? 'active' : ''}" data-diagram-index="${index}" aria-pressed="${index === 0 ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
+    })
+    .join('');
+  const cards = diagrams
+    .map((diagram, index) => {
+      const label = architectureDiagramLabel(ui, diagram.type);
+      const title = text(diagram.title) || label;
+      const description = text(diagram.description);
+      const mermaid = text(diagram.mermaid);
+      const missing = diagram.missing || !mermaid;
+      const diagramHash = mermaid ? sha256Text(mermaid) : '';
+      const visualLabel =
+        sectionId === 'governance-architecture-diagrams'
+          ? ui.governanceMermaidVisual
+          : ui.businessMermaidVisual;
+      return `<article class="diagram-card ${index === 0 ? 'active' : ''}" data-diagram-card data-diagram-index="${index}" data-diagram-type="${escapeHtml(diagram.type)}">
+        <div class="diagram-head">
+          <div class="diagram-title"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(title)}</span></div>
+          <div class="diagram-meta">${diagramHash ? `<span>${escapeHtml(shortHash(diagramHash))}</span>` : ''}</div>
+        </div>
+        ${description ? `<p class="muted">${escapeHtml(description)}</p>` : ''}
+        ${
+          missing
+            ? `<p class="empty">${escapeHtml(`missing ${diagram.type}`)}</p>`
+            : `<div class="diagram-rendered" tabindex="0"><h4>${escapeHtml(visualLabel)}</h4>${renderMermaidNativeBlock(
+                {
+                  id: diagram.id,
+                  fallbackLabel: ui.fallbackDiagram,
+                  sourceLabel: ui.mermaidSource,
+                },
+                mermaid
+              )}</div>`
+        }
+        <div class="diagram-refs">
+          <p><strong>${escapeHtml(ui.diagramEvidenceRefs)}:</strong></p>
+          <div class="pill-list">${renderList(diagram.evidenceRefs)}</div>
+          <p><strong>${escapeHtml(ui.diagramTargetPathRefs)}:</strong></p>
+          <div class="pill-list">${renderList(diagram.targetPathRefs)}</div>
+        </div>
+      </article>`;
+    })
+    .join('');
+  return `<section id="${escapeHtml(sectionId)}" class="card">
+      <h2>${escapeHtml(title)}</h2>
+      <p class="muted">${escapeHtml(lead)}</p>
+      ${mermaidRuntime.available ? '' : `<p class="blocked">${escapeHtml(ui.mermaidRuntimeMissing)}</p>`}
+      <div class="diagram-viewer" data-diagram-viewer data-diagram-mode="single" data-active-diagram="0" data-mermaid-runtime="${mermaidRuntime.available ? 'embedded' : 'missing'}">
+        <div class="diagram-toolbar" aria-label="${escapeHtml(ui.diagramViewer)}">
+          <div class="diagram-tabs">${tabs}</div>
+          <div class="diagram-actions">
+            <button type="button" data-diagram-prev>${escapeHtml(ui.previousDiagram)}</button>
+            <button type="button" data-diagram-next>${escapeHtml(ui.nextDiagram)}</button>
+            <button type="button" data-diagram-toggle>${escapeHtml(ui.expandDiagrams)}</button>
+          </div>
+        </div>
+        ${
+          mermaidRuntime.available
+            ? `<p class="mermaid-runtime-status ok">${escapeHtml(ui.mermaidRuntimeEmbedded)}: ${escapeHtml(
+                mermaidRuntime.hash
+              )}</p>`
+            : `<p class="mermaid-runtime-status blocked">${escapeHtml(ui.mermaidRuntimeMissing)}</p>`
+        }
+        <div class="diagram-grid">${cards}</div>
+      </div>
+    </section>`;
+}
+
+function renderMermaidRuntimeScript(mermaidRuntime) {
+  if (!mermaidRuntime.available) return '';
+  return `<script data-mermaid-runtime-hash="${escapeHtml(mermaidRuntime.hash)}">
+${mermaidRuntime.script}
+</script>`;
+}
+
 function confirmPhrase(confirmation, artifactHash) {
   return (
     text(confirmation.confirmationPhrase) ||
@@ -427,6 +730,34 @@ function validate(confirmation, recipe) {
   for (const field of ['targetPaths', 'consumerImpactScan', 'governanceImpactScan', 'fullArchitectureTriggerMatrix']) {
     if (array(confirmation[field]).length === 0) blockingIssues.push(`missing_${field}`);
   }
+  const businessDiagrams = normalizeArchitectureDiagrams(
+    confirmation,
+    'businessArchitectureDiagrams',
+    'architectureDiagrams'
+  );
+  const governanceDiagrams = normalizeArchitectureDiagrams(
+    confirmation,
+    'governanceArchitectureDiagrams',
+    'architectureDiagrams'
+  );
+  const missingBusinessDiagramTypes = businessDiagrams
+    .filter((diagram) => diagram.missing || !text(diagram.mermaid))
+    .map((diagram) => diagram.type);
+  const missingGovernanceDiagramTypes = governanceDiagrams
+    .filter((diagram) => diagram.missing || !text(diagram.mermaid))
+    .map((diagram) => diagram.type);
+  if (missingBusinessDiagramTypes.length) {
+    blockingIssues.push('missing_businessArchitectureDiagrams');
+    for (const type of missingBusinessDiagramTypes) {
+      blockingIssues.push(`missing_businessArchitectureDiagram_${type}`);
+    }
+  }
+  if (missingGovernanceDiagramTypes.length) {
+    blockingIssues.push('missing_governanceArchitectureDiagrams');
+    for (const type of missingGovernanceDiagramTypes) {
+      blockingIssues.push(`missing_governanceArchitectureDiagram_${type}`);
+    }
+  }
   const declaredHash = text(confirmation.architectureConfirmationArtifactHash || confirmation.artifactHash);
   const computedHash = architectureHashFor(confirmation, recipe);
   if (!declaredHash) blockingIssues.push('missing_architectureConfirmationArtifactHash');
@@ -446,6 +777,8 @@ function renderHtml(input) {
   const confirmability = input.validation.blockingIssues.length ? 'blocked' : 'confirmable';
   const triggerCount = array(c.fullArchitectureTriggerMatrix).filter((row) => text(row.decision || row.status).includes('triggered')).length;
   const architectureDelta = buildArchitectureDelta(c, input.validation);
+  const businessArchitectureDiagrams = normalizeArchitectureDiagrams(c, 'businessArchitectureDiagrams', 'architectureDiagrams');
+  const governanceArchitectureDiagrams = normalizeArchitectureDiagrams(c, 'governanceArchitectureDiagrams', 'architectureDiagrams');
   return `<!doctype html>
 <html lang="${escapeHtml(input.language)}">
 <head>
@@ -460,14 +793,15 @@ function renderHtml(input) {
     .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;margin:18px 0;min-width:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.metric{background:transparent;border:0;border-right:1px solid var(--line);border-radius:0;padding:12px 14px;min-width:0}.metric:last-child{border-right:0}.metric strong{display:block;font-size:28px;line-height:1;color:var(--blue)}.metric span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.metric.warn strong{color:var(--gold)}.metric.bad strong{color:var(--red)}
     h1,h2,h3{margin:0 0 12px}h1{font-size:clamp(34px,4.4vw,56px);line-height:1.04;font-family:Georgia,"Noto Serif SC",serif;font-weight:650;letter-spacing:-.035em}h2{font-size:clamp(24px,2.4vw,32px);line-height:1.15;font-family:Georgia,"Noto Serif SC",serif;font-weight:620;letter-spacing:-.018em}h3{font-size:17px;margin:24px 0 10px}p{margin:0 0 12px}.muted{color:var(--muted)}.hash{font-family:var(--mono);word-break:break-all;font-size:12px}.phrase{background:#191815;color:#f6f0e7;padding:16px;border-radius:0;border-left:4px solid var(--gold);font-family:var(--mono);white-space:pre-wrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;min-width:0}.two-col{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:22px;min-width:0}.review-flow{display:grid;gap:0;margin-top:18px;min-width:0;border-top:1px solid var(--line)}.review-step{border-top:0;border-bottom:1px solid var(--line);padding:18px 0;min-width:0}.review-step:first-child{border-top:0}.review-step h3{margin-top:0}
     .copy-button{border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:3px;padding:8px 14px;font-weight:800;cursor:pointer}.copy-button:hover{filter:brightness(.95)}.copy-button:focus-visible{outline:3px solid rgba(45,93,130,.28);outline-offset:2px}.copy-status{min-height:20px;margin:10px 0 0;color:var(--green);font-size:13px}
-    .table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}.table-wrap th{background:#efe7d8;position:sticky;top:0;font-size:12px;letter-spacing:.02em}.table-wrap tr:nth-child(even) td{background:#fbf8f1}.pill-list span{display:inline-block;margin:0 8px 8px 0;padding:4px 8px;border-radius:3px;background:#eef4f9;border:1px solid #d6e4ef;font-size:12px}.inline-json{font-size:11px;margin:0;max-width:520px}.empty{color:var(--muted);font-style:italic}@media(max-width:900px){main.layout{display:block;padding:24px 18px 52px}.grid,.two-col{display:block}.nav{position:relative;height:auto;margin:0 0 18px;padding:16px}}
+    .diagram-viewer{border:1px solid var(--line);border-radius:0;background:#fbf8f1;padding:14px;margin:18px 0 28px}.diagram-toolbar{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px}.diagram-tabs{display:flex;gap:6px;flex-wrap:wrap}.diagram-actions{display:flex;gap:8px;flex-wrap:wrap}.diagram-tab,.diagram-actions button{border:1px solid rgba(120,104,78,.34);background:#fffdf8;color:var(--ink);border-radius:3px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}.diagram-tab.active,.diagram-actions button:hover{background:#24211b;color:#fff;border-color:#24211b}.mermaid-runtime-status{margin:0 0 12px}.diagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}.diagram-viewer[data-diagram-mode="single"] .diagram-grid{display:block}.diagram-viewer[data-diagram-mode="single"] .diagram-card{display:none}.diagram-viewer[data-diagram-mode="single"] .diagram-card.active{display:block}.diagram-viewer[data-diagram-mode="all"] .diagram-card{display:block}.diagram-card{border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0;background:transparent;box-shadow:none;overflow:hidden}.diagram-viewer[data-diagram-mode="single"] .diagram-card{max-width:none;margin:0}.diagram-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid rgba(120,104,78,.2);padding-bottom:7px}.diagram-title strong{display:block;font-family:Georgia,"Noto Serif SC",serif;font-size:17px;line-height:1}.diagram-title span{display:block;margin-top:4px;color:var(--muted);font-family:var(--mono);font-size:10px}.diagram-meta{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:58%;font-family:var(--mono);font-size:10px;color:var(--blue)}.diagram-rendered{background:#fffdf8;border:1px solid var(--line);border-radius:0;padding:16px 18px 22px;margin-top:9px;overflow:auto;max-height:520px;min-height:300px;text-align:left;resize:vertical;scrollbar-gutter:stable both-edges}.diagram-viewer[data-diagram-mode="all"] .diagram-rendered{max-height:360px;min-height:260px}.diagram-rendered h4{margin:0 0 12px;font-size:11px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}.mermaid-source-native{display:none}.mermaid-native-render{display:block;min-width:max-content;min-height:210px;text-align:left;transform-origin:top left}.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}.mermaid-native-render .actor,.mermaid-native-render .messageText,.mermaid-native-render .noteText,.mermaid-native-render text{font-size:12px !important}.mermaid-native-render .normalized-mermaid-svg text,.mermaid-native-render .normalized-mermaid-svg span,.mermaid-native-render .normalized-mermaid-svg foreignObject{font-family:var(--sans)!important;color:var(--ink)!important;fill:var(--ink)!important}.mermaid-native-render[data-diagram-kind="flowchart"] .node rect,.mermaid-native-render[data-diagram-kind="flowchart"] .node polygon,.mermaid-native-render[data-diagram-kind="flowchart"] .node circle,.mermaid-native-render[data-diagram-kind="flowchart"] .node ellipse,.mermaid-native-render[data-diagram-kind="class"] .classGroup rect,.mermaid-native-render[data-diagram-kind="state"] .stateGroup rect{fill:#fffdf8!important;stroke:var(--gold)!important;stroke-width:1.35px!important;rx:0!important;ry:0!important}.mermaid-native-render[data-diagram-kind="flowchart"] .cluster rect{fill:#fbf8f1!important;stroke:var(--line)!important;stroke-width:1.2px!important;rx:0!important;ry:0!important}.mermaid-native-render[data-diagram-kind="flowchart"] .edgePath path,.mermaid-native-render[data-diagram-kind="flowchart"] .flowchart-link,.mermaid-native-render[data-diagram-kind="class"] .relation,.mermaid-native-render[data-diagram-kind="state"] .transition{stroke:var(--blue)!important;stroke-width:1.45px!important}.mermaid-native-render[data-diagram-kind="flowchart"] marker path,.mermaid-native-render[data-diagram-kind="class"] marker path,.mermaid-native-render[data-diagram-kind="state"] marker path{fill:var(--blue)!important;stroke:var(--blue)!important}.mermaid-native-render[data-diagram-kind="flowchart"] .edgeLabel,.mermaid-native-render[data-diagram-kind="class"] .edgeLabel,.mermaid-native-render[data-diagram-kind="state"] .edgeLabel{background:#fffdf8!important;color:var(--ink)!important}.mermaid-native-render[data-diagram-kind="flowchart"] .labelBkg,.mermaid-native-render[data-diagram-kind="class"] .labelBkg,.mermaid-native-render[data-diagram-kind="state"] .labelBkg{fill:#fffdf8!important;opacity:.86!important}.mermaid-native-render[data-diagram-kind="class"] .classTitle,.mermaid-native-render[data-diagram-kind="state"] .state-title{font-weight:800!important;fill:var(--blue)!important}.mermaid-native-render[data-diagram-kind="class"] .divider,.mermaid-native-render[data-diagram-kind="state"] .divider{stroke:var(--line)!important}.mermaid-runtime-error{margin:12px 0}.fallback-diagram{margin-top:14px;border-top:1px dashed rgba(120,104,78,.35);padding-top:10px}.fallback-diagram summary{cursor:pointer;color:var(--muted);font-weight:800}.fallback-diagram:not([open]){opacity:.72}.rendered-mermaid{background:transparent;border-radius:0}.compact-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:7px}.diagram-viewer[data-diagram-mode="single"] .compact-flow{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.flow-step-card{border-radius:0;border:1px solid rgba(47,111,84,.22);background:var(--green-soft);padding:8px;position:relative;min-height:78px}.flow-step-card.warn{border-color:rgba(166,61,47,.28);background:#fff6f3}.flow-step-card.pass{border-color:rgba(47,111,84,.28);background:#f3fbf6}.flow-step-card.muted-card{background:#f8f3e9;border-style:dashed}.step-index{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:3px;background:#fff;color:var(--green);font-weight:800;margin-bottom:5px;font-size:10px}.flow-step-card strong{display:block;font-size:11.5px;line-height:1.25}.diagram-refs{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}.blocked{color:var(--red);background:var(--red-soft);border-left:4px solid var(--red);padding:10px 12px}
+    .table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}.table-wrap th,.table-wrap td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;min-width:140px;max-width:560px;overflow-wrap:break-word}.table-wrap th{background:#efe7d8;position:sticky;top:0;font-size:12px;letter-spacing:.02em}.table-wrap tr:nth-child(even) td{background:#fbf8f1}.pill-list span{display:inline-block;margin:0 8px 8px 0;padding:4px 8px;border-radius:3px;background:#eef4f9;border:1px solid #d6e4ef;font-size:12px}.inline-json{font-size:11px;margin:0;max-width:520px}.empty{color:var(--muted);font-style:italic}@media(max-width:900px){main.layout{display:block;padding:24px 18px 52px}.grid,.two-col{display:block}.nav{position:relative;height:auto;margin:0 0 18px;padding:16px}.diagram-toolbar{display:block}.diagram-actions{margin-top:10px}}
   </style>
 </head>
 <body>
 <main class="layout">
   <nav class="nav">
     <strong>${escapeHtml(ui.navTitle)}</strong>
-    <a href="#summary">${escapeHtml(ui.navSummary)}</a><a href="#architecture-delta">${escapeHtml(ui.navDelta)}</a><a href="#impact">${escapeHtml(ui.navImpact)}</a><a href="#triggers">${escapeHtml(ui.navTriggers)}</a><a href="#paths">${escapeHtml(ui.navPaths)}</a><a href="#hash">${escapeHtml(ui.navHash)}</a><a href="#risk">${escapeHtml(ui.navRisk)}</a><a href="#phrase">${escapeHtml(ui.navPhrase)}</a><a href="#metadata">${escapeHtml(ui.navMetadata)}</a>
+    <a href="#summary">${escapeHtml(ui.navSummary)}</a><a href="#architecture-delta">${escapeHtml(ui.navDelta)}</a><a href="#business-architecture-diagrams">${escapeHtml(ui.navBusinessDiagrams)}</a><a href="#governance-architecture-diagrams">${escapeHtml(ui.navGovernanceDiagrams)}</a><a href="#impact">${escapeHtml(ui.navImpact)}</a><a href="#triggers">${escapeHtml(ui.navTriggers)}</a><a href="#paths">${escapeHtml(ui.navPaths)}</a><a href="#hash">${escapeHtml(ui.navHash)}</a><a href="#risk">${escapeHtml(ui.navRisk)}</a><a href="#phrase">${escapeHtml(ui.navPhrase)}</a><a href="#metadata">${escapeHtml(ui.navMetadata)}</a>
   </nav>
   <div>
     <section id="summary" class="hero">
@@ -491,6 +825,22 @@ function renderHtml(input) {
       </div>
     </section>
     ${renderArchitectureDelta(architectureDelta, ui)}
+    ${renderArchitectureDiagrams({
+      sectionId: 'business-architecture-diagrams',
+      title: ui.businessArchitectureDiagrams,
+      lead: ui.businessArchitectureDiagramsLead,
+      diagrams: businessArchitectureDiagrams,
+      ui,
+      mermaidRuntime: input.mermaidRuntime,
+    })}
+    ${renderArchitectureDiagrams({
+      sectionId: 'governance-architecture-diagrams',
+      title: ui.governanceArchitectureDiagrams,
+      lead: ui.governanceArchitectureDiagramsLead,
+      diagrams: governanceArchitectureDiagrams,
+      ui,
+      mermaidRuntime: input.mermaidRuntime,
+    })}
     <section id="impact" class="card">
       <h2>${escapeHtml(ui.navImpact)}</h2>
       <div class="review-flow">
@@ -506,8 +856,166 @@ function renderHtml(input) {
     <section id="metadata" class="card"><h2>${escapeHtml(ui.metadata)}</h2>${renderObjectTable([{ jsonPath: input.architecturePath, htmlPath: input.outPath, runId: c.runId, artifactHash, computedArtifactHash: input.validation.computedHash }], ['jsonPath', 'htmlPath', 'runId', 'artifactHash', 'computedArtifactHash'])}</section>
   </div>
 </main>
+${renderMermaidRuntimeScript(input.mermaidRuntime)}
 <script>
 (() => {
+  const mermaidRuntimeAvailable = ${input.mermaidRuntime.available ? 'true' : 'false'};
+  const runtimeUnavailableMessage = ${
+    input.mermaidRuntime.available
+      ? JSON.stringify('Mermaid runtime failed to initialize after embedding.')
+      : JSON.stringify(ui.mermaidRuntimeMissing)
+  };
+  document.querySelectorAll('[data-diagram-viewer]').forEach((viewer) => {
+    const cards = Array.from(viewer.querySelectorAll('[data-diagram-card]'));
+    const tabs = Array.from(viewer.querySelectorAll('[data-diagram-index].diagram-tab'));
+    const toggle = viewer.querySelector('[data-diagram-toggle]');
+    const setActive = (nextIndex) => {
+      if (!cards.length) return;
+      const index = (nextIndex + cards.length) % cards.length;
+      viewer.dataset.activeDiagram = String(index);
+      if (viewer.dataset.diagramMode !== 'all') viewer.dataset.diagramMode = 'single';
+      cards.forEach((card, cardIndex) => card.classList.toggle('active', cardIndex === index));
+      tabs.forEach((tab, tabIndex) => {
+        const active = tabIndex === index;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-pressed', String(active));
+      });
+    };
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        viewer.dataset.diagramMode = 'single';
+        if (toggle) toggle.innerText = ${JSON.stringify(getUiText(input.language).expandDiagrams)};
+        setActive(Number(tab.dataset.diagramIndex || 0));
+      });
+    });
+    const move = (delta) => {
+      viewer.dataset.diagramMode = 'single';
+      if (toggle) toggle.innerText = ${JSON.stringify(getUiText(input.language).expandDiagrams)};
+      setActive(Number(viewer.dataset.activeDiagram || 0) + delta);
+    };
+    const prev = viewer.querySelector('[data-diagram-prev]');
+    const next = viewer.querySelector('[data-diagram-next]');
+    if (prev) prev.addEventListener('click', () => move(-1));
+    if (next) next.addEventListener('click', () => move(1));
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const expanded = viewer.dataset.diagramMode === 'all';
+        viewer.dataset.diagramMode = expanded ? 'single' : 'all';
+        toggle.innerText = expanded
+          ? ${JSON.stringify(getUiText(input.language).expandDiagrams)}
+          : ${JSON.stringify(getUiText(input.language).singleDiagram)};
+        setActive(Number(viewer.dataset.activeDiagram || 0));
+      });
+    }
+    setActive(Number(viewer.dataset.activeDiagram || 0));
+  });
+  async function renderNativeMermaid() {
+    const cards = Array.from(document.querySelectorAll('[data-diagram-card]'));
+    if (!mermaidRuntimeAvailable || !window.mermaid) {
+      cards.forEach((card) => {
+        const error = card.querySelector('[data-mermaid-error]');
+        if (!error) return;
+        error.hidden = false;
+        error.innerText = runtimeUnavailableMessage;
+      });
+      return;
+    }
+    function inferMermaidDiagramKind(source) {
+      const normalized = String(source || '').trim();
+      if (/^sequenceDiagram\\b/iu.test(normalized)) return 'sequence';
+      if (/^classDiagram\\b/iu.test(normalized)) return 'class';
+      if (/^stateDiagram(?:-v2)?\\b/iu.test(normalized)) return 'state';
+      if (/^(?:flowchart|graph)\\b/iu.test(normalized)) return 'flowchart';
+      return 'unknown';
+    }
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      sequence: {
+        mirrorActors: false,
+        wrap: true,
+        useMaxWidth: false,
+        diagramMarginX: 16,
+        diagramMarginY: 20,
+        boxMargin: 8,
+        boxTextMargin: 4,
+        noteMargin: 10,
+        messageAlign: 'left',
+        messageMargin: 34,
+        actorMargin: 42,
+        width: 126,
+        height: 38,
+        actorFontSize: 12,
+        messageFontSize: 12,
+        noteFontSize: 12
+      },
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        nodeSpacing: 28,
+        rankSpacing: 34
+      },
+      themeVariables: {
+        fontFamily: 'Segoe UI, Noto Sans SC, Microsoft YaHei, sans-serif',
+        fontSize: '12px',
+        primaryColor: '#fffdf8',
+        primaryBorderColor: '#8b611b',
+        primaryTextColor: '#24211b',
+        lineColor: '#2d5d82',
+        signalColor: '#2d5d82',
+        signalTextColor: '#24211b',
+        actorBorder: '#8b611b',
+        actorBkg: '#f3e3bf',
+        actorTextColor: '#24211b',
+        noteBkgColor: '#fff6f3',
+        noteTextColor: '#24211b',
+        activationBorderColor: '#28684e',
+        activationBkgColor: '#dff0e7'
+      }
+    });
+    for (const card of cards) {
+      const sourceEl = card.querySelector('[data-mermaid-source]');
+      const target = card.querySelector('[data-mermaid-render]');
+      const error = card.querySelector('[data-mermaid-error]');
+      if (!sourceEl || !target) continue;
+      const sourceText = sourceEl.textContent || '';
+      const diagramKind = inferMermaidDiagramKind(sourceText);
+      const id = 'native-mermaid-' + (target.dataset.diagramId || 'diagram').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2);
+      try {
+        const rendered = await window.mermaid.render(id, sourceText);
+        target.innerHTML = rendered.svg;
+        target.dataset.rendered = 'true';
+        target.dataset.diagramKind = diagramKind;
+        if (typeof rendered.bindFunctions === 'function') rendered.bindFunctions(target);
+        const svg = target.querySelector('svg');
+        if (svg) {
+          svg.classList.add('normalized-mermaid-svg');
+          svg.dataset.diagramKind = diagramKind;
+          svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+          const viewBox = (svg.getAttribute('viewBox') || '').trim().split(/\\s+/).map(Number);
+          if (viewBox.length === 4 && viewBox.every(Number.isFinite)) {
+            const naturalWidth = Math.max(320, Math.ceil(viewBox[2]));
+            const naturalHeight = Math.max(180, Math.ceil(viewBox[3]));
+            svg.setAttribute('width', String(naturalWidth));
+            svg.setAttribute('height', String(naturalHeight));
+            svg.style.width = naturalWidth + 'px';
+            svg.style.height = naturalHeight + 'px';
+          }
+          svg.style.maxWidth = 'none';
+          svg.style.margin = '0';
+          svg.style.display = 'block';
+        }
+        if (error) error.hidden = true;
+      } catch (err) {
+        if (error) {
+          error.hidden = false;
+          error.innerText = 'Mermaid render failed: ' + (err && err.message ? err.message : String(err));
+        }
+      }
+    }
+  }
+  renderNativeMermaid();
   const button = document.querySelector('[data-copy-target]');
   if (!button) return;
   const targetId = button.getAttribute('data-copy-target');
@@ -568,7 +1076,26 @@ function main(argv) {
   const recipe = resolveRecipe(args.recipe);
   const validation = validate(confirmation, recipe);
   const architectureDelta = buildArchitectureDelta(confirmation, validation);
-  const html = renderHtml({ confirmation, recipe, validation, language: args.language, architecturePath, outPath });
+  const businessArchitectureDiagrams = normalizeArchitectureDiagrams(
+    confirmation,
+    'businessArchitectureDiagrams',
+    'architectureDiagrams'
+  );
+  const governanceArchitectureDiagrams = normalizeArchitectureDiagrams(
+    confirmation,
+    'governanceArchitectureDiagrams',
+    'architectureDiagrams'
+  );
+  const mermaidRuntime = readMermaidRuntimeScript();
+  const html = renderHtml({
+    confirmation,
+    recipe,
+    validation,
+    language: args.language,
+    architecturePath,
+    outPath,
+    mermaidRuntime,
+  });
   const htmlHash = sha256Text(html);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, html, 'utf8');
@@ -590,11 +1117,25 @@ function main(argv) {
     blockingIssues: validation.blockingIssues,
     warnings: validation.warnings,
     architectureDelta,
+    businessArchitectureDiagrams,
+    governanceArchitectureDiagrams,
+    mermaidRuntime: {
+      available: mermaidRuntime.available,
+      path: mermaidRuntime.path,
+      hash: mermaidRuntime.hash,
+      error: mermaidRuntime.error,
+    },
     counts: {
       targetPaths: array(confirmation.targetPaths).length,
       consumerImpactScan: array(confirmation.consumerImpactScan).length,
       governanceImpactScan: array(confirmation.governanceImpactScan).length,
       fullArchitectureTriggerMatrix: array(confirmation.fullArchitectureTriggerMatrix).length,
+      businessArchitectureDiagrams: businessArchitectureDiagrams.filter(
+        (diagram) => !diagram.missing && text(diagram.mermaid)
+      ).length,
+      governanceArchitectureDiagrams: governanceArchitectureDiagrams.filter(
+        (diagram) => !diagram.missing && text(diagram.mermaid)
+      ).length,
       evidenceRefs: array(confirmation.evidenceRefs).length,
     },
   };

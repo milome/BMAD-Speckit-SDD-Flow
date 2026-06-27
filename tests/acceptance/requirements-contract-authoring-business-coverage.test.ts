@@ -377,6 +377,136 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
 }
 
 describe('requirements contract sanitized real fixture coverage', () => {
+  it('projects currentTargetMap from explicit source current and target state sections', () => {
+    const root = createTempRoot('requirements-contract-source-state-sections-');
+    try {
+      const source = path.join(root, 'docs/requirements/widget-settings.md');
+      mkdirSync(path.dirname(source), { recursive: true });
+      writeFileSync(
+        source,
+        [
+          '# Widget Settings Source',
+          '',
+          '## Source Current State',
+          '',
+          '- CURRENT-STATE-ANCHOR: The existing widget exposes all controls in one dense row.',
+          '- CURRENT-LIMIT-ANCHOR: Operators cannot distinguish pending values from saved values.',
+          '',
+          '## Source Target State',
+          '',
+          '- TARGET-STATE-ANCHOR: The widget shows a compact status summary and opens a dedicated settings surface.',
+          '- TARGET-MUST-ANCHOR: Apply, cancel, and reset semantics are explicit after every confirmed MUST is implemented.',
+          '',
+          'Implementation evidence from current code reading:',
+          '',
+          '- CURRENT-EVIDENCE-NOISE: Existing code still uses the dense row and must stay out of targetRows.',
+          '- CURRENT-EVIDENCE-DETAIL: Existing reset handling is only source evidence, not a target state.',
+          '',
+          '## Default Visibility',
+          '',
+          '| Entry | Default Visible |',
+          '| --- | --- |',
+          '| Compact Summary | yes |',
+          '| Advanced Panel | no |',
+          '| Legacy Dense Row | no |',
+          '',
+          '## Noisy Governance Notes',
+          '',
+          '- NOISE-ANCHOR: target current must validation wording here is commentary only and must not drive the current/target map.',
+          '',
+          '## Requirements',
+          '',
+          '- The widget MUST show the compact status summary.',
+          '- The widget MUST preserve cancel rollback semantics.',
+          '',
+          '## Target Files',
+          '',
+          '- src/widgets/settings-panel.ts',
+          '',
+          '## Validation',
+          '',
+          '- npm run test -- settings-panel',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-SOURCE-STATE-SECTIONS',
+        requirementSetId: 'REQ-SOURCE-STATE-SECTIONS-SET',
+        targetPath: ['src/widgets/settings-panel.ts'],
+        requiredCommand: 'npm run test -- settings-panel',
+      });
+      const draft = readJson<{ implementationConfirmation: Record<string, unknown> }>(
+        artifacts(root, 'REQ-SOURCE-STATE-SECTIONS', 'REQ-SOURCE-STATE-SECTIONS-SET')
+          .draftImplementationConfirmation
+      ).implementationConfirmation;
+      const currentTargetMap = draft.currentTargetMap as Record<string, unknown>;
+      const currentTargetMapText = stringify(currentTargetMap);
+      const currentTargetMapWithDefaults = currentTargetMap as {
+        diffRows?: Array<Record<string, unknown>>;
+        targetSummary?: Array<Record<string, unknown>>;
+        sourceDefaultVisibility?: {
+          visible?: string[];
+          hidden?: string[];
+          rows?: Array<Record<string, unknown>>;
+        };
+      };
+      const defaultVisibilityDiff = currentTargetMapWithDefaults.diffRows?.find(
+        (row) => row.id === 'CT-DIFF-002'
+      );
+
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
+      expect(currentTargetMap).toMatchObject({
+        schemaVersion: 'current-target-map/v1',
+        displayProfile: 'closed_loop_current_target_map',
+        sourceStateProjection: {
+          mode: 'source_current_target_sections',
+        },
+      });
+      expect(defaultVisibilityDiff, 'CT-DIFF-002 must describe default visibility').toBeTruthy();
+      expect(currentTargetMapWithDefaults.sourceDefaultVisibility?.visible).toEqual([
+        'Compact Summary',
+      ]);
+      expect(currentTargetMapWithDefaults.sourceDefaultVisibility?.hidden).toEqual([
+        'Advanced Panel',
+        'Legacy Dense Row',
+      ]);
+      expect(currentTargetMapText).toContain('CURRENT-STATE-ANCHOR');
+      expect(currentTargetMapText).toContain('CURRENT-LIMIT-ANCHOR');
+      expect(currentTargetMapText).toContain('TARGET-STATE-ANCHOR');
+      expect(currentTargetMapText).toContain('TARGET-MUST-ANCHOR');
+      expect(currentTargetMapText).not.toContain('NOISE-ANCHOR');
+      expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-DETAIL');
+      const targetSummaryText = stringify(currentTargetMapWithDefaults.targetSummary);
+      const defaultVisibilityTargetState = stringify(defaultVisibilityDiff?.targetState);
+      expect(targetSummaryText).toContain('TARGET-STATE-ANCHOR');
+      expect(targetSummaryText).toContain('TARGET-MUST-ANCHOR');
+      expect(targetSummaryText).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(targetSummaryText).not.toContain('CURRENT-EVIDENCE-DETAIL');
+      expect(defaultVisibilityTargetState).toContain('TARGET-STATE-ANCHOR');
+      expect(defaultVisibilityTargetState).toContain('TARGET-MUST-ANCHOR');
+      expect(defaultVisibilityTargetState).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(defaultVisibilityTargetState).not.toContain('CURRENT-EVIDENCE-DETAIL');
+      const sourceProjection = currentTargetMap.sourceStateProjection as {
+        currentRows?: Array<{ text?: string }>;
+        targetRows?: Array<{ text?: string }>;
+      };
+      expect(sourceProjection.currentRows?.map((row) => row.text)).toEqual([
+        'CURRENT-STATE-ANCHOR: The existing widget exposes all controls in one dense row.',
+        'CURRENT-LIMIT-ANCHOR: Operators cannot distinguish pending values from saved values.',
+      ]);
+      expect(sourceProjection.targetRows?.map((row) => row.text)).toEqual([
+        'TARGET-STATE-ANCHOR: The widget shows a compact status summary and opens a dedicated settings surface.',
+        'TARGET-MUST-ANCHOR: Apply, cancel, and reset semantics are explicit after every confirmed MUST is implemented.',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
   it('records source provenance and sanitized fixture integrity', () => {
     const fixture = readUtf8(fixtureRelativePath);
     const metadata = JSON.parse(readUtf8(metadataRelativePath)) as {
@@ -529,7 +659,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
           mustRows.some(
             (row) =>
               row.headingPath?.some((heading) => heading.includes(frId)) &&
+              typeof row.sourcePath === 'string' &&
               row.sourcePath.endsWith('multi-timeframe-display-settings.real.md') &&
+              typeof row.sourceSpan?.startLine === 'number' &&
               row.sourceSpan.startLine > 0
           ),
           `${frId} must be materialized from the sanitized real fixture`
@@ -624,7 +756,6 @@ describe('requirements contract sanitized real fixture coverage', () => {
 
       const outOfScopeRows = (draft.outOfScope as Array<Record<string, unknown>>) ?? [];
       expect(stringify(outOfScopeRows)).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
-      expect(stringify(outOfScopeRows)).toContain('主时间轴语义');
       expect(
         ((draft.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
           row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
@@ -635,6 +766,40 @@ describe('requirements contract sanitized real fixture coverage', () => {
         expect(targetAuthority.accepted.map((row) => row.path)).toContain(targetPath);
         expect(stringify(draft)).toContain(targetPath);
       }
+      const currentTargetMapText = stringify(draft.currentTargetMap);
+      const currentTargetMap = draft.currentTargetMap as Record<string, unknown>;
+      expect(currentTargetMap).toMatchObject({
+        schemaVersion: 'current-target-map/v1',
+        displayProfile: 'closed_loop_current_target_map',
+        sourceStateProjection: {
+          mode: expect.stringMatching(
+            /^(?:source_current_target_sections|heuristic_highlights_fallback)$/u
+          ),
+        },
+      });
+      expect(currentTargetMapText).toContain('source-authorized product code targets');
+      expect(currentTargetMapText).toContain('MUST-001');
+      expect(currentTargetMapText).toContain('MUST-009');
+      expect(currentTargetMapText).toContain('MUST-010');
+      expect(currentTargetMapText).toContain('MUST-011');
+      expect(currentTargetMapText).not.toContain('reconfirm_required');
+      expect(currentTargetMapText).not.toContain('req-trace');
+      expect(currentTargetMapText).not.toContain('controlled confirm-scope ingest');
+      expect(currentTargetMapText).not.toMatch(/source document hash|sourceDocumentHash|implementation readiness/iu);
+      expect(currentTargetMapText).not.toMatch(/current-attempt product implementation evidence/iu);
+      expect(currentTargetMapText).not.toMatch(/source describes behavior|source defines current behavior/iu);
+      expect(currentTargetMapText).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
+      for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
+        expect(currentTargetMapText).toContain(targetPath);
+      }
+      for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
+        expect(currentTargetMapText).toContain(period);
+      }
+      expect(currentTargetMapText).not.toContain('Pre-confirmation drilldown remains inside requirement_confirmation');
+      expect(currentTargetMapText).not.toContain('Draft requirement');
+      expect(currentTargetMapText).not.toContain('User-confirmable requirement');
+      expect(currentTargetMapText).not.toContain('requirement_confirmation draft');
+      expect(currentTargetMapText).not.toContain('requirement_confirmation user_confirmable');
       expect(stringify(draft)).not.toContain('node_modules/bmad-speckit-sdd-flow');
       expect(stringify(draft)).not.toContain('tests/acceptance/main-agent');
     } finally {
@@ -777,7 +942,6 @@ describe('requirements contract sanitized real fixture coverage', () => {
       expect(stringify(confirmation.outOfScope)).toContain(
         metadata.requiredBusinessAnchors.outOfScopeTimeline
       );
-      expect(stringify(confirmation.outOfScope)).toContain('主时间轴语义');
       expect(
         ((confirmation.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
           row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)

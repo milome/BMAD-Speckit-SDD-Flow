@@ -162,10 +162,22 @@ function writeRequirementRecord(
   overrides: Partial<{
     sourceDocumentHash: string;
     implementationConfirmationHash: string;
+    architectureConfirmationState: Record<string, unknown>;
+    architectureConfirmations: Array<Record<string, unknown>>;
+    sixModelResults: Record<string, unknown>;
+    currentMentalModel: string;
+    currentStage: string;
+    stage: string;
   }> = {}
 ): string {
   const recordPath = path.join(tempDir, 'requirement-record.json');
-  const hashes = { ...currentHashes(sourcePath), ...overrides };
+  const hashes = currentHashes(sourcePath);
+  const recordOverrides: Record<string, unknown> = { ...overrides };
+  delete recordOverrides.sourceDocumentHash;
+  delete recordOverrides.implementationConfirmationHash;
+  const sourceDocumentHash = overrides.sourceDocumentHash ?? hashes.sourceDocumentHash;
+  const implementationConfirmationHash =
+    overrides.implementationConfirmationHash ?? hashes.implementationConfirmationHash;
   fs.writeFileSync(
     recordPath,
     `${JSON.stringify(
@@ -178,18 +190,21 @@ function writeRequirementRecord(
           reducer: 'canonical-requirement-record-reducer/v1',
           atomicCommitter: 'requirement-record-control-store/v1',
         },
-        ...hashes,
+        sourceDocumentHash,
+        implementationConfirmationHash,
         confirmationHistory: [
           {
             eventType: 'confirmation_recorded',
             confirmedAt: '2026-05-10T00:00:00.000Z',
             confirmedBy: 'test-user',
             sourcePath,
-            ...hashes,
+            sourceDocumentHash,
+            implementationConfirmationHash,
             confirmationPageHash:
               'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           },
         ],
+        ...recordOverrides,
       },
       null,
       2
@@ -197,6 +212,67 @@ function writeRequirementRecord(
     'utf8'
   );
   return recordPath;
+}
+
+function architectureConfirmationRecordOverrides(sourcePath: string): Record<string, unknown> {
+  const hashes = currentHashes(sourcePath);
+  const architectureHash = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
+  const resolvedRecipeHash =
+    'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+  return {
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationRunId: 'arch-run-001',
+      currentArchitectureConfirmationHash: architectureHash,
+      currentArchitectureConfirmationPath:
+        '_bmad-output/runtime/requirement-records/REQ-TRACE-001/architecture/architecture-confirmation-arch-run-001.json',
+      resolvedRecipeHash,
+      staleInputs: {
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        currentArtifactHash: architectureHash,
+        resolvedRecipeHash,
+      },
+      lastEventType: 'architecture_confirmation_recorded',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    },
+    architectureConfirmations: [
+      {
+        eventType: 'architecture_confirmation_recorded',
+        recordId: 'REQ-TRACE-001',
+        requirementSetId: 'REQ-TRACE-001',
+        runId: 'arch-run-001',
+        decision: 'full_architecture_confirmed',
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        resolvedRecipeHash,
+        architectureConfirmationArtifactHash: architectureHash,
+        architectureConfirmationPath:
+          '_bmad-output/runtime/requirement-records/REQ-TRACE-001/architecture/architecture-confirmation-arch-run-001.json',
+        confirmationText: 'confirmed architecture hashes',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'test-user',
+      },
+    ],
+    sixModelResults: {
+      architecture_confirmation: {
+        payloadKind: 'model_result',
+        model: 'architecture_confirmation',
+        status: 'pass',
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        currentHashes: {
+          sourceDocumentHash: hashes.sourceDocumentHash,
+          implementationConfirmationHash: hashes.implementationConfirmationHash,
+          architectureConfirmationArtifactHash: architectureHash,
+          resolvedRecipeHash,
+        },
+      },
+    },
+    currentMentalModel: 'implementation_readiness',
+    currentStage: 'implementation_readiness',
+    stage: 'implementation_readiness',
+  };
 }
 
 function run(
@@ -756,6 +832,66 @@ describe('req trace generator confirmation block gate', () => {
       aiTddManifestComplete: true,
       atomicTaskLineageComplete: true,
     });
+  });
+
+  it('blocks execution packet generation when architecture confirmation is required but not recorded', () => {
+    const source = writeSource(
+      validCompilerSource(`
+  architectureImpacts:
+    - id: ARCH-001
+      title: "Architecture confirmation required"
+      impact: "Implementation touches product runtime/UI boundaries and must be confirmed before execution."
+      requirementRefs: ["MUST-001"]
+`)
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'missing-architecture-confirmation');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('blocked');
+    expect(receipt.blockingReasons).toContain('ARCHITECTURE_CONFIRMATION_REQUIRED');
+  });
+
+  it('accepts execution packet generation when architecture confirmation is active for current hashes', () => {
+    const source = writeSource(
+      validCompilerSource(`
+  architectureImpacts:
+    - id: ARCH-001
+      title: "Architecture confirmation required"
+      impact: "Implementation touches product runtime/UI boundaries and must be confirmed before execution."
+      requirementRefs: ["MUST-001"]
+`)
+    );
+    const record = writeRequirementRecord(source, architectureConfirmationRecordOverrides(source));
+    const outDir = path.join(tempDir, 'active-architecture-confirmation');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
+    expect(receipt.blockingReasons).toEqual([]);
   });
 
   it('blocks generation when legacy and canonical command target aliases conflict', () => {

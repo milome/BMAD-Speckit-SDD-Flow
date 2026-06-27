@@ -805,6 +805,59 @@ function hasAny(values) {
   return strings(values).length > 0;
 }
 
+function architectureConfirmationRequired(confirmation) {
+  return objects(confirmation?.architectureImpacts).length > 0;
+}
+
+function latestArchitectureConfirmationEvent(record) {
+  return objects(record?.architectureConfirmations)
+    .filter((item) => item.eventType === 'architecture_confirmation_recorded')
+    .at(-1);
+}
+
+function architectureModelResult(record) {
+  const results = record?.sixModelResults;
+  if (!results || typeof results !== 'object' || Array.isArray(results)) return {};
+  const result = results.architecture_confirmation;
+  return result && typeof result === 'object' && !Array.isArray(result) ? result : {};
+}
+
+function architectureConfirmationActiveForCurrentHashes(record, sourceHash, confirmationHash) {
+  const state = record?.architectureConfirmationState;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return false;
+  const currentHash = String(state.currentArchitectureConfirmationHash ?? '').trim();
+  const staleInputs = state.staleInputs && typeof state.staleInputs === 'object' && !Array.isArray(state.staleInputs)
+    ? state.staleInputs
+    : {};
+  if (state.status !== 'active' || !currentHash) return false;
+  if (staleInputs.sourceDocumentHash !== sourceHash) return false;
+  if (staleInputs.implementationConfirmationHash !== confirmationHash) return false;
+  if (staleInputs.currentArtifactHash && staleInputs.currentArtifactHash !== currentHash) return false;
+
+  const event = latestArchitectureConfirmationEvent(record);
+  if (!event) return false;
+  if (event.sourceDocumentHash !== sourceHash) return false;
+  if (event.implementationConfirmationHash !== confirmationHash) return false;
+  if (event.architectureConfirmationArtifactHash !== currentHash) return false;
+
+  const modelResult = architectureModelResult(record);
+  if (modelResult.status && modelResult.status !== 'pass') return false;
+  const modelHashes = modelResult.currentHashes && typeof modelResult.currentHashes === 'object' && !Array.isArray(modelResult.currentHashes)
+    ? modelResult.currentHashes
+    : {};
+  if (modelHashes.sourceDocumentHash && modelHashes.sourceDocumentHash !== sourceHash) return false;
+  if (modelHashes.implementationConfirmationHash && modelHashes.implementationConfirmationHash !== confirmationHash) {
+    return false;
+  }
+  if (
+    modelHashes.architectureConfirmationArtifactHash &&
+    modelHashes.architectureConfirmationArtifactHash !== currentHash
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function requirementClosureFor(confirmation, id) {
   const traceRows = objects(confirmation.traceRows).filter((row) => strings(row.covers).includes(id));
   const evidenceRows = objects(confirmation.evidence).filter(
@@ -831,6 +884,8 @@ function validateCompilerContract(confirmation, record = {}) {
   const manifest = confirmation.aiTddContractExecutionManifestProjection;
   const requiredSections = strings(manifest?.requiredSections);
   const drilldown = confirmation.preConfirmationDrilldown;
+  const sourceHash = String(record?.sourceDocumentHash ?? '').trim();
+  const confirmationHash = String(record?.implementationConfirmationHash ?? '').trim();
   const traceRows = objects(confirmation.traceRows);
   const acceptanceRows = [...objects(confirmation.acceptanceTests), ...objects(confirmation.e2eSuites)];
   const taskRows = objects(confirmation.atomicImplementationTaskList);
@@ -851,6 +906,12 @@ function validateCompilerContract(confirmation, record = {}) {
   failIf(drilldownReceiptRefs(drilldown).length < 3, reasons, 'CRITICAL_AUDITOR_THREE_ROUNDS_REQUIRED');
   failIf(!reconciliationRef(drilldown) || !reconciliationPassed(drilldown), reasons, 'PACKET_SOURCE_RECONCILIATION_REQUIRED');
   failIf(!preRenderGateRef(drilldown), reasons, 'PRE_RENDER_GATE_REPORT_REQUIRED');
+  failIf(
+    architectureConfirmationRequired(confirmation) &&
+      !architectureConfirmationActiveForCurrentHashes(record, sourceHash, confirmationHash),
+    reasons,
+    'ARCHITECTURE_CONFIRMATION_REQUIRED'
+  );
 
   failIf(taskRows.length === 0, reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
   failIf(!confirmation.mustToAtomicTaskMap || typeof confirmation.mustToAtomicTaskMap !== 'object', reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
