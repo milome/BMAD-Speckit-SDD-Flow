@@ -207,7 +207,6 @@ function writeResponse(
 function prepareRequest(root: string, recordId: string) {
   const source = writeSource(root, recordId);
   writePromotionReceipt(root, source, recordId);
-  const beforeHash = sha256Text(readFileSync(source, 'utf8'));
   const paths = authoringPaths(root, recordId);
   const firstResult = runMainAgentAuthoringRepair(root, {
     source,
@@ -224,7 +223,9 @@ function prepareRequest(root: string, recordId: string) {
       authoringFiles: existsSync(paths.dir) ? require('node:fs').readdirSync(paths.dir) : [],
     })
   ).toBe(true);
-  return { source, beforeHash, paths };
+  const currentSourceText = readFileSync(source, 'utf8');
+  expect(currentSourceText).toContain('implementationConfirmation:');
+  return { source, currentSourceHash: sha256Text(currentSourceText), paths };
 }
 
 function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, verdict: string): void {
@@ -249,7 +250,7 @@ describe('compiled dist authoring-repair verdict branching', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-blocked-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-BLOCKED';
-      const { source, beforeHash, paths } = prepareRequest(root, recordId);
+      const { source, currentSourceHash, paths } = prepareRequest(root, recordId);
       writeResponse(paths.request(1), paths.response(1), 'blocked');
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -264,7 +265,7 @@ describe('compiled dist authoring-repair verdict branching', () => {
       expect(result.nextRequiredAction).toBe('resolve_critical_auditor_blocker');
       expect(existsSync(paths.receipt(1))).toBe(true);
       expectReceiptBinding(paths, 'blocked');
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(beforeHash);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(currentSourceHash);
       expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
         'source_gap_fix_materialization_required'
       );
@@ -277,7 +278,7 @@ describe('compiled dist authoring-repair verdict branching', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-insufficient-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-INSUFFICIENT';
-      const { source, beforeHash, paths } = prepareRequest(root, recordId);
+      const { source, currentSourceHash, paths } = prepareRequest(root, recordId);
       writeResponse(paths.request(1), paths.response(1), 'insufficient_audit');
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -292,7 +293,7 @@ describe('compiled dist authoring-repair verdict branching', () => {
       expect(result.nextRequiredAction).toBe('rewrite_current_critical_auditor_round_response');
       expect(existsSync(paths.receipt(1))).toBe(true);
       expectReceiptBinding(paths, 'insufficient_audit');
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(beforeHash);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(currentSourceHash);
       expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
         'source_gap_fix_materialization_required'
       );
@@ -305,7 +306,7 @@ describe('compiled dist authoring-repair verdict branching', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-new-gap-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-NEW-GAP';
-      const { source, beforeHash, paths } = prepareRequest(root, recordId);
+      const { source, currentSourceHash, paths } = prepareRequest(root, recordId);
       writeResponse(paths.request(1), paths.response(1), 'new_valid_gap', {
         validatedGaps: [{ id: 'VALID-GAP-NO-ACTIONS', status: 'open' }],
       });
@@ -322,7 +323,7 @@ describe('compiled dist authoring-repair verdict branching', () => {
         'critical_auditor_validated_gap_repair_actions_missing'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(beforeHash);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(currentSourceHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

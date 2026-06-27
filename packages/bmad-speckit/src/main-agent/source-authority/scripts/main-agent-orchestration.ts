@@ -1477,7 +1477,7 @@ function sha256Text(value: string): string {
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
+    return JSON.stringify(value) ?? String(value);
   }
   if (Array.isArray(value)) {
     return `[${value.map((item) => stableStringify(item)).join(',')}]`;
@@ -5567,7 +5567,11 @@ function materializeImplementationConfirmationText(
     next = `${sourceWithDefinitionOfDone.replace(/\s*$/u, '')}\n\n${dumped}\n`;
   } else {
     const lines = [...extraction.lines];
-    lines.splice(extraction.start, extraction.end - extraction.start, ...dumped.split('\n'));
+    lines.splice(
+      extraction.start,
+      extraction.end - extraction.start,
+      ...dumped.split('\n')
+    );
     next = lines.join('\n');
   }
   return next.endsWith('\n') ? next : `${next}\n`;
@@ -5577,16 +5581,26 @@ function ensureDefinitionOfDoneSection(sourceText: string): string {
   if (/\n##\s+(?:Definition of Done|Completion Definition)\b/iu.test(sourceText)) {
     return sourceText.endsWith('\n') ? sourceText : `${sourceText}\n`;
   }
+  const section = [
+    '## Definition of Done',
+    '',
+    '- The implementation readiness stage audit passes for the current source, implementationConfirmation, and confirmation page hashes.',
+    '- The AI-TDD pre-implementation gate is ready before implementation dispatch, with every ACC/E2E row bound to expected-red proof or controlled red proof execution.',
+    '- Every confirmed MUST/NEG trace row keeps requirement, evidence, command, acceptance, failure-path, edge-case, target-path, and artifact closure.',
+    '- Delivery readiness, closeout readiness, merge readiness, or launch readiness remain false until current-attempt implementation evidence is recorded through controlled runtime fields.',
+  ];
+  const normalized = sourceText.replace(/\r\n/g, '\n');
+  const lines = normalized.split('\n');
+  const implementationConfirmationStart = lines.findIndex((line) =>
+    /^implementationConfirmation:\s*$/u.test(line)
+  );
+  if (implementationConfirmationStart >= 0) {
+    lines.splice(implementationConfirmationStart, 0, '', ...section, '');
+    const next = lines.join('\n');
+    return next.endsWith('\n') ? next : `${next}\n`;
+  }
   const trimmed = sourceText.replace(/\s*$/u, '');
-  return `${trimmed}
-
-## Definition of Done
-
-- The implementation readiness stage audit passes for the current source, implementationConfirmation, and confirmation page hashes.
-- The AI-TDD pre-implementation gate is ready before implementation dispatch, with every ACC/E2E row bound to expected-red proof or controlled red proof execution.
-- Every confirmed MUST/NEG trace row keeps requirement, evidence, command, acceptance, failure-path, edge-case, target-path, and artifact closure.
-- Delivery readiness, closeout readiness, merge readiness, or launch readiness remain false until current-attempt implementation evidence is recorded through controlled runtime fields.
-`;
+  return `${trimmed}\n\n${section.join('\n')}\n`;
 }
 
 function semanticSourceDocumentHashForText(sourceText: string): string {

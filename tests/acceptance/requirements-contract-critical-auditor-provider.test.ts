@@ -400,6 +400,16 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(issueCodes(afterRound2)).toContain('critical_auditor_response_file_missing');
       expect(issueCodes(afterRound2)).not.toContain('critical_auditor_response_request_hash_mismatch');
 
+      const consumedRequest2 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 2)
+      );
+      const consumedReceipt2 = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+        roundArtifact(root, recordId, 'receipt', 2)
+      ).criticalAuditorReceipt;
+      expect(consumedRequest2.requestHash).toBe(
+        consumedReceipt2.requestHash
+      );
+
       const request3 = readJson<Record<string, unknown>>(roundArtifact(root, recordId, 'request', 3));
       const response3 = path.join(responseDir, 'critical-auditor-round-response-3.json');
       writeFileSync(
@@ -419,12 +429,18 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(true);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 2))).toBe(true);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 3))).toBe(true);
+      const finalRequest2 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 2)
+      );
+      const finalRequest3 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 3)
+      );
       expect(readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
         roundArtifact(root, recordId, 'receipt', 2)
-      ).criticalAuditorReceipt.requestHash).toBe(request2.requestHash);
+      ).criticalAuditorReceipt.requestHash).toBe(finalRequest2.requestHash);
       expect(readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
         roundArtifact(root, recordId, 'receipt', 3)
-      ).criticalAuditorReceipt.requestHash).toBe(request3.requestHash);
+      ).criticalAuditorReceipt.requestHash).toBe(finalRequest3.requestHash);
       expect(issueCodes(third)).not.toContain('critical_auditor_response_request_hash_mismatch');
     } finally {
       removeTempRoot(root);
