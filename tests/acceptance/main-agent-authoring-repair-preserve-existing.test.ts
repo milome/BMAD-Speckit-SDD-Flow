@@ -553,7 +553,7 @@ function initGitTracking(root: string, files: string[]): void {
 
 function markSourceUserConfirmed(source: string): void {
   const text = readFileSync(source, 'utf8');
-  writeFileSync(source, text.replace(/\n  status: draft\n/u, '\n  status: user_confirmed\n'), 'utf8');
+  writeFileSync(source, text.replace(/\n {2}status: draft\n/u, '\n  status: user_confirmed\n'), 'utf8');
 }
 
 function writeSinglePassScaleArtifacts(root: string, source: string, recordId: string): void {
@@ -946,7 +946,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       writeFileSync(source, sourceText, 'utf8');
       writePromotionReceipt(root, source, recordId);
       initGitTracking(root, [source]);
-      const paths = authoringPaths(root, recordId);
 
       const result = runMainAgentAuthoringRepair(root, {
         source,

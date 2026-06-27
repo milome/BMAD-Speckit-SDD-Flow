@@ -2477,10 +2477,6 @@ function perMustProjectionIds(index: number, total: number): {
   };
 }
 
-function singleEntryMap(keys: string[], value: string[]): Record<string, string[]> {
-  return Object.fromEntries(keys.map((key) => [key, [...value]]));
-}
-
 const AI_TDD_REQUIRED_SECTIONS = [
   'preConfirmationDrilldownInputs',
   'atomicImplementationTaskLineage',
@@ -2559,31 +2555,6 @@ function extractInlineMustRequirements(
       sourceLine: null,
     }))
     .filter((row) => Boolean(row.text));
-}
-
-function mergeSourceBoundMustRequirements(
-  existing: SourceMustRequirement[],
-  candidates: SourceMustRequirement[]
-): SourceMustRequirement[] {
-  const rows = [...existing];
-  const seenIds = new Set(rows.map((row) => normalizeText(row.id)).filter(Boolean));
-  const seenTexts = new Set(rows.map((row) => normalizeText(row.text).toLowerCase()).filter(Boolean));
-  for (const candidate of candidates) {
-    const normalizedText = normalizeText(candidate.text);
-    if (!normalizedText) {
-      continue;
-    }
-    const normalizedId = normalizeText(candidate.id);
-    if ((normalizedId && seenIds.has(normalizedId)) || seenTexts.has(normalizedText.toLowerCase())) {
-      continue;
-    }
-    rows.push(candidate);
-    if (normalizedId) {
-      seenIds.add(normalizedId);
-    }
-    seenTexts.add(normalizedText.toLowerCase());
-  }
-  return rows;
 }
 
 function resolveSourceMustRequirements(sourcePath: string): SourceMustRequirement[] {
@@ -4026,16 +3997,6 @@ function sourceSpecificOverlaySummaryForCurrentTargetMap(sourceText: string): {
   };
 }
 
-function sourceRequirementSampleForCurrentTargetMap(
-  mustRequirements: SourceMustRequirement[]
-): string {
-  const sample = mustRequirements
-    .slice(0, 5)
-    .map((requirement) => `${requirement.id}: ${requirement.text}`)
-    .join(' | ');
-  return sample || 'source-defined product behavior';
-}
-
 function sourceRequirementTargetDescriptionForCurrentTargetMap(
   mustRequirements: SourceMustRequirement[]
 ): string {
@@ -4125,7 +4086,7 @@ function compileCurrentTargetMapPatterns(values: unknown, label: string): RegExp
   return asStringArray(values).map((pattern) => {
     try {
       return new RegExp(pattern, 'iu');
-    } catch (error) {
+    } catch {
       throw new Error(`invalid current-target-map highlight rule ${label}: ${pattern}`);
     }
   });
@@ -4310,12 +4271,6 @@ function currentTargetMapSourceStateProjection(
     currentRows,
     targetRows,
   };
-}
-
-function currentTargetMapCandidateContextText(
-  candidate: CurrentTargetMapHighlightCandidate
-): string {
-  return `${candidate.headingPath.join(' ')} ${candidate.text}`;
 }
 
 function currentTargetMapCandidateHeadingContextText(
@@ -4572,7 +4527,6 @@ function buildSourceSpecificCurrentTargetMap(input: {
     .filter(Boolean)
     .slice(0, 4)
     .join(' | ');
-  const requirementSample = sourceRequirementSampleForCurrentTargetMap(input.mustRequirements);
   const requirementTargetDescription = sourceRequirementTargetDescriptionForCurrentTargetMap(
     input.mustRequirements
   );
@@ -4761,7 +4715,6 @@ function buildPreConfirmationImplementationConfirmation(input: {
   const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
   const backRef = projectionBackRef(input.packetHash);
   const mustRefs = input.mustRequirements.map((requirement) => requirement.id);
-  const mustTexts = input.mustRequirements.map((requirement) => requirement.text);
   const structuredBlocks = input.structuredBlocks ?? [];
   const businessRows = buildBusinessRequirementRows({
     mustRequirements: input.mustRequirements,
