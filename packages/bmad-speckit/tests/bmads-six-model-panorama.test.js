@@ -423,7 +423,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.equal(output.aiTdd.activeRecords.length, 1);
       assert.equal(output.aiTdd.primaryRecord.recordId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
       assert.equal(output.aiTdd.primaryBecause, 'indexed_active_record');
-      assert.equal(output.orchestration.source, 'requirement_record');
+      assert.equal(output.orchestration.source, 'ai_tdd_runtime_decision');
       assert.equal(output.orchestration.sessionId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
       assert.equal(output.quickStart, null);
       assert.match(text, /You are looking at the AI-TDD runtime state for REQ-CI-GOVERNANCE-MAPPING-FIXTURE\./);
@@ -431,7 +431,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.match(text, /first safe-action reason: indexed_active_record/);
       assert.match(text, /selected by user: no/);
       assert.match(text, /runtime index pointer: yes/);
-      assert.doesNotMatch(text, /Source: requirement_record/);
+      assert.doesNotMatch(text, /Source: ai_tdd_runtime_decision/);
       assert.doesNotMatch(text, /Source: no_active_requirement/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -560,7 +560,7 @@ describe('bmads Six Mental Models panorama', () => {
         '## Stage Evidence',
         '## Contract Status',
         '## Main Agent',
-        'Source: requirement_record',
+        'Source: ai_tdd_runtime_decision',
       ]) {
         assert.doesNotMatch(defaultText, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
         assert.match(fullText, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
