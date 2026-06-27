@@ -456,6 +456,27 @@ function normalizeText(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function envFlagSet(value: string | undefined): boolean {
+  const normalized = normalizeText(value).toLowerCase();
+  return Boolean(normalized && normalized !== '0' && normalized !== 'false' && normalized !== 'no');
+}
+
+function resolveProcessMainAgentHost(): OrchestrationHost | null {
+  if (
+    envFlagSet(process.env.CODEX_THREAD_ID) ||
+    envFlagSet(process.env.CODEX_MANAGED_BY_NPM) ||
+    envFlagSet(process.env.CODEX_MANAGED_PACKAGE_ROOT) ||
+    envFlagSet(process.env.CODEX_HOME) ||
+    envFlagSet(process.env.CODEX_SANDBOX)
+  ) {
+    return 'codex';
+  }
+  if (envFlagSet(process.env.CLAUDE_CODE_CLI)) {
+    return 'claude';
+  }
+  return null;
+}
+
 function stripWrappingQuotes(value: string): string {
   return value.replace(/^"(.*)"$/u, '$1').replace(/^'(.*)'$/u, '$1');
 }
@@ -1055,11 +1076,16 @@ function resolveMainAgentHost(
   if (explicitHost) {
     return explicitHost;
   }
+  const processHost = resolveProcessMainAgentHost();
+  if (processHost) {
+    return processHost;
+  }
   if (surface?.orchestrationState?.host) {
     return surface.orchestrationState.host;
   }
   const root = projectRoot ?? process.cwd();
-  return readGovernanceRemediationConfig(root).primaryHost === 'claude' ? 'claude' : 'cursor';
+  const primaryHost = readGovernanceRemediationConfig(root).primaryHost;
+  return primaryHost === 'claude' || primaryHost === 'codex' ? primaryHost : 'cursor';
 }
 
 function taskTypeFromNextAction(

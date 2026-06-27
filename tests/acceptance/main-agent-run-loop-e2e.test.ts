@@ -137,6 +137,7 @@ describe('main-agent automatic run-loop', () => {
     try {
       const result = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
+        host: 'cursor',
         executor: ({ projectRoot, instruction, args }) => {
           const reportPath = writeMainAgentRunLoopTaskReport(projectRoot, instruction, args);
           return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
@@ -206,6 +207,7 @@ describe('main-agent automatic run-loop', () => {
     try {
       const result = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
+        host: 'cursor',
       });
 
       expect(result.status).toBe('blocked');
@@ -526,6 +528,8 @@ describe('main-agent automatic run-loop', () => {
           root,
           '--action',
           'run-loop',
+          '--host',
+          'cursor',
           ...cliRecordArgs(fixture),
           '--taskReportPath',
           reportPath,
