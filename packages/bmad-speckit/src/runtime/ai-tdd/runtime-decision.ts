@@ -443,6 +443,12 @@ function nextSafeActionFor(input) {
   if (input.reason === 'delivery_closeout_blocker') return 'run_delivery_closeout';
   if (input.delivery.awaiting) return 'confirm-closeout-acceptance';
   if (input.reason === 'readiness_blocker') return 'run_implementation_readiness_gate';
+  if (
+    input.currentMentalModel === 'implementation_readiness' &&
+    input.schemaModelStatus === 'pass'
+  ) {
+    return 'dispatch_implement';
+  }
   if (input.currentMentalModel === 'requirement_confirmation') {
     return 'requirements-contract-authoring author-confirmation-ready-source';
   }

@@ -804,7 +804,26 @@ function buildNoActiveRequirementSurface(labels = textBundle()) {
   };
 }
 
-function resolveMainAgentOrchestrationSurface(projectRoot, labels = textBundle()) {
+function resolveMainAgentOrchestrationSurface(projectRoot, labels = textBundle(), aiTddRuntime = null) {
+  const primaryDecision = aiTddRuntime?.primaryRecord || null;
+  if (primaryDecision) {
+    const blockingReasons =
+      primaryDecision.blockerSummary && primaryDecision.blockerSummary !== 'none'
+        ? [primaryDecision.blockerSummary]
+        : [];
+    return {
+      source: 'ai_tdd_runtime_decision',
+      nextAction: primaryDecision.nextSafeAction,
+      ready: primaryDecision.hasSafetyBlocker !== true,
+      pendingPacketStatus: primaryDecision.delivery?.awaiting ? 'awaiting_user_acceptance' : 'none',
+      sessionId: primaryDecision.requirementSetId || primaryDecision.recordId,
+      stageSummary: {
+        currentMentalModelStatus: primaryDecision.schemaModelStatus,
+        userFacingMessage: `AI-TDD primary route is ${primaryDecision.currentMentalModel}; next safe action is ${primaryDecision.nextSafeAction}.`,
+        blockingReasons,
+      },
+    };
+  }
   const { records } = loadActiveRequirementRecords(projectRoot);
   const hasActiveRequirement = records.length > 0;
   if (!hasActiveRequirement) return buildNoActiveRequirementSurface(labels);
@@ -839,15 +858,15 @@ function buildBmadsOutput(projectRootInput = process.cwd(), buildOptions = {}) {
   const labels = textBundle(language);
   const assetRoot = resolveBmadAssetRoot(projectRoot, options.assetRoot);
   const runtime = loadRuntimeContract(assetRoot);
-  const progress = resolveBmadHelpFiveLayerProgressState({ projectRoot, assetRoot });
-  const orchestration = resolveMainAgentOrchestrationSurface(projectRoot, labels);
-  const readiness = resolveReadinessStatus(projectRoot);
-  const artifacts = collectUpstreamArtifacts(projectRoot);
   const aiTdd = resolveAiTddRuntimeDecision(projectRoot, {
     assetRoot,
     displayBudget: options.budget,
     includeRawRecord: options.includeRawRecord === true || options.json === true,
   });
+  const progress = resolveBmadHelpFiveLayerProgressState({ projectRoot, assetRoot });
+  const orchestration = resolveMainAgentOrchestrationSurface(projectRoot, labels, aiTdd);
+  const readiness = resolveReadinessStatus(projectRoot);
+  const artifacts = collectUpstreamArtifacts(projectRoot);
   const displayBudget = resolveDisplayBudget(options.budget, 'route');
   const currentRoute = runtime.layers
     .flatMap((layer) => layer.stages.map((stage) => ({ layer, stage })))
