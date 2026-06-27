@@ -3672,38 +3672,6 @@ function buildPreConfirmationImplementationConfirmation(input: {
     businessIdToMust,
     mustRefs
   );
-  const businessSequenceViews =
-    businessRequirementIds.length > 0
-      ? [
-          {
-            id: 'SEQ-BUSINESS-001',
-            title: 'Product behavior sequence',
-            scope: 'business',
-            covers: businessDiagramCoverRefs,
-            perMustRows: businessDiagramCoverRefs.map((mustRef) => ({
-              mustRef,
-              assertion: `Business behavior for ${mustRef} remains independently visible in the confirmation view.`,
-            })),
-            mermaid: `sequenceDiagram\n  actor User\n  participant Settings as Multi-timeframe settings\n  User->>Settings: review timeframe display behavior [${businessRequirementIds.join(', ')}]\n  Settings-->>User: show per-timeframe visibility, persistence, and exclusion boundaries [${businessDiagramCoverRefs.join(', ')}]`,
-          },
-        ]
-      : [];
-  const businessFlowViews =
-    businessRequirementIds.length > 0
-      ? [
-          {
-            id: 'FLOW-BUSINESS-001',
-            title: 'Product visibility settings flow',
-            scope: 'business',
-            covers: businessDiagramCoverRefs,
-            perMustRows: businessDiagramCoverRefs.map((mustRef) => ({
-              mustRef,
-              assertion: `The product flow keeps ${mustRef} as a separate confirmation boundary.`,
-            })),
-            mermaid: `flowchart TD\n  A[Open multi-timeframe display settings] --> B[Inspect default visibility and persistence rules]\n  B --> C[Apply timeframe-specific visibility changes]\n  C --> D[Exclude main timeline and out-of-scope behavior]\n  D --> E[Verify acceptance commands]\n  A -.-> R[${businessRequirementIds.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]`,
-          },
-        ]
-      : [];
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
   const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
   const totalMusts = input.mustRequirements.length;
@@ -3725,6 +3693,89 @@ function buildPreConfirmationImplementationConfirmation(input: {
   const allAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
   const allFailureIds = perMustClosures.map((row) => row.failureId);
   const allEdgeIds = perMustClosures.map((row) => row.edgeId);
+  const businessProofClosure = {
+    traceRows: allTraceIds,
+    evidenceRefs: allEvidenceIds,
+    acceptanceRefs: allAcceptanceIds,
+  };
+  const businessPerMustRows = perMustClosures.map((row) => ({
+    mustRef: row.mustId,
+    traceRows: [row.traceId],
+    evidenceRefs: [row.evidenceId],
+    acceptanceRefs: [row.acceptanceId, row.e2eId],
+    failurePathRefs: [row.failureId],
+    edgeCaseRefs: [row.edgeId],
+    assertion: `${row.mustId} remains independently visible and accepted through ${row.traceId}.`,
+  }));
+  const businessSequenceViews =
+    businessRequirementIds.length > 0
+      ? [
+          {
+            id: 'SEQ-BUSINESS-001',
+            title: 'Product behavior happy path',
+            visualKind: 'happy',
+            scope: 'business',
+            covers: businessDiagramCoverRefs,
+            perMustRows: businessPerMustRows,
+            ...businessProofClosure,
+            mermaid: `sequenceDiagram\n  actor User\n  participant Settings as Multi-timeframe settings\n  User->>Settings: review timeframe display behavior [${businessRequirementIds.join(', ')}]\n  Settings-->>User: show per-timeframe visibility, persistence, and exclusion boundaries [${businessDiagramCoverRefs.join(', ')}]\n  Settings-->>User: expose proof closure [${allTraceIds.join(', ')}][${allEvidenceIds.join(', ')}]`,
+          },
+          {
+            id: 'SEQ-BUSINESS-FAILURE-001',
+            title: 'Product behavior failure path',
+            visualKind: 'failure',
+            scope: 'business',
+            covers: ['NEG-001', ...businessDiagramCoverRefs],
+            perMustRows: businessPerMustRows,
+            ...businessProofClosure,
+            failurePathRefs: allFailureIds,
+            mermaid: `sequenceDiagram\n  actor User\n  participant Settings as Multi-timeframe settings\n  User->>Settings: trigger invalid or missing proof condition [NEG-001]\n  Settings-->>User: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Settings-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
+          },
+        ]
+      : [];
+  const businessFlowViews =
+    businessRequirementIds.length > 0
+      ? [
+          {
+            id: 'FLOW-BUSINESS-STATE-001',
+            title: 'Product visibility settings state',
+            visualKind: 'state',
+            scope: 'business',
+            covers: businessDiagramCoverRefs,
+            perMustRows: businessPerMustRows,
+            ...businessProofClosure,
+            mermaid: `stateDiagram-v2\n  [*] --> SourceDefined\n  SourceDefined --> Confirmable: per-MUST trace closure [${allTraceIds.join(', ')}]\n  SourceDefined --> Blocked: missing evidence or acceptance [${allEvidenceIds.join(', ')}]\n  Confirmable --> AwaitUserHash: scope confirmation only [${businessDiagramCoverRefs.join(', ')}]`,
+          },
+          {
+            id: 'FLOW-BUSINESS-001',
+            title: 'Product visibility settings flow',
+            visualKind: 'flow',
+            scope: 'business',
+            covers: businessDiagramCoverRefs,
+            perMustRows: businessPerMustRows,
+            ...businessProofClosure,
+            mermaid: `flowchart TD\n  A[Open multi-timeframe display settings] --> B[Inspect default visibility and persistence rules]\n  B --> C[Apply timeframe-specific visibility changes]\n  C --> D[Exclude main timeline and out-of-scope behavior]\n  D --> E[Verify acceptance commands]\n  A -.-> R[${businessRequirementIds.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${allTraceIds.join(' + ')}]`,
+          },
+        ]
+      : [];
+  const businessEdgeCaseViews =
+    businessRequirementIds.length > 0
+      ? [
+          {
+            id: 'EDGEVIEW-BUSINESS-001',
+            title: 'Product behavior edge cases',
+            visualKind: 'edge',
+            scope: 'business',
+            covers: ['NEG-001', ...businessDiagramCoverRefs],
+            cases: allEdgeIds,
+            perMustRows: businessPerMustRows,
+            ...businessProofClosure,
+            failurePathRefs: allFailureIds,
+            edgeCaseRefs: allEdgeIds,
+            mermaid: `flowchart TD\n  A[Edge signal ${allEdgeIds.join(' + ')}] --> B[Failure guard ${allFailureIds.join(' + ')}]\n  B --> C[Per-MUST trace proof ${allTraceIds.join(' + ')}]\n  C --> D[No silent completion NEG-001]`,
+          },
+        ]
+      : [];
   const acceptanceTestFile =
     validationAuthorityRecords
       .flatMap((record) => record.commandFileRefs)
@@ -4102,7 +4153,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
         acceptanceRefs: [row.acceptanceId, row.e2eId],
         failurePathRefs: [row.failureId],
         edgeCaseRefs: [row.edgeId],
-        sequenceViewRefs: ['SEQ-BUSINESS-001', 'SEQ-001'],
+        sequenceViewRefs: ['SEQ-BUSINESS-001', 'SEQ-BUSINESS-FAILURE-001', 'SEQ-001'],
+        flowViewRefs: ['FLOW-BUSINESS-STATE-001', 'FLOW-BUSINESS-001', 'FLOW-001'],
+        edgeCaseViewRefs: ['EDGEVIEW-BUSINESS-001', 'EDGEVIEW-001'],
         boundaryViewRefs: ['BOUND-001'],
         artifactRefs: ['ART-001', 'ART-002'],
         targetModificationPathRefs: targetPathIds,
@@ -4229,6 +4282,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       },
     ],
     edgeCaseViews: [
+      ...businessEdgeCaseViews,
       {
         id: 'EDGEVIEW-001',
         title: 'Missing drilldown surfaces fail closed',

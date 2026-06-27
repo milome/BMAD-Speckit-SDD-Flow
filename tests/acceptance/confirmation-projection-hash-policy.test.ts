@@ -176,25 +176,25 @@ implementationConfirmation:
     - id: MUST-050
       text: "Only semantic source or implementation hash drift can require demand reconfirmation."
       evidenceRefs: ["EVD-049"]
-      coveredByTraceRows: ["TRACE-039"]
+      coveredByTraceRows: ["TRACE-050"]
     - id: MUST-051
       text: "Only architecture or recipe hash drift can require architecture reconfirmation."
       evidenceRefs: ["EVD-050"]
-      coveredByTraceRows: ["TRACE-039"]
+      coveredByTraceRows: ["TRACE-051"]
     - id: MUST-052
       text: "Projection hash refresh must not mutate semantic confirmation authority."
       evidenceRefs: ["EVD-051"]
-      coveredByTraceRows: ["TRACE-039"]
+      coveredByTraceRows: ["TRACE-052"]
   notDone:
     - id: NEG-039
       text: "Confirmation page hash drift alone must not mark reconfirm_required."
       evidenceRefs: ["EVD-049"]
-      coveredByTraceRows: ["TRACE-039"]
+      coveredByTraceRows: ["TRACE-NEG-039"]
       oracle: "projection hash drift alone remains a projection refresh"
     - id: NEG-040
       text: "Projection refresh must not weaken source, implementation, architecture, or recipe hard stops."
       evidenceRefs: ["EVD-050"]
-      coveredByTraceRows: ["TRACE-039"]
+      coveredByTraceRows: ["TRACE-NEG-040"]
       oracle: "semantic and architecture drift remain hard stops"
   mustNot:
     - id: OUT-001
@@ -239,14 +239,54 @@ implementationConfirmation:
       linkedFailurePathIds: ["FAIL-039"]
       linkedEvidenceIds: ["EVD-049", "EVD-050", "EVD-051"]
   traceRows:
-    - id: TRACE-039
-      covers: ["MUST-050", "MUST-051", "MUST-052", "NEG-039", "NEG-040"]
+    - id: TRACE-050
+      covers: ["MUST-050"]
       taskRefs: ["TASK-CONFIRMATION-PROJECTION-HASH-POLICY"]
-      evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+      evidenceRefs: ["EVD-049"]
+      sequenceViewRefs: ["SEQ-050"]
+      contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
+      deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      acceptanceRefs: ["ACC-050"]
+      artifactRefs: ["CANONICAL-001"]
+      status: PENDING
+    - id: TRACE-051
+      covers: ["MUST-051"]
+      taskRefs: ["TASK-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      evidenceRefs: ["EVD-050"]
+      flowViewRefs: ["FLOW-051"]
+      contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
+      deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      acceptanceRefs: ["ACC-051"]
+      artifactRefs: ["CANONICAL-001"]
+      status: PENDING
+    - id: TRACE-052
+      covers: ["MUST-052"]
+      taskRefs: ["TASK-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      evidenceRefs: ["EVD-051"]
+      sequenceViewRefs: ["SEQ-052"]
+      contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
+      deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      acceptanceRefs: ["ACC-052"]
+      artifactRefs: ["CANONICAL-001"]
+      status: PENDING
+    - id: TRACE-NEG-039
+      covers: ["NEG-039"]
+      taskRefs: ["TASK-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      evidenceRefs: ["EVD-049"]
+      edgeCaseViewRefs: ["EDGEVIEW-039"]
+      contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
+      deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      acceptanceRefs: ["E2E-039"]
+      artifactRefs: ["CANONICAL-001"]
+      status: PENDING
+    - id: TRACE-NEG-040
+      covers: ["NEG-040"]
+      taskRefs: ["TASK-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      evidenceRefs: ["EVD-050"]
       boundaryViewRefs: ["BOUNDARY-001"]
       contractValidationCommandRefs: ["CMD-RENDER-CONFIRMATION"]
       deliveryEvidenceCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
-      acceptanceRefs: ["ACC-039", "E2E-039"]
+      acceptanceRefs: ["E2E-039"]
       artifactRefs: ["CANONICAL-001"]
       status: PENDING
   requiredCommands:
@@ -257,22 +297,50 @@ implementationConfirmation:
       command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md"
       purpose: "Render and validate the confirmation projection."
       oracle: "renderer emits current confirmation projection without mutating semantic authority"
-      traceRows: ["TRACE-039"]
-      evidenceRefs: ["EVD-049"]
+      traceRows: ["TRACE-050", "TRACE-051", "TRACE-052", "TRACE-NEG-039", "TRACE-NEG-040"]
+      evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+      perMustAssertions:
+        MUST-050: "Renderer must keep demand reconfirmation tied only to semantic source or implementation hash drift."
+        MUST-051: "Renderer must keep architecture reconfirmation tied only to architecture or recipe hash drift."
+        MUST-052: "Renderer must refresh projection hashes without changing semantic confirmation authority."
     - id: CMD-CONFIRMATION-PROJECTION-HASH-POLICY
       command: "npx vitest run tests/acceptance/confirmation-projection-hash-policy.test.ts"
       purpose: "Validate projection hash policy behavior."
       oracle: "projection hash refresh preserves semantic and architecture hard stops"
-      traceRows: ["TRACE-039"]
+      traceRows: ["TRACE-050", "TRACE-051", "TRACE-052", "TRACE-NEG-039", "TRACE-NEG-040"]
       evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+      perMustAssertions:
+        MUST-050: "Test asserts semantic source and implementation hash drift remain the only demand reconfirmation triggers."
+        MUST-051: "Test asserts architecture and recipe hash drift remain architecture readiness hard stops."
+        MUST-052: "Test asserts page hash refresh updates projection history without semantic source mutation."
   acceptanceTests:
-    - id: ACC-039
+    - id: ACC-050
       file: "tests/acceptance/confirmation-projection-hash-policy.test.ts"
-      covers: ["MUST-050", "MUST-051", "MUST-052"]
+      covers: ["MUST-050"]
       failurePathRefs: ["FAIL-039"]
       edgeCaseRefs: ["EDGE-039"]
-      traceRows: ["TRACE-039"]
-      evidenceRefs: ["EVD-049", "EVD-051"]
+      traceRows: ["TRACE-050"]
+      evidenceRefs: ["EVD-049"]
+      commandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      expectedPreImplementationState: expected_red
+      oracle: "Semantic source or implementation hash drift is the only demand reconfirmation trigger."
+    - id: ACC-051
+      file: "tests/acceptance/confirmation-projection-hash-policy.test.ts"
+      covers: ["MUST-051"]
+      failurePathRefs: ["FAIL-039"]
+      edgeCaseRefs: ["EDGE-039"]
+      traceRows: ["TRACE-051"]
+      evidenceRefs: ["EVD-050"]
+      commandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
+      expectedPreImplementationState: expected_red
+      oracle: "Architecture and recipe drift remain architecture readiness hard stops."
+    - id: ACC-052
+      file: "tests/acceptance/confirmation-projection-hash-policy.test.ts"
+      covers: ["MUST-052"]
+      failurePathRefs: ["FAIL-039"]
+      edgeCaseRefs: ["EDGE-039"]
+      traceRows: ["TRACE-052"]
+      evidenceRefs: ["EVD-051"]
       commandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
       expectedPreImplementationState: expected_red
       oracle: "Projection refresh does not mutate source authority."
@@ -282,20 +350,35 @@ implementationConfirmation:
       covers: ["NEG-039", "NEG-040"]
       failurePathRefs: ["FAIL-039"]
       edgeCaseRefs: ["EDGE-039"]
-      traceRows: ["TRACE-039"]
+      traceRows: ["TRACE-NEG-039", "TRACE-NEG-040"]
       evidenceRefs: ["EVD-049", "EVD-050"]
       commandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
       negativeControls: ["NEG-039", "NEG-040"]
       expectedPreImplementationState: expected_red
       oracle: "Projection refresh does not bypass semantic or architecture hard stops."
   sequenceViews:
-    - id: SEQ-039
-      title: "Projection refresh sequence"
-      covers: ["MUST-050", "MUST-052", "NEG-039"]
+    - id: SEQ-050
+      title: "Demand reconfirmation semantic drift boundary"
+      scope: business
+      covers: ["MUST-050"]
+      traceRows: ["TRACE-050"]
+      evidenceRefs: ["EVD-049"]
+      acceptanceRefs: ["ACC-050"]
+    - id: SEQ-052
+      title: "Projection refresh semantic authority preservation"
+      scope: business
+      covers: ["MUST-052"]
+      traceRows: ["TRACE-052"]
+      evidenceRefs: ["EVD-051"]
+      acceptanceRefs: ["ACC-052"]
   flowViews:
-    - id: FLOW-039
-      title: "Projection refresh flow"
-      covers: ["MUST-050", "MUST-051", "MUST-052"]
+    - id: FLOW-051
+      title: "Architecture reconfirmation hash boundary"
+      scope: business
+      covers: ["MUST-051"]
+      traceRows: ["TRACE-051"]
+      evidenceRefs: ["EVD-050"]
+      acceptanceRefs: ["ACC-051"]
   edgeCaseViews:
     - id: EDGEVIEW-039
       title: "Projection-only drift edge case"
@@ -307,7 +390,7 @@ implementationConfirmation:
       path: tests/acceptance/confirmation-projection-hash-policy.test.ts
       producer: confirmation-projection-policy-test
       sourceOfTruthRole: implementation
-      traceRows: ["TRACE-039"]
+      traceRows: ["TRACE-050", "TRACE-051", "TRACE-052", "TRACE-NEG-039", "TRACE-NEG-040"]
       evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
   currentTargetMap:
     schemaVersion: current-target-map/v1
@@ -315,47 +398,58 @@ implementationConfirmation:
     currentSummary:
       - id: CUR-039
         text: "Confirmation projection can drift independently from semantic scope."
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-050"]
+        traceRows: ["TRACE-050"]
         evidenceRefs: ["EVD-049"]
     targetSummary:
       - id: TAR-039
         text: "Projection refresh records read-model drift while semantic and architecture hashes remain authoritative."
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-051", "MUST-052"]
+        traceRows: ["TRACE-051", "TRACE-052"]
         evidenceRefs: ["EVD-049", "EVD-050"]
     diffRows:
       - id: DIFF-039
         current: "Projection hash changed."
         target: "Only confirmationProjectionHistory changes when semantic hashes match."
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-052"]
+        traceRows: ["TRACE-052"]
         evidenceRefs: ["EVD-049", "EVD-051"]
     process:
       - id: PROC-039
         from: "confirmation render report"
         to: "controlled projection ledger"
         action: "ingest projection refresh without source mutation"
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-052"]
+        traceRows: ["TRACE-052"]
         evidenceRefs: ["EVD-051"]
     artifactPaths:
       - id: PATH-039
         path: tests/acceptance/confirmation-projection-hash-policy.test.ts
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-050", "MUST-051", "MUST-052"]
+        traceRows: ["TRACE-050", "TRACE-051", "TRACE-052"]
         evidenceRefs: ["EVD-049"]
     canonicalArtifacts:
       - id: CANONICAL-001
         targetPathOrField: tests/acceptance/confirmation-projection-hash-policy.test.ts
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-050", "MUST-051", "MUST-052"]
+        traceRows: ["TRACE-050", "TRACE-051", "TRACE-052"]
         evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
     existingArtifacts:
       - id: LEGACY-039
         currentPath: confirmationPageHash-only-green
         completionProofPolicy: legacy_only
-        traceRows: ["TRACE-039"]
+        mustRefs: ["MUST-050"]
+        traceRows: ["TRACE-050"]
         evidenceRefs: ["EVD-049"]
   targetModificationPaths:
     - id: TARGET-MOD-039
       path: tests/acceptance/confirmation-projection-hash-policy.test.ts
-      traceRows: ["TRACE-039"]
+      traceRows: ["TRACE-050", "TRACE-051", "TRACE-052"]
       evidenceRefs: ["EVD-049", "EVD-050", "EVD-051"]
+      perMustResponsibilities:
+        MUST-050: "Guard demand reconfirmation routing in the acceptance fixture."
+        MUST-051: "Guard architecture readiness routing in the acceptance fixture."
+        MUST-052: "Guard projection refresh ledger behavior in the acceptance fixture."
   closeoutReadinessPreview:
     requiredCommands: ["CMD-RENDER-CONFIRMATION", "CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
     orphanPolicy: "No orphan projection proof may satisfy readiness."
@@ -801,7 +895,12 @@ describe('confirmation projection hash policy', () => {
     );
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);
-    expect(prompt.stdout).toContain('TRACE-039');
+    expect(prompt.stdout).toContain(
+      'TRACE-050 -> TRACE-051 -> TRACE-052 -> TRACE-NEG-039 -> TRACE-NEG-040'
+    );
+    for (const traceId of ['TRACE-050', 'TRACE-051', 'TRACE-052', 'TRACE-NEG-039', 'TRACE-NEG-040']) {
+      expect(prompt.stdout).toContain(traceId);
+    }
   });
 
   it('refreshes projection from the latest record baseline when source inline projection bookkeeping is stale', () => {
@@ -942,7 +1041,12 @@ describe('confirmation projection hash policy', () => {
     });
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);
-    expect(prompt.stdout).toContain('TRACE-039');
+    expect(prompt.stdout).toContain(
+      'TRACE-050 -> TRACE-051 -> TRACE-052 -> TRACE-NEG-039 -> TRACE-NEG-040'
+    );
+    for (const traceId of ['TRACE-050', 'TRACE-051', 'TRACE-052', 'TRACE-NEG-039', 'TRACE-NEG-040']) {
+      expect(prompt.stdout).toContain(traceId);
+    }
   });
 
   it('routes true semantic drift to confirmation-required blocker without repair', () => {

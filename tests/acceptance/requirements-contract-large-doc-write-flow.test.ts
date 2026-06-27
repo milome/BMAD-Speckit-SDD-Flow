@@ -1068,8 +1068,26 @@ describe('requirements-contract large document write flow', () => {
             projectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
             projectionRefs: ['DECOMP-MUST-001', 'TASK-MUST-001'],
           },
+          projectionQualityGate: {
+            requiredRuleCodes: [
+              'projection_per_must_acceptance_not_independent',
+              'projection_shared_evidence_without_per_must_oracle',
+              'required_command_all_cover_all_without_per_must_assertions',
+              'target_modification_path_all_cover_all',
+              'current_target_map_not_product_specific',
+              'business_visual_generic_or_compressed',
+            ],
+          },
           requiredResponseSchema: {
             checkedProjectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
+            checkedProjectionQualityRuleCodes: [
+              'projection_per_must_acceptance_not_independent',
+              'projection_shared_evidence_without_per_must_oracle',
+              'required_command_all_cover_all_without_per_must_assertions',
+              'target_modification_path_all_cover_all',
+              'current_target_map_not_product_specific',
+              'business_visual_generic_or_compressed',
+            ],
           },
           mustRefs: ['MUST-001'],
         },

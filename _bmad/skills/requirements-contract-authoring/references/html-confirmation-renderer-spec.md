@@ -196,6 +196,7 @@ Strict mode must also block projection compression:
 - Shared `targetModificationPaths[]` rows must expose per-MUST responsibilities.
 - `currentTargetMap` must describe product-specific current/target states when business requirements exist.
 - Business visuals must render product/business flows for concrete MUST IDs; generic source-derived diagrams are blockers.
+- Every business visual view must declare `visualKind: happy|failure|state|flow|edge` and expose explicit proof closure: `traceRows[]` or `traceRefs[]`, `evidenceRefs[]`, and `acceptanceRefs[]`. Failure views must also expose `failurePathRefs[]`; edge views must expose `edgeCaseRefs[]`. Renderer strict mode must block missing `visualKind`, missing proof refs, non-reciprocal trace rows, or linked trace rows that do not share at least one evidence ref and one ACC/E2E ref with the view.
 
 Every `applicability.*` domain must include:
 

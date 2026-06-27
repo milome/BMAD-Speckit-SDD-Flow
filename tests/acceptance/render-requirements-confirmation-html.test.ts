@@ -1173,7 +1173,310 @@ function writeEsmMermaidBundle(): string {
   return file;
 }
 
+function sliceBetween(content: string, start: string, end: string): string {
+  const startIndex = content.indexOf(start);
+  expect(startIndex, `missing start marker ${start}`).toBeGreaterThanOrEqual(0);
+  const endIndex = content.indexOf(end, startIndex + start.length);
+  expect(endIndex, `missing end marker ${end}`).toBeGreaterThan(startIndex);
+  return content.slice(startIndex, endIndex);
+}
+
+function sliceSection(content: string, id: string): string {
+  const marker = `id="${id}"`;
+  const startIndex = content.indexOf(marker);
+  expect(startIndex, `missing section ${id}`).toBeGreaterThanOrEqual(0);
+  const nextIndex = content.indexOf('<section class="card"', startIndex + marker.length);
+  return content.slice(startIndex, nextIndex === -1 ? content.length : nextIndex);
+}
+
 describe('render-requirements-confirmation-html', () => {
+  it('keeps source-defined business visualKind diagrams in separate happy failure state flow and edge sections', () => {
+    const source = writeSource('EMPTY_REQUIRED_VIEWS');
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(
+        '  sequenceViews: []',
+        `  sequenceViews:
+    - id: SEQ-HAPPY-VISUAL-001
+      title: "Business happy display settings"
+      visualKind: happy
+      scope: business
+      covers: ["MUST-001", "EVD-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001"]
+      mermaid: |-
+        sequenceDiagram
+          actor User
+          participant Settings
+          User->>Settings: Enable compact period summary [MUST-001][EVD-001]
+    - id: SEQ-FAILURE-VISUAL-001
+      title: "Business failure display rollback"
+      visualKind: failure
+      scope: business
+      covers: ["NEG-001", "EVD-002"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["E2E-001"]
+      failurePathRefs: ["FAIL-001"]
+      mermaid: |-
+        sequenceDiagram
+          actor User
+          participant Settings
+          User->>Settings: Select invalid opacity rollback [NEG-001][EVD-002]`
+      ).replace(
+        '  flowViews: []',
+        `  flowViews:
+    - id: FLOW-STATE-VISUAL-001
+      title: "Business selected period state"
+      visualKind: state
+      scope: business
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001"]
+      mermaid: |-
+        stateDiagram-v2
+          [*] --> Visible
+          Visible --> Deselected: toggle period off [MUST-001]
+    - id: FLOW-FLOW-VISUAL-001
+      title: "Business opacity adjustment flow"
+      visualKind: flow
+      scope: business
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001"]
+      mermaid: |-
+        flowchart TD
+          A[Open display settings MUST-001] --> B[Adjust opacity MUST-001]
+          B --> C[Chart updates MUST-001]`
+      ).replace(
+        '  edgeCaseViews: []',
+        `  edgeCaseViews:
+    - id: EDGE-VISUAL-001
+      title: "Business rapid toggle edge cases"
+      visualKind: edge
+      scope: business
+      covers: ["NEG-001"]
+      cases: ["EDGE-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["E2E-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      mermaid: |-
+        flowchart TD
+          A[Rapid toggle EDGE-001] --> B[No stale selected state NEG-001]`
+      ).replace(
+        '  boundaryViews: []',
+        `  boundaryViews:
+    - id: BOUNDARY-GOVERNANCE-001
+      title: "Governance confirmation boundary"
+      visualKind: boundary
+      scope: governance
+      covers: ["OUT-001"]
+      mermaid: |-
+        flowchart TD
+          A[Scope change OUT-001] --> B[Require reconfirmation OUT-001]`
+      )
+        .replace(
+          '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
+          '      sequenceViewRefs: ["SEQ-HAPPY-VISUAL-001", "SEQ-FAILURE-VISUAL-001"]\n      flowViewRefs: ["FLOW-STATE-VISUAL-001", "FLOW-FLOW-VISUAL-001"]\n      edgeCaseViewRefs: ["EDGE-VISUAL-001"]'
+        )
+        .replace('      boundaryViewRefs: ["BOUNDARY-001"]', '      boundaryViewRefs: ["BOUNDARY-GOVERNANCE-001"]'),
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-visual-kind-sections.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'en-US',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    const businessVisuals = html.slice(
+      html.indexOf('id="business-visuals"'),
+      html.indexOf('id="governance-visuals"')
+    );
+    const governanceVisuals = sliceSection(html, 'governance-visuals');
+    const happySection = sliceBetween(businessVisuals, '<h3>Happy Path Sequence</h3>', '<h3>Failure / Negative Path Sequence</h3>');
+    const failureSection = sliceBetween(businessVisuals, '<h3>Failure / Negative Path Sequence</h3>', '<h3>State View</h3>');
+    const stateSection = sliceBetween(businessVisuals, '<h3>State View</h3>', '<h3>Flow View</h3>');
+    const flowSection = sliceBetween(businessVisuals, '<h3>Flow View</h3>', '<h3>Edge Case View</h3>');
+    const edgeSection = businessVisuals.slice(businessVisuals.indexOf('<h3>Edge Case View</h3>'));
+
+    expect(happySection).toContain('data-diagram-id="SEQ-HAPPY-VISUAL-001"');
+    expect(happySection).not.toContain('SEQ-FAILURE-VISUAL-001');
+    expect(failureSection).toContain('data-diagram-id="SEQ-FAILURE-VISUAL-001"');
+    expect(failureSection).not.toContain('SEQ-HAPPY-VISUAL-001');
+    expect(stateSection).toContain('data-diagram-id="FLOW-STATE-VISUAL-001"');
+    expect(stateSection).not.toContain('FLOW-FLOW-VISUAL-001');
+    expect(flowSection).toContain('data-diagram-id="FLOW-FLOW-VISUAL-001"');
+    expect(flowSection).not.toContain('FLOW-STATE-VISUAL-001');
+    expect(edgeSection).toContain('data-diagram-id="EDGE-VISUAL-001"');
+    expect(governanceVisuals).toContain('data-diagram-id="BOUNDARY-GOVERNANCE-001"');
+    expect(governanceVisuals).not.toContain('SEQ-HAPPY-VISUAL-001');
+    expect(governanceVisuals).not.toContain('SEQ-FAILURE-VISUAL-001');
+    expect(governanceVisuals).not.toContain('FLOW-STATE-VISUAL-001');
+    expect(governanceVisuals).not.toContain('FLOW-FLOW-VISUAL-001');
+    expect(governanceVisuals).not.toContain('EDGE-VISUAL-001');
+  });
+
+  it('blocks source-defined business visualKind views without explicit trace and evidence closure', () => {
+    const source = writeSource('EMPTY_REQUIRED_VIEWS');
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(
+        '  sequenceViews: []',
+        `  sequenceViews:
+    - id: SEQ-HAPPY-VISUAL-001
+      title: "Business happy display settings"
+      visualKind: happy
+      scope: business
+      covers: ["MUST-001", "EVD-001"]
+      mermaid: |-
+        sequenceDiagram
+          actor User
+          participant Settings
+          User->>Settings: Enable compact period summary [MUST-001][EVD-001]`
+      ).replace(
+        '  flowViews: []',
+        `  flowViews:
+    - id: FLOW-STATE-VISUAL-001
+      title: "Business selected period state"
+      visualKind: state
+      scope: business
+      covers: ["MUST-001"]
+      mermaid: |-
+        stateDiagram-v2
+          [*] --> Visible
+          Visible --> Deselected: toggle period off [MUST-001]`
+      ).replace(
+        '  edgeCaseViews: []',
+        `  edgeCaseViews:
+    - id: EDGE-VISUAL-001
+      title: "Business rapid toggle edge cases"
+      visualKind: edge
+      scope: business
+      covers: ["NEG-001"]
+      mermaid: |-
+        flowchart TD
+          A[Rapid toggle EDGE-001] --> B[No stale selected state NEG-001]`
+      ).replace(
+        '  boundaryViews: []',
+        `  boundaryViews:
+    - id: BOUNDARY-GOVERNANCE-001
+      title: "Governance confirmation boundary"
+      visualKind: boundary
+      scope: governance
+      covers: ["OUT-001"]
+      mermaid: |-
+        flowchart TD
+          A[Scope change OUT-001] --> B[Require reconfirmation OUT-001]`
+      )
+        .replace(
+          '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
+          '      sequenceViewRefs: ["SEQ-HAPPY-VISUAL-001"]\n      flowViewRefs: ["FLOW-STATE-VISUAL-001"]\n      edgeCaseViewRefs: ["EDGE-VISUAL-001"]'
+        )
+        .replace('      boundaryViewRefs: ["BOUNDARY-001"]', '      boundaryViewRefs: ["BOUNDARY-GOVERNANCE-001"]'),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'confirmation-visual-kind-closure-blocked.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--language',
+      'en-US',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--json',
+    ]);
+
+    expect(result.status).not.toBe(0);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.scopeConfirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).toEqual(
+      expect.arrayContaining([
+        'visual_view_missing_trace_refs',
+        'visual_view_missing_evidence_refs',
+        'visual_view_missing_acceptance_refs',
+        'visual_edge_view_missing_edge_case_refs',
+      ])
+    );
+  });
+
+  it('blocks business visual views that omit visualKind instead of treating them as decorative diagrams', () => {
+    const source = writeSource('EMPTY_REQUIRED_VIEWS');
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original.replace(
+        '  sequenceViews: []',
+        `  sequenceViews:
+    - id: SEQ-BUSINESS-WITHOUT-KIND-001
+      title: "Business view missing visual kind"
+      scope: business
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001"]
+      mermaid: |-
+        sequenceDiagram
+          actor User
+          participant Settings
+          User->>Settings: Business behavior lacks explicit visual kind [MUST-001][EVD-001]`
+      ).replace(
+        '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
+        '      sequenceViewRefs: ["SEQ-BUSINESS-WITHOUT-KIND-001"]'
+      ),
+      'utf8'
+    );
+
+    const out = path.join(tempDir, 'confirmation-business-visual-kind-missing.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--language',
+      'en-US',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--json',
+    ]);
+
+    expect(result.status).not.toBe(0);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(report.scopeConfirmability).toBe('blocked');
+    expect(report.blockingIssues.map((issue: { code: string }) => issue.code)).toContain(
+      'visual_view_missing_visual_kind'
+    );
+  });
+
   it('extracts Python target paths and prioritizes source-defined business Mermaid views', () => {
     const source = writeSource();
     fs.writeFileSync(
@@ -1217,6 +1520,10 @@ describe('render-requirements-confirmation-html', () => {
         .replace(
           'Selected --> Persisted: store record [MUST-001]',
           'Hidden15m --> Toggle15m: user enables 15m [MUST-001][EVD-001]\\n          Toggle15m --> Visible15m: 15m overlay visible [MUST-001][EVD-001]'
+        )
+        .replace(
+          '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
+          '      sequenceViewRefs: ["SEQ-BUSINESS-SOURCE-001", "SEQ-002"]\n      flowViewRefs: ["FLOW-BUSINESS-SOURCE-001"]'
         ),
       'utf8'
     );

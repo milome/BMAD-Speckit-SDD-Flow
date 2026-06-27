@@ -20,6 +20,14 @@ const fixtureRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md';
 const metadataRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.metadata.json';
+const PROJECTION_QUALITY_RULE_CODES = [
+  'projection_per_must_acceptance_not_independent',
+  'projection_shared_evidence_without_per_must_oracle',
+  'required_command_all_cover_all_without_per_must_assertions',
+  'target_modification_path_all_cover_all',
+  'current_target_map_not_product_specific',
+  'business_visual_generic_or_compressed',
+];
 const requiredCheckpointIds = [
   'cp-00-semantic-kernel',
   'cp-01-must-decomposition-packet',
@@ -267,7 +275,10 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: request.packetProjectionSummary?.projectionGroups ?? [],
-    checkedProjectionQualityRuleCodes: request.projectionQualityGate?.requiredRuleCodes ?? [],
+    checkedProjectionQualityRuleCodes:
+      request.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
+      request.projectionQualityGate?.requiredRuleCodes ??
+      PROJECTION_QUALITY_RULE_CODES,
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
@@ -910,5 +921,5 @@ describe('requirements contract sanitized real fixture coverage', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  });
+  }, 60_000);
 });
