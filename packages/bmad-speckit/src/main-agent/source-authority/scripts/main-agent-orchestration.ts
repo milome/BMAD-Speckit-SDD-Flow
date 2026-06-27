@@ -4871,6 +4871,241 @@ function verifySourceMaterializationBeforeAudit(input: {
   return issues.length > 0 ? { ok: false, issues } : { ok: true, receipt };
 }
 
+function materializePreserveExistingBusinessVisualProofResync(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  requirementSetId: string;
+  createdAt: string;
+  sourceText: string;
+  confirmation: Record<string, unknown>;
+  previousSourceDocumentHash: string;
+}):
+  | {
+      ok: true;
+      changed: boolean;
+      materialized?: ReturnType<typeof readMaterializedConfirmation>;
+      artifacts: string[];
+      changedViewIds: string[];
+    }
+  | { ok: false; issues: PreConfirmationDrilldownIssue[]; artifacts: string[] } {
+  const resync = resyncExistingBusinessVisualProofClosure(input.confirmation);
+  if (!resync.changed) {
+    return { ok: true, changed: false, artifacts: [], changedViewIds: [] };
+  }
+  const draftPath = path.join(
+    input.paths.authoringDir,
+    'authoring-repair-business-visual-proof-resync-source.md'
+  );
+  const nextSourceText = materializeImplementationConfirmationText(
+    input.sourceText,
+    resync.confirmation
+  );
+  fs.writeFileSync(draftPath, nextSourceText, 'utf8');
+  const artifacts = [draftPath, input.paths.sourceMutationDecision, input.paths.promotionReceipt];
+  const encodingGate = runEncodingIntegrityGate({
+    root: input.root,
+    paths: input.paths,
+    targetPaths: [draftPath],
+  });
+  artifacts.push(input.paths.encodingReport);
+  if (encodingGate.issues.length > 0) {
+    return { ok: false, issues: encodingGate.issues, artifacts };
+  }
+  const normalizedDraft = normalizeImplementationConfirmationDraftForPromotion({
+    root: input.root,
+    draftPath,
+    paths: input.paths,
+    blockingStage: 'business_visual_proof_resync_required',
+  });
+  if (!normalizedDraft.ok) {
+    return { ok: false, issues: normalizedDraft.issues, artifacts };
+  }
+  const scaleAssessment = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: draftPath,
+    paths: input.paths,
+    phase: 'initial_assessment',
+  });
+  artifacts.push(input.paths.scaleAssessmentInitial, input.paths.scaleRoutingDecision);
+  if (scaleAssessment.issues.length > 0) {
+    return { ok: false, issues: scaleAssessment.issues, artifacts };
+  }
+  const draftText = fs.readFileSync(draftPath, 'utf8');
+  const draftExtraction = extractImplementationConfirmationBlock(draftText);
+  if (!draftExtraction) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        sourceMaterializationGateIssue(
+          'business_visual_proof_resync_draft_missing_implementation_confirmation',
+          'Business visual proof resync must produce a staging draft with inline implementationConfirmation.',
+          [toRootRelativePath(input.root, draftPath)]
+        ),
+      ],
+    };
+  }
+  let routeDecision = scaleAssessment.routingDecision;
+  const draftSemanticSourceHash = sourceDocumentHashForPreConfirmation(
+    draftText,
+    draftExtraction.blockText,
+    draftExtraction.confirmation
+  );
+  const draftImplementationConfirmationHash = implementationConfirmationHashForPreConfirmation(
+    draftExtraction.confirmation
+  );
+  buildPreserveExistingAuthoringArtifacts({
+    root: input.root,
+    sourcePath: draftPath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+    sourceText: draftText,
+    extraction: draftExtraction,
+    consecutiveNoNewGapRounds: 0,
+  });
+  const mustGateScript = resolveSkillScript(input.root, 'pre_render_must_decomposition_gate.js');
+  const mustGate = runNodeJson(
+    mustGateScript,
+    [
+      '--source',
+      draftPath,
+      '--authoring-dir',
+      input.paths.authoringDir,
+      '--out',
+      input.paths.preRenderMustGate,
+      '--receipt',
+      input.paths.mustDecompositionReceipt,
+      '--reconciliation-report',
+      input.paths.reconciliationReport,
+      '--json',
+    ],
+    input.root
+  );
+  artifacts.push(
+    input.paths.semanticKernel,
+    input.paths.mustDecompositionPacket,
+    input.paths.preRenderMustGate,
+    input.paths.mustDecompositionReceipt,
+    input.paths.reconciliationReport
+  );
+  if (!mustGate.json && !fs.existsSync(input.paths.reconciliationReport)) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        commandFailureIssue(
+          'business_visual_proof_resync_reconciliation_report_missing',
+          mustGateScript,
+          mustGate
+        ),
+      ],
+    };
+  }
+  let postMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: draftPath,
+    paths: input.paths,
+    phase: 'post_materialization_assessment',
+  });
+  artifacts.push(input.paths.scaleAssessmentPostMaterialization);
+  if (postMaterializationScaleAssessment.issues.length > 0) {
+    return { ok: false, issues: postMaterializationScaleAssessment.issues, artifacts };
+  }
+  routeDecision = postMaterializationScaleAssessment.routingDecision;
+  const checkpointEvidence = prepareAuthoringRepairCheckpointPersistenceEvidence({
+    root: input.root,
+    repairDraftPath: draftPath,
+    paths: input.paths,
+    recordId: input.recordId,
+    sourceDocumentHash: draftSemanticSourceHash,
+    implementationConfirmationHash: draftImplementationConfirmationHash,
+    createdAt: input.createdAt,
+    routeDecision,
+  });
+  if (checkpointEvidence.ok === false) {
+    return { ok: false, issues: [checkpointEvidence.issue], artifacts };
+  }
+  artifacts.push(input.paths.checkpointPersistenceEvidence, ...input.paths.checkpointReceiptPaths);
+  if (
+    ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(
+      normalizeText(routeDecision?.decision)
+    )
+  ) {
+    postMaterializationScaleAssessment = runPreConfirmationScaleAssessment({
+      root: input.root,
+      sourcePath: draftPath,
+      paths: input.paths,
+      phase: 'post_materialization_assessment',
+      checkpointPersistenceEvidencePath: input.paths.checkpointPersistenceEvidence,
+    });
+    if (postMaterializationScaleAssessment.issues.length > 0) {
+      return { ok: false, issues: postMaterializationScaleAssessment.issues, artifacts };
+    }
+    routeDecision = postMaterializationScaleAssessment.routingDecision;
+  }
+  const currentTargetHash = fs.existsSync(input.sourcePath) ? sha256File(input.sourcePath) : 'absent';
+  writeSourceMutationDecision({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+    sourceDocumentExistedBefore: fs.existsSync(input.sourcePath),
+    sourceHashBefore: currentTargetHash,
+    sourceHashAfter: normalizedDraft.draftHash,
+    targetRawHashBefore: currentTargetHash,
+    targetRawHashAfter: normalizedDraft.draftHash,
+    semanticSourceHashBefore: input.previousSourceDocumentHash,
+    semanticSourceHashAfter: draftSemanticSourceHash,
+    issues: [],
+    coverageDecision: 'pass',
+    targetAuthorityDecision: 'pass',
+    validationAuthorityDecision: 'pass',
+    projectionSanityDecision: 'pass',
+    auditEvidenceDecision: 'pass',
+    scaleRoutingDecision:
+      normalizeText(routeDecision?.decision) || 'authoring_repair_business_visual_proof_resync',
+    reverseAuditDraftValidationDecision: 'pass',
+    sourceMutationPerformed: false,
+  });
+  const promotion = promoteImplementationConfirmationDraftWithReceipt({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    draftPath,
+    paths: input.paths,
+    autoRepair: true,
+  });
+  if (!promotion.ok) {
+    return { ok: false, issues: promotion.issues, artifacts };
+  }
+  const materialized = readMaterializedConfirmation(input.sourcePath);
+  if (materialized.sourceDocumentHash === input.previousSourceDocumentHash) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        sourceMaterializationGateIssue(
+          'business_visual_proof_resync_hash_unchanged',
+          'Business visual proof resync must change the semantic source hash before audit continues.',
+          [input.previousSourceDocumentHash]
+        ),
+      ],
+    };
+  }
+  return {
+    ok: true,
+    changed: true,
+    materialized,
+    artifacts,
+    changedViewIds: resync.changedViewIds,
+  };
+}
+
 function buildSourceMaterializationRequiredResult(input: {
   root: string;
   sourcePath: string;
@@ -6836,6 +7071,149 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
+}
+
+function uniqueStrings(values: unknown[]): string[] {
+  return [...new Set(values.map((value) => normalizeText(value)).filter(Boolean))];
+}
+
+function appendUniqueStrings(existing: unknown, additions: string[]): string[] {
+  return uniqueStrings([...asStringArray(existing), ...additions]);
+}
+
+function normalizeVisualKindForProofClosure(value: unknown): string {
+  const normalized = normalizeText(value)
+    .toLowerCase()
+    .replace(/[\s_-]+/gu, '');
+  if (!normalized) return '';
+  if (['happy', 'happypath', 'positive', 'success'].includes(normalized)) return 'happy';
+  if (['failure', 'failurepath', 'negative', 'negativepath', 'rollback'].includes(normalized)) return 'failure';
+  if (['state', 'stateview', 'statediagram', 'stateflow'].includes(normalized)) return 'state';
+  if (['flow', 'flowview', 'flowchart', 'process'].includes(normalized)) return 'flow';
+  if (['edge', 'edgecase', 'edgecaseview'].includes(normalized)) return 'edge';
+  if (['boundary', 'scopeboundary', 'out'].includes(normalized)) return 'boundary';
+  return '';
+}
+
+function buildBusinessVisualPerMustProofRows(
+  mustIds: string[],
+  traceIds: string[],
+  evidenceIds: string[],
+  acceptanceIds: string[],
+  failurePathIds: string[],
+  edgeCaseIds: string[]
+): Record<string, unknown>[] {
+  return mustIds.map((mustId, index) => ({
+    mustRef: mustId,
+    traceRows: traceIds.length ? [traceIds[Math.min(index, traceIds.length - 1)]] : [],
+    evidenceRefs: evidenceIds.length ? [evidenceIds[Math.min(index, evidenceIds.length - 1)]] : [],
+    acceptanceRefs: acceptanceIds.length ? [...acceptanceIds] : [],
+    failurePathRefs: failurePathIds.length ? [failurePathIds[Math.min(index, failurePathIds.length - 1)]] : [],
+    edgeCaseRefs: edgeCaseIds.length ? [edgeCaseIds[Math.min(index, edgeCaseIds.length - 1)]] : [],
+    assertion: `${mustId} remains independently visible through the business visual proof chain.`,
+  }));
+}
+
+function resyncExistingBusinessVisualProofClosure(
+  confirmation: Record<string, unknown>
+): { confirmation: Record<string, unknown>; changed: boolean; changedViewIds: string[] } {
+  const traceRows = asRecordArray(confirmation.traceRows);
+  const traceIds = traceRows.map((row) => normalizeText(row.id)).filter(Boolean);
+  const evidenceIds = asRecordArray(confirmation.evidence)
+    .map((row) => normalizeText(row.id))
+    .filter(Boolean);
+  const acceptanceIds = [
+    ...asRecordArray(confirmation.acceptanceTests),
+    ...asRecordArray(confirmation.e2eSuites),
+  ]
+    .map((row) => normalizeText(row.id))
+    .filter(Boolean);
+  const failurePathIds = asRecordArray(confirmation.failurePaths)
+    .map((row) => normalizeText(row.id))
+    .filter(Boolean);
+  const edgeCaseIds = asRecordArray(confirmation.edgeCases)
+    .map((row) => normalizeText(row.id))
+    .filter(Boolean);
+  const mustIds = asRecordArray(confirmation.must)
+    .map((row) => normalizeText(row.id))
+    .filter(Boolean);
+  if (
+    traceIds.length === 0 ||
+    evidenceIds.length === 0 ||
+    acceptanceIds.length === 0 ||
+    mustIds.length === 0
+  ) {
+    return { confirmation, changed: false, changedViewIds: [] };
+  }
+
+  const nextConfirmation: Record<string, unknown> = { ...confirmation };
+  const changedViewIds = new Set<string>();
+  let changed = false;
+  const viewRefsByTraceField: Record<string, Set<string>> = {
+    sequenceViewRefs: new Set<string>(),
+    flowViewRefs: new Set<string>(),
+    edgeCaseViewRefs: new Set<string>(),
+  };
+  const perMustRows = buildBusinessVisualPerMustProofRows(
+    mustIds,
+    traceIds,
+    evidenceIds,
+    acceptanceIds,
+    failurePathIds,
+    edgeCaseIds
+  );
+
+  const syncViewRows = (field: string, traceRefField: string): void => {
+    const rows = asRecordArray(confirmation[field]);
+    if (!rows.length) return;
+    const nextRows = rows.map((row) => {
+      const viewId = normalizeText(row.id);
+      const scope = normalizeText(row.scope).toLowerCase();
+      const visualKind = normalizeVisualKindForProofClosure(row.visualKind);
+      if (!viewId || scope !== 'business' || !visualKind) return row;
+      const nextRow: Record<string, unknown> = { ...row };
+      const before = stableStringify(nextRow);
+      nextRow.traceRows = appendUniqueStrings(nextRow.traceRows ?? nextRow.traceRefs, traceIds);
+      nextRow.evidenceRefs = appendUniqueStrings(nextRow.evidenceRefs, evidenceIds);
+      nextRow.acceptanceRefs = appendUniqueStrings(nextRow.acceptanceRefs, acceptanceIds);
+      nextRow.perMustRows = Array.isArray(nextRow.perMustRows) && nextRow.perMustRows.length
+        ? nextRow.perMustRows
+        : perMustRows;
+      if (visualKind === 'failure') {
+        nextRow.failurePathRefs = appendUniqueStrings(nextRow.failurePathRefs, failurePathIds);
+      }
+      if (visualKind === 'edge') {
+        nextRow.edgeCaseRefs = appendUniqueStrings(nextRow.edgeCaseRefs ?? nextRow.cases, edgeCaseIds);
+      }
+      if (stableStringify(nextRow) !== before) {
+        changed = true;
+        changedViewIds.add(viewId);
+      }
+      viewRefsByTraceField[traceRefField].add(viewId);
+      return nextRow;
+    });
+    nextConfirmation[field] = nextRows;
+  };
+
+  syncViewRows('sequenceViews', 'sequenceViewRefs');
+  syncViewRows('flowViews', 'flowViewRefs');
+  syncViewRows('edgeCaseViews', 'edgeCaseViewRefs');
+
+  const nextTraceRows = traceRows.map((row) => {
+    const traceId = normalizeText(row.id);
+    if (!traceId || !traceIds.includes(traceId)) return row;
+    const nextRow: Record<string, unknown> = { ...row };
+    const before = stableStringify(nextRow);
+    for (const [field, refs] of Object.entries(viewRefsByTraceField)) {
+      if (refs.size > 0) {
+        nextRow[field] = appendUniqueStrings(nextRow[field], [...refs]);
+      }
+    }
+    return stableStringify(nextRow) !== before ? (changed = true, nextRow) : row;
+  });
+  nextConfirmation.traceRows = nextTraceRows;
+
+  return { confirmation: nextConfirmation, changed, changedViewIds: [...changedViewIds].sort() };
 }
 
 function packetWithCriticalAuditorConvergence(
@@ -9258,6 +9636,114 @@ export function runMainAgentAuthoringRepair(
           'authoring_repair'
         ),
       ],
+    });
+  }
+  const initialSourceDocumentHash = sourceDocumentHashForPreConfirmation(
+    sourceText,
+    extraction.blockText,
+    extraction.confirmation
+  );
+  const visualProofResync = materializePreserveExistingBusinessVisualProofResync({
+    root,
+    sourcePath,
+    paths,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    createdAt,
+    sourceText,
+    confirmation: extraction.confirmation,
+    previousSourceDocumentHash: initialSourceDocumentHash,
+  });
+  if (!visualProofResync.ok) {
+    return buildAuthoringRepairResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      status: 'blocked',
+      blockingStage: 'business_visual_proof_resync_required',
+      nextRequiredAction: 'repair_business_visual_proof_resync_materialization',
+      artifacts: visualProofResync.artifacts,
+      sourceDocumentHash: initialSourceDocumentHash,
+      implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
+        extraction.confirmation
+      ),
+      issues: visualProofResync.issues,
+    });
+  }
+  if (visualProofResync.changed) {
+    const materialized = visualProofResync.materialized ?? readMaterializedConfirmation(sourcePath);
+    const rebuilt = buildPreserveExistingAuthoringArtifacts({
+      root,
+      sourcePath,
+      paths,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      createdAt,
+      sourceText: materialized.sourceText,
+      extraction: materialized.extraction,
+      consecutiveNoNewGapRounds: 0,
+    });
+    const archiveDir = archiveCriticalAuditorArtifacts({
+      authoringDir: paths.authoringDir,
+      reason: 'business_visual_proof_resync_restart',
+      auditInputHash: rebuilt.auditInputHash,
+      createdAt,
+    });
+    const request = buildCriticalAuditorRoundRequest({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      roundIndex: 1,
+      sourceDocumentHash: rebuilt.sourceDocumentHash,
+      implementationConfirmationHash: rebuilt.implementationConfirmationHash,
+      packetHash: rebuilt.packetHash,
+      auditInputHash: rebuilt.auditInputHash,
+      mustRequirements: rebuilt.mustRequirements,
+      packet: rebuilt.effectivePacket,
+      previousReceipts: [],
+      gateDryRun: buildCriticalAuditorGateDryRunSummary({
+        root,
+        sourcePath,
+        paths,
+        roundIndex: 1,
+      }),
+      createdAt,
+    });
+    const requestPath = findCriticalAuditorRequestPath(paths.authoringDir, 1);
+    writeJsonUtf8(requestPath, request);
+    return buildAuthoringRepairResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      status: 'blocked',
+      blockingStage: 'critical_auditor_round_required',
+      nextRequiredAction: 'write_critical_auditor_round_response',
+      repairCommand: authoringRepairCommand(
+        toRootRelativePath(root, sourcePath),
+        toRootRelativePath(
+          root,
+          path.join(paths.authoringDir, 'critical-auditor-round-response-1.json')
+        )
+      ),
+      sourceDocumentHash: rebuilt.sourceDocumentHash,
+      implementationConfirmationHash: rebuilt.implementationConfirmationHash,
+      packetHash: rebuilt.packetHash,
+      artifacts: [requestPath, archiveDir, ...visualProofResync.artifacts].filter(
+        (artifact): artifact is string => Boolean(artifact)
+      ),
+      issues: [
+        preConfirmationIssue(
+          'business_visual_proof_resync_materialized',
+          'Existing business visual views were resynchronized with explicit trace, evidence, acceptance, failure, and edge proof refs; Critical Auditor must restart on the new source hashes.',
+          visualProofResync.changedViewIds,
+          'authoring_repair'
+        ),
+      ],
+      consecutiveNoNewGapRounds: 0,
     });
   }
   const inlineMustRequirements = extractInlineMustRequirements(extraction.confirmation);

@@ -337,6 +337,8 @@ implementationConfirmation:
       deliveryEvidenceCommandRefs: ["CMD-001"]
       acceptanceRefs: ["ACC-001", "E2E-001"${overrides.includes('BAD_ACCEPTANCE_REF') ? ', "ACC-999"' : ''}]
       sequenceViewRefs: ["SEQ-001"]
+      flowViewRefs: ["FLOW-001"]
+      edgeCaseViewRefs: ["EDGEVIEW-001"]
       boundaryViewRefs: ["BOUNDARY-001"]
       artifactRefs: ["ART-EVD-001"]
       status: PENDING
@@ -439,8 +441,12 @@ ${
     ? ''
     : `    - id: SEQ-001
       title: "Fixture happy and failure path"
+      visualKind: happy
       scope: business
       covers: ["MUST-001", "NEG-001", "EVD-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
 `
 }
   flowViews:${missingViews ? ' []' : ''}
@@ -449,8 +455,12 @@ ${
     ? ''
     : `    - id: FLOW-001
       title: "Fixture flow"
+      visualKind: flow
       scope: business
       covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
 `
 }
   edgeCaseViews:${missingViews ? ' []' : ''}
@@ -459,9 +469,14 @@ ${
     ? ''
     : `    - id: EDGEVIEW-001
       title: "Smoke-only edge case"
+      visualKind: edge
       scope: business
       covers: ["NEG-001"]
       cases: ["EDGE-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+      edgeCaseRefs: ["EDGE-001"]
 `
 }
   boundaryViews:${missingViews ? ' []' : ''}

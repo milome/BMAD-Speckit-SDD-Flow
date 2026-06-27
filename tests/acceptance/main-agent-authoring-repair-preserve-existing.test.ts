@@ -834,6 +834,158 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
 }
 
 describe('main-agent authoring-repair preserve-existing lane', () => {
+  it('resynchronizes legacy business visual views with explicit proof refs before pre-render ready', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-business-visual-resync-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      let sourceText = readFileSync(source, 'utf8');
+      sourceText = sourceText
+        .replace(
+          [
+            '  sequenceViews:',
+            '    - id: SEQ-001',
+            '      title: "Preserve-existing authoring repair loop"',
+            '      covers: ["MUST-001", "NEG-001"]',
+          ].join('\n'),
+          [
+            '  sequenceViews:',
+            '    - id: SEQ-BUSINESS-001',
+            '      title: "Legacy business happy path"',
+            '      visualKind: happy',
+            '      scope: business',
+            '      covers: ["MUST-001"]',
+            '    - id: SEQ-BUSINESS-FAILURE-001',
+            '      title: "Legacy business failure path"',
+            '      visualKind: failure',
+            '      scope: business',
+            '      covers: ["MUST-001", "NEG-001"]',
+            '    - id: SEQ-001',
+            '      title: "Preserve-existing authoring repair loop"',
+            '      covers: ["MUST-001", "NEG-001"]',
+          ].join('\n')
+        )
+        .replace(
+          [
+            '  flowViews:',
+            '    - id: FLOW-001',
+            '      title: "Request response receipt gate flow"',
+            '      covers: ["MUST-001"]',
+          ].join('\n'),
+          [
+            '  flowViews:',
+            '    - id: FLOW-BUSINESS-STATE-001',
+            '      title: "Legacy business state view"',
+            '      visualKind: state',
+            '      scope: business',
+            '      covers: ["MUST-001"]',
+            '    - id: FLOW-BUSINESS-001',
+            '      title: "Legacy business flow view"',
+            '      visualKind: flow',
+            '      scope: business',
+            '      covers: ["MUST-001"]',
+            '    - id: FLOW-001',
+            '      title: "Request response receipt gate flow"',
+            '      covers: ["MUST-001"]',
+          ].join('\n')
+        )
+        .replace(
+          [
+            '  edgeCaseViews:',
+            '    - id: EDGEVIEW-001',
+            '      title: "Stale response is rejected"',
+            '      covers: ["NEG-001"]',
+            '      cases: ["EDGE-001"]',
+          ].join('\n'),
+          [
+            '  edgeCaseViews:',
+            '    - id: EDGEVIEW-BUSINESS-001',
+            '      title: "Legacy business edge view"',
+            '      visualKind: edge',
+            '      scope: business',
+            '      covers: ["MUST-001", "NEG-001"]',
+            '      cases: ["EDGE-001"]',
+            '    - id: EDGEVIEW-001',
+            '      title: "Stale response is rejected"',
+            '      covers: ["NEG-001"]',
+            '      cases: ["EDGE-001"]',
+          ].join('\n')
+        );
+      writeFileSync(source, sourceText, 'utf8');
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      let result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      for (let round = 1; round <= 3; round += 1) {
+        writeNoNewGapResponse(paths.request(round), paths.response(round));
+        result = runMainAgentAuthoringRepair(root, {
+          source,
+          recordId,
+          requirementSetId: `${recordId}-SET`,
+          mode: 'preserve-existing',
+          criticalAuditorResponse: paths.response(round),
+        });
+      }
+
+      expect(result).toMatchObject({
+        ok: true,
+        status: 'pre_render_ready',
+        blockingStage: null,
+      });
+      const confirmation = readInlineConfirmation(source);
+      const businessViews = [
+        ...confirmation.sequenceViews,
+        ...confirmation.flowViews,
+        ...confirmation.edgeCaseViews,
+      ].filter((view: any) => view.scope === 'business' && view.visualKind);
+      expect(businessViews.map((view: any) => view.visualKind).sort()).toEqual([
+        'edge',
+        'failure',
+        'flow',
+        'happy',
+        'state',
+      ]);
+      const traceIds = confirmation.traceRows.map((row: any) => row.id);
+      const evidenceIds = confirmation.evidence.map((row: any) => row.id);
+      const acceptanceIds = [
+        ...confirmation.acceptanceTests.map((row: any) => row.id),
+        ...confirmation.e2eSuites.map((row: any) => row.id),
+      ];
+      const traceRowsById = new Map(confirmation.traceRows.map((row: any) => [row.id, row]));
+      for (const view of businessViews) {
+        expect(view.traceRows, `${view.id} traceRows`).toEqual(expect.arrayContaining(traceIds));
+        expect(view.evidenceRefs, `${view.id} evidenceRefs`).toEqual(expect.arrayContaining(evidenceIds));
+        expect(view.acceptanceRefs, `${view.id} acceptanceRefs`).toEqual(expect.arrayContaining(acceptanceIds));
+        for (const traceRef of view.traceRows) {
+          const trace = traceRowsById.get(traceRef) as any;
+          expect(
+            [
+              ...(trace.sequenceViewRefs ?? []),
+              ...(trace.flowViewRefs ?? []),
+              ...(trace.edgeCaseViewRefs ?? []),
+              ...(trace.viewRefs ?? []),
+              ...(trace.diagramRefs ?? []),
+            ],
+            `${traceRef} reciprocates ${view.id}`
+          ).toContain(view.id);
+        }
+      }
+      expect(businessViews.find((view: any) => view.visualKind === 'failure')?.failurePathRefs).toEqual(
+        expect.arrayContaining(confirmation.failurePaths.map((row: any) => row.id))
+      );
+      expect(businessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs).toEqual(
+        expect.arrayContaining(confirmation.edgeCases.map((row: any) => row.id))
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('authoring-repair accepts blocked auditor response without gap materialization', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-blocked-'));
     try {
