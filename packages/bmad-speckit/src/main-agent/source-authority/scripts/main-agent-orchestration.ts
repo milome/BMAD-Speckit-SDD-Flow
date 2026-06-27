@@ -5684,6 +5684,7 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
   draftPath: string;
   paths: PreConfirmationPaths;
   autoRepair?: boolean;
+  currentSourceReceiptRefresh?: boolean;
 }): {
   ok: boolean;
   receipt: Record<string, unknown> | null;
@@ -5698,7 +5699,7 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
     '--target',
     toRootRelativePath(input.root, input.sourcePath),
     '--promotion-stage',
-    'authoring-draft',
+    input.currentSourceReceiptRefresh === true ? 'current-source-receipt-refresh' : 'authoring-draft',
     '--scale-assessment',
     input.paths.scaleAssessmentInitial,
     '--scale-routing-decision',
@@ -5858,12 +5859,13 @@ function verifySourceMaterializationBeforeAudit(input: {
       )
     );
   }
-  if (normalizeText(receipt.promotionStage) !== 'authoring-draft') {
+  const promotionStage = normalizeText(receipt.promotionStage);
+  if (!['authoring-draft', 'current-source-receipt-refresh'].includes(promotionStage)) {
     issues.push(
       sourceMaterializationGateIssue(
         'promotion_receipt_stage_invalid',
-        'Promotion receipt must be produced by --promotion-stage authoring-draft.',
-        [normalizeText(receipt.promotionStage)]
+        'Promotion receipt must be produced by --promotion-stage authoring-draft or current-source-receipt-refresh.',
+        [promotionStage]
       )
     );
   }
@@ -6416,6 +6418,7 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
     draftPath: input.paths.draftSourcePreview,
     paths: input.paths,
     autoRepair: true,
+    currentSourceReceiptRefresh: true,
   });
   artifacts.push(input.paths.promotionReceipt);
   if (promotion.ok !== true || !promotion.receipt || promotion.receipt.ok !== true) {
@@ -17976,6 +17979,73 @@ function missingAcceptanceFilePaths(
   );
 }
 
+const EXPECTED_RED_PROOF_MATERIALIZATION_BLOCKERS = new Set([
+  'pre_implementation_valid_expected_red_missing',
+  'requirement_pre_implementation_missing_plan',
+  'trace_acceptance_binding_missing',
+  'pre_implementation_red_proof_missing',
+]);
+
+function canMaterializeExpectedRedProofsFromManifest(input: {
+  blockingActions: ReadinessRemediationAction[];
+  aiTddReport: Record<string, unknown> | null;
+}): boolean {
+  if (input.blockingActions.length === 0) return true;
+  if (
+    input.blockingActions.some(
+      (action) => action.classification === 'requires_user_decision'
+    )
+  ) {
+    return false;
+  }
+  if (
+    input.blockingActions.some(
+      (action) =>
+        !EXPECTED_RED_PROOF_MATERIALIZATION_BLOCKERS.has(
+          readinessBlockerBaseId(action.blocker)
+        )
+    )
+  ) {
+    return false;
+  }
+
+  const proofRows = defaultProofRows(null, input.aiTddReport);
+  const proofAcceptanceIds = new Set(
+    proofRows.map((row) => normalizeText(row.acceptanceId)).filter(Boolean)
+  );
+  if (proofAcceptanceIds.size === 0) return false;
+
+  const matrixRows = objectsFrom(input.aiTddReport?.redGreenMatrix);
+  const acceptanceRows = matrixRows.filter((row) =>
+    ['ACC', 'E2E'].includes(normalizeText(row.category))
+  );
+  if (acceptanceRows.length === 0) return false;
+
+  return acceptanceRows.every((row) => {
+    const rowId = normalizeText(row.id);
+    return (
+      rowId &&
+      proofAcceptanceIds.has(rowId) &&
+      stringsFrom(row.commandRefs).length > 0 &&
+      stringsFrom(row.refs).some((ref) => /^TRACE-/u.test(ref)) &&
+      stringsFrom(row.refs).some((ref) => /^EVD-/u.test(ref)) &&
+      Boolean(normalizeText(row.oracle))
+    );
+  });
+}
+
+function expectedRedProofMaterializationAction(
+  action: ReadinessRemediationAction
+): ReadinessRemediationAction {
+  return deriveReadinessAction({
+    blocker: action.blocker,
+    action: 'materialize_expected_red_proof_from_confirmed_manifest',
+    reason:
+      'confirmed AI-TDD manifest already declares acceptance/e2e rows, trace refs, evidence refs, command refs, and oracles; readiness may persist controlled expected-red proof without source mutation',
+    reasonCode: 'expected_red_proof_materialization_allowed_from_manifest',
+  });
+}
+
 function defaultProofRows(
   report: Record<string, unknown> | null,
   aiTddReport: Record<string, unknown> | null
@@ -18148,7 +18218,30 @@ export function runMainAgentReadinessAutoRemediation(input: {
   const concreteActions = blockerActions.filter(
     (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
   );
-  const blockingActions = concreteActions.filter((action) => !action.autoRemediationAllowed);
+  const implementationRunKind = normalizeText(args.implementationRunKind) || 'first-implementation';
+  const sourcePath = normalizeText(record.sourcePath);
+  const aiTddReport = aiTddPreImplementationReport({
+    record,
+    recordPath: input.recordPath,
+    sourcePath,
+    implementationRunKind,
+  });
+  const initialBlockingActions = concreteActions.filter((action) => !action.autoRemediationAllowed);
+  const canMaterializeExpectedRedProofs = canMaterializeExpectedRedProofsFromManifest({
+    blockingActions: initialBlockingActions,
+    aiTddReport,
+  });
+  const effectiveActions = canMaterializeExpectedRedProofs
+    ? blockerActions.map((action) =>
+        EXPECTED_RED_PROOF_MATERIALIZATION_BLOCKERS.has(readinessBlockerBaseId(action.blocker))
+          ? expectedRedProofMaterializationAction(action)
+          : action
+      )
+    : blockerActions;
+  const effectiveConcreteActions = effectiveActions.filter(
+    (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
+  );
+  const blockingActions = effectiveConcreteActions.filter((action) => !action.autoRemediationAllowed);
   if (blockingActions.length > 0) {
     const hasUserDecision = blockingActions.some(
       (action) => action.classification === 'requires_user_decision'
@@ -18156,7 +18249,7 @@ export function runMainAgentReadinessAutoRemediation(input: {
     return {
       ok: false,
       status: 'blocked',
-      blockerActions,
+      blockerActions: effectiveActions,
       requiredNextAction: hasUserDecision
         ? 'blocked_by_unresolved_user_decision'
         : 'source_amendment_required',
@@ -18172,16 +18265,8 @@ export function runMainAgentReadinessAutoRemediation(input: {
     };
   }
 
-  const implementationRunKind = normalizeText(args.implementationRunKind) || 'first-implementation';
-  const sourcePath = normalizeText(record.sourcePath);
-  const aiTddReport = aiTddPreImplementationReport({
-    record,
-    recordPath: input.recordPath,
-    sourcePath,
-    implementationRunKind,
-  });
   const filesChanged: string[] = [];
-  for (const action of concreteActions.filter(
+  for (const action of effectiveConcreteActions.filter(
     (item) => item.action === 'create_expected_red_adapter_test'
   )) {
     const absolute = resolveProjectPath(input.projectRoot, action.target ?? '');
@@ -18189,7 +18274,7 @@ export function runMainAgentReadinessAutoRemediation(input: {
     createExpectedRedAdapterTest(absolute, action.blocker);
     if (!existed) filesChanged.push(path.relative(input.projectRoot, absolute).replace(/\\/g, '/'));
   }
-  const shouldCreateManifestFiles = concreteActions.some(
+  const shouldCreateManifestFiles = effectiveConcreteActions.some(
     (item) => item.action === 'create_missing_acceptance_files_from_manifest'
   );
   if (shouldCreateManifestFiles) {
@@ -18241,7 +18326,7 @@ export function runMainAgentReadinessAutoRemediation(input: {
     lane: 'readiness_auto_remediation',
     recordId: normalizeText(record.recordId),
     requirementSetId: normalizeText(record.requirementSetId) || normalizeText(record.recordId),
-    blockerActions,
+    blockerActions: effectiveActions,
     filesChanged,
     ...(preImplementationPlan ? { preImplementationPlan } : {}),
     proofRows,
@@ -18273,7 +18358,7 @@ export function runMainAgentReadinessAutoRemediation(input: {
   return {
     ok: rerun.exitCode === 0,
     status: rerun.exitCode === 0 ? 'done' : 'blocked',
-    blockerActions,
+    blockerActions: effectiveActions,
     filesChanged: [
       ...filesChanged,
       path.relative(input.projectRoot, receiptPath).replace(/\\/g, '/'),

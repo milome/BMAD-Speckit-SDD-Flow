@@ -26,6 +26,11 @@ const PROMOTION_STAGE_POLICIES = {
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: true,
   },
+  "current-source-receipt-refresh": {
+    allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
+    confirmationReadyOnSuccess: false,
+    safePromotionAsDraft: false,
+  },
 };
 
 function promotionPolicyFor(stage) {
@@ -43,7 +48,7 @@ function usage() {
     "  --require <text>        Required literal text. May be repeated.",
     "  --min-bytes <n>         Minimum UTF-8 byte count.",
     "  --retry-receipt <path>  Retry receipt JSON path.",
-    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default) or authoring-draft.",
+    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default), authoring-draft, or current-source-receipt-refresh.",
     "  --scale-assessment <path> Required authoring scale assessment JSON for guarded source writes.",
     "  --scale-routing-decision <path> Required scale routing decision JSON for guarded source writes.",
     "  --source-mutation-decision <path> Required source mutation decision JSON for guarded source writes.",
@@ -393,7 +398,11 @@ function isDocsPlansTarget(targetPath) {
 }
 
 function guardedPromotionRequired(args, targetPath) {
-  return args.promotionStage === "authoring-draft" || isDocsPlansTarget(targetPath);
+  return (
+    args.promotionStage === "authoring-draft" ||
+    args.promotionStage === "current-source-receipt-refresh" ||
+    isDocsPlansTarget(targetPath)
+  );
 }
 
 function defaultAuthoringDir(manifest) {
@@ -1105,6 +1114,27 @@ function main() {
       return failed.exitCode;
     }
 
+    if (args.promotionStage === "current-source-receipt-refresh") {
+      const targetState = currentTargetState(targetPath);
+      if (!targetState.exists || targetState.hash !== manifest.draftHash) {
+        const failed = fail(
+          receipt,
+          "semantic_decision_required:current_source_hash_mismatch",
+          {
+            promotionStage: args.promotionStage,
+            requiredCondition: "draftHash must match the current target hash",
+            targetExists: targetState.exists,
+            targetHash: targetState.hash,
+            draftHash: manifest.draftHash,
+          },
+          { ...args, draft: draftPath, target: targetPath },
+          manifest
+        );
+        writeReceipt(failed.receipt, args.json);
+        return failed.exitCode;
+      }
+    }
+
     let effectiveArgs = args;
     if (args.autoRepair && guardedPromotionRequired(args, targetPath)) {
       const autoRepair = autoRepairDeterministicGateArtifacts(args, manifest, targetPath);
@@ -1157,14 +1187,21 @@ function main() {
       return failed.exitCode;
     }
 
-    if (args.promotionStage === "authoring-draft") {
+    if (args.promotionStage === "authoring-draft" || args.promotionStage === "current-source-receipt-refresh") {
       receipt.audit = {
         status: null,
         ok: true,
         skipped: true,
-        reason: "authoring_draft_is_not_confirmation_ready",
+        reason:
+          args.promotionStage === "current-source-receipt-refresh"
+            ? "current_source_receipt_refresh_is_not_confirmation_ready"
+            : "authoring_draft_is_not_confirmation_ready",
       };
-      receipt.residualRisks.push("reverse_audit_not_run_authoring_draft");
+      receipt.residualRisks.push(
+        args.promotionStage === "current-source-receipt-refresh"
+          ? "reverse_audit_not_run_current_source_receipt_refresh"
+          : "reverse_audit_not_run_authoring_draft"
+      );
     } else {
       const audit = runReverseAudit(draftPath);
       receipt.audit = audit;

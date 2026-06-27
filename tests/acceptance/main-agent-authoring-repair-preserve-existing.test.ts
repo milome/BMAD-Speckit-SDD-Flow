@@ -448,7 +448,8 @@ function writePromotionReceipt(
   root: string,
   source: string,
   recordId: string,
-  requirementSetId = `${recordId}-SET`
+  requirementSetId = `${recordId}-SET`,
+  options: { statusValue?: string; promotionStage?: string } = {}
 ): string {
   void requirementSetId;
   const receiptDir = path.join(
@@ -479,11 +480,14 @@ function writePromotionReceipt(
     preflightOnly: false,
     draftPath: sourceRel,
     targetPath: sourceRel,
-    promotionStage: 'authoring-draft',
-    allowedStatuses: ['draft'],
-    statusValue: 'draft',
+    promotionStage: options.promotionStage ?? 'authoring-draft',
+    allowedStatuses:
+      options.promotionStage === 'current-source-receipt-refresh'
+        ? ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required', 'user_confirmed']
+        : ['draft'],
+    statusValue: options.statusValue ?? 'draft',
     confirmationReady: false,
-    safePromotionAsDraft: true,
+    safePromotionAsDraft: options.promotionStage === 'current-source-receipt-refresh' ? false : true,
     requiresUserConfirmationBeforeExecution: true,
     manifestPath: `${sourceRel}.manifest.json`,
     targetHash,
@@ -503,7 +507,7 @@ function writePromotionReceipt(
       manifest: {
         ok: true,
         draftHash: targetHash,
-        statusValue: 'draft',
+        statusValue: options.statusValue ?? 'draft',
       },
     },
     authoringPromotionGate: {
@@ -545,6 +549,11 @@ function initGitTracking(root: string, files: string[]): void {
     });
     expect(add.status, add.stderr || add.stdout).toBe(0);
   }
+}
+
+function markSourceUserConfirmed(source: string): void {
+  const text = readFileSync(source, 'utf8');
+  writeFileSync(source, text.replace(/\n  status: draft\n/u, '\n  status: user_confirmed\n'), 'utf8');
 }
 
 function writeSinglePassScaleArtifacts(root: string, source: string, recordId: string): void {
@@ -2211,6 +2220,53 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           result.implementationConfirmationHash
         );
       }
+      expect(authoringExecutableHelpers(paths.dir)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refreshes a stale current-source receipt for an already confirmed source without downgrading status', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-confirmed-refresh-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      markSourceUserConfirmed(source);
+      const receiptPath = writePromotionReceipt(root, source, recordId, `${recordId}-SET`, {
+        statusValue: 'user_confirmed',
+        promotionStage: 'authoring-draft',
+      });
+      writeSinglePassScaleArtifacts(root, source, recordId);
+      makePromotionReceiptStale(receiptPath);
+      const paths = authoringPaths(root, recordId);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_round_required',
+        nextRequiredAction: 'write_critical_auditor_round_response',
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+        'current_source_promotion_receipt_refresh_failed'
+      );
+      const refreshedPromotionReceipt = readJson(paths.promotionReceipt);
+      expect(refreshedPromotionReceipt).toMatchObject({
+        promotionStage: 'current-source-receipt-refresh',
+        statusValue: 'user_confirmed',
+        targetHash: sha256Text(readFileSync(source, 'utf8')),
+        confirmationReady: false,
+        safePromotionAsDraft: false,
+        requiresUserConfirmationBeforeExecution: true,
+      });
+      expect(readFileSync(source, 'utf8')).toContain('status: user_confirmed');
+      expect(existsSync(paths.request(1))).toBe(true);
       expect(authoringExecutableHelpers(paths.dir)).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });

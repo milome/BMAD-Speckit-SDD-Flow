@@ -115,6 +115,20 @@ function writeAuthoringPromotionGuard(
   const routeDecision = options.routeDecision ?? 'single_pass_final_allowed';
   const targetExists = fs.existsSync(options.targetPath);
   const targetHash = targetExists ? sha256Text(fs.readFileSync(options.targetPath, 'utf8')) : 'absent';
+  let targetSemanticSourceHash: string | null = null;
+  if (targetExists) {
+    try {
+      const targetText = fs.readFileSync(options.targetPath, 'utf8');
+      const extractedTarget = extractImplementationConfirmation(targetText);
+      targetSemanticSourceHash = sourceDocumentHashFor(
+        targetText,
+        extractedTarget.blockText,
+        extractedTarget.confirmation
+      );
+    } catch {
+      targetSemanticSourceHash = null;
+    }
+  }
   const draftHash = sha256Text(fs.readFileSync(options.draftPath, 'utf8'));
   const draftText = fs.readFileSync(options.draftPath, 'utf8');
   const extractedDraft = extractImplementationConfirmation(draftText);
@@ -181,6 +195,7 @@ function writeAuthoringPromotionGuard(
     sourceDocumentExistedBefore: options.sourceDocumentExistedBefore ?? targetExists,
     sourceDocumentHashBefore: options.sourceDocumentHashBefore ?? targetHash,
     sourceDocumentHashAfter: options.sourceDocumentHashAfter ?? draftHash,
+    semanticSourceHashBefore: targetSemanticSourceHash,
     semanticSourceHashAfter: draftSemanticSourceHash,
   });
   const encodingReportPath = writeJson(`${name}-encoding-report.json`, {
@@ -1494,6 +1509,71 @@ describe('requirements-contract large document write flow', () => {
       statusValue: 'user_confirmed',
     });
     expect(fs.readFileSync(target, 'utf8')).toBe('# old target\n');
+  });
+
+  it('allows current-source receipt refresh for a confirmed source only when draft equals target', () => {
+    const sourceText = draftWithStatus('user_confirmed');
+    const target = write('current-confirmed-target.md', sourceText);
+    const draft = write('current-confirmed-draft.md', sourceText);
+    const guard = writeAuthoringPromotionGuard('current-confirmed-refresh', {
+      draftPath: draft,
+      targetPath: target,
+    });
+
+    const promoted = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'current-source-receipt-refresh',
+      ...guard.args,
+      '--json',
+    ]);
+
+    expect(promoted.result.status).toBe(0);
+    expect(promoted.json).toMatchObject({
+      ok: true,
+      promotionStage: 'current-source-receipt-refresh',
+      statusValue: 'user_confirmed',
+      confirmationReady: false,
+      safePromotionAsDraft: false,
+      requiresUserConfirmationBeforeExecution: true,
+    });
+    expect(promoted.json.targetHash).toBe(sha256Text(sourceText));
+    expect(JSON.parse(fs.readFileSync(guard.paths.receiptOutPath, 'utf8'))).toMatchObject({
+      promotionStage: 'current-source-receipt-refresh',
+      targetHash: sha256Text(sourceText),
+      statusValue: 'user_confirmed',
+    });
+
+    const changedDraft = write(
+      'current-confirmed-changed-draft.md',
+      `${sourceText}\nThis would be an unauthorized semantic edit.\n`
+    );
+    const changedGuard = writeAuthoringPromotionGuard('current-confirmed-refresh-changed', {
+      draftPath: changedDraft,
+      targetPath: target,
+    });
+    const rejected = runNode(PROMOTE, [
+      '--draft',
+      changedDraft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'current-source-receipt-refresh',
+      ...changedGuard.args,
+      '--json',
+    ]);
+
+    expect(rejected.result.status).toBe(1);
+    expect(rejected.json).toMatchObject({
+      ok: false,
+      promotionStage: 'current-source-receipt-refresh',
+      statusValue: 'user_confirmed',
+      failureClass: 'semantic_decision_required:current_source_hash_mismatch',
+    });
+    expect(fs.readFileSync(target, 'utf8')).toBe(sourceText);
   });
 
   it('does not implement allow-expected-draft-gap', () => {

@@ -901,6 +901,24 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.failedChecks).toEqual([]);
   });
 
+  it('accepts localized completion semantics headings as Definition of Done', () => {
+    const source = writeSource();
+    fs.writeFileSync(
+      source,
+      fs.readFileSync(source, 'utf8').replace('## Definition of Done', '## 10. 完成语义'),
+      'utf8'
+    );
+    const render = runRenderer(source);
+    expect(render.result.status).toBe(0);
+    patchConfirmationRender(source, render);
+
+    const audit = runStageAudit(AUDIT_IMPLEMENTATION_READINESS, source, render.reportPath);
+
+    expect(audit.result.status, JSON.stringify(audit.report.findings, null, 2)).toBe(0);
+    expect(audit.report.reverseAuditChecks.hasDefinitionOfDone).toBe(true);
+    expect(audit.report.failedChecks).not.toContain('missing_required_sections');
+  });
+
   it('uses controlled runtime evidence for readiness mode instead of stale render-time delivery readiness', () => {
     const source = writeSource();
     const render = runRenderer(source);
