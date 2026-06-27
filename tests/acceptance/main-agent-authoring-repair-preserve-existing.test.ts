@@ -1097,6 +1097,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       sourceText = [
         sourceText,
         '',
+        '## Definition of Done',
+        '',
+        '- Run the implementation readiness stage audit before any delivery-readiness claim.',
+        '- Keep the AI-TDD pre-implementation gate bound before implementation dispatch.',
+        '',
         '## Reverse Audit Report',
         '',
         'Audit command:',
@@ -1138,6 +1143,10 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         status: 'pre_render_ready',
         blockingStage: null,
       });
+      const repairedSourceText = readFileSync(source, 'utf8');
+      expect(repairedSourceText).toContain('## Definition of Done');
+      expect(repairedSourceText).toContain('implementation readiness stage audit');
+      expect(repairedSourceText).toContain('AI-TDD pre-implementation gate');
       const confirmation = readInlineConfirmation(source);
       const businessViews = [
         ...confirmation.sequenceViews,

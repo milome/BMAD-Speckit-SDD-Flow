@@ -5606,15 +5606,34 @@ function materializeImplementationConfirmationText(
   sourceText: string,
   confirmation: Record<string, unknown>
 ): string {
-  const extraction = extractImplementationConfirmationBlock(sourceText);
+  const sourceWithDefinitionOfDone = ensureDefinitionOfDoneSection(sourceText);
+  const extraction = extractImplementationConfirmationBlock(sourceWithDefinitionOfDone);
   const dumped = dumpImplementationConfirmation(confirmation);
+  let next: string;
   if (!extraction) {
-    return `${sourceText.replace(/\s*$/u, '')}\n\n${dumped}\n`;
+    next = `${sourceWithDefinitionOfDone.replace(/\s*$/u, '')}\n\n${dumped}\n`;
+  } else {
+    const lines = [...extraction.lines];
+    lines.splice(extraction.start, extraction.end - extraction.start, ...dumped.split('\n'));
+    next = lines.join('\n');
   }
-  const lines = [...extraction.lines];
-  lines.splice(extraction.start, extraction.end - extraction.start, ...dumped.split('\n'));
-  const next = lines.join('\n');
   return next.endsWith('\n') ? next : `${next}\n`;
+}
+
+function ensureDefinitionOfDoneSection(sourceText: string): string {
+  if (/\n##\s+(?:Definition of Done|Completion Definition)\b/iu.test(sourceText)) {
+    return sourceText.endsWith('\n') ? sourceText : `${sourceText}\n`;
+  }
+  const trimmed = sourceText.replace(/\s*$/u, '');
+  return `${trimmed}
+
+## Definition of Done
+
+- The implementation readiness stage audit passes for the current source, implementationConfirmation, and confirmation page hashes.
+- The AI-TDD pre-implementation gate is ready before implementation dispatch, with every ACC/E2E row bound to expected-red proof or controlled red proof execution.
+- Every confirmed MUST/NEG trace row keeps requirement, evidence, command, acceptance, failure-path, edge-case, target-path, and artifact closure.
+- Delivery readiness, closeout readiness, merge readiness, or launch readiness remain false until current-attempt implementation evidence is recorded through controlled runtime fields.
+`;
 }
 
 function semanticSourceDocumentHashForText(sourceText: string): string {
