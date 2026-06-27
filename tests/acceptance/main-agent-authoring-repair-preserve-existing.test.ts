@@ -604,6 +604,14 @@ function authoringExecutableHelpers(authoringDir: string): string[] {
     .sort();
 }
 
+function checkedProjectionQualityRuleCodesForRequest(request: any): string[] {
+  return (
+    request.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
+    request.projectionQualityGate?.requiredRuleCodes ??
+    []
+  );
+}
+
 function writeNoNewGapResponse(
   requestPath: string,
   responsePath: string,
@@ -612,6 +620,7 @@ function writeNoNewGapResponse(
   const request = readJson(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
     requestHash: request.requestHash,
@@ -623,6 +632,7 @@ function writeNoNewGapResponse(
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
+    checkedProjectionQualityRuleCodes,
     verdict: 'no_new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
@@ -652,6 +662,7 @@ function writeNewValidGapResponse(
   const request = readJson(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
     requestHash: request.requestHash,
@@ -663,6 +674,7 @@ function writeNewValidGapResponse(
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
+    checkedProjectionQualityRuleCodes,
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
@@ -712,6 +724,7 @@ function writeBlockedResponse(
   const request = readJson(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
     requestHash: request.requestHash,
@@ -723,6 +736,7 @@ function writeBlockedResponse(
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
+    checkedProjectionQualityRuleCodes,
     verdict: 'blocked',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
@@ -755,6 +769,7 @@ function writeInsufficientAuditResponse(
   const request = readJson(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+  const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
     requestHash: request.requestHash,
@@ -766,6 +781,7 @@ function writeInsufficientAuditResponse(
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
+    checkedProjectionQualityRuleCodes,
     verdict: 'insufficient_audit',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
