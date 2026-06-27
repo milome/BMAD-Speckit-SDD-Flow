@@ -296,6 +296,57 @@ function statusForModel(record, modelId) {
   return modelStatusEvidence(record, modelId).status;
 }
 
+function manifestRowFor(manifests, modelId) {
+  return (manifests?.sixModelManifest || []).find((row) => row.modelId === modelId) || null;
+}
+
+function actionRowsFor(manifests, modelId) {
+  return (manifests?.actionMatrix || []).filter((row) => row.modelId === modelId);
+}
+
+function statusMatchesMatrixRow(rowStatus, modelStatus) {
+  if (rowStatus === modelStatus) return true;
+  if (rowStatus === 'stale' && modelStatus === 'not_established') return true;
+  return false;
+}
+
+function conditionSatisfied(record, condition, delivery) {
+  switch (condition) {
+    case 'record_created':
+      return true;
+    case 'confirmation_recorded':
+      return statusForModel(record, 'requirement_confirmation') === 'pass';
+    case 'architecture_confirmation_required':
+      return statusForModel(record, 'requirement_confirmation') === 'pass';
+    case 'architecture_confirmation_active':
+    case 'current_architecture_confirmation_active':
+      return statusForModel(record, 'architecture_confirmation') === 'pass';
+    case 'confirmed_source_and_architecture_active':
+      return (
+        statusForModel(record, 'requirement_confirmation') === 'pass' &&
+        statusForModel(record, 'architecture_confirmation') === 'pass'
+      );
+    case 'readiness_passed':
+      return statusForModel(record, 'implementation_readiness') === 'pass';
+    case 'all_trace_slices_current_pass':
+    case 'execution_closure_pass':
+      return statusForModel(record, 'execution_closure') === 'pass';
+    case 'audit_review_pass':
+    case 'audit_review_pass_and_current_evidence':
+    case 'audit_review_pass_and_current_closeout_evidence':
+      return statusForModel(record, 'audit_review') === 'pass';
+    case 'closeout_acceptance_confirmed':
+      return isTerminalClosedRecord(record);
+    case 'delivery_closeout_gate_passed':
+    case 'closeout_pass':
+      return statusForModel(record, 'delivery_confirmation') === 'pass';
+    case 'delivery_confirmation_user_acceptance_requested':
+      return delivery.awaiting === true;
+    default:
+      return false;
+  }
+}
+
 function inferCurrentMentalModel(record) {
   const explicit = text(record.currentMentalModel);
   if (MODEL_IDS.includes(explicit)) return explicit;
@@ -332,6 +383,35 @@ function openBlockers(record) {
     }
   }
   return unique(blockers);
+}
+
+function resolveEffectiveCurrentModel({ record, manifests, currentMentalModel, schemaModelStatus }) {
+  const manifestRow = manifestRowFor(manifests, currentMentalModel);
+  const passCondition = text(manifestRow?.passCondition);
+  if (
+    manifestRow?.nextModel &&
+    conditionSatisfied(record, passCondition, deliveryInfo(record))
+  ) {
+    return {
+      effectiveCurrentModel: manifestRow.nextModel,
+      effectiveModelReason: `manifest_next_model_after_${passCondition || `${currentMentalModel}_pass`}`,
+      advancedFromModel: currentMentalModel,
+    };
+  }
+  return {
+    effectiveCurrentModel: currentMentalModel,
+    effectiveModelReason: 'current_model_not_passed',
+    advancedFromModel: '',
+  };
+}
+
+function matrixActionFor({ record, manifests, effectiveCurrentModel, effectiveSchemaModelStatus, delivery }) {
+  return actionRowsFor(manifests, effectiveCurrentModel).find(
+    (row) =>
+      text(row.runtimeNextAction) &&
+      statusMatchesMatrixRow(text(row.schemaStatus), effectiveSchemaModelStatus) &&
+      conditionSatisfied(record, text(row.condition), delivery)
+  );
 }
 
 function reconfirmationState(record) {
@@ -443,20 +523,7 @@ function nextSafeActionFor(input) {
   if (input.reason === 'delivery_closeout_blocker') return 'run_delivery_closeout';
   if (input.delivery.awaiting) return 'confirm-closeout-acceptance';
   if (input.reason === 'readiness_blocker') return 'run_implementation_readiness_gate';
-  if (
-    input.currentMentalModel === 'implementation_readiness' &&
-    input.schemaModelStatus === 'pass'
-  ) {
-    return 'dispatch_implement';
-  }
-  if (input.currentMentalModel === 'requirement_confirmation') {
-    return 'requirements-contract-authoring author-confirmation-ready-source';
-  }
-  if (input.currentMentalModel === 'architecture_confirmation') return 'prepare_architecture_confirmation';
-  if (input.currentMentalModel === 'implementation_readiness') return 'run_implementation_readiness_gate';
-  if (input.currentMentalModel === 'execution_closure') return 'req-trace-matrix-prompt-generator';
-  if (input.currentMentalModel === 'audit_review') return 'dispatch_review';
-  if (input.currentMentalModel === 'delivery_confirmation') return 'run_closeout';
+  if (input.matrixAction?.runtimeNextAction) return input.matrixAction.runtimeNextAction;
   return 'inspect_requirement_record';
 }
 
@@ -465,6 +532,7 @@ function canCompileGoalPacket(summary) {
     Boolean(summary.sourceDocumentHash) &&
     Boolean(summary.implementationConfirmationHash) &&
     ['implementation_readiness', 'execution_closure'].includes(summary.currentMentalModel) &&
+    summary.nextSafeAction === 'dispatch_implement' &&
     !summary.hasSafetyBlocker &&
     ['pass', 'not_established'].includes(summary.schemaModelStatus)
   );
@@ -472,6 +540,7 @@ function canCompileGoalPacket(summary) {
 
 function summarizeRecord(entry, options = {}) {
   const { record, recordPath, recordId, isExplicitSelection, isIndexedActive } = entry;
+  const manifests = options.manifests || {};
   const currentMentalModel = inferCurrentMentalModel(record);
   const schemaModelStatus = statusForModel(record, currentMentalModel);
   const blockers = openBlockers(record);
@@ -487,14 +556,31 @@ function summarizeRecord(entry, options = {}) {
     isIndexedActive
   );
   const hasSafetyBlocker = SAFETY_PRIORITY[reason] > SAFETY_PRIORITY.explicit_user_selection;
+  const effective = resolveEffectiveCurrentModel({
+    record,
+    manifests,
+    currentMentalModel,
+    schemaModelStatus,
+  });
+  const effectiveSchemaModelStatus = statusForModel(record, effective.effectiveCurrentModel);
+  const matrixAction = matrixActionFor({
+    record,
+    manifests,
+    effectiveCurrentModel: effective.effectiveCurrentModel,
+    effectiveSchemaModelStatus,
+    delivery,
+  });
   const nextSafeAction = nextSafeActionFor({
     record,
     currentMentalModel,
+    effectiveCurrentModel: effective.effectiveCurrentModel,
     schemaModelStatus,
+    effectiveSchemaModelStatus,
     blockers,
     delivery,
     reconfirmation,
     reason,
+    matrixAction,
   });
   const displayState =
     delivery.awaiting || schemaModelStatus === 'awaiting_user_acceptance'
@@ -509,7 +595,7 @@ function summarizeRecord(entry, options = {}) {
     const evidence = modelStatusEvidence(record, modelId, currentMentalModel);
     modelStatuses[modelId] = {
       ...evidence,
-      isCurrent: currentMentalModel === modelId,
+      isCurrent: effective.effectiveCurrentModel === modelId,
     };
   }
   const summary = {
@@ -517,11 +603,18 @@ function summarizeRecord(entry, options = {}) {
     sourceOrTitle: sourceOrTitle(record),
     activityState: entry.activityState,
     isTerminalClosed: entry.isTerminalClosed,
+    rawCurrentMentalModel: currentMentalModel,
     currentMentalModel,
+    effectiveCurrentModel: effective.effectiveCurrentModel,
+    effectiveModelReason: effective.effectiveModelReason,
+    advancedFromModel: effective.advancedFromModel,
     schemaModelStatus,
+    effectiveSchemaModelStatus,
     displayState,
     blockerSummary: blockers.length > 0 ? blockers.join('; ') : 'none',
     nextSafeAction,
+    matrixActionId: matrixAction?.actionId || '',
+    matrixCondition: matrixAction?.condition || '',
     updatedAt:
       text(record.updatedAt) ||
       text(record.currentAttemptId) ||
@@ -647,6 +740,7 @@ function resolveAiTddRuntimeDecision(projectRoot, options = {}) {
   const activeRecords = annotateIndexPointerTrust(
     records.map((record) =>
       summarizeRecord(record, {
+        manifests,
         includeRawRecord: options.includeRawRecord === true,
       })
     ),
