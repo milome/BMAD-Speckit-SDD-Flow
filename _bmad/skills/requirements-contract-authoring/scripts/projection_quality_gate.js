@@ -314,6 +314,9 @@ function collectProjectionQualityIssues(confirmation, options = {}) {
         ...mustRefsForCoverageRow(row, traceMustMap),
         ...perMustDetailRefsFor(row, businessMust),
       ]);
+      if (rowMustRefs.size === businessMust.length && !hasPerMustDetailForAll(row, businessMust)) {
+        continue;
+      }
       for (const ref of rowMustRefs) {
         if (businessMust.includes(ref)) productSpecificBusinessRefs.add(ref);
       }

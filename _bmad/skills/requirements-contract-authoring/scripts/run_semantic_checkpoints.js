@@ -283,9 +283,18 @@ function pathExists(filePath) {
 }
 
 function semanticAuthoringPaths(sourcePath, progressPath = '') {
-  const authoringDir = progressPath
-    ? path.dirname(path.resolve(progressPath))
-    : defaultAuthoringRuntimeDir(sourcePath);
+  const defaultDir = defaultAuthoringRuntimeDir(sourcePath);
+  const progressDir = progressPath ? path.dirname(path.resolve(progressPath)) : '';
+  const progressDirHasAuthoringArtifacts =
+    progressDir &&
+    [
+      'semantic-kernel.json',
+      'must_decomposition_packet.json',
+      'must_decomposition_receipt.json',
+      'must_packet_source_reconciliation_report.json',
+      'pre-render-must-decomposition-gate-report.json',
+    ].some((fileName) => fs.existsSync(path.join(progressDir, fileName)));
+  const authoringDir = progressDirHasAuthoringArtifacts ? progressDir : defaultDir;
   return {
     authoringDir,
     semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
@@ -825,12 +834,26 @@ function currentProgressMatchesDocument({ priorProgress, currentDocumentHash }) 
   return priorProgress?.documentHash === currentDocumentHash;
 }
 
+function hasCompletedImmediatePriorCheckpoint({ priorProgress, checkpoint }) {
+  const checkpointPosition = checkpointIndex(checkpoint.id);
+  if (checkpointPosition <= 0) return false;
+  const completed = new Set(
+    (priorProgress?.checkpoints ?? [])
+      .filter((item) => item.status === 'passed')
+      .map((item) => canonicalCheckpointId(item.id))
+  );
+  return completed.has(CHECKPOINTS[checkpointPosition - 1].id);
+}
+
 function currentPreRenderEvidenceAllowsCheckpoint({ sourcePath, progressPath, checkpoint, priorProgress, currentDocumentHash }) {
   if (!EVIDENCE_ONLY_CHECKPOINT_IDS.has(checkpoint.id)) {
     return { ok: false, reason: 'checkpoint_requires_source_diff' };
   }
   if (!currentProgressMatchesDocument({ priorProgress, currentDocumentHash })) {
     return { ok: false, reason: 'progress_document_hash_not_current' };
+  }
+  if (!hasCompletedImmediatePriorCheckpoint({ priorProgress, checkpoint })) {
+    return { ok: false, reason: 'prior_checkpoint_progress_missing' };
   }
   const gate = buildCombinedPreRenderGateReport({ sourcePath, progressPath });
   if (gate.report.verdict !== 'PASS') {
