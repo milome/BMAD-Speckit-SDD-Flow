@@ -926,6 +926,8 @@ describe('req trace generator confirmation block gate', () => {
       'codex',
       '--goal-command-available',
       'true',
+      '--task-report-path',
+      path.join(tempDir, 'alias-conflict-task-report.json'),
       '--json',
     ]);
 
@@ -1111,6 +1113,8 @@ describe('req trace generator confirmation block gate', () => {
       'codex',
       '--goal-command-available',
       'true',
+      '--task-report-path',
+      path.join(tempDir, 'codex-goal-default-task-report.json'),
       '--json',
     ]);
 

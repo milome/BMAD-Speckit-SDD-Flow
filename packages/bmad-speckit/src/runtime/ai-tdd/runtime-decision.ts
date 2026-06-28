@@ -434,7 +434,7 @@ function openBlockers(record) {
   return unique(blockers);
 }
 
-function resolveEffectiveCurrentModel({ record, manifests, currentMentalModel, schemaModelStatus }) {
+function resolveEffectiveCurrentModel({ record, manifests, currentMentalModel }) {
   const manifestRow = manifestRowFor(manifests, currentMentalModel);
   const passCondition = text(manifestRow?.passCondition);
   if (
