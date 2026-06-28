@@ -352,6 +352,17 @@ export interface MainAgentRunLoopResult {
   mainAgentStageSummary: MainAgentStageSummary | null;
 }
 
+export interface NativeGoalTaskReportImportResult {
+  status: 'imported' | 'invalid';
+  reasonCode?: 'native_goal_task_report_invalid';
+  validationErrors: string[];
+  taskReportPath: string;
+  packetId: string | null;
+  nextAction: OrchestrationNextAction | null;
+  controlledIngested: boolean;
+  taskReport: TaskReport | null;
+}
+
 export interface MainAgentRunLoopExecutorContext {
   projectRoot: string;
   instruction: MainAgentDispatchInstruction;
@@ -14799,6 +14810,17 @@ function deriveNextActionFromRequirementRecord(input: {
     !Array.isArray(sixModelResults[currentMentalModel])
       ? (sixModelResults[currentMentalModel] as Record<string, unknown>)
       : null;
+  const nativeGoalHandoff =
+    input.record?.nativeGoalHandoff &&
+    typeof input.record.nativeGoalHandoff === 'object' &&
+    !Array.isArray(input.record.nativeGoalHandoff)
+      ? (input.record.nativeGoalHandoff as Record<string, unknown>)
+      : null;
+  const nativeGoalImportStatus = normalizeText(nativeGoalHandoff?.importStatus);
+  const nativeGoalAwaitingTaskReport =
+    nativeGoalHandoff &&
+    nativeGoalHandoff.imported !== true &&
+    !['task_report_partial', 'task_report_blocked'].includes(nativeGoalImportStatus);
   const architectureState =
     input.record?.architectureConfirmationState &&
     typeof input.record.architectureConfirmationState === 'object' &&
@@ -14878,6 +14900,10 @@ function deriveNextActionFromRequirementRecord(input: {
     }
   } else if (currentMentalModel === 'execution_closure') {
     const executionClosureStatus = normalizeText(currentModelResult?.status);
+    if (nativeGoalAwaitingTaskReport) {
+      blockingReasonRefs.push({ sourceType: 'native_goal_handoff', id: 'task_report_import_required' });
+      return { nextAction: 'await_native_goal_task_report', ready: false, blockingReasonRefs };
+    }
     if (executionClosureStatus === 'pass') {
       return { nextAction: 'dispatch_review', ready: true, blockingReasonRefs };
     }
@@ -14928,6 +14954,10 @@ function deriveNextActionFromRequirementRecord(input: {
   }
   const executionClosurePass = modelStatusFor(input.record, 'execution_closure') === 'pass';
   const auditReviewPass = modelStatusFor(input.record, 'audit_review') === 'pass';
+  if (nativeGoalAwaitingTaskReport && executionClosurePass) {
+    blockingReasonRefs.push({ sourceType: 'native_goal_handoff', id: 'task_report_import_required' });
+    return { nextAction: 'await_native_goal_task_report', ready: false, blockingReasonRefs };
+  }
   const hasCurrentCompiledPromptRef = packetHasCurrentHashCompiledPromptRef(
     input.pendingPacket,
     input.record
@@ -15264,8 +15294,10 @@ export function resolveMainAgentOrchestrationSurface(
   const sixModelRuntimeDecisionAuthoritative =
     Boolean(sixModelRuntimeDecision?.currentMentalModel) &&
     sixModelRuntimeDecision?.nextAction !== 'record_closed' &&
-    !controlPlaneBlocksSixModelOverride &&
-    !bridgePendingPacketRemainsAuthoritative &&
+    (sixModelRuntimeDecision?.nextAction === 'await_native_goal_task_report' ||
+      !controlPlaneBlocksSixModelOverride) &&
+    (sixModelRuntimeDecision?.nextAction === 'await_native_goal_task_report' ||
+      !bridgePendingPacketRemainsAuthoritative) &&
     !bridgeImplementDispatchFallback &&
     !bridgeCompletedRemediationReturnsToImplement;
   const fallbackActionNextAction = bridgeImplementDispatchFallback
@@ -15631,6 +15663,13 @@ export function ensureMainAgentDispatchPacket(
       );
     }
   }
+  const nativeCompiledRefMissing =
+    isNativeImplementHost(host, taskType) &&
+    compiledRun?.status === 'pass' &&
+    compiledRun.compiledPromptRef &&
+    (!compiledRun.compiledPromptRef.goalExecutionPath ||
+      !compiledRun.compiledPromptRef.goalExecutionHash ||
+      !compiledRun.compiledPromptRef.taskReportPath);
   const executionStrategy =
     compiledRun?.status === 'pass'
       ? ensurePolicyDefaultExecutionStrategy({
@@ -15710,6 +15749,8 @@ export function ensureMainAgentDispatchPacket(
                   compiledRun.status !== 'pass' &&
                   compiledRun.status !== 'no_confirmed_source'
                 ? compiledRun.blockingReasons
+                : nativeCompiledRefMissing
+                  ? ['native_goal_compiled_ref_missing']
                 : null,
         });
   const compilerBlocked =
@@ -15719,6 +15760,20 @@ export function ensureMainAgentDispatchPacket(
 
   const packetKind: PacketKind = 'originalExecutionPacketId' in packet ? 'resume' : 'execution';
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
+  if (
+    isNativeImplementHost(host, taskType) &&
+    !compilerBlocked &&
+    'taskType' in packet &&
+    packet.compiledPromptRef
+  ) {
+    writeNativeGoalHandoffToRecord({
+      recordPath,
+      host,
+      packet,
+      packetPath,
+      modelPacket: readModelPacketForCompiledRef(input.projectRoot, packet.compiledPromptRef),
+    });
+  }
 
   let writtenState: OrchestrationState;
   const canUpdateCurrentState =
@@ -15878,6 +15933,7 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'inspect',
   'step',
   'dispatch-plan',
+  'import-native-goal-task-report',
   'run-loop',
   'claim',
   'dispatch',
@@ -15921,6 +15977,151 @@ function defaultRunLoopTaskReportPath(
     sessionId,
     `${packetId}.json`
   );
+}
+
+function normalizeSlashPath(value: string): string {
+  return value.replace(/\\/g, '/').replace(/^\/+/, '');
+}
+
+function globToRegExp(glob: string): RegExp {
+  const normalized = normalizeSlashPath(glob);
+  let pattern = '';
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    const next = normalized[index + 1];
+    if (char === '*' && next === '*') {
+      pattern += '.*';
+      index += 1;
+    } else if (char === '*') {
+      pattern += '[^/]*';
+    } else {
+      pattern += char.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+    }
+  }
+  return new RegExp(`^${pattern}$`, 'u');
+}
+
+function pathMatchesAllowedScope(filePath: string, scopes: string[]): boolean {
+  const normalized = normalizeSlashPath(filePath);
+  return scopes.some((scope) => globToRegExp(scope).test(normalized));
+}
+
+function readJsonObjectFile(filePath: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function readModelPacketForCompiledRef(
+  projectRoot: string,
+  compiledPromptRef: CompiledPromptRef | null | undefined
+): Record<string, unknown> | null {
+  const modelPacketPath = normalizeText(compiledPromptRef?.modelPacketPath);
+  if (!modelPacketPath) return null;
+  const absolute = path.isAbsolute(modelPacketPath)
+    ? modelPacketPath
+    : path.resolve(projectRoot, modelPacketPath);
+  if (!fs.existsSync(absolute)) return null;
+  return readJsonObjectFile(absolute);
+}
+
+function requiredCommandsFromModelPacket(modelPacket: Record<string, unknown> | null): string[] {
+  if (!modelPacket) return [];
+  const rawRequired = Array.isArray(modelPacket.requiredCommands)
+    ? modelPacket.requiredCommands
+    : [];
+  const direct = rawRequired
+    .map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return '';
+      const record = item as Record<string, unknown>;
+      return normalizeText(record.id || record.commandId || record.command);
+    })
+    .filter(Boolean);
+  const handoff =
+    modelPacket.executionHandoff &&
+    typeof modelPacket.executionHandoff === 'object' &&
+    !Array.isArray(modelPacket.executionHandoff)
+      ? (modelPacket.executionHandoff as Record<string, unknown>)
+      : {};
+  const handoffCommands = Array.isArray(handoff.requiredValidationCommands)
+    ? handoff.requiredValidationCommands
+    : [];
+  const fromHandoff = handoffCommands
+    .map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return '';
+      const record = item as Record<string, unknown>;
+      return normalizeText(record.id || record.commandId || record.command);
+    })
+    .filter(Boolean);
+  return [...new Set([...direct, ...fromHandoff])];
+}
+
+function validationsCoverRequiredCommands(validationsRun: string[], requiredCommands: string[]): boolean {
+  if (requiredCommands.length === 0) return true;
+  const haystack = validationsRun.join('\n');
+  return requiredCommands.every((command) => haystack.includes(command));
+}
+
+function nativeGoalImportReturnCommand(taskReportPath: string): string {
+  return `bmad-speckit main-agent-orchestration --action import-native-goal-task-report --taskReportPath ${taskReportPath}`;
+}
+
+function isNativeImplementHost(host: OrchestrationHost, taskType: OrchestrationTaskType): boolean {
+  return taskType === 'implement' && (host === 'codex' || host === 'claude');
+}
+
+function writeNativeGoalHandoffToRecord(input: {
+  recordPath?: string | null;
+  host: OrchestrationHost;
+  packet: RecommendationPacket | ExecutionPacket | ResumePacket;
+  packetPath: string;
+  modelPacket?: Record<string, unknown> | null;
+  imported?: boolean;
+  importStatus?: string;
+}): void {
+  if (!input.recordPath || !fs.existsSync(input.recordPath)) return;
+  if (!('taskType' in input.packet) || input.packet.taskType !== 'implement') return;
+  const compiledPromptRef = input.packet.compiledPromptRef;
+  if (!compiledPromptRef?.goalExecutionPath || !compiledPromptRef.goalExecutionHash) return;
+  const taskReportPath = normalizeText(compiledPromptRef.taskReportPath);
+  if (!taskReportPath) return;
+  const record = readJsonIfExists(input.recordPath);
+  if (!record) return;
+  const receipt = readJsonObjectFile(compiledPromptRef.auditReceiptPath);
+  const goalCommand =
+    receipt?.goalCommand && typeof receipt.goalCommand === 'object' && !Array.isArray(receipt.goalCommand)
+      ? (receipt.goalCommand as Record<string, unknown>)
+      : {};
+  const commandText =
+    normalizeText(goalCommand.commandText) ||
+    normalizeText((receipt?.continuationDirective as Record<string, unknown> | undefined)?.directive);
+  record.nativeGoalHandoff = {
+    schemaVersion: 'native-goal-handoff/v1',
+    recordId: normalizeText(record.recordId) || input.packet.parentSessionId,
+    packetId: input.packet.packetId,
+    packetPath: input.packetPath,
+    dispatchHost: input.host,
+    runtimeHost: input.host === 'claude' ? 'claude-code-cli' : input.host,
+    renderedHostLabel: input.host === 'claude' ? 'claude-code' : input.host,
+    modelPacketPath: compiledPromptRef.modelPacketPath,
+    goalExecutionPath: compiledPromptRef.goalExecutionPath,
+    goalExecutionHash: compiledPromptRef.goalExecutionHash,
+    taskReportPath,
+    goalCommand: commandText,
+    returnAction: 'import-native-goal-task-report',
+    returnCommand: nativeGoalImportReturnCommand(taskReportPath),
+    sourceDocumentHash: compiledPromptRef.sourceDocumentHash,
+    implementationConfirmationHash: compiledPromptRef.implementationConfirmationHash,
+    requiredCommands: requiredCommandsFromModelPacket(input.modelPacket ?? null),
+    imported: input.imported === true,
+    importStatus: input.importStatus ?? (input.imported ? 'imported' : 'awaiting_task_report'),
+  };
+  writeJsonUtf8(input.recordPath, record);
 }
 
 function dispatchPacketGoalCommandMode(packet: ExecutionPacket): string {
@@ -16976,6 +17177,311 @@ function parseJsonObjectFromText(value: string): Record<string, unknown> | null 
   } catch {
     return null;
   }
+}
+
+function recordNativeGoalControlledIngestEvidence(input: {
+  recordPath: string | null;
+  taskReportPath: string;
+  taskReport: TaskReport;
+  pendingPacket: ExecutionPacket;
+  requiredCommands: string[];
+  recordedAt: string;
+}): string[] {
+  if (!input.recordPath) return [];
+  const record = readJsonIfExists(input.recordPath) ?? {};
+  const recordId = normalizeText(record.recordId) || input.pendingPacket.parentSessionId;
+  const requirementSetId = normalizeText(record.requirementSetId) || input.pendingPacket.parentSessionId;
+  const sourceDocumentHash =
+    normalizeText(input.pendingPacket.compiledPromptRef?.sourceDocumentHash) ||
+    normalizeText(record.sourceDocumentHash);
+  const implementationConfirmationHash =
+    normalizeText(input.pendingPacket.compiledPromptRef?.implementationConfirmationHash) ||
+    normalizeText(record.implementationConfirmationHash);
+  const relativeTaskReportPath = path.relative(path.dirname(input.recordPath), input.taskReportPath);
+  const eventIds: string[] = [];
+  const executionEvent = {
+    eventType: 'execution_iteration_recorded',
+    recordId,
+    requirementSetId,
+    packetId: input.taskReport.packetId,
+    executionIterationId: input.taskReport.packetId,
+    runId: input.taskReport.packetId,
+    status: input.taskReport.status,
+    filesChanged: input.taskReport.filesChanged,
+    validationsRun: input.taskReport.validationsRun,
+    evidenceRefs: input.taskReport.evidence,
+    downstreamContext: input.taskReport.downstreamContext,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    recordedAt: input.recordedAt,
+    recordedBy: 'main-agent-orchestration',
+    ingestPolicy: 'strict_task_report_controlled_ingest',
+  };
+  const executionCommit = appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'main-agent-orchestration',
+    eventType: 'execution_iteration_recorded',
+    payload: executionEvent,
+    recordedAt: input.recordedAt,
+    reduce: (current) => ({
+      ...current,
+      executionIterations: [...objectsFrom(current.executionIterations), executionEvent],
+      lastEventType: 'execution_iteration_recorded',
+      updatedAt: input.recordedAt,
+    }),
+  });
+  eventIds.push(executionCommit.event.eventId);
+
+  const closureEvent = {
+    eventType: 'requirement_closure_recorded',
+    recordId,
+    requirementSetId,
+    requirementId: recordId,
+    packetId: input.taskReport.packetId,
+    status: input.taskReport.status === 'done' ? 'pass' : input.taskReport.status,
+    evidenceRefs: input.taskReport.evidence,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    recordedAt: input.recordedAt,
+    recordedBy: 'main-agent-orchestration',
+    closureSource: 'native_goal_task_report_import',
+  };
+  const closureCommit = appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'main-agent-orchestration',
+    eventType: 'requirement_closure_recorded',
+    payload: closureEvent,
+    recordedAt: input.recordedAt,
+    reduce: (current) => ({
+      ...current,
+      requirementClosures: [...objectsFrom(current.requirementClosures), closureEvent],
+      lastEventType: 'requirement_closure_recorded',
+      updatedAt: input.recordedAt,
+    }),
+  });
+  eventIds.push(closureCommit.event.eventId);
+
+  const artifactEvent = {
+    eventType: 'artifact_indexed',
+    recordId,
+    requirementSetId,
+    artifactType: 'native_goal_task_report',
+    sourceOfTruthRole: 'evidence',
+    path: input.taskReportPath,
+    relativePath: relativeTaskReportPath.replace(/\\/g, '/'),
+    contentHash: fs.existsSync(input.taskReportPath) ? sha256File(input.taskReportPath) : null,
+    producer: 'main-agent-orchestration',
+    purpose: 'Native /goal TaskReport imported through main-agent controlled ingest.',
+    relatedRequirementIds: [recordId],
+    status: 'active',
+    inputVersion: 'task-report-v1',
+    outputVersion: 'requirement-record-controlled-evidence-v1',
+    recordedAt: input.recordedAt,
+  };
+  const taskReportArtifactRef = {
+    artifactType: artifactEvent.artifactType,
+    sourceOfTruthRole: artifactEvent.sourceOfTruthRole,
+    recordId,
+    requirementSetId,
+    path: artifactEvent.path,
+    contentHash: artifactEvent.contentHash,
+    producer: artifactEvent.producer,
+    purpose: artifactEvent.purpose,
+    relatedRequirementIds: artifactEvent.relatedRequirementIds,
+    status: artifactEvent.status,
+    inputVersion: artifactEvent.inputVersion,
+    outputVersion: artifactEvent.outputVersion,
+    evidenceRefs: input.taskReport.evidence,
+  };
+  const artifactCommit = appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'main-agent-orchestration',
+    eventType: 'artifact_indexed',
+    payload: artifactEvent,
+    recordedAt: input.recordedAt,
+    reduce: (current) => ({
+      ...current,
+      artifactIndex: [...objectsFrom(current.artifactIndex), artifactEvent],
+      lastEventType: 'artifact_indexed',
+      updatedAt: input.recordedAt,
+    }),
+  });
+  eventIds.push(artifactCommit.event.eventId);
+
+  const commandRows = input.requiredCommands.map((commandId) => ({
+    commandId,
+    command: commandId,
+    blockingIfMissing: true,
+    negativeOrRegression: true,
+    closeoutAttemptId: input.taskReport.packetId,
+    lastRunRef: {
+      commandId,
+      runId: input.taskReport.packetId,
+      closeoutAttemptId: input.taskReport.packetId,
+      exitCode: input.taskReport.status === 'done' ? 0 : 1,
+    },
+    evidenceRefs: input.taskReport.evidence,
+    artifactRefs: [taskReportArtifactRef],
+  }));
+  const deliveryEvent = {
+    eventType: 'delivery_required_commands_recorded',
+    recordId,
+    requirementSetId,
+    packetId: input.taskReport.packetId,
+    requiredCommands: commandRows,
+    recordedAt: input.recordedAt,
+    recordedBy: 'main-agent-orchestration',
+    source: 'native_goal_task_report_import',
+  };
+  const deliveryCommit = appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'main-agent-orchestration',
+    eventType: 'delivery_required_commands_recorded',
+    payload: deliveryEvent,
+    recordedAt: input.recordedAt,
+    reduce: (current) => ({
+      ...current,
+      deliveryEvidence: {
+        ...(current.deliveryEvidence &&
+        typeof current.deliveryEvidence === 'object' &&
+        !Array.isArray(current.deliveryEvidence)
+          ? (current.deliveryEvidence as Record<string, unknown>)
+          : {}),
+        requiredCommands: commandRows,
+      },
+      lastEventType: 'delivery_required_commands_recorded',
+      updatedAt: input.recordedAt,
+    }),
+  });
+  eventIds.push(deliveryCommit.event.eventId);
+  return eventIds;
+}
+
+function invalidNativeGoalTaskReportImport(input: {
+  taskReportPath: string;
+  packetId?: string | null;
+  validationErrors: string[];
+  taskReport?: TaskReport | null;
+}): NativeGoalTaskReportImportResult {
+  return {
+    status: 'invalid',
+    reasonCode: 'native_goal_task_report_invalid',
+    validationErrors: input.validationErrors,
+    taskReportPath: input.taskReportPath,
+    packetId: input.packetId ?? input.taskReport?.packetId ?? null,
+    nextAction: null,
+    controlledIngested: false,
+    taskReport: input.taskReport ?? null,
+  };
+}
+
+export function importNativeGoalTaskReport(input: {
+  projectRoot: string;
+  flow: RuntimeFlowId;
+  stage: string;
+  taskReportPath?: string | null;
+  recordId?: string;
+  requirementSetId?: string;
+  runId?: string;
+}): NativeGoalTaskReportImportResult {
+  const taskReportPath = normalizeText(input.taskReportPath);
+  if (!taskReportPath || !fs.existsSync(taskReportPath)) {
+    return invalidNativeGoalTaskReportImport({
+      taskReportPath,
+      validationErrors: ['taskReportPath_missing'],
+    });
+  }
+  const runtimeContext = loadRuntimeContextForMainAgent(input);
+  const state = resolveScopedOrchestrationState(input.projectRoot, runtimeContext).state;
+  const pendingPacket = readPendingPacketPayload(state);
+  if (!state?.pendingPacket || !pendingPacket || !('taskType' in pendingPacket)) {
+    return invalidNativeGoalTaskReportImport({
+      taskReportPath,
+      validationErrors: ['pending_implement_packet_missing'],
+    });
+  }
+  const parsed = readJsonObjectFile(taskReportPath);
+  if (!validateTaskReportShape(parsed)) {
+    return invalidNativeGoalTaskReportImport({
+      taskReportPath,
+      packetId: normalizeText(parsed?.packetId) || null,
+      validationErrors: ['schema_invalid'],
+    });
+  }
+  const report = parsed;
+  const validationErrors: string[] = [];
+  if (pendingPacket.taskType !== 'implement') validationErrors.push('pending_packet_not_implement');
+  if (report.packetId !== pendingPacket.packetId) validationErrors.push('packetId_mismatch');
+  const compiledPromptRef = pendingPacket.compiledPromptRef;
+  if (!compiledPromptRef) validationErrors.push('compiledPromptRef_missing');
+  const activeRecordPath = runtimeRecordPath(runtimeContext);
+  const activeRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  if (
+    compiledPromptRef &&
+    normalizeText(compiledPromptRef.sourceDocumentHash) !==
+      normalizeText(activeRecord?.sourceDocumentHash)
+  ) {
+    validationErrors.push('sourceDocumentHash_mismatch');
+  }
+  const modelPacket = readModelPacketForCompiledRef(input.projectRoot, compiledPromptRef);
+  const allowedWriteScope =
+    Array.isArray(pendingPacket.allowedWriteScope) && pendingPacket.allowedWriteScope.length > 0
+      ? pendingPacket.allowedWriteScope
+      : [];
+  for (const changed of report.filesChanged) {
+    if (!pathMatchesAllowedScope(changed, allowedWriteScope)) {
+      validationErrors.push(`filesChanged_out_of_scope:${changed}`);
+    }
+  }
+  const requiredCommands = requiredCommandsFromModelPacket(modelPacket);
+  if (!validationsCoverRequiredCommands(report.validationsRun, requiredCommands)) {
+    validationErrors.push('required_command_coverage_missing');
+  }
+  if (report.evidence.length === 0) validationErrors.push('evidence_empty');
+
+  if (validationErrors.length > 0) {
+    return invalidNativeGoalTaskReportImport({
+      taskReportPath,
+      validationErrors,
+      taskReport: report,
+    });
+  }
+
+  const nextActionHint: OrchestrationNextAction =
+    report.status === 'done' ? 'run_execution_closure_gate' : 'dispatch_remediation';
+  const completedState = ingestMainAgentTaskReport(input.projectRoot, state.sessionId, report, {
+    nextActionHint,
+    currentStage: input.stage,
+  });
+  const recordedAt = new Date().toISOString();
+  recordNativeGoalControlledIngestEvidence({
+    recordPath: activeRecordPath,
+    taskReportPath,
+    taskReport: report,
+    pendingPacket,
+    requiredCommands,
+    recordedAt,
+  });
+  if (activeRecordPath && compiledPromptRef) {
+    writeNativeGoalHandoffToRecord({
+      recordPath: activeRecordPath,
+      host: state.host,
+      packet: pendingPacket,
+      packetPath: state.pendingPacket.packetPath,
+      modelPacket,
+      imported: report.status === 'done',
+      importStatus: `task_report_${report.status}`,
+    });
+  }
+  return {
+    status: 'imported',
+    validationErrors: [],
+    taskReportPath,
+    packetId: report.packetId,
+    nextAction: report.status === 'done' ? completedState.nextAction : 'dispatch_remediation',
+    controlledIngested: true,
+    taskReport: report,
+  };
 }
 
 function commandCloseoutAttemptId(command: Record<string, unknown>): string {
@@ -18718,6 +19224,28 @@ export function runMainAgentAutomaticLoop(input: {
     };
   }
 
+  if (initialSurface.mainAgentNextAction === 'await_native_goal_task_report') {
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      ...surfaceInput,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: 'blocked',
+      steps: [
+        ...steps,
+        {
+          step: 'native-goal-task-report',
+          status: 'fail',
+          summary: 'waiting for packet-bound native /goal TaskReport import',
+        },
+      ],
+      dispatchInstruction: null,
+      taskReport: null,
+      finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
+    };
+  }
+
   const instruction = buildMainAgentDispatchInstruction({
     ...surfaceInput,
     host: input.host,
@@ -19383,6 +19911,19 @@ export function mainMainAgentOrchestration(argv: string[]): number {
       });
       process.stdout.write(`${JSON.stringify(instruction, null, 2)}\n`);
       return instruction ? 0 : 1;
+    }
+    case 'import-native-goal-task-report': {
+      const result = importNativeGoalTaskReport({
+        projectRoot: root,
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        runId: args.runId,
+        flow,
+        stage,
+        taskReportPath: args.taskReportPath,
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.status === 'imported' ? 0 : 1;
     }
     case 'run-loop': {
       const result = runMainAgentAutomaticLoop({

@@ -18,7 +18,7 @@ function runReleaseGate(
     '--project',
     'tsconfig.node.json',
     '--transpile-only',
-    'scripts/main-agent-release-gate.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts',
     ...args,
   ];
   try {
@@ -128,7 +128,12 @@ describe('main-agent release gate contract', () => {
           allRequiredHostsPassed: true,
           legacyDualHostPassed: true,
         },
-        githubPrApi: { passed: true, prUrl: 'https://example.invalid/pull/1' },
+        githubPrApi: {
+          attempted: false,
+          passed: true,
+          prUrl: null,
+          steps: [{ id: 'real-github-preflight', exitCode: 0, detail: 'gh auth and repo access verified' }],
+        },
         ...(evidence_provenance ? { evidence_provenance } : {}),
       }),
       'utf8'
@@ -234,6 +239,58 @@ describe('main-agent release gate contract', () => {
       const matrixCheck = report.checks.find((item) => item.id === 'multi-host-real-artifact');
       expect(matrixCheck?.passed).toBe(false);
       expect(matrixCheck?.stderr).toContain('cursor=false');
+    } finally {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not require PR API smoke URL before user-confirmed delivery handoff', () => {
+    const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-no-pr-smoke-'));
+    try {
+      const reportPath = path.join(reportDir, 'report.json');
+      const ledgerPath = writePassingLedger(reportDir);
+      const evidence = writeReleaseGateEvidence(reportDir, {
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
+      const hostMatrix = JSON.parse(fs.readFileSync(evidence.hostMatrixPath, 'utf8')) as {
+        githubPrApi: { attempted: boolean; passed: boolean; prUrl: string | null };
+      };
+      hostMatrix.githubPrApi = {
+        attempted: false,
+        passed: true,
+        prUrl: null,
+      };
+      fs.writeFileSync(evidence.hostMatrixPath, JSON.stringify(hostMatrix), 'utf8');
+
+      const run = runReleaseGate(
+        {
+          MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: `${process.execPath} -e "process.exit(0)"`,
+          MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
+          MAIN_AGENT_RELEASE_GATE_SKIP_QUALITY_PRODUCER: 'true',
+        },
+        true,
+        [
+          ...strongArgs(evidence),
+          ...sameRunArgs(),
+          '--ledgerPath',
+          ledgerPath,
+          '--skipSprintStatusUpdate',
+          'true',
+        ]
+      );
+
+      expect(run.exitCode).toBe(0);
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        checks: Array<{ id: string; passed: boolean; stdout: string; stderr: string }>;
+        completion_intent?: { storyKey: string };
+      };
+      const matrixCheck = report.checks.find((item) => item.id === 'multi-host-real-artifact');
+      expect(matrixCheck?.passed).toBe(true);
+      expect(matrixCheck?.stdout).toContain('githubPreflight=true');
+      expect(matrixCheck?.stdout).toContain('prSmoke=not_required_pre_delivery');
+      expect(report.completion_intent?.storyKey).toBe('S-release');
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
     }

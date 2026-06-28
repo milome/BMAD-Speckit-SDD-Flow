@@ -70,6 +70,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.prTopologyPath = argv[++index];
     } else if (token === '--enableRealPrApi' && argv[index + 1]) {
       out.enableRealPrApi = argv[++index];
+    } else if (token === '--allowMutation' && argv[index + 1]) {
+      out.allowMutation = argv[++index];
     } else if (token === '--runId' && argv[index + 1]) {
       out.runId = argv[++index];
     } else if (token === '--storyKey' && argv[index + 1]) {
@@ -127,6 +129,11 @@ function providerPreflight(
       passed: githubAuthAvailable(checkCommand),
       detail:
         'GITHUB_TOKEN/GH_TOKEN/GITHUB_PAT_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN or gh auth status must be available',
+    },
+    {
+      id: 'github-repo-access',
+      passed: checkCommand('gh', ['repo', 'view', '--json', 'nameWithOwner']),
+      detail: 'gh repo view --json nameWithOwner must be available for the current repository',
     },
   ];
 }
@@ -213,31 +220,47 @@ function runGithubPrApiOrchestration(input: {
   providerOk: boolean;
   journeyPassed: boolean;
   enableRealPrApi?: boolean;
+  allowMutation?: boolean;
   runCommand?: CommandRunner;
 }): HostMatrixPrOrchestrationReport['githubPrApi'] {
   if (input.provider !== 'real') {
     return { attempted: false, passed: true, steps: [], prUrl: null };
   }
-  if (!input.enableRealPrApi) {
+  if (!input.providerOk || !input.journeyPassed) {
     return {
-      attempted: true,
+      attempted: false,
       passed: false,
       steps: [
+        { id: 'precondition', exitCode: 1, detail: 'provider or journey precondition failed' },
+      ],
+      prUrl: null,
+    };
+  }
+  if (!input.enableRealPrApi) {
+    return {
+      attempted: false,
+      passed: true,
+      steps: [
         {
-          id: 'real-pr-api-disabled',
-          exitCode: 1,
-          detail: 'pass --enableRealPrApi true to create/close a real GitHub PR',
+          id: 'real-pr-api-not-requested',
+          exitCode: 0,
+          detail: 'real GitHub PR API smoke is not required before user-confirmed delivery',
         },
       ],
       prUrl: null,
     };
   }
-  if (!input.providerOk || !input.journeyPassed) {
+  if (!input.allowMutation) {
     return {
-      attempted: true,
-      passed: false,
+      attempted: false,
+      passed: true,
       steps: [
-        { id: 'precondition', exitCode: 1, detail: 'provider or journey precondition failed' },
+        {
+          id: 'real-pr-api-mutation-not-authorized',
+          exitCode: 0,
+          detail:
+            'pass --allowMutation true with --enableRealPrApi true to create/close a real GitHub PR',
+        },
       ],
       prUrl: null,
     };
@@ -376,6 +399,7 @@ export function runHostMatrixPrOrchestration(input: {
   checkCommand?: CommandChecker;
   runJourney?: (args: string[]) => number;
   enableRealPrApi?: boolean;
+  allowMutation?: boolean;
   runCommand?: CommandRunner;
   runId?: string;
   storyKey?: string;
@@ -456,6 +480,7 @@ export function runHostMatrixPrOrchestration(input: {
     providerOk,
     journeyPassed: journeyReport.finalPassed === true && hostMatrix.allRequiredHostsPassed,
     enableRealPrApi: input.enableRealPrApi,
+    allowMutation: input.allowMutation,
     runCommand: input.runCommand,
   });
 
@@ -544,6 +569,7 @@ export function main(argv: string[]): number {
     provider,
     projectRoot,
     enableRealPrApi: args.enableRealPrApi === 'true',
+    allowMutation: args.allowMutation === 'true',
     runId: args.runId,
     storyKey: args.storyKey,
     evidenceBundleId: args.evidenceBundleId,

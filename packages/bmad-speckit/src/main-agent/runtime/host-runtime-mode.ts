@@ -275,6 +275,7 @@ export function writeNativeGoalInvocationReceipt(input: {
     stderrRef: input.stderrRef,
     packetId: input.packetId,
     attemptId: input.attemptId,
+    recordId: input.recordId,
   };
   const filePath = path.join(
     runtimeModeDir(input.projectRoot, input.recordId, input.attemptId),

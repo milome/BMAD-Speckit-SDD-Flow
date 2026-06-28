@@ -398,6 +398,7 @@ export function runMainAgentCompiledPrompt(input: {
       auditReceiptHash: sha256File(auditReceiptPath),
       goalExecutionPath: fs.existsSync(goalExecutionPath) ? goalExecutionPath : null,
       goalExecutionHash: fs.existsSync(goalExecutionPath) ? sha256File(goalExecutionPath) : null,
+      taskReportPath,
       sourceDocumentHash: confirmedSource.sourceDocumentHash,
       implementationConfirmationHash: confirmedSource.implementationConfirmationHash,
     },

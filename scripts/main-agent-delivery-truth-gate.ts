@@ -29,6 +29,12 @@ interface HostMatrixEvidence {
     allRequiredHostsPassed: boolean;
     legacyDualHostPassed?: boolean;
   };
+  githubPrApi?: {
+    attempted?: boolean;
+    passed: boolean;
+    prUrl: string | null;
+    steps?: Array<{ id: string; exitCode: number; detail: string }>;
+  };
   evidence_provenance?: EvidenceProvenance;
 }
 
@@ -165,24 +171,37 @@ function checkHostMatrix(evidence: HostMatrixEvidence | null): {
   const requiredHosts = new Set(evidence?.hostMatrix?.requiredHosts ?? []);
   const hasAllRequiredHosts =
     requiredHosts.has('cursor') && requiredHosts.has('claude') && requiredHosts.has('codex');
+  const structuralPassed =
+    evidence != null &&
+    evidence.journeyMode === 'real' &&
+    evidence.journeyE2EPassed === true &&
+    evidence.hostMatrix?.matrixType === 'main_agent_multi_host_matrix' &&
+    hasAllRequiredHosts &&
+    evidence.hostMatrix.hostsPassed.cursor === true &&
+    evidence.hostMatrix.hostsPassed.claude === true &&
+    evidence.hostMatrix.hostsPassed.codex === true &&
+    evidence.hostMatrix.allRequiredHostsPassed === true;
+  const githubPreflightPassed =
+    evidence?.githubPrApi == null ? true : evidence.githubPrApi.passed === true;
+  const failureLabel =
+    evidence?.githubPrApi?.passed === false
+      ? 'github_auth_not_verified'
+      : 'host_matrix_real_preflight_failed';
   return {
-    passed:
-      evidence != null &&
-      evidence.journeyMode === 'real' &&
-      evidence.journeyE2EPassed === true &&
-      evidence.hostMatrix?.matrixType === 'main_agent_multi_host_matrix' &&
-      hasAllRequiredHosts &&
-      evidence.hostMatrix.hostsPassed.cursor === true &&
-      evidence.hostMatrix.hostsPassed.claude === true &&
-      evidence.hostMatrix.hostsPassed.codex === true &&
-      evidence.hostMatrix.allRequiredHostsPassed === true,
+    passed: structuralPassed && githubPreflightPassed,
     summary: evidence
-      ? `mode=${evidence.journeyMode}, journey=${evidence.journeyE2EPassed}, cursor=${evidence.hostMatrix?.hostsPassed.cursor}, claude=${evidence.hostMatrix?.hostsPassed.claude}, codex=${evidence.hostMatrix?.hostsPassed.codex}, allRequiredHostsPassed=${evidence.hostMatrix?.allRequiredHostsPassed}`
+      ? `mode=${evidence.journeyMode}, journey=${evidence.journeyE2EPassed}, cursor=${evidence.hostMatrix?.hostsPassed.cursor}, claude=${evidence.hostMatrix?.hostsPassed.claude}, codex=${evidence.hostMatrix?.hostsPassed.codex}, allRequiredHostsPassed=${evidence.hostMatrix?.allRequiredHostsPassed}, githubPreflight=${evidence.githubPrApi?.passed ?? 'not_recorded'}, ${structuralPassed && githubPreflightPassed ? 'host_matrix_real_preflight_passed' : failureLabel}`
       : 'missing',
   };
 }
 
 function checkPrTopology(evidence: PrTopology | null): { passed: boolean; summary: string } {
+  if (evidence == null) {
+    return {
+      passed: true,
+      summary: 'not_required_pre_delivery',
+    };
+  }
   const validation = evidence ? validatePrTopologyForReleaseGate(evidence) : { passed: false };
   const allClosed =
     evidence?.required_nodes.every((node) =>
@@ -244,13 +263,15 @@ function checkEvidenceProvenance(input: {
   sprintAudit: SprintStatusAuditEvidence | null;
   qualityGate?: QualityGateEvidence | null;
 }): { passed: boolean; summary: string } {
-  const entries = [
+  const entries: Array<[string, EvidenceProvenance | undefined]> = [
     ['releaseGate', input.releaseGate?.evidence_provenance],
     ['hostMatrix', input.hostMatrix?.evidence_provenance],
-    ['prTopology', input.prTopology?.evidence_provenance],
     ['sprintAudit', input.sprintAudit?.evidence_provenance],
     ['qualityGate', input.qualityGate?.evidence_provenance],
-  ] as const;
+  ];
+  if (input.prTopology) {
+    entries.push(['prTopology', input.prTopology.evidence_provenance]);
+  }
   const present = entries.filter(([, value]) => value != null);
   if (present.length === 0) {
     return { passed: false, summary: 'missing evidence_provenance on all delivery artifacts' };
@@ -372,7 +393,7 @@ export function main(argv: string[]): number {
     qualityGate,
   })) {
     const evidencePath = evidencePaths[id as keyof typeof evidencePaths];
-    if (result.missing) missingEvidence.push(`${id}: ${evidencePath}`);
+    if (result.missing && id !== 'prTopology') missingEvidence.push(`${id}: ${evidencePath}`);
     if (result.error) missingEvidence.push(`${id}: ${evidencePath}: ${result.error}`);
   }
   const report = evaluateDeliveryTruthGate({

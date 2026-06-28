@@ -1232,6 +1232,16 @@ function recommendedNowAction(primary, language) {
   }
   const route = effectiveRuntimeRoute(primary);
   const next = primary.nextSafeAction;
+  if (next === 'dispatch_implement' && primary.nativeGoalHandoff) {
+    return actionDisplay({
+      kind: 'managed_native_goal_handoff',
+      executable: true,
+      label: '主控托管执行',
+      actionToken: next,
+      suggestedPrompt: primary.nativeGoalHandoff.goalCommand || '',
+      renderAsCode: false,
+    });
+  }
   if (primary.delivery.awaiting || next === 'confirm-closeout-acceptance') {
     return actionDisplay({
       kind: 'cli_command',
@@ -1384,7 +1394,15 @@ function renderRecommendedNow(runtime, labels, language) {
   const lines = [schemaHeading(labels.headingSchema, 'recommendedNow')];
   if (zh) {
     lines.push('', `当前 route：${route}`, `下一安全动作：${next}`);
-    if (action.kind === 'suggested_prompt') {
+    if (action.kind === 'managed_native_goal_handoff') {
+      const handoff = primary.nativeGoalHandoff;
+      lines.push('主控托管执行');
+      lines.push(`Packet ID: ${handoff.packetId}`);
+      lines.push(`Goal command: ${handoff.goalCommand}`);
+      lines.push(`TaskReport path: ${handoff.taskReportPath}`);
+      lines.push('Return to main agent after /goal writes TaskReport');
+      lines.push(handoff.returnCommand);
+    } else if (action.kind === 'suggested_prompt') {
       lines.push('这个 route 没有专属公开技能，请复制下面提示词执行。', '', '推荐提示词：');
       lines.push(
         action.suggestedPrompt ||
@@ -1401,7 +1419,15 @@ function renderRecommendedNow(runtime, labels, language) {
     return lines;
   }
   lines.push('', `Current route: ${route}`, `Next safe action: ${next}`);
-  if (action.kind === 'suggested_prompt') {
+  if (action.kind === 'managed_native_goal_handoff') {
+    const handoff = primary.nativeGoalHandoff;
+    lines.push('主控托管执行');
+    lines.push(`Packet ID: ${handoff.packetId}`);
+    lines.push(`Goal command: ${handoff.goalCommand}`);
+    lines.push(`TaskReport path: ${handoff.taskReportPath}`);
+    lines.push('Return to main agent after /goal writes TaskReport');
+    lines.push(handoff.returnCommand);
+  } else if (action.kind === 'suggested_prompt') {
     lines.push('This route has no dedicated public skill. Use the suggested prompt below.', '', 'Suggested prompt:');
     lines.push(
       action.suggestedPrompt ||

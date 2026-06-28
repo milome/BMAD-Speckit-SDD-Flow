@@ -283,6 +283,21 @@ function modelStatusEvidence(record, modelId, currentMentalModel = '') {
     }
     return { status: 'not_established', source: 'missing readiness gate evidence' };
   }
+  if (modelId === 'execution_closure') {
+    const iterations = asArray(record.executionIterations);
+    const closures = asArray(record.requirementClosures);
+    const artifactIndex = asArray(record.artifactIndex);
+    const requiredCommands = asArray(record.deliveryEvidence?.requiredCommands);
+    if (
+      iterations.length > 0 &&
+      closures.length > 0 &&
+      artifactIndex.length > 0 &&
+      requiredCommands.length > 0
+    ) {
+      return { status: 'pass', source: 'controlled ingest execution closure evidence' };
+    }
+    return { status: 'not_established', source: 'missing controlled ingest execution closure evidence' };
+  }
   if (modelId === 'delivery_confirmation' && deliveryAwaitingAcceptance(record)) {
     return { status: 'awaiting_user_acceptance', source: 'delivery acceptance request' };
   }
@@ -345,6 +360,40 @@ function conditionSatisfied(record, condition, delivery) {
     default:
       return false;
   }
+}
+
+function nativeGoalHandoff(record) {
+  const handoff = record?.nativeGoalHandoff;
+  if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)) return null;
+  if (!text(handoff.packetId) || !text(handoff.taskReportPath)) return null;
+  return {
+    packetId: text(handoff.packetId),
+    goalCommand: text(handoff.goalCommand),
+    taskReportPath: text(handoff.taskReportPath),
+    returnCommand:
+      text(handoff.returnCommand) ||
+      `bmad-speckit main-agent-orchestration --action import-native-goal-task-report --taskReportPath ${text(handoff.taskReportPath)}`,
+    dispatchHost: text(handoff.dispatchHost),
+    runtimeHost: text(handoff.runtimeHost),
+    renderedHostLabel: text(handoff.renderedHostLabel),
+    imported: handoff.imported === true,
+    importStatus: text(handoff.importStatus),
+  };
+}
+
+function hasControlledNativeGoalTaskReportIngest(record, handoff) {
+  if (!handoff) return false;
+  if (handoff.imported !== true) return false;
+  const iterations = asArray(record.executionIterations);
+  const closures = asArray(record.requirementClosures);
+  const artifactIndex = asArray(record.artifactIndex);
+  const requiredCommands = asArray(record.deliveryEvidence?.requiredCommands);
+  return (
+    iterations.length > 0 &&
+    closures.length > 0 &&
+    artifactIndex.length > 0 &&
+    requiredCommands.length > 0
+  );
 }
 
 function inferCurrentMentalModel(record) {
@@ -523,6 +572,15 @@ function nextSafeActionFor(input) {
   if (input.reason === 'delivery_closeout_blocker') return 'run_delivery_closeout';
   if (input.delivery.awaiting) return 'confirm-closeout-acceptance';
   if (input.reason === 'readiness_blocker') return 'run_implementation_readiness_gate';
+  if (
+    input.nativeGoalHandoff &&
+    !input.nativeGoalTaskReportIngested &&
+    !['task_report_partial', 'task_report_blocked'].includes(
+      text(input.nativeGoalHandoff.importStatus)
+    )
+  ) {
+    return 'await_native_goal_task_report';
+  }
   if (input.matrixAction?.runtimeNextAction) return input.matrixAction.runtimeNextAction;
   return 'inspect_requirement_record';
 }
@@ -570,6 +628,11 @@ function summarizeRecord(entry, options = {}) {
     effectiveSchemaModelStatus,
     delivery,
   });
+  const packetBoundNativeGoalHandoff = nativeGoalHandoff(record);
+  const nativeGoalTaskReportIngested = hasControlledNativeGoalTaskReportIngest(
+    record,
+    packetBoundNativeGoalHandoff
+  );
   const nextSafeAction = nextSafeActionFor({
     record,
     currentMentalModel,
@@ -581,6 +644,8 @@ function summarizeRecord(entry, options = {}) {
     reconfirmation,
     reason,
     matrixAction,
+    nativeGoalHandoff: packetBoundNativeGoalHandoff,
+    nativeGoalTaskReportIngested,
   });
   const displayState =
     delivery.awaiting || schemaModelStatus === 'awaiting_user_acceptance'
@@ -638,6 +703,8 @@ function summarizeRecord(entry, options = {}) {
     indexPointerStatus: isIndexedActive ? 'trusted_pointer' : 'not_index_pointer',
     hasSafetyBlocker,
     modelStatuses,
+    nativeGoalHandoff: packetBoundNativeGoalHandoff,
+    nativeGoalTaskReportIngested,
     recordPath: normalizePath(path.relative(process.cwd(), recordPath)),
   };
   if (options.includeRawRecord) summary.rawRecord = record;

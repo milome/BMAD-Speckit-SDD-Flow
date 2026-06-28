@@ -121,6 +121,7 @@ Useful options:
 - `--human-prompt-profile full|compact` to select human prompt density. `full` is the default for `--out-dir`.
 - `--execution-discipline-profile-ref <path>` to load an immutable main-agent generated execution discipline profile snapshot. The profile is `discipline_profile_only` and may be rendered into `human_prompt.txt`, `goal_execution.md`, and `audit_receipt.json`; it must not change confirmed source rows, required commands, packet authority, or mental model state.
 - `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command must reference `goal_execution.md` and `model_packet.json`; it requires `--out-dir` and is length-checked.
+- `--task-report-path <path>` is mandatory when `--goal-command-available true` and `--out-dir` are used. It is the packet-bound TaskReport path that the native `/goal` main session must overwrite with its final execution result.
 - `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.
@@ -214,6 +215,11 @@ Native /goal requires --out-dir so goal_execution.md and model_packet.json can b
 ```
 
 ```text
+BLOCK: TASK_REPORT_PATH_REQUIRED
+Native /goal requires --task-report-path so the main-agent can controlled-ingest the result.
+```
+
+```text
 BLOCK: GOAL_COMMAND_TOO_LONG
 The generated /goal document-reference command still exceeds the hard length limit.
 ```
@@ -231,6 +237,27 @@ When `--goal-command-available true` is used for `codex` or `claude-code`, apply
 `goal_execution.md` is not execution authority. It is a `/goal`-safe execution entry document. It must reference `model_packet.json`, `human_prompt.txt`, and `audit_receipt.json`, and it must state that `model_packet.json` remains the machine-readable execution authority. `human_prompt.txt` must state that the `/goal` command is an entry pointer only, not the full task scope, and that execution scope is `goal_execution.md + model_packet.json`.
 
 `audit_receipt.json` must record `goalCommand.mode`, `goalCommand.chars`, `goalCommand.maxChars`, `goalCommand.safeMaxChars`, and, when a goal document is written, `goalCommand.documentPath` plus `goalCommand.documentHash`. It must also record `goalDocumentRequiredFragmentsPassed` and missing fragments.
+
+## Native /goal TaskReport Handoff
+
+Native `/goal` is an execution entry point only. The TaskReport at `--task-report-path` is the only result artifact that can reconnect native `/goal` execution to main-agent orchestration.
+
+When `--goal-command-available true` is used with `--out-dir`, req-trace must:
+
+- Block with `TASK_REPORT_PATH_REQUIRED` when `--task-report-path` is missing.
+- Write the exact TaskReport path into `goal_execution.md`.
+- Write `audit_receipt.json.goalCommand.taskReportPath`, `audit_receipt.json.goalCommand.packetId`, and `audit_receipt.json.goalCommand.recordId`.
+- Write top-level `audit_receipt.json.goalExecutionPath` and `audit_receipt.json.goalExecutionHash`.
+- Write `audit_receipt.json.mainAgentHandoff.returnAction=import-native-goal-task-report`.
+- Never render a missing-value TaskReport path placeholder.
+
+After the user runs the native `/goal`, the only valid recovery action is returning to the main-agent and running:
+
+```text
+bmad-speckit main-agent-orchestration --action import-native-goal-task-report --taskReportPath <packet compiledPromptRef.taskReportPath>
+```
+
+`goal_execution.md`, `audit_receipt.json`, stdout, exit code, chat summary, and `/goal` completion are not execution closure PASS evidence. Only main-agent controlled ingest of a valid TaskReport may write execution closure evidence.
 
 ## Shared Goal Contract Rendering
 

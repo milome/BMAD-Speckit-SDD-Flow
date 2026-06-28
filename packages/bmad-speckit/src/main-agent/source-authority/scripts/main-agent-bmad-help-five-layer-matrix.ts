@@ -542,6 +542,18 @@ function runLayerStage(input: {
     `run=${runLoop.runId}`,
     `final=${runLoop.finalSurface.mainAgentNextAction ?? 'none'}`,
   ];
+  const nativeGoalHandoff =
+    runLoop.finalSurface.sixModelRuntimeDecision?.primaryRecord?.nativeGoalHandoff ??
+    initialSurface.sixModelRuntimeDecision?.primaryRecord?.nativeGoalHandoff ??
+    null;
+  if (nativeGoalHandoff) {
+    evidence.push('主控托管执行');
+    evidence.push(`Packet ID: ${nativeGoalHandoff.packetId}`);
+    evidence.push(`Goal command: ${nativeGoalHandoff.goalCommand}`);
+    evidence.push(`TaskReport path: ${nativeGoalHandoff.taskReportPath}`);
+    evidence.push('Return to main agent after /goal writes TaskReport');
+    evidence.push(nativeGoalHandoff.returnCommand);
+  }
   const passed =
     helpPolicy.mainAgentOrchestration.source !== 'none' &&
     helpPolicy.mainAgentNextAction != null &&

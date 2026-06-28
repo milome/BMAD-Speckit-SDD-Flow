@@ -68,7 +68,9 @@ function runtimeScript(scriptPath: string, args: string[] = []): string[] {
 }
 
 function runtimeCommandText(scriptPath: string, args: string[] = []): string {
-  return runtimeScript(scriptPath, args).map((value) => (/\s/u.test(value) ? JSON.stringify(value) : value)).join(' ');
+  return runtimeScript(scriptPath, args)
+    .map((value) => (/\s/u.test(value) ? JSON.stringify(value) : value))
+    .join(' ');
 }
 
 function runStep(id: string, command: string[], allowFailure = false): StepResult {
@@ -131,8 +133,6 @@ function main(argv: string[]): number {
       ? runtimeCommandText('scripts/main-agent-host-matrix-pr-orchestrator.ts', [
           '--provider',
           'real',
-          '--enableRealPrApi',
-          'true',
         ])
       : runtimeCommandText('scripts/main-agent-host-matrix-pr-orchestrator.ts', ['--provider', 'mock']);
   const releaseGateEnv = {

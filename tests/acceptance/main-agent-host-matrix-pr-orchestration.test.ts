@@ -82,6 +82,7 @@ describe('main-agent host-matrix PR orchestration', () => {
         runJourney: fastPassingJourney,
         checkCommand: (command, args = []) => {
           if (command === 'gh' && args.join(' ') === 'auth status') return true;
+          if (command === 'gh' && args.join(' ') === 'repo view --json nameWithOwner') return true;
           return ['gh', 'claude', 'codex'].includes(command);
         },
       });
@@ -155,25 +156,27 @@ describe('main-agent host-matrix PR orchestration', () => {
     }
   });
 
-  it('fails closed in real provider mode unless real PR API mutation is explicitly enabled', () => {
+  it('passes in real provider mode without mutating PR API smoke when preflight and host journey pass', () => {
     const report = runHostMatrixPrOrchestration({
       provider: 'real',
       runJourney: fastPassingJourney,
       checkCommand: (command, args = []) => {
         if (command === 'gh' && args.join(' ') === 'auth status') return true;
+        if (command === 'gh' && args.join(' ') === 'repo view --json nameWithOwner') return true;
         return ['gh', 'claude', 'codex'].includes(command);
       },
     });
 
     expect(report.providerPreflight.every((check) => check.passed)).toBe(true);
-    expect(report.githubPrApi.attempted).toBe(true);
-    expect(report.githubPrApi.passed).toBe(false);
-    expect(report.githubPrApi.steps[0].id).toBe('real-pr-api-disabled');
-    expect(report.finalPassed).toBe(false);
-    expect(report.prTopology.all_affected_stories_passed).toBe(false);
+    expect(report.githubPrApi.attempted).toBe(false);
+    expect(report.githubPrApi.passed).toBe(true);
+    expect(report.githubPrApi.prUrl).toBeNull();
+    expect(report.githubPrApi.steps.map((step) => step.id)).toContain('real-pr-api-not-requested');
+    expect(report.finalPassed).toBe(true);
+    expect(report.prTopology.all_affected_stories_passed).toBe(true);
   });
 
-  it('records a real PR API success path only after git push, PR create, and PR close succeed', () => {
+  it('does not mutate when PR API smoke is enabled without explicit mutation authorization', () => {
     const steps: string[] = [];
     const report = runHostMatrixPrOrchestration({
       provider: 'real',
@@ -181,6 +184,33 @@ describe('main-agent host-matrix PR orchestration', () => {
       runJourney: fastPassingJourney,
       checkCommand: (command, args = []) => {
         if (command === 'gh' && args.join(' ') === 'auth status') return true;
+        if (command === 'gh' && args.join(' ') === 'repo view --json nameWithOwner') return true;
+        return ['gh', 'claude', 'codex'].includes(command);
+      },
+      runCommand: (command, args) => {
+        const key = `${command} ${args.join(' ')}`;
+        steps.push(key);
+        return { exitCode: 0, detail: key };
+      },
+    });
+
+    expect(report.githubPrApi.attempted).toBe(false);
+    expect(report.githubPrApi.passed).toBe(true);
+    expect(report.githubPrApi.steps[0].id).toBe('real-pr-api-mutation-not-authorized');
+    expect(steps.some((step) => step.startsWith('git push -u origin'))).toBe(false);
+    expect(report.finalPassed).toBe(true);
+  });
+
+  it('records a real PR API success path only after explicit mutation authorization, git push, PR create, and PR close succeed', () => {
+    const steps: string[] = [];
+    const report = runHostMatrixPrOrchestration({
+      provider: 'real',
+      enableRealPrApi: true,
+      allowMutation: true,
+      runJourney: fastPassingJourney,
+      checkCommand: (command, args = []) => {
+        if (command === 'gh' && args.join(' ') === 'auth status') return true;
+        if (command === 'gh' && args.join(' ') === 'repo view --json nameWithOwner') return true;
         return ['gh', 'claude', 'codex'].includes(command);
       },
       runCommand: (command, args) => {

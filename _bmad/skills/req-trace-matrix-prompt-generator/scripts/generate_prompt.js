@@ -129,6 +129,23 @@ function normalizeArgs(args) {
   if (!allowedGoalAvailability.has(args.goalCommandAvailable)) {
     throw new Error(`Unsupported --goal-command-available: ${args.goalCommandAvailable}`);
   }
+  if (args.goalCommandAvailable === 'true' && args.outDir && !String(args.taskReportPath || '').trim()) {
+    throw new BlockedInput(
+      'BLOCK: TASK_REPORT_PATH_REQUIRED',
+      'Native /goal generation requires --task-report-path so main-agent can import the execution TaskReport.'
+    );
+  }
+  if (args.taskReportPath) {
+    args.taskReportPath = normalizePathSafe(path.resolve(args.taskReportPath));
+  }
+}
+
+function taskReportPathRequired(args) {
+  return (
+    args.goalCommandAvailable === 'true' &&
+    args.outDir &&
+    !String(args.taskReportPath || '').trim()
+  );
 }
 
 function readText(file) {
@@ -1510,6 +1527,9 @@ function buildGoalDirective(packet, hints, artifactPaths) {
       originalInlineChars: inlineChars,
       documentPath: artifactPaths.goalDocument,
       documentHash: null,
+      taskReportPath: packet.executionHandoff?.taskReportPath || null,
+      packetId: packet.packetId,
+      recordId: packet.recordId,
     }),
   };
 }
@@ -1660,6 +1680,15 @@ function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, out
   writeText(artifactPaths.goalDocumentDiskPath, goalDocument);
   const goalDocumentHash = sha256(readText(artifactPaths.goalDocumentDiskPath));
   promptMeta.hostDirective.goalCommand.documentHash = goalDocumentHash;
+  promptMeta.hostDirective.goalCommand.taskReportPath = packet.executionHandoff?.taskReportPath || null;
+  promptMeta.hostDirective.goalCommand.packetId = packet.packetId;
+  promptMeta.hostDirective.goalCommand.recordId = packet.recordId;
+  packet.executionHandoff.goalExecutionPath = artifactPaths.goalDocument;
+  packet.executionHandoff.goalExecutionHash = goalDocumentHash;
+  packet.executionHandoff.modelPacketPath = artifactPaths.modelPacket;
+  packet.executionHandoff.returnAction = 'import-native-goal-task-report';
+  packet.executionHandoff.resumeAction = 'import-native-goal-task-report';
+  packet.executionHandoff.ingestPolicy = 'strict_task_report_controlled_ingest';
   promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument, packet.sourceDocument);
   promptMeta.goalContractTemplate = goalDocumentResult.audit;
   outputs.goalDocument = artifactPaths.goalDocument;
@@ -1718,7 +1747,7 @@ function renderGoalNativeTaskReportHandoff(packet) {
   return `### Native Goal TaskReport Handoff
 
 - Packet ID: ${handoff.packetId || packet.packetId || packet.recordId}
-- TaskReport path: ${handoff.taskReportPath || '(not provided)'}
+- TaskReport path: ${handoff.taskReportPath}
 - TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }
 - Allowed write scope: ${allowedWriteScope.join(', ') || '(not declared)'}
 - Required validation commands: ${
@@ -2249,6 +2278,26 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
       externalSupervisorRequired: Boolean(promptMeta.hostDirective.externalSupervisorLoop),
     },
     goalCommand: promptMeta.hostDirective.goalCommand,
+    goalExecutionPath:
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+        ? outputs.goalDocument ?? null
+        : null,
+    goalExecutionHash:
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+        ? outputHashes.goalDocumentHash ?? null
+        : null,
+    mainAgentHandoff:
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+        ? {
+            recordId: packet.recordId,
+            packetId: packet.packetId,
+            modelPacketPath: outputs.modelPacket,
+            goalExecutionPath: outputs.goalDocument ?? null,
+            goalExecutionHash: outputHashes.goalDocumentHash ?? null,
+            taskReportPath: packet.executionHandoff?.taskReportPath || null,
+            returnAction: 'import-native-goal-task-report',
+          }
+        : null,
     humanPromptRequiredFragmentsPassed: promptMeta.audit.passed,
     humanPromptRequiredFragments: promptMeta.audit.fragments,
     humanPromptMissingRequiredFragments: promptMeta.audit.missing,
@@ -2401,6 +2450,17 @@ function compileArtifacts(args) {
     };
     const outputHashes = { modelPacketHash, humanPromptHash };
     ensureGoalDocumentPrepared(args, promptMeta, packet, context.artifactPaths, outputs, outputHashes);
+    writeJson(packetPath, packet);
+    outputHashes.modelPacketHash = sha256(readText(packetPath));
+    if (
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref' &&
+      !outputHashes.goalDocumentHash
+    ) {
+      throw new BlockedInput(
+        'BLOCK: GOAL_EXECUTION_REF_NOT_BOUND',
+        'goal_execution.md was generated without binding goalExecutionHash to audit_receipt.json.'
+      );
+    }
     const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta);
     writeJson(receiptPath, receipt);
     outputHashes.auditReceiptHash = sha256(readText(receiptPath));

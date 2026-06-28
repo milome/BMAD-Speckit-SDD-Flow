@@ -653,7 +653,7 @@ function main(argv: string[]): number {
   const root = process.cwd();
   const e2eCommand =
     normalizeText(process.env.MAIN_AGENT_RELEASE_GATE_E2E_COMMAND) ||
-    'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real --enableRealPrApi true';
+    'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real';
   const explicitLedgerPath =
     resolveOptionalPath(root, args.ledgerPath) ??
     resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_LEDGER_PATH);
@@ -742,7 +742,12 @@ function main(argv: string[]): number {
         hostsPassed: Record<'cursor' | 'claude' | 'codex', boolean>;
         allRequiredHostsPassed: boolean;
       };
-      githubPrApi?: { passed: boolean; prUrl: string | null };
+      githubPrApi?: {
+        attempted?: boolean;
+        passed: boolean;
+        prUrl: string | null;
+        steps?: Array<{ id: string; exitCode: number; detail: string }>;
+      };
       evidence_provenance?: EvidenceProvenance;
     }>('multi-host-real-artifact', hostMatrixPath, (value) => {
       const provenance = validateEvidenceProvenance(value, expectedProvenance);
@@ -759,12 +764,14 @@ function main(argv: string[]): number {
         value.hostMatrix?.hostsPassed?.codex === true &&
         value.hostMatrix?.allRequiredHostsPassed === true &&
         value.githubPrApi?.passed === true &&
-        typeof value.githubPrApi.prUrl === 'string' &&
-        value.githubPrApi.prUrl.length > 0 &&
         provenance.passed;
+      const prSmoke =
+        typeof value.githubPrApi?.prUrl === 'string' && value.githubPrApi.prUrl.length > 0
+          ? value.githubPrApi.prUrl
+          : 'not_required_pre_delivery';
       return {
         passed,
-        summary: `mode=${value.journeyMode}, journey=${value.journeyE2EPassed}, cursor=${value.hostMatrix?.hostsPassed?.cursor}, claude=${value.hostMatrix?.hostsPassed?.claude}, codex=${value.hostMatrix?.hostsPassed?.codex}, allRequiredHostsPassed=${value.hostMatrix?.allRequiredHostsPassed}, githubPrApi=${value.githubPrApi?.passed}, prUrl=${value.githubPrApi?.prUrl ?? 'missing'}, ${provenance.summary}`,
+        summary: `mode=${value.journeyMode}, journey=${value.journeyE2EPassed}, cursor=${value.hostMatrix?.hostsPassed?.cursor}, claude=${value.hostMatrix?.hostsPassed?.claude}, codex=${value.hostMatrix?.hostsPassed?.codex}, allRequiredHostsPassed=${value.hostMatrix?.allRequiredHostsPassed}, githubPreflight=${value.githubPrApi?.passed}, prSmoke=${prSmoke}, ${provenance.summary}`,
       };
     }),
     checkJsonFile<PrTopology & { evidence_provenance?: EvidenceProvenance }>(

@@ -117,7 +117,7 @@ function main(argv: string[]): number {
   ];
   const releaseGateCommand =
     provider === 'real'
-      ? 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real --enableRealPrApi true'
+      ? 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real'
       : 'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider mock';
   const releaseGateEnv = {
     MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: releaseGateCommand,
