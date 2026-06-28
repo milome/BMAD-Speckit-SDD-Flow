@@ -30,6 +30,7 @@ const REBASELINE_EVENT_TYPES = new Set([
   'control_log_rebaseline_recorded',
   'controlled_migration_recorded',
 ]);
+const LEGACY_NULL_GENESIS_EVENT_TYPES = new Set(['confirmation_recorded']);
 const REQUIRED_SUBSYSTEM_IDS = [
   'requirement_confirmation',
   'architecture_confirmation',
@@ -299,7 +300,17 @@ function replayProof(record: JsonObject, events: JsonObject[]): JsonObject {
   }
   const replayStartIndex = rebaselineIndex >= 0 ? rebaselineIndex : 0;
   const rebaseline = replayStartIndex > 0 ? controlledRebaseline(events[replayStartIndex]) : null;
-  if (replayStartIndex === 0 && text(events[0]?.previousEventHash) !== ZERO_HASH) {
+  const firstEvent = events[0];
+  const legacyNullGenesis =
+    replayStartIndex === 0 &&
+    firstEvent?.previousEventHash === null &&
+    LEGACY_NULL_GENESIS_EVENT_TYPES.has(text(firstEvent.eventType)) &&
+    isSha256(text(firstEvent.eventHash));
+  if (
+    replayStartIndex === 0 &&
+    text(firstEvent?.previousEventHash) !== ZERO_HASH &&
+    !legacyNullGenesis
+  ) {
     reasons.push('event_log_missing_genesis_or_rebaseline');
   }
   if (replayStartIndex > 0 && !rebaseline?.ok)
@@ -321,8 +332,14 @@ function replayProof(record: JsonObject, events: JsonObject[]): JsonObject {
     reasons.push('record_event_count_mismatch');
   return {
     ok: reasons.length === 0,
-    mode: replayStartIndex > 0 ? 'event-log-chain-from-rebaseline' : 'event-log-chain',
+    mode:
+      replayStartIndex > 0
+        ? 'event-log-chain-from-rebaseline'
+        : legacyNullGenesis
+          ? 'event-log-chain-legacy-genesis'
+          : 'event-log-chain',
     replayStartIndex,
+    ...(legacyNullGenesis ? { legacyGenesis: true } : {}),
     ...(rebaseline?.ok ? { rebaseline } : {}),
     reasons,
   };
@@ -354,19 +371,64 @@ function writerRegistryProof(events: JsonObject[], attemptId: string): JsonObjec
 
 function receiptProof(recordPath: string, events: JsonObject[]): JsonObject {
   const receiptDir = path.join(path.dirname(recordPath), 'events', 'receipts');
+  const skippableLegacyGenesis = events.filter(
+    (event, index) =>
+      index === 0 &&
+      event.previousEventHash === null &&
+      LEGACY_NULL_GENESIS_EVENT_TYPES.has(text(event.eventType)) &&
+      isSha256(text(event.eventHash))
+  );
   const missing = events
+    .filter((event) => !skippableLegacyGenesis.includes(event))
     .map((event) => text(event.eventId).replace(/[^a-z0-9_.-]/giu, '_'))
     .filter((id) => id && !fs.existsSync(path.join(receiptDir, `${id}.json`)));
-  return { ok: missing.length === 0, receiptDir: normalizePath(receiptDir), missing };
+  return {
+    ok: missing.length === 0,
+    receiptDir: normalizePath(receiptDir),
+    missing,
+    ...(skippableLegacyGenesis.length
+      ? { legacyGenesisReceiptSkipped: skippableLegacyGenesis.length }
+      : {}),
+  };
 }
 
 function schemaEvolutionProof(record: JsonObject): JsonObject {
   const store = nested(record.controlStore);
-  const scriptsExist = [
+  const requiredScripts = [
     'scripts/requirement-record-event-reducer.ts',
     'scripts/controlled-ingest-atomic-committer.ts',
     'scripts/requirement-record-schema-evolution.ts',
-  ].every((file) => fs.existsSync(file));
+  ];
+  const packageScriptDir = __dirname;
+  const packageSourceAuthorityDir = path.resolve(packageScriptDir, '..');
+  const rootScriptDir = path.resolve(packageScriptDir, '..', '..', '..', '..', '..', 'scripts');
+  const candidateScriptSets = [
+    requiredScripts,
+    [
+      path.join(packageScriptDir, 'requirement-record-event-reducer.js'),
+      path.join(packageScriptDir, 'controlled-ingest-atomic-committer.js'),
+      path.join(packageScriptDir, 'requirement-record-schema-evolution.js'),
+    ],
+    [
+      path.join(packageScriptDir, 'requirement-record-event-reducer.ts'),
+      path.join(packageScriptDir, 'controlled-ingest-atomic-committer.ts'),
+      path.join(packageScriptDir, 'requirement-record-schema-evolution.ts'),
+    ],
+    [
+      path.join(packageSourceAuthorityDir, 'scripts', 'requirement-record-event-reducer.ts'),
+      path.join(packageSourceAuthorityDir, 'scripts', 'controlled-ingest-atomic-committer.ts'),
+      path.join(packageSourceAuthorityDir, 'scripts', 'requirement-record-schema-evolution.ts'),
+    ],
+    [
+      path.join(rootScriptDir, 'requirement-record-event-reducer.ts'),
+      path.join(rootScriptDir, 'controlled-ingest-atomic-committer.ts'),
+      path.join(rootScriptDir, 'requirement-record-schema-evolution.ts'),
+    ],
+  ];
+  const resolvedScriptSet = candidateScriptSets.find((files) =>
+    files.every((file) => fs.existsSync(file))
+  );
+  const scriptsExist = Boolean(resolvedScriptSet);
   return {
     ok:
       scriptsExist &&
@@ -375,6 +437,9 @@ function schemaEvolutionProof(record: JsonObject): JsonObject {
     reducer: text(store.reducer),
     atomicCommitter: text(store.atomicCommitter),
     scriptsExist,
+    ...(resolvedScriptSet
+      ? { scriptProofPaths: resolvedScriptSet.map((file) => normalizePath(path.resolve(file))) }
+      : {}),
   };
 }
 
