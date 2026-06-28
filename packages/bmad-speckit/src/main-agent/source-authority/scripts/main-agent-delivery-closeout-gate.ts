@@ -111,6 +111,10 @@ function parseArgs(argv: string[]): ParsedArgs {
   return out;
 }
 
+function isDirectMainAgentDeliveryCloseoutGateCli(entry: string | undefined): boolean {
+  return /(^|[\\/])main-agent-delivery-closeout-gate(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -2220,25 +2224,35 @@ function evaluate(
       });
       blockingReasons.push('ai_tdd_contract_gate_source_missing');
     } else {
-      const aiTddGate = evaluateAiTddContractGate({
-        sourcePath: resolvedSourcePath,
-        record,
-        recordPath,
-        mode: 'closeout',
-        attemptId,
-        evaluatedAt: new Date().toISOString(),
-        evaluatedBy: 'main-agent-delivery-closeout-gate',
-      });
-      checks.push({
-        id: 'ai-tdd-contract-gate-closeout',
-        passed: text(aiTddGate.decision) === 'pass',
-        blockingReasons: strings(aiTddGate.blockingReasons),
-      });
-      if (text(aiTddGate.decision) !== 'pass') {
-        blockingReasons.push(
-          'ai_tdd_contract_gate_not_passed',
-          ...strings(aiTddGate.blockingReasons)
-        );
+      try {
+        const aiTddGate = evaluateAiTddContractGate({
+          sourcePath: resolvedSourcePath,
+          record,
+          recordPath,
+          mode: 'closeout',
+          attemptId,
+          evaluatedAt: new Date().toISOString(),
+          evaluatedBy: 'main-agent-delivery-closeout-gate',
+        });
+        checks.push({
+          id: 'ai-tdd-contract-gate-closeout',
+          passed: text(aiTddGate.decision) === 'pass',
+          blockingReasons: strings(aiTddGate.blockingReasons),
+        });
+        if (text(aiTddGate.decision) !== 'pass') {
+          blockingReasons.push(
+            'ai_tdd_contract_gate_not_passed',
+            ...strings(aiTddGate.blockingReasons)
+          );
+        }
+      } catch (error) {
+        checks.push({
+          id: 'ai-tdd-contract-gate-closeout',
+          passed: false,
+          blockingReasons: ['ai_tdd_contract_gate_evaluation_failed'],
+          error: error instanceof Error ? error.message : String(error),
+        });
+        blockingReasons.push('ai_tdd_contract_gate_evaluation_failed');
       }
     }
   }
@@ -2786,7 +2800,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   return evaluation.decision === 'pass' ? 0 : 1;
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectMainAgentDeliveryCloseoutGateCli(process.argv[1])) {
   try {
     process.exitCode = mainDeliveryCloseoutGate(process.argv.slice(2));
   } catch (error) {

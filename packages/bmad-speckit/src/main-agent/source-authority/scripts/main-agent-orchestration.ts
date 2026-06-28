@@ -16978,6 +16978,35 @@ function parseJsonObjectFromText(value: string): Record<string, unknown> | null 
   }
 }
 
+function commandCloseoutAttemptId(command: Record<string, unknown>): string {
+  const direct = normalizeText(command.closeoutAttemptId);
+  if (direct) return direct;
+  const lastRunRef = command.lastRunRef;
+  return lastRunRef && typeof lastRunRef === 'object' && !Array.isArray(lastRunRef)
+    ? normalizeText((lastRunRef as Record<string, unknown>).closeoutAttemptId)
+    : '';
+}
+
+function selectEvidenceBoundCloseoutAttemptId(record: Record<string, unknown> | null): string {
+  if (!record) return '';
+  const deliveryEvidence =
+    record.deliveryEvidence &&
+    typeof record.deliveryEvidence === 'object' &&
+    !Array.isArray(record.deliveryEvidence)
+      ? (record.deliveryEvidence as Record<string, unknown>)
+      : {};
+  const commandAttempts = objectsFrom(deliveryEvidence.requiredCommands)
+    .map(commandCloseoutAttemptId)
+    .filter(Boolean);
+  const runAttempts = new Set(
+    objectsFrom(record.executionIterations)
+      .flatMap((iteration) => objectsFrom(iteration.commandRunRefs))
+      .map((run) => normalizeText(run.closeoutAttemptId))
+      .filter(Boolean)
+  );
+  return commandAttempts.find((candidate) => runAttempts.has(candidate)) ?? '';
+}
+
 function runMainAgentDeliveryCloseout(input: {
   projectRoot: string;
   recordPath: string;
@@ -16989,10 +17018,9 @@ function runMainAgentDeliveryCloseout(input: {
   decision: string;
   blockingReasons: string[];
 } {
-  const attemptId =
-    normalizeText(input.args.closeoutAttemptId) ||
-    normalizeText(input.args.attemptId) ||
-    `closeout-${Date.now()}`;
+  const requestedAttemptId =
+    normalizeText(input.args.closeoutAttemptId) || normalizeText(input.args.attemptId);
+  let attemptId = requestedAttemptId;
   const explicitReportPath = normalizeText(input.args.closeoutReportPath);
   const reportPath = explicitReportPath
     ? path.resolve(input.projectRoot, stripWrappingQuotes(explicitReportPath))
@@ -17000,13 +17028,12 @@ function runMainAgentDeliveryCloseout(input: {
   const argv = [
     '--requirement-record',
     input.recordPath,
-    '--attempt-id',
-    attemptId,
     '--allow-existing-attempt',
     '--report-path',
     reportPath,
     '--json',
   ];
+  if (requestedAttemptId) argv.push('--attempt-id', requestedAttemptId);
   const source = normalizeText(input.args.sourcePath);
   if (source) argv.push('--source', stripWrappingQuotes(source));
   const modelPacket = normalizeText(input.args.modelPacketPath);
@@ -17023,6 +17050,14 @@ function runMainAgentDeliveryCloseout(input: {
     nested = captureNestedMainOutput(() => mainDeliveryCloseoutGate(argv));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    const report = readJsonObject(reportPath);
+    const record = readJsonObject(input.recordPath);
+    attemptId =
+      normalizeText(report?.currentAttemptId) ||
+      normalizeText((record?.closeout as Record<string, unknown> | undefined)?.currentAttemptId) ||
+      selectEvidenceBoundCloseoutAttemptId(record) ||
+      requestedAttemptId ||
+      `closeout-${Date.now()}`;
     const taskReport: TaskReport = {
       packetId: attemptId,
       status: 'blocked',
@@ -17049,6 +17084,11 @@ function runMainAgentDeliveryCloseout(input: {
     ? path.resolve(input.projectRoot, outputReportPath)
     : reportPath;
   const report = readJsonObject(resolvedReportPath);
+  attemptId =
+    normalizeText(output?.attemptId) ||
+    normalizeText(report?.currentAttemptId) ||
+    attemptId ||
+    `closeout-${Date.now()}`;
   const decision =
     normalizeText(output?.decision) ||
     normalizeText(report?.decision) ||

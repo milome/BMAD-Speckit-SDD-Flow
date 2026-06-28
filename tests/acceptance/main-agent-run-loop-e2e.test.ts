@@ -410,6 +410,41 @@ describe('main-agent automatic run-loop', () => {
     });
     const root = fixture.root;
     try {
+      const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      record.deliveryEvidence = {
+        requiredCommands: [
+          {
+            commandId: 'CMD-CURRENT',
+            command: 'node -e "process.exit(0)"',
+            blockingIfMissing: true,
+            negativeOrRegression: true,
+            closeoutAttemptId: 'implement-current',
+            lastRunRef: {
+              commandId: 'CMD-CURRENT',
+              runId: 'implement-current',
+              closeoutAttemptId: 'implement-current',
+            },
+          },
+        ],
+      };
+      record.executionIterations = [
+        {
+          executionIterationId: 'exec-current',
+          commandRunRefs: [
+            {
+              commandId: 'CMD-CURRENT',
+              runId: 'implement-current',
+              closeoutAttemptId: 'implement-current',
+              exitCode: 0,
+            },
+          ],
+        },
+      ];
+      fs.writeFileSync(fixture.recordPath, JSON.stringify(record, null, 2) + '\n', 'utf8');
+
       const result = runMainAgentAutomaticLoop({
         ...runLoopArgs(fixture),
         host: 'codex',
@@ -425,7 +460,7 @@ describe('main-agent automatic run-loop', () => {
         })
       );
       expect(result.taskReport).toMatchObject({
-        packetId: expect.stringMatching(/^closeout-/),
+        packetId: 'implement-current',
         status: 'blocked',
       });
       expect(result.taskReport?.validationsRun).toContain('main-agent:delivery-closeout-gate');
