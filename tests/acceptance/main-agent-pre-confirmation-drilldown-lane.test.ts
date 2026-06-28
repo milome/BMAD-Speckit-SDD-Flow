@@ -19,6 +19,23 @@ import {
   runMainAgentPreConfirmationDrilldown,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
+const PROJECTION_QUALITY_RULE_CODES = [
+  'projection_per_must_acceptance_not_independent',
+  'projection_shared_evidence_without_per_must_oracle',
+  'required_command_all_cover_all_without_per_must_assertions',
+  'target_modification_path_all_cover_all',
+  'current_target_map_not_product_specific',
+  'business_visual_generic_or_compressed',
+];
+
+function checkedProjectionQualityRuleCodesForRequest(input: any): string[] {
+  return (
+    input.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
+    input.projectionQualityGate?.requiredRuleCodes ??
+    PROJECTION_QUALITY_RULE_CODES
+  );
+}
+
 function writeDraftSource(root: string, name = 'source.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
   mkdirSync(path.dirname(source), { recursive: true });
@@ -409,13 +426,35 @@ function expectArtifactContract(file: string, recordId: string): void {
     /^sha256:/
   );
   expect(
-    artifact.contentHash ?? artifact.receiptHash ?? artifact.kernelHash ?? artifact.packetHash,
+    artifact.contentHash ??
+      artifact.receiptHash ??
+      artifact.kernelHash ??
+      artifact.packetHash ??
+      artifact.progressHash ??
+      artifact.reportHash ??
+      artifact.reconciliationHash,
     `${file} content or receipt hash`
   ).toMatch(/^sha256:/);
   expect(artifact.createdBy, `${file} createdBy`).toBeTruthy();
   expect(artifact.createdAt, `${file} createdAt`).toBeTruthy();
-  expect(Array.isArray(artifact.inputRefs), `${file} inputRefs`).toBe(true);
-  expect(artifact.inputRefs.length, `${file} inputRefs length`).toBeGreaterThan(0);
+  const checkpointReceiptRefs = Array.isArray(artifact.resumeLedger?.checkpointReceiptRefs)
+    ? artifact.resumeLedger.checkpointReceiptRefs.filter(
+        (ref: any) =>
+          ref &&
+          typeof ref === 'object' &&
+          typeof ref.checkpointId === 'string' &&
+          typeof ref.path === 'string' &&
+          typeof ref.hash === 'string' &&
+          ref.hash.startsWith('sha256:')
+      )
+    : null;
+  const inputRefs = Array.isArray(artifact.inputRefs)
+    ? artifact.inputRefs
+    : checkpointReceiptRefs && checkpointReceiptRefs.length === artifact.resumeLedger.checkpointReceiptRefs.length
+      ? checkpointReceiptRefs
+      : null;
+  expect(Array.isArray(inputRefs), `${file} inputRefs`).toBe(true);
+  expect(inputRefs?.length ?? 0, `${file} inputRefs length`).toBeGreaterThan(0);
 }
 
 function expectCheckpointAutoPromoted(
@@ -520,6 +559,7 @@ function cleanCriticalAuditorRound(input: any) {
     gateDryRunHash: gateDryRun.hash,
     reconciliationIssueCount: gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: packetProjectionSummary.projectionGroups,
+    checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
     reviewedProjectionRefs: packetProjectionSummary.projectionRefs.slice(0, 1),
     priorFindingsDisposition: [
       {
@@ -529,6 +569,11 @@ function cleanCriticalAuditorRound(input: any) {
       },
     ],
     rejectedGapCandidates: [{ id: `REJ-${roundIndex}`, reason: 'no new valid gap detected' }],
+    falsePositiveProofs: (gateDryRun.actionableBlockingIssues ?? []).map((issue: any) => ({
+      blockerCode: String(issue.code ?? ''),
+      proofType: 'current_source_packet_hash_match',
+      evidenceRefs: [gateDryRun.reportPath],
+    })),
     rationale: `Round ${roundIndex} found no new valid gap.`,
   };
 }
@@ -1058,6 +1103,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
               gateDryRunHash: input.gateDryRun.hash,
               reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
               checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+              checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
               reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
               priorFindingsDisposition: [
                 {
@@ -1076,6 +1122,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
             gateDryRunHash: input.gateDryRun.hash,
             reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
             checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+            checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
             reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
             priorFindingsDisposition: [
               {
@@ -1153,6 +1200,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
               gateDryRunHash: input.gateDryRun.hash,
               reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
               checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+              checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
               reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
               priorFindingsDisposition: [
                 {
@@ -1171,6 +1219,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
             gateDryRunHash: input.gateDryRun.hash,
             reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
             checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+            checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
             reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
             priorFindingsDisposition: [
               {
@@ -1228,6 +1277,57 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         seenAuditorInputs.every((input) => input.mustRefs.join(',') === mustRefs.join(','))
       ).toBe(true);
       expect(seenAuditorInputs.every((input) => input.mustPacketCount === 3)).toBe(true);
+
+      const sourceDefinedBusinessViews = [
+        ...confirmation.sequenceViews,
+        ...confirmation.flowViews,
+        ...confirmation.edgeCaseViews,
+      ].filter((view: any) => view.scope === 'business' && view.visualKind);
+      expect(sourceDefinedBusinessViews.map((view: any) => view.visualKind).sort()).toEqual([
+        'edge',
+        'failure',
+        'flow',
+        'happy',
+        'state',
+      ]);
+      const traceRowsById = new Map(confirmation.traceRows.map((row: any) => [row.id, row]));
+      for (const view of sourceDefinedBusinessViews) {
+        expect(view.traceRows, `${view.id} traceRows`).toEqual(
+          expect.arrayContaining(confirmation.traceRows.map((row: any) => row.id))
+        );
+        expect(view.evidenceRefs, `${view.id} evidenceRefs`).toEqual(
+          expect.arrayContaining(confirmation.evidence.map((row: any) => row.id))
+        );
+        expect(view.acceptanceRefs, `${view.id} acceptanceRefs`).toEqual(
+          expect.arrayContaining(confirmation.acceptanceTests.map((row: any) => row.id))
+        );
+        for (const traceRef of view.traceRows) {
+          const trace = traceRowsById.get(traceRef) as any;
+          expect(
+            [
+              ...(trace.sequenceViewRefs ?? []),
+              ...(trace.flowViewRefs ?? []),
+              ...(trace.edgeCaseViewRefs ?? []),
+              ...(trace.viewRefs ?? []),
+              ...(trace.diagramRefs ?? []),
+            ],
+            `${traceRef} reciprocates ${view.id}`
+          ).toContain(view.id);
+          expect(trace.evidenceRefs.some((ref: string) => view.evidenceRefs.includes(ref))).toBe(
+            true
+          );
+          expect(trace.acceptanceRefs.some((ref: string) => view.acceptanceRefs.includes(ref))).toBe(
+            true
+          );
+        }
+      }
+      expect(
+        sourceDefinedBusinessViews.find((view: any) => view.visualKind === 'failure')
+          ?.failurePathRefs
+      ).toEqual(expect.arrayContaining(confirmation.failurePaths.map((row: any) => row.id)));
+      expect(
+        sourceDefinedBusinessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs
+      ).toEqual(expect.arrayContaining(confirmation.edgeCases.map((row: any) => row.id)));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

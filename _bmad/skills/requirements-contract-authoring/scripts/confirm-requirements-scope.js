@@ -69,7 +69,49 @@ function semanticConfirmationForHash(confirmation) {
   for (const [key, value] of Object.entries(confirmation ?? {})) {
     if (!bookkeepingFields.has(key)) semantic[key] = value;
   }
+  normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
+}
+
+function normalizePreConfirmationDrilldownForHash(semantic) {
+  if (
+    !semantic.preConfirmationDrilldown ||
+    typeof semantic.preConfirmationDrilldown !== 'object' ||
+    Array.isArray(semantic.preConfirmationDrilldown)
+  ) {
+    return;
+  }
+  const drilldown = { ...semantic.preConfirmationDrilldown };
+  if (
+    drilldown.semanticKernelRef &&
+    typeof drilldown.semanticKernelRef === 'object' &&
+    !Array.isArray(drilldown.semanticKernelRef)
+  ) {
+    const semanticKernelRef = { ...drilldown.semanticKernelRef };
+    delete semanticKernelRef.hash;
+    drilldown.semanticKernelRef = semanticKernelRef;
+  }
+  if (
+    drilldown.mustDecompositionPacketRef &&
+    typeof drilldown.mustDecompositionPacketRef === 'object' &&
+    !Array.isArray(drilldown.mustDecompositionPacketRef)
+  ) {
+    const mustDecompositionPacketRef = { ...drilldown.mustDecompositionPacketRef };
+    delete mustDecompositionPacketRef.hash;
+    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
+  }
+  if (
+    drilldown.criticalAuditor &&
+    typeof drilldown.criticalAuditor === 'object' &&
+    !Array.isArray(drilldown.criticalAuditor)
+  ) {
+    const criticalAuditor = { ...drilldown.criticalAuditor };
+    delete criticalAuditor.consecutiveNoNewGapRounds;
+    delete criticalAuditor.latestReceiptHash;
+    delete criticalAuditor.convergenceVerdict;
+    drilldown.criticalAuditor = criticalAuditor;
+  }
+  semantic.preConfirmationDrilldown = drilldown;
 }
 
 function sourceDocumentHashFor(sourceText, blockText, confirmation) {

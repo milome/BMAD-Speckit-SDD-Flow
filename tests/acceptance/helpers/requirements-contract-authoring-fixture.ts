@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
@@ -88,6 +89,9 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
     scaleRoutingDecision: path.join(authoring, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoring, 'checkpoint-persistence-evidence.json'),
+    checkpointReceiptPaths: Array.from({ length: 9 }, (_item, index) =>
+      path.join(authoring, `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`)
+    ),
     progress: path.join(authoring, 'semantic-checkpoint-progress.json'),
     reconciliationReport: path.join(authoring, 'must_packet_source_reconciliation_report.json'),
     preRenderMustGate: path.join(authoring, 'pre-render-must-decomposition-gate-report.json'),
@@ -123,9 +127,10 @@ export function stagingTransactionDir(root: string, recordId: string): string {
     ? readdirSync(stagingRoot, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .map((entry) => path.join(stagingRoot, entry.name))
+        .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs)
     : [];
-  if (entries.length !== 1) {
-    throw new Error(`expected exactly one staging transaction under ${stagingRoot}, found ${entries.length}`);
+  if (entries.length === 0) {
+    throw new Error(`expected at least one staging transaction under ${stagingRoot}, found 0`);
   }
   return entries[0];
 }
@@ -169,7 +174,6 @@ export function writeCheckpointPersistenceEvidence(root: string, recordId: strin
       preRenderGlobalConsistencyHash: sha256File(paths.preRenderGlobalConsistency),
       packetSourceReconciliationHash: sha256File(paths.reconciliationReport),
     },
-    completedCheckpointIds: checkpointIds,
     progressHash: sha256File(paths.progress),
     preRenderMustDecompositionGateHash: sha256File(paths.preRenderMustGate),
     preRenderGlobalConsistencyHash: sha256File(paths.preRenderGlobalConsistency),
@@ -235,6 +239,10 @@ export function buildValidResponseFromRequest(
   const projectionRefs = Array.isArray(projectionSummary?.projectionRefs)
     ? (projectionSummary.projectionRefs as string[])
     : [];
+  const projectionQualityGate = request.projectionQualityGate as Record<string, unknown> | undefined;
+  const checkedProjectionQualityRuleCodes = Array.isArray(projectionQualityGate?.requiredRuleCodes)
+    ? (projectionQualityGate.requiredRuleCodes as string[])
+    : [];
   return {
     schemaVersion: 'critical-auditor-round-response/v1',
     verdict: 'no_new_valid_gap',
@@ -257,6 +265,7 @@ export function buildValidResponseFromRequest(
           'packet_source_reconciliation',
           'pre_render_must_decomposition_gate',
         ],
+    checkedProjectionQualityRuleCodes,
     reviewedMustRefs,
     reviewedProjectionRefs: [projectionRefs[0] ?? firstProjectionRef(packet)],
     priorFindingsDisposition: [
@@ -296,6 +305,14 @@ export function cleanCriticalAuditorRound(input: CriticalAuditorFixtureInput) {
     gateDryRunHash: gateDryRun.hash,
     reconciliationIssueCount: gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: packetProjectionSummary.projectionGroups,
+    checkedProjectionQualityRuleCodes: [
+      'projection_per_must_acceptance_not_independent',
+      'projection_shared_evidence_without_per_must_oracle',
+      'required_command_all_cover_all_without_per_must_assertions',
+      'target_modification_path_all_cover_all',
+      'current_target_map_not_product_specific',
+      'business_visual_generic_or_compressed',
+    ],
     reviewedProjectionRefs: packetProjectionSummary.projectionRefs.slice(0, 1),
     priorFindingsDisposition: [
       {

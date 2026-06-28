@@ -751,6 +751,33 @@ function listGitVisibleFiles(projectRoot: string): string[] {
     .filter(Boolean);
 }
 
+function listGitDirtyFiles(projectRoot: string): string[] | null {
+  const result = spawnSync('git', ['status', '--porcelain=v1', '-z', '--untracked-files=normal'], {
+    cwd: projectRoot,
+    encoding: 'buffer',
+    shell: process.platform === 'win32',
+  });
+  if ((result.status ?? 1) !== 0) {
+    return null;
+  }
+  const files: string[] = [];
+  const tokens = result.stdout.toString('utf8').split('\0').filter(Boolean);
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    const status = token.slice(0, 2);
+    const rawPath = token.slice(3);
+    if (!rawPath) continue;
+    files.push(normalizePath(rawPath));
+    if (status[0] === 'R' || status[0] === 'C') {
+      index += 1;
+      if (tokens[index]) {
+        files.push(normalizePath(tokens[index]));
+      }
+    }
+  }
+  return [...new Set(files)].sort();
+}
+
 function listFilesystemVisibleFiles(projectRoot: string): string[] {
   const out: string[] = [];
   const ignored = new Set(['.git', 'node_modules']);
@@ -771,7 +798,8 @@ function listFilesystemVisibleFiles(projectRoot: string): string[] {
 
 function snapshotGitVisibleFiles(projectRoot: string): Map<string, string> {
   const snapshot = new Map<string, string>();
-  const files = listGitVisibleFiles(projectRoot);
+  const dirtyFiles = listGitDirtyFiles(projectRoot);
+  const files = dirtyFiles ?? listGitVisibleFiles(projectRoot);
   for (const file of files.length > 0 ? files : listFilesystemVisibleFiles(projectRoot)) {
     const absolute = path.join(projectRoot, file);
     if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) continue;

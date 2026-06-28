@@ -11,12 +11,21 @@ const SKILL_SCRIPTS = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-
 const NORMALIZE = path.join(SKILL_SCRIPTS, 'normalize-draft-markdown.js');
 const MANIFEST = path.join(SKILL_SCRIPTS, 'generate-draft-manifest.js');
 const PROMOTE = path.join(SKILL_SCRIPTS, 'promote-draft-large-doc.js');
+const PREPARE_CURRENT_SOURCE_PROMOTION = path.join(
+  SKILL_SCRIPTS,
+  'prepare-current-source-promotion.js'
+);
+const WRITE_CRITICAL_AUDITOR_NO_NEW_GAP_RESPONSE = path.join(
+  SKILL_SCRIPTS,
+  'write-critical-auditor-no-new-gap-response.js'
+);
 const requireForTest = createRequire(import.meta.url);
 const {
   extractImplementationConfirmation,
   sourceDocumentHashFor,
   implementationConfirmationHashFor,
 } = requireForTest(path.join(SKILL_SCRIPTS, 'pre_render_definition_drilldown_lib.js'));
+const { normalizeMarkdown } = requireForTest(path.join(SKILL_SCRIPTS, 'normalize-draft-markdown.js'));
 
 const REQUIRED_CHECKPOINT_IDS = [
   'cp-00-semantic-kernel',
@@ -82,6 +91,13 @@ function writeJson(fileName: string, value: any): string {
   return write(fileName, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function listTemporaryExecutables(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((entry) => /\.(?:cjs|js|mjs|ps1)$/iu.test(entry))
+    .sort();
+}
+
 function writeAuthoringPromotionGuard(
   name: string,
   options: {
@@ -99,7 +115,29 @@ function writeAuthoringPromotionGuard(
   const routeDecision = options.routeDecision ?? 'single_pass_final_allowed';
   const targetExists = fs.existsSync(options.targetPath);
   const targetHash = targetExists ? sha256Text(fs.readFileSync(options.targetPath, 'utf8')) : 'absent';
+  let targetSemanticSourceHash: string | null = null;
+  if (targetExists) {
+    try {
+      const targetText = fs.readFileSync(options.targetPath, 'utf8');
+      const extractedTarget = extractImplementationConfirmation(targetText);
+      targetSemanticSourceHash = sourceDocumentHashFor(
+        targetText,
+        extractedTarget.blockText,
+        extractedTarget.confirmation
+      );
+    } catch {
+      targetSemanticSourceHash = null;
+    }
+  }
   const draftHash = sha256Text(fs.readFileSync(options.draftPath, 'utf8'));
+  const draftText = fs.readFileSync(options.draftPath, 'utf8');
+  const extractedDraft = extractImplementationConfirmation(draftText);
+  const draftSemanticSourceHash = sourceDocumentHashFor(
+    draftText,
+    extractedDraft.blockText,
+    extractedDraft.confirmation
+  );
+  const draftImplementationHash = implementationConfirmationHashFor(extractedDraft.confirmation);
   const scaleAssessment = {
     schemaVersion: 'contract-authoring-scale-assessment/v1',
     phase: 'initial_assessment',
@@ -157,6 +195,8 @@ function writeAuthoringPromotionGuard(
     sourceDocumentExistedBefore: options.sourceDocumentExistedBefore ?? targetExists,
     sourceDocumentHashBefore: options.sourceDocumentHashBefore ?? targetHash,
     sourceDocumentHashAfter: options.sourceDocumentHashAfter ?? draftHash,
+    semanticSourceHashBefore: targetSemanticSourceHash,
+    semanticSourceHashAfter: draftSemanticSourceHash,
   });
   const encodingReportPath = writeJson(`${name}-encoding-report.json`, {
     checkedFiles: 1,
@@ -182,18 +222,37 @@ function writeAuthoringPromotionGuard(
     paths.receiptOutPath,
   ];
   if (options.includeCheckpointEvidence) {
+    const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId) => {
+      const receiptPayload = {
+        schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
+        checkpointId,
+        status: 'passed',
+        sourceDocumentHash: draftSemanticSourceHash,
+        implementationConfirmationHash: draftImplementationHash,
+      };
+      const receiptPath = writeJson(`${name}-${checkpointId}-receipt.json`, {
+        ...receiptPayload,
+        receiptHash: sha256Json(receiptPayload),
+      });
+      return {
+        checkpointId,
+        path: receiptPath.replace(/\\/g, '/'),
+        hash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
+        status: 'passed',
+      };
+    });
     paths.checkpointPersistenceEvidencePath = writeJson(`${name}-checkpoint-persistence-evidence.json`, {
       checkpointPersistenceSatisfiedCandidate: true,
       checkpointPersistenceRef: {
         routeDecisionHash: `sha256:${'3'.repeat(64)}`,
         progressPath: path.join(tempDir, `${name}-semantic-checkpoint-progress.json`).replace(/\\/g, '/'),
         progressHash: `sha256:${'4'.repeat(64)}`,
+        checkpointReceiptRefs,
         completedCheckpointIds: REQUIRED_CHECKPOINT_IDS,
         preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
         preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
         packetSourceReconciliationHash: `sha256:${'7'.repeat(64)}`,
       },
-      completedCheckpointIds: REQUIRED_CHECKPOINT_IDS,
       progressHash: `sha256:${'4'.repeat(64)}`,
       preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
       preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
@@ -813,6 +872,274 @@ describe('requirements-contract large document write flow', () => {
     expect(fs.readFileSync(target, 'utf8')).not.toContain('status: user_confirmed');
   });
 
+  it('fails closed when an authoring artifact directory contains temporary executable helper scripts', () => {
+    const target = write('target-with-helper.md', '# old target\n');
+    const draft = write('authoring-draft-with-helper.md', draftWithStatus('draft'));
+    const guard = writeAuthoringPromotionGuard('authoring-helper-pollution', {
+      draftPath: draft,
+      targetPath: target,
+    });
+    fs.writeFileSync(
+      path.join(path.dirname(guard.paths.sourceMutationDecisionPath), 'prepare-current-source-promotion.cjs'),
+      'require("node:fs").writeFileSync("unsafe.txt", "unsafe");\n',
+      'utf8'
+    );
+
+    const blocked = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'authoring-draft',
+      ...guard.args,
+      '--json',
+    ]);
+
+    expect(blocked.result.status).toBe(1);
+    expect(blocked.json.failureClass).toBe('authoring_promotion_gate_failed');
+    expect(blocked.json.authoringPromotionGate.errors).toContain(
+      'authoring_temporary_executable_helper_present'
+    );
+    expect(blocked.json.authoringPromotionGate.decisions.temporaryExecutableHelpers.files).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('prepare-current-source-promotion.cjs'),
+      ])
+    );
+    expect(fs.readFileSync(target, 'utf8')).toBe('# old target\n');
+  });
+
+  it('prepares current-source promotion artifacts with skill-local flow and no authoring helper scripts', () => {
+    const source = write(
+      'docs/plans/current-source.md',
+      draftWithStatus('draft', '', 'REQ-CURRENT-SOURCE-PREP')
+    );
+    const authoringDir = path.join(
+      tempDir,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'REQ-CURRENT-SOURCE-PREP',
+      'authoring'
+    );
+
+    const prepared = runNode(PREPARE_CURRENT_SOURCE_PROMOTION, [
+      '--source',
+      source,
+      '--authoring-dir',
+      authoringDir,
+      '--json',
+    ], tempDir);
+
+    expect(prepared.result.status).toBe(0);
+    expect(prepared.json.ok).toBe(true);
+    expect(prepared.json.rawSourceHash).toBe(sha256Text(fs.readFileSync(source, 'utf8')));
+    expect(prepared.json.draftHash).toBe(prepared.json.rawSourceHash);
+    expect(prepared.json.draftImplementationConfirmation).toContain(
+      'draft-implementation-confirmation.json'
+    );
+    expect(prepared.json.authoringMaterializationReceipt).toContain(
+      'authoring-materialization-receipt.json'
+    );
+    expect(fs.readFileSync(path.join(authoringDir, 'current-source-authoring-draft.md'), 'utf8')).toBe(
+      fs.readFileSync(source, 'utf8')
+    );
+    const decision = JSON.parse(
+      fs.readFileSync(path.join(authoringDir, 'source-mutation-decision.json'), 'utf8')
+    );
+    expect(decision).toMatchObject({
+      sourceDocumentHashBefore: prepared.json.rawSourceHash,
+      sourceDocumentHashAfter: prepared.json.rawSourceHash,
+      targetRawHashBefore: prepared.json.rawSourceHash,
+      targetRawHashAfter: prepared.json.rawSourceHash,
+      semanticSourceHashBefore: prepared.json.semanticSourceHash,
+      semanticSourceHashAfter: prepared.json.semanticSourceHash,
+      sourceMutationPerformed: false,
+      finalDecision: 'allow_source_materialization',
+    });
+    const draftProjection = JSON.parse(
+      fs.readFileSync(path.join(authoringDir, 'draft-implementation-confirmation.json'), 'utf8')
+    );
+    expect(draftProjection).toMatchObject({
+      schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+      rawSourceHash: prepared.json.rawSourceHash,
+      semanticSourceHash: prepared.json.semanticSourceHash,
+      implementationConfirmationHash: prepared.json.implementationConfirmationHash,
+      decision: 'current_source_materialization_preserved',
+      failClosed: false,
+    });
+    const materializationReceipt = JSON.parse(
+      fs.readFileSync(path.join(authoringDir, 'authoring-materialization-receipt.json'), 'utf8')
+    );
+    expect(materializationReceipt).toMatchObject({
+      schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+      rawSourceHash: prepared.json.rawSourceHash,
+      semanticSourceHash: prepared.json.semanticSourceHash,
+      implementationConfirmationHash: prepared.json.implementationConfirmationHash,
+      decision: 'current_source_materialization_preserved',
+      failClosed: false,
+      requiresUserConfirmationBeforeExecution: true,
+      receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+    });
+    expect(listTemporaryExecutables(authoringDir)).toEqual([]);
+  });
+
+  it('auto-repairs stale receipt binding through skill-local current-source flow without helper scripts', () => {
+    const recordId = `REQ-CURRENT-SOURCE-AUTO-${path
+      .basename(tempDir)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '-')}`;
+    const target = path.join(tempDir, 'docs', 'plans', 'current-source-auto.md');
+    const sourceText = normalizeMarkdown(draftWithStatus('draft', '', recordId)).content;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, sourceText, 'utf8');
+    const draft = write('current-source-auto-draft.md', sourceText);
+    const authoringDir = path.join(
+      tempDir,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      recordId,
+      'authoring'
+    );
+    fs.mkdirSync(authoringDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(authoringDir, 'promotion-receipt.json'),
+      `${JSON.stringify({ ok: true, targetHash: `sha256:${'8'.repeat(64)}` }, null, 2)}\n`,
+      'utf8'
+    );
+    const scaleGuard = writeAuthoringPromotionGuard('current-source-auto-refresh', {
+      draftPath: draft,
+      targetPath: target,
+    });
+
+    const promoted = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'authoring-draft',
+      '--scale-assessment',
+      scaleGuard.paths.scaleAssessmentPath,
+      '--scale-routing-decision',
+      scaleGuard.paths.scaleRoutingDecisionPath,
+      '--auto-repair',
+      '--json',
+    ], tempDir);
+
+    expect(promoted.result.status).toBe(0);
+    expect(promoted.json.ok).toBe(true);
+    expect(promoted.json.autoRepair.actions.map((action: any) => action.action)).toContain(
+      'prepare_current_source_promotion'
+    );
+    expect(promoted.json.targetHash).toBe(sha256Text(sourceText));
+    expect(promoted.json.authoringPromotionGate.decisions.sourceMutation).toMatchObject({
+      sourceDocumentHashBefore: sha256Text(sourceText),
+      sourceDocumentHashAfter: sha256Text(sourceText),
+      targetRawHashBefore: sha256Text(sourceText),
+      targetRawHashAfter: sha256Text(sourceText),
+    });
+    const receipt = JSON.parse(fs.readFileSync(path.join(authoringDir, 'promotion-receipt.json'), 'utf8'));
+    expect(receipt.targetHash).toBe(sha256Text(sourceText));
+    expect(receipt.preflight.manifest.draftHash).toBe(sha256Text(sourceText));
+    expect(receipt.authoringPromotionGate.decisions.sourceMutation.sourceDocumentHashAfter).toBe(
+      sha256Text(sourceText)
+    );
+    expect(listTemporaryExecutables(authoringDir)).toEqual([]);
+  });
+
+  it('writes Critical Auditor no-new-gap responses through a skill-local script without helper scripts', () => {
+    const authoringDir = path.join(
+      tempDir,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      'REQ-CRITICAL-AUDITOR-SKILL-LOCAL',
+      'authoring'
+    );
+    fs.mkdirSync(authoringDir, { recursive: true });
+    const requestPath = path.join(authoringDir, 'critical-auditor-round-request-1.json');
+    fs.writeFileSync(
+      requestPath,
+      `${JSON.stringify(
+        {
+          schemaVersion: 'critical-auditor-round-request/v1',
+          requestHash: `sha256:${'1'.repeat(64)}`,
+          recordId: 'REQ-CRITICAL-AUDITOR-SKILL-LOCAL',
+          roundIndex: 1,
+          sourceDocumentHash: `sha256:${'2'.repeat(64)}`,
+          implementationConfirmationHash: `sha256:${'3'.repeat(64)}`,
+          packetHash: `sha256:${'4'.repeat(64)}`,
+          gateDryRun: {
+            gateDryRunHash: `sha256:${'5'.repeat(64)}`,
+            actionableBlockingIssueCount: 0,
+            actionableBlockingIssues: [],
+            reconciliation: {
+              issueCount: 0,
+            },
+            reconciliationReportPath: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
+          },
+          packetProjectionSummary: {
+            projectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
+            projectionRefs: ['DECOMP-MUST-001', 'TASK-MUST-001'],
+          },
+          projectionQualityGate: {
+            requiredRuleCodes: [
+              'projection_per_must_acceptance_not_independent',
+              'projection_shared_evidence_without_per_must_oracle',
+              'required_command_all_cover_all_without_per_must_assertions',
+              'target_modification_path_all_cover_all',
+              'current_target_map_not_product_specific',
+              'business_visual_generic_or_compressed',
+            ],
+          },
+          requiredResponseSchema: {
+            checkedProjectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
+            checkedProjectionQualityRuleCodes: [
+              'projection_per_must_acceptance_not_independent',
+              'projection_shared_evidence_without_per_must_oracle',
+              'required_command_all_cover_all_without_per_must_assertions',
+              'target_modification_path_all_cover_all',
+              'current_target_map_not_product_specific',
+              'business_visual_generic_or_compressed',
+            ],
+          },
+          mustRefs: ['MUST-001'],
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const written = runNode(WRITE_CRITICAL_AUDITOR_NO_NEW_GAP_RESPONSE, [
+      '--authoring-dir',
+      authoringDir,
+      '--round',
+      '1',
+      '--json',
+    ], tempDir);
+    const responsePath = path.join(authoringDir, 'critical-auditor-round-response-1.json');
+    const response = JSON.parse(fs.readFileSync(responsePath, 'utf8'));
+
+    expect(written.result.status).toBe(0);
+    expect(written.json.ok).toBe(true);
+    expect(response).toMatchObject({
+      schemaVersion: 'critical-auditor-round-response/v1',
+      verdict: 'no_new_valid_gap',
+      requestHash: `sha256:${'1'.repeat(64)}`,
+      sourceDocumentHash: `sha256:${'2'.repeat(64)}`,
+      implementationConfirmationHash: `sha256:${'3'.repeat(64)}`,
+      packetHash: `sha256:${'4'.repeat(64)}`,
+      gateDryRunHash: `sha256:${'5'.repeat(64)}`,
+      reconciliationIssueCount: 0,
+      checkedProjectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
+      reviewedProjectionRefs: ['DECOMP-MUST-001', 'TASK-MUST-001'],
+    });
+    expect(listTemporaryExecutables(authoringDir)).toEqual([]);
+  });
+
   it('requires checkpoint persistence evidence when scale routing requires checkpoints', () => {
     const target = path.join(tempDir, 'docs', 'plans', 'checkpoint-required.md');
     const draft = write('checkpoint-draft.md', draftWithStatus('draft'));
@@ -868,6 +1195,101 @@ describe('requirements-contract large document write flow', () => {
       completedCheckpointCount: REQUIRED_CHECKPOINT_IDS.length,
     });
     expect(fs.readFileSync(target, 'utf8')).toContain('implementationConfirmation:');
+  });
+
+  it('blocks checkpoint persistence evidence when checkpoint receipts are bound to a stale semantic source hash', () => {
+    const target = write('checkpoint-stale-target.md', '# current target\n');
+    const draft = write('checkpoint-stale-draft.md', draftWithStatus('draft'));
+    const guard = writeAuthoringPromotionGuard('checkpoint-stale-receipt', {
+      draftPath: draft,
+      targetPath: target,
+      routeDecision: 'checkpoint_required',
+      includeCheckpointEvidence: true,
+    });
+    const checkpointEvidence = JSON.parse(
+      fs.readFileSync(guard.paths.checkpointPersistenceEvidencePath, 'utf8')
+    );
+    const firstRef = checkpointEvidence.checkpointPersistenceRef.checkpointReceiptRefs[0];
+    const receipt = JSON.parse(fs.readFileSync(firstRef.path, 'utf8'));
+    const { receiptHash: _oldReceiptHash, ...receiptPayload } = receipt;
+    const staleReceiptPayload = {
+      ...receiptPayload,
+      sourceDocumentHash: `sha256:${'a'.repeat(64)}`,
+    };
+    fs.writeFileSync(
+      firstRef.path,
+      `${JSON.stringify(
+        {
+          ...staleReceiptPayload,
+          receiptHash: sha256Json(staleReceiptPayload),
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+    firstRef.hash = sha256Text(fs.readFileSync(firstRef.path, 'utf8'));
+    fs.writeFileSync(
+      guard.paths.checkpointPersistenceEvidencePath,
+      `${JSON.stringify(checkpointEvidence, null, 2)}\n`,
+      'utf8'
+    );
+
+    const blocked = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'authoring-draft',
+      ...guard.args,
+      '--json',
+    ]);
+
+    expect(blocked.result.status).toBe(1);
+    expect(blocked.json.authoringPromotionGate.errors).toContain(
+      'checkpoint_receipt_source_hash_mismatch:cp-00-semantic-kernel'
+    );
+    expect(fs.readFileSync(target, 'utf8')).toBe('# current target\n');
+  });
+
+  it('blocks source mutation decisions bound to a stale semantic source hash', () => {
+    const target = write('semantic-stale-target.md', '# current target\n');
+    const draft = write('semantic-stale-draft.md', draftWithStatus('draft'));
+    const guard = writeAuthoringPromotionGuard('semantic-stale-source-mutation', {
+      draftPath: draft,
+      targetPath: target,
+    });
+    const decision = JSON.parse(fs.readFileSync(guard.paths.sourceMutationDecisionPath, 'utf8'));
+    fs.writeFileSync(
+      guard.paths.sourceMutationDecisionPath,
+      `${JSON.stringify(
+        {
+          ...decision,
+          semanticSourceHashAfter: `sha256:${'b'.repeat(64)}`,
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const blocked = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'authoring-draft',
+      ...guard.args,
+      '--json',
+    ]);
+
+    expect(blocked.result.status).toBe(1);
+    expect(blocked.json.authoringPromotionGate.errors).toContain(
+      'source_mutation_semantic_source_hash_after_mismatch'
+    );
+    expect(fs.readFileSync(target, 'utf8')).toBe('# current target\n');
   });
 
   it('blocks guarded authoring promotion on failed source mutation or encoding gates', () => {
@@ -1088,6 +1510,71 @@ describe('requirements-contract large document write flow', () => {
       statusValue: 'user_confirmed',
     });
     expect(fs.readFileSync(target, 'utf8')).toBe('# old target\n');
+  });
+
+  it('allows current-source receipt refresh for a confirmed source only when draft equals target', () => {
+    const sourceText = draftWithStatus('user_confirmed');
+    const target = write('current-confirmed-target.md', sourceText);
+    const draft = write('current-confirmed-draft.md', sourceText);
+    const guard = writeAuthoringPromotionGuard('current-confirmed-refresh', {
+      draftPath: draft,
+      targetPath: target,
+    });
+
+    const promoted = runNode(PROMOTE, [
+      '--draft',
+      draft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'current-source-receipt-refresh',
+      ...guard.args,
+      '--json',
+    ]);
+
+    expect(promoted.result.status).toBe(0);
+    expect(promoted.json).toMatchObject({
+      ok: true,
+      promotionStage: 'current-source-receipt-refresh',
+      statusValue: 'user_confirmed',
+      confirmationReady: false,
+      safePromotionAsDraft: false,
+      requiresUserConfirmationBeforeExecution: true,
+    });
+    expect(promoted.json.targetHash).toBe(sha256Text(sourceText));
+    expect(JSON.parse(fs.readFileSync(guard.paths.receiptOutPath, 'utf8'))).toMatchObject({
+      promotionStage: 'current-source-receipt-refresh',
+      targetHash: sha256Text(sourceText),
+      statusValue: 'user_confirmed',
+    });
+
+    const changedDraft = write(
+      'current-confirmed-changed-draft.md',
+      `${sourceText}\nThis would be an unauthorized semantic edit.\n`
+    );
+    const changedGuard = writeAuthoringPromotionGuard('current-confirmed-refresh-changed', {
+      draftPath: changedDraft,
+      targetPath: target,
+    });
+    const rejected = runNode(PROMOTE, [
+      '--draft',
+      changedDraft,
+      '--target',
+      target,
+      '--promotion-stage',
+      'current-source-receipt-refresh',
+      ...changedGuard.args,
+      '--json',
+    ]);
+
+    expect(rejected.result.status).toBe(1);
+    expect(rejected.json).toMatchObject({
+      ok: false,
+      promotionStage: 'current-source-receipt-refresh',
+      statusValue: 'user_confirmed',
+      failureClass: 'semantic_decision_required:current_source_hash_mismatch',
+    });
+    expect(fs.readFileSync(target, 'utf8')).toBe(sourceText);
   });
 
   it('does not implement allow-expected-draft-gap', () => {

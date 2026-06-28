@@ -94,7 +94,7 @@ function listFilesystemFiles(scopes) {
 }
 
 function parseArgs(argv) {
-  const options = { json: false, paths: [] };
+  const options = { json: false, paths: [], defaultPathsUsed: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--json') options.json = true;
@@ -102,7 +102,10 @@ function parseArgs(argv) {
     else if (arg.startsWith('--paths=')) options.paths.push(...arg.slice('--paths='.length).split(',').filter(Boolean));
     else options.paths.push(arg);
   }
-  if (options.paths.length === 0) options.paths = DEFAULT_PATHS;
+  if (options.paths.length === 0) {
+    options.paths = DEFAULT_PATHS;
+    options.defaultPathsUsed = true;
+  }
   return options;
 }
 
@@ -140,7 +143,11 @@ function main() {
   const options = parseArgs(process.argv.slice(2));
   const gitFiles = listGitFiles();
   const source = gitFiles ? 'git' : 'filesystem';
-  const files = (gitFiles ?? listFilesystemFiles(options.paths))
+  const candidateFiles =
+    gitFiles && !options.defaultPathsUsed
+      ? [...new Set([...gitFiles, ...listFilesystemFiles(options.paths)])].sort()
+      : (gitFiles ?? listFilesystemFiles(options.paths));
+  const files = candidateFiles
     .filter((file) => isInScope(file, options.paths))
     .filter(isTextFile)
     .filter((file) => fs.existsSync(file));

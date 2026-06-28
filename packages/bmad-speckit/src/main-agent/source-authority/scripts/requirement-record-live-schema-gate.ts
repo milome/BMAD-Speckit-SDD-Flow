@@ -23,7 +23,29 @@ function readJson(file: string): JsonObject {
 function schemaPath(): string {
   const candidates = [
     path.resolve(__dirname, '..', '_bmad', '_schemas', 'requirement-record.schema.json'),
-    path.resolve(__dirname, '..', '..', '..', '..', '_bmad', '_schemas', 'requirement-record.schema.json'),
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      '_bmad',
+      '_schemas',
+      'requirement-record.schema.json'
+    ),
+    path.resolve(process.cwd(), '_bmad', '_schemas', 'requirement-record.schema.json'),
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      '..',
+      '..',
+      '_bmad',
+      '_schemas',
+      'requirement-record.schema.json'
+    ),
   ];
   const resolved = candidates.find((candidate) => fs.existsSync(candidate));
   if (resolved) return resolved;

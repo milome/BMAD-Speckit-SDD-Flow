@@ -35,7 +35,7 @@ const CONTRACT_FORBIDDEN_FIELDS = new Set([
   'updatedItems',
 ]);
 
-const MAPPING_TOP_FIELDS = new Set(['version', 'updatedAt', 'source', 'items']);
+const MAPPING_TOP_FIELDS = new Set(['version', 'updatedAt', 'source', 'active', 'records', 'items']);
 const MAPPING_ITEM_FIELDS = new Set([
   'requirementId',
   'sourceType',
@@ -47,8 +47,24 @@ const MAPPING_ITEM_FIELDS = new Set([
   'status',
   'acceptanceRefs',
   'lastPacketId',
+  'recordId',
+  'requirementSetId',
+  'recordPath',
+  'sourcePath',
+  'sourceDocumentHash',
+  'implementationConfirmationHash',
+  'confirmationPageHash',
   'updatedAt',
 ]);
+const MAPPING_RECORD_FIELDS = new Set([
+  'recordId',
+  'requirementSetId',
+  'recordPath',
+  'flow',
+  'status',
+  'updatedAt',
+]);
+const MAPPING_ACTIVE_FIELDS = new Set(['recordId', 'requirementSetId', 'recordPath']);
 
 const MAPPING_FORBIDDEN_FIELDS = new Set([
   'signal_overrides',
@@ -142,6 +158,34 @@ function validateMapping(mapping: JsonObject, failures: string[]): void {
 
   if (mapping.source !== MAPPING_PATH) {
     fail(`${MAPPING_PATH}: source must point to itself`, failures);
+  }
+  if (mapping.active && typeof mapping.active === 'object' && !Array.isArray(mapping.active)) {
+    validateObjectFields({
+      object: mapping.active as JsonObject,
+      allowed: MAPPING_ACTIVE_FIELDS,
+      forbidden: MAPPING_FORBIDDEN_FIELDS,
+      label: `${MAPPING_PATH}: active`,
+      failures,
+    });
+  }
+  if (mapping.records != null) {
+    if (!Array.isArray(mapping.records)) {
+      fail(`${MAPPING_PATH}: records must be an array`, failures);
+    } else {
+      mapping.records.forEach((item, index) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          fail(`${MAPPING_PATH}: records[${index}] must be an object`, failures);
+          return;
+        }
+        validateObjectFields({
+          object: item as JsonObject,
+          allowed: MAPPING_RECORD_FIELDS,
+          forbidden: MAPPING_FORBIDDEN_FIELDS,
+          label: `${MAPPING_PATH}: records[${index}]`,
+          failures,
+        });
+      });
+    }
   }
   if (!Array.isArray(mapping.items)) {
     fail(`${MAPPING_PATH}: items must be an array`, failures);

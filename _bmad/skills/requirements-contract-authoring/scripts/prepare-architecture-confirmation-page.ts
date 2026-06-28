@@ -17,6 +17,24 @@ function resolvePackageDistScript(relativeDistPath) {
   const directCandidates = [
     path.resolve('packages/bmad-speckit', relativeDistPath),
     path.resolve('node_modules/bmad-speckit', relativeDistPath),
+    path.resolve(
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit',
+      relativeDistPath
+    ),
+    path.resolve(
+      SKILL_DIR,
+      '..',
+      '..',
+      '..',
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit',
+      relativeDistPath
+    ),
   ];
   for (const candidate of directCandidates) {
     if (fs.existsSync(candidate)) return candidate;

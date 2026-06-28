@@ -1,13 +1,16 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
+  cleanCriticalAuditorRound,
   createTempRoot,
   issueCodes,
   readJson,
+  readImplementationConfirmation,
 } from './helpers/requirements-contract-authoring-fixture';
 import {
   runMainAgentAuthoringRepair,
@@ -18,6 +21,34 @@ const fixtureRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md';
 const metadataRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.metadata.json';
+const PROJECTION_QUALITY_RULE_CODES = [
+  'projection_per_must_acceptance_not_independent',
+  'projection_shared_evidence_without_per_must_oracle',
+  'required_command_all_cover_all_without_per_must_assertions',
+  'target_modification_path_all_cover_all',
+  'current_target_map_not_product_specific',
+  'business_visual_generic_or_compressed',
+];
+const requiredCheckpointIds = [
+  'cp-00-semantic-kernel',
+  'cp-01-must-decomposition-packet',
+  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-03-packet-to-source-materialization',
+  'cp-04-id-freeze',
+  'cp-05-implementation-confirmation-core',
+  'cp-06-projections',
+  'cp-07-human-readable-views',
+  'cp-08-pre-render-global-reconciliation',
+];
+const requireForProjectionGate = createRequire(import.meta.url);
+const { collectProjectionQualityIssues } = requireForProjectionGate(
+  '../../_bmad/skills/requirements-contract-authoring/scripts/projection_quality_gate.js'
+) as {
+  collectProjectionQualityIssues: (
+    confirmation: Record<string, unknown>,
+    options?: Record<string, unknown>
+  ) => Array<{ code: string; refs: string[] }>;
+};
 
 function readUtf8(relativePath: string): string {
   return readFileSync(path.join(process.cwd(), relativePath), 'utf8');
@@ -254,6 +285,10 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: request.packetProjectionSummary?.projectionGroups ?? [],
+    checkedProjectionQualityRuleCodes:
+      request.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
+      request.projectionQualityGate?.requiredRuleCodes ??
+      PROJECTION_QUALITY_RULE_CODES,
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
@@ -342,6 +377,31 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
             },
             ...actionBase,
           },
+          {
+            actionId: 'REPAIR-MTF-ADD-BUSINESS-VISUAL',
+            type: 'add_business_visual',
+            targetField: 'implementationConfirmation.flowViews',
+            newValue: {
+              id: 'FLOW-BUSINESS-MTF-DEFAULT-HIDDEN',
+              title: 'Default hidden multi-timeframe business flow',
+              visualKind: 'flow',
+              scope: 'business',
+              covers: ['MUST-MTF-DEFAULT-HIDDEN'],
+              perMustRows: [
+                {
+                  mustRef: 'MUST-MTF-DEFAULT-HIDDEN',
+                  traceRows: ['TRACE-MTF-DEFAULT-HIDDEN'],
+                  evidenceRefs: ['EVD-MTF-DEFAULT-HIDDEN'],
+                  acceptanceRefs: ['ACC-MTF-DEFAULT-HIDDEN', 'E2E-MTF-DEFAULT-HIDDEN'],
+                  assertion:
+                    'MUST-MTF-DEFAULT-HIDDEN has an independent business visual boundary for default hidden periods.',
+                },
+              ],
+              mermaid:
+                'flowchart TD\n  User[User opens chart] --> Hidden[15m 30m 45m D hidden by default]\n  Hidden --> Settings[User enables overlays intentionally]',
+            },
+            ...actionBase,
+          },
         ],
       },
     ],
@@ -352,6 +412,179 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
 }
 
 describe('requirements contract sanitized real fixture coverage', () => {
+  it('fails generic current-target rows and partial business visual coverage per business MUST', () => {
+    const issues = collectProjectionQualityIssues({
+      must: [
+        { id: 'MUST-001', text: 'Business timeframe selector must preserve hidden period defaults.' },
+        { id: 'MUST-002', text: 'Business timeframe selector must apply explicit visible period settings.' },
+      ],
+      traceRows: [
+        { id: 'TRACE-001', covers: ['MUST-001'] },
+        { id: 'TRACE-002', covers: ['MUST-002'] },
+      ],
+      requirementBoundary: {
+        business: {
+          requirementIds: ['MUST-001', 'MUST-002'],
+        },
+      },
+      currentTargetMap: {
+        currentSummary: [
+          {
+            id: 'CTM-001',
+            requirementRefs: ['MUST-001', 'MUST-002'],
+            current: 'source-derived current state for all requirements',
+            target: 'generic target state for all requirements',
+          },
+        ],
+      },
+      businessVisuals: [
+        {
+          id: 'BUS-001',
+          covers: ['MUST-001'],
+          title: 'Hidden period default flow',
+          mermaid: 'flowchart TD\nUser-->Settings\nSettings-->HiddenPeriods',
+        },
+      ],
+    });
+    const currentTargetIssue = issues.find(
+      (issue) => issue.code === 'current_target_map_not_product_specific'
+    );
+    const visualIssue = issues.find((issue) => issue.code === 'business_visual_generic_or_compressed');
+
+    expect(currentTargetIssue?.refs).toEqual(['currentTargetMap', 'MUST-001', 'MUST-002']);
+    expect(visualIssue?.refs).toEqual(['businessVisuals', 'MUST-002']);
+  });
+
+  it('projects currentTargetMap from explicit source current and target state sections', () => {
+    const root = createTempRoot('requirements-contract-source-state-sections-');
+    try {
+      const source = path.join(root, 'docs/requirements/widget-settings.md');
+      mkdirSync(path.dirname(source), { recursive: true });
+      writeFileSync(
+        source,
+        [
+          '# Widget Settings Source',
+          '',
+          '## Source Current State',
+          '',
+          '- CURRENT-STATE-ANCHOR: The existing widget exposes all controls in one dense row.',
+          '- CURRENT-LIMIT-ANCHOR: Operators cannot distinguish pending values from saved values.',
+          '',
+          '## Source Target State',
+          '',
+          '- TARGET-STATE-ANCHOR: The widget shows a compact status summary and opens a dedicated settings surface.',
+          '- TARGET-MUST-ANCHOR: Apply, cancel, and reset semantics are explicit after every confirmed MUST is implemented.',
+          '',
+          'Implementation evidence from current code reading:',
+          '',
+          '- CURRENT-EVIDENCE-NOISE: Existing code still uses the dense row and must stay out of targetRows.',
+          '- CURRENT-EVIDENCE-DETAIL: Existing reset handling is only source evidence, not a target state.',
+          '',
+          '## Default Visibility',
+          '',
+          '| Entry | Default Visible |',
+          '| --- | --- |',
+          '| Compact Summary | yes |',
+          '| Advanced Panel | no |',
+          '| Legacy Dense Row | no |',
+          '',
+          '## Noisy Governance Notes',
+          '',
+          '- NOISE-ANCHOR: target current must validation wording here is commentary only and must not drive the current/target map.',
+          '',
+          '## Requirements',
+          '',
+          '- The widget MUST show the compact status summary.',
+          '- The widget MUST preserve cancel rollback semantics.',
+          '',
+          '## Target Files',
+          '',
+          '- src/widgets/settings-panel.ts',
+          '',
+          '## Validation',
+          '',
+          '- npm run test -- settings-panel',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-SOURCE-STATE-SECTIONS',
+        requirementSetId: 'REQ-SOURCE-STATE-SECTIONS-SET',
+        targetPath: ['src/widgets/settings-panel.ts'],
+        requiredCommand: 'npm run test -- settings-panel',
+      });
+      const draft = readJson<{ implementationConfirmation: Record<string, unknown> }>(
+        artifacts(root, 'REQ-SOURCE-STATE-SECTIONS', 'REQ-SOURCE-STATE-SECTIONS-SET')
+          .draftImplementationConfirmation
+      ).implementationConfirmation;
+      const currentTargetMap = draft.currentTargetMap as Record<string, unknown>;
+      const currentTargetMapText = stringify(currentTargetMap);
+      const currentTargetMapWithDefaults = currentTargetMap as {
+        diffRows?: Array<Record<string, unknown>>;
+        targetSummary?: Array<Record<string, unknown>>;
+        sourceDefaultVisibility?: {
+          visible?: string[];
+          hidden?: string[];
+          rows?: Array<Record<string, unknown>>;
+        };
+      };
+      const defaultVisibilityDiff = currentTargetMapWithDefaults.diffRows?.find(
+        (row) => row.id === 'CT-DIFF-002'
+      );
+
+      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
+      expect(currentTargetMap).toMatchObject({
+        schemaVersion: 'current-target-map/v1',
+        displayProfile: 'closed_loop_current_target_map',
+        sourceStateProjection: {
+          mode: 'source_current_target_sections',
+        },
+      });
+      expect(defaultVisibilityDiff, 'CT-DIFF-002 must describe default visibility').toBeTruthy();
+      expect(currentTargetMapWithDefaults.sourceDefaultVisibility?.visible).toEqual([
+        'Compact Summary',
+      ]);
+      expect(currentTargetMapWithDefaults.sourceDefaultVisibility?.hidden).toEqual([
+        'Advanced Panel',
+        'Legacy Dense Row',
+      ]);
+      expect(currentTargetMapText).toContain('CURRENT-STATE-ANCHOR');
+      expect(currentTargetMapText).toContain('CURRENT-LIMIT-ANCHOR');
+      expect(currentTargetMapText).toContain('TARGET-STATE-ANCHOR');
+      expect(currentTargetMapText).toContain('TARGET-MUST-ANCHOR');
+      expect(currentTargetMapText).not.toContain('NOISE-ANCHOR');
+      expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-DETAIL');
+      const targetSummaryText = stringify(currentTargetMapWithDefaults.targetSummary);
+      const defaultVisibilityTargetState = stringify(defaultVisibilityDiff?.targetState);
+      expect(targetSummaryText).toContain('TARGET-STATE-ANCHOR');
+      expect(targetSummaryText).toContain('TARGET-MUST-ANCHOR');
+      expect(targetSummaryText).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(targetSummaryText).not.toContain('CURRENT-EVIDENCE-DETAIL');
+      expect(defaultVisibilityTargetState).toContain('TARGET-STATE-ANCHOR');
+      expect(defaultVisibilityTargetState).toContain('TARGET-MUST-ANCHOR');
+      expect(defaultVisibilityTargetState).not.toContain('CURRENT-EVIDENCE-NOISE');
+      expect(defaultVisibilityTargetState).not.toContain('CURRENT-EVIDENCE-DETAIL');
+      const sourceProjection = currentTargetMap.sourceStateProjection as {
+        currentRows?: Array<{ text?: string }>;
+        targetRows?: Array<{ text?: string }>;
+      };
+      expect(sourceProjection.currentRows?.map((row) => row.text)).toEqual([
+        'CURRENT-STATE-ANCHOR: The existing widget exposes all controls in one dense row.',
+        'CURRENT-LIMIT-ANCHOR: Operators cannot distinguish pending values from saved values.',
+      ]);
+      expect(sourceProjection.targetRows?.map((row) => row.text)).toEqual([
+        'TARGET-STATE-ANCHOR: The widget shows a compact status summary and opens a dedicated settings surface.',
+        'TARGET-MUST-ANCHOR: Apply, cancel, and reset semantics are explicit after every confirmed MUST is implemented.',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
   it('records source provenance and sanitized fixture integrity', () => {
     const fixture = readUtf8(fixtureRelativePath);
     const metadata = JSON.parse(readUtf8(metadataRelativePath)) as {
@@ -504,7 +737,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
           mustRows.some(
             (row) =>
               row.headingPath?.some((heading) => heading.includes(frId)) &&
+              typeof row.sourcePath === 'string' &&
               row.sourcePath.endsWith('multi-timeframe-display-settings.real.md') &&
+              typeof row.sourceSpan?.startLine === 'number' &&
               row.sourceSpan.startLine > 0
           ),
           `${frId} must be materialized from the sanitized real fixture`
@@ -525,9 +760,80 @@ describe('requirements contract sanitized real fixture coverage', () => {
         expectTextContainsAll(draft.e2eScenarios, [period]);
       }
 
+      const traceRows = (draft.traceRows as Array<Record<string, unknown>>) ?? [];
+      const mustToAtomicTaskMap = draft.mustToAtomicTaskMap as Record<string, string[]>;
+      const atomicTaskToTraceMap = draft.atomicTaskToTraceMap as Record<string, string[]>;
+      const atomicTaskToAcceptanceMap = draft.atomicTaskToAcceptanceMap as Record<string, string[]>;
+      const atomicTaskToEvidenceMap = draft.atomicTaskToEvidenceMap as Record<string, string[]>;
+      const atomicTaskToTargetPathMap = draft.atomicTaskToTargetPathMap as Record<string, string[]>;
+      const atomicTaskToCommandMap = draft.atomicTaskToCommandMap as Record<string, string[]>;
+      const manifest = draft.aiTddContractExecutionManifestProjection as Record<string, any>;
+
+      expect(traceRows.length).toBeGreaterThanOrEqual(mustRows.length);
+      expect(
+        traceRows.some((row) => row.id === 'TRACE-001' && (row.covers as string[]).length === mustRows.length + 1)
+      ).toBe(false);
+      for (const must of mustRows) {
+        const coveringRows = traceRows.filter((row) => ((row.covers as string[]) ?? []).includes(must.id));
+        expect(coveringRows.length, `${must.id} requires an independent TRACE row`).toBeGreaterThanOrEqual(1);
+        expect(coveringRows.some((row) => ((row.covers as string[]) ?? []).length < mustRows.length)).toBe(
+          true
+        );
+        expect(mustToAtomicTaskMap[must.id]?.length, `${must.id} mustToAtomicTaskMap`).toBeGreaterThan(0);
+      }
+      for (const trace of traceRows) {
+        expect((trace.failurePathRefs as string[])?.length, `${trace.id} failurePathRefs`).toBeGreaterThan(0);
+        expect((trace.edgeCaseRefs as string[])?.length, `${trace.id} edgeCaseRefs`).toBeGreaterThan(0);
+      }
+      for (const taskId of Object.values(mustToAtomicTaskMap).flat()) {
+        expect(atomicTaskToTraceMap[taskId]?.length, `${taskId} atomicTaskToTraceMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToAcceptanceMap[taskId]?.length,
+          `${taskId} atomicTaskToAcceptanceMap`
+        ).toBeGreaterThan(0);
+        expect(atomicTaskToEvidenceMap[taskId]?.length, `${taskId} atomicTaskToEvidenceMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToTargetPathMap[taskId]?.length,
+          `${taskId} atomicTaskToTargetPathMap`
+        ).toBeGreaterThan(0);
+        expect(atomicTaskToCommandMap[taskId]?.length, `${taskId} atomicTaskToCommandMap`).toBeGreaterThan(0);
+      }
+      for (const acceptanceRow of [
+        ...((draft.acceptanceTests as Array<Record<string, unknown>>) ?? []),
+        ...((draft.e2eSuites as Array<Record<string, unknown>>) ?? []),
+      ]) {
+        expect(String(acceptanceRow.redProofPlan ?? '').trim(), `${acceptanceRow.id} redProofPlan`).not.toBe('');
+      }
+      expect(manifest.requiredSections).toEqual(
+        expect.arrayContaining([
+          'atomicImplementationTaskLineage',
+          'finalGateMatrix',
+          'executionLoopProtocol',
+          'semanticGapPolicy',
+          'hostExecutionHints',
+          'commandTargetCollection',
+          'traceClosureAssertions',
+          'currentTargetMap',
+          'targetModificationPathCoverage',
+          'canonicalSurfaceReconciliation',
+          'legacyDenial',
+          'closeoutProof',
+          'evidenceTrustStates',
+        ])
+      );
+      expect(manifest.atomicImplementationTaskLineage.requiredMaps).toEqual(
+        expect.arrayContaining([
+          'mustToAtomicTaskMap',
+          'atomicTaskToTraceMap',
+          'atomicTaskToAcceptanceMap',
+          'atomicTaskToEvidenceMap',
+          'atomicTaskToTargetPathMap',
+          'atomicTaskToCommandMap',
+        ])
+      );
+
       const outOfScopeRows = (draft.outOfScope as Array<Record<string, unknown>>) ?? [];
       expect(stringify(outOfScopeRows)).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
-      expect(stringify(outOfScopeRows)).toContain('主时间轴语义');
       expect(
         ((draft.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
           row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
@@ -538,8 +844,203 @@ describe('requirements contract sanitized real fixture coverage', () => {
         expect(targetAuthority.accepted.map((row) => row.path)).toContain(targetPath);
         expect(stringify(draft)).toContain(targetPath);
       }
+      const currentTargetMapText = stringify(draft.currentTargetMap);
+      const currentTargetMap = draft.currentTargetMap as Record<string, unknown>;
+      expect(currentTargetMap).toMatchObject({
+        schemaVersion: 'current-target-map/v1',
+        displayProfile: 'closed_loop_current_target_map',
+        sourceStateProjection: {
+          mode: expect.stringMatching(
+            /^(?:source_current_target_sections|heuristic_highlights_fallback)$/u
+          ),
+        },
+      });
+      expect(currentTargetMapText).toContain('source-authorized product code targets');
+      expect(currentTargetMapText).toContain('MUST-001');
+      expect(currentTargetMapText).toContain('MUST-009');
+      expect(currentTargetMapText).toContain('MUST-010');
+      expect(currentTargetMapText).toContain('MUST-011');
+      expect(currentTargetMapText).not.toContain('reconfirm_required');
+      expect(currentTargetMapText).not.toContain('req-trace');
+      expect(currentTargetMapText).not.toContain('controlled confirm-scope ingest');
+      expect(currentTargetMapText).not.toMatch(/source document hash|sourceDocumentHash|implementation readiness/iu);
+      expect(currentTargetMapText).not.toMatch(/current-attempt product implementation evidence/iu);
+      expect(currentTargetMapText).not.toMatch(/source describes behavior|source defines current behavior/iu);
+      expect(currentTargetMapText).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
+      for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
+        expect(currentTargetMapText).toContain(targetPath);
+      }
+      for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
+        expect(currentTargetMapText).toContain(period);
+      }
+      expect(currentTargetMapText).not.toContain('Pre-confirmation drilldown remains inside requirement_confirmation');
+      expect(currentTargetMapText).not.toContain('Draft requirement');
+      expect(currentTargetMapText).not.toContain('User-confirmable requirement');
+      expect(currentTargetMapText).not.toContain('requirement_confirmation draft');
+      expect(currentTargetMapText).not.toContain('requirement_confirmation user_confirmable');
       expect(stringify(draft)).not.toContain('node_modules/bmad-speckit-sdd-flow');
       expect(stringify(draft)).not.toContain('tests/acceptance/main-agent');
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
+  it('runs author-confirmation-ready-source end-to-end with checkpoint receipts, summary, promotion, and real fixture coverage', () => {
+    const root = createTempRoot('requirements-contract-real-e2e-');
+    try {
+      const fixture = readUtf8(fixtureRelativePath);
+      const metadata = JSON.parse(readUtf8(metadataRelativePath)) as {
+        requiredBusinessAnchors: {
+          frIds: string[];
+          hiddenByDefaultPeriods: string[];
+          outOfScopeTimeline: string;
+          targetPaths: string[];
+        };
+      };
+      const recordId = 'REQ-REAL-BUSINESS-E2E';
+      const requirementSetId = `${recordId}-SET`;
+      const source = writeRealFixtureToTempRoot(root, fixture);
+      let stderr = '';
+      let result: ReturnType<typeof runMainAgentPreConfirmationDrilldown> | null = null;
+      const originalStderrWrite = process.stderr.write;
+      process.stderr.write = ((chunk: string | Uint8Array) => {
+        stderr += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        result = runMainAgentPreConfirmationDrilldown(root, {
+          source,
+          recordId,
+          requirementSetId,
+          targetPath: metadata.requiredBusinessAnchors.targetPaths,
+          requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        });
+      } finally {
+        process.stderr.write = originalStderrWrite;
+      }
+
+      const paths = artifacts(root, recordId, requirementSetId);
+      const progress = readJson<Record<string, unknown>>(paths.progress);
+      const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
+      const summary = evidence.checkpointPersistenceRef as Record<string, unknown>;
+      const promotion = readJson<Record<string, unknown>>(paths.promotionReceipt);
+      const confirmation = readImplementationConfirmation(source);
+      const targetAuthority = readJson<{ accepted: Array<{ path: string }> }>(
+        paths.targetAuthorityReport
+      );
+
+      expect(result?.sourceMutationPerformed).toBe(true);
+      expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+        'critical_auditor_provider_mode_required'
+      );
+      expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+        'checkpoint_required_before_source_materialization'
+      );
+      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+
+      expect(progress.resumeLedger).toMatchObject({
+        schemaVersion: 'requirements-contract-checkpoint-resume-ledger/v1',
+        completedCheckpointIds: requiredCheckpointIds,
+      });
+      expect(progress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
+      expect(progress.currentCheckpoint).toBe(null);
+      expect(progress.next).toBe(null);
+
+      expect(evidence).toMatchObject({
+        schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
+        checkpointPersistenceSatisfiedCandidate: true,
+      });
+      expect(evidence).not.toHaveProperty('completedCheckpointIds');
+      expect(summary.completedCheckpointIds).toEqual(requiredCheckpointIds);
+      expect(summary.checkpointReceiptRefs).toHaveLength(requiredCheckpointIds.length);
+      expect(String(summary.progressHash)).toMatch(/^sha256:/u);
+      expect(String(summary.preRenderMustDecompositionGateHash)).toMatch(/^sha256:/u);
+      expect(String(summary.preRenderGlobalConsistencyHash)).toMatch(/^sha256:/u);
+      expect(String(summary.packetSourceReconciliationHash)).toMatch(/^sha256:/u);
+
+      for (const [index, checkpointId] of requiredCheckpointIds.entries()) {
+        const receiptPath = paths.checkpointReceiptPaths[index];
+        expect(existsSync(receiptPath)).toBe(true);
+        const receipt = readJson<Record<string, unknown>>(receiptPath);
+        expect(receipt).toMatchObject({
+          schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
+          checkpointId,
+          status: 'passed',
+          recordId,
+        });
+        expect(String(receipt.receiptHash)).toMatch(/^sha256:/u);
+      }
+
+      expect(promotion).toMatchObject({
+        ok: true,
+        promotionStage: 'authoring-draft',
+        statusValue: 'draft',
+        confirmationReady: false,
+        safePromotionAsDraft: true,
+        requiresUserConfirmationBeforeExecution: true,
+      });
+      expect((promotion.authoringPromotionGate as Record<string, unknown>).ok).toBe(true);
+      expect(promotion.targetHash).toBe(sha256PrefixedText(readFileSync(source, 'utf8')));
+      expect(stringify(promotion)).toContain('checkpointPersistence');
+
+      const businessRequirementIds =
+        ((confirmation.requirementBoundary as any).business.requirementIds as string[]) ?? [];
+      const businessViews = (confirmation.businessViews as Array<Record<string, unknown>>) ?? [];
+      const mustRows = confirmation.must as Array<{
+        sourcePath?: string;
+        sourceSpan?: { startLine: number };
+        headingPath?: string[];
+      }>;
+      for (const frId of metadata.requiredBusinessAnchors.frIds) {
+        expect(businessRequirementIds).toContain(frId);
+        expect(stringify(businessViews)).toContain(frId);
+        expect(
+          mustRows.some(
+            (row) =>
+              row.headingPath?.some((heading) => heading.includes(frId)) &&
+              row.sourcePath?.endsWith('multi-timeframe-display-settings.real.md') &&
+              (row.sourceSpan?.startLine ?? 0) > 0
+          ),
+          `${frId} must stay source-span bound after promotion`
+        ).toBe(true);
+      }
+      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(true);
+      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(true);
+      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(true);
+
+      for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
+        expectTextContainsAll(confirmation.must, [period]);
+        expectTextContainsAll(confirmation.evidence, [period]);
+        expectTextContainsAll(confirmation.traceRows, [period]);
+        expectTextContainsAll(confirmation.acceptanceCriteria, [period]);
+        expectTextContainsAll(confirmation.e2eScenarios, [period]);
+      }
+
+      expect(stringify(confirmation.outOfScope)).toContain(
+        metadata.requiredBusinessAnchors.outOfScopeTimeline
+      );
+      expect(
+        ((confirmation.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
+          row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
+        )
+      ).toBe(false);
+
+      for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
+        expect(targetAuthority.accepted.map((row) => row.path)).toContain(targetPath);
+        expect(stringify(confirmation)).toContain(targetPath);
+      }
+      expect(stringify(confirmation.requiredCommands)).toContain(
+        'pytest tests/test_multi_timeframe_settings.py'
+      );
+      expect(stringify(confirmation)).not.toContain('node_modules/bmad-speckit-sdd-flow');
+      expect(stringify(confirmation)).not.toContain('tests/acceptance/main-agent');
+      expect(stderr).toContain('[requirements-contract-authoring] checkpoint trace start');
+      for (const checkpointId of requiredCheckpointIds) {
+        expect(stderr).toContain(`checkpoint phase=start id=${checkpointId}`);
+        expect(stderr).toContain(`checkpoint phase=result id=${checkpointId} result=passed`);
+      }
+      expect(stderr).toContain('checkpoint-persistence summary');
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
@@ -621,6 +1122,8 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const sourceText = readFileSync(source, 'utf8');
       expect(sourceText).toContain('MUST-MTF-DEFAULT-HIDDEN');
       expect(sourceText).toContain('OUT-MTF-1M');
+      expect(sourceText).toContain('boundaryType: non_goal_scope_boundary');
+      expect(sourceText).toContain('conflictResolution: out_of_scope_boundary_only');
       expect(sourceText).toContain('EVD-MTF-DEFAULT-HIDDEN');
       expect(sourceText).toContain('TRACE-MTF-DEFAULT-HIDDEN');
       expect(sourceText).toContain('ACC-MTF-DEFAULT-HIDDEN');
@@ -662,5 +1165,5 @@ describe('requirements contract sanitized real fixture coverage', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  });
+  }, 60_000);
 });

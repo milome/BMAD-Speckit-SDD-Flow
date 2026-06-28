@@ -234,6 +234,10 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
+    "nativeGoalHandoff": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "closeout": { "$ref": "#/$defs/closeout" },
     "closeoutAcceptance": {
       "type": "object",

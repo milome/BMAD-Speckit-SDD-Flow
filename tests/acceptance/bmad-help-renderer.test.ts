@@ -4,6 +4,10 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
+import {
+  cleanupRequirementWorkspace,
+  materializeRequirementFixture,
+} from '../helpers/requirement-fixture-runtime';
 
 const require = createRequire(import.meta.url);
 const { buildBmadHelpOutput, renderBmadHelp } = require(
@@ -208,6 +212,55 @@ describe('bmad-help and BMADS runtime boundary', () => {
       expect(text).not.toContain('Next safe action: run_implementation_readiness_gate');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders dispatch_implement after implementation readiness has passed', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'implementation_readiness',
+      sixModelResults: {
+        requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
+        architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
+        implementation_readiness: {
+          model: 'implementation_readiness',
+          status: 'pass',
+          blockingReasons: [],
+        },
+        execution_closure: {
+          model: 'execution_closure',
+          status: 'not_established',
+          blockingReasons: ['execution_closure_not_established'],
+        },
+      },
+    });
+    try {
+      const output = buildBmadsOutput(fixture.root);
+      const text = renderBmads(output);
+
+      expect(output).toMatchObject({
+        aiTdd: {
+          primaryRecord: {
+            currentMentalModel: 'implementation_readiness',
+            schemaModelStatus: 'pass',
+            nextSafeAction: 'dispatch_implement',
+          },
+          nextSafeAction: 'dispatch_implement',
+        },
+        orchestration: {
+          source: 'ai_tdd_runtime_decision',
+          nextAction: 'dispatch_implement',
+          ready: true,
+        },
+      });
+      expect(text).toContain('Next safe action: dispatch_implement.');
+      expect(text).not.toContain('Next safe action: run_implementation_readiness_gate');
+      expect(text).not.toContain('Next action: inspect_requirement_record');
+
+      const debugText = renderBmads({ ...output, debug: true });
+      expect(debugText).toContain('Next action: dispatch_implement');
+      expect(debugText).not.toContain('Next action: inspect_requirement_record');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
     }
   });
 

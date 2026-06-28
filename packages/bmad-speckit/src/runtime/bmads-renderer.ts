@@ -12,6 +12,10 @@ const {
 const BMADS_HEADINGS = HEADING_SCHEMAS.bmads;
 const BMADS_ZH_HEADINGS = HEADING_SCHEMAS.bmadsZhCn;
 
+function effectiveRuntimeRoute(primary) {
+  return primary?.effectiveCurrentModel || primary?.currentMentalModel || 'none';
+}
+
 const BMADS_TEXT = {
   en: {
     quickStartMessage:
@@ -52,9 +56,9 @@ const BMADS_TEXT = {
     summaryWhyReadiness:
       'Implementation and story development stay blocked until the governed readiness gate is current and passing.',
     summaryWaitingDefault: (primary) =>
-      `The first safe-action record is positioned at ${primary.currentMentalModel}.`,
+      `The first safe-action record is positioned at ${effectiveRuntimeRoute(primary)}.`,
     summaryWhyDefault:
-      'The next step must follow the current mental model and RequirementRecord route.',
+      'The next step must follow the effective runtime route and RequirementRecord next safe action.',
     summaryAction: (primary) => `Next safe action: ${primary.nextSafeAction}.`,
     headingSchema: BMADS_HEADINGS,
     sectionStatusSummary: schemaTitle(BMADS_HEADINGS, 'statusSummary'),
@@ -100,7 +104,7 @@ const BMADS_TEXT = {
     modelStatusLabel: 'Status',
     modelStatusSourceLabel: 'Evidence source',
     routeBasisLabel: 'Route basis',
-    routeBasisCurrent: 'current RequirementRecord model',
+    routeBasisCurrent: 'current effective runtime route',
     routeBasisPending: 'waiting for prior model evidence',
     routeBasisTerminal: 'terminal event only, not a user-executable action',
     currentStatusSuffix: 'inferred current position',
@@ -149,7 +153,7 @@ const BMADS_TEXT = {
     recommendedActionReconfirmation:
       'Repair and reconfirm the requirement source first, because stale confirmation evidence blocks later mental models.',
     recommendedActionDefault: (primary) =>
-      `Run ${primary.nextSafeAction}, because ${primary.currentMentalModel} is the current AI-TDD control position.`,
+      `Run ${primary.nextSafeAction}, because ${effectiveRuntimeRoute(primary)} is the current AI-TDD control position.`,
     recommendedGoal: (skill) => `Use ${skill} only after the first safe-action blocker is clear.`,
     recommendedBmadHelp:
       'Use `bmad-speckit bmad-help` only when you need the BMAD Method workflow panorama, not to override this runtime safety route.',
@@ -174,7 +178,7 @@ const BMADS_TEXT = {
     activeSeeing: (runtime, primary) => [
       `You are handling ${runtime.inventory?.currentActionableRecords ?? runtime.activeRecords.length} current-actionable RequirementRecord(s).`,
       `Look at ${primary.recordId} first because it has the highest safety priority: ${runtime.primaryBecause}.`,
-      `Current position is ${primary.currentMentalModel}; the next step must follow the Next Safe Action.`,
+      `Current position is ${effectiveRuntimeRoute(primary)}; the next step must follow the Next Safe Action.`,
     ],
     waitingDelivery: (primary) => `First safe-action record ${primary.recordId} is waiting for user delivery acceptance.`,
     actionDelivery:
@@ -193,7 +197,7 @@ const BMADS_TEXT = {
     avoidReadiness:
       'Do not treat upstream planning readiness as governed runtime readiness.',
     waitingDefault: (primary) =>
-      `First safe-action record ${primary.recordId} is currently at ${primary.currentMentalModel}.`,
+      `First safe-action record ${primary.recordId} is currently at ${effectiveRuntimeRoute(primary)}.`,
     actionDefault: (primary) => `Run the Next Safe Action first: ${primary.nextSafeAction}.`,
     secondaryWaiting: (count) =>
       `There are ${count} additional current-actionable record(s). They are still visible, but they are not the first safe action right now.`,
@@ -239,8 +243,8 @@ const BMADS_TEXT = {
     summaryWaitingReadiness: '系统在等 implementation readiness 通过。',
     summaryWhyReadiness:
       'readiness gate 未保持当前且通过时，implementation 和 story development 都必须阻塞。',
-    summaryWaitingDefault: (primary) => `第一安全动作记录位于 ${primary.currentMentalModel}。`,
-    summaryWhyDefault: '下一步必须服从当前心智模型和 RequirementRecord route。',
+    summaryWaitingDefault: (primary) => `第一安全动作记录位于 ${effectiveRuntimeRoute(primary)}。`,
+    summaryWhyDefault: '下一步必须服从有效 runtime route 和 RequirementRecord 下一安全动作。',
     summaryAction: (primary) => `下一安全动作：${primary.nextSafeAction}。`,
     headingSchema: BMADS_ZH_HEADINGS,
     sectionStatusSummary: schemaTitle(BMADS_ZH_HEADINGS, 'statusSummary'),
@@ -286,7 +290,7 @@ const BMADS_TEXT = {
     modelStatusLabel: '状态',
     modelStatusSourceLabel: '证据来源',
     routeBasisLabel: '路由依据',
-    routeBasisCurrent: '当前 RequirementRecord 模型',
+    routeBasisCurrent: '当前有效 runtime route',
     routeBasisPending: '等待前序模型证据',
     routeBasisTerminal: '只是终态事件，不是用户可执行动作',
     currentStatusSuffix: '推断当前位置',
@@ -333,7 +337,7 @@ const BMADS_TEXT = {
     recommendedActionReconfirmation:
       '先修复并重新确认需求源，因为过期确认凭证会阻塞后续心智模型。',
     recommendedActionDefault: (primary) =>
-      `先执行 ${primary.nextSafeAction}，因为 ${primary.currentMentalModel} 是当前 AI-TDD 控制位置。`,
+      `先执行 ${primary.nextSafeAction}，因为 ${effectiveRuntimeRoute(primary)} 是当前 AI-TDD 控制位置。`,
     recommendedGoal: (skill) => `只有第一安全动作的阻塞清除后才使用 ${skill}。`,
     recommendedBmadHelp:
       '只有需要 BMAD 方法学全景时才运行 `bmad-speckit bmad-help`，不要用它覆盖本页 runtime 安全路线。',
@@ -358,7 +362,7 @@ const BMADS_TEXT = {
     activeSeeing: (runtime, primary) => [
       `你正在处理 ${runtime.inventory?.currentActionableRecords ?? runtime.activeRecords.length} 条可继续推进的需求记录。`,
       `当前先看 ${primary.recordId}，因为它的安全优先级最高：${runtime.primaryBecause}。`,
-      `当前位置是 ${primary.currentMentalModel}，下一步必须按 Next Safe Action 走。`,
+      `当前位置是 ${effectiveRuntimeRoute(primary)}，下一步必须按 Next Safe Action 走。`,
     ],
     waitingDelivery: (primary) => `第一安全动作记录 ${primary.recordId} 在等用户交付验收。`,
     actionDelivery:
@@ -376,7 +380,7 @@ const BMADS_TEXT = {
       `先执行 ${primary.nextSafeAction}，不要直接进入 story development。`,
     avoidReadiness: '不要把 upstream planning readiness 当成 governed runtime readiness。',
     waitingDefault: (primary) =>
-      `第一安全动作记录 ${primary.recordId} 当前位于 ${primary.currentMentalModel}。`,
+      `第一安全动作记录 ${primary.recordId} 当前位于 ${effectiveRuntimeRoute(primary)}。`,
     actionDefault: (primary) => `先执行 Next Safe Action：${primary.nextSafeAction}。`,
     secondaryWaiting: (count) =>
       `另外还有 ${count} 条额外的可继续推进记录；它们没有消失，但不是当前第一安全动作。`,
@@ -804,7 +808,27 @@ function buildNoActiveRequirementSurface(labels = textBundle()) {
   };
 }
 
-function resolveMainAgentOrchestrationSurface(projectRoot, labels = textBundle()) {
+function resolveMainAgentOrchestrationSurface(projectRoot, labels = textBundle(), aiTddRuntime = null) {
+  const primaryDecision = aiTddRuntime?.primaryRecord || null;
+  if (primaryDecision) {
+    const route = primaryDecision.effectiveCurrentModel || primaryDecision.currentMentalModel;
+    const blockingReasons =
+      primaryDecision.blockerSummary && primaryDecision.blockerSummary !== 'none'
+        ? [primaryDecision.blockerSummary]
+        : [];
+    return {
+      source: 'ai_tdd_runtime_decision',
+      nextAction: primaryDecision.nextSafeAction,
+      ready: primaryDecision.hasSafetyBlocker !== true,
+      pendingPacketStatus: primaryDecision.delivery?.awaiting ? 'awaiting_user_acceptance' : 'none',
+      sessionId: primaryDecision.requirementSetId || primaryDecision.recordId,
+      stageSummary: {
+        currentMentalModelStatus: primaryDecision.effectiveSchemaModelStatus || primaryDecision.schemaModelStatus,
+        userFacingMessage: `AI-TDD primary route is ${route}; next safe action is ${primaryDecision.nextSafeAction}.`,
+        blockingReasons,
+      },
+    };
+  }
   const { records } = loadActiveRequirementRecords(projectRoot);
   const hasActiveRequirement = records.length > 0;
   if (!hasActiveRequirement) return buildNoActiveRequirementSurface(labels);
@@ -839,15 +863,15 @@ function buildBmadsOutput(projectRootInput = process.cwd(), buildOptions = {}) {
   const labels = textBundle(language);
   const assetRoot = resolveBmadAssetRoot(projectRoot, options.assetRoot);
   const runtime = loadRuntimeContract(assetRoot);
-  const progress = resolveBmadHelpFiveLayerProgressState({ projectRoot, assetRoot });
-  const orchestration = resolveMainAgentOrchestrationSurface(projectRoot, labels);
-  const readiness = resolveReadinessStatus(projectRoot);
-  const artifacts = collectUpstreamArtifacts(projectRoot);
   const aiTdd = resolveAiTddRuntimeDecision(projectRoot, {
     assetRoot,
     displayBudget: options.budget,
     includeRawRecord: options.includeRawRecord === true || options.json === true,
   });
+  const progress = resolveBmadHelpFiveLayerProgressState({ projectRoot, assetRoot });
+  const orchestration = resolveMainAgentOrchestrationSurface(projectRoot, labels, aiTdd);
+  const readiness = resolveReadinessStatus(projectRoot);
+  const artifacts = collectUpstreamArtifacts(projectRoot);
   const displayBudget = resolveDisplayBudget(options.budget, 'route');
   const currentRoute = runtime.layers
     .flatMap((layer) => layer.stages.map((stage) => ({ layer, stage })))
@@ -1206,8 +1230,18 @@ function recommendedNowAction(primary, language) {
       renderAsCode: true,
     });
   }
-  const route = primary.currentMentalModel;
+  const route = effectiveRuntimeRoute(primary);
   const next = primary.nextSafeAction;
+  if (next === 'dispatch_implement' && primary.nativeGoalHandoff) {
+    return actionDisplay({
+      kind: 'managed_native_goal_handoff',
+      executable: true,
+      label: '主控托管执行',
+      actionToken: next,
+      suggestedPrompt: primary.nativeGoalHandoff.goalCommand || '',
+      renderAsCode: false,
+    });
+  }
   if (primary.delivery.awaiting || next === 'confirm-closeout-acceptance') {
     return actionDisplay({
       kind: 'cli_command',
@@ -1217,7 +1251,7 @@ function recommendedNowAction(primary, language) {
       renderAsCode: true,
     });
   }
-  if (/requirements-contract-authoring/iu.test(next) || route === 'requirement_confirmation') {
+  if (/requirements-contract-authoring/iu.test(next)) {
     return actionDisplay({
       kind: 'skill',
       executable: true,
@@ -1237,7 +1271,7 @@ function recommendedNowAction(primary, language) {
       renderAsCode: true,
     });
   }
-  if (/req-trace-matrix-prompt-generator/iu.test(next) || route === 'execution_closure') {
+  if (/req-trace-matrix-prompt-generator/iu.test(next)) {
     return actionDisplay({
       kind: 'skill',
       executable: true,
@@ -1247,7 +1281,7 @@ function recommendedNowAction(primary, language) {
       renderAsCode: true,
     });
   }
-  if (/review|grill|audit/iu.test(next) || route === 'audit_review') {
+  if (/review|grill|audit/iu.test(next)) {
     return actionDisplay({
       kind: 'skill',
       executable: true,
@@ -1257,7 +1291,7 @@ function recommendedNowAction(primary, language) {
       renderAsCode: true,
     });
   }
-  if (route === 'architecture_confirmation' && next === 'prepare_architecture_confirmation') {
+  if (next === 'prepare_architecture_confirmation') {
     return actionDisplay({
       kind: 'suggested_prompt',
       executable: true,
@@ -1355,12 +1389,20 @@ function renderRecommendedNow(runtime, labels, language) {
   const primary = runtime.primaryRecord;
   const zh = resolveLanguage(language) === 'zh-CN';
   const action = recommendedNowAction(primary, language);
-  const route = primary?.currentMentalModel || 'none';
+  const route = effectiveRuntimeRoute(primary);
   const next = primary?.nextSafeAction || 'requirements-contract-authoring author-confirmation-ready-source';
   const lines = [schemaHeading(labels.headingSchema, 'recommendedNow')];
   if (zh) {
     lines.push('', `当前 route：${route}`, `下一安全动作：${next}`);
-    if (action.kind === 'suggested_prompt') {
+    if (action.kind === 'managed_native_goal_handoff') {
+      const handoff = primary.nativeGoalHandoff;
+      lines.push('主控托管执行');
+      lines.push(`Packet ID: ${handoff.packetId}`);
+      lines.push(`Goal command: ${handoff.goalCommand}`);
+      lines.push(`TaskReport path: ${handoff.taskReportPath}`);
+      lines.push('Return to main agent after /goal writes TaskReport');
+      lines.push(handoff.returnCommand);
+    } else if (action.kind === 'suggested_prompt') {
       lines.push('这个 route 没有专属公开技能，请复制下面提示词执行。', '', '推荐提示词：');
       lines.push(
         action.suggestedPrompt ||
@@ -1377,7 +1419,15 @@ function renderRecommendedNow(runtime, labels, language) {
     return lines;
   }
   lines.push('', `Current route: ${route}`, `Next safe action: ${next}`);
-  if (action.kind === 'suggested_prompt') {
+  if (action.kind === 'managed_native_goal_handoff') {
+    const handoff = primary.nativeGoalHandoff;
+    lines.push('主控托管执行');
+    lines.push(`Packet ID: ${handoff.packetId}`);
+    lines.push(`Goal command: ${handoff.goalCommand}`);
+    lines.push(`TaskReport path: ${handoff.taskReportPath}`);
+    lines.push('Return to main agent after /goal writes TaskReport');
+    lines.push(handoff.returnCommand);
+  } else if (action.kind === 'suggested_prompt') {
     lines.push('This route has no dedicated public skill. Use the suggested prompt below.', '', 'Suggested prompt:');
     lines.push(
       action.suggestedPrompt ||
@@ -1429,14 +1479,14 @@ function modelStatusSourceForRow(row, primary) {
   if (!primary) return 'no active RequirementRecord';
   const evidence = primary.modelStatuses?.[row.modelId];
   if (evidence?.source) return evidence.source;
-  if (primary.currentMentalModel === row.modelId) return 'current RequirementRecord model';
+  if (primary.currentMentalModel === row.modelId) return 'raw RequirementRecord current model';
   if (row.terminalEvent) return 'manifest terminal event';
   return 'no model evidence found';
 }
 
 function routeBasisForModel(row, primary, labels) {
   if (!primary) return labels.routeBasisPending;
-  if (primary.currentMentalModel === row.modelId) return labels.routeBasisCurrent;
+  if (effectiveRuntimeRoute(primary) === row.modelId) return labels.routeBasisCurrent;
   if (row.terminalEvent) return labels.routeBasisTerminal;
   return labels.routeBasisPending;
 }

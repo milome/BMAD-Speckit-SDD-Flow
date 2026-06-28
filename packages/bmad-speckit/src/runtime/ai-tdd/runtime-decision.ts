@@ -283,6 +283,21 @@ function modelStatusEvidence(record, modelId, currentMentalModel = '') {
     }
     return { status: 'not_established', source: 'missing readiness gate evidence' };
   }
+  if (modelId === 'execution_closure') {
+    const iterations = asArray(record.executionIterations);
+    const closures = asArray(record.requirementClosures);
+    const artifactIndex = asArray(record.artifactIndex);
+    const requiredCommands = asArray(record.deliveryEvidence?.requiredCommands);
+    if (
+      iterations.length > 0 &&
+      closures.length > 0 &&
+      artifactIndex.length > 0 &&
+      requiredCommands.length > 0
+    ) {
+      return { status: 'pass', source: 'controlled ingest execution closure evidence' };
+    }
+    return { status: 'not_established', source: 'missing controlled ingest execution closure evidence' };
+  }
   if (modelId === 'delivery_confirmation' && deliveryAwaitingAcceptance(record)) {
     return { status: 'awaiting_user_acceptance', source: 'delivery acceptance request' };
   }
@@ -294,6 +309,91 @@ function modelStatusEvidence(record, modelId, currentMentalModel = '') {
 
 function statusForModel(record, modelId) {
   return modelStatusEvidence(record, modelId).status;
+}
+
+function manifestRowFor(manifests, modelId) {
+  return (manifests?.sixModelManifest || []).find((row) => row.modelId === modelId) || null;
+}
+
+function actionRowsFor(manifests, modelId) {
+  return (manifests?.actionMatrix || []).filter((row) => row.modelId === modelId);
+}
+
+function statusMatchesMatrixRow(rowStatus, modelStatus) {
+  if (rowStatus === modelStatus) return true;
+  if (rowStatus === 'stale' && modelStatus === 'not_established') return true;
+  return false;
+}
+
+function conditionSatisfied(record, condition, delivery) {
+  switch (condition) {
+    case 'record_created':
+      return true;
+    case 'confirmation_recorded':
+      return statusForModel(record, 'requirement_confirmation') === 'pass';
+    case 'architecture_confirmation_required':
+      return statusForModel(record, 'requirement_confirmation') === 'pass';
+    case 'architecture_confirmation_active':
+    case 'current_architecture_confirmation_active':
+      return statusForModel(record, 'architecture_confirmation') === 'pass';
+    case 'confirmed_source_and_architecture_active':
+      return (
+        statusForModel(record, 'requirement_confirmation') === 'pass' &&
+        statusForModel(record, 'architecture_confirmation') === 'pass'
+      );
+    case 'readiness_passed':
+      return statusForModel(record, 'implementation_readiness') === 'pass';
+    case 'all_trace_slices_current_pass':
+    case 'execution_closure_pass':
+      return statusForModel(record, 'execution_closure') === 'pass';
+    case 'audit_review_pass':
+    case 'audit_review_pass_and_current_evidence':
+    case 'audit_review_pass_and_current_closeout_evidence':
+      return statusForModel(record, 'audit_review') === 'pass';
+    case 'closeout_acceptance_confirmed':
+      return isTerminalClosedRecord(record);
+    case 'delivery_closeout_gate_passed':
+    case 'closeout_pass':
+      return statusForModel(record, 'delivery_confirmation') === 'pass';
+    case 'delivery_confirmation_user_acceptance_requested':
+      return delivery.awaiting === true;
+    default:
+      return false;
+  }
+}
+
+function nativeGoalHandoff(record) {
+  const handoff = record?.nativeGoalHandoff;
+  if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)) return null;
+  if (!text(handoff.packetId) || !text(handoff.taskReportPath)) return null;
+  return {
+    packetId: text(handoff.packetId),
+    goalCommand: text(handoff.goalCommand),
+    taskReportPath: text(handoff.taskReportPath),
+    returnCommand:
+      text(handoff.returnCommand) ||
+      `bmad-speckit main-agent-orchestration --action import-native-goal-task-report --taskReportPath ${text(handoff.taskReportPath)}`,
+    dispatchHost: text(handoff.dispatchHost),
+    runtimeHost: text(handoff.runtimeHost),
+    renderedHostLabel: text(handoff.renderedHostLabel),
+    imported: handoff.imported === true,
+    importStatus: text(handoff.importStatus),
+  };
+}
+
+function hasControlledNativeGoalTaskReportIngest(record, handoff) {
+  if (!handoff) return false;
+  if (handoff.imported !== true) return false;
+  const iterations = asArray(record.executionIterations);
+  const closures = asArray(record.requirementClosures);
+  const artifactIndex = asArray(record.artifactIndex);
+  const requiredCommands = asArray(record.deliveryEvidence?.requiredCommands);
+  return (
+    iterations.length > 0 &&
+    closures.length > 0 &&
+    artifactIndex.length > 0 &&
+    requiredCommands.length > 0
+  );
 }
 
 function inferCurrentMentalModel(record) {
@@ -332,6 +432,35 @@ function openBlockers(record) {
     }
   }
   return unique(blockers);
+}
+
+function resolveEffectiveCurrentModel({ record, manifests, currentMentalModel }) {
+  const manifestRow = manifestRowFor(manifests, currentMentalModel);
+  const passCondition = text(manifestRow?.passCondition);
+  if (
+    manifestRow?.nextModel &&
+    conditionSatisfied(record, passCondition, deliveryInfo(record))
+  ) {
+    return {
+      effectiveCurrentModel: manifestRow.nextModel,
+      effectiveModelReason: `manifest_next_model_after_${passCondition || `${currentMentalModel}_pass`}`,
+      advancedFromModel: currentMentalModel,
+    };
+  }
+  return {
+    effectiveCurrentModel: currentMentalModel,
+    effectiveModelReason: 'current_model_not_passed',
+    advancedFromModel: '',
+  };
+}
+
+function matrixActionFor({ record, manifests, effectiveCurrentModel, effectiveSchemaModelStatus, delivery }) {
+  return actionRowsFor(manifests, effectiveCurrentModel).find(
+    (row) =>
+      text(row.runtimeNextAction) &&
+      statusMatchesMatrixRow(text(row.schemaStatus), effectiveSchemaModelStatus) &&
+      conditionSatisfied(record, text(row.condition), delivery)
+  );
 }
 
 function reconfirmationState(record) {
@@ -443,14 +572,16 @@ function nextSafeActionFor(input) {
   if (input.reason === 'delivery_closeout_blocker') return 'run_delivery_closeout';
   if (input.delivery.awaiting) return 'confirm-closeout-acceptance';
   if (input.reason === 'readiness_blocker') return 'run_implementation_readiness_gate';
-  if (input.currentMentalModel === 'requirement_confirmation') {
-    return 'requirements-contract-authoring author-confirmation-ready-source';
+  if (
+    input.nativeGoalHandoff &&
+    !input.nativeGoalTaskReportIngested &&
+    !['task_report_partial', 'task_report_blocked'].includes(
+      text(input.nativeGoalHandoff.importStatus)
+    )
+  ) {
+    return 'await_native_goal_task_report';
   }
-  if (input.currentMentalModel === 'architecture_confirmation') return 'prepare_architecture_confirmation';
-  if (input.currentMentalModel === 'implementation_readiness') return 'run_implementation_readiness_gate';
-  if (input.currentMentalModel === 'execution_closure') return 'req-trace-matrix-prompt-generator';
-  if (input.currentMentalModel === 'audit_review') return 'dispatch_review';
-  if (input.currentMentalModel === 'delivery_confirmation') return 'run_closeout';
+  if (input.matrixAction?.runtimeNextAction) return input.matrixAction.runtimeNextAction;
   return 'inspect_requirement_record';
 }
 
@@ -459,6 +590,7 @@ function canCompileGoalPacket(summary) {
     Boolean(summary.sourceDocumentHash) &&
     Boolean(summary.implementationConfirmationHash) &&
     ['implementation_readiness', 'execution_closure'].includes(summary.currentMentalModel) &&
+    summary.nextSafeAction === 'dispatch_implement' &&
     !summary.hasSafetyBlocker &&
     ['pass', 'not_established'].includes(summary.schemaModelStatus)
   );
@@ -466,6 +598,7 @@ function canCompileGoalPacket(summary) {
 
 function summarizeRecord(entry, options = {}) {
   const { record, recordPath, recordId, isExplicitSelection, isIndexedActive } = entry;
+  const manifests = options.manifests || {};
   const currentMentalModel = inferCurrentMentalModel(record);
   const schemaModelStatus = statusForModel(record, currentMentalModel);
   const blockers = openBlockers(record);
@@ -481,14 +614,38 @@ function summarizeRecord(entry, options = {}) {
     isIndexedActive
   );
   const hasSafetyBlocker = SAFETY_PRIORITY[reason] > SAFETY_PRIORITY.explicit_user_selection;
+  const effective = resolveEffectiveCurrentModel({
+    record,
+    manifests,
+    currentMentalModel,
+    schemaModelStatus,
+  });
+  const effectiveSchemaModelStatus = statusForModel(record, effective.effectiveCurrentModel);
+  const matrixAction = matrixActionFor({
+    record,
+    manifests,
+    effectiveCurrentModel: effective.effectiveCurrentModel,
+    effectiveSchemaModelStatus,
+    delivery,
+  });
+  const packetBoundNativeGoalHandoff = nativeGoalHandoff(record);
+  const nativeGoalTaskReportIngested = hasControlledNativeGoalTaskReportIngest(
+    record,
+    packetBoundNativeGoalHandoff
+  );
   const nextSafeAction = nextSafeActionFor({
     record,
     currentMentalModel,
+    effectiveCurrentModel: effective.effectiveCurrentModel,
     schemaModelStatus,
+    effectiveSchemaModelStatus,
     blockers,
     delivery,
     reconfirmation,
     reason,
+    matrixAction,
+    nativeGoalHandoff: packetBoundNativeGoalHandoff,
+    nativeGoalTaskReportIngested,
   });
   const displayState =
     delivery.awaiting || schemaModelStatus === 'awaiting_user_acceptance'
@@ -503,7 +660,7 @@ function summarizeRecord(entry, options = {}) {
     const evidence = modelStatusEvidence(record, modelId, currentMentalModel);
     modelStatuses[modelId] = {
       ...evidence,
-      isCurrent: currentMentalModel === modelId,
+      isCurrent: effective.effectiveCurrentModel === modelId,
     };
   }
   const summary = {
@@ -511,11 +668,18 @@ function summarizeRecord(entry, options = {}) {
     sourceOrTitle: sourceOrTitle(record),
     activityState: entry.activityState,
     isTerminalClosed: entry.isTerminalClosed,
+    rawCurrentMentalModel: currentMentalModel,
     currentMentalModel,
+    effectiveCurrentModel: effective.effectiveCurrentModel,
+    effectiveModelReason: effective.effectiveModelReason,
+    advancedFromModel: effective.advancedFromModel,
     schemaModelStatus,
+    effectiveSchemaModelStatus,
     displayState,
     blockerSummary: blockers.length > 0 ? blockers.join('; ') : 'none',
     nextSafeAction,
+    matrixActionId: matrixAction?.actionId || '',
+    matrixCondition: matrixAction?.condition || '',
     updatedAt:
       text(record.updatedAt) ||
       text(record.currentAttemptId) ||
@@ -539,6 +703,8 @@ function summarizeRecord(entry, options = {}) {
     indexPointerStatus: isIndexedActive ? 'trusted_pointer' : 'not_index_pointer',
     hasSafetyBlocker,
     modelStatuses,
+    nativeGoalHandoff: packetBoundNativeGoalHandoff,
+    nativeGoalTaskReportIngested,
     recordPath: normalizePath(path.relative(process.cwd(), recordPath)),
   };
   if (options.includeRawRecord) summary.rawRecord = record;
@@ -641,6 +807,7 @@ function resolveAiTddRuntimeDecision(projectRoot, options = {}) {
   const activeRecords = annotateIndexPointerTrust(
     records.map((record) =>
       summarizeRecord(record, {
+        manifests,
         includeRawRecord: options.includeRawRecord === true,
       })
     ),

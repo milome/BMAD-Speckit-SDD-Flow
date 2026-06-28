@@ -130,6 +130,31 @@ function implementationReadyRecord(id = 'REQ-READY') {
   };
 }
 
+function executionClosurePassedRecord(id = 'REQ-EXECUTION-CLOSED') {
+  return {
+    recordId: id,
+    title: 'Execution closure passed requirement',
+    currentMentalModel: 'execution_closure',
+    sourceDocumentHash: 'sha256:source-execution-closed',
+    implementationConfirmationHash: 'sha256:confirmation-execution-closed',
+    sixModelResults: {
+      requirement_confirmation: { status: 'pass' },
+      architecture_confirmation: { status: 'pass' },
+      implementation_readiness: { status: 'pass' },
+      execution_closure: { status: 'pass' },
+    },
+    updatedAt: '2026-06-01T00:02:00.000Z',
+  };
+}
+
+function sectionBetween(text, startHeading, endHeading) {
+  const start = text.indexOf(startHeading);
+  assert.notEqual(start, -1, `missing section start ${startHeading}`);
+  const end = text.indexOf(endHeading, start + startHeading.length);
+  assert.notEqual(end, -1, `missing section end ${endHeading}`);
+  return text.slice(start, end);
+}
+
 describe('bmads Six Mental Models panorama', () => {
   it('runs from a consumer project without a local _bmad source tree', () => {
     const root = makeConsumerLikeRoot([implementationReadyRecord()], 'REQ-READY');
@@ -218,7 +243,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.match(text, /confirm-closeout-acceptance with sha256:delivery-closeout-report/);
       assert.match(text, /6\/6\. Delivery Confirmation \(delivery_confirmation\)/);
       assert.match(text, /Question: Can the work be safely called complete, shipped, and closed\?/);
-      assert.match(text, /Route basis: current RequirementRecord model/);
+      assert.match(text, /Route basis: current effective runtime route/);
       assert.doesNotMatch(text, /60\. Delivery Confirmation/);
       assert.doesNotMatch(text, /Next Safe Action: record_closed/);
     } finally {
@@ -265,6 +290,33 @@ describe('bmads Six Mental Models panorama', () => {
 
       assert.equal(output.aiTdd.primaryRecord.recordId, 'REQ-AWAIT-CLOSEOUT');
       assert.equal(output.aiTdd.primaryBecause, 'awaiting_user_acceptance');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('advances effective model and next action from the six-model matrices', () => {
+    const root = makeRoot([executionClosurePassedRecord()], 'REQ-EXECUTION-CLOSED');
+    try {
+      const output = buildBmadsOutput({ projectRoot: root, budget: 'route' });
+      const text = renderBmads(output);
+      const recommendedNow = sectionBetween(text, '### Recommended Now', '### Core Skills');
+
+      assert.equal(output.aiTdd.primaryRecord.currentMentalModel, 'execution_closure');
+      assert.equal(output.aiTdd.primaryRecord.effectiveCurrentModel, 'audit_review');
+      assert.equal(
+        output.aiTdd.primaryRecord.effectiveModelReason,
+        'manifest_next_model_after_all_trace_slices_current_pass'
+      );
+      assert.equal(output.aiTdd.primaryRecord.matrixActionId, 'AUDIT_DISPATCH');
+      assert.equal(output.aiTdd.primaryRecord.matrixCondition, 'execution_closure_pass');
+      assert.equal(output.aiTdd.primaryRecord.nextSafeAction, 'dispatch_review');
+      assert.equal(output.orchestration.nextAction, 'dispatch_review');
+      assert.match(output.orchestration.stageSummary.userFacingMessage, /primary route is audit_review/);
+      assert.doesNotMatch(output.orchestration.stageSummary.userFacingMessage, /primary route is execution_closure/);
+      assert.match(recommendedNow, /Current route: audit_review/);
+      assert.match(recommendedNow, /Next safe action: dispatch_review/);
+      assert.doesNotMatch(recommendedNow, /req-trace-matrix-prompt-generator/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -423,7 +475,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.equal(output.aiTdd.activeRecords.length, 1);
       assert.equal(output.aiTdd.primaryRecord.recordId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
       assert.equal(output.aiTdd.primaryBecause, 'indexed_active_record');
-      assert.equal(output.orchestration.source, 'requirement_record');
+      assert.equal(output.orchestration.source, 'ai_tdd_runtime_decision');
       assert.equal(output.orchestration.sessionId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
       assert.equal(output.quickStart, null);
       assert.match(text, /You are looking at the AI-TDD runtime state for REQ-CI-GOVERNANCE-MAPPING-FIXTURE\./);
@@ -431,7 +483,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.match(text, /first safe-action reason: indexed_active_record/);
       assert.match(text, /selected by user: no/);
       assert.match(text, /runtime index pointer: yes/);
-      assert.doesNotMatch(text, /Source: requirement_record/);
+      assert.doesNotMatch(text, /Source: ai_tdd_runtime_decision/);
       assert.doesNotMatch(text, /Source: no_active_requirement/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -560,7 +612,7 @@ describe('bmads Six Mental Models panorama', () => {
         '## Stage Evidence',
         '## Contract Status',
         '## Main Agent',
-        'Source: requirement_record',
+        'Source: ai_tdd_runtime_decision',
       ]) {
         assert.doesNotMatch(defaultText, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
         assert.match(fullText, new RegExp(diagnostic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));

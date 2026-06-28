@@ -46,6 +46,18 @@ function receiptPath(root: string, recordId: string, attemptId: string): string 
   );
 }
 
+function orchestrationStatePath(fixture: {
+  recordPath: string;
+  requirementSetId: string;
+}): string {
+  return path.join(
+    path.dirname(fixture.recordPath),
+    'orchestration',
+    'orchestration-state',
+    `${fixture.requirementSetId}.json`
+  );
+}
+
 function addGoalCommandText(input: {
   packetPath: string;
   auditReceiptPath: string;
@@ -137,6 +149,84 @@ describe('main-agent run-loop native goal invocation routing', () => {
       expect(receipt.taskReportPath).toBe(requestedTaskReportPath);
     } finally {
       cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('infers Codex CLI host from process env even when state and config still say cursor', () => {
+    const packetId = 'implement-native-codex-env';
+    const previousEnv = {
+      CODEX_THREAD_ID: process.env.CODEX_THREAD_ID,
+      CODEX_MANAGED_BY_NPM: process.env.CODEX_MANAGED_BY_NPM,
+      CODEX_MANAGED_PACKAGE_ROOT: process.env.CODEX_MANAGED_PACKAGE_ROOT,
+    };
+    process.env.CODEX_THREAD_ID = 'codex-thread-fixture';
+    process.env.CODEX_MANAGED_BY_NPM = 'true';
+    process.env.CODEX_MANAGED_PACKAGE_ROOT = 'D:\\Dev\\BMAD-Speckit-SDD-Flow';
+
+    const fixture = materializeRequirementFixture({
+      orchestrationNextAction: 'dispatch_implement',
+      pendingPacket: { packetId, packetKind: 'execution', status: 'ready_for_main_agent' },
+    });
+    try {
+      fs.mkdirSync(path.join(fixture.root, '_bmad', '_config'), { recursive: true });
+      fs.writeFileSync(
+        path.join(fixture.root, '_bmad', '_config', 'governance-remediation.yaml'),
+        ['version: 1', 'primaryHost: cursor', 'authoritativeHost: cursor'].join('\n'),
+        'utf8'
+      );
+      const statePath = orchestrationStatePath(fixture);
+      const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      state.host = 'cursor';
+      state.hostRecovery = {
+        degradation_level: 'none',
+        active_host_mode: 'cursor',
+        orchestration_entry: 'main-agent-orchestration',
+        updated_at: '2026-06-28T00:00:00.000Z',
+      };
+      writeJson(statePath, state);
+
+      const compiled = writeCompiledImplementPacket({
+        root: fixture.root,
+        fixture,
+        packetId,
+      });
+      const commandText = addGoalCommandText({
+        packetPath: compiled.packetPath,
+        auditReceiptPath: compiled.compiledPromptRef.auditReceiptPath,
+        goalExecutionPath: compiled.compiledPromptRef.goalExecutionPath!,
+        modelPacketPath: compiled.compiledPromptRef.modelPacketPath,
+        packetId,
+      });
+      const spawnSyncFn: NativeGoalSpawnSyncFn = () => {
+        throw new Error('run-loop must not spawn a host CLI for native /goal');
+      };
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.recordId,
+        requirementSetId: fixture.requirementSetId,
+        runId: fixture.runId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        nativeGoalSpawnSyncFn: spawnSyncFn,
+      });
+
+      expect(result.dispatchInstruction?.host).toBe('codex');
+      expect(result.steps.some((step) => step.step === 'native-goal-invocation')).toBe(true);
+      const receipt = JSON.parse(
+        fs.readFileSync(receiptPath(fixture.root, fixture.recordId, packetId), 'utf8')
+      );
+      expect(receipt.invokedCommandKind).toBe('main_session_native_goal_required');
+      expect(receipt.args).toEqual([commandText]);
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+      for (const [key, value] of Object.entries(previousEnv)) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
     }
   });
 });

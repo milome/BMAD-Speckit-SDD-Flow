@@ -519,6 +519,91 @@ describe('strict closeout proof gate', () => {
     }
   });
 
+  it('accepts legacy null-genesis confirmation events without requiring a historical receipt', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'strict-closeout-legacy-genesis-'));
+    try {
+      const { recordPath, base, sourcePath } = writeScopedAiTddFixture(root);
+      const eventLogPath = path.join(base, 'events', 'control-events.jsonl');
+      const currentAttemptEvent = JSON.parse(readFileSync(eventLogPath, 'utf8'));
+      const legacyGenesis = {
+        eventId: 'confirmation_recorded:2026-06-27T07:14:28.138Z:REQ-LEGACY',
+        eventType: 'confirmation_recorded',
+        writerId: 'ingest-confirmation-event.js',
+        previousEventHash: null,
+        eventHash: HISTORICAL_HASH,
+        payload: {},
+      };
+      currentAttemptEvent.previousEventHash = HISTORICAL_HASH;
+      writeFileSync(
+        eventLogPath,
+        [legacyGenesis, currentAttemptEvent].map((event) => JSON.stringify(event)).join('\n') +
+          '\n',
+        'utf8'
+      );
+      rmSync(path.join(base, 'events', 'receipts'), { recursive: true, force: true });
+      writeReceipt(base, currentAttemptEvent.eventId, currentAttemptEvent.eventHash);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      writeJson(recordPath, {
+        ...record,
+        eventCount: 2,
+        eventChainHead: EVENT_HASH,
+        lastAppliedEventHash: EVENT_HASH,
+      });
+
+      const reportPath = path.join(base, 'strict-report.json');
+      const code = mainStrictCloseoutProofGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        ATTEMPT,
+        '--report-path',
+        reportPath,
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.replayFromEventLog.ok).toBe(true);
+      expect(report.replayFromEventLog.mode).toBe('event-log-chain-legacy-genesis');
+      expect(report.atomicCommitRecovery.ok).toBe(true);
+      expect(report.atomicCommitRecovery.legacyGenesisReceiptSkipped).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves schema evolution scripts from the package runtime instead of the consumer cwd', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'strict-closeout-package-schema-'));
+    const previousCwd = process.cwd();
+    try {
+      const { recordPath, base, sourcePath } = writeScopedAiTddFixture(root);
+      process.chdir(root);
+
+      const reportPath = path.join(base, 'strict-report.json');
+      const code = mainStrictCloseoutProofGate([
+        '--requirement-record',
+        recordPath,
+        '--source',
+        sourcePath,
+        '--attempt-id',
+        ATTEMPT,
+        '--report-path',
+        reportPath,
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report.schemaEvolutionCompatibility.ok).toBe(true);
+      expect(report.schemaEvolutionCompatibility.scriptsExist).toBe(true);
+    } finally {
+      process.chdir(previousCwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('accepts default dataset release artifacts and typed execution closure writer for current attempts', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'strict-closeout-default-dataset-'));
     try {

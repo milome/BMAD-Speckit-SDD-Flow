@@ -19,6 +19,7 @@ const {
   STALE_BOOKKEEPING_REPAIR_REQUIRED,
   PROJECTION_REFRESH_REQUIRED,
 } = require('./confirmation_drift_classifier');
+const { collectProjectionQualityIssues } = require('./projection_quality_gate');
 
 const CORE_REPORT_SECTIONS = [
   'implementationConfirmation Findings',
@@ -677,12 +678,18 @@ function hasModernDrilldownShape(renderReport) {
   );
 }
 
+function hasDefinitionOfDoneSection(text) {
+  return /(?:^|\n)\s{0,3}#{1,6}\s+(?:\d+(?:\.\d+)*\.\s*)?(?:Definition of Done|Completion Definition|完成语义|完成定义|完成标准|验收完成标准)\s*(?:\n|$)/iu.test(
+    text
+  );
+}
+
 function collectReportShapeIssues(text, renderReport) {
   const findings = [];
   const modernDrilldownShape = hasModernDrilldownShape(renderReport);
   const missingSections = ['implementationConfirmation', 'Reverse Audit Report', 'Definition of Done'].filter((section) => {
     if (section === 'Reverse Audit Report' && modernDrilldownShape) return false;
-    if (section === 'Definition of Done' && text.includes('Completion Definition')) return false;
+    if (section === 'Definition of Done' && hasDefinitionOfDoneSection(text)) return false;
     return !text.includes(section);
   });
   if (missingSections.length) {
@@ -700,7 +707,10 @@ function collectReportShapeIssues(text, renderReport) {
 
   if (modernDrilldownShape) return findings;
 
-  const reverseAuditText = /###\s+Reverse Audit Report([\s\S]*?)(?:\n###\s+Definition of Done|\n##\s+Definition of Done|\n#\s+)/u.exec(text)?.[1] ?? text;
+  const reverseAuditText =
+    /###\s+Reverse Audit Report([\s\S]*?)(?:\n\s{0,3}#{1,6}\s+(?:\d+(?:\.\d+)*\.\s*)?(?:Definition of Done|Completion Definition|完成语义|完成定义|完成标准|验收完成标准)\s*(?:\n|$)|\n#\s+)/iu.exec(
+      text
+    )?.[1] ?? text;
   const equivalentSectionGroups = new Map([
     ['implementationConfirmation Findings', ['implementationConfirmation Findings', 'Source confirmation readiness']],
     ['HTML Confirmation Findings', ['HTML Confirmation Findings', 'confirmation HTML renderer', 'confirmation page language']],
@@ -1361,7 +1371,7 @@ function buildReport({
       hasContractAuthoringRequired: confirmation?.contractAuthoringRequired === true,
       hasConfirmationRender: Boolean(confirmation?.confirmationRender),
       hasReverseAuditReport: /##\s+(?:\d+\.\s+)?Reverse Audit Report/u.test(text),
-      hasDefinitionOfDone: text.includes('Definition of Done'),
+      hasDefinitionOfDone: hasDefinitionOfDoneSection(text),
       diagramBlockCount: traceability.diagramBlockCount,
       diagramIdCount: traceability.diagramIdCount,
       missingDiagramCoverage: traceability.missingDiagramCoverage,
@@ -1506,6 +1516,12 @@ function main(argv) {
   findings.push(...collectReportShapeIssues(text, renderReport));
   const traceability = collectTraceabilityIssues(text, confirmation);
   findings.push(...traceability.findings);
+  findings.push(
+    ...collectProjectionQualityIssues(confirmation, {
+      source: 'reverse_audit',
+      makeIssue: issue,
+    })
+  );
   findings.push(...collectAntiSmokeIssues(text, confirmation, renderReport));
   const definitionDrilldown = collectDefinitionDrilldownIssues({
     confirmation,

@@ -43,6 +43,26 @@ function confirmationRecipeHash(confirmation: Record<string, unknown>): string {
   const semantic = Object.fromEntries(
     Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key))
   );
+  const drilldown =
+    typeof semantic.preConfirmationDrilldown === 'object' &&
+    semantic.preConfirmationDrilldown !== null &&
+    !Array.isArray(semantic.preConfirmationDrilldown)
+      ? { ...(semantic.preConfirmationDrilldown as Record<string, unknown>) }
+      : null;
+  const criticalAuditor =
+    drilldown &&
+    typeof drilldown.criticalAuditor === 'object' &&
+    drilldown.criticalAuditor !== null &&
+    !Array.isArray(drilldown.criticalAuditor)
+      ? { ...(drilldown.criticalAuditor as Record<string, unknown>) }
+      : null;
+  if (drilldown && criticalAuditor) {
+    delete criticalAuditor.consecutiveNoNewGapRounds;
+    delete criticalAuditor.latestReceiptHash;
+    delete criticalAuditor.convergenceVerdict;
+    drilldown.criticalAuditor = criticalAuditor;
+    semantic.preConfirmationDrilldown = drilldown;
+  }
   return sha256Text(confirmationStableStringify(semantic));
 }
 
@@ -407,6 +427,40 @@ describe('target artifact realization gate', () => {
     expect(implementationConfirmationHash(confirmation)).toBe(confirmationRecipeHash(confirmation));
   });
 
+  it('keeps Critical Auditor run-derived proof fields out of the semantic confirmation hash', () => {
+    const confirmation = {
+      status: 'user_confirmed',
+      must: [{ id: 'MUST-001', text: 'Keep semantic hash stable.' }],
+      preConfirmationDrilldown: {
+        semanticKernelRef: { path: 'semantic-kernel.json', hash: 'sha256:kernel' },
+        criticalAuditor: {
+          minimumRounds: 3,
+          consecutiveNoNewGapRounds: 3,
+          latestReceiptHash: 'sha256:receipt-current',
+          convergenceVerdict: 'bounded_no_new_gap',
+        },
+      },
+    };
+    const rerunConfirmation = {
+      ...confirmation,
+      preConfirmationDrilldown: {
+        ...confirmation.preConfirmationDrilldown,
+        criticalAuditor: {
+          ...confirmation.preConfirmationDrilldown.criticalAuditor,
+          consecutiveNoNewGapRounds: 4,
+          latestReceiptHash: 'sha256:receipt-rerun',
+          convergenceVerdict: 'bounded_no_new_gap_after_rerun',
+        },
+      },
+    };
+
+    expect(confirmationRecipeHash(confirmation)).toBe(confirmationRecipeHash(rerunConfirmation));
+    expect(implementationConfirmationHash(confirmation)).toBe(
+      implementationConfirmationHash(rerunConfirmation)
+    );
+    expect(implementationConfirmationHash(confirmation)).toBe(confirmationRecipeHash(confirmation));
+  });
+
   it('passes declared targets without hardcoded requirement fields', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-pass-'));
     try {
@@ -545,6 +599,91 @@ describe('target artifact realization gate', () => {
           }),
         ])
       );
+      expect(report.decision).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts source-authorized product code targets indexed as evidence snapshots', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-product-code-'));
+    try {
+      const fixture = passingRecord(root);
+      const sourcePath = path.join(root, 'product-code-source.md');
+      const productCodePath = path.join(root, 'src', 'feature.py');
+      writeText(productCodePath, 'def feature():\n    return True\n');
+      const confirmation = {
+        status: 'user_confirmed',
+        artifactAutomationPlan: [],
+        currentTargetMap: {
+          canonicalArtifacts: [],
+          pathRegistry: [],
+          artifactPaths: [
+            {
+              id: 'CT-ARTPATH-001',
+              path: productCodePath.replace(/\\/gu, '/'),
+              targetRole: 'source-authorized product code target',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          ],
+          existingArtifacts: [],
+        },
+      };
+      writeText(
+        sourcePath,
+        `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+          .split('\n')
+          .map((line) => `  ${line}`)
+          .join('\n')}\n`
+      );
+      const artifact = {
+        artifactType: 'source-authorized product code target',
+        path: productCodePath.replace(/\\/gu, '/'),
+        contentHash: sha256File(productCodePath),
+        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        sourceOfTruthRole: 'evidence',
+        status: 'active',
+        inputVersion: ATTEMPT,
+        outputVersion: ATTEMPT,
+        relatedRequirementIds: ['TRACE-001', 'EVD-001'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      };
+      const eventPath = path.join(
+        path.dirname(fixture.recordPath),
+        'events',
+        'product-code-control-events.jsonl'
+      );
+      writeText(
+        eventPath,
+        `${JSON.stringify({
+          eventId: 'artifact_indexed:product-code',
+          eventType: 'artifact_indexed',
+          payload: {
+            packet: {
+              closeoutAttemptId: ATTEMPT,
+              artifactRefs: [artifact],
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          },
+        })}\n`
+      );
+      const record = {
+        ...fixture.record,
+        sourcePath,
+        implementationConfirmationHash: implementationConfirmationHash(confirmation),
+        artifactIndex: [artifact],
+        controlStore: { eventLogPath: eventPath.replace(/\\/gu, '/') },
+      };
+      const report = evaluateTargetArtifactRealization({
+        sourcePath,
+        record,
+        recordPath: fixture.recordPath,
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('target_artifact_source_of_truth_role_mismatch');
       expect(report.decision).toBe('pass');
     } finally {
       rmSync(root, { recursive: true, force: true });

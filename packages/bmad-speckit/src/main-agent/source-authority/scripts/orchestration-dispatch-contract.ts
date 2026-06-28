@@ -46,6 +46,7 @@ export interface CompiledPromptRef {
   auditReceiptHash: string;
   goalExecutionPath?: string | null;
   goalExecutionHash?: string | null;
+  taskReportPath?: string | null;
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
 }

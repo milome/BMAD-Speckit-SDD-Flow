@@ -815,6 +815,91 @@ describe('main-agent readiness auto remediation lane', () => {
     }
   });
 
+  it('writes controlled expected-red proof when source already declares acceptance and e2e plans', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-red-proof-'));
+    try {
+      const { recordPath, reportPath } = makeSourceFixture(root);
+      expect(
+        mainImplementationReadinessGate([
+          '--requirement-record',
+          recordPath,
+          '--implementation-run-kind',
+          'first-implementation',
+          '--evaluated-at',
+          '2026-05-26T00:00:01.000Z',
+        ])
+      ).toBe(1);
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        recordId: 'REQ-AUTO-REMEDIATE',
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        args: {
+          implementationRunKind: 'first-implementation',
+          readinessReportPath: reportPath,
+        },
+      });
+
+      expect(result.status, JSON.stringify(result.taskReport, null, 2)).toBe('completed');
+      expect(result.steps).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            step: 'readiness-auto-remediation',
+            status: 'pass',
+          }),
+        ])
+      );
+      expect(result.taskReport?.validationsRun).toEqual(
+        expect.arrayContaining([
+          'controlled-ingest:readiness_auto_remediation_recorded',
+          'main-agent-implementation-readiness-gate:rerun',
+        ])
+      );
+
+      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, any>;
+      expect(record.aiTddContractGate?.requirementPreImplementationPlan).toEqual(
+        expect.objectContaining({
+          status: 'ready_for_expected_red_validation',
+          acceptanceIds: expect.arrayContaining(['ACC-001', 'E2E-001']),
+        })
+      );
+      expect(record.aiTddContractGate?.preImplementationRedProofs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            acceptanceId: 'ACC-001',
+            state: 'expected_red',
+            proofSource: 'main_agent_readiness_auto_remediation',
+          }),
+          expect.objectContaining({
+            acceptanceId: 'E2E-001',
+            state: 'expected_red',
+            proofSource: 'main_agent_readiness_auto_remediation',
+          }),
+        ])
+      );
+      expect(record.contractChecks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            contract: 'ai_tdd_pre_implementation_red_proof',
+            checkId: 'readiness-auto-red-proof:ACC-001',
+            decision: 'pass',
+          }),
+          expect.objectContaining({
+            contract: 'ai_tdd_pre_implementation_red_proof',
+            checkId: 'readiness-auto-red-proof:E2E-001',
+            decision: 'pass',
+          }),
+        ])
+      );
+      expect(record.sixModelResults?.implementation_readiness?.status).toBe('pass');
+      expect(record.readinessBaselineMetadata?.status).toBe('current');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('blocks acceptance projection gaps as source amendments without mutating source', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-unique-overlay-'));
     try {

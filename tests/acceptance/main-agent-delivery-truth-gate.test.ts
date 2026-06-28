@@ -116,6 +116,23 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionLanguage).toBe('complete_allowed');
   });
 
+  it('allows delivery confirmation before post-confirmation PR topology evidence exists', () => {
+    const report = evaluateDeliveryTruthGate({
+      releaseGate: passingReleaseGate(),
+      hostMatrix: hostMatrix('real'),
+      sprintAudit: passingSprintAudit(),
+      qualityGate: { critical_failures: 0, evidence_provenance: evidenceProvenance },
+      env: {},
+    });
+
+    expect(report.completionAllowed).toBe(true);
+    expect(report.deliveryStatus).toBe('complete');
+    expect(report.failedEvidence.join('\n')).not.toContain('pr-topology-closed');
+    expect(report.checks.find((check) => check.id === 'pr-topology-closed')?.summary).toContain(
+      'not_required_pre_delivery'
+    );
+  });
+
   it('emits a blocked report when required evidence files are missing', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delivery-truth-missing-'));
     try {

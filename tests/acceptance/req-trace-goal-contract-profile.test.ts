@@ -30,6 +30,13 @@ const VERIFY_GOAL_PROFILE = path.join(
   'scripts',
   'verify-goal-contract-profile.js'
 );
+const SKILL_MD = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'req-trace-matrix-prompt-generator',
+  'SKILL.md'
+);
 
 let tempDir: string;
 let canonicalProfile: string;
@@ -50,8 +57,15 @@ afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
-function runNativeGoal(): { status: number; stdout: string; stderr: string; outDir: string } {
+function runNativeGoal(
+  input: { taskReportPath?: string | null } = {}
+): { status: number; stdout: string; stderr: string; outDir: string; taskReportPath: string | null } {
   const outDir = path.join(tempDir, 'out');
+  const taskReportPath =
+    input.taskReportPath === null
+      ? null
+      : input.taskReportPath ?? path.join(tempDir, 'task-report.json');
+  const taskReportArgs = taskReportPath ? ['--task-report-path', taskReportPath] : [];
   try {
     const stdout = execFileSync(
       process.execPath,
@@ -69,17 +83,19 @@ function runNativeGoal(): { status: number; stdout: string; stderr: string; outD
         'true',
         '--goal-contract-profile',
         tempProfile,
+        ...taskReportArgs,
         '--json',
       ],
       { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
     );
-    return { status: 0, stdout, stderr: '', outDir };
+    return { status: 0, stdout, stderr: '', outDir, taskReportPath };
   } catch (error: any) {
     return {
       status: error.status ?? 1,
       stdout: String(error.stdout ?? ''),
       stderr: String(error.stderr ?? ''),
       outDir,
+      taskReportPath,
     };
   }
 }
@@ -100,6 +116,10 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function normalizeGeneratedPath(filePath: string): string {
+  return path.resolve(filePath).replace(/\\/g, '/');
+}
+
 function profileHashFor(profile: Record<string, any>): string {
   return sha256(stableStringify({ ...profile, profileHash: null }));
 }
@@ -113,6 +133,80 @@ function writeProfile(mutator: (profile: Record<string, any>) => Record<string, 
 }
 
 describe('req-trace shared goal contract profile integration', () => {
+  it('native goal generation fails when task report path is missing', () => {
+    const result = runNativeGoal({ taskReportPath: null });
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('TASK_REPORT_PATH_REQUIRED');
+    expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
+  });
+
+  it('generated goal execution document contains exact TaskReport path', () => {
+    const result = runNativeGoal();
+
+    expect(result.status).toBe(0);
+    const goalDocument = fs.readFileSync(path.join(result.outDir, 'goal_execution.md'), 'utf8');
+    expect(goalDocument).toContain(`TaskReport path: ${normalizeGeneratedPath(result.taskReportPath!)}`);
+    expect(goalDocument).not.toContain('TaskReport path: (not provided)');
+  });
+
+  it('audit receipt goalCommand taskReportPath matches packet compiledPromptRef taskReportPath', () => {
+    const result = runNativeGoal();
+
+    expect(result.status).toBe(0);
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
+    const modelPacket = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'model_packet.json'), 'utf8')
+    );
+    const taskReportPath = normalizeGeneratedPath(result.taskReportPath!);
+    expect(receipt.goalCommand).toMatchObject({
+      mode: 'native_goal_document_ref',
+      taskReportPath,
+      packetId: modelPacket.packetId,
+      recordId: modelPacket.recordId,
+    });
+    expect(receipt.mainAgentHandoff).toMatchObject({
+      taskReportPath,
+      returnAction: 'import-native-goal-task-report',
+    });
+  });
+
+  it('audit receipt goal execution path and hash are non-null', () => {
+    const result = runNativeGoal();
+
+    expect(result.status).toBe(0);
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
+    expect(receipt.goalExecutionPath).toBe(
+      normalizeGeneratedPath(path.join(result.outDir, 'goal_execution.md'))
+    );
+    expect(receipt.goalExecutionHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(receipt.mainAgentHandoff.goalExecutionPath).toBe(receipt.goalExecutionPath);
+    expect(receipt.mainAgentHandoff.goalExecutionHash).toBe(receipt.goalExecutionHash);
+  });
+
+  it('skill contract makes TaskReport the mandatory native goal return artifact', () => {
+    const skill = fs.readFileSync(SKILL_MD, 'utf8');
+
+    expect(skill).toContain(
+      '`--task-report-path <path>` is mandatory when `--goal-command-available true` and `--out-dir` are used'
+    );
+    expect(skill).toContain('BLOCK: TASK_REPORT_PATH_REQUIRED');
+    expect(skill).toContain('Native /goal TaskReport Handoff');
+    expect(skill).toContain('The TaskReport at `--task-report-path` is the only result artifact');
+    expect(skill).toContain(
+      'bmad-speckit main-agent-orchestration --action import-native-goal-task-report --taskReportPath <packet compiledPromptRef.taskReportPath>'
+    );
+    expect(skill).toContain(
+      '`goal_execution.md`, `audit_receipt.json`, stdout, exit code, chat summary, and `/goal` completion are not execution closure PASS evidence'
+    );
+    expect(skill).toContain('Never render a missing-value TaskReport path placeholder');
+    expect(skill).not.toContain('TaskReport path: (not provided)');
+  });
+
   it('records shared template/profile/renderer audit in native /goal mode', () => {
     const result = runNativeGoal();
     const profileVersion = JSON.parse(canonicalProfile).profileVersion;

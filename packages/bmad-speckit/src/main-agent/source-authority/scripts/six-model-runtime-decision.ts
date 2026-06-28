@@ -15,6 +15,7 @@ export type SixModelRuntimeNextAction =
   | 'run_execution_closure_gate'
   | 'dispatch_review'
   | 'dispatch_remediation'
+  | 'await_native_goal_task_report'
   | 'run_closeout'
   | 'run_pre_confirmation_drilldown'
   | 'await_user_acceptance'
@@ -173,6 +174,18 @@ function blockingReasons(result: Record<string, unknown> | null): string[] {
     : [];
 }
 
+function hasAwaitingNativeGoalTaskReport(record: Record<string, unknown>): boolean {
+  const handoff = object(record.nativeGoalHandoff);
+  if (!handoff) return false;
+  if (!text(handoff.packetId) || !text(handoff.taskReportPath)) return false;
+  const importStatus = text(handoff.importStatus);
+  return (
+    handoff.imported !== true &&
+    importStatus !== 'task_report_partial' &&
+    importStatus !== 'task_report_blocked'
+  );
+}
+
 export function resolveSixModelRuntimeDecision(input: {
   record: Record<string, unknown> | null;
   attemptId: string;
@@ -213,6 +226,11 @@ export function resolveSixModelRuntimeDecision(input: {
   } else if (text(record.status) !== 'user_confirmed') {
     nextAction = 'run_pre_confirmation_drilldown';
     reasonRefs.push({ sourceType: 'requirement_record', id: recordId });
+  } else if (hasCurrentPass(record, 'execution_closure') && hasAwaitingNativeGoalTaskReport(record)) {
+    nextAction = 'await_native_goal_task_report';
+    ready = false;
+    transitionMode = 'blocked';
+    reasonRefs.push({ sourceType: 'native_goal_handoff', id: 'task_report_import_required' });
   } else if (currentMentalModel === 'requirement_confirmation') {
     if (currentModelStatus === 'pass') {
       nextAction = 'enter_architecture_confirmation';

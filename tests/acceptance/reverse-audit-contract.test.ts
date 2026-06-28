@@ -337,6 +337,8 @@ implementationConfirmation:
       deliveryEvidenceCommandRefs: ["CMD-001"]
       acceptanceRefs: ["ACC-001", "E2E-001"${overrides.includes('BAD_ACCEPTANCE_REF') ? ', "ACC-999"' : ''}]
       sequenceViewRefs: ["SEQ-001"]
+      flowViewRefs: ["FLOW-001"]
+      edgeCaseViewRefs: ["EDGEVIEW-001"]
       boundaryViewRefs: ["BOUNDARY-001"]
       artifactRefs: ["ART-EVD-001"]
       status: PENDING
@@ -439,8 +441,12 @@ ${
     ? ''
     : `    - id: SEQ-001
       title: "Fixture happy and failure path"
+      visualKind: happy
       scope: business
       covers: ["MUST-001", "NEG-001", "EVD-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
 `
 }
   flowViews:${missingViews ? ' []' : ''}
@@ -449,8 +455,12 @@ ${
     ? ''
     : `    - id: FLOW-001
       title: "Fixture flow"
+      visualKind: flow
       scope: business
       covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
 `
 }
   edgeCaseViews:${missingViews ? ' []' : ''}
@@ -459,9 +469,14 @@ ${
     ? ''
     : `    - id: EDGEVIEW-001
       title: "Smoke-only edge case"
+      visualKind: edge
       scope: business
       covers: ["NEG-001"]
       cases: ["EDGE-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+      edgeCaseRefs: ["EDGE-001"]
 `
 }
   boundaryViews:${missingViews ? ' []' : ''}
@@ -652,6 +667,92 @@ function runReverseAudit(source: string, reportPath: string, extraArgs: string[]
   };
 }
 
+function rewriteSourceWithCompressedProjection(source: string) {
+  const text = fs.readFileSync(source, 'utf8');
+  const rewritten = text
+    .replace(
+      `  must:
+    - id: MUST-001
+      text: "The user confirms a scoped behavior."
+      textZh: "用户确认受控范围内的行为。"
+      evidenceRefs: ["EVD-001"]`,
+      `  must:
+    - id: MUST-001
+      text: "The primary timeframe display setting is persisted."
+      textZh: "主周期显示设置会被持久化。"
+      evidenceRefs: ["EVD-001"]
+    - id: MUST-002
+      text: "The secondary timeframe display setting is persisted."
+      textZh: "副周期显示设置会被持久化。"
+      evidenceRefs: ["EVD-001"]
+    - id: MUST-003
+      text: "Failed display setting saves roll back to the previous setting."
+      textZh: "显示设置保存失败时回滚到之前设置。"
+      evidenceRefs: ["EVD-001"]`
+    )
+    .replace(
+      '      requirementRefs: ["MUST-001", "NEG-001"]',
+      '      requirementRefs: ["MUST-001", "MUST-002", "MUST-003", "NEG-001"]'
+    )
+    .replace(
+      '      covers: ["MUST-001", "NEG-001"]',
+      '      covers: ["MUST-001", "MUST-002", "MUST-003", "NEG-001"]'
+    )
+    .replace(
+      '      covers: ["MUST-001"',
+      '      covers: ["MUST-001", "MUST-002", "MUST-003"'
+    )
+    .replace(
+      '      title: "Fixture happy and failure path"',
+      '      title: "Source-derived business requirement scenario"'
+    )
+    .replace(
+      '      title: "Fixture flow"',
+      '      title: "Source-derived flow"'
+    )
+    .replace(
+      '        text: "Reverse audit wrapper validates confirmation render reports."',
+      '        text: "Source-derived current state for all MUST rows."'
+    )
+    .replace(
+      '        text: "Reverse audit preserves stage semantics and AI-TDD manifest projection."',
+      '        text: "Generic source-derived target for all MUST rows."'
+    )
+    .replace(
+      '        current: "Wrapper-only reverse audit fixture."',
+      '        current: "generic current."'
+    )
+    .replace(
+      '        target: "Fixture includes explicit AI-TDD manifest surfaces."',
+      '        target: "generic target."'
+    )
+    .replace(
+      '        current: "Command target can be hidden behind command text."',
+      '        current: "one shared command."'
+    )
+    .replace(
+      '        target: "Command target file paths are visible."',
+      '        target: "one shared command."'
+    )
+    .replace(
+      '        current: "Legacy smoke-only proof can appear complete."',
+      '        current: "one shared evidence row."'
+    )
+    .replace(
+      '        target: "Smoke-only proof is explicitly denied."',
+      '        target: "one shared evidence row."'
+    )
+    .replace(
+      '      requirementIds: ["MUST-001", "NEG-001"]',
+      '      requirementIds: ["MUST-001", "MUST-002", "MUST-003"]'
+    )
+    .replace(
+      '      diagramRefs: ["MERMAID-001"]',
+      '      diagramRefs: ["MERMAID-001"]'
+    );
+  fs.writeFileSync(source, rewritten, 'utf8');
+}
+
 function writeRequirementRecordForReadiness(
   source: string,
   render: { report: any },
@@ -798,6 +899,24 @@ describe('reverse_audit_contract', () => {
     expect(audit.report.rendererAuthority.deliveryReadiness.ready).toBe(false);
     expect(audit.report.preConfirmationSemanticDrilldown.status).toBe('pass');
     expect(audit.report.failedChecks).toEqual([]);
+  });
+
+  it('accepts localized completion semantics headings as Definition of Done', () => {
+    const source = writeSource();
+    fs.writeFileSync(
+      source,
+      fs.readFileSync(source, 'utf8').replace('## Definition of Done', '## 10. 完成语义'),
+      'utf8'
+    );
+    const render = runRenderer(source);
+    expect(render.result.status).toBe(0);
+    patchConfirmationRender(source, render);
+
+    const audit = runStageAudit(AUDIT_IMPLEMENTATION_READINESS, source, render.reportPath);
+
+    expect(audit.result.status, JSON.stringify(audit.report.findings, null, 2)).toBe(0);
+    expect(audit.report.reverseAuditChecks.hasDefinitionOfDone).toBe(true);
+    expect(audit.report.failedChecks).not.toContain('missing_required_sections');
   });
 
   it('uses controlled runtime evidence for readiness mode instead of stale render-time delivery readiness', () => {
@@ -1037,6 +1156,24 @@ describe('reverse_audit_contract', () => {
         expect.objectContaining({ code: 'acceptance_oracle_smoke_only', source: 'reverse_audit' }),
       ])
     );
+  });
+
+  it('fails when projection rows collapse per-MUST acceptance, evidence, commands, paths, and business visuals', () => {
+    const source = writeSource();
+    rewriteSourceWithCompressedProjection(source);
+    const render = runRenderer(source);
+    patchConfirmationRender(source, render);
+
+    const audit = runReverseAudit(source, render.reportPath);
+    const codes = audit.report.findings.map((finding: any) => finding.code);
+
+    expect(audit.result.status).toBe(1);
+    expect(codes).toContain('projection_per_must_acceptance_not_independent');
+    expect(codes).toContain('projection_shared_evidence_without_per_must_oracle');
+    expect(codes).toContain('required_command_all_cover_all_without_per_must_assertions');
+    expect(codes).toContain('target_modification_path_all_cover_all');
+    expect(codes).toContain('current_target_map_not_product_specific');
+    expect(codes).toContain('business_visual_generic_or_compressed');
   });
 
   it('adds deterministic definition drilldown warnings and blockers', () => {

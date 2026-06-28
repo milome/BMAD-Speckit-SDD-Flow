@@ -129,6 +129,23 @@ function normalizeArgs(args) {
   if (!allowedGoalAvailability.has(args.goalCommandAvailable)) {
     throw new Error(`Unsupported --goal-command-available: ${args.goalCommandAvailable}`);
   }
+  if (args.goalCommandAvailable === 'true' && args.outDir && !String(args.taskReportPath || '').trim()) {
+    throw new BlockedInput(
+      'BLOCK: TASK_REPORT_PATH_REQUIRED',
+      'Native /goal generation requires --task-report-path so main-agent can import the execution TaskReport.'
+    );
+  }
+  if (args.taskReportPath) {
+    args.taskReportPath = normalizePathSafe(path.resolve(args.taskReportPath));
+  }
+}
+
+function taskReportPathRequired(args) {
+  return (
+    args.goalCommandAvailable === 'true' &&
+    args.outDir &&
+    !String(args.taskReportPath || '').trim()
+  );
 }
 
 function readText(file) {
@@ -229,7 +246,49 @@ function semanticConfirmationForHash(confirmation) {
   for (const [key, value] of Object.entries(confirmation ?? {})) {
     if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
   }
+  normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
+}
+
+function normalizePreConfirmationDrilldownForHash(semantic) {
+  if (
+    !semantic.preConfirmationDrilldown ||
+    typeof semantic.preConfirmationDrilldown !== 'object' ||
+    Array.isArray(semantic.preConfirmationDrilldown)
+  ) {
+    return;
+  }
+  const drilldown = { ...semantic.preConfirmationDrilldown };
+  if (
+    drilldown.semanticKernelRef &&
+    typeof drilldown.semanticKernelRef === 'object' &&
+    !Array.isArray(drilldown.semanticKernelRef)
+  ) {
+    const semanticKernelRef = { ...drilldown.semanticKernelRef };
+    delete semanticKernelRef.hash;
+    drilldown.semanticKernelRef = semanticKernelRef;
+  }
+  if (
+    drilldown.mustDecompositionPacketRef &&
+    typeof drilldown.mustDecompositionPacketRef === 'object' &&
+    !Array.isArray(drilldown.mustDecompositionPacketRef)
+  ) {
+    const mustDecompositionPacketRef = { ...drilldown.mustDecompositionPacketRef };
+    delete mustDecompositionPacketRef.hash;
+    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
+  }
+  if (
+    drilldown.criticalAuditor &&
+    typeof drilldown.criticalAuditor === 'object' &&
+    !Array.isArray(drilldown.criticalAuditor)
+  ) {
+    const criticalAuditor = { ...drilldown.criticalAuditor };
+    delete criticalAuditor.consecutiveNoNewGapRounds;
+    delete criticalAuditor.latestReceiptHash;
+    delete criticalAuditor.convergenceVerdict;
+    drilldown.criticalAuditor = criticalAuditor;
+  }
+  semantic.preConfirmationDrilldown = drilldown;
 }
 
 function sourceDocumentHashFor(sourceText, blockText, confirmation) {
@@ -763,6 +822,59 @@ function hasAny(values) {
   return strings(values).length > 0;
 }
 
+function architectureConfirmationRequired(confirmation) {
+  return objects(confirmation?.architectureImpacts).length > 0;
+}
+
+function latestArchitectureConfirmationEvent(record) {
+  return objects(record?.architectureConfirmations)
+    .filter((item) => item.eventType === 'architecture_confirmation_recorded')
+    .at(-1);
+}
+
+function architectureModelResult(record) {
+  const results = record?.sixModelResults;
+  if (!results || typeof results !== 'object' || Array.isArray(results)) return {};
+  const result = results.architecture_confirmation;
+  return result && typeof result === 'object' && !Array.isArray(result) ? result : {};
+}
+
+function architectureConfirmationActiveForCurrentHashes(record, sourceHash, confirmationHash) {
+  const state = record?.architectureConfirmationState;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return false;
+  const currentHash = String(state.currentArchitectureConfirmationHash ?? '').trim();
+  const staleInputs = state.staleInputs && typeof state.staleInputs === 'object' && !Array.isArray(state.staleInputs)
+    ? state.staleInputs
+    : {};
+  if (state.status !== 'active' || !currentHash) return false;
+  if (staleInputs.sourceDocumentHash !== sourceHash) return false;
+  if (staleInputs.implementationConfirmationHash !== confirmationHash) return false;
+  if (staleInputs.currentArtifactHash && staleInputs.currentArtifactHash !== currentHash) return false;
+
+  const event = latestArchitectureConfirmationEvent(record);
+  if (!event) return false;
+  if (event.sourceDocumentHash !== sourceHash) return false;
+  if (event.implementationConfirmationHash !== confirmationHash) return false;
+  if (event.architectureConfirmationArtifactHash !== currentHash) return false;
+
+  const modelResult = architectureModelResult(record);
+  if (modelResult.status && modelResult.status !== 'pass') return false;
+  const modelHashes = modelResult.currentHashes && typeof modelResult.currentHashes === 'object' && !Array.isArray(modelResult.currentHashes)
+    ? modelResult.currentHashes
+    : {};
+  if (modelHashes.sourceDocumentHash && modelHashes.sourceDocumentHash !== sourceHash) return false;
+  if (modelHashes.implementationConfirmationHash && modelHashes.implementationConfirmationHash !== confirmationHash) {
+    return false;
+  }
+  if (
+    modelHashes.architectureConfirmationArtifactHash &&
+    modelHashes.architectureConfirmationArtifactHash !== currentHash
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function requirementClosureFor(confirmation, id) {
   const traceRows = objects(confirmation.traceRows).filter((row) => strings(row.covers).includes(id));
   const evidenceRows = objects(confirmation.evidence).filter(
@@ -789,6 +901,8 @@ function validateCompilerContract(confirmation, record = {}) {
   const manifest = confirmation.aiTddContractExecutionManifestProjection;
   const requiredSections = strings(manifest?.requiredSections);
   const drilldown = confirmation.preConfirmationDrilldown;
+  const sourceHash = String(record?.sourceDocumentHash ?? '').trim();
+  const confirmationHash = String(record?.implementationConfirmationHash ?? '').trim();
   const traceRows = objects(confirmation.traceRows);
   const acceptanceRows = [...objects(confirmation.acceptanceTests), ...objects(confirmation.e2eSuites)];
   const taskRows = objects(confirmation.atomicImplementationTaskList);
@@ -809,6 +923,12 @@ function validateCompilerContract(confirmation, record = {}) {
   failIf(drilldownReceiptRefs(drilldown).length < 3, reasons, 'CRITICAL_AUDITOR_THREE_ROUNDS_REQUIRED');
   failIf(!reconciliationRef(drilldown) || !reconciliationPassed(drilldown), reasons, 'PACKET_SOURCE_RECONCILIATION_REQUIRED');
   failIf(!preRenderGateRef(drilldown), reasons, 'PRE_RENDER_GATE_REPORT_REQUIRED');
+  failIf(
+    architectureConfirmationRequired(confirmation) &&
+      !architectureConfirmationActiveForCurrentHashes(record, sourceHash, confirmationHash),
+    reasons,
+    'ARCHITECTURE_CONFIRMATION_REQUIRED'
+  );
 
   failIf(taskRows.length === 0, reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
   failIf(!confirmation.mustToAtomicTaskMap || typeof confirmation.mustToAtomicTaskMap !== 'object', reasons, 'ATOMIC_TASK_LINEAGE_REQUIRED');
@@ -1407,6 +1527,9 @@ function buildGoalDirective(packet, hints, artifactPaths) {
       originalInlineChars: inlineChars,
       documentPath: artifactPaths.goalDocument,
       documentHash: null,
+      taskReportPath: packet.executionHandoff?.taskReportPath || null,
+      packetId: packet.packetId,
+      recordId: packet.recordId,
     }),
   };
 }
@@ -1557,6 +1680,15 @@ function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, out
   writeText(artifactPaths.goalDocumentDiskPath, goalDocument);
   const goalDocumentHash = sha256(readText(artifactPaths.goalDocumentDiskPath));
   promptMeta.hostDirective.goalCommand.documentHash = goalDocumentHash;
+  promptMeta.hostDirective.goalCommand.taskReportPath = packet.executionHandoff?.taskReportPath || null;
+  promptMeta.hostDirective.goalCommand.packetId = packet.packetId;
+  promptMeta.hostDirective.goalCommand.recordId = packet.recordId;
+  packet.executionHandoff.goalExecutionPath = artifactPaths.goalDocument;
+  packet.executionHandoff.goalExecutionHash = goalDocumentHash;
+  packet.executionHandoff.modelPacketPath = artifactPaths.modelPacket;
+  packet.executionHandoff.returnAction = 'import-native-goal-task-report';
+  packet.executionHandoff.resumeAction = 'import-native-goal-task-report';
+  packet.executionHandoff.ingestPolicy = 'strict_task_report_controlled_ingest';
   promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument, packet.sourceDocument);
   promptMeta.goalContractTemplate = goalDocumentResult.audit;
   outputs.goalDocument = artifactPaths.goalDocument;
@@ -1615,7 +1747,7 @@ function renderGoalNativeTaskReportHandoff(packet) {
   return `### Native Goal TaskReport Handoff
 
 - Packet ID: ${handoff.packetId || packet.packetId || packet.recordId}
-- TaskReport path: ${handoff.taskReportPath || '(not provided)'}
+- TaskReport path: ${handoff.taskReportPath}
 - TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }
 - Allowed write scope: ${allowedWriteScope.join(', ') || '(not declared)'}
 - Required validation commands: ${
@@ -2146,6 +2278,26 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
       externalSupervisorRequired: Boolean(promptMeta.hostDirective.externalSupervisorLoop),
     },
     goalCommand: promptMeta.hostDirective.goalCommand,
+    goalExecutionPath:
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+        ? outputs.goalDocument ?? null
+        : null,
+    goalExecutionHash:
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+        ? outputHashes.goalDocumentHash ?? null
+        : null,
+    mainAgentHandoff:
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref'
+        ? {
+            recordId: packet.recordId,
+            packetId: packet.packetId,
+            modelPacketPath: outputs.modelPacket,
+            goalExecutionPath: outputs.goalDocument ?? null,
+            goalExecutionHash: outputHashes.goalDocumentHash ?? null,
+            taskReportPath: packet.executionHandoff?.taskReportPath || null,
+            returnAction: 'import-native-goal-task-report',
+          }
+        : null,
     humanPromptRequiredFragmentsPassed: promptMeta.audit.passed,
     humanPromptRequiredFragments: promptMeta.audit.fragments,
     humanPromptMissingRequiredFragments: promptMeta.audit.missing,
@@ -2298,6 +2450,17 @@ function compileArtifacts(args) {
     };
     const outputHashes = { modelPacketHash, humanPromptHash };
     ensureGoalDocumentPrepared(args, promptMeta, packet, context.artifactPaths, outputs, outputHashes);
+    writeJson(packetPath, packet);
+    outputHashes.modelPacketHash = sha256(readText(packetPath));
+    if (
+      promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref' &&
+      !outputHashes.goalDocumentHash
+    ) {
+      throw new BlockedInput(
+        'BLOCK: GOAL_EXECUTION_REF_NOT_BOUND',
+        'goal_execution.md was generated without binding goalExecutionHash to audit_receipt.json.'
+      );
+    }
     const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta);
     writeJson(receiptPath, receipt);
     outputHashes.auditReceiptHash = sha256(readText(receiptPath));

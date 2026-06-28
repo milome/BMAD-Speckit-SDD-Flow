@@ -14,6 +14,24 @@ Every requirement instance uses the same layered schema:
 
 Consumer projects must not be forced to fill heavy registries that do not apply. They must still show every non-applicable domain with `applies: false` plus a concrete `reasonCode`.
 
+## Required Source State Sections
+
+Every source document authored by this skill MUST include dedicated human-readable sections before the inline `implementationConfirmation` block:
+
+```markdown
+## Source Current State
+
+- Describe the consumer/project behavior that exists today, including concrete user-visible limitations, current controls, default state, rollback gaps, target files, or operational constraints.
+- Do not describe confirmation governance, renderer state, audit state, hashes, or implementation-readiness state here.
+
+## Source Target State
+
+- Describe the target user-visible behavior after all confirmed MUST rows are implemented, including default behavior, rollback behavior, validation boundaries, and acceptance-visible outcomes.
+- Every target statement must be represented by one or more IDs inside `implementationConfirmation.must[]`, `traceRows[]`, `acceptanceTests[]`, or `evidence[]`.
+```
+
+`currentTargetMap` materialization MUST project `Source Current State` and `Source Target State` first. It MUST NOT infer the current/target comparison by project name, domain keyword, file path keyword, or consumer-specific phrase matching. Heuristic highlighting is allowed only as an explicit fallback for legacy source documents that do not yet contain both dedicated sections.
+
 ## Core Mandatory Fields
 
 ```yaml
@@ -473,11 +491,25 @@ Renderer and ingest must not classify recovery groups by regex. Grouping authori
 
 This is mandatory for source documents authored by this skill. `applicability.currentTargetMap.applies` must be `true`, and the confirmation page must render this view.
 
+The materializer must fill this view from the dedicated `## Source Current State` and `## Source Target State` sections whenever both are present. Source-state projection is not a keyword search problem: project-specific phrases, product names, framework names, and file-name tokens are not valid current/target inference rules.
+
 ```yaml
   currentTargetMap:
     schemaVersion: current-target-map/v1
     displayProfile: closed_loop_current_target_map
     introduction: "Source-driven current versus target comparison."
+    sourceStateProjection:
+      mode: source_current_target_sections
+      currentSectionHeadings: ["Source Current State"]
+      targetSectionHeadings: ["Source Target State"]
+      currentRows:
+        - id: SOURCE-CURRENT-001
+          text: "Current user-visible limitation from the source document."
+          sourceLine: 1
+      targetRows:
+        - id: SOURCE-TARGET-001
+          text: "Target user-visible behavior after all confirmed MUST rows are implemented."
+          sourceLine: 2
     currentSummary:
       - title: "Current behavior or control surface"
         detail: "Describe what exists or is unverified today."

@@ -75,6 +75,7 @@ The contract confirmability audit answers only whether the requirements scope ca
    - Verify read-model/evidence artifacts do not directly control workflow state.
 7. Row quality:
    - Verify every evidence entry has a gate command or explicit manual proof, evidence expectation, and independent oracle where applicable.
+   - Verify per-MUST projection quality: independent ACC/E2E or explicit per-MUST assertions, shared evidence per-MUST oracles, shared command per-MUST assertions, target path per-MUST responsibilities, product-specific currentTargetMap rows, and business-specific visuals.
 8. E2E validity:
    - Reject E2E rows that only assert exit code, stdout success, HTTP 200, page render, or mock calls.
 9. Gaps and testability:
@@ -236,7 +237,7 @@ The gate writes:
 - `must_packet_source_reconciliation_report.json`
 - `pre-render-must-decomposition-gate-report.json`
 
-The gate must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, renderer missing drilldown sections, or stale gate hashes.
+The gate must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, per-MUST projection quality failures, renderer missing drilldown sections, or stale gate hashes.
 
 Convergence fields:
 

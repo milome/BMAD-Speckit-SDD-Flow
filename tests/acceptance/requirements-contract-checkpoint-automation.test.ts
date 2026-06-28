@@ -741,7 +741,15 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
     mustDerivedProjectionMap: [
       {
         mustRef: mustRows[0]?.id ?? 'MUST-001',
-        materializedTo: ['implementationConfirmation.closeoutReadinessPreview'],
+        materializedTo: [
+          ...(confirmation.currentTargetMap
+            ? ['implementationConfirmation.currentTargetMap']
+            : []),
+          ...(confirmation.aiTddContractExecutionManifestProjection
+            ? ['implementationConfirmation.aiTddContractExecutionManifestProjection']
+            : []),
+          'implementationConfirmation.closeoutReadinessPreview',
+        ],
       },
     ],
   };
@@ -1380,6 +1388,264 @@ implementationConfirmation:
   return file;
 }
 
+function writeCompressedProjectionFalsePositiveSource(root = tempDir): string {
+  const file = path.join(root, 'docs', 'requirements', 'compressed-projection.md');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(
+    file,
+    `# Compressed Projection False Positive
+
+implementationConfirmation:
+  contractSchemaVersion: 1
+  status: draft
+  recordId: REQ-GLOBAL-GATE
+  requirementSetId: REQSET-GLOBAL-GATE
+  entryFlow: standalone_tasks
+  entryFlowClass: task_packet_entry
+  workflowAdapter: bmad
+  contractAuthoringRequired: true
+  confirmationLanguage: zh-CN
+  confirmationProfile: implementation_confirmation
+  requiredViewPacks: ["currentTargetMap"]
+  optionalViewPacks: []
+  confirmedAt: null
+  confirmedBy: null
+  sourceDocumentHash: null
+  implementationConfirmationHash: null
+  confirmationRender:
+    htmlPath: null
+    summaryPath: null
+    reportPath: null
+    htmlHash: null
+    confirmationPhrase: null
+  applicability:
+    governanceEvents:
+      applies: false
+      reasonCode: no_governance_event_or_control_envelope_changes
+    runtimeRecovery:
+      applies: false
+      reasonCode: no_runtime_resume_or_recovery_runtime_changes
+      requiresFunctionalResumeFailureCaseRegistry: false
+      activeRequirementResolutionRequired: false
+      retiredContextSurfaceForbidden: true
+    scoringDashboardSft:
+      applies: false
+      reasonCode: no_scoring_dashboard_sft_dataset_or_read_model_changes
+    currentTargetMap:
+      applies: true
+      reasonCode: product_current_target_comparison_required
+    scriptsAndHooks:
+      applies: false
+      reasonCode: no_script_or_hook_runtime_changes
+    aiTddContractGate:
+      applies: true
+      reasonCode: requires_manifest_projection
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    currentSummary:
+      - title: "Source-derived current state"
+        detail: "Generic source-derived baseline for all MUST rows."
+    targetSummary:
+      - title: "Source-derived target state"
+        detail: "Generic source-derived target for all MUST rows."
+    diffRows:
+      - dimension: "Source-derived dimension"
+        currentState: "generic current"
+        targetState: "generic target"
+        action: "generic action"
+      - dimension: "Trace compression"
+        currentState: "one shared row"
+        targetState: "one shared row"
+        action: "generic action"
+      - dimension: "Evidence compression"
+        currentState: "one shared row"
+        targetState: "one shared row"
+        action: "generic action"
+    process:
+      - phase: "source-derived"
+        currentState: "generic source-derived flow"
+        targetState: "generic source-derived flow"
+    artifactPaths:
+      - path: "src/renderer/display-settings.ts"
+        targetRole: "source_derived_target"
+    canonicalArtifacts: []
+  must:
+    - id: MUST-001
+      text: "The chart must persist the selected primary timeframe display mode."
+      evidenceRefs: ["EVD-001"]
+      coveredByTraceRows: ["TRACE-001"]
+    - id: MUST-002
+      text: "The chart must persist the selected secondary timeframe display mode."
+      evidenceRefs: ["EVD-001"]
+      coveredByTraceRows: ["TRACE-002"]
+    - id: MUST-003
+      text: "The chart must roll back to previous timeframe display settings when save fails."
+      evidenceRefs: ["EVD-001"]
+      coveredByTraceRows: ["TRACE-003"]
+  notDone:
+    - id: NEG-001
+      text: "The UI must not claim settings are saved when persistence fails."
+      evidenceRefs: ["EVD-001"]
+      whyItBlocksCompletion: "False save feedback hides rollback defects."
+      negativeAssertionRequired: true
+      coveredByFailurePath: ["FAIL-001"]
+      coveredByTraceRows: ["TRACE-004"]
+  mustNot:
+    - id: OUT-001
+      text: "This scope excludes broker integration changes."
+      scopeBoundary: "Only local display setting persistence and rollback are in scope."
+      userApprovalRequiredIfChanged: true
+  evidence:
+    - id: EVD-001
+      text: "One shared source-derived evidence row claims every display setting behavior is covered."
+      gate: "npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts"
+      oracle: "A single generic oracle says all timeframe display settings pass."
+      requiredCommandRefs: ["CMD-CONTRACT-001"]
+      artifactRefs: ["ART-001"]
+  failurePaths:
+    - id: FAIL-001
+      title: "Persistence save failure"
+      trigger: "Settings persistence throws."
+      expectedBehavior: "Rollback to previous display settings and show failure."
+      forbiddenBehavior: "Show saved state."
+      blocksCompletionWhenViolated: true
+      linkedNegIds: ["NEG-001"]
+      linkedEvidenceIds: ["EVD-001"]
+      requiredAssertions: ["Rollback occurs", "Failure is visible"]
+  edgeCases:
+    - id: EDGE-001
+      category: persistence_failure
+      condition: "A save request fails after the UI already applied optimistic settings."
+      expectedBehavior: "Restore previous display settings."
+      forbiddenBehavior: "Leave optimistic settings visible as saved."
+      linkedFailurePathIds: ["FAIL-001"]
+      linkedEvidenceIds: ["EVD-001"]
+  traceRows:
+    - id: TRACE-001
+      covers: ["MUST-001"]
+      taskRefs: []
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+    - id: TRACE-002
+      covers: ["MUST-002"]
+      taskRefs: []
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+    - id: TRACE-003
+      covers: ["MUST-003"]
+      taskRefs: []
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+    - id: TRACE-004
+      covers: ["NEG-001"]
+      taskRefs: []
+      evidenceRefs: ["EVD-001"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+  acceptanceTests:
+    - id: ACC-001
+      file: "tests/acceptance/requirements-contract-checkpoint-automation.test.ts"
+      covers: ["MUST-001", "MUST-002", "MUST-003", "NEG-001"]
+      traceRows: ["TRACE-001", "TRACE-002", "TRACE-003", "TRACE-004"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-CONTRACT-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "One broad assertion covers all timeframe display settings."
+      positiveControl: true
+      negativeControls: ["NEG-001"]
+      mockOnly: false
+  e2eSuites:
+    - id: E2E-001
+      file: "tests/e2e/timeframe-display-settings.e2e.test.ts"
+      covers: ["MUST-001", "MUST-002", "MUST-003", "NEG-001"]
+      traceRows: ["TRACE-001", "TRACE-002", "TRACE-003", "TRACE-004"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-DELIVERY-001"]
+      expectedPreImplementationState: expected_red
+      oracle: "One broad journey covers all timeframe display settings."
+      positiveControl: true
+      negativeControls: ["NEG-001"]
+      mockOnly: false
+  sequenceViews:
+    - id: SEQ-001
+      title: "Source-derived business scenario"
+      scope: business
+      covers: ["MUST-001", "MUST-002", "MUST-003", "TRACE-001", "TRACE-002", "TRACE-003"]
+      mermaid: "flowchart TD\\n  A[Source-derived scenario] --> B[All MUST rows]"
+  flowViews:
+    - id: FLOW-001
+      title: "Source-derived rollback flow"
+      scope: business
+      covers: ["NEG-001", "TRACE-004"]
+      mermaid: "flowchart TD\\n  A[Source-derived failure] --> B[Generic rollback]"
+  edgeCaseViews:
+    - id: EDGEVIEW-001
+      title: "Persistence edge case"
+      scope: business
+      covers: ["EDGE-001", "FAIL-001"]
+  boundaryViews:
+    - id: BOUNDARY-001
+      title: "Scope boundary"
+      scope: business
+      covers: ["OUT-001"]
+  businessVisuals:
+    - id: BUS-001
+      title: "Source-derived business requirement scenario"
+      scope: business
+      covers: ["MUST-001", "MUST-002", "MUST-003"]
+      mermaid: "flowchart TD\\n  A[Source-derived business requirement scenario] --> B[MUST-001..MUST-003]"
+  artifactAutomationPlan:
+    - artifactId: ART-001
+      path: "_bmad-output/runtime/requirement-records/REQ-GLOBAL-GATE/authoring/pre-render-global-consistency-report.json"
+      artifactType: report
+      canAffectControlFlow: false
+      linkedEvidenceIds: ["EVD-001"]
+      traceRows: ["TRACE-001", "TRACE-002", "TRACE-003", "TRACE-004"]
+  requiredCommands:
+    - id: CMD-CONTRACT-001
+      command: "npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts"
+      purpose: "Validate all timeframe display settings with one shared command."
+    - id: CMD-DELIVERY-001
+      command: "npx vitest run tests/e2e/timeframe-display-settings.e2e.test.ts"
+      purpose: "Validate all timeframe display settings with one shared journey."
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: src/renderer/display-settings.ts
+      changeType: explicit_modification
+      intent: "Implement all timeframe display settings in one source-derived row."
+      requirementRefs: ["MUST-001", "MUST-002", "MUST-003"]
+      traceRefs: ["TRACE-001", "TRACE-002", "TRACE-003", "TRACE-004"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: true
+  suggestedCommands: []
+  closeoutReadinessPreview:
+    requiredCommands: ["CMD-CONTRACT-001", "CMD-DELIVERY-001"]
+  requirementBoundary:
+    business:
+      description: "Timeframe display settings behavior."
+      requirementIds: ["MUST-001", "MUST-002", "MUST-003"]
+      viewRefs: ["SEQ-001", "FLOW-001"]
+      diagramRefs: ["BUS-001"]
+    governance:
+      description: "Confirmation governance only."
+      requirementIds: ["NEG-001"]
+      viewRefs: []
+      diagramRefs: []
+`,
+    'utf8'
+  );
+  return file;
+}
+
 function initGitRepo(root: string) {
   spawnSync('git', ['init'], { cwd: root, encoding: 'utf8' });
   spawnSync('git', ['config', 'user.email', 'test@example.invalid'], {
@@ -1941,11 +2207,11 @@ describe('requirements contract checkpoint automation', () => {
     expect(status.result.stderr).toContain('机器信息：');
 
     const resume = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
-    expect(resume.result.status).toBe(1);
+    expect(resume.result.status).toBe(0);
     expect(() => JSON.parse(resume.result.stdout)).not.toThrow();
     expect(resume.result.stderr).toContain('[需求契约]');
     expect(resume.result.stderr).toContain('现在在做什么：');
-    expect(resume.result.stderr).toContain('为什么停在这里：');
+    expect(resume.result.stderr).toContain('为什么继续：');
     expect(resume.result.stderr).toContain('下一安全动作：');
     expect(resume.result.stderr).toContain('机器信息：');
   });
@@ -1953,24 +2219,50 @@ describe('requirements contract checkpoint automation', () => {
   it('explains checkpoint_source_edit_missing in human language and suppresses it with --quiet', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
-    const progress = path.join(tempDir, 'progress.json');
-    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
-    runNode(
-      CHECKPOINTS,
-      [
-        '--source',
-        source,
-        '--progress',
-        progress,
-        '--mode',
-        'run',
-        '--checkpoint',
-        'cp-01-header-scope-decisions',
-      ],
-      tempDir
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    for (const receiptPath of [
+      path.join(authoringDir, 'critical-auditor-receipt-round-1.json'),
+      path.join(authoringDir, 'critical-auditor-receipt-round-2.json'),
+      path.join(authoringDir, 'critical-auditor-receipt-round-3.json'),
+    ]) {
+      fs.rmSync(receiptPath, { force: true });
+    }
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    });
+    const documentHash = fileHash(source);
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source,
+          documentHash,
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          lastCompletedCheckpoint: 'cp-00-semantic-kernel',
+          currentCheckpoint: 'cp-01-must-decomposition-packet',
+          next: 'cp-01-must-decomposition-packet',
+          checkpoints: [
+            {
+              id: 'cp-00-semantic-kernel',
+              name: 'semantic kernel',
+              status: 'passed',
+              documentHash,
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
     );
 
-    const blocked = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
+    const blocked = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
     expect(blocked.result.status).toBe(1);
     expect(blocked.json.code).toBe('checkpoint_source_edit_missing');
     expect(blocked.result.stderr).toContain('当前源文档还没有写入本 checkpoint 需要保存的内容');
@@ -1980,7 +2272,7 @@ describe('requirements contract checkpoint automation', () => {
 
     const quiet = spawnSync(
       process.execPath,
-      [CHECKPOINTS, '--source', source, '--progress', progress, '--mode', 'resume', '--json', '--quiet'],
+      [CHECKPOINTS, '--source', source, '--progress', progress, '--mode', 'run', '--json', '--quiet'],
       {
         cwd: tempDir,
         encoding: 'utf8',
@@ -2168,7 +2460,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
   });
 
-  it('continues run from recovered progress instead of replaying completed checkpoints', () => {
+  it('continues run from recovered progress using current evidence instead of replaying completed checkpoints', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
@@ -2200,9 +2492,8 @@ describe('requirements contract checkpoint automation', () => {
       encoding: 'utf8',
     }).stdout.trim();
 
-    expect(result.status).toBe(1);
-    expect(json.code).toBe('checkpoint_source_edit_missing');
-    expect(json.failedCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
     expect(commitCount).toBe('1');
   });
 
@@ -2442,7 +2733,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.checkpointPersistenceSatisfiedCandidate).toBe(true);
     expect(json.checkpointPersistenceRef.routeDecisionHash).toBe(routeDecision.routeDecisionHash);
     expect(json.checkpointPersistenceRef.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
-    expect(json.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json).not.toHaveProperty('completedCheckpointIds');
     expect(json.checkpointPersistenceRef.progressHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
     expect(json.checkpointPersistenceRef.preRenderMustDecompositionGateHash).toMatch(
       /^sha256:[a-f0-9]{64}$/u
@@ -2456,7 +2747,141 @@ describe('requirements contract checkpoint automation', () => {
     expect(after).toBe(before);
   });
 
-  it('resumes from progress next checkpoint and runs remaining checkpoints separately', () => {
+  it('records remaining checkpoints from current pre-render evidence when no source diff remains', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    });
+    const documentHash = fileHash(source);
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source,
+          documentHash,
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          lastCompletedCheckpoint: 'cp-00-semantic-kernel',
+          currentCheckpoint: 'cp-01-must-decomposition-packet',
+          next: 'cp-01-must-decomposition-packet',
+          checkpoints: [
+            {
+              id: 'cp-00-semantic-kernel',
+              name: 'semantic kernel',
+              status: 'passed',
+              documentHash,
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const beforeCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const afterCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+    const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
+    expect(afterCommitCount).toBe(beforeCommitCount);
+    expect(savedProgress.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(
+      SEMANTIC_CHECKPOINT_IDS
+    );
+    expect(
+      savedProgress.checkpoints
+        .filter((checkpoint: any) => checkpoint.id !== 'cp-00-semantic-kernel')
+        .every((checkpoint: any) => checkpoint.evidenceOnly === true)
+    ).toBe(true);
+  });
+
+  it('does not restart cp-00 when run sees completed progress with next checkpoint null', () => {
+    initGitRepo(tempDir);
+    const source = writeGloballyConsistentSource(tempDir);
+    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
+    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDir);
+    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
+    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    });
+    const documentHash = fileHash(source);
+    const commitHash = spawnSync('git', ['rev-parse', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+    fs.writeFileSync(
+      progress,
+      JSON.stringify(
+        {
+          schemaVersion: 'semantic-checkpoint-progress/v1',
+          source,
+          documentHash,
+          mode: 'checkpoint_required',
+          modeDecision: 'checkpoint_required',
+          lastCompletedCheckpoint: 'cp-08-pre-render-global-reconciliation',
+          currentCheckpoint: null,
+          next: null,
+          checkpoints: SEMANTIC_CHECKPOINT_IDS.map((id) => ({
+            id,
+            name: id,
+            status: 'passed',
+            commitHash,
+            documentHash,
+            evidenceOnly: id !== 'cp-00-semantic-kernel',
+          })),
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    const beforeCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
+    const afterCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
+      cwd: tempDir,
+      encoding: 'utf8',
+    }).stdout.trim();
+    const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
+
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
+    expect(json.completedCheckpoints).toEqual([]);
+    expect(afterCommitCount).toBe(beforeCommitCount);
+    expect(savedProgress.next).toBe(null);
+  });
+
+  it('resumes from progress next checkpoint and records remaining checkpoints from current evidence', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');
@@ -2487,12 +2912,13 @@ describe('requirements contract checkpoint automation', () => {
     }).stdout.trim();
     const savedProgress = JSON.parse(fs.readFileSync(progress, 'utf8'));
 
-    expect(result.status).toBe(1);
-    expect(json.ok).toBe(false);
-    expect(json.code).toBe('checkpoint_source_edit_missing');
-    expect(json.failedCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(result.status).toBe(0);
+    expect(json.status).toBe('pre_render_ready');
     expect(commitCount).toBe('1');
-    expect(savedProgress.next).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(savedProgress.next).toBe(null);
+    expect(savedProgress.checkpoints.map((checkpoint: any) => checkpoint.id)).toEqual(
+      SEMANTIC_CHECKPOINT_IDS.slice(1)
+    );
   });
 
   it('fails the pre-render gate for eighteen trace rows that reference missing evidence', () => {
@@ -2531,6 +2957,34 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.issues.map((issue: any) => issue.code)).toContain(
       'global_current_target_required_view_pack_missing'
     );
+  });
+
+  it('fails the pre-render gate when per-MUST projection closure is compressed into shared generic rows', () => {
+    initGitRepo(tempDir);
+    const source = writeCompressedProjectionFalsePositiveSource(tempDir);
+    const progress = path.join(tempDir, 'progress.json');
+    writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
+
+    const { result, json } = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'],
+      tempDir
+    );
+    const failedChecks = new Set(json.failedChecks);
+
+    expect(result.status).toBe(1);
+    expect(json.verdict).toBe('FAIL');
+    expect(failedChecks).toContain('global_projection_per_must_acceptance_not_independent');
+    expect(failedChecks).toContain('global_projection_shared_evidence_without_per_must_oracle');
+    expect(failedChecks).toContain('global_required_command_all_cover_all_without_per_must_assertions');
+    expect(failedChecks).toContain('global_target_modification_path_all_cover_all');
+    expect(failedChecks).toContain('global_current_target_map_not_product_specific');
+    expect(failedChecks).toContain('global_business_visual_generic_or_compressed');
+    expect(
+      json.issues.filter(
+        (issue: any) => issue.code === 'global_projection_per_must_acceptance_not_independent'
+      )
+    ).toHaveLength(3);
   });
 
   it('fails retention cleanup when no confirmed retention strategy is provided', () => {

@@ -487,7 +487,7 @@ function extractPathRefs(value) {
   const refs = new Set();
   const normalized = String(value ?? '').replace(/\r?\n/g, ' ');
   const matches = normalized.matchAll(
-    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
+    /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs|py)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|py|ya?ml|md))(?=$|[^A-Za-z0-9_.-])/giu
   );
   for (const match of matches) refs.add(match[1]);
   return [...refs];
@@ -1036,7 +1036,7 @@ function inferMermaidBlockScope(block, businessIds, governanceIds) {
   const explicitScope = String(block?.sectionGroup ?? '').toLowerCase();
   if (['business', 'governance', 'mixed'].includes(explicitScope)) return explicitScope;
   if (block?.viewKind === 'boundary') return 'governance';
-  if (['happy', 'failure', 'stateFlow', 'edge'].includes(block?.viewKind)) return 'business';
+  if (['happy', 'failure', 'state', 'flow', 'stateFlow', 'edge'].includes(block?.viewKind)) return 'business';
   const title = `${block?.title ?? ''} ${block?.sourceHeading ?? ''}`;
   if (
     /治理|边界|门禁|准出|control|governance|closeout|recovery|resume|current[-\s]?target|double\s*gate|turnstile|rate\s*limit|origin|budget|kill\s*switch/iu.test(
@@ -1843,6 +1843,87 @@ function buildDerivedMermaidBlocks(confirmation, views) {
   return blocks;
 }
 
+function normalizeVisualKind(value) {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/gu, '');
+  if (!normalized) return null;
+  if (['happy', 'happypath', 'positive', 'success'].includes(normalized)) return 'happy';
+  if (['failure', 'failurepath', 'negative', 'negativepath', 'rollback'].includes(normalized)) return 'failure';
+  if (['state', 'stateview', 'statediagram', 'stateflow'].includes(normalized)) return 'state';
+  if (['flow', 'flowview', 'flowchart', 'process'].includes(normalized)) return 'flow';
+  if (['edge', 'edgecase', 'edgecaseview'].includes(normalized)) return 'edge';
+  if (['boundary', 'scopeboundary', 'out'].includes(normalized)) return 'boundary';
+  return null;
+}
+
+function inferFlowViewVisualKind(view) {
+  const source = String(view?.mermaid ?? '').trim();
+  if (/^stateDiagram(?:-v2)?\b/iu.test(source)) return 'state';
+  if (/^(flowchart|graph)\b/iu.test(source)) return 'flow';
+  return 'flow';
+}
+
+function defaultVisualKindForViewGroup(generatedFrom, view) {
+  if (generatedFrom === 'sequenceViews') {
+    return stringList(view?.covers).some((id) => id.startsWith('NEG-') || id.startsWith('OUT-'))
+      ? 'failure'
+      : 'happy';
+  }
+  if (generatedFrom === 'flowViews') return inferFlowViewVisualKind(view);
+  if (generatedFrom === 'edgeCaseViews') return 'edge';
+  if (generatedFrom === 'boundaryViews') return 'boundary';
+  return 'happy';
+}
+
+function viewVisualKind(view, defaultKind) {
+  return (
+    normalizeVisualKind(view?.visualKind) ??
+    normalizeVisualKind(view?.viewKind) ??
+    normalizeVisualKind(view?.diagramKind) ??
+    normalizeVisualKind(defaultKind) ??
+    'happy'
+  );
+}
+
+function buildSourceDefinedViewMermaidBlocks(views) {
+  const viewGroups = [
+    ['sequenceViews', null, asArray(views.sequenceViews)],
+    ['flowViews', null, asArray(views.flowViews)],
+    ['edgeCaseViews', 'edge', asArray(views.edgeCaseViews)],
+    ['boundaryViews', 'boundary', asArray(views.boundaryViews)],
+  ];
+  const allViews = viewGroups.flatMap(([, , rows]) => rows);
+  const businessIds = new Set(
+    allViews
+      .filter((view) => inferViewScope(view, new Set(), new Set()) !== 'governance')
+      .flatMap((view) => stringList(view.covers))
+  );
+  const governanceIds = new Set(
+    allViews
+      .filter((view) => inferViewScope(view, businessIds, new Set()) !== 'business')
+      .flatMap((view) => stringList(view.covers))
+  );
+  return viewGroups.flatMap(([generatedFrom, viewKind, rows]) =>
+    rows
+      .filter((view) => typeof view?.mermaid === 'string' && view.mermaid.trim())
+      .map((view, index) => {
+        const defaultKind = viewKind ?? defaultVisualKindForViewGroup(generatedFrom, view);
+        return makeMermaidBlock(
+          view.id || `${String(generatedFrom).toUpperCase()}-SOURCE-${String(index + 1).padStart(3, '0')}`,
+          view.mermaid.trim(),
+          viewVisualKind(view, defaultKind),
+          generatedFrom,
+          {
+            title: view.title || view.id,
+            sectionGroup: inferViewScope(view, businessIds, governanceIds),
+          }
+        );
+      })
+  );
+}
+
 function findUnboundDiagramSemantics(source) {
   const out = [];
   const lines = source.split(/\r?\n/u);
@@ -2005,6 +2086,61 @@ function isBoundaryOnlyTrace(row, boundaryViews) {
 
 function findViewsCovering(views, id) {
   return views.filter((view) => stringList(view.covers).includes(id)).map((view) => view.id);
+}
+
+function traceViewRefs(row) {
+  return unique([
+    ...stringList(row.sequenceViewRefs),
+    ...stringList(row.flowViewRefs),
+    ...stringList(row.edgeCaseViewRefs),
+    ...stringList(row.boundaryViewRefs),
+    ...stringList(row.boundaryRefs),
+    ...stringList(row.diagramRefs),
+    ...stringList(row.viewRefs),
+  ]);
+}
+
+function explicitViewTraceRefs(view) {
+  return unique([
+    ...stringList(view.traceRows),
+    ...stringList(view.traceRefs),
+    ...stringList(view.linkedTraceRows),
+    ...stringList(view.linkedTraceRefs),
+  ]);
+}
+
+function explicitViewEvidenceRefs(view) {
+  return unique([
+    ...stringList(view.evidenceRefs),
+    ...stringList(view.linkedEvidenceIds),
+    ...stringList(view.linkedEvidenceRefs),
+  ]);
+}
+
+function explicitViewAcceptanceRefs(view) {
+  return unique([
+    ...stringList(view.acceptanceRefs),
+    ...stringList(view.acceptanceTestRefs),
+    ...stringList(view.e2eRefs),
+    ...stringList(view.testRefs),
+  ]);
+}
+
+function explicitViewFailurePathRefs(view) {
+  return unique([
+    ...stringList(view.failurePathRefs),
+    ...stringList(view.linkedFailurePathIds),
+    ...stringList(view.linkedFailurePathRefs),
+  ]);
+}
+
+function explicitViewEdgeCaseRefs(view) {
+  return unique([
+    ...stringList(view.edgeCaseRefs),
+    ...stringList(view.linkedEdgeCaseIds),
+    ...stringList(view.linkedEdgeCaseRefs),
+    ...stringList(view.cases).filter((ref) => ref.startsWith('EDGE-')),
+  ]);
 }
 
 function findArtifactRefs(artifactPlan, id) {
@@ -3322,6 +3458,7 @@ function buildCoverage(input) {
     validateRefs(stringList(row.covers), new Set([...idSet.must, ...idSet.notDone, ...idSet.mustNot]), 'trace_unknown_cover_ref', rowId);
     validateRefs(stringList(row.evidenceRefs), idSet.evidence, 'trace_unknown_evidence_ref', rowId);
     validateRefs(stringList(row.acceptanceRefs), acceptanceIds, 'trace_unknown_acceptance_ref', rowId);
+    validateRefs(traceViewRefs(row), idSet.views, 'trace_unknown_view_ref', rowId);
     if (!stringList(row.covers).length && !isBoundaryOnlyTrace(row, boundaryViews)) {
       blockingIssues.push(blocking('trace_missing_covers', `${rowId} has no covers`, [rowId]));
     }
@@ -3349,6 +3486,79 @@ function buildCoverage(input) {
     }
     if (hasStatusWithoutUserApproval(row.status) && row.userApproved !== true) {
       blockingIssues.push(blocking('trace_bare_deferred_or_out_of_scope', `${rowId} uses bare ${row.status}`, [rowId]));
+    }
+  }
+
+  const traceById = new Map(traceRows.map((row) => [row.id, row]));
+  const visualViews = [
+    ...sequenceViews.map((view) => ({ ...view, sourceSection: 'sequenceViews' })),
+    ...flowViews.map((view) => ({ ...view, sourceSection: 'flowViews' })),
+    ...edgeCaseViews.map((view) => ({ ...view, sourceSection: 'edgeCaseViews' })),
+  ];
+  for (const view of visualViews) {
+    const viewId = view.id ?? 'VIEW-UNKNOWN';
+    const visualKind = viewVisualKind(view, viewRowDefaultVisualKind(view));
+    const scope = String(view.scope ?? '').trim().toLowerCase();
+    const businessVisualView = scope === 'business';
+    if (!businessVisualView) continue;
+    if (!view.visualKind) {
+      blockingIssues.push(blocking('visual_view_missing_visual_kind', `${viewId} is a business visual view but has no visualKind`, [viewId]));
+    }
+
+    const traceRefs = explicitViewTraceRefs(view);
+    const evidenceRefs = explicitViewEvidenceRefs(view);
+    const acceptanceRefs = explicitViewAcceptanceRefs(view);
+    const failurePathRefs = explicitViewFailurePathRefs(view);
+    const edgeCaseRefs = explicitViewEdgeCaseRefs(view);
+
+    validateRefs(traceRefs, idSet.traceRows, 'visual_view_unknown_trace_ref', viewId);
+    validateRefs(evidenceRefs, idSet.evidence, 'visual_view_unknown_evidence_ref', viewId);
+    validateRefs(acceptanceRefs, acceptanceIds, 'visual_view_unknown_acceptance_ref', viewId);
+    validateRefs(failurePathRefs, idSet.failurePaths, 'visual_view_unknown_failure_path_ref', viewId);
+    validateRefs(edgeCaseRefs, idSet.edgeCases, 'visual_view_unknown_edge_case_ref', viewId);
+
+    if (!traceRefs.length) {
+      blockingIssues.push(blocking('visual_view_missing_trace_refs', `${viewId} has no traceRows[] or traceRefs[]`, [viewId]));
+    }
+    if (!evidenceRefs.length) {
+      blockingIssues.push(blocking('visual_view_missing_evidence_refs', `${viewId} has no evidenceRefs[]`, [viewId]));
+    }
+    if (!acceptanceRefs.length) {
+      blockingIssues.push(blocking('visual_view_missing_acceptance_refs', `${viewId} has no acceptanceRefs[]`, [viewId]));
+    }
+    if (visualKind === 'failure' && !failurePathRefs.length) {
+      blockingIssues.push(blocking('visual_failure_view_missing_failure_path_refs', `${viewId} has no failurePathRefs[]`, [viewId]));
+    }
+    if (visualKind === 'edge' && !edgeCaseRefs.length) {
+      blockingIssues.push(blocking('visual_edge_view_missing_edge_case_refs', `${viewId} has no edgeCaseRefs[]`, [viewId]));
+    }
+    for (const traceRef of traceRefs) {
+      const linkedTrace = traceById.get(traceRef);
+      if (!linkedTrace) continue;
+      if (!traceViewRefs(linkedTrace).includes(viewId)) {
+        blockingIssues.push(
+          blocking('visual_view_trace_not_reciprocal', `${viewId} references ${traceRef}, but that trace row does not reference the view`, [
+            viewId,
+            traceRef,
+          ])
+        );
+      }
+      if (!stringList(linkedTrace.evidenceRefs).some((ref) => evidenceRefs.includes(ref))) {
+        blockingIssues.push(
+          blocking('visual_view_trace_evidence_not_shared', `${viewId} and ${traceRef} do not share an evidence ref`, [
+            viewId,
+            traceRef,
+          ])
+        );
+      }
+      if (!stringList(linkedTrace.acceptanceRefs).some((ref) => acceptanceRefs.includes(ref))) {
+        blockingIssues.push(
+          blocking('visual_view_trace_acceptance_not_shared', `${viewId} and ${traceRef} do not share an ACC/E2E ref`, [
+            viewId,
+            traceRef,
+          ])
+        );
+      }
     }
   }
 
@@ -4431,6 +4641,8 @@ function getUiText(language) {
     happyPath: 'Happy Path 时序图',
     failurePath: 'Failure / Negative Path 时序图',
     stateFlow: 'State / Flow View',
+    stateView: 'State View',
+    flowView: 'Flow View',
     edgeCase: 'Edge Case View',
     decisionQuestion: '问题',
     decisionAnswer: '答案',
@@ -4581,6 +4793,8 @@ function getUiText(language) {
     happyPath: 'Happy Path Sequence',
     failurePath: 'Failure / Negative Path Sequence',
     stateFlow: 'State / Flow View',
+    stateView: 'State View',
+    flowView: 'Flow View',
     edgeCase: 'Edge Case View',
     decisionQuestion: 'Question',
     decisionAnswer: 'Answer',
@@ -4857,6 +5071,25 @@ function uniqueBlocks(blocks) {
   });
 }
 
+function isSourceDefinedViewBlock(block) {
+  return (
+    ['sequenceViews', 'flowViews', 'edgeCaseViews', 'boundaryViews'].includes(block?.generatedFrom) &&
+    !String(block?.id ?? '').startsWith('DERIVED-')
+  );
+}
+
+function prioritizeSourceDefinedViewBlocks(blocks) {
+  return [...blocks].sort((left, right) => {
+    const leftSourceDefined = isSourceDefinedViewBlock(left) ? 0 : 1;
+    const rightSourceDefined = isSourceDefinedViewBlock(right) ? 0 : 1;
+    return leftSourceDefined - rightSourceDefined;
+  });
+}
+
+function sourceDefinedVisualKindMatches(block, visualKinds) {
+  return isSourceDefinedViewBlock(block) && visualKinds.includes(block.viewKind);
+}
+
 function selectDiagramBlocks(mermaidBlocks, views) {
   const sequenceViews = asArray(views.sequenceViews);
   const flowViews = asArray(views.flowViews);
@@ -4890,46 +5123,71 @@ function selectDiagramBlocks(mermaidBlocks, views) {
     blockScope(block) === 'business' ||
     blockScope(block) === 'mixed' ||
     (block.sectionGroup !== 'governance' &&
-      (block.viewKind === 'happy' || block.viewKind === 'failure' || block.viewKind === 'stateFlow' || block.viewKind === 'edge'));
+      ['happy', 'failure', 'state', 'flow', 'stateFlow', 'edge'].includes(block.viewKind));
   const governanceBlock = (block) =>
     blockScope(block) === 'governance' ||
     (block.sectionGroup === 'governance' && blockScope(block) !== 'business' && block.viewKind === 'boundary');
   const businessViewBlocks = mermaidBlocks.filter((block) => businessBlock(block));
   const governanceViewBlocks = mermaidBlocks.filter((block) => governanceBlock(block));
+  const nonSourceDefinedBusinessBlocks = businessViewBlocks.filter((block) => !isSourceDefinedViewBlock(block));
+  const stateLikeSource = (block) => /^\s*stateDiagram(?:-v2)?\b/iu.test(block.source);
+  const flowLikeSource = (block) => /^\s*(flowchart|graph)\b/iu.test(block.source);
+  const happyBlocks = [
+    ...businessViewBlocks.filter((block) => sourceDefinedVisualKindMatches(block, ['happy'])),
+    ...nonSourceDefinedBusinessBlocks.filter(
+      (block) =>
+        block.viewKind === 'happy' ||
+        blockIntersectsIds(block, happyIds) ||
+        (block.viewKind === 'source' && blockHasAnyPrefix(block, ['MUST-', 'EVD-']) && !blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
+    ),
+  ];
+  const failureBlocks = [
+    ...businessViewBlocks.filter((block) => sourceDefinedVisualKindMatches(block, ['failure'])),
+    ...nonSourceDefinedBusinessBlocks.filter(
+      (block) => block.viewKind === 'failure' || blockIntersectsIds(block, failureIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-'])
+    ),
+  ];
+  const stateBlocks = [
+    ...businessViewBlocks.filter((block) => sourceDefinedVisualKindMatches(block, ['state'])),
+    ...nonSourceDefinedBusinessBlocks.filter(
+      (block) =>
+        block.viewKind === 'state' ||
+        block.viewKind === 'stateFlow' ||
+        (block.viewKind === 'source' && stateLikeSource(block)) ||
+        (block.viewKind !== 'source' && blockIntersectsIds(block, flowIds) && stateLikeSource(block))
+    ),
+  ];
+  const flowBlocks = [
+    ...businessViewBlocks.filter((block) => sourceDefinedVisualKindMatches(block, ['flow'])),
+    ...nonSourceDefinedBusinessBlocks.filter(
+      (block) =>
+        block.viewKind === 'flow' ||
+        (block.viewKind === 'source' && flowLikeSource(block)) ||
+        (block.viewKind !== 'source' && blockIntersectsIds(block, flowIds) && flowLikeSource(block))
+    ),
+  ];
+  const edgeBlocks = [
+    ...businessViewBlocks.filter((block) => sourceDefinedVisualKindMatches(block, ['edge'])),
+    ...nonSourceDefinedBusinessBlocks.filter(
+      (block) => block.viewKind === 'edge' || blockIntersectsIds(block, edgeIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-'])
+    ),
+  ];
   return {
     all: mermaidBlocks.map((block) => ({ ...block, sectionGroup: blockScope(block) })),
-    happy: uniqueBlocks(
-      businessViewBlocks.filter(
-        (block) =>
-          (block.viewKind === 'happy' ||
-            blockIntersectsIds(block, happyIds) ||
-            (block.viewKind === 'source' &&
-              blockHasAnyPrefix(block, ['MUST-', 'EVD-']) &&
-              !blockHasAnyPrefix(block, ['NEG-', 'OUT-'])))
-      )
-    ),
-    failure: uniqueBlocks(
-      businessViewBlocks.filter(
-        (block) =>
-          (block.viewKind === 'failure' || blockIntersectsIds(block, failureIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
-      )
-    ),
-    stateFlow: uniqueBlocks(
-      businessViewBlocks.filter(
-        (block) =>
-          (block.viewKind === 'stateFlow' ||
-            blockIntersectsIds(block, flowIds) ||
-            (block.viewKind === 'source' && /^\s*(stateDiagram|stateDiagram-v2|flowchart|graph)\b/iu.test(block.source)))
-      )
-    ),
-    edge: uniqueBlocks(
-      businessViewBlocks.filter(
-        (block) =>
-          (block.viewKind === 'edge' || blockIntersectsIds(block, edgeIds) || blockHasAnyPrefix(block, ['NEG-', 'OUT-']))
-      )
-    ),
-    business: uniqueBlocks(businessViewBlocks).map((block) => ({ ...block, sectionGroup: blockScope(block) })),
-    governance: uniqueBlocks(governanceViewBlocks).map((block) => ({ ...block, sectionGroup: blockScope(block) })),
+    happy: uniqueBlocks(prioritizeSourceDefinedViewBlocks(happyBlocks)),
+    failure: uniqueBlocks(prioritizeSourceDefinedViewBlocks(failureBlocks)),
+    state: uniqueBlocks(prioritizeSourceDefinedViewBlocks(stateBlocks)),
+    flow: uniqueBlocks(prioritizeSourceDefinedViewBlocks(flowBlocks)),
+    stateFlow: uniqueBlocks(prioritizeSourceDefinedViewBlocks([...stateBlocks, ...flowBlocks])),
+    edge: uniqueBlocks(prioritizeSourceDefinedViewBlocks(edgeBlocks)),
+    business: uniqueBlocks(prioritizeSourceDefinedViewBlocks(businessViewBlocks)).map((block) => ({
+      ...block,
+      sectionGroup: blockScope(block),
+    })),
+    governance: uniqueBlocks(prioritizeSourceDefinedViewBlocks(governanceViewBlocks)).map((block) => ({
+      ...block,
+      sectionGroup: blockScope(block),
+    })),
   };
 }
 
@@ -5150,6 +5408,27 @@ function renderRequirementBoundary(boundary, ui) {
   </section>`;
 }
 
+function viewRowDefaultVisualKind(view) {
+  return defaultVisualKindForViewGroup(view?.type, view);
+}
+
+function businessViewRowsByKind(businessViews, visualKinds) {
+  return businessViews.filter((view) => visualKinds.includes(viewVisualKind(view, viewRowDefaultVisualKind(view))));
+}
+
+function renderBusinessViewTable(rows) {
+  return renderTable(
+    ['viewId', 'title', 'scope', 'covers', 'diagramHash'],
+    rows.map((view) => [
+      view.id,
+      view.title ?? '',
+      view.inferredScope,
+      renderIdBadges(view.covers),
+      view.diagramHash ?? 'computed from Mermaid blocks below',
+    ])
+  );
+}
+
 function renderBusinessVisuals(diagramGroups, boundary, ui, mermaidRuntime, args) {
   const businessViews = boundary.viewRows.filter((view) => view.inferredScope === 'business' || view.inferredScope === 'mixed');
   return `<section class="card" id="business-visuals"><h2>${escapeHtml(ui.businessVisuals)}</h2><p class="section-lead">${escapeHtml(
@@ -5164,29 +5443,22 @@ function renderBusinessVisuals(diagramGroups, boundary, ui, mermaidRuntime, args
     ui,
     mermaidRuntime,
     args
-  )}${renderTable(
-    ['viewId', 'title', 'scope', 'covers', 'diagramHash'],
-    businessViews.map((view) => [
-      view.id,
-      view.title ?? '',
-      view.inferredScope,
-      renderIdBadges(view.covers),
-      view.diagramHash ?? 'computed from Mermaid blocks below',
-    ])
-  )}<h3>${escapeHtml(ui.failurePath)}</h3>${renderMermaidBlocks(
+  )}${renderBusinessViewTable(businessViewRowsByKind(businessViews, ['happy']))}<h3>${escapeHtml(ui.failurePath)}</h3>${renderMermaidBlocks(
     diagramGroups.failure,
     ui,
     mermaidRuntime,
     args
-  )}<h3>${escapeHtml(ui.stateFlow)}</h3>${renderMermaidBlocks(
-    diagramGroups.stateFlow,
+  )}${renderBusinessViewTable(businessViewRowsByKind(businessViews, ['failure']))}<h3>${escapeHtml(ui.stateView)}</h3>${renderMermaidBlocks(
+    diagramGroups.state,
     ui,
     mermaidRuntime,
     args
-  )}${renderTable(
-    ['viewId', 'title', 'scope', 'covers', 'diagramHash'],
-    businessViews.filter((view) => view.type === 'flowViews').map((view) => [view.id, view.title ?? '', view.inferredScope, renderIdBadges(view.covers), view.diagramHash ?? 'computed from Mermaid blocks below'])
-  )}<h3>${escapeHtml(ui.edgeCase)}</h3>${renderMermaidBlocks(
+  )}${renderBusinessViewTable(businessViewRowsByKind(businessViews, ['state']))}<h3>${escapeHtml(ui.flowView)}</h3>${renderMermaidBlocks(
+    diagramGroups.flow,
+    ui,
+    mermaidRuntime,
+    args
+  )}${renderBusinessViewTable(businessViewRowsByKind(businessViews, ['flow']))}<h3>${escapeHtml(ui.edgeCase)}</h3>${renderMermaidBlocks(
     diagramGroups.edge,
     ui,
     mermaidRuntime,
@@ -8113,6 +8385,7 @@ function main(argv) {
   const targetModificationPaths = normalizeTargetModificationPaths(confirmation, artifactPlan);
   const views = normalizeViews(confirmation);
   const mermaidBlocks = uniqueBlocks([
+    ...buildSourceDefinedViewMermaidBlocks(views),
     ...buildDerivedMermaidBlocks(confirmation, views),
     ...extractMermaidBlocks(sourceText),
   ]);

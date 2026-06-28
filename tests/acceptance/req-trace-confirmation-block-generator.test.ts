@@ -86,7 +86,39 @@ function semanticConfirmationForHash(
   for (const [key, value] of Object.entries(confirmation)) {
     if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
   }
+  normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
+}
+
+function normalizePreConfirmationDrilldownForHash(semantic: Record<string, unknown>): void {
+  const value = semantic.preConfirmationDrilldown;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+  const drilldown = { ...(value as Record<string, unknown>) };
+  const semanticKernelRef = drilldown.semanticKernelRef;
+  if (semanticKernelRef && typeof semanticKernelRef === 'object' && !Array.isArray(semanticKernelRef)) {
+    const next = { ...(semanticKernelRef as Record<string, unknown>) };
+    delete next.hash;
+    drilldown.semanticKernelRef = next;
+  }
+  const mustDecompositionPacketRef = drilldown.mustDecompositionPacketRef;
+  if (
+    mustDecompositionPacketRef &&
+    typeof mustDecompositionPacketRef === 'object' &&
+    !Array.isArray(mustDecompositionPacketRef)
+  ) {
+    const next = { ...(mustDecompositionPacketRef as Record<string, unknown>) };
+    delete next.hash;
+    drilldown.mustDecompositionPacketRef = next;
+  }
+  const criticalAuditor = drilldown.criticalAuditor;
+  if (criticalAuditor && typeof criticalAuditor === 'object' && !Array.isArray(criticalAuditor)) {
+    const next = { ...(criticalAuditor as Record<string, unknown>) };
+    delete next.consecutiveNoNewGapRounds;
+    delete next.latestReceiptHash;
+    delete next.convergenceVerdict;
+    drilldown.criticalAuditor = next;
+  }
+  semantic.preConfirmationDrilldown = drilldown;
 }
 
 function extractConfirmation(sourceText: string): {
@@ -130,10 +162,22 @@ function writeRequirementRecord(
   overrides: Partial<{
     sourceDocumentHash: string;
     implementationConfirmationHash: string;
+    architectureConfirmationState: Record<string, unknown>;
+    architectureConfirmations: Array<Record<string, unknown>>;
+    sixModelResults: Record<string, unknown>;
+    currentMentalModel: string;
+    currentStage: string;
+    stage: string;
   }> = {}
 ): string {
   const recordPath = path.join(tempDir, 'requirement-record.json');
-  const hashes = { ...currentHashes(sourcePath), ...overrides };
+  const hashes = currentHashes(sourcePath);
+  const recordOverrides: Record<string, unknown> = { ...overrides };
+  delete recordOverrides.sourceDocumentHash;
+  delete recordOverrides.implementationConfirmationHash;
+  const sourceDocumentHash = overrides.sourceDocumentHash ?? hashes.sourceDocumentHash;
+  const implementationConfirmationHash =
+    overrides.implementationConfirmationHash ?? hashes.implementationConfirmationHash;
   fs.writeFileSync(
     recordPath,
     `${JSON.stringify(
@@ -146,18 +190,21 @@ function writeRequirementRecord(
           reducer: 'canonical-requirement-record-reducer/v1',
           atomicCommitter: 'requirement-record-control-store/v1',
         },
-        ...hashes,
+        sourceDocumentHash,
+        implementationConfirmationHash,
         confirmationHistory: [
           {
             eventType: 'confirmation_recorded',
             confirmedAt: '2026-05-10T00:00:00.000Z',
             confirmedBy: 'test-user',
             sourcePath,
-            ...hashes,
+            sourceDocumentHash,
+            implementationConfirmationHash,
             confirmationPageHash:
               'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           },
         ],
+        ...recordOverrides,
       },
       null,
       2
@@ -165,6 +212,67 @@ function writeRequirementRecord(
     'utf8'
   );
   return recordPath;
+}
+
+function architectureConfirmationRecordOverrides(sourcePath: string): Record<string, unknown> {
+  const hashes = currentHashes(sourcePath);
+  const architectureHash = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
+  const resolvedRecipeHash =
+    'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+  return {
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationRunId: 'arch-run-001',
+      currentArchitectureConfirmationHash: architectureHash,
+      currentArchitectureConfirmationPath:
+        '_bmad-output/runtime/requirement-records/REQ-TRACE-001/architecture/architecture-confirmation-arch-run-001.json',
+      resolvedRecipeHash,
+      staleInputs: {
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        currentArtifactHash: architectureHash,
+        resolvedRecipeHash,
+      },
+      lastEventType: 'architecture_confirmation_recorded',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    },
+    architectureConfirmations: [
+      {
+        eventType: 'architecture_confirmation_recorded',
+        recordId: 'REQ-TRACE-001',
+        requirementSetId: 'REQ-TRACE-001',
+        runId: 'arch-run-001',
+        decision: 'full_architecture_confirmed',
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        resolvedRecipeHash,
+        architectureConfirmationArtifactHash: architectureHash,
+        architectureConfirmationPath:
+          '_bmad-output/runtime/requirement-records/REQ-TRACE-001/architecture/architecture-confirmation-arch-run-001.json',
+        confirmationText: 'confirmed architecture hashes',
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'test-user',
+      },
+    ],
+    sixModelResults: {
+      architecture_confirmation: {
+        payloadKind: 'model_result',
+        model: 'architecture_confirmation',
+        status: 'pass',
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        currentHashes: {
+          sourceDocumentHash: hashes.sourceDocumentHash,
+          implementationConfirmationHash: hashes.implementationConfirmationHash,
+          architectureConfirmationArtifactHash: architectureHash,
+          resolvedRecipeHash,
+        },
+      },
+    },
+    currentMentalModel: 'implementation_readiness',
+    currentStage: 'implementation_readiness',
+    stage: 'implementation_readiness',
+  };
 }
 
 function run(
@@ -726,6 +834,66 @@ describe('req trace generator confirmation block gate', () => {
     });
   });
 
+  it('blocks execution packet generation when architecture confirmation is required but not recorded', () => {
+    const source = writeSource(
+      validCompilerSource(`
+  architectureImpacts:
+    - id: ARCH-001
+      title: "Architecture confirmation required"
+      impact: "Implementation touches product runtime/UI boundaries and must be confirmed before execution."
+      requirementRefs: ["MUST-001"]
+`)
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'missing-architecture-confirmation');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('blocked');
+    expect(receipt.blockingReasons).toContain('ARCHITECTURE_CONFIRMATION_REQUIRED');
+  });
+
+  it('accepts execution packet generation when architecture confirmation is active for current hashes', () => {
+    const source = writeSource(
+      validCompilerSource(`
+  architectureImpacts:
+    - id: ARCH-001
+      title: "Architecture confirmation required"
+      impact: "Implementation touches product runtime/UI boundaries and must be confirmed before execution."
+      requirementRefs: ["MUST-001"]
+`)
+    );
+    const record = writeRequirementRecord(source, architectureConfirmationRecordOverrides(source));
+    const outDir = path.join(tempDir, 'active-architecture-confirmation');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
+    expect(receipt.blockingReasons).toEqual([]);
+  });
+
   it('blocks generation when legacy and canonical command target aliases conflict', () => {
     const source = writeSource(
       validCompilerSource().replace(
@@ -758,6 +926,8 @@ describe('req trace generator confirmation block gate', () => {
       'codex',
       '--goal-command-available',
       'true',
+      '--task-report-path',
+      path.join(tempDir, 'alias-conflict-task-report.json'),
       '--json',
     ]);
 
@@ -943,6 +1113,8 @@ describe('req trace generator confirmation block gate', () => {
       'codex',
       '--goal-command-available',
       'true',
+      '--task-report-path',
+      path.join(tempDir, 'codex-goal-default-task-report.json'),
       '--json',
     ]);
 
@@ -1128,6 +1300,47 @@ describe('req trace generator confirmation block gate', () => {
     expect(receipt.decision).toBe('pass');
     const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
     expect(packet.preConfirmationDrilldown.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
+  });
+
+  it('ignores pre-confirmation drilldown bookkeeping when validating confirmation record hashes', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        / {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u,
+        `  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: authoring/semantic-kernel.json
+      hash: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    mustDecompositionPacketRef:
+      path: authoring/must_decomposition_packet.json
+      hash: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      latestReceiptHash: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: authoring/must_packet_source_reconciliation_report.json
+      verdict: pass
+    preRenderGateReportPath: authoring/pre-render-must-decomposition-gate-report.json
+  must:\n`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'drilldown-bookkeeping-hash-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
   });
 
   it('blocks missing AI-TDD/currentTargetMap applicability and missing E2E suites', () => {

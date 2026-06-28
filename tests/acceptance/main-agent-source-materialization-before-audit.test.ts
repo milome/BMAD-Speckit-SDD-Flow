@@ -11,6 +11,23 @@ import {
   validateWrittenDeepReviewInput,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
+const PROJECTION_QUALITY_RULE_CODES = [
+  'projection_per_must_acceptance_not_independent',
+  'projection_shared_evidence_without_per_must_oracle',
+  'required_command_all_cover_all_without_per_must_assertions',
+  'target_modification_path_all_cover_all',
+  'current_target_map_not_product_specific',
+  'business_visual_generic_or_compressed',
+];
+
+function checkedProjectionQualityRuleCodesForRequest(input: any): string[] {
+  return (
+    input.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
+    input.projectionQualityGate?.requiredRuleCodes ??
+    PROJECTION_QUALITY_RULE_CODES
+  );
+}
+
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value);
@@ -326,6 +343,7 @@ function writeValidatedGapResponse(request: string, response: string): void {
         gateDryRunHash: body.gateDryRun.gateDryRunHash,
         reconciliationIssueCount: body.gateDryRun.reconciliation.issueCount,
         checkedProjectionGroups: body.packetProjectionSummary.projectionGroups,
+        checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(body),
         verdict: 'new_valid_gap',
         reviewedMustRefs: body.mustRefs,
         reviewedProjectionRefs: projectionRefs.slice(0, 1),
@@ -375,6 +393,7 @@ function cleanCriticalAuditorRound(input: any) {
     gateDryRunHash: input.gateDryRun.hash,
     reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+    checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
     reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
     priorFindingsDisposition: [
       {

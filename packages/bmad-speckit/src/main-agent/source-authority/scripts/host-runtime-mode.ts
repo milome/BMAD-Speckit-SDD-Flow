@@ -53,11 +53,13 @@ export interface NativeGoalInvocationReceipt {
   goalExecutionPath: string;
   goalExecutionHash: string;
   goalCommandTextHash: string;
-  invokedCommandKind: 'host_native_goal';
+  invokedCommandKind: 'host_native_goal' | 'main_session_native_goal_required';
+  executionSurface?: 'host_native_goal' | 'main_session_native_goal_required';
   command: string;
   args: string[];
   taskReportPath: string;
-  nativeGoalCommandUsed: true;
+  nativeGoalCommandPrepared?: boolean;
+  nativeGoalCommandUsed: boolean;
   startedAt: string;
   endedAt: string;
   exitCode: number;
@@ -65,6 +67,7 @@ export interface NativeGoalInvocationReceipt {
   stderrRef: string;
   packetId: string;
   attemptId: string;
+  recordId?: string;
 }
 
 function sha256File(filePath: string): string {
@@ -262,9 +265,12 @@ export function writeNativeGoalInvocationReceipt(input: {
   host: string;
   goalExecutionPath: string;
   goalCommandTextHash?: string;
+  invokedCommandKind?: 'host_native_goal' | 'main_session_native_goal_required';
+  executionSurface?: 'host_native_goal' | 'main_session_native_goal_required';
   command?: string;
   args?: string[];
   taskReportPath?: string;
+  nativeGoalCommandPrepared?: boolean;
   nativeGoalCommandUsed?: boolean;
   stdoutRef: string;
   stderrRef: string;
@@ -279,11 +285,13 @@ export function writeNativeGoalInvocationReceipt(input: {
     goalExecutionPath: input.goalExecutionPath,
     goalExecutionHash: sha256File(input.goalExecutionPath),
     goalCommandTextHash: input.goalCommandTextHash ?? 'not_available',
-    invokedCommandKind: 'host_native_goal',
+    invokedCommandKind: input.invokedCommandKind ?? 'host_native_goal',
+    executionSurface: input.executionSurface ?? 'host_native_goal',
     command: input.command ?? 'not_available',
     args: input.args ?? [],
     taskReportPath: input.taskReportPath ?? 'not_available',
-    nativeGoalCommandUsed: input.nativeGoalCommandUsed === false ? true : true,
+    nativeGoalCommandPrepared: input.nativeGoalCommandPrepared !== false,
+    nativeGoalCommandUsed: input.nativeGoalCommandUsed !== false,
     startedAt: input.startedAt ?? new Date().toISOString(),
     endedAt: input.endedAt ?? new Date().toISOString(),
     exitCode: input.exitCode,
@@ -291,6 +299,7 @@ export function writeNativeGoalInvocationReceipt(input: {
     stderrRef: input.stderrRef,
     packetId: input.packetId,
     attemptId: input.attemptId,
+    recordId: input.recordId,
   };
   const filePath = path.join(
     runtimeModeDir(input.projectRoot, input.recordId, input.attemptId),

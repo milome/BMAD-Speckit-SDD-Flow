@@ -19,6 +19,30 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
+const args = process.argv.slice(2);
+
+function delegateMetadataRequestToMainCli(argv) {
+  const wantsHelp = argv.includes('--help') || argv.includes('-h');
+  const wantsVersion = argv.includes('--version') || argv.includes('-v');
+  if (!wantsHelp && !wantsVersion) return;
+
+  const cliEntry = path.join(PKG_ROOT, 'scripts', 'bmad-speckit-cli.js');
+  const forwarded = wantsHelp ? ['init', '--help'] : ['--version'];
+  const result = spawnSync(process.execPath, [cliEntry, ...forwarded], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: 'inherit',
+  });
+
+  if (result.error) {
+    console.error(result.error instanceof Error ? result.error.message : String(result.error));
+    process.exit(1);
+  }
+  process.exit(typeof result.status === 'number' ? result.status : 1);
+}
+
+delegateMetadataRequestToMainCli(args);
+
 const ROOT_PACKAGE_JSON = require(path.join(PKG_ROOT, 'package.json'));
 const { syncSpecifyMirror } = require(path.join(
   PKG_ROOT,
@@ -43,7 +67,6 @@ function resolveInstallSurfaceManifestTools() {
   }
   return null;
 }
-const args = process.argv.slice(2);
 const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
 const withPackageJson = args.includes('--with-package-json');

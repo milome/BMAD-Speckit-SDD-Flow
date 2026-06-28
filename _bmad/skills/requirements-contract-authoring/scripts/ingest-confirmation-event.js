@@ -59,7 +59,49 @@ function semanticConfirmationForHash(confirmation) {
   for (const [key, value] of Object.entries(confirmation ?? {})) {
     if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
   }
+  normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
+}
+
+function normalizePreConfirmationDrilldownForHash(semantic) {
+  if (
+    !semantic.preConfirmationDrilldown ||
+    typeof semantic.preConfirmationDrilldown !== 'object' ||
+    Array.isArray(semantic.preConfirmationDrilldown)
+  ) {
+    return;
+  }
+  const drilldown = { ...semantic.preConfirmationDrilldown };
+  if (
+    drilldown.semanticKernelRef &&
+    typeof drilldown.semanticKernelRef === 'object' &&
+    !Array.isArray(drilldown.semanticKernelRef)
+  ) {
+    const semanticKernelRef = { ...drilldown.semanticKernelRef };
+    delete semanticKernelRef.hash;
+    drilldown.semanticKernelRef = semanticKernelRef;
+  }
+  if (
+    drilldown.mustDecompositionPacketRef &&
+    typeof drilldown.mustDecompositionPacketRef === 'object' &&
+    !Array.isArray(drilldown.mustDecompositionPacketRef)
+  ) {
+    const mustDecompositionPacketRef = { ...drilldown.mustDecompositionPacketRef };
+    delete mustDecompositionPacketRef.hash;
+    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
+  }
+  if (
+    drilldown.criticalAuditor &&
+    typeof drilldown.criticalAuditor === 'object' &&
+    !Array.isArray(drilldown.criticalAuditor)
+  ) {
+    const criticalAuditor = { ...drilldown.criticalAuditor };
+    delete criticalAuditor.consecutiveNoNewGapRounds;
+    delete criticalAuditor.latestReceiptHash;
+    delete criticalAuditor.convergenceVerdict;
+    drilldown.criticalAuditor = criticalAuditor;
+  }
+  semantic.preConfirmationDrilldown = drilldown;
 }
 
 function sourceDocumentHashFor(sourceText, blockText, confirmation) {
@@ -325,7 +367,50 @@ function updateSourceBookkeeping(sourceText, extracted, update) {
   return lines.join('\n');
 }
 
-function buildRequirementRecord(existing, event, projectionEvent = null) {
+function controlEventLogPathForRecord(recordPath) {
+  return path.join(path.dirname(recordPath), 'events', 'control-events.jsonl');
+}
+
+function controlEventIdFor(event) {
+  return `${event.eventType}:${event.confirmedAt ?? event.observedAt ?? new Date().toISOString()}:${event.recordId}`;
+}
+
+function buildControlEvent(existingRecord, event) {
+  const eventId = controlEventIdFor(event);
+  const previousEventHash =
+    existingRecord?.controlStore && typeof existingRecord.controlStore === 'object'
+      ? existingRecord.controlStore.lastEventHash ?? null
+      : null;
+  const unsigned = {
+    eventId,
+    eventType: event.eventType,
+    recordId: event.recordId,
+    requirementSetId: event.requirementSetId,
+    writerId: 'ingest-confirmation-event.js',
+    recordedAt: event.confirmedAt ?? event.observedAt ?? new Date().toISOString(),
+    previousEventHash,
+    payloadSchemaVersion: `${event.eventType}/v1`,
+    payloadHash: sha256(JSON.stringify(event)),
+    payload: event,
+  };
+  return {
+    ...unsigned,
+    eventHash: sha256(stableStringify(unsigned)),
+  };
+}
+
+function buildControlStore(recordPath, controlEvent) {
+  return {
+    schemaVersion: 'control-store/v1',
+    eventLogPath: normalizePathForReport(controlEventLogPathForRecord(recordPath)),
+    lastEventId: controlEvent.eventId,
+    lastEventHash: controlEvent.eventHash,
+    reducer: 'canonical-requirement-record-reducer/v1',
+    atomicCommitter: 'requirement-record-control-store/v1',
+  };
+}
+
+function buildRequirementRecord(existing, event, projectionEvent = null, options = {}) {
   const record = existing && typeof existing === 'object' ? existing : {};
   const confirmationHistory = Array.isArray(record.confirmationHistory)
     ? [...record.confirmationHistory]
@@ -344,6 +429,7 @@ function buildRequirementRecord(existing, event, projectionEvent = null) {
       updatedAt: projectionEvent?.observedAt ?? record.updatedAt,
     };
   }
+  const controlEvent = buildControlEvent(record, event);
   return {
     ...record,
     recordId: record.recordId ?? event.recordId,
@@ -363,6 +449,7 @@ function buildRequirementRecord(existing, event, projectionEvent = null) {
     confirmationHistory,
     confirmationProjectionHistory,
     lastEventType: 'confirmation_recorded',
+    controlStore: options.recordPath ? buildControlStore(options.recordPath, controlEvent) : record.controlStore,
     updatedAt: event.confirmedAt,
   };
 }
@@ -1092,7 +1179,8 @@ function main(argv) {
   const baseNextRecord = buildRequirementRecord(
     existingRecord,
     isProjectionOnlyRefresh ? null : event,
-    projectionEvent
+    projectionEvent,
+    { recordPath }
   );
   const nextRecord =
     !isProjectionOnlyRefresh && requestId
@@ -1110,6 +1198,13 @@ function main(argv) {
   );
   if (!isProjectionOnlyRefresh) appendJsonl(eventLogPath, event);
   if (projectionEvent) appendJsonl(eventLogPath, projectionEvent);
+  const controlEventLogPath = controlEventLogPathForRecord(recordPath);
+  if (!isProjectionOnlyRefresh) {
+    appendJsonl(controlEventLogPath, buildControlEvent(existingRecord, event));
+  }
+  if (projectionEvent) {
+    appendJsonl(controlEventLogPath, buildControlEvent(nextRecord, projectionEvent));
+  }
 
   const artifactIndexPath = path.resolve(
     args.artifactIndex ??

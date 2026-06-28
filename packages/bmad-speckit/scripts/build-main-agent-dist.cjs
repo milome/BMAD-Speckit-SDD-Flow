@@ -10,6 +10,7 @@ const distRoot = path.join(packageRoot, 'dist', 'main-agent');
 const packageSourceRoot = path.join(packageRoot, 'src');
 const packageDistRoot = path.join(packageRoot, 'dist');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
+const packageDistBmadRoot = path.join(packageDistRoot, '_bmad');
 const excludedRuntimeFiles = new Set([]);
 const sourceAuthorityRoot = path.join(sourceRoot, 'source-authority');
 const governanceUserStoryMappingFixtureModuleParts = [
@@ -232,6 +233,7 @@ const runtimeAssetDirectories = [
   '_bmad/runtime/hooks',
   '_bmad/shared/contract-execution-manifest',
   '_bmad/shared/critical-auditor-profile',
+  '_bmad/skills/requirements-contract-authoring',
   '_bmad/core/agents/code-reviewer',
   '_bmad/core/skills/bmad-party-mode',
 ];
@@ -363,6 +365,14 @@ function assertInsidePackageBmad(target) {
   }
 }
 
+function assertInsidePackageDistBmad(target) {
+  const resolvedTarget = path.resolve(target);
+  const resolvedBmadRoot = path.resolve(packageDistBmadRoot);
+  if (resolvedTarget !== resolvedBmadRoot && !resolvedTarget.startsWith(`${resolvedBmadRoot}${path.sep}`)) {
+    throw new Error(`refusing to modify path outside package dist _bmad: ${target}`);
+  }
+}
+
 function copyDirectoryContents(source, target) {
   if (!fs.existsSync(source) || !fs.statSync(source).isDirectory()) {
     throw new Error(`runtime asset directory missing: ${path.relative(repoRoot, source).replace(/\\/g, '/')}`);
@@ -383,12 +393,17 @@ function copyDirectoryContents(source, target) {
 
 function copyRuntimeAssetDirectory(relativePath) {
   const source = path.join(repoRoot, relativePath);
-  const target = path.join(packageRoot, relativePath);
-  assertInsidePackageBmad(target);
-  if (fs.existsSync(target)) {
-    fs.rmSync(target, { recursive: true, force: true });
+  const targets = [
+    { path: path.join(packageRoot, relativePath), assertInside: assertInsidePackageBmad },
+    { path: path.join(packageDistRoot, relativePath), assertInside: assertInsidePackageDistBmad },
+  ];
+  for (const target of targets) {
+    target.assertInside(target.path);
+    if (fs.existsSync(target.path)) {
+      fs.rmSync(target.path, { recursive: true, force: true });
+    }
+    copyDirectoryContents(source, target.path);
   }
-  copyDirectoryContents(source, target);
 }
 
 function sanitizeSourceAuthorityPackageJson(source) {

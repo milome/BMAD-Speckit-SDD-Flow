@@ -138,9 +138,39 @@ describe('npm pack root package → clean install → CLI', () => {
         'scripts',
         'normalize-draft-markdown.js'
       );
+      const installedPrepareCurrentSourcePromotionScript = join(
+        rootInstallDir,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'prepare-current-source-promotion.js'
+      );
+      const installedWriteCriticalAuditorNoNewGapResponseScript = join(
+        rootInstallDir,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'write-critical-auditor-no-new-gap-response.js'
+      );
+      const installedProjectionQualityGateScript = join(
+        rootInstallDir,
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'projection_quality_gate.js'
+      );
       expect(existsSync(installedPromoteScript)).toBe(true);
       expect(existsSync(installedManifestScript)).toBe(true);
       expect(existsSync(installedNormalizeScript)).toBe(true);
+      expect(existsSync(installedPrepareCurrentSourcePromotionScript)).toBe(true);
+      expect(existsSync(installedWriteCriticalAuditorNoNewGapResponseScript)).toBe(true);
+      expect(existsSync(installedProjectionQualityGateScript)).toBe(true);
+      expect(readFileSync(installedProjectionQualityGateScript, 'utf8')).toContain(
+        'projection_per_must_acceptance_not_independent'
+      );
       expect(run(`"${process.execPath}" "${installedPromoteScript}" --help`, consumer)).toContain(
         '--preflight-only'
       );

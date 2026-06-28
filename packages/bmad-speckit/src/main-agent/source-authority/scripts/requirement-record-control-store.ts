@@ -936,6 +936,7 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'artifactIndex',
     'extensionRefs',
     'deliveryEvidence',
+    'nativeGoalHandoff',
     'implementationReadiness',
     'executionClosures',
     'auditReviews',

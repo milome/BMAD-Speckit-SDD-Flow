@@ -31,6 +31,21 @@ function runNode(script: string, args: string[]) {
   });
 }
 
+function copyPrepareScriptIntoInstallSurface(root: string): string {
+  const source = fs.readFileSync(PREPARE, 'utf8');
+  const script = path.join(
+    root,
+    '.codex',
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    'prepare-architecture-confirmation-page.ts'
+  );
+  fs.mkdirSync(path.dirname(script), { recursive: true });
+  fs.writeFileSync(script, source, 'utf8');
+  return script;
+}
+
 function writeConfirmedFixture() {
   const source = path.join(tempDir, 'source.md');
   const record = path.join(
@@ -137,7 +152,7 @@ function writeConfirmedFixture() {
   return { source, record };
 }
 
-const targetPaths = JSON.stringify(['scripts/main-agent-implementation-readiness-gate.ts']);
+const targetPaths = JSON.stringify(['src/product/display_settings_widget.py']);
 const consumerImpactScan = JSON.stringify([
   { category: 'data_model', status: 'triggered', summary: 'fixture' },
 ]);
@@ -153,6 +168,33 @@ const triggerMatrix = JSON.stringify([
 ]);
 
 describe('prepare-architecture-confirmation-page', () => {
+  it('resolves nested packaged bmad-speckit dist scripts from npm tarball installs', () => {
+    const installRoot = path.join(tempDir, 'consumer-install');
+    const prepare = copyPrepareScriptIntoInstallSurface(installRoot);
+    const nestedIngest = path.join(
+      installRoot,
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit',
+      'dist',
+      'main-agent',
+      'source-authority',
+      'scripts',
+      'ingest-architecture-confirmation.js'
+    );
+    fs.mkdirSync(path.dirname(nestedIngest), { recursive: true });
+    fs.writeFileSync(nestedIngest, 'module.exports = {};', 'utf8');
+
+    const result = spawnSync(process.execPath, [prepare, '--help'], {
+      cwd: installRoot,
+      encoding: 'utf8',
+    });
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stdout).toContain('Usage: node prepare-architecture-confirmation-page.ts');
+  });
+
   it('automatically checks stale state, generates the architecture artifact, and renders user-facing HTML', () => {
     const fixture = writeConfirmedFixture();
     const out = path.join(

@@ -43,6 +43,10 @@ function parseArgs(argv: string[]): ParsedArgs {
   return out;
 }
 
+function isDirectPerMustClosureEvidenceIndexCli(entry: string | undefined): boolean {
+  return /(^|[\\/])per-must-closure-evidence-index(\.[cm]?js|\.ts)?$/iu.test(entry ?? '');
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -433,7 +437,7 @@ export function mainPerMustClosureEvidenceIndex(argv: string[]): number {
   return text(index.decision) === 'pass' ? 0 : 1;
 }
 
-if (require.main === module) {
+if (require.main === module && isDirectPerMustClosureEvidenceIndexCli(process.argv[1])) {
   try {
     process.exitCode = mainPerMustClosureEvidenceIndex(process.argv.slice(2));
   } catch (error) {

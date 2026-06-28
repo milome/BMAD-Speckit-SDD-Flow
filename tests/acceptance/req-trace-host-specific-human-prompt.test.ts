@@ -222,6 +222,8 @@ function runLongGoal(extraArgs: string[] = []): {
       'codex',
       '--goal-command-available',
       'true',
+      '--task-report-path',
+      path.join(tempDir, 'long-goal-task-report.json'),
       '--json',
       ...extraArgs,
     ],
