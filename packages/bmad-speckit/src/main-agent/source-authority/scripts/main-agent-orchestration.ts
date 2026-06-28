@@ -4588,6 +4588,33 @@ function buildSourceSpecificCurrentTargetMap(input: {
   const evidenceRefs = input.allEvidenceIds;
   const requirementRefs = input.mustRefs;
   const backRef = input.packetHash ? projectionBackRef(input.packetHash, requirementRefs[0]) : {};
+  const perMustCurrentTargetEntries = input.mustRequirements.map((requirement, index) => {
+    const mustId = requirement.id;
+    const traceId = traceRows[index] ?? traceRows[0] ?? 'TRACE-UNBOUND';
+    const evidenceId = evidenceRefs[index] ?? evidenceRefs[0] ?? 'EVD-UNBOUND';
+    const sourceAnchor = [
+      requirement.sourcePath,
+      requirement.sourceLine ? `line ${requirement.sourceLine}` : null,
+    ]
+      .filter(Boolean)
+      .join(':');
+    const requirementText = normalizeText(requirement.text).slice(0, 220);
+    return {
+      mustId,
+      assertion: `${mustId} maps current ${productSurface} source anchor ${sourceAnchor || mustId} to target behavior in ${targetPathText}: ${requirementText}. Proof refs: ${traceId}, ${evidenceId}.`,
+      responsibility: `${mustId} remains independently reviewable in currentTargetMap for ${productSurface}; do not collapse it into an all-MUST row without ${traceId}.`,
+    };
+  });
+  const perMustCurrentTargetAssertions = Object.fromEntries(
+    perMustCurrentTargetEntries.map((row) => [row.mustId, row.assertion])
+  );
+  const perMustCurrentTargetResponsibilities = Object.fromEntries(
+    perMustCurrentTargetEntries.map((row) => [row.mustId, row.responsibility])
+  );
+  const perMustCurrentTargetClosure = {
+    perMustAssertions: perMustCurrentTargetAssertions,
+    perMustResponsibilities: perMustCurrentTargetResponsibilities,
+  };
   const diffRows = [
     {
       id: 'CT-DIFF-001',
@@ -4598,6 +4625,7 @@ function buildSourceSpecificCurrentTargetMap(input: {
       traceRows,
       evidenceRefs,
       requirementRefs,
+      ...perMustCurrentTargetClosure,
       ...backRef,
     },
     {
@@ -13885,6 +13913,65 @@ export function runMainAgentPreConfirmationDrilldown(
     roundProvider: options.criticalAuditorRound ?? fileBackedProvider,
     maxRounds: options.maxCriticalAuditorRounds,
   });
+  const sourceHashAfterCriticalAuditor =
+    entryMode === 'intake_to_new_source'
+      ? 'absent'
+      : safeCurrentSourceDocumentHash(sourcePath);
+  if (
+    entryMode === 'existing_source' &&
+    sourceHashAfterCriticalAuditor !== stagingTransaction.sourceStartHash
+  ) {
+    const issue = preConfirmationIssue(
+      'source_hash_changed_before_promotion',
+      'Current source hash changed after staging transaction start; source promotion is forbidden.',
+      [
+        toRootRelativePath(root, sourcePath),
+        stagingTransaction.sourceStartHash,
+        sourceHashAfterCriticalAuditor,
+      ],
+      'source_mutation_gate'
+    );
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      currentSourceHash: sourceHashAfterCriticalAuditor,
+      blockingStage: 'source_hash_changed_before_promotion',
+      createdAt,
+    });
+    writeSourceMutationDecision({
+      root,
+      sourcePath,
+      paths,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      createdAt,
+      sourceHashBefore,
+      issues: [issue],
+      coverageDecision: 'pass',
+      targetAuthorityDecision: 'pass',
+      validationAuthorityDecision: 'pass',
+      projectionSanityDecision: 'pass',
+      auditEvidenceDecision: 'block',
+      scaleRoutingDecision:
+        normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
+      reverseAuditDraftValidationDecision: 'block',
+      sourceMutationPerformed: false,
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: [issue],
+      sourceDocumentHash: sourceHashAfterCriticalAuditor,
+      implementationConfirmationHash: previewImplementationConfirmationHash,
+      criticalAuditorProviderMode,
+      blockingStage: 'source_hash_changed_before_promotion',
+      sourceMutationPerformed: false,
+      stagingTransaction,
+    });
+  }
   if (criticalAuditorLoop.issues.length > 0) {
     const providerMissing = criticalAuditorLoop.issues.some(
       (issue) => issue.code === 'critical_auditor_provider_mode_required'
