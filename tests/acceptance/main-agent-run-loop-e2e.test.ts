@@ -387,6 +387,61 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
+  it('routes run_closeout through delivery closeout instead of stale dispatch_review projection', () => {
+    const fixture = materializeRunLoopFixture({
+      currentMentalModel: 'audit_review',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+        audit_review: { status: 'pass' },
+      },
+      orchestrationNextAction: 'dispatch_review',
+      pendingPacket: {
+        packetId: 'audit-stale',
+        packetKind: 'execution',
+        status: 'invalidated',
+      },
+      lastTaskReport: {
+        packetId: 'audit-stale',
+        status: 'done',
+      },
+    });
+    const root = fixture.root;
+    try {
+      const result = runMainAgentAutomaticLoop({
+        ...runLoopArgs(fixture),
+        host: 'codex',
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(result.dispatchInstruction).toBeNull();
+      expect(result.steps.map((step) => step.step)).not.toContain('dispatch-plan');
+      expect(result.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'delivery-closeout',
+          status: 'fail',
+        })
+      );
+      expect(result.taskReport).toMatchObject({
+        packetId: expect.stringMatching(/^closeout-/),
+        status: 'blocked',
+      });
+      expect(result.taskReport?.validationsRun).toContain('main-agent:delivery-closeout-gate');
+      expect(
+        result.taskReport?.evidence.some((entry) =>
+          entry.includes('delivery-closeout-report.json')
+        )
+      ).toBe(true);
+      expect(result.finalSurface.mainAgentStageSummary?.nextMentalModel).toBe(
+        'delivery_confirmation'
+      );
+    } finally {
+      cleanupRequirementWorkspace(root);
+    }
+  });
+
   it('continues rerun_gate remediation through main-session native goal blockers', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;

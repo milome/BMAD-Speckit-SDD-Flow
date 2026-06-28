@@ -59,6 +59,7 @@ import {
 } from './runtime-context-registry';
 import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
 import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
+import { mainDeliveryCloseoutGate } from './main-agent-delivery-closeout-gate';
 import { applyLongRunPolicyToState } from './long-run-runtime-policy';
 import type {
   ImplementationEntryDecision,
@@ -16966,6 +16967,124 @@ function latestImplementationReadinessGate(
   return gates.length > 0 ? gates[gates.length - 1] : null;
 }
 
+function parseJsonObjectFromText(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function runMainAgentDeliveryCloseout(input: {
+  projectRoot: string;
+  recordPath: string;
+  args: Record<string, string | undefined>;
+}): {
+  ok: boolean;
+  taskReport: TaskReport;
+  reportPath: string | null;
+  decision: string;
+  blockingReasons: string[];
+} {
+  const attemptId =
+    normalizeText(input.args.closeoutAttemptId) ||
+    normalizeText(input.args.attemptId) ||
+    `closeout-${Date.now()}`;
+  const explicitReportPath = normalizeText(input.args.closeoutReportPath);
+  const reportPath = explicitReportPath
+    ? path.resolve(input.projectRoot, stripWrappingQuotes(explicitReportPath))
+    : path.join(path.dirname(input.recordPath), 'delivery-closeout-report.json');
+  const argv = [
+    '--requirement-record',
+    input.recordPath,
+    '--attempt-id',
+    attemptId,
+    '--allow-existing-attempt',
+    '--report-path',
+    reportPath,
+    '--json',
+  ];
+  const source = normalizeText(input.args.sourcePath);
+  if (source) argv.push('--source', stripWrappingQuotes(source));
+  const modelPacket = normalizeText(input.args.modelPacketPath);
+  if (modelPacket) argv.push('--model-packet', stripWrappingQuotes(modelPacket));
+  const closeoutHtmlPath = normalizeText(input.args.closeoutHtmlPath);
+  if (closeoutHtmlPath) argv.push('--closeout-html-path', stripWrappingQuotes(closeoutHtmlPath));
+  const closeoutRenderReportPath = normalizeText(input.args.closeoutRenderReportPath);
+  if (closeoutRenderReportPath) {
+    argv.push('--closeout-render-report-path', stripWrappingQuotes(closeoutRenderReportPath));
+  }
+
+  let nested: { exitCode: number; stdout: string; stderr: string };
+  try {
+    nested = captureNestedMainOutput(() => mainDeliveryCloseoutGate(argv));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const taskReport: TaskReport = {
+      packetId: attemptId,
+      status: 'blocked',
+      filesChanged: [],
+      validationsRun: ['main-agent:delivery-closeout-gate'],
+      evidence: [relativePathFromRoot(input.projectRoot, reportPath)],
+      downstreamContext: [
+        'delivery closeout blocked; satisfy closeout evidence before user acceptance',
+      ],
+      driftFlags: ['delivery-closeout-gate-error', message],
+    };
+    return {
+      ok: false,
+      taskReport,
+      reportPath: fs.existsSync(reportPath) ? reportPath : null,
+      decision: 'blocked',
+      blockingReasons: taskReport.driftFlags ?? [],
+    };
+  }
+
+  const output = parseJsonObjectFromText(nested.stdout);
+  const outputReportPath = normalizeText(output?.reportPath);
+  const resolvedReportPath = outputReportPath
+    ? path.resolve(input.projectRoot, outputReportPath)
+    : reportPath;
+  const report = readJsonObject(resolvedReportPath);
+  const decision =
+    normalizeText(output?.decision) ||
+    normalizeText(report?.decision) ||
+    (nested.exitCode === 0 ? 'pass' : 'blocked');
+  const outputBlockingReasons = stringsFrom(output?.blockingReasons);
+  const blockingReasons = outputBlockingReasons.length
+    ? outputBlockingReasons
+    : stringsFrom(report?.blockingReasons);
+  const reportEvidencePath = fs.existsSync(resolvedReportPath)
+    ? relativePathFromRoot(input.projectRoot, resolvedReportPath)
+    : relativePathFromRoot(input.projectRoot, reportPath);
+  const taskReport: TaskReport = {
+    packetId: attemptId,
+    status: decision === 'pass' && nested.exitCode === 0 ? 'done' : 'blocked',
+    filesChanged: [],
+    validationsRun: ['main-agent:delivery-closeout-gate'],
+    evidence: [
+      reportEvidencePath,
+      ...(normalizeText(output?.receiptPath) ? [normalizeText(output?.receiptPath)] : []),
+    ],
+    downstreamContext: [
+      decision === 'pass'
+        ? 'delivery closeout passed; delivery confirmation user acceptance can proceed'
+        : 'delivery closeout blocked; satisfy closeout evidence before user acceptance',
+    ],
+    ...(blockingReasons.length ? { driftFlags: blockingReasons } : {}),
+  };
+  return {
+    ok: taskReport.status === 'done',
+    taskReport,
+    reportPath: fs.existsSync(resolvedReportPath) ? resolvedReportPath : null,
+    decision,
+    blockingReasons,
+  };
+}
+
 function readReadinessReport(
   recordPath: string,
   args: Record<string, string | undefined>
@@ -18519,6 +18638,38 @@ export function runMainAgentAutomaticLoop(input: {
       steps,
       dispatchInstruction: null,
       taskReport,
+      finalSurface,
+      mainAgentStageSummary: finalSurface.mainAgentStageSummary,
+    };
+  }
+
+  if (activeRecordPath && initialSurface.mainAgentNextAction === 'run_closeout') {
+    const closeout = runMainAgentDeliveryCloseout({
+      projectRoot: input.projectRoot,
+      recordPath: activeRecordPath,
+      args,
+    });
+    steps.push({
+      step: 'delivery-closeout',
+      status: closeout.ok ? 'pass' : 'fail',
+      summary: `decision=${closeout.decision}, report=${
+        closeout.reportPath ? relativePathFromRoot(input.projectRoot, closeout.reportPath) : 'missing'
+      }`,
+    });
+    const finalSurface = resolveMainAgentOrchestrationSurface({
+      ...surfaceInput,
+    });
+    steps.push({
+      step: 'inspect.final',
+      status: 'pass',
+      summary: `nextAction=${finalSurface.mainAgentNextAction ?? 'none'}, pending=${finalSurface.pendingPacketStatus}`,
+    });
+    return {
+      runId: `main-agent-run-loop-${Date.now()}`,
+      status: closeout.ok ? 'completed' : 'blocked',
+      steps,
+      dispatchInstruction: null,
+      taskReport: closeout.taskReport,
       finalSurface,
       mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
