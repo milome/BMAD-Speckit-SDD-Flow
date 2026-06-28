@@ -1074,6 +1074,7 @@ describe('requirements-contract large document write flow', () => {
           gateDryRun: {
             gateDryRunHash: `sha256:${'5'.repeat(64)}`,
             actionableBlockingIssueCount: 0,
+            actionableBlockingIssues: [],
             reconciliation: {
               issueCount: 0,
             },

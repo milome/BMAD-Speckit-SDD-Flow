@@ -282,8 +282,10 @@ function pathExists(filePath) {
   return fs.existsSync(path.resolve(filePath));
 }
 
-function semanticAuthoringPaths(sourcePath) {
-  const authoringDir = defaultAuthoringRuntimeDir(sourcePath);
+function semanticAuthoringPaths(sourcePath, progressPath = '') {
+  const authoringDir = progressPath
+    ? path.dirname(path.resolve(progressPath))
+    : defaultAuthoringRuntimeDir(sourcePath);
   return {
     authoringDir,
     semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
@@ -312,8 +314,8 @@ function unwrapReceipt(value) {
   return value?.criticalAuditorReceipt ?? value;
 }
 
-function semanticDrilldownStatus(sourcePath) {
-  const paths = semanticAuthoringPaths(sourcePath);
+function semanticDrilldownStatus(sourcePath, progressPath = '') {
+  const paths = semanticAuthoringPaths(sourcePath, progressPath);
   const kernel = readSemanticJson(paths.semanticKernel)?.semanticKernel ?? readSemanticJson(paths.semanticKernel);
   const packet = readSemanticJson(paths.mustDecompositionPacket)?.must_decomposition_packet ?? readSemanticJson(paths.mustDecompositionPacket)?.mustDecompositionPacket ?? readSemanticJson(paths.mustDecompositionPacket);
   const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
@@ -392,8 +394,8 @@ function currentSemanticBinding(sourcePath) {
   return { confirmation, sourceDocumentHash, implementationConfirmationHash };
 }
 
-function currentAuthoringEvidence(sourcePath) {
-  const paths = semanticAuthoringPaths(sourcePath);
+function currentAuthoringEvidence(sourcePath, progressPath = '') {
+  const paths = semanticAuthoringPaths(sourcePath, progressPath);
   const binding = currentSemanticBinding(sourcePath);
   const kernel = readSemanticJson(paths.semanticKernel)?.semanticKernel ?? readSemanticJson(paths.semanticKernel);
   const packet =
@@ -426,8 +428,8 @@ function noNewGapReceiptCount(receipts, auditInputHash = null) {
   }).length;
 }
 
-function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint }) {
-  const evidence = currentAuthoringEvidence(sourcePath);
+function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressPath = '' }) {
+  const evidence = currentAuthoringEvidence(sourcePath, progressPath);
   const issues = [];
   const issue = (code, message, refs = [], nextAction = null) => {
     issues.push({
@@ -525,15 +527,15 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint }) {
         status: 'blocked',
         failedCheckpoint: checkpoint.id,
         issues,
-        nextAction: issues[0]?.nextAction ?? semanticDrilldownStatus(sourcePath).nextAction,
-        semanticDrilldown: semanticDrilldownStatus(sourcePath),
+        nextAction: issues[0]?.nextAction ?? semanticDrilldownStatus(sourcePath, progressPath).nextAction,
+        semanticDrilldown: semanticDrilldownStatus(sourcePath, progressPath),
       }
     );
   }
   return { ok: true, evidence };
 }
 
-function buildPlan({ sourcePath, assessment = null, progress = null }) {
+function buildPlan({ sourcePath, assessment = null, progress = null, progressPath = '' }) {
   const completedIds = new Set((progress?.checkpoints ?? []).filter((item) => item.status === 'passed').map((item) => canonicalCheckpointId(item.id)));
   const checkpoints = CHECKPOINTS.map((checkpoint, index) => ({
     ...checkpoint,
@@ -549,7 +551,7 @@ function buildPlan({ sourcePath, assessment = null, progress = null }) {
     until: 'pre-render-ready',
     checkpointCount: checkpoints.length,
     nextCheckpoint: next?.id ?? null,
-    semanticDrilldown: semanticDrilldownStatus(sourcePath),
+    semanticDrilldown: semanticDrilldownStatus(sourcePath, progressPath),
     checkpoints,
   };
 }
@@ -812,7 +814,7 @@ function updateProgress({
     },
     blockers: [],
     next: nextCheckpointAfter(checkpoint.id),
-    semanticDrilldown: semanticDrilldownStatus(sourcePath),
+    semanticDrilldown: semanticDrilldownStatus(sourcePath, progressPath),
     checkpoints: [...checkpoints, entry].sort((a, b) => CHECKPOINTS.findIndex((item) => item.id === a.id) - CHECKPOINTS.findIndex((item) => item.id === b.id)),
   };
   writeProgressAtomic(progressPath, progress);
@@ -1328,11 +1330,13 @@ function runPreRenderGlobalConsistencyGate({ sourcePath, progressPath }) {
   return { report, progress };
 }
 
-function runPreRenderMustDecompositionGate({ sourcePath }) {
-  const paths = semanticAuthoringPaths(sourcePath);
+function runPreRenderMustDecompositionGate({ sourcePath, progressPath = '' }) {
+  const paths = semanticAuthoringPaths(sourcePath, progressPath);
   const result = mustDecompositionGate.runGate({
     source: sourcePath,
     authoringDir: paths.authoringDir,
+    semanticKernel: paths.semanticKernel,
+    mustDecompositionPacket: paths.mustDecompositionPacket,
     out: paths.preRenderMustDecompositionGate,
     receipt: paths.mustDecompositionReceipt,
     reconciliationReport: paths.packetSourceReconciliation,
@@ -1342,7 +1346,7 @@ function runPreRenderMustDecompositionGate({ sourcePath }) {
 }
 
 function buildCombinedPreRenderGateReport({ sourcePath, progressPath }) {
-  const mustGate = runPreRenderMustDecompositionGate({ sourcePath });
+  const mustGate = runPreRenderMustDecompositionGate({ sourcePath, progressPath });
   const globalGate = runPreRenderGlobalConsistencyGate({ sourcePath, progressPath });
   const failedChecks = unique([
     ...asArray(mustGate.report?.failedChecks),
@@ -1362,7 +1366,7 @@ function buildCombinedPreRenderGateReport({ sourcePath, progressPath }) {
     failedChecks,
     issueCount: mustIssues.length + globalIssues.length,
     issues: [...mustIssues, ...globalIssues],
-    semanticDrilldown: semanticDrilldownStatus(sourcePath),
+    semanticDrilldown: semanticDrilldownStatus(sourcePath, progressPath),
     mustDecompositionGate: mustGate.report,
     globalConsistencyGate: globalGate.report,
   };
@@ -1461,7 +1465,7 @@ function commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment =
       stagedPaths: existingStaged,
     });
   }
-  const authoringEvidence = validateCheckpointAuthoringEvidence({ sourcePath, checkpoint });
+  const authoringEvidence = validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressPath });
   if (!authoringEvidence.ok) return authoringEvidence;
   const evidenceOnly = currentPreRenderEvidenceAllowsCheckpoint({
     sourcePath,
@@ -1707,7 +1711,7 @@ function resumeStatus({ sourcePath, progressPath }) {
       status: 'no_progress',
       nextCheckpoint: CHECKPOINTS[0].id,
       progressPath: normalizePathForReport(progressPath),
-      semanticDrilldown: semanticDrilldownStatus(sourcePath),
+      semanticDrilldown: semanticDrilldownStatus(sourcePath, progressPath),
     };
   }
   const currentHash = sha256File(sourcePath);
@@ -1726,7 +1730,7 @@ function resumeStatus({ sourcePath, progressPath }) {
     documentHash: currentHash,
     authoringMode: resolveAuthoringMode({ progress }),
     recoveredFrom,
-    semanticDrilldown: semanticDrilldownStatus(sourcePath),
+    semanticDrilldown: semanticDrilldownStatus(sourcePath, progressPath),
     progress,
   };
 }
@@ -1739,7 +1743,7 @@ function completedCheckpointIdsFromProgress(progress) {
 
 function checkpointPersistenceEvidence({ sourcePath, progressPath, routeDecision }) {
   const progress = readJsonIfExists(progressPath);
-  const authoring = currentAuthoringEvidence(sourcePath);
+  const authoring = currentAuthoringEvidence(sourcePath, progressPath);
   const completedCheckpointIds = completedCheckpointIdsFromProgress(progress);
   const allCheckpointIds = CHECKPOINTS.map((checkpoint) => checkpoint.id);
   const completedAll = allCheckpointIds.every((id) => completedCheckpointIds.includes(id));
@@ -1850,7 +1854,7 @@ function main(argv) {
     progress = recoveredStatus.progress ?? null;
   }
   if (args.mode === 'plan') {
-    const plan = buildPlan({ sourcePath, assessment, progress });
+    const plan = buildPlan({ sourcePath, assessment, progress, progressPath });
     emitCheckpointHumanStatus(args, plan, routeDecisionValidation);
     process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
     return 0;

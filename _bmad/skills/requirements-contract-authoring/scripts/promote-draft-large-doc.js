@@ -610,7 +610,20 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
   if (!evidence || typeof evidence !== "object") {
     return ["checkpoint_persistence_evidence_missing_or_invalid"];
   }
-  if (evidence.checkpointPersistenceSatisfiedCandidate !== true) {
+  const policy =
+    evidence.checkpointPersistenceRef &&
+    typeof evidence.checkpointPersistenceRef === "object" &&
+    !Array.isArray(evidence.checkpointPersistenceRef)
+      ? evidence.checkpointPersistenceRef.preRenderGatePolicy
+      : null;
+  const deferredCriticalAuditorOnly =
+    context.allowDeferredCriticalAuditorBlockers === true &&
+    policy &&
+    typeof policy === "object" &&
+    !Array.isArray(policy) &&
+    policy.mode === "source_gap_fix_materialization" &&
+    policy.auditorConvergenceDeferredToNextRound === true;
+  if (evidence.checkpointPersistenceSatisfiedCandidate !== true && !deferredCriticalAuditorOnly) {
     issues.push("checkpoint_persistence_satisfied_candidate_required");
   }
   if (Array.isArray(evidence.completedCheckpointIds)) {
@@ -983,6 +996,11 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
           ...validateCheckpointPersistenceEvidence(checkpointEvidence, {
             sourceDocumentHash: semanticBinding.sourceDocumentHash,
             implementationConfirmationHash: semanticBinding.implementationConfirmationHash,
+            allowDeferredCriticalAuditorBlockers:
+              checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy?.mode ===
+                "source_gap_fix_materialization" &&
+              checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy
+                ?.auditorConvergenceDeferredToNextRound === true,
           })
         );
       }

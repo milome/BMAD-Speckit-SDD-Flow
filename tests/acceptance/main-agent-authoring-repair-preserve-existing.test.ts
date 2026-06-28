@@ -1243,7 +1243,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const before = sha256Text(readFileSync(source, 'utf8'));
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1252,6 +1251,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
       writeBlockedResponse(paths.request(1), paths.response(1));
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -1266,7 +1266,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result.nextRequiredAction).toBe('resolve_critical_auditor_blocker');
       expect(existsSync(paths.receipt(1))).toBe(true);
       expectReceiptBinding(paths, 1, 'blocked');
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
       expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
         'source_gap_fix_materialization_required'
       );
@@ -1281,7 +1281,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const before = sha256Text(readFileSync(source, 'utf8'));
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1290,6 +1289,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
       writeInsufficientAuditResponse(paths.request(1), paths.response(1));
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -1304,7 +1304,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result.nextRequiredAction).toBe('rewrite_current_critical_auditor_round_response');
       expect(existsSync(paths.receipt(1))).toBe(true);
       expectReceiptBinding(paths, 1, 'insufficient_audit');
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
       expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
         'source_gap_fix_materialization_required'
       );
@@ -1319,7 +1319,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const before = sha256Text(readFileSync(source, 'utf8'));
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1328,6 +1327,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
       writeBlockedResponse(paths.request(1), paths.response(1), {
         sourceMaterializationFindings: [],
         falsePositiveProofs: [
@@ -1374,7 +1374,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         'critical_auditor_insufficient_audit_evidence_missing'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1386,7 +1386,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const before = sha256Text(readFileSync(source, 'utf8'));
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1395,6 +1394,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
       writeNewValidGapResponse(paths.request(1), paths.response(1), { validatedGaps: [] });
 
       const result = runMainAgentAuthoringRepair(root, {
@@ -1409,7 +1409,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         'critical_auditor_new_valid_gap_missing_validated_gap'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1421,7 +1421,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const before = sha256Text(readFileSync(source, 'utf8'));
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1430,6 +1429,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
       writeNewValidGapResponse(paths.request(1), paths.response(1), {
         validatedGaps: [{ id: 'VALID-GAP-NO-ACTIONS', status: 'open' }],
       });
@@ -1446,7 +1446,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         'critical_auditor_validated_gap_repair_actions_missing'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1458,7 +1458,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const before = sha256Text(readFileSync(source, 'utf8'));
       const paths = authoringPaths(root, recordId);
 
       runMainAgentAuthoringRepair(root, {
@@ -1467,6 +1466,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
       writeBlockedResponse(paths.request(1), paths.response(1), {
         sourceMaterializationFindings: [
           {
@@ -1488,7 +1488,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result.nextRequiredAction).toBe('run_packet_source_projection_resynchronization');
       expect(existsSync(paths.receipt(1))).toBe(true);
       expectReceiptBinding(paths, 1, 'blocked');
-      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(before);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
       expect(existsSync(paths.kernel)).toBe(true);
       expect(existsSync(paths.packet)).toBe(true);
       expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
@@ -2030,10 +2030,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(existsSync(paths.kernel)).toBe(true);
       expect(existsSync(paths.packet)).toBe(true);
       expect(existsSync(paths.request(1))).toBe(true);
-      expect(existsSync(paths.gate)).toBe(false);
-      expect(readFileSync(source, 'utf8')).toBe(original);
-      expect(readFileSync(source, 'utf8')).toContain('CUSTOM-SECTION-MUST-STAY');
-      expect(readFileSync(source, 'utf8')).toContain('requiredCommands:');
+      expect(existsSync(paths.gate)).toBe(true);
+      const repairedSource = readFileSync(source, 'utf8');
+      expect(repairedSource).not.toBe(original);
+      expect(repairedSource).toContain('CUSTOM-SECTION-MUST-STAY');
+      expect(repairedSource).toContain('requiredCommands:');
+      expect(repairedSource).toContain('currentTargetMap:');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -2045,7 +2047,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
-      const original = readFileSync(source, 'utf8');
       const paths = authoringPaths(root, recordId);
 
       let result = runMainAgentAuthoringRepair(root, {
@@ -2057,6 +2058,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result.blockingStage).toBe('critical_auditor_round_required');
       expect(readJson(paths.request(1)).roundPerspective.id).toBe('round_1_must_atomicity');
       expect(readJson(paths.request(1)).gateDryRun.gateDryRunHash).toMatch(/^sha256:/);
+      const afterInitialRepairHash = sha256Text(readFileSync(source, 'utf8'));
 
       writeNoNewGapResponse(paths.request(1), paths.response(1));
       result = runMainAgentAuthoringRepair(root, {
@@ -2073,7 +2075,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(readJson(paths.request(2)).roundPerspective.id).toBe(
         'round_2_projection_materialization'
       );
-      expect(existsSync(paths.gate)).toBe(false);
+      expect(existsSync(paths.gate)).toBe(true);
 
       writeNoNewGapResponse(paths.request(2), paths.response(2));
       result = runMainAgentAuthoringRepair(root, {
@@ -2089,7 +2091,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(readJson(paths.request(3)).roundPerspective.id).toBe(
         'round_3_authority_boundary_hash_delivery_confusion'
       );
-      expect(existsSync(paths.gate)).toBe(false);
+      expect(existsSync(paths.gate)).toBe(true);
 
       writeNoNewGapResponse(paths.request(3), paths.response(3));
       result = runMainAgentAuthoringRepair(root, {
@@ -2110,7 +2112,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(readJson(paths.gate).verdict).toBe('PASS');
       expect(readJson(paths.reconciliation).verdict).toBe('pass');
       expect(readJson(paths.progress).status).toBe('pre_render_ready');
-      expect(readFileSync(source, 'utf8')).toBe(original);
+      expect(sha256Text(readFileSync(source, 'utf8'))).toBe(afterInitialRepairHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

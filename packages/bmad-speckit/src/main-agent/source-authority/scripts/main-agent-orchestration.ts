@@ -2566,7 +2566,7 @@ function extractExplicitSourceMustRequirements(sourceText: string): SourceMustRe
     .split('\n')
     .forEach((line, index) => {
       const match = line.match(
-        /^\s*(?:[-*]\s*)?(?:\[(MUST-\d+)\]\s*)?MUST(?:-\d+)?\s*[:：]\s*(.+?)\s*$/iu
+        /^\s*(?:[-*]\s*)?(?:\[(MUST-[A-Z0-9][A-Z0-9-]*)\]\s*)?MUST(?:-[A-Z0-9][A-Z0-9-]*)?\s*[:：]\s*(.+?)\s*$/iu
       );
       if (!match) {
         return;
@@ -6073,6 +6073,10 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
       draftPath,
       '--authoring-dir',
       input.paths.authoringDir,
+      '--semantic-kernel',
+      input.paths.semanticKernel,
+      '--must-decomposition-packet',
+      input.paths.mustDecompositionPacket,
       '--out',
       input.paths.preRenderMustGate,
       '--receipt',
@@ -6402,6 +6406,7 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
       implementationConfirmationHash,
       createdAt: new Date().toISOString(),
       routeDecision,
+      forceRefresh: true,
     });
     artifacts.push(
       input.paths.progress,
@@ -6534,6 +6539,10 @@ function readCurrentCheckpointReceipts(paths: PreConfirmationPaths): Record<stri
   return paths.checkpointReceiptPaths
     .map((receiptPath) => readJsonIfExists(receiptPath))
     .filter((receipt): receipt is Record<string, unknown> => Boolean(receipt));
+}
+
+function hasAnyAuthoringCheckpointReceipt(paths: PreConfirmationPaths): boolean {
+  return paths.checkpointReceiptPaths.some((receiptPath) => fs.existsSync(receiptPath));
 }
 
 function checkpointTraceValue(values: string[]): string {
@@ -6806,6 +6815,7 @@ function runAuthoringCheckpoint(input: {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
   createdAt: string;
+  forceRefresh?: boolean;
 }): { ok: true; receipt: Record<string, unknown> } | { ok: false; issue: PreConfirmationDrilldownIssue } {
   const previousCheckpoint = AUTHORING_REPAIR_CHECKPOINTS[input.checkpoint.index - 1] ?? null;
   if (previousCheckpoint) {
@@ -6835,6 +6845,7 @@ function runAuthoringCheckpoint(input: {
   const existingReceiptPath = checkpointReceiptPath(input.paths, input.checkpoint);
   const existingReceipt = readJsonIfExists(existingReceiptPath);
   if (
+    input.forceRefresh !== true &&
     isCurrentCheckpointReceipt({
       root: input.root,
       receipt: existingReceipt,
@@ -6943,6 +6954,7 @@ function runAuthoringCheckpointExecution(input: {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
   createdAt: string;
+  forceRefresh?: boolean;
 }): { ok: true } | { ok: false; issues: PreConfirmationDrilldownIssue[] } {
   const runners = [
     runCp00SemanticKernel,
@@ -6955,7 +6967,8 @@ function runAuthoringCheckpointExecution(input: {
     runCp07HumanReadableViews,
     runCp08Reconciliation,
   ];
-  const resumeStartIndex = resolveCheckpointResumeStartIndex(input);
+  const resumeStartIndex =
+    input.forceRefresh === true ? 0 : resolveCheckpointResumeStartIndex(input);
   if (resumeStartIndex > 0) {
     const nextCheckpoint =
       AUTHORING_REPAIR_CHECKPOINTS[resumeStartIndex]?.id ?? 'checkpoint-persistence-summary';
@@ -6990,6 +7003,8 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
     'critical_auditor_receipt_input_hash_stale',
     'critical_auditor_less_than_three_no_new_gap_rounds',
     'critical_auditor_validated_gap_unresolved',
+    'critical_auditor_receipts_required_before_checkpoint',
+    'author_claim_lacks_critic_disposition',
   ]);
   const routeDecisionHash = normalizeText(input.routeDecision?.routeDecisionHash);
   const checkpointReceiptRefs = AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => {
@@ -7105,6 +7120,7 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
   implementationConfirmationHash: string;
   createdAt: string;
   routeDecision: Record<string, unknown> | null;
+  forceRefresh?: boolean;
 }): { ok: true } | { ok: false; issue: PreConfirmationDrilldownIssue } {
   const routeDecisionText = normalizeText(input.routeDecision?.decision);
   if (!['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecisionText)) {
@@ -7182,6 +7198,7 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
     createdAt: input.createdAt,
+    forceRefresh: input.forceRefresh,
   });
   if (!checkpointRun.ok) {
     return { ok: false, issue: checkpointRun.issues[0] };
@@ -7204,6 +7221,7 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     paths: input.paths,
     evidencePath: input.paths.checkpointPersistenceEvidence,
     routeDecision: input.routeDecision,
+    allowDeferredCriticalAuditorBlockers: true,
   });
   if (validationIssues.length > 0) {
     return { ok: false, issue: validationIssues[0] };
@@ -7317,6 +7335,7 @@ function materializeCriticalAuditorGapFix(input: {
   const changedTargetFields = new Set<string>();
   const repairRefs = {
     mustIds: new Set<string>(),
+    negIds: new Set<string>(),
     outIds: new Set<string>(),
     evidenceIds: new Set<string>(),
     traceIds: new Set<string>(),
@@ -7537,6 +7556,7 @@ function materializeCriticalAuditorGapFix(input: {
         if (action.type === 'add_must' || action.type === 'split_must') {
           repairRefs.mustIds.add(materializedRef);
         }
+        if (action.type === 'add_neg') repairRefs.negIds.add(materializedRef);
         if (action.type === 'add_out') repairRefs.outIds.add(materializedRef);
         if (action.type === 'add_evidence') repairRefs.evidenceIds.add(materializedRef);
         if (action.type === 'add_trace') repairRefs.traceIds.add(materializedRef);
@@ -7689,6 +7709,10 @@ function materializeCriticalAuditorGapFix(input: {
       repairDraftPath,
       '--authoring-dir',
       input.paths.authoringDir,
+      '--semantic-kernel',
+      input.paths.semanticKernel,
+      '--must-decomposition-packet',
+      input.paths.mustDecompositionPacket,
       '--out',
       input.paths.preRenderMustGate,
       '--receipt',
@@ -7734,6 +7758,7 @@ function materializeCriticalAuditorGapFix(input: {
     ),
     createdAt: input.createdAt,
     routeDecision: repairRouteDecision,
+    forceRefresh: true,
   });
   if (!checkpointEvidence.ok) {
     return { ok: false, issue: checkpointEvidence.issue };
@@ -8336,6 +8361,44 @@ function appendKnownIdRefs(existing: unknown, additions: string[], knownIds: str
   return appendUniqueStrings(existing, additions).filter((ref) => known.has(ref));
 }
 
+function areAuthoringCheckpointReceiptsCurrent(input: {
+  root: string;
+  draftSourcePath: string;
+  paths: PreConfirmationPaths;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+}): boolean {
+  return AUTHORING_REPAIR_CHECKPOINTS.every((checkpoint) =>
+    isCurrentCheckpointReceipt({
+      root: input.root,
+      receipt: readJsonIfExists(checkpointReceiptPath(input.paths, checkpoint)),
+      checkpoint,
+      sourceDocumentHash: input.sourceDocumentHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      draftSourcePath: input.draftSourcePath,
+      paths: input.paths,
+    })
+  );
+}
+
+function authoringCheckpointRouteDecisionForPersistence(
+  routeDecision: Record<string, unknown> | null,
+  paths: PreConfirmationPaths
+): Record<string, unknown> | null {
+  const decision = normalizeText(routeDecision?.decision);
+  if (['checkpoint_required', 'checkpoint_required_with_amendment'].includes(decision)) {
+    return routeDecision;
+  }
+  if (hasAnyAuthoringCheckpointReceipt(paths)) {
+    return {
+      ...(routeDecision ?? {}),
+      decision: 'checkpoint_required_with_amendment',
+      decisionSource: normalizeText(routeDecision?.decisionSource) || 'existing_checkpoint_receipts',
+    };
+  }
+  return routeDecision;
+}
+
 function firstAvailableRef(...sets: Array<Set<string>>): string {
   for (const set of sets) {
     const first = [...set][0];
@@ -8348,6 +8411,7 @@ function closeCriticalAuditorRepairProjectionRefs(
   confirmation: Record<string, unknown>,
   refs: {
     mustIds: Set<string>;
+    negIds: Set<string>;
     outIds: Set<string>;
     evidenceIds: Set<string>;
     traceIds: Set<string>;
@@ -8357,10 +8421,15 @@ function closeCriticalAuditorRepairProjectionRefs(
   }
 ): { confirmation: Record<string, unknown>; changed: boolean; changedFields: string[] } {
   const mustIds = [...refs.mustIds];
-  if (mustIds.length === 0) {
+  const negIds = [...refs.negIds];
+  const requirementIds = [...mustIds, ...negIds];
+  if (requirementIds.length === 0) {
     return { confirmation, changed: false, changedFields: [] };
   }
   const next: Record<string, unknown> = { ...confirmation };
+  const packetHash = normalizeText(
+    recordObject(recordObject(next.preConfirmationDrilldown).mustDecompositionPacketRef).hash
+  );
   const changedFields = new Set<string>();
   const allMustIds = asRecordArray(next.must)
     .map((row) => normalizeText(row.id))
@@ -8369,6 +8438,10 @@ function closeCriticalAuditorRepairProjectionRefs(
   const traceIds = [...refs.traceIds];
   const acceptanceIds = [...refs.acceptanceIds];
   const e2eIds = [...refs.e2eIds];
+  const effectiveAcceptanceIds =
+    acceptanceIds.length > 0 ? acceptanceIds : selectExistingRowIds(next, ['acceptanceTests'], []);
+  const effectiveE2eIds =
+    e2eIds.length > 0 ? e2eIds : selectExistingRowIds(next, ['e2eSuites'], []);
   const commandId =
     firstAvailableRef(refs.commandIds) ||
     normalizeText(asRecordArray(next.requiredCommands)[0]?.id) ||
@@ -8401,7 +8474,38 @@ function closeCriticalAuditorRepairProjectionRefs(
       ...row,
       evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
       coveredByTraceRows: appendUniqueStrings(row.coveredByTraceRows, traceIds),
-      acceptanceRefs: appendUniqueStrings(row.acceptanceRefs, [...acceptanceIds, ...e2eIds]),
+      acceptanceRefs: appendUniqueStrings(row.acceptanceRefs, [
+        ...effectiveAcceptanceIds,
+        ...effectiveE2eIds,
+      ]),
+    })
+  );
+
+  updateRows(
+    'notDone',
+    (row) => negIds.includes(normalizeText(row.id)),
+    (row) => ({
+      ...row,
+      evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
+      coveredByTraceRows: appendUniqueStrings(row.coveredByTraceRows, traceIds),
+      coveredByFailurePath: appendUniqueStrings(row.coveredByFailurePath, [
+        `FAIL-${normalizeText(row.id)}`,
+      ]),
+      negativeAssertionRequired: row.negativeAssertionRequired ?? true,
+    })
+  );
+
+  updateRows(
+    'negativeRequirements',
+    (row) => negIds.includes(normalizeText(row.id)),
+    (row) => ({
+      ...row,
+      evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
+      coveredByTraceRows: appendUniqueStrings(row.coveredByTraceRows, traceIds),
+      coveredByFailurePath: appendUniqueStrings(row.coveredByFailurePath, [
+        `FAIL-${normalizeText(row.id)}`,
+      ]),
+      negativeAssertionRequired: row.negativeAssertionRequired ?? true,
     })
   );
 
@@ -8411,6 +8515,7 @@ function closeCriticalAuditorRepairProjectionRefs(
     (row) => ({
       ...row,
       mustRefs: appendUniqueStrings(row.mustRefs, mustIds),
+      covers: appendUniqueStrings(row.covers, requirementIds),
       gate:
         normalizeText(row.gate) ||
         'Critical Auditor repair evidence must be verified by the requirement command.',
@@ -8423,9 +8528,9 @@ function closeCriticalAuditorRepairProjectionRefs(
       perMustAssertions: {
         ...recordObject(row.perMustAssertions),
         ...Object.fromEntries(
-          mustIds.map((mustId) => [
-            mustId,
-            `Evidence ${normalizeText(row.id)} independently proves ${mustId}.`,
+          requirementIds.map((requirementId) => [
+            requirementId,
+            `Evidence ${normalizeText(row.id)} independently proves ${requirementId}.`,
           ])
         ),
       },
@@ -8437,7 +8542,7 @@ function closeCriticalAuditorRepairProjectionRefs(
     (row) => traceIds.includes(normalizeText(row.id)),
     (row) => ({
       ...row,
-      covers: appendUniqueStrings(row.covers, mustIds).filter(
+      covers: appendUniqueStrings(row.covers, requirementIds).filter(
         (ref) => ref.startsWith('MUST-') || ref.startsWith('NEG-')
       ),
       boundaryRefs: appendUniqueStrings(row.boundaryRefs, [...refs.outIds]),
@@ -8451,9 +8556,9 @@ function closeCriticalAuditorRepairProjectionRefs(
       perMustAssertions: {
         ...recordObject(row.perMustAssertions),
         ...Object.fromEntries(
-          mustIds.map((mustId) => [
-            mustId,
-            `Trace ${normalizeText(row.id)} independently closes ${mustId}.`,
+          requirementIds.map((requirementId) => [
+            requirementId,
+            `Trace ${normalizeText(row.id)} independently closes ${requirementId}.`,
           ])
         ),
       },
@@ -8481,10 +8586,40 @@ function closeCriticalAuditorRepairProjectionRefs(
       })
     );
   };
-  closeAcceptanceRows('acceptanceTests', acceptanceIds);
-  closeAcceptanceRows('acceptanceCriteria', acceptanceIds);
-  closeAcceptanceRows('e2eSuites', e2eIds);
-  closeAcceptanceRows('e2eScenarios', e2eIds);
+  closeAcceptanceRows('acceptanceTests', effectiveAcceptanceIds);
+  closeAcceptanceRows('acceptanceCriteria', effectiveAcceptanceIds);
+  closeAcceptanceRows('e2eSuites', effectiveE2eIds);
+  closeAcceptanceRows('e2eScenarios', effectiveE2eIds);
+
+  for (const negId of negIds) {
+    const failureId = `FAIL-${negId}`;
+    const existingFailure = asRecordArray(next.failurePaths).some(
+      (row) => normalizeText(row.id) === failureId
+    );
+    if (!existingFailure) {
+      next.failurePaths = [
+        ...asRecordArray(next.failurePaths),
+        {
+          id: failureId,
+          title: `Validated negative requirement ${negId} must fail closed.`,
+          trigger: `Critical Auditor repaired negative requirement ${negId} is violated.`,
+          expectedBehavior: `Fail closed and block confirmation when ${negId} is violated.`,
+          forbiddenBehavior: `Allow confirmation when ${negId} is violated.`,
+          blocksCompletionWhenViolated: true,
+          linkedNegIds: [negId],
+          linkedEvidenceIds: evidenceIds,
+          traceRows: traceIds,
+          requiredAssertions: [
+            `${negId} is covered by at least one trace row`,
+            `${negId} is covered by at least one evidence row`,
+            `${negId} is covered by an explicit failure path`,
+          ],
+          ...projectionBackRefForRepair(packetHash, negId),
+        },
+      ];
+      changedFields.add('failurePaths');
+    }
+  }
 
   if (commandId && allMustIds.length > 1) {
     updateRows(
@@ -8707,6 +8842,18 @@ function buildBusinessVisualPerMustProofRows(
   }));
 }
 
+function defaultFailurePathRequiredAssertions(row: Record<string, unknown>): string[] {
+  const failureId = normalizeText(row.id) || 'failure-path';
+  const trigger = normalizeText(row.trigger) || 'failure trigger occurs';
+  const expected = normalizeText(row.expectedBehavior) || 'expected fail-closed behavior is enforced';
+  const forbidden = normalizeText(row.forbiddenBehavior) || 'forbidden behavior is rejected';
+  return [
+    `${failureId}: ${trigger}`,
+    `${failureId}: ${expected}`,
+    `${failureId}: ${forbidden}`,
+  ];
+}
+
 function resyncExistingBusinessVisualProofClosure(
   confirmation: Record<string, unknown>,
   context?: {
@@ -8752,10 +8899,25 @@ function resyncExistingBusinessVisualProofClosure(
   const targetPathClassificationResync = resyncTargetModificationPathClassifications(
     nextConfirmation
   );
+  let shouldForceCurrentTargetMapRebuild = context?.forceCurrentTargetMapRebuild === true;
   if (targetPathClassificationResync.changed) {
     nextConfirmation.targetModificationPaths = targetPathClassificationResync.rows;
     changed = true;
+    shouldForceCurrentTargetMapRebuild = true;
     changedViewIds.add('targetModificationPaths');
+  }
+  const nextFailurePaths = asRecordArray(confirmation.failurePaths).map((row) => {
+    if (asStringArray(row.requiredAssertions).length > 0) return row;
+    changed = true;
+    shouldForceCurrentTargetMapRebuild = true;
+    changedViewIds.add('failurePaths');
+    return {
+      ...row,
+      requiredAssertions: defaultFailurePathRequiredAssertions(row),
+    };
+  });
+  if (nextFailurePaths.length > 0) {
+    nextConfirmation.failurePaths = nextFailurePaths;
   }
   const viewRefsByTraceField: Record<string, Set<string>> = {
     sequenceViewRefs: new Set<string>(),
@@ -8815,7 +8977,7 @@ function resyncExistingBusinessVisualProofClosure(
 
   if (
     context &&
-    (context.forceCurrentTargetMapRebuild ||
+    (shouldForceCurrentTargetMapRebuild ||
       shouldRebuildExistingCurrentTargetMap(nextConfirmation.currentTargetMap, context.sourceText))
   ) {
     const rebuiltCurrentTargetMap = buildCurrentTargetMapFromExistingConfirmation({
@@ -9014,6 +9176,11 @@ function buildPreserveExistingMustDecompositionPacket(input: {
     ['aiTddContractExecutionManifestProjection'],
     ['AI-TDD-001']
   );
+  const closeoutIds = selectExistingRowIds(
+    input.confirmation,
+    ['closeoutReadinessPreview'],
+    ['closeoutReadinessPreview']
+  );
   const projection = (id: string, target: string, mustRef = firstMustRef) => ({
     id,
     mustRef,
@@ -9179,12 +9346,12 @@ function buildPreserveExistingMustDecompositionPacket(input: {
           )
         ),
         mustCurrentTargetProjection: currentTargetIds.map((id) =>
-          projection(id, 'implementationConfirmation.currentTargetMap', requirement.id)
+          projection(id, `implementationConfirmation.currentTargetMap[${id}]`, requirement.id)
         ),
         mustAiTddManifestProjection: aiTddIds.map((id) =>
           projection(
             id,
-            'implementationConfirmation.aiTddContractExecutionManifestProjection',
+            `implementationConfirmation.aiTddContractExecutionManifestProjection[${id}]`,
             requirement.id
           )
         ),
@@ -9196,8 +9363,8 @@ function buildPreserveExistingMustDecompositionPacket(input: {
         ),
         mustCloseoutBoundaryProjection: [
           projection(
-            'CLOSEOUT-BOUNDARY-001',
-            'implementationConfirmation.closeoutReadinessPreview',
+            closeoutIds[0] ?? 'closeoutReadinessPreview',
+            `implementationConfirmation.closeoutReadinessPreview[${closeoutIds[0] ?? 'closeoutReadinessPreview'}]`,
             requirement.id
           ),
         ],
@@ -9206,9 +9373,9 @@ function buildPreserveExistingMustDecompositionPacket(input: {
     mustDerivedProjectionMap: mustRefs.map((mustRef) => ({
       mustRef,
       materializedTo: [
-        'implementationConfirmation.currentTargetMap',
-        'implementationConfirmation.aiTddContractExecutionManifestProjection',
-        'implementationConfirmation.closeoutReadinessPreview',
+        ...currentTargetIds.map((id) => `implementationConfirmation.currentTargetMap[${id}]`),
+        ...aiTddIds.map((id) => `implementationConfirmation.aiTddContractExecutionManifestProjection[${id}]`),
+        ...closeoutIds.map((id) => `implementationConfirmation.closeoutReadinessPreview[${id}]`),
       ],
     })),
   };
@@ -9561,6 +9728,10 @@ function buildCriticalAuditorGateDryRunSummary(input: {
       input.sourcePath,
       '--authoring-dir',
       input.paths.authoringDir,
+      '--semantic-kernel',
+      input.paths.semanticKernel,
+      '--must-decomposition-packet',
+      input.paths.mustDecompositionPacket,
       '--out',
       reportPath,
       '--receipt',
@@ -11298,17 +11469,93 @@ export function runMainAgentAuthoringRepair(
     extraction.blockText,
     extraction.confirmation
   );
-  const visualProofResync = materializePreserveExistingBusinessVisualProofResync({
+  const initialImplementationConfirmationHash = implementationConfirmationHashForPreConfirmation(
+    extraction.confirmation
+  );
+  const initialWarnings = detectIgnoredRequirementSource(root, sourcePath);
+  const initialMaterializationGate = verifySourceMaterializationBeforeAudit({
     root,
     sourcePath,
     paths,
-    recordId: identity.recordId,
     requirementSetId: identity.requirementSetId,
-    createdAt,
-    sourceText,
-    confirmation: extraction.confirmation,
-    previousSourceDocumentHash: initialSourceDocumentHash,
+    expectedSourceDocumentHash: initialSourceDocumentHash,
+    expectedImplementationConfirmationHash: initialImplementationConfirmationHash,
   });
+  if (initialMaterializationGate.ok === false) {
+    if (shouldAttemptCurrentSourcePromotionReceiptRefresh(initialMaterializationGate.issues)) {
+      const refresh = runSkillLocalCurrentSourcePromotionRefresh({
+        root,
+        sourcePath,
+        paths,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+      });
+      if (refresh.ok === false) {
+        return buildCurrentSourcePromotionRefreshFailedResult({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          paths,
+          sourceDocumentHash: initialSourceDocumentHash,
+          implementationConfirmationHash: initialImplementationConfirmationHash,
+          warnings: initialWarnings,
+          staleReceiptIssues: initialMaterializationGate.issues,
+          refreshIssues: refresh.issues,
+          artifacts: refresh.artifacts,
+        });
+      }
+      const refreshedGate = verifySourceMaterializationBeforeAudit({
+        root,
+        sourcePath,
+        paths,
+        requirementSetId: identity.requirementSetId,
+        expectedSourceDocumentHash: initialSourceDocumentHash,
+        expectedImplementationConfirmationHash: initialImplementationConfirmationHash,
+      });
+      if (refreshedGate.ok === false) {
+        return buildCurrentSourcePromotionRefreshFailedResult({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          paths,
+          sourceDocumentHash: initialSourceDocumentHash,
+          implementationConfirmationHash: initialImplementationConfirmationHash,
+          warnings: initialWarnings,
+          staleReceiptIssues: initialMaterializationGate.issues,
+          refreshIssues: refreshedGate.issues,
+          artifacts: refresh.artifacts,
+        });
+      }
+    } else {
+      return buildSourceMaterializationRequiredResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        sourceDocumentHash: initialSourceDocumentHash,
+        implementationConfirmationHash: initialImplementationConfirmationHash,
+        warnings: initialWarnings,
+        issues: initialMaterializationGate.issues,
+      });
+    }
+  }
+  const visualProofResync =
+    normalizeText(extraction.confirmation.status) === 'user_confirmed'
+      ? { ok: true as const, changed: false, artifacts: [], changedViewIds: [] }
+      : materializePreserveExistingBusinessVisualProofResync({
+          root,
+          sourcePath,
+          paths,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          createdAt,
+          sourceText,
+          confirmation: extraction.confirmation,
+          previousSourceDocumentHash: initialSourceDocumentHash,
+        });
   if (!visualProofResync.ok) {
     return buildAuthoringRepairResult({
       root,
@@ -11324,6 +11571,7 @@ export function runMainAgentAuthoringRepair(
       implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
         extraction.confirmation
       ),
+      warnings: initialWarnings,
       issues: visualProofResync.issues,
     });
   }
@@ -11340,6 +11588,37 @@ export function runMainAgentAuthoringRepair(
       extraction: materialized.extraction,
       consecutiveNoNewGapRounds: 0,
     });
+    const checkpointPersistence = prepareAuthoringRepairCheckpointPersistenceEvidence({
+      root,
+      repairDraftPath: sourcePath,
+      paths,
+      recordId: identity.recordId,
+      sourceDocumentHash: rebuilt.sourceDocumentHash,
+      implementationConfirmationHash: rebuilt.implementationConfirmationHash,
+      createdAt,
+      routeDecision: authoringCheckpointRouteDecisionForPersistence(
+        readJsonIfExists(paths.scaleRoutingDecision),
+        paths
+      ),
+    });
+    if (checkpointPersistence.ok === false) {
+      return buildAuthoringRepairResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        status: 'blocked',
+        blockingStage: 'checkpoint_persistence_required_before_audit',
+        nextRequiredAction: 'rerun_semantic_checkpoints_before_critical_auditor_round',
+        sourceDocumentHash: rebuilt.sourceDocumentHash,
+        implementationConfirmationHash: rebuilt.implementationConfirmationHash,
+        packetHash: rebuilt.packetHash,
+        artifacts: visualProofResync.artifacts,
+        warnings: initialWarnings,
+        issues: [checkpointPersistence.issue],
+      });
+    }
     const archiveDir = archiveCriticalAuditorArtifacts({
       authoringDir: paths.authoringDir,
       reason: 'business_visual_proof_resync_restart',
@@ -11390,6 +11669,7 @@ export function runMainAgentAuthoringRepair(
       artifacts: [requestPath, archiveDir, ...visualProofResync.artifacts].filter(
         (artifact): artifact is string => Boolean(artifact)
       ),
+      warnings: initialWarnings,
       issues: [
         preConfirmationIssue(
           'business_visual_proof_resync_materialized',
@@ -11581,6 +11861,49 @@ export function runMainAgentAuthoringRepair(
         packetHash,
         warnings,
         issues: materializationGate.issues,
+      });
+    }
+  }
+  if (
+    hasAnyAuthoringCheckpointReceipt(paths) &&
+    !areAuthoringCheckpointReceiptsCurrent({
+      root,
+      draftSourcePath: sourcePath,
+      paths,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    })
+  ) {
+    const checkpointRouteDecision = authoringCheckpointRouteDecisionForPersistence(
+      readJsonIfExists(paths.scaleRoutingDecision),
+      paths
+    );
+    const checkpointPersistence = prepareAuthoringRepairCheckpointPersistenceEvidence({
+      root,
+      repairDraftPath: sourcePath,
+      paths,
+      recordId: identity.recordId,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      createdAt,
+      routeDecision: checkpointRouteDecision,
+      forceRefresh: true,
+    });
+    if (checkpointPersistence.ok === false) {
+      return buildAuthoringRepairResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        status: 'blocked',
+        blockingStage: 'checkpoint_persistence_required_before_audit',
+        nextRequiredAction: 'rerun_semantic_checkpoints_before_critical_auditor_round',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        packetHash,
+        warnings,
+        issues: [checkpointPersistence.issue],
       });
     }
   }
@@ -12003,6 +12326,10 @@ export function runMainAgentAuthoringRepair(
       sourcePath,
       '--authoring-dir',
       paths.authoringDir,
+      '--semantic-kernel',
+      paths.semanticKernel,
+      '--must-decomposition-packet',
+      paths.mustDecompositionPacket,
       '--out',
       paths.preRenderMustGate,
       '--receipt',
@@ -12227,11 +12554,11 @@ function resolveSkillScript(root: string, relativeScript: string): string {
     path.join(root, '.cursor', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.claude', 'skills', 'requirements-contract-authoring'),
     path.join(root, '.agents', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.join(repoRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.join(repoRoot, '.codex', 'skills', 'requirements-contract-authoring'),
     path.join(repoRoot, '.cursor', 'skills', 'requirements-contract-authoring'),
     path.join(repoRoot, '.claude', 'skills', 'requirements-contract-authoring'),
+    path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '.codex', 'skills', 'requirements-contract-authoring'),
     path.resolve(__dirname, '..', '.cursor', 'skills', 'requirements-contract-authoring'),
@@ -12496,6 +12823,7 @@ function validateCheckpointPersistenceEvidence(input: {
   paths: PreConfirmationPaths;
   evidencePath: string;
   routeDecision: Record<string, unknown> | null;
+  allowDeferredCriticalAuditorBlockers?: boolean;
 }): PreConfirmationDrilldownIssue[] {
   const evidence = readJsonIfExists(input.evidencePath);
   const issues: PreConfirmationDrilldownIssue[] = [];
@@ -12532,7 +12860,15 @@ function validateCheckpointPersistenceEvidence(input: {
     addIssue('evidence file is missing or invalid JSON');
     return issues;
   }
-  if (evidence.checkpointPersistenceSatisfiedCandidate !== true) {
+  const preRenderGatePolicy = recordObject(ref?.preRenderGatePolicy);
+  const deferredCriticalAuditorOnly =
+    input.allowDeferredCriticalAuditorBlockers === true &&
+    normalizeText(preRenderGatePolicy.mode) === 'source_gap_fix_materialization' &&
+    preRenderGatePolicy.auditorConvergenceDeferredToNextRound === true;
+  if (
+    evidence.checkpointPersistenceSatisfiedCandidate !== true &&
+    !deferredCriticalAuditorOnly
+  ) {
     addIssue('checkpointPersistenceSatisfiedCandidate is not true');
   }
   if (!ref) {
@@ -13830,6 +14166,10 @@ export function runMainAgentPreConfirmationDrilldown(
       paths.draftSourcePreview,
       '--authoring-dir',
       paths.authoringDir,
+      '--semantic-kernel',
+      paths.semanticKernel,
+      '--must-decomposition-packet',
+      paths.mustDecompositionPacket,
       '--out',
       paths.preRenderMustGate,
       '--receipt',
