@@ -430,6 +430,8 @@ function normalizedExpectedSourceOfTruthRole(role: string): string {
     legacy_compatibility: 'evidence',
     post_closeout_review_evidence: 'evidence',
     post_closeout_review_projection: 'projection',
+    'source-authorized product code target': 'evidence',
+    source_authorized_product_code_target: 'evidence',
   };
   return aliases[role] ?? role;
 }

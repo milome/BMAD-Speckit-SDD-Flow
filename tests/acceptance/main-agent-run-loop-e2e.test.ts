@@ -477,6 +477,88 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
+  it('reuses evidence-bound closeout attempt even after an earlier blocked closeout check', () => {
+    const fixture = materializeRunLoopFixture({
+      currentMentalModel: 'audit_review',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+        audit_review: { status: 'pass' },
+      },
+    });
+    const root = fixture.root;
+    try {
+      const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      record.closeout = {
+        currentAttemptId: 'closeout-stale',
+        attempts: [
+          {
+            closeoutAttemptId: 'implement-current',
+            decision: 'blocked',
+            blockingReasons: ['delivery_truth_gate_not_passed'],
+          },
+        ],
+      };
+      record.deliveryEvidence = {
+        requiredCommands: [
+          {
+            commandId: 'CMD-CURRENT',
+            command: 'node -e "process.exit(0)"',
+            blockingIfMissing: true,
+            negativeOrRegression: true,
+            closeoutAttemptId: 'implement-current',
+            lastRunRef: {
+              commandId: 'CMD-CURRENT',
+              runId: 'implement-current',
+              closeoutAttemptId: 'implement-current',
+            },
+          },
+        ],
+      };
+      record.executionIterations = [
+        {
+          executionIterationId: 'exec-current',
+          commandRunRefs: [
+            {
+              commandId: 'CMD-CURRENT',
+              runId: 'implement-current',
+              closeoutAttemptId: 'implement-current',
+              exitCode: 0,
+            },
+          ],
+        },
+      ];
+      fs.writeFileSync(fixture.recordPath, JSON.stringify(record, null, 2) + '\n', 'utf8');
+
+      const result = runMainAgentAutomaticLoop({
+        ...runLoopArgs(fixture),
+        host: 'codex',
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(result.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'delivery-closeout',
+          status: 'fail',
+        })
+      );
+      expect(result.taskReport).toMatchObject({
+        packetId: 'implement-current',
+        status: 'blocked',
+      });
+      expect(result.taskReport?.driftFlags ?? []).not.toContain(
+        'deliveryEvidence.requiredCommands_current_attempt_missing'
+      );
+    } finally {
+      cleanupRequirementWorkspace(root);
+    }
+  });
+
   it('continues rerun_gate remediation through main-session native goal blockers', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;

@@ -551,6 +551,91 @@ describe('target artifact realization gate', () => {
     }
   });
 
+  it('accepts source-authorized product code targets indexed as evidence snapshots', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-product-code-'));
+    try {
+      const fixture = passingRecord(root);
+      const sourcePath = path.join(root, 'product-code-source.md');
+      const productCodePath = path.join(root, 'src', 'feature.py');
+      writeText(productCodePath, 'def feature():\n    return True\n');
+      const confirmation = {
+        status: 'user_confirmed',
+        artifactAutomationPlan: [],
+        currentTargetMap: {
+          canonicalArtifacts: [],
+          pathRegistry: [],
+          artifactPaths: [
+            {
+              id: 'CT-ARTPATH-001',
+              path: productCodePath.replace(/\\/gu, '/'),
+              targetRole: 'source-authorized product code target',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          ],
+          existingArtifacts: [],
+        },
+      };
+      writeText(
+        sourcePath,
+        `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
+          .split('\n')
+          .map((line) => `  ${line}`)
+          .join('\n')}\n`
+      );
+      const artifact = {
+        artifactType: 'source-authorized product code target',
+        path: productCodePath.replace(/\\/gu, '/'),
+        contentHash: sha256File(productCodePath),
+        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        sourceOfTruthRole: 'evidence',
+        status: 'active',
+        inputVersion: ATTEMPT,
+        outputVersion: ATTEMPT,
+        relatedRequirementIds: ['TRACE-001', 'EVD-001'],
+        traceRows: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      };
+      const eventPath = path.join(
+        path.dirname(fixture.recordPath),
+        'events',
+        'product-code-control-events.jsonl'
+      );
+      writeText(
+        eventPath,
+        `${JSON.stringify({
+          eventId: 'artifact_indexed:product-code',
+          eventType: 'artifact_indexed',
+          payload: {
+            packet: {
+              closeoutAttemptId: ATTEMPT,
+              artifactRefs: [artifact],
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          },
+        })}\n`
+      );
+      const record = {
+        ...fixture.record,
+        sourcePath,
+        implementationConfirmationHash: implementationConfirmationHash(confirmation),
+        artifactIndex: [artifact],
+        controlStore: { eventLogPath: eventPath.replace(/\\/gu, '/') },
+      };
+      const report = evaluateTargetArtifactRealization({
+        sourcePath,
+        record,
+        recordPath: fixture.recordPath,
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain('target_artifact_source_of_truth_role_mismatch');
+      expect(report.decision).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('matches run-id template paths under evidence category directories and treats manifest sections as logical surfaces', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-run-id-'));
     try {

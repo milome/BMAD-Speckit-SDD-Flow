@@ -17020,7 +17020,11 @@ function runMainAgentDeliveryCloseout(input: {
 } {
   const requestedAttemptId =
     normalizeText(input.args.closeoutAttemptId) || normalizeText(input.args.attemptId);
-  let attemptId = requestedAttemptId;
+  const record = readJsonObject(input.recordPath);
+  const evidenceBoundAttemptId = requestedAttemptId
+    ? ''
+    : selectEvidenceBoundCloseoutAttemptId(record);
+  let attemptId = requestedAttemptId || evidenceBoundAttemptId;
   const explicitReportPath = normalizeText(input.args.closeoutReportPath);
   const reportPath = explicitReportPath
     ? path.resolve(input.projectRoot, stripWrappingQuotes(explicitReportPath))
@@ -17033,7 +17037,7 @@ function runMainAgentDeliveryCloseout(input: {
     reportPath,
     '--json',
   ];
-  if (requestedAttemptId) argv.push('--attempt-id', requestedAttemptId);
+  if (attemptId) argv.push('--attempt-id', attemptId);
   const source = normalizeText(input.args.sourcePath);
   if (source) argv.push('--source', stripWrappingQuotes(source));
   const modelPacket = normalizeText(input.args.modelPacketPath);
@@ -17051,11 +17055,10 @@ function runMainAgentDeliveryCloseout(input: {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const report = readJsonObject(reportPath);
-    const record = readJsonObject(input.recordPath);
     attemptId =
       normalizeText(report?.currentAttemptId) ||
       normalizeText((record?.closeout as Record<string, unknown> | undefined)?.currentAttemptId) ||
-      selectEvidenceBoundCloseoutAttemptId(record) ||
+      evidenceBoundAttemptId ||
       requestedAttemptId ||
       `closeout-${Date.now()}`;
     const taskReport: TaskReport = {

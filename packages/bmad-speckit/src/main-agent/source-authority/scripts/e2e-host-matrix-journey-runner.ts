@@ -292,6 +292,15 @@ function spawnCommand(command: string, args: string[], cwd: string, shell = fals
   };
 }
 
+function resolvePackageCli(): string {
+  const candidates = [
+    path.resolve(__dirname, '..', '..', '..', '..', 'bin', 'bmad-speckit.js'),
+    path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+    path.resolve(__dirname, '..', 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+}
+
 function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: string) {
   if (mode === 'mock') {
     const js = `console.log(JSON.stringify({host: process.argv[1], mode: "mock", ok: true}))`;
@@ -327,7 +336,7 @@ function runInspectCheck(
     allowLegacyContextFallback?: boolean;
   } = {}
 ) {
-  const packageCli = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+  const packageCli = resolvePackageCli();
   const args = [
     packageCli,
     'main-agent-orchestration',
