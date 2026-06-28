@@ -108,7 +108,8 @@ const GENERATED_SOURCE_AUTHORITY_ASSETS = EXPECTED_SOURCE_AUTHORITY_ASSETS.filte
 function runtimeTargetBasePath(base) {
   if (base === 'package') return PACKAGE_ROOT;
   if (base === 'packageDist') return PACKAGE_DIST_ROOT;
-  return DIST_ROOT;
+  if (base === undefined || base === 'dist') return DIST_ROOT;
+  throw new Error(`unknown runtimeTargetBase: ${base}`);
 }
 
 function isTypeScriptRuntimeSourcePath(relativePath) {

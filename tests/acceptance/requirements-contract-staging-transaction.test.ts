@@ -65,6 +65,7 @@ describe('requirements contract staging transaction', () => {
       const initialDraft = readFileSync(path.join(stagingDir, 'draft-source.md'), 'utf8');
       expect(issueCodes(initial)).toContain('critical_auditor_provider_mode_required');
       expect(initialDraft).toContain('confirmationLanguage: not_selected');
+      const initialImplementationConfirmationHash = initial.implementationConfirmationHash;
 
       const refreshed = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
@@ -83,6 +84,7 @@ describe('requirements contract staging transaction', () => {
       );
 
       expect(issueCodes(refreshed)).toContain('critical_auditor_provider_mode_required');
+      expect(refreshed.implementationConfirmationHash).not.toBe(initialImplementationConfirmationHash);
       expect(refreshedDraft).toContain('confirmationLanguage: zh-CN');
       expect(refreshedDraft).not.toContain('confirmationLanguage: not_selected');
       expect(refreshedKernel.semanticKernel?.implementationConfirmationHash).toBe(

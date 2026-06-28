@@ -104,6 +104,10 @@ function hasPerMustDetailForAll(row, mustIds) {
   return mustIds.length > 0 && mustIds.every((mustId) => hasPerMustDetail(row, mustId));
 }
 
+function perMustDetailRefsFor(row, mustIds) {
+  return mustIds.filter((mustId) => hasPerMustDetail(row, mustId));
+}
+
 function idsFor(rows) {
   return unique(asArray(rows).map((row) => rowId(row)));
 }
@@ -302,18 +306,25 @@ function collectProjectionQualityIssues(confirmation, options = {}) {
   const businessMust = businessMustIds(confirmation, mustIds);
   if (businessMust.length > 0 && confirmation.currentTargetMap) {
     const rows = currentTargetRows(confirmation);
-    const hasBusinessRefs = rows.some((row) =>
-      refsFor(row, ['covers', 'requirementRefs', 'mustRefs', 'traceRefs', 'traceRows']).some((ref) =>
-        businessMust.includes(ref)
-      )
-    );
-    const text = collectText(rows);
-    if (!hasBusinessRefs && isGenericProjectionText(text)) {
+    const productSpecificBusinessRefs = new Set();
+    for (const row of rows) {
+      const text = collectText(row);
+      if (isGenericProjectionText(text)) continue;
+      const rowMustRefs = new Set([
+        ...mustRefsForCoverageRow(row, traceMustMap),
+        ...perMustDetailRefsFor(row, businessMust),
+      ]);
+      for (const ref of rowMustRefs) {
+        if (businessMust.includes(ref)) productSpecificBusinessRefs.add(ref);
+      }
+    }
+    const missingProductSpecificRows = businessMust.filter((mustId) => !productSpecificBusinessRefs.has(mustId));
+    if (missingProductSpecificRows.length > 0) {
       issues.push(
         issue(
           'current_target_map_not_product_specific',
           'currentTargetMap uses generic/source-derived rows instead of product-specific current and target states for business MUST rows',
-          ['currentTargetMap', ...businessMust]
+          ['currentTargetMap', ...missingProductSpecificRows]
         )
       );
     }
@@ -325,23 +336,30 @@ function collectProjectionQualityIssues(confirmation, options = {}) {
       ...asArray(confirmation.sequenceViews).filter((row) => String(row?.scope ?? '').toLowerCase() === 'business'),
       ...asArray(confirmation.flowViews).filter((row) => String(row?.scope ?? '').toLowerCase() === 'business'),
     ];
-    const hasSpecificBusinessVisual = visuals.some((row) => {
+    const visualCoverage = new Set();
+    for (const row of visuals) {
       const text = collectText(row);
-      const visualMustRefs = refsFor(row, ['covers', 'requirementRefs', 'mustRefs']).filter((ref) =>
-        businessMust.includes(ref)
-      );
-      if (visualMustRefs.length === 0) return false;
-      if (isGenericProjectionText(text)) return false;
-      if (visualMustRefs.length < businessMust.length) return true;
-      if (businessMust.every((mustId) => text.includes(mustId))) return true;
-      return hasPerMustDetailForAll(row, businessMust);
-    });
-    if (!hasSpecificBusinessVisual) {
+      const visualMustRefs = unique([
+        ...refsFor(row, ['covers', 'requirementRefs', 'mustRefs']),
+        ...perMustDetailRefsFor(row, businessMust),
+      ]).filter((ref) => businessMust.includes(ref));
+      if (visualMustRefs.length === 0) continue;
+      if (isGenericProjectionText(text)) continue;
+      if (visualMustRefs.length === 1 || visualMustRefs.length < businessMust.length) {
+        for (const mustId of visualMustRefs) visualCoverage.add(mustId);
+        continue;
+      }
+      if (businessMust.every((mustId) => text.includes(mustId)) || hasPerMustDetailForAll(row, businessMust)) {
+        for (const mustId of visualMustRefs) visualCoverage.add(mustId);
+      }
+    }
+    const missingBusinessVisuals = businessMust.filter((mustId) => !visualCoverage.has(mustId));
+    if (missingBusinessVisuals.length > 0) {
       issues.push(
         issue(
           'business_visual_generic_or_compressed',
           'business visuals are missing, generic, or compressed across business MUST rows without per-MUST flow boundaries',
-          ['businessVisuals', ...businessMust]
+          ['businessVisuals', ...missingBusinessVisuals]
         )
       );
     }

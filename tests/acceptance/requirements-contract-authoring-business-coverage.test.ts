@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
@@ -39,6 +40,15 @@ const requiredCheckpointIds = [
   'cp-07-human-readable-views',
   'cp-08-pre-render-global-reconciliation',
 ];
+const requireForProjectionGate = createRequire(import.meta.url);
+const { collectProjectionQualityIssues } = requireForProjectionGate(
+  '../../_bmad/skills/requirements-contract-authoring/scripts/projection_quality_gate.js'
+) as {
+  collectProjectionQualityIssues: (
+    confirmation: Record<string, unknown>,
+    options?: Record<string, unknown>
+  ) => Array<{ code: string; refs: string[] }>;
+};
 
 function readUtf8(relativePath: string): string {
   return readFileSync(path.join(process.cwd(), relativePath), 'utf8');
@@ -367,6 +377,31 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
             },
             ...actionBase,
           },
+          {
+            actionId: 'REPAIR-MTF-ADD-BUSINESS-VISUAL',
+            type: 'add_business_visual',
+            targetField: 'implementationConfirmation.flowViews',
+            newValue: {
+              id: 'FLOW-BUSINESS-MTF-DEFAULT-HIDDEN',
+              title: 'Default hidden multi-timeframe business flow',
+              visualKind: 'flow',
+              scope: 'business',
+              covers: ['MUST-MTF-DEFAULT-HIDDEN'],
+              perMustRows: [
+                {
+                  mustRef: 'MUST-MTF-DEFAULT-HIDDEN',
+                  traceRows: ['TRACE-MTF-DEFAULT-HIDDEN'],
+                  evidenceRefs: ['EVD-MTF-DEFAULT-HIDDEN'],
+                  acceptanceRefs: ['ACC-MTF-DEFAULT-HIDDEN', 'E2E-MTF-DEFAULT-HIDDEN'],
+                  assertion:
+                    'MUST-MTF-DEFAULT-HIDDEN has an independent business visual boundary for default hidden periods.',
+                },
+              ],
+              mermaid:
+                'flowchart TD\n  User[User opens chart] --> Hidden[15m 30m 45m D hidden by default]\n  Hidden --> Settings[User enables overlays intentionally]',
+            },
+            ...actionBase,
+          },
         ],
       },
     ],
@@ -377,6 +412,49 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
 }
 
 describe('requirements contract sanitized real fixture coverage', () => {
+  it('fails generic current-target rows and partial business visual coverage per business MUST', () => {
+    const issues = collectProjectionQualityIssues({
+      must: [
+        { id: 'MUST-001', text: 'Business timeframe selector must preserve hidden period defaults.' },
+        { id: 'MUST-002', text: 'Business timeframe selector must apply explicit visible period settings.' },
+      ],
+      traceRows: [
+        { id: 'TRACE-001', covers: ['MUST-001'] },
+        { id: 'TRACE-002', covers: ['MUST-002'] },
+      ],
+      requirementBoundary: {
+        business: {
+          requirementIds: ['MUST-001', 'MUST-002'],
+        },
+      },
+      currentTargetMap: {
+        currentSummary: [
+          {
+            id: 'CTM-001',
+            requirementRefs: ['MUST-001', 'MUST-002'],
+            current: 'source-derived current state for all requirements',
+            target: 'generic target state for all requirements',
+          },
+        ],
+      },
+      businessVisuals: [
+        {
+          id: 'BUS-001',
+          covers: ['MUST-001'],
+          title: 'Hidden period default flow',
+          mermaid: 'flowchart TD\nUser-->Settings\nSettings-->HiddenPeriods',
+        },
+      ],
+    });
+    const currentTargetIssue = issues.find(
+      (issue) => issue.code === 'current_target_map_not_product_specific'
+    );
+    const visualIssue = issues.find((issue) => issue.code === 'business_visual_generic_or_compressed');
+
+    expect(currentTargetIssue?.refs).toEqual(['currentTargetMap', 'MUST-001', 'MUST-002']);
+    expect(visualIssue?.refs).toEqual(['businessVisuals', 'MUST-002']);
+  });
+
   it('projects currentTargetMap from explicit source current and target state sections', () => {
     const root = createTempRoot('requirements-contract-source-state-sections-');
     try {
@@ -1044,6 +1122,8 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const sourceText = readFileSync(source, 'utf8');
       expect(sourceText).toContain('MUST-MTF-DEFAULT-HIDDEN');
       expect(sourceText).toContain('OUT-MTF-1M');
+      expect(sourceText).toContain('boundaryType: non_goal_scope_boundary');
+      expect(sourceText).toContain('conflictResolution: out_of_scope_boundary_only');
       expect(sourceText).toContain('EVD-MTF-DEFAULT-HIDDEN');
       expect(sourceText).toContain('TRACE-MTF-DEFAULT-HIDDEN');
       expect(sourceText).toContain('ACC-MTF-DEFAULT-HIDDEN');

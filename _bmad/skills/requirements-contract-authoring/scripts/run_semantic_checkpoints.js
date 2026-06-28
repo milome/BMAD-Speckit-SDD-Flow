@@ -1765,7 +1765,6 @@ function checkpointPersistenceEvidence({ sourcePath, progressPath, routeDecision
     authoring.reconciliation?.verdict === 'pass';
   return {
     checkpointPersistenceSatisfiedCandidate,
-    completedCheckpointIds,
     checkpointPersistenceRef: {
       routeDecisionHash: routeDecision.routeDecisionHash,
       progressPath: normalizePathForReport(progressPath),

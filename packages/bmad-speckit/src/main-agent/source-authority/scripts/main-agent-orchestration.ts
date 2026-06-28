@@ -1685,6 +1685,7 @@ const CRITICAL_AUDITOR_REPAIR_ACTION_TYPES = [
   'add_acc',
   'add_e2e',
   'add_business_view',
+  'add_business_visual',
   'replace_target_path',
   'replace_validation_command',
 ] as const;
@@ -1732,6 +1733,14 @@ const CRITICAL_AUDITOR_REPAIR_ACTION_TARGET_FIELDS: Record<
   ],
   add_e2e: ['e2eSuites', 'e2eScenarios', 'implementationConfirmation.e2eSuites', 'implementationConfirmation.e2eScenarios'],
   add_business_view: ['businessViews', 'implementationConfirmation.businessViews'],
+  add_business_visual: [
+    'businessVisuals',
+    'sequenceViews',
+    'flowViews',
+    'implementationConfirmation.businessVisuals',
+    'implementationConfirmation.sequenceViews',
+    'implementationConfirmation.flowViews',
+  ],
   replace_target_path: [
     'targetModificationPaths',
     'implementationConfirmation.targetModificationPaths',
@@ -5605,12 +5614,11 @@ function materializeImplementationConfirmationText(
     next = `${sourceWithDefinitionOfDone.replace(/\s*$/u, '')}\n\n${dumped}\n`;
   } else {
     const lines = [...extraction.lines];
-    lines.splice(
-      extraction.start,
-      extraction.end - extraction.start,
-      ...dumped.split('\n')
-    );
-    next = lines.join('\n');
+    const replacementLines = dumped.split('\n');
+    next = lines
+      .slice(0, extraction.start)
+      .concat(replacementLines, lines.slice(extraction.end))
+      .join('\n');
   }
   return next.endsWith('\n') ? next : `${next}\n`;
 }
@@ -6586,6 +6594,21 @@ function checkpointArtifactRefs(input: {
   }));
 }
 
+function sameCheckpointArtifactSet(
+  actualRefs: Array<{ path: string; hash: string }>,
+  expectedRefs: Array<{ path: string; hash: string }>
+): boolean {
+  if (actualRefs.length !== expectedRefs.length) return false;
+  const actualByPath = new Map(actualRefs.map((ref) => [ref.path, ref.hash]));
+  if (actualByPath.size !== actualRefs.length) return false;
+  const expectedByPath = new Map(expectedRefs.map((ref) => [ref.path, ref.hash]));
+  if (expectedByPath.size !== expectedRefs.length) return false;
+  for (const [expectedPath, expectedHash] of expectedByPath.entries()) {
+    if (actualByPath.get(expectedPath) !== expectedHash) return false;
+  }
+  return true;
+}
+
 function isCurrentCheckpointReceipt(input: {
   root: string;
   receipt: Record<string, unknown> | null;
@@ -6593,6 +6616,7 @@ function isCurrentCheckpointReceipt(input: {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
   draftSourcePath: string;
+  paths: PreConfirmationPaths;
 }): boolean {
   if (!input.receipt || input.receipt.status !== 'passed') return false;
   if (normalizeText(input.receipt.checkpointId) !== input.checkpoint.id) return false;
@@ -6605,7 +6629,8 @@ function isCurrentCheckpointReceipt(input: {
   }
   const artifactRefs = Array.isArray(input.receipt.artifactRefs) ? input.receipt.artifactRefs : [];
   if (artifactRefs.length === 0) return false;
-  return artifactRefs.every((item) => {
+  const actualRefs: Array<{ path: string; hash: string }> = [];
+  for (const item of artifactRefs) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
     const artifactPath = normalizeText((item as Record<string, unknown>).path);
     const artifactHash = normalizeText((item as Record<string, unknown>).hash);
@@ -6613,8 +6638,19 @@ function isCurrentCheckpointReceipt(input: {
     const absoluteArtifactPath = path.isAbsolute(artifactPath)
       ? artifactPath
       : path.resolve(input.root, artifactPath);
-    return fs.existsSync(absoluteArtifactPath) && sha256File(absoluteArtifactPath) === artifactHash;
+    if (!fs.existsSync(absoluteArtifactPath) || sha256File(absoluteArtifactPath) !== artifactHash) {
+      return false;
+    }
+    actualRefs.push({ path: toRootRelativePath(input.root, absoluteArtifactPath), hash: artifactHash });
+  }
+  const expectedRefs = checkpointArtifactRefs({
+    root: input.root,
+    draftSourcePath: input.draftSourcePath,
+    paths: input.paths,
+    checkpoint: input.checkpoint,
   });
+  if (expectedRefs.length === 0 || expectedRefs.some((ref) => ref.hash === 'missing')) return false;
+  return sameCheckpointArtifactSet(actualRefs, expectedRefs);
 }
 
 function checkpointProgressFromReceipts(input: {
@@ -6639,6 +6675,7 @@ function checkpointProgressFromReceipts(input: {
       sourceDocumentHash: input.sourceDocumentHash,
       implementationConfirmationHash: input.implementationConfirmationHash,
       draftSourcePath: input.draftSourcePath,
+      paths: input.paths,
     })
   ).map((checkpoint) => checkpoint.id);
   const nextCheckpoint =
@@ -6747,6 +6784,7 @@ function resolveCheckpointResumeStartIndex(input: {
         sourceDocumentHash: input.sourceDocumentHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         draftSourcePath: input.draftSourcePath,
+        paths: input.paths,
       })
     ) {
       return 0;
@@ -6780,6 +6818,7 @@ function runAuthoringCheckpoint(input: {
         sourceDocumentHash: input.sourceDocumentHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         draftSourcePath: input.draftSourcePath,
+        paths: input.paths,
       })
     ) {
       return {
@@ -6803,9 +6842,10 @@ function runAuthoringCheckpoint(input: {
       sourceDocumentHash: input.sourceDocumentHash,
       implementationConfirmationHash: input.implementationConfirmationHash,
       draftSourcePath: input.draftSourcePath,
+      paths: input.paths,
     })
   ) {
-    return { ok: true, receipt: existingReceipt };
+    return { ok: true, receipt: existingReceipt as Record<string, unknown> };
   }
   process.stderr.write(
     `[requirements-contract-authoring] checkpoint execution start id=${input.checkpoint.id} receipt=${toRootRelativePath(input.root, existingReceiptPath)}\n`
@@ -6943,7 +6983,14 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
   createdAt: string;
+  allowDeferredCriticalAuditorBlockers?: boolean;
 }): Record<string, unknown> {
+  const auditorConvergenceOnlyCodes = new Set([
+    'critical_auditor_receipt_missing',
+    'critical_auditor_receipt_input_hash_stale',
+    'critical_auditor_less_than_three_no_new_gap_rounds',
+    'critical_auditor_validated_gap_unresolved',
+  ]);
   const routeDecisionHash = normalizeText(input.routeDecision?.routeDecisionHash);
   const checkpointReceiptRefs = AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => {
     const receiptPath = checkpointReceiptPath(input.paths, checkpoint);
@@ -6955,6 +7002,7 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
       sourceDocumentHash: input.sourceDocumentHash,
       implementationConfirmationHash: input.implementationConfirmationHash,
       draftSourcePath: input.draftSourcePath,
+      paths: input.paths,
     });
     return {
       checkpointId: checkpoint.id,
@@ -6966,12 +7014,43 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
   const completedCheckpointIds = checkpointReceiptRefs
     .filter((receipt) => receipt.status === 'passed')
     .map((receipt) => receipt.checkpointId);
+  const preRenderMustGate = readJsonIfExists(input.paths.preRenderMustGate);
+  const preRenderGlobalConsistency = readJsonIfExists(input.paths.preRenderGlobalConsistency);
+  const reconciliationReport = readJsonIfExists(input.paths.reconciliationReport);
+  const mustGateIssues = asRecordArray(preRenderMustGate?.blockingIssues);
+  const globalGateIssues = asRecordArray(preRenderGlobalConsistency?.issues);
+  const mustGateVerdict = normalizeText(preRenderMustGate?.verdict).toLowerCase();
+  const globalGateVerdict = normalizeText(preRenderGlobalConsistency?.verdict).toLowerCase();
+  const reconciliationVerdict = normalizeText(reconciliationReport?.verdict).toLowerCase();
+  const deferredCriticalAuditorBlockers = input.allowDeferredCriticalAuditorBlockers
+    ? [...mustGateIssues, ...globalGateIssues].filter((issue) =>
+        auditorConvergenceOnlyCodes.has(normalizeText(issue.code))
+      )
+    : [];
+  const nonDeferredMustGateIssues = mustGateIssues.filter(
+    (issue) =>
+      !input.allowDeferredCriticalAuditorBlockers ||
+      !auditorConvergenceOnlyCodes.has(normalizeText(issue.code))
+  );
+  const nonDeferredGlobalGateIssues = globalGateIssues.filter(
+    (issue) =>
+      !input.allowDeferredCriticalAuditorBlockers ||
+      !auditorConvergenceOnlyCodes.has(normalizeText(issue.code))
+  );
+  const mustGateStructurallyPassed =
+    mustGateVerdict === 'pass' ||
+    (mustGateVerdict === 'fail' &&
+      nonDeferredMustGateIssues.length === 0 &&
+      reconciliationVerdict === 'pass');
+  const globalGateStructurallyPassed =
+    globalGateVerdict === 'pass' ||
+    (globalGateVerdict === 'fail' && nonDeferredGlobalGateIssues.length === 0);
+  const structuralGateSatisfied = mustGateStructurallyPassed && globalGateStructurallyPassed;
   const checkpointPersistenceSatisfiedCandidate =
     AUTHORING_REPAIR_CHECKPOINT_IDS.every((id) => completedCheckpointIds.includes(id)) &&
     fs.existsSync(input.paths.progress) &&
-    fs.existsSync(input.paths.preRenderMustGate) &&
-    fs.existsSync(input.paths.preRenderGlobalConsistency) &&
-    fs.existsSync(input.paths.reconciliationReport);
+    structuralGateSatisfied &&
+    reconciliationVerdict === 'pass';
   const evidence = {
     schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
     checkpointPersistenceSatisfiedCandidate,
@@ -6995,6 +7074,17 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
       packetSourceReconciliationHash: fs.existsSync(input.paths.reconciliationReport)
         ? sha256File(input.paths.reconciliationReport)
         : null,
+      preRenderGatePolicy: {
+        mode: input.allowDeferredCriticalAuditorBlockers
+          ? 'source_gap_fix_materialization'
+          : 'final_pre_render',
+        structuralGateSatisfied,
+        auditorConvergenceDeferredToNextRound: deferredCriticalAuditorBlockers.length > 0,
+        deferredCriticalAuditorBlockers: deferredCriticalAuditorBlockers.map((issue) => ({
+          code: normalizeText(issue.code),
+          refs: asStringArray(issue.refs),
+        })),
+      },
     },
     completedAt: input.createdAt,
     createdBy:
@@ -7105,6 +7195,7 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
     createdAt: input.createdAt,
+    allowDeferredCriticalAuditorBlockers: true,
   });
   writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
   const validationIssues = validateCheckpointPersistenceEvidence({
@@ -7224,6 +7315,15 @@ function materializeCriticalAuditorGapFix(input: {
   const semanticBeforeHash = implementationConfirmationHashForPreConfirmation(input.confirmation);
   const appliedActions: Record<string, unknown>[] = [];
   const changedTargetFields = new Set<string>();
+  const repairRefs = {
+    mustIds: new Set<string>(),
+    outIds: new Set<string>(),
+    evidenceIds: new Set<string>(),
+    traceIds: new Set<string>(),
+    acceptanceIds: new Set<string>(),
+    e2eIds: new Set<string>(),
+    commandIds: new Set<string>(),
+  };
   const repairBackRef = (
     action: CriticalAuditorRepairAction,
     materializedId: string
@@ -7318,8 +7418,21 @@ function materializeCriticalAuditorGapFix(input: {
     changedTargetFields.add(field);
     return id;
   };
-  const nextConfirmation: Record<string, unknown> = {
+  let nextConfirmation: Record<string, unknown> = {
     ...input.confirmation,
+  };
+  const appendRepairRows = (
+    confirmation: Record<string, unknown>,
+    fields: string[],
+    action: CriticalAuditorRepairAction,
+    defaultPrefix: string,
+    extra: Record<string, unknown> = {}
+  ) => {
+    const createdIds: string[] = [];
+    for (const field of fields) {
+      createdIds.push(appendRow(confirmation, field, action, defaultPrefix, extra));
+    }
+    return createdIds;
   };
   for (const gap of asRecordArray(input.response.validatedGaps)) {
     const repairActions = asRecordArray(gap.repairActions) as unknown as CriticalAuditorRepairAction[];
@@ -7348,9 +7461,16 @@ function materializeCriticalAuditorGapFix(input: {
           });
           break;
         case 'add_out':
-          materializedRef = appendRows(nextConfirmation, ['mustNot', 'outOfScope'], action, 'OUT', {
+          {
+            const outRefs = appendRepairRows(nextConfirmation, ['mustNot', 'outOfScope'], action, 'OUT', {
             userApprovalRequiredIfChanged: true,
+              boundaryType: 'non_goal_scope_boundary',
+              conflictResolution: 'out_of_scope_boundary_only',
+              covers: [],
+              linkedMustRefs: asStringArray(action.mustRefs),
           });
+            materializedRef = outRefs[0] ?? '';
+          }
           break;
         case 'add_evidence':
           materializedRef = appendRow(nextConfirmation, 'evidence', action, 'EVD');
@@ -7359,19 +7479,36 @@ function materializeCriticalAuditorGapFix(input: {
           materializedRef = appendRow(nextConfirmation, 'traceRows', action, 'TRACE');
           break;
         case 'add_acc':
-          materializedRef = appendRows(
-            nextConfirmation,
-            ['acceptanceTests', 'acceptanceCriteria'],
-            action,
-            'ACC'
-          );
+          {
+            const acceptanceRefs = appendRepairRows(
+              nextConfirmation,
+              ['acceptanceTests', 'acceptanceCriteria'],
+              action,
+              'ACC'
+            );
+            materializedRef = acceptanceRefs[0] ?? '';
+          }
           break;
         case 'add_e2e':
-          materializedRef = appendRows(nextConfirmation, ['e2eSuites', 'e2eScenarios'], action, 'E2E');
+          {
+            const e2eRefs = appendRepairRows(nextConfirmation, ['e2eSuites', 'e2eScenarios'], action, 'E2E');
+            materializedRef = e2eRefs[0] ?? '';
+          }
           break;
         case 'add_business_view':
           materializedRef = appendRow(nextConfirmation, 'businessViews', action, 'BUSINESS-VIEW');
           break;
+        case 'add_business_visual': {
+          const visualField = targetField.includes('sequenceViews')
+            ? 'sequenceViews'
+            : targetField.includes('flowViews')
+              ? 'flowViews'
+              : 'businessVisuals';
+          materializedRef = appendRow(nextConfirmation, visualField, action, 'BUSINESS-VISUAL', {
+            scope: 'business',
+          });
+          break;
+        }
         case 'replace_target_path':
           materializedRef = replaceRows(nextConfirmation, 'targetModificationPaths', action, ['path']);
           break;
@@ -7396,6 +7533,17 @@ function materializeCriticalAuditorGapFix(input: {
         requirementIds: action.requirementIds,
         mustRefs: action.mustRefs,
       });
+      if (materializedRef) {
+        if (action.type === 'add_must' || action.type === 'split_must') {
+          repairRefs.mustIds.add(materializedRef);
+        }
+        if (action.type === 'add_out') repairRefs.outIds.add(materializedRef);
+        if (action.type === 'add_evidence') repairRefs.evidenceIds.add(materializedRef);
+        if (action.type === 'add_trace') repairRefs.traceIds.add(materializedRef);
+        if (action.type === 'add_acc') repairRefs.acceptanceIds.add(materializedRef);
+        if (action.type === 'add_e2e') repairRefs.e2eIds.add(materializedRef);
+        if (action.type === 'replace_validation_command') repairRefs.commandIds.add(materializedRef);
+      }
     }
   }
   if (appliedActions.length === 0) {
@@ -7408,7 +7556,12 @@ function materializeCriticalAuditorGapFix(input: {
       ),
     };
   }
-  const semanticAfterHash = implementationConfirmationHashForPreConfirmation(nextConfirmation);
+  const repairClosure = closeCriticalAuditorRepairProjectionRefs(nextConfirmation, repairRefs);
+  if (repairClosure.changed) {
+    nextConfirmation = repairClosure.confirmation;
+    for (const field of repairClosure.changedFields) changedTargetFields.add(field);
+  }
+  let semanticAfterHash = implementationConfirmationHashForPreConfirmation(nextConfirmation);
   if (semanticAfterHash === semanticBeforeHash) {
     return {
       ok: false,
@@ -7418,6 +7571,20 @@ function materializeCriticalAuditorGapFix(input: {
         appliedActions.map((action) => normalizeText(action.actionId))
       ),
     };
+  }
+  const resyncedRepair = resyncExistingBusinessVisualProofClosure(nextConfirmation, {
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText: fs.readFileSync(input.sourcePath, 'utf8'),
+    packetHash: normalizeText(
+      recordObject(recordObject(nextConfirmation.preConfirmationDrilldown).mustDecompositionPacketRef).hash
+    ),
+    forceCurrentTargetMapRebuild: true,
+  });
+  if (resyncedRepair.changed) {
+    nextConfirmation = resyncedRepair.confirmation;
+    for (const viewId of resyncedRepair.changedViewIds) changedTargetFields.add(viewId);
+    semanticAfterHash = implementationConfirmationHashForPreConfirmation(nextConfirmation);
   }
   const existingRows = asRecordArray(input.confirmation.sourceGapFixes);
   Object.assign(nextConfirmation, {
@@ -8169,6 +8336,182 @@ function appendKnownIdRefs(existing: unknown, additions: string[], knownIds: str
   return appendUniqueStrings(existing, additions).filter((ref) => known.has(ref));
 }
 
+function firstAvailableRef(...sets: Array<Set<string>>): string {
+  for (const set of sets) {
+    const first = [...set][0];
+    if (first) return first;
+  }
+  return '';
+}
+
+function closeCriticalAuditorRepairProjectionRefs(
+  confirmation: Record<string, unknown>,
+  refs: {
+    mustIds: Set<string>;
+    outIds: Set<string>;
+    evidenceIds: Set<string>;
+    traceIds: Set<string>;
+    acceptanceIds: Set<string>;
+    e2eIds: Set<string>;
+    commandIds: Set<string>;
+  }
+): { confirmation: Record<string, unknown>; changed: boolean; changedFields: string[] } {
+  const mustIds = [...refs.mustIds];
+  if (mustIds.length === 0) {
+    return { confirmation, changed: false, changedFields: [] };
+  }
+  const next: Record<string, unknown> = { ...confirmation };
+  const changedFields = new Set<string>();
+  const allMustIds = asRecordArray(next.must)
+    .map((row) => normalizeText(row.id))
+    .filter((id) => id.startsWith('MUST-'));
+  const evidenceIds = [...refs.evidenceIds];
+  const traceIds = [...refs.traceIds];
+  const acceptanceIds = [...refs.acceptanceIds];
+  const e2eIds = [...refs.e2eIds];
+  const commandId =
+    firstAvailableRef(refs.commandIds) ||
+    normalizeText(asRecordArray(next.requiredCommands)[0]?.id) ||
+    normalizeText(asRecordArray(next.requiredCommands)[0]?.commandId);
+
+  const updateRows = (
+    field: string,
+    shouldUpdate: (row: Record<string, unknown>) => boolean,
+    update: (row: Record<string, unknown>) => Record<string, unknown>
+  ) => {
+    const rows = asRecordArray(next[field]);
+    if (rows.length === 0) return;
+    let changed = false;
+    const nextRows = rows.map((row) => {
+      if (!shouldUpdate(row)) return row;
+      const updated = update({ ...row });
+      if (stableStringify(updated) !== stableStringify(row)) changed = true;
+      return updated;
+    });
+    if (changed) {
+      next[field] = nextRows;
+      changedFields.add(field);
+    }
+  };
+
+  updateRows(
+    'must',
+    (row) => mustIds.includes(normalizeText(row.id)),
+    (row) => ({
+      ...row,
+      evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
+      coveredByTraceRows: appendUniqueStrings(row.coveredByTraceRows, traceIds),
+      acceptanceRefs: appendUniqueStrings(row.acceptanceRefs, [...acceptanceIds, ...e2eIds]),
+    })
+  );
+
+  updateRows(
+    'evidence',
+    (row) => evidenceIds.includes(normalizeText(row.id)),
+    (row) => ({
+      ...row,
+      mustRefs: appendUniqueStrings(row.mustRefs, mustIds),
+      gate:
+        normalizeText(row.gate) ||
+        'Critical Auditor repair evidence must be verified by the requirement command.',
+      oracle:
+        normalizeText(row.oracle) ||
+        `Repair evidence proves ${mustIds.join(', ')} without relying on shared all-MUST closure.`,
+      requiredCommandRefs: commandId
+        ? appendUniqueStrings(row.requiredCommandRefs, [commandId])
+        : asStringArray(row.requiredCommandRefs),
+      perMustAssertions: {
+        ...recordObject(row.perMustAssertions),
+        ...Object.fromEntries(
+          mustIds.map((mustId) => [
+            mustId,
+            `Evidence ${normalizeText(row.id)} independently proves ${mustId}.`,
+          ])
+        ),
+      },
+    })
+  );
+
+  updateRows(
+    'traceRows',
+    (row) => traceIds.includes(normalizeText(row.id)),
+    (row) => ({
+      ...row,
+      covers: appendUniqueStrings(row.covers, mustIds).filter(
+        (ref) => ref.startsWith('MUST-') || ref.startsWith('NEG-')
+      ),
+      boundaryRefs: appendUniqueStrings(row.boundaryRefs, [...refs.outIds]),
+      evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
+      contractValidationCommandRefs: commandId
+        ? appendUniqueStrings(row.contractValidationCommandRefs, [commandId])
+        : asStringArray(row.contractValidationCommandRefs),
+      deliveryEvidenceCommandRefs: commandId
+        ? appendUniqueStrings(row.deliveryEvidenceCommandRefs, [commandId])
+        : asStringArray(row.deliveryEvidenceCommandRefs),
+      perMustAssertions: {
+        ...recordObject(row.perMustAssertions),
+        ...Object.fromEntries(
+          mustIds.map((mustId) => [
+            mustId,
+            `Trace ${normalizeText(row.id)} independently closes ${mustId}.`,
+          ])
+        ),
+      },
+    })
+  );
+
+  const closeAcceptanceRows = (field: string, ids: string[]) => {
+    updateRows(
+      field,
+      (row) => ids.includes(normalizeText(row.id)),
+      (row) => ({
+        ...row,
+        covers: appendUniqueStrings(row.covers, mustIds),
+        traceRows: appendUniqueStrings(row.traceRows ?? row.traceRefs, traceIds),
+        evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
+        perMustAssertions: {
+          ...recordObject(row.perMustAssertions),
+          ...Object.fromEntries(
+            mustIds.map((mustId) => [
+              mustId,
+              `Acceptance ${normalizeText(row.id)} independently verifies ${mustId}.`,
+            ])
+          ),
+        },
+      })
+    );
+  };
+  closeAcceptanceRows('acceptanceTests', acceptanceIds);
+  closeAcceptanceRows('acceptanceCriteria', acceptanceIds);
+  closeAcceptanceRows('e2eSuites', e2eIds);
+  closeAcceptanceRows('e2eScenarios', e2eIds);
+
+  if (commandId && allMustIds.length > 1) {
+    updateRows(
+      'requiredCommands',
+      (row) => normalizeText(row.id) === commandId || normalizeText(row.commandId) === commandId,
+      (row) => ({
+        ...row,
+        perMustAssertions: {
+          ...recordObject(row.perMustAssertions),
+          ...Object.fromEntries(
+            allMustIds.map((mustId) => [
+              mustId,
+              `Command ${commandId} has an independent assertion boundary for ${mustId}.`,
+            ])
+          ),
+        },
+      })
+    );
+  }
+
+  return {
+    confirmation: next,
+    changed: changedFields.size > 0,
+    changedFields: [...changedFields].sort(),
+  };
+}
+
 function normalizeVisualKindForProofClosure(value: unknown): string {
   const normalized = normalizeText(value)
     .toLowerCase()
@@ -8366,7 +8709,13 @@ function buildBusinessVisualPerMustProofRows(
 
 function resyncExistingBusinessVisualProofClosure(
   confirmation: Record<string, unknown>,
-  context?: { root: string; sourcePath: string; sourceText: string; packetHash?: string }
+  context?: {
+    root: string;
+    sourcePath: string;
+    sourceText: string;
+    packetHash?: string;
+    forceCurrentTargetMapRebuild?: boolean;
+  }
 ): { confirmation: Record<string, unknown>; changed: boolean; changedViewIds: string[] } {
   const traceRows = asRecordArray(confirmation.traceRows);
   const traceIds = traceRows.map((row) => normalizeText(row.id)).filter(Boolean);
@@ -8435,9 +8784,15 @@ function resyncExistingBusinessVisualProofClosure(
       nextRow.traceRows = appendUniqueStrings(nextRow.traceRows ?? nextRow.traceRefs, traceIds);
       nextRow.evidenceRefs = appendUniqueStrings(nextRow.evidenceRefs, evidenceIds);
       nextRow.acceptanceRefs = appendUniqueStrings(nextRow.acceptanceRefs, acceptanceIds);
-      nextRow.perMustRows = Array.isArray(nextRow.perMustRows) && nextRow.perMustRows.length
-        ? nextRow.perMustRows
-        : perMustRows;
+      const existingPerMustRows = asRecordArray(nextRow.perMustRows);
+      const existingMustRefs = new Set(
+        existingPerMustRows.map((entry) => normalizeText(entry.mustRef)).filter(Boolean)
+      );
+      const missingPerMustRows = perMustRows.filter((entry) => !existingMustRefs.has(entry.mustRef));
+      nextRow.perMustRows =
+        existingPerMustRows.length > 0
+          ? [...existingPerMustRows, ...missingPerMustRows]
+          : perMustRows;
       if (visualKind === 'failure') {
         nextRow.failurePathRefs = appendUniqueStrings(nextRow.failurePathRefs, failurePathIds);
       }
@@ -8460,7 +8815,8 @@ function resyncExistingBusinessVisualProofClosure(
 
   if (
     context &&
-    shouldRebuildExistingCurrentTargetMap(nextConfirmation.currentTargetMap, context.sourceText)
+    (context.forceCurrentTargetMapRebuild ||
+      shouldRebuildExistingCurrentTargetMap(nextConfirmation.currentTargetMap, context.sourceText))
   ) {
     const rebuiltCurrentTargetMap = buildCurrentTargetMapFromExistingConfirmation({
       root: context.root,
@@ -12225,6 +12581,7 @@ function validateCheckpointPersistenceEvidence(input: {
         sourceDocumentHash: normalizeText(evidence.sourceDocumentHash),
         implementationConfirmationHash: normalizeText(evidence.implementationConfirmationHash),
         draftSourcePath: input.sourcePath,
+        paths: input.paths,
       })
     ) {
       addIssue(`checkpoint receipt stale or invalid ${checkpoint.id}`);

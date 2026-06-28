@@ -437,10 +437,21 @@ function expectArtifactContract(file: string, recordId: string): void {
   ).toMatch(/^sha256:/);
   expect(artifact.createdBy, `${file} createdBy`).toBeTruthy();
   expect(artifact.createdAt, `${file} createdAt`).toBeTruthy();
+  const checkpointReceiptRefs = Array.isArray(artifact.resumeLedger?.checkpointReceiptRefs)
+    ? artifact.resumeLedger.checkpointReceiptRefs.filter(
+        (ref: any) =>
+          ref &&
+          typeof ref === 'object' &&
+          typeof ref.checkpointId === 'string' &&
+          typeof ref.path === 'string' &&
+          typeof ref.hash === 'string' &&
+          ref.hash.startsWith('sha256:')
+      )
+    : null;
   const inputRefs = Array.isArray(artifact.inputRefs)
     ? artifact.inputRefs
-    : Array.isArray(artifact.resumeLedger?.checkpointReceiptRefs)
-      ? artifact.resumeLedger.checkpointReceiptRefs
+    : checkpointReceiptRefs && checkpointReceiptRefs.length === artifact.resumeLedger.checkpointReceiptRefs.length
+      ? checkpointReceiptRefs
       : null;
   expect(Array.isArray(inputRefs), `${file} inputRefs`).toBe(true);
   expect(inputRefs?.length ?? 0, `${file} inputRefs length`).toBeGreaterThan(0);

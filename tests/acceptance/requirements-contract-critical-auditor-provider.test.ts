@@ -94,6 +94,97 @@ describe('requirements contract Critical Auditor provider modes', () => {
     }
   });
 
+  it('no-new-gap response writer fails closed on malformed gate counts and out-of-scope requests', () => {
+    const root = createTempRoot('requirements-contract-critical-auditor-writer-fail-closed-');
+    try {
+      const recordId = 'REQ-CRITICAL-AUDITOR-WRITER-FAIL-CLOSED';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const authoringDir = path.dirname(fixture.requestPath);
+      const responsePath = roundArtifact(root, recordId, 'response', 1);
+      const script = path.join(
+        process.cwd(),
+        '_bmad',
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        'write-critical-auditor-no-new-gap-response.js'
+      );
+      const malformedRequest = {
+        ...(fixture.request as any),
+        gateDryRun: {
+          ...((fixture.request as any).gateDryRun ?? {}),
+          actionableBlockingIssueCount: 'not-a-number',
+          actionableBlockingIssues: {},
+          reconciliation: {
+            ...(((fixture.request as any).gateDryRun ?? {}).reconciliation ?? {}),
+            issueCount: 'not-a-number',
+          },
+        },
+      };
+      const malformedRequestPath = path.join(
+        authoringDir,
+        'critical-auditor-round-request-malformed.json'
+      );
+      writeFileSync(malformedRequestPath, `${JSON.stringify(malformedRequest, null, 2)}\n`, 'utf8');
+
+      const malformed = spawnSync(
+        process.execPath,
+        [
+          script,
+          '--authoring-dir',
+          authoringDir,
+          '--request',
+          malformedRequestPath,
+          '--response-out',
+          responsePath,
+          '--round',
+          '1',
+          '--reviewed-projection-ref',
+          String((fixture.request as any).packetProjectionSummary.projectionRefs[0]),
+          '--json',
+        ],
+        { cwd: process.cwd(), encoding: 'utf8' }
+      );
+      const malformedJson = JSON.parse(malformed.stdout);
+      expect(malformed.status).toBe(1);
+      expect(malformedJson.issues).toEqual(
+        expect.arrayContaining([
+          'critical_auditor_request_gate_dry_run_blocker_count_malformed',
+          'critical_auditor_request_gate_dry_run_blockers_malformed',
+          'critical_auditor_request_reconciliation_issue_count_malformed',
+        ])
+      );
+
+      const outOfScopeRequestPath = path.join(root, 'critical-auditor-round-request-outside.json');
+      writeFileSync(outOfScopeRequestPath, `${JSON.stringify(fixture.request, null, 2)}\n`, 'utf8');
+      const outOfScope = spawnSync(
+        process.execPath,
+        [
+          script,
+          '--authoring-dir',
+          authoringDir,
+          '--request',
+          outOfScopeRequestPath,
+          '--response-out',
+          responsePath,
+          '--round',
+          '1',
+          '--json',
+        ],
+        { cwd: process.cwd(), encoding: 'utf8' }
+      );
+      expect(outOfScope.status).toBe(1);
+      const outOfScopeJson = JSON.parse(outOfScope.stdout);
+      expect(outOfScopeJson).toMatchObject({
+        ok: false,
+        failureClass: 'critical_auditor_no_new_gap_response_failed',
+        error: 'request_outside_authoring_dir',
+      });
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('round requests require Critical Auditor to check per-MUST projection quality rules', () => {
     const root = createTempRoot('requirements-contract-critical-auditor-projection-quality-');
     try {

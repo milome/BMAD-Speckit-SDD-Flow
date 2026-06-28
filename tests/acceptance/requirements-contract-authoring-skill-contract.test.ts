@@ -38,15 +38,15 @@ describe('requirements-contract-authoring published contract', () => {
 
     expect(report.ok).toBe(true);
     expect(report.source.fileCount).toBeGreaterThan(0);
-    expect(report.surfaces.map((surface: any) => surface.path)).toEqual(
-      expect.arrayContaining([
+    expect(report.surfaces.map((surface: any) => surface.path).sort()).toEqual(
+      [
         path.join(ROOT, '.codex', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
         path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
         path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
         path
           .join(ROOT, 'packages', 'bmad-speckit', '_bmad', 'skills', 'requirements-contract-authoring')
           .replace(/\\/g, '/'),
-      ])
+      ].sort()
     );
     for (const surface of report.surfaces) {
       expect(surface.ok, surface.path).toBe(true);

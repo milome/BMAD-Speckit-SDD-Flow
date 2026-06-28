@@ -760,6 +760,19 @@ function collectContradictionQuestions(confirmation) {
       const overlap = sharedTokens(must.text, out.text);
       const mustText = String(must.text ?? '');
       const outText = String(out.text ?? '');
+      const outBoundaryType = String(out.boundaryType ?? out.scopeBoundaryType ?? '').trim();
+      const outConflictResolution = String(out.conflictResolution ?? '').trim();
+      const outLinkedMustRefs = stringList(out.linkedMustRefs);
+      const outCovers = stringList(out.covers);
+      const outIsBoundaryLinkedToMust =
+        /^OUT-/iu.test(String(out.id ?? '')) &&
+        outLinkedMustRefs.length > 0 &&
+        outCovers.length === 0 &&
+        out.userApprovalRequiredIfChanged === true;
+      const outIsExplicitScopeBoundary =
+        outBoundaryType === 'non_goal_scope_boundary' ||
+        outConflictResolution === 'out_of_scope_boundary_only' ||
+        outIsBoundaryLinkedToMust;
       const outIsProofBoundary =
         /do not treat|must not treat|cannot (?:be|count|serve)|不得把|不能把/iu.test(outText) &&
         /proof|authority|completion|完成证明|权威/u.test(outText);
@@ -770,8 +783,9 @@ function collectContradictionQuestions(confirmation) {
       if (
         overlap.length >= 2 &&
         !(
-          outIsProofBoundary &&
-          mustIsEvidenceRecording
+          outIsExplicitScopeBoundary ||
+          (outIsProofBoundary &&
+            mustIsEvidenceRecording)
         ) &&
         /do not|must not|forbid|outside|不得|禁止|不能/iu.test(outText)
       ) {

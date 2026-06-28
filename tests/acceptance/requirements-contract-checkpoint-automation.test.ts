@@ -745,8 +745,7 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
           ...(confirmation.currentTargetMap
             ? ['implementationConfirmation.currentTargetMap']
             : []),
-          ...(confirmation.aiTddContractExecutionManifestProjection ||
-          confirmation.contractExecutionManifest
+          ...(confirmation.aiTddContractExecutionManifestProjection
             ? ['implementationConfirmation.aiTddContractExecutionManifestProjection']
             : []),
           'implementationConfirmation.closeoutReadinessPreview',
@@ -2734,7 +2733,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.checkpointPersistenceSatisfiedCandidate).toBe(true);
     expect(json.checkpointPersistenceRef.routeDecisionHash).toBe(routeDecision.routeDecisionHash);
     expect(json.checkpointPersistenceRef.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
-    expect(json.completedCheckpointIds).toEqual(SEMANTIC_CHECKPOINT_IDS);
+    expect(json).not.toHaveProperty('completedCheckpointIds');
     expect(json.checkpointPersistenceRef.progressHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
     expect(json.checkpointPersistenceRef.preRenderMustDecompositionGateHash).toMatch(
       /^sha256:[a-f0-9]{64}$/u

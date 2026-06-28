@@ -174,7 +174,6 @@ export function writeCheckpointPersistenceEvidence(root: string, recordId: strin
       preRenderGlobalConsistencyHash: sha256File(paths.preRenderGlobalConsistency),
       packetSourceReconciliationHash: sha256File(paths.reconciliationReport),
     },
-    completedCheckpointIds: checkpointIds,
     progressHash: sha256File(paths.progress),
     preRenderMustDecompositionGateHash: sha256File(paths.preRenderMustGate),
     preRenderGlobalConsistencyHash: sha256File(paths.preRenderGlobalConsistency),

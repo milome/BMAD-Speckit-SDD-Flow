@@ -104,6 +104,16 @@ function numberValue(value) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function isFiniteNumberValue(value) {
+  if (value === null || value === undefined || value === "") return false;
+  const numeric = Number(value);
+  return Number.isFinite(numeric);
+}
+
+function strictNumberValue(value) {
+  return Number(value);
+}
+
 function roundPerspective(roundIndex) {
   if (roundIndex === 1) return "MUST atomicity, over-broad tasks, and missing decomposition";
   if (roundIndex === 2) {
@@ -202,10 +212,19 @@ function validateRequestForNoNewGap(request, roundIndex, reviewedProjectionRefs)
   if (!(gateDryRun.gateDryRunHash || gateDryRun.hash)) {
     issues.push("critical_auditor_request_gate_dry_run_hash_missing");
   }
-  if (numberValue(gateDryRun.actionableBlockingIssueCount) !== 0) {
+  if (!isFiniteNumberValue(gateDryRun.actionableBlockingIssueCount)) {
+    issues.push("critical_auditor_request_gate_dry_run_blocker_count_malformed");
+  } else if (strictNumberValue(gateDryRun.actionableBlockingIssueCount) !== 0) {
     issues.push("critical_auditor_no_new_gap_forbidden_by_gate_dry_run_blockers");
   }
-  if (numberValue(reconciliation.issueCount) !== 0) {
+  if (!Array.isArray(gateDryRun.actionableBlockingIssues)) {
+    issues.push("critical_auditor_request_gate_dry_run_blockers_malformed");
+  } else if (gateDryRun.actionableBlockingIssues.length !== 0) {
+    issues.push("critical_auditor_no_new_gap_forbidden_by_gate_dry_run_blockers");
+  }
+  if (!isFiniteNumberValue(reconciliation.issueCount)) {
+    issues.push("critical_auditor_request_reconciliation_issue_count_malformed");
+  } else if (strictNumberValue(reconciliation.issueCount) !== 0) {
     issues.push("critical_auditor_no_new_gap_forbidden_by_reconciliation_issues");
   }
   if (selectCheckedProjectionGroups(request).length === 0) {
@@ -251,6 +270,7 @@ function writeCriticalAuditorNoNewGapResponse(args) {
   const responsePath = path.resolve(
     args.responseOut || path.join(authoringDir, `critical-auditor-round-response-${roundIndex}.json`)
   );
+  ensureInsideAuthoringDir(authoringDir, requestPath, "request");
   ensureInsideAuthoringDir(authoringDir, responsePath, "response_out");
   if (!fs.existsSync(requestPath)) throw new Error("critical_auditor_round_request_missing");
 
