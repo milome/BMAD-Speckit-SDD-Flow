@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import schema from '../../docs/reference/runtime-context.schema.json';
-import { defaultRuntimeContextFile, projectContextPath } from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, projectContextPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context schema', () => {
   it('accepts story-scoped identity fields', () => {

@@ -1,5 +1,5 @@
 # Stages governed by audit granularity mode (full / story / epic).
-# Referenced by scripts/runtime-governance.ts
+# Referenced by packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts
 version: "1.0"
 granularity_governed_stages:
   - story_create

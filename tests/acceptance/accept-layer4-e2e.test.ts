@@ -117,7 +117,7 @@ describe('layer4 complete workflow e2e', () => {
     });
 
     it('uses parse-bmad-audit-result.ts for verification', () => {
-      expect(master).toContain('scripts/parse-bmad-audit-result.ts');
+      expect(master).toContain('packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts');
       expect(master).toContain("status === 'PASS'");
     });
   });

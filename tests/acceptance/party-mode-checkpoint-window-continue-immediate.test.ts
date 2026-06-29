@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateCheckpointWindowInput } from '../../scripts/party-mode-runtime';
+import { evaluateCheckpointWindowInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode checkpoint window continue immediate', () => {
   it('maps C to immediate continue and skips the remaining checkpoint window', () => {

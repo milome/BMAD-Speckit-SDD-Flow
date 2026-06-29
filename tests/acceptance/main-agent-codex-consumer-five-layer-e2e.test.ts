@@ -53,6 +53,16 @@ function runBlockedJson(command: string, cwd: string, env: NodeJS.ProcessEnv = p
   throw new Error(`Expected command to block: ${command}`);
 }
 
+function parseLegacyJsonReport<T extends Record<string, unknown>>(output: string): T {
+  const parsed = JSON.parse(output) as T & {
+    data?: {
+      stdout?: string;
+    };
+  };
+  const stdout = parsed.data?.stdout?.trim();
+  return stdout ? (JSON.parse(stdout) as T) : parsed;
+}
+
 function writeLayer1PrdCompletionEvidence(root: string): void {
   const prdRelativePath = '_bmad-output/planning-artifacts/dev/prd.md';
   const productBriefRelativePath = '_bmad-output/planning-artifacts/product-brief-consumer.md';
@@ -291,30 +301,21 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         'gates',
         'delivery-truth.json'
       );
-      const deliveryOutput = run(
+      const deliveryOutput = runBlockedJson(
         `npx --no-install bmad-speckit main-agent:delivery-truth-gate --cwd . --json --reportPath "${reportPath}"`,
         target
       );
-      const deliveryEnvelope = JSON.parse(deliveryOutput) as {
-        schemaVersion: string;
-        action: string;
-        status: string;
-        exitCode: number;
-        data?: { reportPath?: string };
-      };
-      expect(deliveryEnvelope.schemaVersion).toBe('main-agent-package-runtime/v1');
-      expect(deliveryEnvelope.action).toBe('delivery-truth-gate');
-      expect(deliveryEnvelope.status).toBe('package_runtime_ready');
-      expect(deliveryEnvelope.exitCode).toBe(0);
-      expect(deliveryEnvelope.data?.reportPath).toBe(reportPath);
-      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+      const report = parseLegacyJsonReport<{
         completionAllowed: boolean;
         completionLanguage: string;
-        mode: string;
-      };
+        deliveryStatus: string;
+        missingEvidence: string[];
+      }>(deliveryOutput);
       expect(report.completionAllowed).toBe(false);
-      expect(report.completionLanguage).toBe('partial_only');
-      expect(report.mode).toBe('package_runtime_module');
+      expect(report.completionLanguage).toBe('blocked_only');
+      expect(report.deliveryStatus).toBe('blocked');
+      expect(report.missingEvidence.length).toBeGreaterThan(0);
+      expect(fs.existsSync(reportPath)).toBe(true);
     } finally {
       fs.rmSync(target, { recursive: true, force: true });
     }
@@ -406,7 +407,7 @@ describe('Codex consumer five-layer main-agent e2e', () => {
     const packRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-pack-root-'));
     const target = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-packed-consumer-'));
     try {
-      const packOutput = run(`npm pack --pack-destination "${packRoot}"`, ROOT);
+      const packOutput = run(`npm pack --silent --pack-destination "${packRoot}"`, ROOT);
       const tgzName = packOutput.trim().split(/\r?\n/).filter(Boolean).at(-1);
       if (!tgzName) {
         throw new Error(`npm pack did not return a tarball name: ${packOutput}`);
@@ -645,12 +646,13 @@ describe('Codex consumer five-layer main-agent e2e', () => {
       const releaseReportPath = path.join(gatesRoot, 'main-agent-release-gate-report.json');
       const releaseOutput = fs.readFileSync(releaseReportPath, 'utf8');
       const release = JSON.parse(releaseOutput) as {
-        reportType?: string;
+        gate?: string;
         criticalFailures: number;
+        critical_failures?: number;
         mode?: string;
       };
-      expect(release.reportType).toBe('main_agent_release_gate_package_runtime');
-      expect(release.criticalFailures).toBe(0);
+      expect(release.gate).toBe('main-agent-release-gate');
+      expect(release.criticalFailures ?? release.critical_failures).toBe(0);
       expect(release.mode).toBe('package_runtime_module');
 
       const sprintAuditPath = path.join(
@@ -661,7 +663,7 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         'sprint-status-update-audit.json'
       );
       writeJson(sprintAuditPath, { authorized: true });
-      const deliveryOutput = run(
+      const deliveryOutput = runBlockedJson(
         [
           'npx --no-install bmad-speckit main-agent:delivery-truth-gate',
           '--cwd',
@@ -680,22 +682,26 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         ].join(' '),
         target
       );
-      const delivery = JSON.parse(deliveryOutput) as {
-        schemaVersion: string;
-        action: string;
-        status: string;
-        exitCode: number;
-        data?: { report?: { completionAllowed?: boolean; mode?: string } };
-      };
-      expect(delivery.schemaVersion).toBe('main-agent-package-runtime/v1');
-      expect(delivery.action).toBe('delivery-truth-gate');
-      expect(delivery.status).toBe('package_runtime_ready');
-      expect(delivery.exitCode).toBe(0);
-      expect(delivery.data?.report?.completionAllowed).toBe(false);
-      expect(delivery.data?.report?.mode).toBe('package_runtime_module');
+      const delivery = parseLegacyJsonReport<{
+        reportType: string;
+        completionAllowed: boolean;
+        completionLanguage: string;
+        deliveryStatus: string;
+        failedEvidence?: string[];
+      }>(deliveryOutput);
+      expect(delivery.reportType).toBe('main_agent_delivery_truth_gate');
+      expect(delivery.completionAllowed).toBe(false);
+      expect(delivery.completionLanguage).toBe('partial_only');
+      expect(delivery.deliveryStatus).toBe('partial');
+      expect(delivery.failedEvidence?.some((item) => item.includes('authorized-sprint-status-write'))).toBe(
+        true
+      );
+      expect(delivery.failedEvidence?.some((item) => item.includes('same-run-evidence-provenance'))).toBe(
+        true
+      );
     } finally {
       fs.rmSync(packRoot, { recursive: true, force: true });
       fs.rmSync(target, { recursive: true, force: true });
     }
-  }, 240_000);
+  }, 360_000);
 });

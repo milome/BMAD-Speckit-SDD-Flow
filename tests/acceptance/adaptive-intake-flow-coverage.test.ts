@@ -2,12 +2,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { evaluateAdaptiveIntakeProof } from '../../scripts/adaptive-intake-proof-gate';
+import { evaluateAdaptiveIntakeProof } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-proof-gate';
 import {
   writeUserStoryMappingIndex,
   type UserStoryMappingFlow,
   type UserStoryMappingItem,
-} from '../../scripts/user-story-mapping';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping';
 
 function item(flow: UserStoryMappingFlow): UserStoryMappingItem {
   return {

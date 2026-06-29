@@ -8,7 +8,7 @@ import { ensureScoringBuild } from '../helpers/ensure-scoring-build';
 import {
   createGovernancePacketExecutionRecord,
   updateGovernancePacketExecutionRecord,
-} from '../../scripts/governance-packet-execution-store';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
 
 interface JsonRpcMessage {
   jsonrpc: '2.0';

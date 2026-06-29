@@ -1,0 +1,6 @@
+{
+  "status": "pass",
+  "check": "packages-no-root-ts-bridge",
+  "packageRootTsBridgeCount": 0,
+  "findings": []
+}

@@ -1,6 +1,6 @@
 /**
  * SFT-extract subcommand: extract SFT training dataset from scoring data.
- * Ported from scripts/sft-extract.ts to JS for CLI integration.
+ * Ported from bmad-speckit sft-extract to JS for CLI integration.
  *
  * Exit codes: 0=success, 1=error
  */

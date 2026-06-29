@@ -7,7 +7,7 @@ import {
   appendTurn,
   evaluateGate,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode mixed log integrity', () => {
   it('rejects control records that try to masquerade as agent turns or counted ratio events', () => {

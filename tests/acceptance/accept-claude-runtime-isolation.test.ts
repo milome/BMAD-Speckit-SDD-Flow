@@ -9,7 +9,7 @@ describe('claude runtime isolation', () => {
   });
 
   it('wraps Windows npm-based audits through cmd.exe', () => {
-    const script = readFileSync('scripts/speckit-cli.ts', 'utf8');
+    const script = readFileSync('packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts', 'utf8');
     expect(script).toContain('function buildCrossPlatformCommand');
     expect(script).toContain("process.platform !== 'win32'");
     expect(script).toContain('cmd.exe');
@@ -17,7 +17,7 @@ describe('claude runtime isolation', () => {
   });
 
   it('routes speckit CLI stages through top-level Claude aliases', () => {
-    const script = readFileSync('scripts/speckit-cli.ts', 'utf8');
+    const script = readFileSync('packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts', 'utf8');
     expect(script).toContain("agentFile: '.claude/agents/speckit-specify.md'");
     expect(script).toContain("agentFile: '.claude/agents/speckit-plan.md'");
     expect(script).toContain("agentFile: '.claude/agents/speckit-gaps.md'");

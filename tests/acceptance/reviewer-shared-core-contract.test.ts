@@ -5,13 +5,13 @@ import {
   REVIEWER_SHARED_CORE_BASE_PROMPT_PATH,
   REVIEWER_SHARED_CORE_METADATA_PATH,
   REVIEWER_SHARED_CORE_PROFILE_PACK_PATH,
-} from '../../scripts/reviewer-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract';
 import {
   REVIEWER_SHARED_CORE_METADATA,
   REVIEWER_SHARED_CORE_PROFILE_PACK,
   REVIEWER_SHARED_CORE_VERSION,
   reviewerSharedCoreBasePromptPath,
-} from '../../scripts/reviewer-shared-core';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-shared-core';
 
 describe('reviewer shared core contract', () => {
   it('loads reviewer shared core metadata and profile pack from host-neutral files', () => {

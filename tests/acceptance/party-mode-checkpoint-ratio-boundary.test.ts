@@ -7,7 +7,7 @@ import {
   appendTurn,
   evaluateGate,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode checkpoint ratio boundary', () => {
   it('keeps checkpoint control records out of challenger_ratio accounting', () => {

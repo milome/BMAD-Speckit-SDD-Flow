@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const repoRoot = process.cwd();
 const schemaPath = path.join(repoRoot, '_bmad', '_schemas', 'requirement-record.schema.json');

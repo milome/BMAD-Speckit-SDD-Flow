@@ -7,7 +7,7 @@ import {
   projectContextPath,
   readRuntimeContext,
   writeRuntimeContext,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context io', () => {
   it('writes and reads project context under _bmad-output/runtime/context/project.json', () => {

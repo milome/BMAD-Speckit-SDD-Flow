@@ -37,7 +37,7 @@ description: |
 3. **SFT 分支**：若匹配 SFT 短语 → 运行 `npx bmad-speckit sft-extract` → 将脚本输出（摘要）展示给用户。
 
 **复用说明**：
-- 本 Skill 不实现 discovery、coach 或 SFT 逻辑；全部复用 `scripts/coach-diagnose.ts` 与 `scripts/sft-extract.ts`。
+- 本 Skill 不实现 discovery、coach 或 SFT 逻辑；全部复用 `bmad-speckit coach` 与 `bmad-speckit sft-extract`。
 - Coach：无 `--run-id` 时，脚本内部调用 `discoverLatestRunId` 取 timestamp 最近一轮；默认仅诊断 `scenario=real_dev`；与 `/bmad-coach` Command 共用逻辑。若需诊断 eval_question 样本，需显式传 `--scenario eval_question`。
 - SFT：与 `/bmad-sft-extract` Command 共用 `npx bmad-speckit sft-extract`；支持 `--output`、`--min-score`（默认 90，不可低于 90）。
 

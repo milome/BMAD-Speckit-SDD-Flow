@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   validateTemplateManifest,
   type TemplateManifest,
-} from '../../scripts/i18n/validate-template-manifest';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest';
 
 function createValidManifest(): TemplateManifest {
   return {

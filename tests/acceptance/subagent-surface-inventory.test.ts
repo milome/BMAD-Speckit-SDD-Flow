@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   runSubagentSurfaceInventory,
   subagentSurfaceInventoryInternals,
-} from '../../scripts/subagent-surface-inventory';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =
@@ -61,7 +61,7 @@ function registryRows(options: { unsafeEnvelope?: boolean; omitBmm?: boolean } =
         - renderer or tests hardcode partial surface list as authority
   subagentExecutionSurfaceRegistry:
     - surfaceId: main_agent_codex_worker_adapter
-      path: scripts/main-agent-codex-worker-adapter.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts
       surfaceType: no_hook_worker_adapter
       classification: control_worker
       canAffectControlFlow: true
@@ -130,7 +130,16 @@ ${registryRows(options)}
     },
   });
   writeText(
-    path.join(root, 'scripts', 'main-agent-codex-worker-adapter.ts'),
+    path.join(
+      root,
+      'packages',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'scripts',
+      'main-agent-codex-worker-adapter.ts'
+    ),
     'export const prompt = "Codex worker adapter requires subagent envelope";\n'
   );
   writeText(

@@ -689,7 +689,7 @@
       "mustRef": "MUST-001",
       "task": "Implement production main-agent mental model gate result computation and controlled recording.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-mental-model-gate.test.ts"
       ],
       "redProofPlan": "CMD-001 fails before production gate exists.",
@@ -704,7 +704,7 @@
       "mustRef": "MUST-002",
       "task": "Add canonical model result event payload schema with required hashes, source refs, status, blockers, and before/after record hashes.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-mental-model-gate.test.ts"
       ],
       "redProofPlan": "CMD-001 fails when required event fields are absent.",
@@ -719,7 +719,7 @@
       "mustRef": "MUST-003",
       "task": "Implement adjacent-only forward transition writer with fail-closed blockers and hash checks.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-routing-e2e.test.ts"
       ],
       "redProofPlan": "CMD-002 fails for non-adjacent transition and fromModel mismatch cases.",
@@ -734,7 +734,7 @@
       "mustRef": "MUST-004",
       "task": "Implement controlled rollback writer with allowed rollback targets and record hash preservation.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-routing-e2e.test.ts"
       ],
       "redProofPlan": "CMD-002 fails when rollback writes an unauthorized target or omits before/after hashes.",
@@ -749,7 +749,7 @@
       "mustRef": "MUST-005",
       "task": "Implement semantic drift classifier route that writes reconfirmation_requested before rollback.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-routing-e2e.test.ts"
       ],
       "redProofPlan": "CMD-002 fails when semantic drift enters rerun or dispatch without reconfirmation.",
@@ -764,7 +764,7 @@
       "mustRef": "MUST-006",
       "task": "Add reconfirmation request payload contract without direct currentMentalModel transition writes.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-routing-e2e.test.ts"
       ],
       "redProofPlan": "CMD-002 fails when reconfirmation payload writes transition fields directly.",
@@ -779,7 +779,7 @@
       "mustRef": "MUST-007",
       "task": "Implement exact phrase plus source, implementation, and page hash reconfirmation ingest closure.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-routing-e2e.test.ts"
       ],
       "redProofPlan": "CMD-002 fails for hash mismatch controlled ingest.",
@@ -794,7 +794,7 @@
       "mustRef": "MUST-008",
       "task": "Implement blocker intake normalization for pending, stale, unknown, blocked, and unresolved blockers.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/controlled-blocker-intake.test.ts"
       ],
       "redProofPlan": "CMD-004 fails when unresolved blocker allows next action progression.",
@@ -808,7 +808,7 @@
       "taskId": "TASK-009",
       "mustRef": "MUST-009",
       "task": "Extend Main Agent inspect surface with active record, current model, blockers, reconfirmation, rerun, attempt binding, next safe action, and forbidden shortcuts.",
-      "targetFiles": ["scripts/main-agent-orchestration.ts"],
+      "targetFiles": ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"],
       "redProofPlan": "CMD-004 fails when inspect omits blockers or forbidden shortcuts.",
       "acceptanceRefs": ["ACC-004"],
       "traceRefs": ["TRACE-004"],
@@ -821,7 +821,7 @@
       "mustRef": "MUST-010",
       "task": "Wire production run-loop through inspect, blocker intake, mental model gate, dispatch, rerun, audit, and delivery decisions.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-run-loop-e2e.test.ts"
       ],
       "redProofPlan": "CMD-003 fails when run-loop bypasses gate or blocker intake.",
@@ -836,7 +836,7 @@
       "mustRef": "MUST-011",
       "task": "Bind rerun loops to owner model, source hashes, evidence, and recomputed pass result.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-routing-e2e.test.ts"
       ],
       "redProofPlan": "CMD-002 fails when resolved rerun advances while model result is blocked or stale.",
@@ -851,7 +851,7 @@
       "mustRef": "MUST-012",
       "task": "Record execution_closure_result_recorded summary for dispatch packet, model packet, prompt, strategy, TaskReport, command, trace, artifact, rerun, and evidence closure.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-run-loop-e2e.test.ts"
       ],
       "redProofPlan": "CMD-003 fails when execution closure lacks attempt binding or evidence ingest refs.",
@@ -866,7 +866,7 @@
       "mustRef": "MUST-013",
       "task": "Record audit_review_result_recorded summary for audit reports, score dimensions, findings, waivers, reruns, blocker intake, and attempt binding.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-run-loop-e2e.test.ts"
       ],
       "redProofPlan": "CMD-003 fails when audit review pass ignores blockers or invalid waivers.",
@@ -881,7 +881,7 @@
       "mustRef": "MUST-014",
       "task": "Enforce delivery_confirmation_result_recorded before record_closed and require current closeout proof.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
       ],
       "redProofPlan": "CMD-006 fails when record_closed occurs before delivery confirmation pass.",
@@ -896,7 +896,7 @@
       "mustRef": "MUST-015",
       "task": "Classify legacy events as migration, diagnostics, gate, stage, report, or negative fixture only.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
         "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
       ],
@@ -912,7 +912,7 @@
       "mustRef": "MUST-016",
       "task": "Update RequirementRecord schema and reducer to canonical control fields and reject gate_check_recorded as sixModelResults authority.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
         "tests/acceptance/main-agent-mental-model-gate.test.ts"
       ],
@@ -928,7 +928,7 @@
       "mustRef": "MUST-017",
       "task": "Implement controlled writer registry ownership and fail closed for unowned control event writes.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts"
       ],
       "redProofPlan": "CMD-005 fails when an unregistered writer writes control fields.",
@@ -990,7 +990,7 @@
       "mustRef": "MUST-021",
       "task": "Implement MUST-to-command semantic coverage gate and fail closed for weak, orphaned, stage-mismatched, missing-command, missing-oracle, and missing-scoring-dimension atoms.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/must-to-command-coverage-gate.test.ts"
       ],
       "redProofPlan": "CMD-021 fails when MUST-013 is covered only by ACC-005.",
@@ -1021,7 +1021,7 @@
       "mustRef": "MUST-023",
       "task": "Implement first-class audit_review dispatch with AuditExecutionProfile, auditScoringConvergencePolicy, reviewer profile hash, runAuditorHost args, and self-review denial.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/main-agent-audit-review-dispatch-profile.test.ts"
       ],
       "redProofPlan": "CMD-022 fails when audit packet uses legacy_generic_prompt or lacks AuditExecutionProfile.",
@@ -1036,8 +1036,8 @@
       "mustRef": "MUST-024",
       "task": "Implement audit scoring convergence fail-closed behavior with parseable scoring block, score receipt, runAuditorHost receipt, and three valid no-gap rounds.",
       "targetFiles": [
-        "scripts/audit-scoring-convergence-policy.ts",
-        "scripts/run-auditor-host.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
+        "bmad-speckit run-auditor-host",
         "tests/acceptance/main-agent-audit-review-fail-closed.test.ts",
         "tests/acceptance/main-agent-audit-review-convergence.test.ts"
       ],
@@ -1053,7 +1053,7 @@
       "mustRef": "MUST-025",
       "task": "Implement table-driven six mental model runtime decision matrix consumed by inspect, dispatch-plan, and run-loop.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/six-mental-model-decision-matrix.test.ts",
         "tests/acceptance/main-agent-run-loop-e2e.test.ts"
       ],
@@ -1073,9 +1073,9 @@
         "_bmad/shared/critical-auditor-profile/critical-auditor-profile.json",
         "_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js",
         "_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile.js",
-        "scripts/main-agent-orchestration.ts",
-        "scripts/audit-scoring-convergence-policy.ts",
-        "scripts/run-auditor-host.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
+        "bmad-speckit run-auditor-host",
         "tests/acceptance/critical-auditor-profile-contract.test.ts",
         "tests/acceptance/main-agent-critical-auditor-profile-consumption.test.ts"
       ],
@@ -1091,11 +1091,11 @@
       "mustRef": "MUST-027",
       "task": "Implement deterministic host runtime mode selection, native /goal enforcement for Codex and Claude Code CLI, Cursor IDE Ralph Method TDD subagent prompt generation, main-session direct execution for Cursor CLI and unknown hosts, TaskProgress heartbeat tracking, and supervised timeout separation.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
-        "scripts/main-agent-compiled-prompt-runner.ts",
-        "scripts/main-agent-codex-worker-adapter.ts",
-        "scripts/long-run-runtime-policy.ts",
-        "scripts/orchestration-state.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts",
         "tests/acceptance/main-agent-host-runtime-mode.test.ts",
         "tests/acceptance/main-agent-supervised-worker-timeout.test.ts"
       ],
@@ -1111,7 +1111,7 @@
       "mustRef": "MUST-028",
       "task": "Implement audit triad orchestration policy, three-perspective subagent execution, main-agent repair receipts, repair feedback dispatch, stale convergence reset, and gate-level triad convergence consumption.",
       "targetFiles": [
-        "scripts/main-agent-orchestration.ts",
+        "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "tests/acceptance/audit-triad-orchestration-policy.test.ts",
         "tests/acceptance/audit-triad-closed-loop-e2e.test.ts",
         "tests/acceptance/audit-triad-reset-on-reconfirm.test.ts",
@@ -3133,7 +3133,7 @@
           "id": "ART-001",
           "kind": "code",
           "sourceSection": "artifactAutomationPlan",
-          "pathOrField": "scripts/main-agent-orchestration.ts",
+          "pathOrField": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
           "expectedProducer": "implementation_agent",
           "expectedSourceOfTruthRole": "implementation",
           "traceRefs": [
@@ -4398,11 +4398,11 @@
       },
       {
         "id": "CMD-011",
-        "command": "rg -n -e 'currentMentalModel.*delivery_closeout|delivery_closeout.*currentMentalModel|当前心智模型:.*delivery_closeout' -- scripts/main-agent-orchestration.ts tests/acceptance/six-mental-model-routing-e2e.test.ts _bmad/skills/bmad-speckit/SKILL.md .codex/skills/bmad-speckit/SKILL.md .claude/agents/bmad-master.md",
+        "command": "rg -n -e 'currentMentalModel.*delivery_closeout|delivery_closeout.*currentMentalModel|当前心智模型:.*delivery_closeout' -- packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts tests/acceptance/six-mental-model-routing-e2e.test.ts _bmad/skills/bmad-speckit/SKILL.md .codex/skills/bmad-speckit/SKILL.md .claude/agents/bmad-master.md",
         "role": "",
         "expectedMode": "",
         "files": [
-          "scripts/main-agent-orchestration.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
           "tests/acceptance/six-mental-model-routing-e2e.test.ts",
           "_bmad/skills/bmad-speckit/SKILL.md",
           ".codex/skills/bmad-speckit/SKILL.md",
@@ -4413,11 +4413,11 @@
       },
       {
         "id": "CMD-012",
-        "command": "rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+        "command": "rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
         "role": "",
         "expectedMode": "",
         "files": [
-          "scripts/main-agent-orchestration.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
           "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
           "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts"
         ],
@@ -4426,11 +4426,11 @@
       },
       {
         "id": "CMD-013",
-        "command": "rg -n -e 'gate_check_recorded.*sixModelResults|sixModelResults.*gate_check_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-mental-model-gate.test.ts",
+        "command": "rg -n -e 'gate_check_recorded.*sixModelResults|sixModelResults.*gate_check_recorded' -- packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts tests/acceptance/main-agent-mental-model-gate.test.ts",
         "role": "",
         "expectedMode": "",
         "files": [
-          "scripts/main-agent-orchestration.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
           "tests/acceptance/main-agent-mental-model-gate.test.ts"
         ],
         "traceRefs": ["TRACE-007"],
@@ -4443,8 +4443,8 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-audit-review-fail-closed.test.ts",
-          "scripts/audit-scoring-convergence-policy.ts",
-          "scripts/run-auditor-host.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
+          "bmad-speckit run-auditor-host"
         ],
         "traceRefs": ["TRACE-012"],
         "evidenceRefs": ["EVD-010"]
@@ -4456,8 +4456,8 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-audit-review-convergence.test.ts",
-          "scripts/audit-scoring-convergence-policy.ts",
-          "scripts/run-auditor-host.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
+          "bmad-speckit run-auditor-host"
         ],
         "traceRefs": ["TRACE-012"],
         "evidenceRefs": ["EVD-010"]
@@ -4469,7 +4469,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/six-mental-model-decision-matrix.test.ts",
-          "scripts/main-agent-orchestration.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
         "traceRefs": ["TRACE-013"],
         "evidenceRefs": ["EVD-011"]
@@ -4496,9 +4496,9 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-critical-auditor-profile-consumption.test.ts",
-          "scripts/main-agent-orchestration.ts",
-          "scripts/audit-scoring-convergence-policy.ts",
-          "scripts/run-auditor-host.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
+          "bmad-speckit run-auditor-host"
         ],
         "traceRefs": ["TRACE-014"],
         "evidenceRefs": ["EVD-012"]
@@ -4510,9 +4510,9 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-host-runtime-mode.test.ts",
-          "scripts/main-agent-orchestration.ts",
-          "scripts/main-agent-compiled-prompt-runner.ts",
-          "scripts/main-agent-codex-worker-adapter.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts"
         ],
         "traceRefs": ["TRACE-015"],
         "evidenceRefs": ["EVD-013"]
@@ -4524,9 +4524,9 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-supervised-worker-timeout.test.ts",
-          "scripts/main-agent-codex-worker-adapter.ts",
-          "scripts/long-run-runtime-policy.ts",
-          "scripts/orchestration-state.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts"
         ],
         "traceRefs": ["TRACE-015"],
         "evidenceRefs": ["EVD-013"]
@@ -4538,7 +4538,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/must-to-command-coverage-gate.test.ts",
-          "scripts/main-agent-orchestration.ts",
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
           "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
           "_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js"
         ],
@@ -4552,8 +4552,8 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-audit-review-dispatch-profile.test.ts",
-          "scripts/main-agent-orchestration.ts",
-          "scripts/run-auditor-host.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+          "bmad-speckit run-auditor-host"
         ],
         "traceRefs": ["TRACE-011"],
         "evidenceRefs": ["EVD-009"]
@@ -4565,7 +4565,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/main-agent-state-matrix-authority.test.ts",
-          "scripts/main-agent-orchestration.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
         "traceRefs": ["TRACE-013"],
         "evidenceRefs": ["EVD-011"]
@@ -4592,7 +4592,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/audit-triad-orchestration-policy.test.ts",
-          "scripts/main-agent-orchestration.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
         "traceRefs": ["TRACE-016"],
         "evidenceRefs": ["EVD-014"]
@@ -4604,7 +4604,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/audit-triad-closed-loop-e2e.test.ts",
-          "scripts/main-agent-orchestration.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
         "traceRefs": ["TRACE-016"],
         "evidenceRefs": ["EVD-014"]
@@ -4616,7 +4616,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/audit-triad-reset-on-reconfirm.test.ts",
-          "scripts/main-agent-orchestration.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
         "traceRefs": ["TRACE-016"],
         "evidenceRefs": ["EVD-014"]
@@ -4628,7 +4628,7 @@
         "expectedMode": "",
         "files": [
           "tests/acceptance/docs-triad-review-policy.test.ts",
-          "scripts/main-agent-orchestration.ts"
+          "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
         ],
         "traceRefs": ["TRACE-016"],
         "evidenceRefs": ["EVD-014"]
@@ -5295,7 +5295,7 @@
         "id": "ART-001",
         "kind": "code",
         "sourceSection": "artifactAutomationPlan",
-        "pathOrField": "scripts/main-agent-orchestration.ts",
+        "pathOrField": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "expectedProducer": "implementation_agent",
         "expectedSourceOfTruthRole": "implementation",
         "traceRefs": ["TRACE-001", "TRACE-002", "TRACE-003", "TRACE-004", "TRACE-005", "TRACE-006"],
@@ -5522,7 +5522,7 @@
     "targetModificationPaths": [
       {
         "id": "TARGET-001",
-        "path": "scripts/main-agent-orchestration.ts",
+        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
         "traceRefs": [
           "TRACE-001",
           "TRACE-002",
@@ -5699,7 +5699,7 @@
       },
       {
         "id": "TARGET-022",
-        "path": "scripts/run-auditor-host.ts",
+        "path": "bmad-speckit run-auditor-host",
         "traceRefs": ["TRACE-011", "TRACE-012"],
         "evidenceRefs": ["EVD-009", "EVD-010"],
         "artifactRefs": ["ART-008", "ART-009"],
@@ -5707,7 +5707,7 @@
       },
       {
         "id": "TARGET-023",
-        "path": "scripts/audit-scoring-convergence-policy.ts",
+        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
         "traceRefs": ["TRACE-012", "TRACE-014"],
         "evidenceRefs": ["EVD-010", "EVD-012"],
         "artifactRefs": ["ART-009", "ART-011"],
@@ -5867,7 +5867,7 @@
       },
       {
         "id": "TARGET-043",
-        "path": "scripts/main-agent-compiled-prompt-runner.ts",
+        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
         "traceRefs": ["TRACE-015"],
         "evidenceRefs": ["EVD-013"],
         "artifactRefs": ["ART-012"],
@@ -5875,7 +5875,7 @@
       },
       {
         "id": "TARGET-044",
-        "path": "scripts/main-agent-codex-worker-adapter.ts",
+        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
         "traceRefs": ["TRACE-015"],
         "evidenceRefs": ["EVD-013"],
         "artifactRefs": ["ART-012"],
@@ -5883,7 +5883,7 @@
       },
       {
         "id": "TARGET-045",
-        "path": "scripts/long-run-runtime-policy.ts",
+        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
         "traceRefs": ["TRACE-015"],
         "evidenceRefs": ["EVD-013"],
         "artifactRefs": ["ART-012"],
@@ -5891,7 +5891,7 @@
       },
       {
         "id": "TARGET-046",
-        "path": "scripts/orchestration-state.ts",
+        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts",
         "traceRefs": ["TRACE-015"],
         "evidenceRefs": ["EVD-013"],
         "artifactRefs": ["ART-012"],
@@ -6326,7 +6326,7 @@
       "rows": [
         {
           "id": "TARGET-001",
-          "path": "scripts/main-agent-orchestration.ts",
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
           "traceRefs": [
             "TRACE-001",
             "TRACE-002",
@@ -6587,7 +6587,7 @@
         },
         {
           "id": "TARGET-022",
-          "path": "scripts/run-auditor-host.ts",
+          "path": "bmad-speckit run-auditor-host",
           "traceRefs": ["TRACE-011", "TRACE-012"],
           "evidenceRefs": ["EVD-009", "EVD-010"],
           "artifactRefs": ["ART-008", "ART-009"],
@@ -6599,7 +6599,7 @@
         },
         {
           "id": "TARGET-023",
-          "path": "scripts/audit-scoring-convergence-policy.ts",
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
           "traceRefs": ["TRACE-012", "TRACE-014"],
           "evidenceRefs": ["EVD-010", "EVD-012"],
           "artifactRefs": ["ART-009", "ART-011"],
@@ -6839,7 +6839,7 @@
         },
         {
           "id": "TARGET-043",
-          "path": "scripts/main-agent-compiled-prompt-runner.ts",
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
           "traceRefs": ["TRACE-015"],
           "evidenceRefs": ["EVD-013"],
           "artifactRefs": ["ART-012"],
@@ -6851,7 +6851,7 @@
         },
         {
           "id": "TARGET-044",
-          "path": "scripts/main-agent-codex-worker-adapter.ts",
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
           "traceRefs": ["TRACE-015"],
           "evidenceRefs": ["EVD-013"],
           "artifactRefs": ["ART-012"],
@@ -6863,7 +6863,7 @@
         },
         {
           "id": "TARGET-045",
-          "path": "scripts/long-run-runtime-policy.ts",
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
           "traceRefs": ["TRACE-015"],
           "evidenceRefs": ["EVD-013"],
           "artifactRefs": ["ART-012"],
@@ -6875,7 +6875,7 @@
         },
         {
           "id": "TARGET-046",
-          "path": "scripts/orchestration-state.ts",
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts",
           "traceRefs": ["TRACE-015"],
           "evidenceRefs": ["EVD-013"],
           "artifactRefs": ["ART-012"],
@@ -7074,21 +7074,21 @@
     },
     {
       "id": "CMD-011",
-      "command": "rg -n -e 'currentMentalModel.*delivery_closeout|delivery_closeout.*currentMentalModel|当前心智模型:.*delivery_closeout' -- scripts/main-agent-orchestration.ts tests/acceptance/six-mental-model-routing-e2e.test.ts _bmad/skills/bmad-speckit/SKILL.md .codex/skills/bmad-speckit/SKILL.md .claude/agents/bmad-master.md",
+      "command": "rg -n -e 'currentMentalModel.*delivery_closeout|delivery_closeout.*currentMentalModel|当前心智模型:.*delivery_closeout' -- packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts tests/acceptance/six-mental-model-routing-e2e.test.ts _bmad/skills/bmad-speckit/SKILL.md .codex/skills/bmad-speckit/SKILL.md .claude/agents/bmad-master.md",
       "traceRows": ["TRACE-007", "TRACE-009"],
       "evidenceRefs": ["EVD-006", "EVD-007"],
       "oracle": ""
     },
     {
       "id": "CMD-012",
-      "command": "rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+      "command": "rg -n -e 'architecture_confirmation_state_checked|implementation_readiness_check_recorded|readiness_baseline_activation_requested|closeout_recorded' -- packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
       "traceRows": ["TRACE-007"],
       "evidenceRefs": ["EVD-006"],
       "oracle": ""
     },
     {
       "id": "CMD-013",
-      "command": "rg -n -e 'gate_check_recorded.*sixModelResults|sixModelResults.*gate_check_recorded' -- scripts/main-agent-orchestration.ts tests/acceptance/main-agent-mental-model-gate.test.ts",
+      "command": "rg -n -e 'gate_check_recorded.*sixModelResults|sixModelResults.*gate_check_recorded' -- packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts tests/acceptance/main-agent-mental-model-gate.test.ts",
       "traceRows": ["TRACE-007"],
       "evidenceRefs": ["EVD-006"],
       "oracle": ""

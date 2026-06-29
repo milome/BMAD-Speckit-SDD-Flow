@@ -64,7 +64,7 @@ function runReleaseGate(
     '--project',
     'tsconfig.node.json',
     '--transpile-only',
-    'scripts/main-agent-release-gate.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts',
     '--runId',
     runId,
     '--storyKey',

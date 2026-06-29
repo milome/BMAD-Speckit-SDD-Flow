@@ -9,7 +9,7 @@ import {
   recordGatesLoopRetry,
   resetGatesLoopProgress,
   writeOrchestrationState,
-} from '../../scripts/orchestration-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 
 describe('main-agent gatesLoop E2E', () => {
   it('opens the circuit after repeated no-progress and changes the main-agent branch', () => {

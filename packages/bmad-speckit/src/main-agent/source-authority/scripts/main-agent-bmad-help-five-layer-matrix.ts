@@ -434,7 +434,9 @@ function validateBmadHelpEntry(
     bmadsRuntimeContract:
       bmadsRuntime.includes('schemaVersion: bmads-runtime/v1') &&
       bmadsRuntime.includes('governance: _bmad/_config/orchestration-governance.contract.yaml') &&
-      bmadsRuntime.includes('dispatch: scripts/orchestration-dispatch-contract.ts') &&
+      bmadsRuntime.includes(
+        'dispatch: packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts'
+      ) &&
       bmadsRuntime.includes('stageMapping: _bmad/_config/stage-mapping.yaml') &&
       !bmadsRuntime.includes('p0_journey_coverage') &&
       !bmadsRuntime.includes('smoke_e2e_readiness'),

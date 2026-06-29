@@ -6,8 +6,8 @@ import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { mainAuditorPostActions } from '../../scripts/auditor-post-actions';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { mainAuditorPostActions } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-post-actions';
 
 describe('auditor post-actions runner', () => {
   it('writes score-compatible audit index entry from a structured bugfix audit report without separate CLI orchestration', () => {

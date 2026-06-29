@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
 import * as path from 'node:path';
-import { loadManifest } from '../../scripts/i18n/load-manifest';
+import { loadManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/load-manifest';
 import { extractOverallGrade } from '../../packages/scoring/parsers/audit-generic';
 
 describe('acceptance: i18n audit pipeline (E15-S2 T6.4)', () => {

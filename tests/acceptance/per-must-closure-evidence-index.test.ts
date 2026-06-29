@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPerMustClosureEvidenceIndex,
   mainPerMustClosureEvidenceIndex,
-} from '../../scripts/per-must-closure-evidence-index';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/per-must-closure-evidence-index';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 

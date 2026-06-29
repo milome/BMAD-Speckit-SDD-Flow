@@ -30,7 +30,7 @@ describe('governance hook jsdoc typing', () => {
       expect(content).toContain('// @ts-check');
       for (const typedefName of testCase.typedefs) {
         expect(content).toContain(
-          `@typedef {import('../../../scripts/governance-hook-types').${typedefName}} ${typedefName}`
+          `@typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').${typedefName}} ${typedefName}`
         );
       }
       expect(content).toContain(testCase.returns);

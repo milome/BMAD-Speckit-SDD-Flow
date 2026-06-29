@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePromptRoutingHintsFromText } from '../../scripts/prompt-routing-hints';
-import { resolvePromptHintUsage } from '../../scripts/prompt-routing-governance';
+import { resolvePromptRoutingHintsFromText } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints';
+import { resolvePromptHintUsage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance';
 
 const repoRoot = process.cwd();
 

@@ -1,0 +1,1388 @@
+{
+  "schemaVersion": "root-ts-hard-cut-dist-runtime-evidence/v1",
+  "generatedAt": "2026-06-29T03:00:08.008Z",
+  "buildCommand": "npm run build:main-agent-dist",
+  "distRuntimeStatus": "pass",
+  "rowCount": 197,
+  "missingDistRuntimeCount": 0,
+  "missingDistRuntimeRows": [],
+  "distRows": [
+    {
+      "originalPath": "scripts/adaptive-intake-governance-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/adaptive-intake-governance-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/adaptive-intake-proof-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/adaptive-intake-proof-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ai-tdd-contract-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ai-tdd-contract-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/analytics-cluster.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/analytics-cluster.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/analytics-prompt-optimize.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/analytics-prompt-optimize.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/analytics-rule-suggest.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/analytics-rule-suggest.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/analytics-sft-extract.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/analytics-sft-extract.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/architecture-confirmation-hash-recipe.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/architecture-drift-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/architecture-drift-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/assert-implementation-entry.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/assert-implementation-entry.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/audit-scoring-convergence-policy.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-scoring-convergence-policy.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/audit-stage-routing.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-stage-routing.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/audit-triad-orchestrator.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/audit-triad-orchestrator.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/auditor-post-actions.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/auditor-post-actions.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/auditor-spec.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/auditor-spec.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmad-config.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-config.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmad-help-five-layer-progress-marker.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmad-help-routing-state.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-help-routing-state.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmad-runtime-worker.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-runtime-worker.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmad-state-reader.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state-reader.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmad-state.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/bmad-state.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/bmads-auto-cli.ts",
+      "distRuntimePaths": [],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/check-story-score-written.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/check-story-score-written.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/coach-diagnose.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/coach-diagnose.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/continue-state-contract.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/continue-state-contract.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/control-event-log-rebaseline.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/control-event-log-rebaseline.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/controlled-ingest-atomic-committer.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/controlled-ingest-atomic-committer.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/controlled-readiness-audit-bridge.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/create-second-story.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/create-second-story.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/create-test-story.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/create-test-story.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/critical-auditor-profile.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/critical-auditor-profile.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/dashboard-generate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/dashboard-generate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/dashboard-projection-mapping.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/dashboard-projection-mapping.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/diagnose-bmad-state.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/diagnose-bmad-state.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/e2e-dual-host-journey-runner.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/e2e-dual-host-journey-runner.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/e2e-host-matrix-journey-runner.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/e2e-host-matrix-journey-runner.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/e2e-verify-paths.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/e2e-verify-paths.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/emit-runtime-policy.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/emit-runtime-policy.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/eval-question-generate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/eval-question-generate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/eval-questions-cli.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/eval-questions-cli.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/evidence-provenance.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/evidence-provenance.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/execution-discipline-profiles.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/execution-discipline-profiles.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/execution-intent-schema.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/execution-intent-schema.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/execution-strategy-selection.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/execution-strategy-selection.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/facilitator-registry.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/facilitator-registry.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/facilitator-runtime-definition.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/facilitator-runtime-definition.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/final-closeout-evidence-runner.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/final-closeout-evidence-runner.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-execution-result-ingestor.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-execution-result-ingestor.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-hook-types.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-hook-types.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-host-dispatch-adapter.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-host-dispatch-adapter.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-packet-dispatch-worker.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-packet-dispatch-worker.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-packet-execution-store.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-packet-execution-store.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-packet-reconciler.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-packet-reconciler.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-provider-adapter.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-provider-adapter.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-remediation-artifact.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-remediation-artifact.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-remediation-config.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-remediation-config.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-remediation-runner.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-remediation-runner.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-runtime-queue.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-runtime-queue.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-stage-event-emitter.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-stage-event-emitter.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/governance-transport-envelope.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/governance-transport-envelope.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/host-runtime-mode.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/host-runtime-mode.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/agent-display-names.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/agent-display-names.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/agent-manifest.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/agent-manifest.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/detect-language.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/detect-language.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/field-meta-types.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/field-meta-types.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/language-policy.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/language-policy.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/load-manifest.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/load-manifest.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/materialize-facilitator-definition.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/party-mode-runtime-assets.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/placeholder-types.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/placeholder-types.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/print-resolved-audit-prompt.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/protected-token-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/protected-token-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/render-audit-block-cli.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/render-audit-block-cli.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/render-field-view.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/render-field-view.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/render-template.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/render-template.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-for-session-cli.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-for-session.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-for-session.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/resolve-localized-markdown-path.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/sync-party-mode-mirrors.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/i18n/validate-template-manifest.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/i18n/validate-template-manifest.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ingest-architecture-confirmation.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ingest-architecture-confirmation.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ingest-implementation-evidence.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ingest-implementation-evidence.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/initialize-six-model-requirement-confirmation.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/live-smoke-main-agent-runtime.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/live-smoke-speckit-workflow.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/live-smoke-speckit-workflow.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/long-run-runtime-policy.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/long-run-runtime-policy.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-ai-tdd-closeout-remediation-adapter.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-audit-review-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-audit-review-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-artifact-hardcut.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-chaos-scenarios.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-chaos-scenarios.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-codex-worker-adapter.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-compiled-prompt-runner.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-control-plane-isolation-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-control-plane-isolation-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-data-governance-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-data-governance-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-dataset-release-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-dataset-release-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-decision-field-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-decision-field-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-delivery-truth-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-development-journey-matrix.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-development-journey-matrix.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-entryflow-traceability-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-execution-closure-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-execution-closure-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-functional-resume-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-functional-resume-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-governed-data-products.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-governed-data-products.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-implementation-readiness-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-orchestration.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-production-loop-ready-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-quality-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-quality-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-release-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-release-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-scoring-gates-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-scoring-gates-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-soak-runner.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-soak-runner.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-trace-status-policy-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/main-agent-unified-ingress.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-unified-ingress.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/model-governance-hint-resolver.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-hint-resolver.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/model-governance-hints-schema.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-hints-schema.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/model-governance-policy-filter.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/model-governance-policy-filter.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/orchestration-dispatch-contract.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/orchestration-dispatch-contract.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/orchestration-governance-contract.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/orchestration-governance-contract.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/orchestration-state.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/orchestration-state.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/parallel-mission-control.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parallel-mission-control.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/parse-and-write-score.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parse-and-write-score.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/parse-bmad-audit-result.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/parse-bmad-audit-result.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/party-mode-gate-check.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-gate-check.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/party-mode-runtime.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/party-mode-runtime.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/per-must-closure-evidence-index.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/per-must-closure-evidence-index.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/pre-rerun-anti-false-positive-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/prompt-routing-governance.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-governance.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/prompt-routing-hints-schema.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-hints-schema.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/prompt-routing-hints.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/prompt-routing-hints.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/query-validate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/query-validate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/pathing.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/pathing.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/progress-format.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/progress-format.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/schema.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/schema.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/speckit-implement.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/speckit-implement.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/types.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/types.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/verify-pass-consistency.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/verify-tdd-trace.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/ralph-method/write-tracking-files.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/ralph-method/write-tracking-files.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reconfirmation-runtime.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reconfirmation-runtime.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/requirement-record-control-store.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirement-record-control-store.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/requirement-record-event-reducer.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirement-record-event-reducer.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/requirement-record-live-schema-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirement-record-live-schema-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/requirement-record-schema-evolution.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirement-record-schema-evolution.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/resolve-active-requirement.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/resolve-active-requirement.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reviewer-contract.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-contract.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reviewer-registry.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-registry.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reviewer-rollout-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-rollout-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reviewer-runtime-definition.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-runtime-definition.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reviewer-schema.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-schema.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/reviewer-shared-core.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/reviewer-shared-core.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/run-auditor-host.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-auditor-host.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/run-fresh-regression-matrix.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-fresh-regression-matrix.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-context-registry.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context-registry.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-context.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-context.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-governance-registry.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-governance-registry.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-governance-template-schema.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-governance-template-schema.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-governance.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-governance.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-scoring-data-path.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-scoring-data-path.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/runtime-step-state.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/runtime-step-state.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/scores-summary.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/scores-summary.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/sdd-artifact-manifest.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/sdd-artifact-manifest.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/sft-extract.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/sft-extract.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/six-model-runtime-decision.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/six-model-runtime-decision.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/skill-inventory-provider.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/skill-inventory-provider.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/skill-orchestration-audit.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/skill-orchestration-audit.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/skill-semantic-features-config.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/skill-semantic-features-config.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/speckit-cli.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/speckit-cli.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/sprint-status-authorized-update.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/sprint-status-authorized-update.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/stable-runtime-policy-json.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/stable-runtime-policy-json.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/start-dashboard.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/start-dashboard.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/strict-closeout-proof-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/strict-closeout-proof-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/strict-command-resolution-preflight.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/strict-command-resolution-preflight.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/subagent-current-attempt-revalidation.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-current-attempt-revalidation.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/subagent-evidence-envelope.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-evidence-envelope.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/subagent-surface-inventory.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/subagent-surface-inventory.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/supervised-worker-runtime.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/supervised-worker-runtime.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/target-artifact-realization-gate.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/target-artifact-realization-gate.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/test-locks.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-locks.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/test-story-flow.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/test-story-flow.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/trace-040-evidence-packet-generator.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/trace-closure-matrix.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/trace-closure-matrix.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/update-runtime-audit-index.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/update-runtime-audit-index.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/update-specify-passed.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/update-specify-passed.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/user-story-mapping.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/user-story-mapping.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/validate-single-source-whitelist.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/validate-single-source-whitelist.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/verify-agent-files.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-agent-files.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/verify-cursor-audit-granularity.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-cursor-audit-granularity.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/verify-story-mode.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/verify-story-mode.js"
+      ],
+      "distRuntimeExists": true
+    },
+    {
+      "originalPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+      "distRuntimePaths": [
+        "packages/bmad-speckit/dist/main-agent/source-authority/scripts/write-runtime-policy-snapshot-and-recovery-context.js"
+      ],
+      "distRuntimeExists": true
+    }
+  ]
+}

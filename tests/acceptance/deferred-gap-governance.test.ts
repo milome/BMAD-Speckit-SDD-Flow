@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { readOrchestrationState } from '../../scripts/orchestration-state';
+import { readOrchestrationState } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 

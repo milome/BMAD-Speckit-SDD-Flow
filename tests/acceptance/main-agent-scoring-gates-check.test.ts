@@ -5,9 +5,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveScoringPolicy } from '../../packages/scoring/policy';
-import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
-import { mainIngestImplementationEvidence } from '../../scripts/ingest-implementation-evidence';
-import { mainScoringGatesCheck } from '../../scripts/main-agent-scoring-gates-check';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
+import { mainScoringGatesCheck } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =
@@ -233,7 +233,7 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
         {
           commandId: 'CMD-SCORING-GATES-CHECK',
           command:
-            'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',
+            'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts',
           commandType: 'delivery_evidence',
           blockingIfMissing: true,
           negativeOrRegression: true,
@@ -255,7 +255,7 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
           {
             commandId: 'CMD-SCORING-GATES-CHECK',
             command:
-              'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-scoring-gates-check.ts',
+              'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts',
             runId: 'run-scoring-001',
             closeoutAttemptId: 'closeout-scoring-001',
             exitCode: 0,
@@ -491,13 +491,13 @@ describe('main-agent scoring gates check', () => {
         taskRefs: ['TASK-SCORING-POLICY-GATES'],
         evidenceRefs: ['EVD-027'],
         filesChanged: [
-          'scripts/ingest-implementation-evidence.ts',
-          'scripts/main-agent-scoring-gates-check.ts',
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts',
         ],
         implementationDelta: {
           filesChanged: [
-            'scripts/ingest-implementation-evidence.ts',
-            'scripts/main-agent-scoring-gates-check.ts',
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts',
           ],
           diffSummaryRef: 'scoring/score-record.json',
           behaviorAffecting: true,

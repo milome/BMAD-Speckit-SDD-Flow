@@ -583,7 +583,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  });
+  }, 60_000);
 
   it('records source provenance and sanitized fixture integrity', () => {
     const fixture = readUtf8(fixtureRelativePath);

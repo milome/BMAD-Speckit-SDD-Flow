@@ -6,7 +6,7 @@ import {
   ingestMainAgentTaskReport,
   resolveMainAgentOrchestrationSurface,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { resolveSixModelRuntimeDecision } from '../../scripts/six-model-runtime-decision';
+import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
@@ -73,7 +73,7 @@ describe('Six mental model decision matrix', () => {
       const state = ingestMainAgentTaskReport(fixture.root, fixture.requirementSetId, {
         packetId: 'implement-current',
         status: 'done',
-        filesChanged: ['scripts/main-agent-orchestration.ts'],
+        filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'],
         validationsRun: ['vitest'],
         evidence: ['task-report.json'],
         downstreamContext: ['implementation iteration complete'],

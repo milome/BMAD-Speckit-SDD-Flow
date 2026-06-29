@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { renderTemplate } from '../../scripts/i18n/render-template';
-import { resolveLanguagePolicy } from '../../scripts/i18n/language-policy';
-import type { TemplateManifest } from '../../scripts/i18n/validate-template-manifest';
-import { loadConfig } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { renderTemplate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-template';
+import { resolveLanguagePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy';
+import type { TemplateManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest';
+import { loadConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 function governanceSnapshotFromResolve() {
   const config = loadConfig();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateCheckpointWindowInput } from '../../scripts/party-mode-runtime';
+import { evaluateCheckpointWindowInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode checkpoint window business replan', () => {
   it('treats normal business text inside the checkpoint window as replan-before-next-batch', () => {

@@ -784,10 +784,10 @@ program
   .description('Run the BMAD main-agent release gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
+  .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
       'release-gate',
-      ...forwardedArgsFromCommand(command),
+      ...rawArgsAfterCommandName('main-agent:release-gate'),
     ])
   );
 
@@ -796,10 +796,10 @@ program
   .description('Run the BMAD main-agent delivery truth gate CLI surface')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .action((_options, command) =>
+  .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
       'delivery-truth-gate',
-      ...forwardedArgsFromCommand(command),
+      ...rawArgsAfterCommandName('main-agent:delivery-truth-gate'),
     ])
   );
 

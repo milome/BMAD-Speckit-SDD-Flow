@@ -5,11 +5,11 @@ import path from 'node:path';
 import {
   ensureProjectRuntimeContext,
   ensureStoryRuntimeContext,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   readRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
 const STEP04 = path.join(

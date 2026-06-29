@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { processQueue } from '../../scripts/bmad-runtime-worker';
-import { createGovernanceHostDispatchAdapter } from '../../scripts/governance-host-dispatch-adapter';
-import { readGovernanceRemediationConfig } from '../../scripts/governance-remediation-config';
-import { fallbackAllowed } from '../../scripts/orchestration-dispatch-contract';
+import { processQueue } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker';
+import { createGovernanceHostDispatchAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter';
+import { readGovernanceRemediationConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config';
+import { fallbackAllowed } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
   createAutonomousFallbackDisabledFixture,
   writePendingGovernanceQueueItem,

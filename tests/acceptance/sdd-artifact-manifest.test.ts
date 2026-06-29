@@ -7,7 +7,7 @@ import {
   createSddArtifactManifest,
   governedNonStorySddRoot,
   validateSddArtifactManifest,
-} from '../../scripts/sdd-artifact-manifest';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/sdd-artifact-manifest';
 
 describe('SDD artifact manifest contract', () => {
   it('requires manifest identity, review authority, hashes, bound ids, and packet producer', () => {

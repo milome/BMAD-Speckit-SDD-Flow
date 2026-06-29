@@ -7,7 +7,7 @@ import {
   evaluateGate,
   KNOWN_GATE_PROFILES,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode closure level mapping', () => {
   it('freezes closure levels for all known gate profiles', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { renderTemplate } from '../../scripts/i18n/render-template';
-import type { TemplateManifest } from '../../scripts/i18n/validate-template-manifest';
+import { renderTemplate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-template';
+import type { TemplateManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest';
 
 const manifest: TemplateManifest = {
   id: 'golden.audit',

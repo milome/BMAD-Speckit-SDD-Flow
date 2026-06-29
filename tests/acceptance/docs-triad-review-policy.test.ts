@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createAuditTriadExecutionPlan } from '../../scripts/audit-triad-orchestrator';
-import { stageProfileForCallPoint } from '../../scripts/critical-auditor-profile';
+import { createAuditTriadExecutionPlan } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
+import { stageProfileForCallPoint } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

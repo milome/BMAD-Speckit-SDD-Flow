@@ -23,7 +23,7 @@ describe('main-agent quality gate thresholds', () => {
         '--project',
         'tsconfig.node.json',
         '--transpile-only',
-        'scripts/main-agent-quality-gate.ts',
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',
       ],
       { cwd: ROOT, encoding: 'utf8' }
     );
@@ -40,7 +40,7 @@ describe('main-agent quality gate thresholds', () => {
   });
 
   it('keeps the quality gate implementation out of fail-closed TODO stub mode', () => {
-    const source = readFileSync(path.join(ROOT, 'scripts/main-agent-quality-gate.ts'), 'utf8');
+    const source = readFileSync(path.join(ROOT, 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts'), 'utf8');
     expect(source).not.toContain("failTodo('main-agent-quality-gate'");
     expect(source).not.toContain('TODO implementation not completed');
   });
@@ -80,7 +80,7 @@ describe('main-agent quality gate thresholds', () => {
             '--project',
             'tsconfig.node.json',
             '--transpile-only',
-            'scripts/main-agent-quality-gate.ts',
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',
             '--runId',
             'run-quality',
             '--storyKey',
@@ -132,7 +132,7 @@ describe('main-agent quality gate thresholds', () => {
           '--project',
           'tsconfig.node.json',
           '--transpile-only',
-          'scripts/main-agent-quality-gate.ts',
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',
           '--runId',
           'run-quality',
           '--storyKey',

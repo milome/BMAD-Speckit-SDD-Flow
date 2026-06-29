@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import {
   deriveLocalizedMarkdownPaths,
   resolveLocalizedMarkdownPath,
-} from '../../scripts/i18n/resolve-localized-markdown-path';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path';
 
 describe('resolveLocalizedMarkdownPath', () => {
   let tmp: string;

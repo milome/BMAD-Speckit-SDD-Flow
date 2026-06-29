@@ -1566,7 +1566,9 @@ export function evaluateCanonicalSchemaReducerGate(input: {
   const { confirmation, sourcePath } = readImplementationConfirmation(input.sourcePath);
   const fields = declaredRecordFields(confirmation);
   const schemaPath = path.resolve('_bmad/_schemas/requirement-record.schema.json');
-  const reducerPath = path.resolve('scripts/requirement-record-control-store.ts');
+  const reducerPath = path.resolve(
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts'
+  );
   const schemaText = fs.existsSync(schemaPath) ? fs.readFileSync(schemaPath, 'utf8') : '';
   const reducerText = fs.existsSync(reducerPath) ? fs.readFileSync(reducerPath, 'utf8') : '';
   const issues: GateIssue[] = [];

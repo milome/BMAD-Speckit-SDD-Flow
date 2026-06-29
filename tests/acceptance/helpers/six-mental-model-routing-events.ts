@@ -1,4 +1,4 @@
-import { appendControlEventAndReplay } from '../../../scripts/requirement-record-control-store';
+import { appendControlEventAndReplay } from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 import {
   IMPLEMENTATION_HASH,
   type JsonObject,

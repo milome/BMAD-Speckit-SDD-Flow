@@ -4,7 +4,7 @@ import {
   getI18nConfig,
   loadConfig,
   type RuntimeConfig,
-} from '../../scripts/bmad-config';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 
 const REQUIRED_I18N_KEYS = [
   'default_language_mode',

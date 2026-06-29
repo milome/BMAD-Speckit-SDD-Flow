@@ -2,18 +2,18 @@ import { cpSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadConfig, resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
+import { loadConfig, resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 import {
   createGovernancePacketExecutionRecord,
   updateGovernancePacketExecutionRecord,
-} from '../../scripts/governance-packet-execution-store';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
-import { runAuditorHost } from '../../scripts/run-auditor-host';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
+import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 function buildStoryCloseout(root: string, artifactPath: string) {

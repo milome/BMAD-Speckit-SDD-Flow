@@ -6,7 +6,16 @@ describe('runtime-policy removes speckit fallback', () => {
   it('does not let emit-runtime-policy use removed speckit fallback logic', () => {
     const repoRoot = process.cwd();
     const emitSource = readFileSync(
-      path.join(repoRoot, 'scripts', 'emit-runtime-policy.ts'),
+      path.join(
+        repoRoot,
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'emit-runtime-policy.ts'
+      ),
       'utf8'
     );
 

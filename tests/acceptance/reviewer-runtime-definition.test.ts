@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ensureReviewerRuntimeDefinition,
   materializeReviewerDefinition,
-} from '../../scripts/reviewer-runtime-definition';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition';
 
 function createFixtureRoot(): string {
   const root = mkdtempSync(path.join(os.tmpdir(), 'reviewer-runtime-definition-'));

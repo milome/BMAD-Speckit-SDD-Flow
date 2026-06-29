@@ -9,8 +9,8 @@ import {
   requirementRecordIndexPath,
   requirementRecordsRoot,
   resolveActiveRequirement,
-} from '../../scripts/resolve-active-requirement';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 let root: string;
@@ -279,11 +279,9 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     const result = spawnSync(
       process.execPath,
       [
-        'node_modules/ts-node/dist/bin.js',
-        '--project',
-        'tsconfig.node.json',
-        '--transpile-only',
-        'scripts/resolve-active-requirement.ts',
+        'packages/bmad-speckit/bin/bmad-speckit.js',
+        'main-agent',
+        'resolve-active-requirement',
         '--cwd',
         root,
         '--record-id',
@@ -293,9 +291,22 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       { cwd: process.cwd(), encoding: 'utf8' }
     );
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('resolve-active-requirement:');
-    expect(result.stderr).toContain('blocked_missing_active_requirement');
-    expect(result.stderr).toContain('index-repair-projection.json');
+    const envelope = JSON.parse(result.stdout) as {
+      status?: string;
+      exitCode?: number;
+      errors?: Array<{ message?: string }>;
+      data?: { sourceAuthorityRuntimeProof?: { stderr?: string } };
+    };
+    const failureText = [
+      result.stderr,
+      envelope.errors?.map((error) => error.message).join('\n') ?? '',
+      envelope.data?.sourceAuthorityRuntimeProof?.stderr ?? '',
+    ].join('\n');
+    expect(envelope.status).toBe('source_authority_runtime_failed');
+    expect(envelope.exitCode).toBe(1);
+    expect(failureText).toContain('resolve-active-requirement:');
+    expect(failureText).toContain('blocked_missing_active_requirement');
+    expect(failureText).toContain('index-repair-projection.json');
   });
 
   it('emit-runtime-policy reads flow/stage from ResolvedRuntimeContext, not legacy context', () => {

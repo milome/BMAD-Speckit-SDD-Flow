@@ -253,9 +253,9 @@
 
 ## scripts
 
-> Scoring 相关脚本已整合进 `bmad-speckit` CLI 子命令。`scripts/*.ts` 保留为源仓库开发入口。
-> 对应关系：`parse-and-write-score.ts` → `npx bmad-speckit score`、`check-story-score-written.ts` → `npx bmad-speckit check-score`、`coach-diagnose.ts` → `npx bmad-speckit coach`、`dashboard-generate.ts` → `npx bmad-speckit dashboard`、`sft-extract.ts` → `npx bmad-speckit sft-extract`、`scores-summary.ts` → `npx bmad-speckit scores`。
-> 当前审计后自动化主路径：`scripts/run-auditor-host.ts` 负责 host 级收口，`scripts/auditor-post-actions.ts` 负责 post-actions 编排，必要时再调用 `scripts/update-runtime-audit-index.ts` 与底层 scoring 能力。
+> Root `scripts/**/*.ts` is no longer a runtime authority. Scoring and main-agent script entrypoints are exposed through `bmad-speckit` CLI commands and package source-authority modules.
+> Scoring command mapping: `parse-and-write-score.ts` → `npx bmad-speckit score`, `check-story-score-written.ts` → `npx bmad-speckit check-score`, `coach-diagnose.ts` → `npx bmad-speckit coach`, `dashboard-generate.ts` → `npx bmad-speckit dashboard`, `sft-extract.ts` → `npx bmad-speckit sft-extract`, `scores-summary.ts` → `npx bmad-speckit scores`.
+> Current audit automation path: `bmad-speckit run-auditor-host` is the host-level closeout command, and `packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-post-actions.ts` remains the package source-authority post-actions implementation.
 
 [生产] scripts/accept-e1-s1.ts
 [生产] scripts/accept-e1-s2.ts
@@ -267,29 +267,29 @@
 [生产] scripts/accept-e4-s1.ts
 [生产] scripts/accept-e4-s2.ts
 [生产] scripts/accept-e4-s3.ts
-[生产] scripts/analytics-cluster.ts
-[生产] scripts/analytics-prompt-optimize.ts
-[生产] scripts/analytics-rule-suggest.ts
-[生产] scripts/analytics-sft-extract.ts
-[生产] scripts/auditor-post-actions.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-post-actions.ts
 [生产] scripts/bmad-sync-from-v6.ps1
 [生产] scripts/bmad-sync-from-v6.sh
 [生产] scripts/check-sprint-ready.ps1
 [生产] scripts/check-sprint-ready.sh
-[生产] scripts/check-story-score-written.ts
-[生产] scripts/coach-diagnose.ts
-[生产] scripts/dashboard-generate.ts
-[生产] scripts/eval-question-generate.ts
-[生产] scripts/eval-questions-cli.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts
 [生产] scripts/init-to-root.js
-[生产] scripts/parse-and-write-score.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-and-write-score.ts
 [生产] scripts/query-validate.ts
-[生产] scripts/run-auditor-host.ts
-[生产] scripts/scores-summary.ts
+[生产] bmad-speckit run-auditor-host
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts
 [生产] scripts/setup.ps1
 [生产] scripts/setup.sh
-[生产] scripts/sft-extract.ts
-[生产] scripts/update-runtime-audit-index.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/sft-extract.ts
+[生产] packages/bmad-speckit/src/main-agent/source-authority/scripts/update-runtime-audit-index.ts
 
 ## skills
 

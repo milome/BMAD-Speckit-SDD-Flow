@@ -27,7 +27,7 @@ This skill defines **constitution → spec.md → plan.md → IMPLEMENTATION_GAP
 
 ## Runtime Governance for this round (JSON)
 
-Before executing any stage task of this skill in each round, there must be a governance JSON block injected into the context by **hook + `emit-runtime-policy`** (`scripts/emit-runtime-policy.ts` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`); see `docs/reference/runtime-policy-emit-schema.md` for the contract. **Prohibited** Hand-written sample policies that are inconsistent with `resolveRuntimePolicy` are prohibited; if there is no such block in the context, `.bmad/runtime-context.json` and hook must be repaired first, and fields must not be made up.
+Before executing any stage task of this skill in each round, there must be a governance JSON block injected into the context by **hook + `emit-runtime-policy`** (`bmad-speckit emit-runtime-policy` / `.claude|cursor/hooks/emit-runtime-policy-cli.js`); see `docs/reference/runtime-policy-emit-schema.md` for the contract. **Prohibited** Hand-written sample policies that are inconsistent with `resolveRuntimePolicy` are prohibited; if there is no such block in the context, `.bmad/runtime-context.json` and hook must be repaired first, and fields must not be made up.
 
 ## Main Agent Orchestration Surface
 

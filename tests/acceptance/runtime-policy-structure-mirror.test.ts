@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { loadConfig } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { loadConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('runtime-policy structure mirror', () => {
   it('exposes identity/control/language substructures while preserving top-level compatibility fields', () => {
@@ -30,7 +30,7 @@ describe('runtime-policy structure mirror', () => {
   });
 
   it('keeps bmad-help top-level routing fields mirrored from helpRouting', async () => {
-    const { resolveBmadHelpRuntimePolicy } = await import('../../scripts/bmad-config');
+    const { resolveBmadHelpRuntimePolicy } = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config');
     const policy = resolveBmadHelpRuntimePolicy({
       flow: 'story',
       stage: 'specify',

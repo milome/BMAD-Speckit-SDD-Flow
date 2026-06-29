@@ -230,7 +230,7 @@ try {
     [ordered]@{
       requiredHelpers = $required
       consumerScriptsRequired = $false
-      note = 'Consumer validation requires installed hook/runtime helpers and does not require scripts/party-mode-gate-check.ts.'
+      note = 'Consumer validation requires installed hook/runtime helpers and does not require installed party-mode runtime checker.'
     }
   } | Out-Null
 

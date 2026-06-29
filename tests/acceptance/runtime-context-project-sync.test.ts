@@ -6,12 +6,12 @@ import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import {
   defaultRuntimeContextFile,
   projectContextPath,
   writeRuntimeContext,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context project sync', () => {
   it('keeps project context and registry aligned with sprint-status derived roots', () => {

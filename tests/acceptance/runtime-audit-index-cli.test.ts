@@ -6,8 +6,8 @@ import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { mainUpdateRuntimeAuditIndex } from '../../scripts/update-runtime-audit-index';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { mainUpdateRuntimeAuditIndex } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/update-runtime-audit-index';
 
 describe('runtime audit index cli', () => {
   it('writes bugfix audit result into registry auditIndex from reportPath', () => {

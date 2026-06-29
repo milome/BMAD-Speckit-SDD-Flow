@@ -5,7 +5,7 @@ import {
   projectContextPath,
   runContextPath,
   storyContextPath,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context paths', () => {
   it('builds project, epic, story, and run context paths under _bmad-output/runtime/context', () => {

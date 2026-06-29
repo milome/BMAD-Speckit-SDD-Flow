@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildRunContext } from '../../scripts/runtime-context-registry';
+import { buildRunContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context run sync', () => {
   it('builds run context for dev_story and post_audit with lifecycle/workflow stages', () => {

@@ -216,6 +216,25 @@ function readLockOwner(lockDir) {
   }
 }
 
+function isLockOwnerAlive(owner) {
+  if (!owner || owner.unreadable) return true;
+  const pid = Number(owner.pid);
+  if (!Number.isInteger(pid) || pid <= 0) return true;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code !== 'ESRCH';
+  }
+}
+
+function removeDeadOwnerLock(lockDir) {
+  const owner = readLockOwner(lockDir);
+  if (isLockOwnerAlive(owner)) return false;
+  rmWithRetry(lockDir);
+  return true;
+}
+
 function acquirePersistentPackSessionLock(lockDir) {
   fs.mkdirSync(path.dirname(lockDir), { recursive: true });
   const startedAt = Date.now();
@@ -235,6 +254,9 @@ function acquirePersistentPackSessionLock(lockDir) {
     } catch (error) {
       if (error.code !== 'EEXIST') {
         throw error;
+      }
+      if (removeDeadOwnerLock(lockDir)) {
+        continue;
       }
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
     }
@@ -264,6 +286,9 @@ function acquirePrepublishSyncLock(lockDir) {
     } catch (error) {
       if (error.code !== 'EEXIST') {
         throw error;
+      }
+      if (removeDeadOwnerLock(lockDir)) {
+        continue;
       }
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
     }

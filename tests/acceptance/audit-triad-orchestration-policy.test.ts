@@ -3,7 +3,7 @@ import {
   createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
   type AuditTriadRoundReceipt,
-} from '../../scripts/audit-triad-orchestrator';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

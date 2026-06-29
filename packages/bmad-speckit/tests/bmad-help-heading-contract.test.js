@@ -3,12 +3,12 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildBmadHelpOutput, renderBmadHelp } = require('../src/runtime/bmad-help-renderer');
-const { DISPLAY_BUDGETS } = require('../src/runtime/ai-tdd/display-budget');
+const { buildBmadHelpOutput, renderBmadHelp } = require('../dist/runtime/bmad-help-renderer');
+const { DISPLAY_BUDGETS } = require('../dist/runtime/ai-tdd/display-budget');
 const {
   HEADING_SCHEMAS,
   schemaHeading,
-} = require('../src/runtime/markdown-sections');
+} = require('../dist/runtime/markdown-sections');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const HELP_HEADINGS = HEADING_SCHEMAS.bmadHelp;

@@ -7,7 +7,7 @@ import { buildMainAgentDispatchInstruction } from '../../packages/bmad-speckit/s
 import {
   writeUserStoryMappingIndex,
   type UserStoryMappingIndex,
-} from '../../scripts/user-story-mapping';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 function bootstrapProject(root: string, index: UserStoryMappingIndex): void {

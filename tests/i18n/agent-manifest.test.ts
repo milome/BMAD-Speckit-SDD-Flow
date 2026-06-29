@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCsvLine, readAgentManifestRow } from '../../scripts/i18n/agent-manifest';
+import { parseCsvLine, readAgentManifestRow } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/agent-manifest';
 
 describe('agent manifest parser', () => {
   it('parses quoted csv fields with commas correctly', () => {

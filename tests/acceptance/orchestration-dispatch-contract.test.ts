@@ -9,7 +9,7 @@ import {
   fallbackAllowed,
   packetArtifactPath,
   resolveDispatchRoute,
-} from '../../scripts/orchestration-dispatch-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 
 describe('orchestration dispatch contract', () => {
   it('maps interactive implementation and review work to host-native child transports', () => {

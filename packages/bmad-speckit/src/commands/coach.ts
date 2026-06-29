@@ -1,6 +1,6 @@
 /**
  * Coach subcommand: AI Coach diagnosis entry point.
- * Ported from scripts/coach-diagnose.ts to JS for CLI integration.
+ * Ported from bmad-speckit coach to JS for CLI integration.
  *
  * Exit codes: 0=success, 1=error
  */

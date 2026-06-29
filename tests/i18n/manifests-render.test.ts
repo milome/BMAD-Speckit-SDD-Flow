@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { loadManifest } from '../../scripts/i18n/load-manifest';
-import { renderTemplate } from '../../scripts/i18n/render-template';
-import type { LanguagePolicy } from '../../scripts/i18n/language-policy';
-import { validateTemplateManifest } from '../../scripts/i18n/validate-template-manifest';
+import { loadManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/load-manifest';
+import { renderTemplate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-template';
+import type { LanguagePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy';
+import { validateTemplateManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest';
 
 function lp(mode: 'zh' | 'en' | 'bilingual'): LanguagePolicy {
   return {

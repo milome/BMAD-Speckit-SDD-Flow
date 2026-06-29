@@ -18,7 +18,11 @@ interface ParsedArgs {
   help?: boolean;
 }
 
-const DYNAMIC_RUNNER = 'scripts/run-required-commands-from-ai-tdd-manifest.ts';
+const DYNAMIC_RUNNER = 'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts';
+
+function packageCliPath(): string {
+  return path.resolve(__dirname, '..', '..', '..', '..', '..', 'bin', 'bmad-speckit.js');
+}
 
 function parseArgs(argv: string[]): ParsedArgs {
   const args: ParsedArgs = {};
@@ -83,12 +87,10 @@ function runDynamicRunner(input: {
   evidenceDir: string;
 }): number {
   const command = [
-    'npx.cmd',
-    'ts-node',
-    '--project',
-    'tsconfig.node.json',
-    '--transpile-only',
-    DYNAMIC_RUNNER,
+    process.execPath,
+    packageCliPath(),
+    'main-agent',
+    'run-required-commands-from-ai-tdd-manifest',
     '--source',
     input.sourcePath,
     '--requirement-record',
@@ -106,7 +108,7 @@ function runDynamicRunner(input: {
   const result = spawnSync(command[0], command.slice(1), {
     cwd: process.cwd(),
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
     windowsHide: true,
     maxBuffer: 32 * 1024 * 1024,
   });

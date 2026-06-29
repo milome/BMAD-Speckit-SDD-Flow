@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReviewerRouteExplainability as buildScriptRoute } from '../../scripts/reviewer-registry';
+import { buildReviewerRouteExplainability as buildScriptRoute } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry';
 import { buildReviewerRouteExplainability as buildDashboardRoute } from '../../packages/scoring/dashboard/reviewer-projection';
 
 describe('reviewer projection parity', () => {

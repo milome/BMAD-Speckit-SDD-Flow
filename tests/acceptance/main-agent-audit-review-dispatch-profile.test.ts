@@ -5,7 +5,7 @@ import { buildMainAgentDispatchInstruction } from '../../packages/bmad-speckit/s
 import {
   createExecutionPacket,
   type ExecutionPacket,
-} from '../../scripts/orchestration-dispatch-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

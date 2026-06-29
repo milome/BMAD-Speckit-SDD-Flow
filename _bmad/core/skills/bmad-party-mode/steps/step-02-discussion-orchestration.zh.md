@@ -176,7 +176,7 @@ After generating all agent responses for the round, let the user know he can spe
     - `node .cursor/hooks/party-mode-read-current-session.cjs --project-root <project_root>`
     - 若 project-local helper 缺失，回退为：
       - `node _bmad/runtime/hooks/party-mode-read-current-session.cjs --project-root <project_root>`
-  - `scripts/party-mode-gate-check.ts` 仅是**仓库源码调试 wrapper**，consumer 安装不得要求项目根存在 `scripts/` 目录。
+  - `installed party-mode runtime checker` 仅是**仓库源码调试 wrapper**，consumer 安装不得要求项目根存在 `scripts/` 目录。
   - 生产路径禁止用 CLI 参数覆盖 `.meta.json` 中的 `min_rounds / ratio_threshold / tail_window`。
   - 若 checker/helper 输出 `failed_checks` 非空，Facilitator 必须显式报告失败项并继续讨论，不得展示或接受 [E]。
 - **收敛条件**：在达到最少轮次后，须同时满足：(1) 已产出单一方案或共识结论，且无「可选」「可考虑」等未决表述；(2) 最近 2–3 轮无人提出新的 risks、edge cases 或遗漏点；(3) **挑战者已做终审陈述**（同意/有条件同意/有保留）；若有保留，须列出 deferred gaps 并写入产出。
@@ -186,7 +186,7 @@ After generating all agent responses for the round, let the user know he can spe
 - **展示 [E] 的时机**：仅在满足最少轮次且收敛条件满足后，再展示退出选项。
 - **Convergence Record（固定模板）**：在收敛前必须写入 `_bmad-output/party-mode/evidence/<session_key>.convergence.json`，最少包含：`session_key`、`gate_profile_id`、`closure_level`、`round_tail`、`challenger_ratio`、`gate_result`、`source_log_sha256`、`generated_at`。
 - **Audit Verdict（固定模板）**：在退出前必须写入 `_bmad-output/party-mode/evidence/<session_key>.audit.json`，最少包含：`session_key`、`gate_profile_id`、`closure_level`、`min_rounds_check`、`challenger_ratio_check`、`last_tail_no_new_gap_check`、`final_result`、`source_log_sha256`、`generated_at`。
-- **恢复顺序（强制）**：先读取 `.meta.json`，再恢复 `.latest.json`，再用 session log 校验 `source_log_sha256`，再恢复最后 `tail_window` 轮原始记录，最后重新执行基于 `current-session.json` 的 installed runtime checker/helper；consumer 项目不得要求 `scripts/party-mode-gate-check.ts`。
+- **恢复顺序（强制）**：先读取 `.meta.json`，再恢复 `.latest.json`，再用 session log 校验 `source_log_sha256`，再恢复最后 `tail_window` 轮原始记录，最后重新执行基于 `current-session.json` 的 installed runtime checker/helper；consumer 项目不得要求 `installed party-mode runtime checker`。
 - **回滚触发条件（强制）**：checker 计算异常、`.meta.json / session log / snapshot / evidence` 路径引用失效、或恢复后统计值与 session log 重算结果不一致。
 - **回滚动作（强制）**：仅回滚本次 remediation 涉及的 party-mode 修订范围；回滚后必须重跑相关验收命令与 checker；未通过回滚后验证前，不得展示或接受 [E]。
 

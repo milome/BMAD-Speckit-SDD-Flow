@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('sft language policy', () => {
   it('retains canonical machine keys for SFT-facing policy output', () => {

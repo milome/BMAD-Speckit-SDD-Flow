@@ -12,7 +12,7 @@ This directory owns the canonical `ContractExecutionManifest` normalization laye
 
 ## Required Consumers
 
-- `scripts/ai-tdd-contract-gate.ts` must wrap its manifest output with the shared builder before writing `contractExecutionManifest`.
+- `packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts` must wrap its manifest output with the shared builder before writing `contractExecutionManifest`.
 - `_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js` must build `model_packet.json.contractExecutionManifest` through the shared builder.
 
 ## Fail-Closed Drift Cases

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { renderFieldView, type FieldMetaRegistry } from '../../scripts/i18n/render-field-view';
-import { loadConfig } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { renderFieldView, type FieldMetaRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-field-view';
+import { loadConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 function createRegistry(): FieldMetaRegistry {
   return {

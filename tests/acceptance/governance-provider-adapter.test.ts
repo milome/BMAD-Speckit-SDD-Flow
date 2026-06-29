@@ -1,11 +1,11 @@
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createGovernanceProviderAdapterFromConfig } from '../../scripts/governance-remediation-config';
+import { createGovernanceProviderAdapterFromConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config';
 import {
   createAnthropicCompatibleGovernanceProviderAdapter,
   createHttpJsonGovernanceProviderAdapter,
   createOpenAICompatibleGovernanceProviderAdapter,
-} from '../../scripts/governance-provider-adapter';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter';
 
 function listen(
   handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void>

@@ -5,7 +5,7 @@ import {
   resolveCriticalAuditorProfile,
   stageProfileForCallPoint,
   validateCriticalAuditorProfileForStage,
-} from '../../scripts/critical-auditor-profile';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile';
 
 describe('CriticalAuditorProfile stage-aware contract', () => {
   it('provides the required shared contract files and resolves them through the runtime wrapper', () => {

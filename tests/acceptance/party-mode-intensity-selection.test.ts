@@ -3,7 +3,7 @@ import {
   inferGateProfileId,
   requestsQuickProbe,
   requiresHighConfidenceFinalOutputs,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode intensity selection', () => {
   it('defaults ordinary RCA and option analysis prompts to decision_root_cause_50', () => {

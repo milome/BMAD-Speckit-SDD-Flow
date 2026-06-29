@@ -8,7 +8,7 @@ import {
   markBatchCompleted,
   startSession,
   writeBatchReceipt,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode batch state commit', () => {
   it('commits pending -> checkpoint_ready -> completed through meta.json', () => {

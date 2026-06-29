@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('runtime language en outputs', () => {
   it('preserves canonical machine fields while documenting english-only narrative mode for output surfaces', () => {

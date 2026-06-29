@@ -50,7 +50,7 @@ You are a very strict code auditor. Review whether tasks.md fully covers the ori
 
 ### §4.1 tasks audit report — parseable scoring block (mandatory)
 
-All tasks-stage reports (including line-by-line checklist style) **must** end with the following parseable block for `parseAndWriteScore` (`scoring/orchestrator/parse-and-write.ts`, `scripts/parse-and-write-score.ts`). **No prose substitute**; emit the full structure. Overall grade A/B/C/D only. One score per dimension on its own line.
+All tasks-stage reports (including line-by-line checklist style) **must** end with the following parseable block for `parseAndWriteScore` (`scoring/orchestrator/parse-and-write.ts`, `bmad-speckit score`). **No prose substitute**; emit the full structure. Overall grade A/B/C/D only. One score per dimension on its own line.
 
 **Parser note**: `extractOverallGrade` accepts either `Overall Grade:` or `总体评级:` (same letter on both if you output both). Dimension lines must match `name` or `name_en` in `code-reviewer-config.yaml` mode `prd` (below uses English `name_en` values).
 

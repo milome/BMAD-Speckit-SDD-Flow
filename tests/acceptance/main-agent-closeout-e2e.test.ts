@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { resolveMainAgentOrchestrationSurface } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { runAuditorHost } from '../../scripts/run-auditor-host';
+import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
 import {
   buildPassImplementationEntryGate,
   buildSixModelResultsForAuditReady,

@@ -43,7 +43,7 @@ Legacy compatibility references such as `_bmad-output/runtime/context/project.js
 
 1. **Resolve active Requirement**: use explicit `recordId` / `requirementSetId` / `runId` from the host-session activation request, or `_bmad-output/runtime/requirement-records/index.json`; do not infer the active run from `_bmad-output/runtime/context/**`, handoff, dashboard, score, SFT, bmad-help, or old runtime context.
 2. **Load runtime config**:
-   - `_bmad/_config/bmad-story-config.yaml`
+   - `packages/bmad-speckit/src/main-agent/source-authority/_bmad/_config/bmad-story-config.yaml`
    - resolve:
      - `audit_granularity.mode`
      - `auto_continue.enabled`
@@ -225,7 +225,7 @@ legacy_commit_gate:
   denial_reason:
     - 当前 stage 审计未通过
     - 未检测到审计报告
-  verifier: npx --no-install bmad-speckit run-auditor-host
+  verifier: packages/bmad-speckit/src/main-agent/source-authority/npx --no-install bmad-speckit run-auditor-host
   verifier_condition: "status === 'PASS'"
 ```
 

@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime language english hook surface', () => {

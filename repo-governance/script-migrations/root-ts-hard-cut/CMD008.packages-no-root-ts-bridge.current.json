@@ -1,0 +1,1080 @@
+{
+  "status": "fail",
+  "check": "packages-no-root-ts-bridge",
+  "packageRootTsBridgeCount": 119,
+  "findings": [
+    {
+      "path": "packages/bmad-speckit/src/commands/check-score.ts",
+      "line": 3,
+      "refs": [
+        "scripts/check-story-score-written.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/check-story-score-written.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/commands/coach.ts",
+      "line": 3,
+      "refs": [
+        "scripts/coach-diagnose.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/coach-diagnose.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/commands/dashboard.ts",
+      "line": 3,
+      "refs": [
+        "scripts/dashboard-generate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/dashboard-generate.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/commands/score.ts",
+      "line": 3,
+      "refs": [
+        "scripts/parse-and-write-score.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/parse-and-write-score.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/commands/scores.ts",
+      "line": 3,
+      "refs": [
+        "scripts/scores-summary.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/scores-summary.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/commands/sft-extract.ts",
+      "line": 3,
+      "refs": [
+        "scripts/sft-extract.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/sft-extract.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/commands/score.ts",
+      "line": 3,
+      "refs": [
+        "scripts/parse-and-write-score.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "* Ported from scripts/parse-and-write-score.ts to JS for CLI integration."
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts",
+      "line": 4,
+      "refs": [
+        "scripts/analytics-cluster.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-cluster.ts --dataPath scoring/data --minFrequency 2"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts",
+      "line": 5,
+      "refs": [
+        "scripts/analytics-cluster.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-cluster.ts --dataPath scoring/data --output clusters.json"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts",
+      "line": 4,
+      "refs": [
+        "scripts/analytics-prompt-optimize.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-prompt-optimize.ts --dataPath scoring/data"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts",
+      "line": 5,
+      "refs": [
+        "scripts/analytics-prompt-optimize.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-prompt-optimize.ts --dataPath scoring/data --clustersPath clusters.json"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts",
+      "line": 4,
+      "refs": [
+        "scripts/analytics-rule-suggest.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-rule-suggest.ts --dataPath scoring/data"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts",
+      "line": 5,
+      "refs": [
+        "scripts/analytics-rule-suggest.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-rule-suggest.ts --dataPath scoring/data --clustersPath clusters.json --rulesDir scoring/rules"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts",
+      "line": 4,
+      "refs": [
+        "scripts/analytics-sft-extract.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/analytics-sft-extract.ts --dataPath scoring/data --output scoring/data/sft-dataset.jsonl"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts",
+      "line": 91,
+      "refs": [
+        "scripts/auditor-spec.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "console.error('Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]');"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts",
+      "line": 8,
+      "refs": [
+        "scripts/check-story-score-written.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* 示例：npx ts-node scripts/check-story-score-written.ts --epic 2 --story 1"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts",
+      "line": 40,
+      "refs": [
+        "scripts/check-story-score-written.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+      "line": 4,
+      "refs": [
+        "scripts/coach-diagnose.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/coach-diagnose.ts                     # 无参：discovery 最新 run_id → 诊断"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+      "line": 5,
+      "refs": [
+        "scripts/coach-diagnose.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/coach-diagnose.ts --run-id=sample-run --format=json"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+      "line": 6,
+      "refs": [
+        "scripts/coach-diagnose.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/coach-diagnose.ts --epic 3            # Story 6.2: 仅诊断 Epic 3"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+      "line": 7,
+      "refs": [
+        "scripts/coach-diagnose.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/coach-diagnose.ts --story 3.3         # Story 6.2: 仅诊断 Story 3.3"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+      "line": 8,
+      "refs": [
+        "scripts/coach-diagnose.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/coach-diagnose.ts --limit 50          # discovery 最多考虑 50 条"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts",
+      "line": 8,
+      "refs": [
+        "scripts/dashboard-generate.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* 示例：npx ts-node scripts/dashboard-generate.ts --epic 2"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts",
+      "line": 8,
+      "refs": [
+        "scripts/eval-question-generate.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* 示例：npx ts-node scripts/eval-question-generate.ts --run-id r1 --version v1"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts",
+      "line": 116,
+      "refs": [
+        "scripts/eval-question-generate.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "line": 8,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* 示例：npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "line": 83,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node scripts/eval-questions-cli.ts add --title \"题目标题\" [--version v1|v2]'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "line": 226,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "line": 240,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "console.error('  npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]');"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "line": 242,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'  npx ts-node scripts/eval-questions-cli.ts add --title \"xxx\" [--version v1|v2]'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "line": 245,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/final-closeout-evidence-runner.ts",
+      "line": 21,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "const DYNAMIC_RUNNER = 'scripts/run-required-commands-from-ai-tdd-manifest.ts';"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts",
+      "line": 713,
+      "refs": [
+        "scripts/governance-remediation-artifact.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node --transpile-only scripts/governance-remediation-artifact.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--promptText <text>] [--sourceGateFailureIds a,"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
+      "line": 1479,
+      "refs": [
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node --transpile-only scripts/governance-remediation-runner.ts --outputPath <path> --attemptId <id> --capabilitySlot <slot> --canonicalAgent <agent> --actualExecutor <executor> --adapterPath <path> --expectedDelta <text> --rerunOwner <owner> --rerunGate <gate> --outcome <text> --stageContextKnown true|false --gateFailureExists true|false --blockerOwnershipLocked true|false --rootTargetLocked true|false --equivalentAdapterCount <n> [--projectRoot <path>] [--configPath <path>] [--pr"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/print-resolved-audit-prompt.ts",
+      "line": 3,
+      "refs": [
+        "scripts/i18n/print-resolved-audit-prompt.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* Usage: npx ts-node --transpile-only scripts/i18n/print-resolved-audit-prompt.ts <refsDir> <templateBasename> [projectRoot]"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts",
+      "line": 869,
+      "refs": [
+        "scripts/ingest-implementation-evidence.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/ingest-implementation-evidence.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "line": 437,
+      "refs": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "bmadsRuntime.includes('dispatch: scripts/orchestration-dispatch-contract.ts') &&"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+      "line": 133,
+      "refs": [
+        "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "? runtimeCommandText('scripts/main-agent-host-matrix-pr-orchestrator.ts', ["
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+      "line": 137,
+      "refs": [
+        "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": ": runtimeCommandText('scripts/main-agent-host-matrix-pr-orchestrator.ts', ['--provider', 'mock']);"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+      "line": 154,
+      "refs": [
+        "scripts/main-agent-release-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "runtimeScript('scripts/main-agent-release-gate.ts', commonReleaseArgs),"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+      "line": 162,
+      "refs": [
+        "scripts/main-agent-delivery-truth-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "runtimeScript('scripts/main-agent-delivery-truth-gate.ts'),"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+      "line": 241,
+      "refs": [
+        "scripts/main-agent-quality-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "const gateSource = readIfExists('scripts/main-agent-quality-gate.ts');"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "line": 351,
+      "refs": [
+        "scripts/main-agent-quality-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "\"  'scripts/main-agent-quality-gate.ts',\","
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "line": 352,
+      "refs": [
+        "scripts/main-agent-release-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "\"  'scripts/main-agent-release-gate.ts',\","
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "line": 472,
+      "refs": [
+        "scripts/main-agent-quality-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/main-agent-quality-gate.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "line": 473,
+      "refs": [
+        "scripts/main-agent-release-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/main-agent-release-gate.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "line": 656,
+      "refs": [
+        "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real';"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "line": 692,
+      "refs": [
+        "scripts/main-agent-quality-gate.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-and-write-score.ts",
+      "line": 9,
+      "refs": [
+        "scripts/parse-and-write-score.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* 示例：npx ts-node scripts/parse-and-write-score.ts --reportPath path/to/report.md --stage prd --runId r1"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-and-write-score.ts",
+      "line": 114,
+      "refs": [
+        "scripts/parse-and-write-score.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "'Usage: npx ts-node scripts/parse-and-write-score.ts --reportPath <path> [--stage prd|arch|story|spec|plan|tasks|implement] [--runId <id>] [--epic N] [--story N] [--scenario real_dev|eval_question] [--writeMode single_file|jsonl|both] [--dataPath <path>] [--baseCommitHash <hash>] [--skipAutoHash true] [--sourceHashFilePath <path>] [--artifactDocPath <path>] [--host <host>] [--hostKind <kind>] [--providerId <id>] [--providerMode <mode>] [--toolTraceRef <hash>] [--toolTracePath <path>] [--event <e"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/README.md.source.ts",
+      "line": 3,
+      "refs": [
+        "scripts/*.ts",
+        "scripts/eval-questions-cli.ts",
+        "scripts/eval-question-generate.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "const originalSource = \"# scripts\\n\\n部署与开发便利脚本目录。\\n\\n> **Scoring 相关脚本已整合进 `bmad-speckit` CLI**。目标项目应使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores/check-score`。`scripts/*.ts` 保留为源仓库开发便利入口，不再是推荐调用方式。\\n\\n## CLI 子命令对应关系\\n\\n| 旧脚本 | CLI 子命令 |\\n|--------|-----------|\\n| `parse-and-write-score.ts` | `npx bmad-speckit score` |\\n| `check-story-score-written.ts` | `npx bmad-speckit check-score` |\\n| `coach-diagnose.ts` | `npx bmad-speckit coach` |\\n| `dashboard-generate.ts` | `npx bmad-spec"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "line": 211,
+      "refs": [
+        "scripts/resolve-active-requirement.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "path: 'scripts/resolve-active-requirement.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "line": 212,
+      "refs": [
+        "scripts/resolve-active-requirement.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "contentHash: hashFile(root, 'scripts/resolve-active-requirement.ts'),"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "line": 235,
+      "refs": [
+        "scripts/main-agent-implementation-readiness-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "path: 'scripts/main-agent-implementation-readiness-gate.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "line": 236,
+      "refs": [
+        "scripts/main-agent-implementation-readiness-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "contentHash: hashFile(root, 'scripts/main-agent-implementation-readiness-gate.ts'),"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "line": 246,
+      "refs": [
+        "scripts/controlled-readiness-audit-bridge.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "path: 'scripts/controlled-readiness-audit-bridge.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "line": 247,
+      "refs": [
+        "scripts/controlled-readiness-audit-bridge.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "contentHash: hashFile(root, 'scripts/controlled-readiness-audit-bridge.ts'),"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
+      "line": 3,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "const DYNAMIC_RUNNER = 'scripts/run-required-commands-from-ai-tdd-manifest.ts';"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
+      "line": 13,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'run-confirmed-final-required-commands.js is a non-executing tombstone. Use scripts/run-required-commands-from-ai-tdd-manifest.ts.',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts",
+      "line": 330,
+      "refs": [
+        "scripts/ingest-implementation-evidence.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/ingest-implementation-evidence.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 303,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 462,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 515,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 578,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 599,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 673,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 680,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 942,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 972,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 1176,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "evaluatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 1263,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 1272,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "line": 1318,
+      "refs": [
+        "scripts/run-required-commands-from-ai-tdd-manifest.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "evaluatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
+      "line": 4,
+      "refs": [
+        "scripts/scores-summary.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/scores-summary.ts                 # 全部摘要"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
+      "line": 5,
+      "refs": [
+        "scripts/scores-summary.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/scores-summary.ts --epic 3       # Epic 3 汇总"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
+      "line": 6,
+      "refs": [
+        "scripts/scores-summary.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/scores-summary.ts --story 3.3    # Story 3.3 明细"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/sft-extract.ts",
+      "line": 8,
+      "refs": [
+        "scripts/sft-extract.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "* 示例：npx ts-node scripts/sft-extract.ts --min-score 80"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 5,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/speckit-cli.ts <command> [options]"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 22,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/speckit-cli.ts constitution --projectPath ./"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 23,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 24,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "*   npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 153,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "console.log(`\\nUsage: npx ts-node scripts/speckit-cli.ts ${command} [options]\\n`);"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 173,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "Usage: npx ts-node scripts/speckit-cli.ts <command> [options]"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 185,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "npx ts-node scripts/speckit-cli.ts constitution --projectPath ./"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 186,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 187,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "npx ts-node scripts/speckit-cli.ts plan --epic 4 --story 1 --specPath specs/.../spec.md"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "line": 188,
+      "refs": [
+        "scripts/speckit-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
+      "line": 398,
+      "refs": [
+        "scripts/requirement-record-event-reducer.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/requirement-record-event-reducer.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
+      "line": 399,
+      "refs": [
+        "scripts/controlled-ingest-atomic-committer.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/controlled-ingest-atomic-committer.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
+      "line": 400,
+      "refs": [
+        "scripts/requirement-record-schema-evolution.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/requirement-record-schema-evolution.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 55,
+      "refs": [
+        "scripts/orchestration-dispatch-contract.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/orchestration-dispatch-contract.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 57,
+      "refs": [
+        "scripts/main-agent-codex-worker-adapter.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/main-agent-codex-worker-adapter.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 58,
+      "refs": [
+        "scripts/governance-remediation-runner.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/governance-remediation-runner.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 59,
+      "refs": [
+        "scripts/governance-packet-dispatch-worker.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/governance-packet-dispatch-worker.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 60,
+      "refs": [
+        "scripts/governance-host-dispatch-adapter.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/governance-host-dispatch-adapter.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 61,
+      "refs": [
+        "scripts/parallel-mission-control.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/parallel-mission-control.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 62,
+      "refs": [
+        "scripts/run-auditor-host.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/run-auditor-host.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 63,
+      "refs": [
+        "scripts/reviewer-registry.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/reviewer-registry.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 64,
+      "refs": [
+        "scripts/facilitator-registry.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/facilitator-registry.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 65,
+      "refs": [
+        "scripts/bmad-runtime-worker.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/bmad-runtime-worker.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 67,
+      "refs": [
+        "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/main-agent-host-matrix-pr-orchestrator.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 68,
+      "refs": [
+        "scripts/main-agent-dual-host-pr-orchestrator.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/main-agent-dual-host-pr-orchestrator.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 69,
+      "refs": [
+        "scripts/e2e-host-matrix-journey-runner.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/e2e-host-matrix-journey-runner.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 70,
+      "refs": [
+        "scripts/e2e-dual-host-journey-runner.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/e2e-dual-host-journey-runner.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 71,
+      "refs": [
+        "scripts/party-mode-runtime.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/party-mode-runtime.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 72,
+      "refs": [
+        "scripts/facilitator-runtime-definition.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/facilitator-runtime-definition.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 73,
+      "refs": [
+        "scripts/i18n/materialize-facilitator-definition.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/i18n/materialize-facilitator-definition.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "line": 74,
+      "refs": [
+        "scripts/i18n/sync-party-mode-mirrors.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/i18n/sync-party-mode-mirrors.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts",
+      "line": 1569,
+      "refs": [
+        "scripts/requirement-record-control-store.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "const reducerPath = path.resolve('scripts/requirement-record-control-store.ts');"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 164,
+      "refs": [
+        "scripts/strict-closeout-proof-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/strict-closeout-proof-gate.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 165,
+      "refs": [
+        "scripts/control-event-log-rebaseline.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/control-event-log-rebaseline.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 166,
+      "refs": [
+        "scripts/main-agent-delivery-closeout-gate.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/main-agent-delivery-closeout-gate.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 167,
+      "refs": [
+        "scripts/final-closeout-evidence-runner.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/final-closeout-evidence-runner.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 168,
+      "refs": [
+        "scripts/controlled-ingest-atomic-committer.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/controlled-ingest-atomic-committer.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 169,
+      "refs": [
+        "scripts/requirement-record-event-reducer.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/requirement-record-event-reducer.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "line": 170,
+      "refs": [
+        "scripts/requirement-record-schema-evolution.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "'scripts/requirement-record-schema-evolution.ts',"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-consumer-governance.ps1",
+      "line": 233,
+      "refs": [
+        "scripts/party-mode-gate-check.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "note = 'Consumer validation requires installed hook/runtime helpers and does not require scripts/party-mode-gate-check.ts.'"
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+      "line": 4,
+      "refs": [
+        "scripts/write-runtime-policy-snapshot-and-recovery-context.ts"
+      ],
+      "hasExecutionToken": false,
+      "text": "const i=p.join(r,'scripts/write-runtime-policy-snapshot-and-recovery-context.ts')"
+    },
+    {
+      "path": "packages/scoring/eval-questions/EVAL_AGENT_BMAD_FLOW_IMPROVEMENT.md",
+      "line": 41,
+      "refs": [
+        "scripts/eval-questions-cli.ts"
+      ],
+      "hasExecutionToken": true,
+      "text": "npx ts-node scripts/eval-questions-cli.ts run --id q005 --version v1"
+    }
+  ]
+}

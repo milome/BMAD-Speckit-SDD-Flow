@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { readGovernanceRemediationConfig } from '../../scripts/governance-remediation-config';
+import { readGovernanceRemediationConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config';
 
 describe('governance packet execution config', () => {
   it('parses execution closure config and keeps backward compatibility', () => {

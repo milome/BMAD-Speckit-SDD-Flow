@@ -147,7 +147,7 @@ describe('requirements contract consumer target authority', () => {
           '',
           '## 目标文件',
           '',
-          '`scripts/main-agent-orchestration.ts`',
+          '`packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`',
           '',
           '## 验收标准',
           '',
@@ -166,7 +166,7 @@ describe('requirements contract consumer target authority', () => {
 
       expect(issueCodes(result)).toContain('projection_domain_mismatch');
       expect(sanity.decision).toBe('block');
-      expect(sanity.offendingTargets).toContain('scripts/main-agent-orchestration.ts');
+      expect(sanity.offendingTargets).toContain('packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts');
       expect(decision.finalDecision).toBe('block_source_materialization');
       expectSourceHashUnchanged(source, beforeHash);
     } finally {

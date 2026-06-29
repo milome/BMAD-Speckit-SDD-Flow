@@ -6,9 +6,9 @@ import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { runAuditorHost } from '../../scripts/run-auditor-host';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('auditor host runner', () => {
   it.each([

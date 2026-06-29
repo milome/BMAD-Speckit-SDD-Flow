@@ -300,7 +300,8 @@ function artifactRefForOutput(input: {
     path: normalizePath(input.outputPath),
     hash: sha256File(input.outputPath),
     contentHash: sha256File(input.outputPath),
-    producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    producer:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
     purpose: `required command output for ${input.commandId}`,
     relatedRequirementIds: unique([...input.traceRefs, ...input.evidenceRefs]),
     closeoutAttemptId: input.closeoutAttemptId,
@@ -459,7 +460,8 @@ function writeSemanticCoverageClosureReport(input: {
     reportType: 'must_atom_coverage_closure_report',
     schemaVersion: 'must-atom-coverage-closure/v1',
     generatedAt: new Date().toISOString(),
-    generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    generatedBy:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
     recordId: text(input.record.recordId),
     closeoutAttemptId: input.closeoutAttemptId,
     decision: blockedClosures.length === 0 ? 'pass' : 'blocked',
@@ -512,7 +514,8 @@ function writeAuditConvergenceReceipt(filePath: string, closeoutAttemptId: strin
   writeJson(filePath, {
     schemaVersion: 'audit-scoring-convergence-receipt/v1',
     generatedAt: new Date().toISOString(),
-    generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    generatedBy:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
     closeoutAttemptId,
     auditAttemptId: text(sourceReceipt.attemptId),
     sourceReceiptPath: normalizePath(sourceReceiptPath),
@@ -575,7 +578,8 @@ function targetArtifactRefs(
           artifactType: 'requirement_record_field',
           filePath: pathOrField,
           hash: sha256Bytes(stableStringify(value)),
-          producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+          producer:
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
           purpose: `current-attempt requirement record field snapshot for ${text(target.id) || pathOrField}`,
           traceRows: strings(target.traceRefs),
           evidenceRefs: strings(target.evidenceRefs),
@@ -596,7 +600,8 @@ function targetArtifactRefs(
       artifactRefForFile({
         artifactType: text(target.expectedSourceOfTruthRole) || 'target_file_snapshot',
         filePath: absolute,
-        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        producer:
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
         purpose: `current-attempt target artifact snapshot for ${text(target.id) || targetPath}`,
         traceRows: strings(target.traceRefs),
         evidenceRefs: strings(target.evidenceRefs),
@@ -670,14 +675,16 @@ function commandReportRefs(input: {
         stderrPath: run.stderrPath,
         traceRows: run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows)),
         evidenceRefs: run.artifactRefs.flatMap((artifact) => strings(artifact.evidenceRefs)),
-        generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        generatedBy:
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
         generatedAt: new Date().toISOString(),
       });
       refs.push(
         artifactRefForFile({
           artifactType: report.artifactType,
           filePath: reportPath,
-          producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+          producer:
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
           purpose: `normalized current-attempt report for ${commandId}`,
           traceRows: unique(run.artifactRefs.flatMap((artifact) => strings(artifact.traceRows))),
           evidenceRefs: unique(
@@ -939,7 +946,8 @@ function buildFailureCaseCoverage(input: {
     reportType: 'failure_case_coverage',
     source: 'implementationConfirmation.functionalResumeFailureCaseRegistry',
     generatedAt: new Date().toISOString(),
-    generatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    generatedBy:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
     runId: input.runId,
     closeoutAttemptId: input.closeoutAttemptId,
     sourceDocumentHash: text(input.record.sourceDocumentHash),
@@ -969,7 +977,8 @@ function buildFailureCaseCoverage(input: {
       artifactRefForFile({
         artifactType: 'failure_case_coverage',
         filePath: reportPath,
-        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        producer:
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
         purpose: 'current-attempt functional resume failure-case coverage report',
         traceRows: refs.traceRefs,
         evidenceRefs: refs.evidenceRefs,
@@ -1173,7 +1182,8 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     recordPath,
     mode: 'pre-rerun',
     attemptId: args.attemptId,
-    evaluatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    evaluatedBy:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
   });
   const preRunReportPath = path.join(evidenceDir, 'ai-tdd-pre-run-report.json');
   writeJson(preRunReportPath, preRunReport);
@@ -1260,7 +1270,8 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     artifactRefForFile({
       artifactType: 'gate_report',
       filePath: preRunReportPath,
-      producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      producer:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
       purpose: 'AI TDD pre-run manifest readiness report',
       traceRows: refs.traceRows,
       evidenceRefs: refs.evidenceRefs,
@@ -1269,7 +1280,8 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     artifactRefForFile({
       artifactType: 'evidence_bundle',
       filePath: commandEvidenceBundlePath,
-      producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      producer:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
       purpose: 'current-attempt required command evidence bundle',
       traceRows: refs.traceRows,
       evidenceRefs: refs.evidenceRefs,
@@ -1315,7 +1327,8 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     recordPath,
     mode: 'closeout',
     attemptId: args.attemptId,
-    evaluatedBy: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    evaluatedBy:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
   });
   const closeoutReportPath = path.join(evidenceDir, 'ai-tdd-closeout-report.json');
   writeJson(closeoutReportPath, closeoutReport);

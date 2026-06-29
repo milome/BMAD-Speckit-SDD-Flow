@@ -7,8 +7,8 @@ import {
   buildStoryContextsFromSprintStatus,
   buildRunContext,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime-policy lifecycle chain sequence', () => {

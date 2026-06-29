@@ -6,7 +6,7 @@ import {
   buildProjectRegistryFromSprintStatus,
   writeRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context workflow wiring', () => {
   it('can persist a sprint-derived registry in the runtime output area', () => {

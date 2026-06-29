@@ -5,7 +5,7 @@
  *
  * CLI 参数：--epic N --story N [--dataPath] [--stage story|implement]
  *
- * 示例：npx ts-node scripts/check-story-score-written.ts --epic 2 --story 1
+ * 示例：npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts --epic 2 --story 1
  *
  * 退出码：0=有记录，1=无记录或参数错误
  */
@@ -37,7 +37,7 @@ function main(): void {
 
   if (!epicRaw || !storyRaw) {
     console.error(
-      'Usage: npx ts-node scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]'
+      'Usage: npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts --epic N --story N [--dataPath path] [--stage story|implement]'
     );
     process.exit(1);
   }

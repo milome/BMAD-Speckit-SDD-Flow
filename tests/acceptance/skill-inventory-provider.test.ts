@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveGovernanceSkillInventory } from '../../scripts/skill-inventory-provider';
+import { resolveGovernanceSkillInventory } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-inventory-provider';
 
 function writeSkill(root: string, relativePath: string, content?: string): void {
   const skillDir = path.join(root, relativePath);

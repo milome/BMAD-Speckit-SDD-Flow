@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainTraceStatusPolicyCheck } from '../../scripts/main-agent-trace-status-policy-check';
+import { mainTraceStatusPolicyCheck } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-trace-status-policy-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =

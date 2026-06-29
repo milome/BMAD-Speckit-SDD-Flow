@@ -2,14 +2,14 @@ import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const adapterPath = path.resolve('scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts');
+const adapterPath = path.resolve('packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts');
 
 async function loadAdapter(): Promise<Record<string, unknown>> {
   expect(
     existsSync(adapterPath),
     'expected the AI-TDD closeout remediation adapter implementation to exist'
   ).toBe(true);
-  return import('../../scripts/main-agent-ai-tdd-closeout-remediation-adapter');
+  return import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-ai-tdd-closeout-remediation-adapter');
 }
 
 describe('AI-TDD closeout remediation adapter', () => {

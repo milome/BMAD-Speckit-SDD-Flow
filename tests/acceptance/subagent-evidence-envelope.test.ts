@@ -3,15 +3,15 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainIngestImplementationEvidence } from '../../scripts/ingest-implementation-evidence';
+import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
 import {
   buildSubagentEvidenceEnvelopeFromTaskReport,
   runSubagentEvidenceEnvelopeAcceptance,
   sha256Object,
   validateSubagentEvidenceEnvelope,
   validateTaskReportLegacyBoundary,
-} from '../../scripts/subagent-evidence-envelope';
-import type { ExecutionPacket, TaskReport } from '../../scripts/orchestration-dispatch-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope';
+import type { ExecutionPacket, TaskReport } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
 const IMPLEMENTATION_HASH =
@@ -159,7 +159,11 @@ function writeFixture(root: string) {
     taskType: 'implement',
     role: 'implementation-worker',
     inputArtifacts: ['docs/design/需求实现完整性门禁与重跑闭环设计.md'],
-    allowedWriteScope: ['scripts/**', 'tests/**', '_bmad/_schemas/**'],
+    allowedWriteScope: [
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/**',
+      'tests/**',
+      '_bmad/_schemas/**',
+    ],
     expectedDelta: 'Implement subagent evidence envelope acceptance',
     successCriteria: ['subagentEvidenceEnvelope accepted through controlled ingest'],
     stopConditions: ['hash drift'],
@@ -167,7 +171,7 @@ function writeFixture(root: string) {
   const taskReport: TaskReport = {
     packetId: packet.packetId,
     status: 'done',
-    filesChanged: ['scripts/subagent-evidence-envelope.ts'],
+    filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts'],
     validationsRun: ['npx vitest run tests/acceptance/subagent-evidence-envelope.test.ts'],
     evidence: [evidenceArtifactPath],
     downstreamContext: ['TRACE-035'],
@@ -206,8 +210,8 @@ function writeFixture(root: string) {
     traceRows: ['TRACE-035'],
     coveredRequirementIds: ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027'],
     taskRefs: ['TASK-SUBAGENT-EVIDENCE-ENVELOPE-GOVERNANCE'],
-    actualFilesChanged: ['scripts/subagent-evidence-envelope.ts'],
-    diffHash: sha256Object({ filesChanged: ['scripts/subagent-evidence-envelope.ts'] }),
+    actualFilesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts'],
+    diffHash: sha256Object({ filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts'] }),
     workspaceRef: {
       kind: 'main_workspace',
       path: root,
@@ -232,9 +236,9 @@ function writeFixture(root: string) {
     traceRows: ['TRACE-035'],
     taskRefs: ['TASK-SUBAGENT-EVIDENCE-ENVELOPE-GOVERNANCE'],
     evidenceRefs: ['EVD-004', 'EVD-044', 'EVD-045'],
-    filesChanged: ['scripts/subagent-evidence-envelope.ts'],
+    filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts'],
     implementationDelta: {
-      filesChanged: ['scripts/subagent-evidence-envelope.ts'],
+      filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts'],
       diffSummaryRef: 'diff-summary.md',
       behaviorAffecting: true,
       negativeAssertionArtifactRefs: [evidenceRef],
@@ -416,7 +420,7 @@ describe('subagent evidence envelope acceptance', () => {
       const taskReport: TaskReport = {
         packetId: 'packet-trace-035',
         status: 'done',
-        filesChanged: ['scripts/subagent-evidence-envelope.ts'],
+        filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts'],
         validationsRun: ['test'],
         evidence: [fixture.evidenceArtifactPath],
         downstreamContext: ['TRACE-035'],

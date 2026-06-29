@@ -3,9 +3,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
-import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
-import { writeNativeGoalInvocationReceipt } from '../../scripts/host-runtime-mode';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import { writeNativeGoalInvocationReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const RECORD_ID = 'REQ-NATIVE-CLOSEOUT';
@@ -69,7 +69,7 @@ function writeTaskReport(root: string): string {
   writeJson(filePath, {
     packetId: PACKET_ID,
     status: 'done',
-    filesChanged: ['scripts/main-agent-delivery-closeout-gate.ts'],
+    filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts'],
     validationsRun: ['native-closeout-fixture'],
     evidence: ['native closeout fixture TaskReport'],
     downstreamContext: ['native goal closeout fixture complete'],

@@ -88,7 +88,7 @@ const specPath = process.argv[2];
 const iteration = parseInt(process.argv[3] || '1', 10);
 
 if (!specPath) {
-  console.error('Usage: npx ts-node scripts/auditor-spec.ts <spec-path> [iteration]');
+  console.error('Usage: npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts <spec-path> [iteration]');
   process.exit(1);
 }
 

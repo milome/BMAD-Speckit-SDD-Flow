@@ -90,14 +90,39 @@ function prepareHostMatrixRoot(root: string): string {
   return hostMatrixRoot;
 }
 
+function findCanonicalBmadRoot(startDir: string): string | null {
+  const candidates = [
+    path.join(startDir, '..', '_bmad'),
+    path.join(startDir, '..', '..', '..', '..', '..', '..', '..', '_bmad'),
+    path.join(process.cwd(), '_bmad'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, 'commands', 'bmad-help.md'))) {
+      return candidate;
+    }
+  }
+
+  let current: string | null = path.resolve(startDir);
+  while (current) {
+    const candidate = path.join(current, '_bmad');
+    if (fs.existsSync(path.join(candidate, 'commands', 'bmad-help.md'))) {
+      return candidate;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
 export function runDevelopmentJourneyMatrix(input: {
   projectRoot: string;
   hostKinds?: MainAgentHostKind[];
   realProvider?: boolean;
 }): DevelopmentJourneyMatrixReport {
   const projectRoot = path.resolve(input.projectRoot);
-  const canonicalBmadRoot = path.join(__dirname, '..', '_bmad');
-  if (!fs.existsSync(path.join(projectRoot, '_bmad')) && fs.existsSync(canonicalBmadRoot)) {
+  const canonicalBmadRoot = findCanonicalBmadRoot(__dirname);
+  if (canonicalBmadRoot && !fs.existsSync(path.join(projectRoot, '_bmad'))) {
     fs.cpSync(canonicalBmadRoot, path.join(projectRoot, '_bmad'), { recursive: true });
   }
   const hostKinds = input.hostKinds ?? ['cursor', 'claude', 'codex'];

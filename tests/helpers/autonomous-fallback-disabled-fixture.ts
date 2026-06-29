@@ -5,7 +5,7 @@ import {
   governanceCurrentRunPath,
   governancePendingQueueFilePath,
   type GovernanceRuntimeQueueItem,
-} from '../../scripts/governance-runtime-queue';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue';
 
 export interface AutonomousFallbackDisabledFixture {
   root: string;

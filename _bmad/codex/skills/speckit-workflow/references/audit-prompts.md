@@ -58,7 +58,7 @@
 
 ### §4.1 tasks 审计报告可解析评分块（强制）
 
-所有 tasks 阶段审计报告（含逐条对照格式）**必须在结尾包含**以下可解析块，供 `parseAndWriteScore`（`scoring/orchestrator/parse-and-write.ts`、`scripts/parse-and-write-score.ts`）解析并写入 scoring 存储。**禁止用描述代替**：不得用描述句概括，必须输出完整结构化块。总体评级仅限 A/B/C/D。维度分须逐行写出：
+所有 tasks 阶段审计报告（含逐条对照格式）**必须在结尾包含**以下可解析块，供 `parseAndWriteScore`（`scoring/orchestrator/parse-and-write.ts`、`bmad-speckit score`）解析并写入 scoring 存储。**禁止用描述代替**：不得用描述句概括，必须输出完整结构化块。总体评级仅限 A/B/C/D。维度分须逐行写出：
 
 ```markdown
 ## 可解析评分块（供 parseAndWriteScore）

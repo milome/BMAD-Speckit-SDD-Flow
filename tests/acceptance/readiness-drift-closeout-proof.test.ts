@@ -7,7 +7,7 @@ import {
   buildReadinessDriftProjection,
   evaluateReadinessDrift,
 } from '../../packages/scoring/governance/readiness-drift';
-import { deriveReviewCloseoutEnvelopeV1 } from '../../scripts/reviewer-schema';
+import { deriveReviewCloseoutEnvelopeV1 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema';
 import type { JourneyContractSignals, RunScoreRecord } from '../../packages/scoring/writer/types';
 
 function makeRecord(overrides: Partial<RunScoreRecord>): RunScoreRecord {

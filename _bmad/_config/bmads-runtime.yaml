@@ -2,7 +2,7 @@ schemaVersion: bmads-runtime/v1
 
 contracts:
   governance: _bmad/_config/orchestration-governance.contract.yaml
-  dispatch: scripts/orchestration-dispatch-contract.ts
+  dispatch: packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts
   stageMapping: _bmad/_config/stage-mapping.yaml
 
 entry:

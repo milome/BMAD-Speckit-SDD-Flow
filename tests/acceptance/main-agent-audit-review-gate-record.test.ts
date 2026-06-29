@@ -6,9 +6,9 @@ import {
   type AuditTriadExecutionPlan,
   type AuditTriadRoundReceipt,
   writeAuditTriadExecutionPlan,
-} from '../../scripts/audit-triad-orchestrator';
-import { mainAuditReviewGate } from '../../scripts/main-agent-audit-review-gate';
-import { resolveSixModelRuntimeDecision } from '../../scripts/six-model-runtime-decision';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
+import { mainAuditReviewGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate';
+import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

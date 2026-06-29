@@ -73,9 +73,8 @@ const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
   {
     file: 'source-authority/scripts/critical-auditor-profile.js',
     forbidden: '../../../../../../_bmad/shared/critical-auditor-profile',
-    required: '../../../../_bmad/shared/critical-auditor-profile',
-    runtimeTarget: '_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
-    runtimeTargetBase: 'packageDist',
+    required: '../_bmad/shared/critical-auditor-profile',
+    runtimeTarget: 'source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
   },
   {
     file: 'source-authority/scripts/query-validate.js',

@@ -3,21 +3,21 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
-import { resolveExecutionDisciplineProfile } from '../../scripts/execution-discipline-profiles';
+import { resolveExecutionDisciplineProfile } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles';
 import type {
   CompiledPromptRef,
   ExecutionPacket,
-} from '../../scripts/orchestration-dispatch-contract';
-import { packetArtifactPath } from '../../scripts/orchestration-dispatch-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
+import { packetArtifactPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
   createDefaultOrchestrationState,
   writeOrchestrationStateAtPath,
-} from '../../scripts/orchestration-state';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 export const SIX_MODEL_HARDENING_FIXTURE_ID =
   'REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING';

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resolveRuntimeScoringDataPath } from '../../scripts/runtime-scoring-data-path';
+import { resolveRuntimeScoringDataPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-scoring-data-path';
 
 function normalized(value: string): string {
   return value.replace(/\\/g, '/');

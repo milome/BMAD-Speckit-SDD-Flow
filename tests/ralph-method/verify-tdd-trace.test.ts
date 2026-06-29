@@ -2,9 +2,9 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createRalphTrackingFiles } from '../../scripts/ralph-method/write-tracking-files';
-import { verifyTddTrace } from '../../scripts/ralph-method/verify-tdd-trace';
-import type { RalphUserStory } from '../../scripts/ralph-method/types';
+import { createRalphTrackingFiles } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files';
+import { verifyTddTrace } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace';
+import type { RalphUserStory } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types';
 
 const tempRoots: string[] = [];
 

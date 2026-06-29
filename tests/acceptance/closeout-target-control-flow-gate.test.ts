@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { evaluateCloseoutTargetControlFlowGate } from '../../scripts/target-artifact-realization-gate';
+import { evaluateCloseoutTargetControlFlowGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate';
 
 function writeText(filePath: string, value: string): void {
   mkdirSync(path.dirname(filePath), { recursive: true });

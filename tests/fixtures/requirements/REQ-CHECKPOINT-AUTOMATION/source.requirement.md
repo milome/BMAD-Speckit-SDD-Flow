@@ -39,13 +39,13 @@ implementationConfirmation:
     - id: TARGET-MOD-017
       path: tests/acceptance/requirements-contract-authoring-skill-contract.test.ts
     - id: TARGET-MOD-018
-      path: scripts/main-agent-implementation-readiness-gate.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts
     - id: TARGET-MOD-019
-      path: scripts/main-agent-delivery-closeout-gate.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts
     - id: TARGET-MOD-020
-      path: scripts/strict-closeout-proof-gate.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts
     - id: TARGET-MOD-021
-      path: scripts/requirement-record-control-store.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts
     - id: TARGET-MOD-022
       path: _bmad/_schemas/requirement-record.schema.json
     - id: TARGET-MOD-023
@@ -55,7 +55,7 @@ implementationConfirmation:
     - id: TARGET-MOD-025
       path: _bmad-output/runtime/requirement-records/<recordId>/authoring/stage-boundary-regression-report.json
     - id: TARGET-MOD-026
-      path: scripts/ai-tdd-contract-gate.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts
     - id: TARGET-MOD-027
       path: tests/acceptance/ai-tdd-contract-gate.test.ts
   failurePaths:

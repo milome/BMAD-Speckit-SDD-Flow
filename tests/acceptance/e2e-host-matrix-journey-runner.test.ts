@@ -4,11 +4,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 function shellQuote(value: string): string {
   return `"${value.replace(/"/g, '\\"')}"`;
@@ -73,7 +73,7 @@ describe('e2e host matrix journey runner', () => {
         '--project',
         'tsconfig.node.json',
         '--transpile-only',
-        'scripts/e2e-host-matrix-journey-runner.ts',
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-host-matrix-journey-runner.ts',
         '--project-root',
         shellQuote(fixtureRoot),
         '--mode mock',

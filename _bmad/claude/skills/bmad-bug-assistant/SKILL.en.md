@@ -321,7 +321,7 @@ Unified host close-out after the audit passes (mandatory): After the post-implem
 
 **Host call example** (executed in the project root directory):
 ```bash
-npx ts-node scripts/run-auditor-host.ts \
+npx --no-install bmad-speckit run-auditor-host \
   --projectRoot <projectRoot> \
   --stage bugfix \
   --artifactPath <BUGFIX document path> \

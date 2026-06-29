@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EXECUTION_DISCIPLINE_PROFILES,
   resolveExecutionDisciplineProfile,
-} from '../../scripts/execution-discipline-profiles';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles';
 import { createHash } from 'node:crypto';
 
 const FLOWS = ['story', 'bugfix', 'standalone_tasks'] as const;

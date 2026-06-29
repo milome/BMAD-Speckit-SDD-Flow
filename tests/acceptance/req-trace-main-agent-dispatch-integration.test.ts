@@ -6,12 +6,12 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveConfirmedSource,
   runMainAgentCompiledPrompt,
-} from '../../scripts/main-agent-compiled-prompt-runner';
-import { resolveExecutionDisciplineProfile } from '../../scripts/execution-discipline-profiles';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner';
+import { resolveExecutionDisciplineProfile } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles';
 import {
   buildExecutionStrategyOptions,
   selectExecutionStrategy,
-} from '../../scripts/execution-strategy-selection';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-strategy-selection';
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;

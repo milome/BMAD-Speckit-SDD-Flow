@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { appendControlEventAndReplay } from '../../scripts/requirement-record-control-store';
+import { appendControlEventAndReplay } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
 

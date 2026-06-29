@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "root-ts-hard-cut-install-matrix/v1",
+  "generatedAt": "2026-06-29T03:00:56.477Z",
+  "installMatrixStatus": "pass",
+  "installMatrixRequiredCommandsStatus": "pass",
+  "historicalEvidenceExclusionStatus": "pass",
+  "modes": [
+    {
+      "mode": "local-package-bin-static",
+      "command": "node packages/bmad-speckit/bin/bmad-speckit.js --help",
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    },
+    {
+      "mode": "root-package-json-static",
+      "command": "package.json scripts scan",
+      "usedRootScript": false,
+      "usedTsx": false,
+      "usedTsNode": false,
+      "usedCompiledFallback": false
+    }
+  ],
+  "findings": []
+}

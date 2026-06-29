@@ -5,11 +5,11 @@ import { describe, expect, it } from 'vitest';
 import {
   createGovernancePacketExecutionRecord,
   readGovernancePacketExecutionRecord,
-} from '../../scripts/governance-packet-execution-store';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
 import {
   createAcceptedPlaceholderDispatchAdapter,
   processPendingExecutionRecords,
-} from '../../scripts/governance-packet-dispatch-worker';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker';
 
 describe.skip('legacy archived: packet dispatch plane', () => {
   it('leases and launches pending execution records in the archived dispatch plane', async () => {

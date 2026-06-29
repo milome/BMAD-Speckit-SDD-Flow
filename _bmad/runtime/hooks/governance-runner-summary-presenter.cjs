@@ -3,9 +3,9 @@
 'use strict';
 
 /**
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceExecutionResult} GovernanceExecutionResult
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection} GovernanceExecutorRoutingProjection
- * @typedef {import('../../../scripts/governance-hook-types').GovernancePresentation} GovernancePresentation
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceExecutionResult} GovernanceExecutionResult
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceExecutorRoutingProjection} GovernanceExecutorRoutingProjection
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernancePresentation} GovernancePresentation
  */
 
 const {

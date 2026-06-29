@@ -168,7 +168,7 @@ _bmad-output/implementation-artifacts/
 4. Read `_bmad-output/.../prd.tasks-E{epic}-S{story}.json` (ralph-method US)
 5. Read `_bmad-output/.../progress.tasks-E{epic}-S{story}.txt` (ralph-method TDD 记录)
 6. Read `.claude/skills/speckit-workflow/references/audit-prompts.md` §5
-7. **读取审计配置**: 调用 `scripts/bmad-config.ts` 的`shouldAudit('implement')` 确定是否执行审计
+7. **读取审计配置**: 调用 `packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts` 的`shouldAudit('implement')` 确定是否执行审计
 
 **配置检查逻辑**:
 ```typescript

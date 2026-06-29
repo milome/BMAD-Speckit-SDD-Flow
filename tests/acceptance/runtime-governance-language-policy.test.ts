@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
-import { loadConfig } from '../../scripts/bmad-config';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
+import { loadConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 
 describe('runtime-governance language policy', () => {
   it('surfaces language substructure as the canonical machine-surface preservation contract', () => {

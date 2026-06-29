@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainStrictCommandResolutionPreflight } from '../../scripts/strict-command-resolution-preflight';
+import { mainStrictCommandResolutionPreflight } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =

@@ -32,6 +32,7 @@ interface ReleaseGateReport {
   blocked_sprint_status_update: boolean;
   checks: GateCheckResult[];
   blocking_reasons: string[];
+  mode?: 'package_runtime_module';
   completion_intent?: {
     token: string;
     storyKey: string;
@@ -348,8 +349,8 @@ function writeReleaseQualityProofCodexShim(proofDir: string): string {
       "const expectedDelta = matchLine('Expected delta') || 'release quality proof';",
       'const requiredArtifacts = [',
       "  '_bmad/_config/main-agent-quality-gate.thresholds.json',",
-      "  'scripts/main-agent-quality-gate.ts',",
-      "  'scripts/main-agent-release-gate.ts',",
+      "  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',",
+      "  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts',",
       '];',
       'if (!packetId || !packetPath || !taskReportPath) {',
       "  console.error('release quality proof shim missing prompt fields');",
@@ -469,8 +470,8 @@ function writeRunScopedCodexQualityProof(
     role: 'release-quality-proof-worker',
     inputArtifacts: [
       '_bmad/_config/main-agent-quality-gate.thresholds.json',
-      'scripts/main-agent-quality-gate.ts',
-      'scripts/main-agent-release-gate.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts',
     ],
     allowedWriteScope: ['_bmad-output/runtime/gates/codex-quality-proof/**'],
     expectedDelta:
@@ -648,12 +649,12 @@ function validateExecutionAuditLedger(
   };
 }
 
-function main(argv: string[]): number {
+export function mainReleaseGate(argv: string[]): number {
   const args = parseArgs(argv);
   const root = process.cwd();
   const e2eCommand =
     normalizeText(process.env.MAIN_AGENT_RELEASE_GATE_E2E_COMMAND) ||
-    'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-host-matrix-pr-orchestrator.ts --provider real';
+    'node packages/bmad-speckit/bin/bmad-speckit.js main-agent host-matrix-pr-orchestrator --provider real';
   const explicitLedgerPath =
     resolveOptionalPath(root, args.ledgerPath) ??
     resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_LEDGER_PATH);
@@ -689,7 +690,7 @@ function main(argv: string[]): number {
       });
     } else {
       const qualityCommand = appendScriptProvenanceArgs(
-        'node node_modules/ts-node/dist/bin.js --project tsconfig.node.json --transpile-only scripts/main-agent-quality-gate.ts',
+        'node packages/bmad-speckit/bin/bmad-speckit.js main-agent quality-gate',
         expectedProvenance
       );
       runCommand(
@@ -854,6 +855,7 @@ function main(argv: string[]): number {
     blocked_sprint_status_update: blockingReasons.length > 0,
     checks,
     blocking_reasons: blockingReasons,
+    ...(PACKAGE_RUNTIME ? { mode: 'package_runtime_module' } : {}),
   };
   if (blockingReasons.length === 0) {
     const contractPath = path.join(
@@ -922,4 +924,6 @@ function main(argv: string[]): number {
   return 0;
 }
 
-process.exit(main(process.argv.slice(2)));
+if (require.main === module) {
+  process.exit(mainReleaseGate(process.argv.slice(2)));
+}

@@ -3,13 +3,13 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import {
   buildParallelMissionPlan,
   buildPrTopology,
   evaluateParallelMissionEvidenceIntegration,
 } from '../../packages/bmad-speckit/src/main-agent/runtime/parallel-mission-control.ts';
-import { sha256Object } from '../../scripts/subagent-evidence-envelope';
+import { sha256Object } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope';
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
 const IMPLEMENTATION_HASH =

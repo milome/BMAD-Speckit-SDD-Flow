@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import path from 'node:path';
-import { readRuntimeContext } from '../../scripts/runtime-context';
+import { readRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-governance state ordering', () => {
   it('rejects non-monotonic stage transitions against the canonical runtime stage sequence', () => {

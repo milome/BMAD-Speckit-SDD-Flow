@@ -6,11 +6,11 @@ import {
   buildProjectRegistryFromSprintStatus,
   writeRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import {
   writeRuntimeContextFromSprintStatus,
   projectContextPath,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context integration wiring', () => {
   it('produces both registry and project context from sprint-status in a real output tree', () => {

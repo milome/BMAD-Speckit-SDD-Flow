@@ -8,7 +8,7 @@ import {
   recordGatesLoopRetry,
   resetGatesLoopProgress,
   writeOrchestrationState,
-} from '../../scripts/orchestration-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 
 describe('main-agent gates loop compensation', () => {
   it('tracks retry budget and opens the circuit after repeated no-progress cycles', () => {

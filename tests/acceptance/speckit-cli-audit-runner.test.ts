@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 describe('speckit-cli audit runner integration', () => {
   it('routes audit execution through runAuditorHost instead of direct auditor script orchestration', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const runAuditorHostImpl = vi.fn().mockResolvedValue({
       status: 'PASS' as const,
       closeoutEnvelope: {
@@ -36,7 +36,7 @@ describe('speckit-cli audit runner integration', () => {
   });
 
   it('supports document audit entry through the registry-backed consumer map', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const runAuditorHostImpl = vi.fn().mockResolvedValue({
       status: 'PASS' as const,
       closeoutEnvelope: {
@@ -64,7 +64,7 @@ describe('speckit-cli audit runner integration', () => {
   });
 
   it('treats blocked closeout envelope as failure even when audit status is PASS', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const runAuditorHostImpl = vi.fn().mockResolvedValue({
       status: 'PASS' as const,
       closeoutEnvelope: {

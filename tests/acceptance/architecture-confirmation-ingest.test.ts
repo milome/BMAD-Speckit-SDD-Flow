@@ -3,8 +3,8 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainIngestArchitectureConfirmation } from '../../scripts/ingest-architecture-confirmation';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+import { mainIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') {
@@ -86,7 +86,7 @@ function writeFixture(root: string): {
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
     architectureConfirmationHashRecipe: recipe,
     resolvedRecipeHash: recipe.resolvedRecipeHash,
-    targetPaths: ['scripts/main-agent-orchestration.ts'],
+    targetPaths: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'],
     targetPathsHash: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
     consumerImpactScan: [{ category: 'product_capability', status: 'triggered' }],
     consumerImpactScanHash:

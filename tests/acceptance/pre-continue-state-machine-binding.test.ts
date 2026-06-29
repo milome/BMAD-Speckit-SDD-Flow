@@ -11,12 +11,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { processQueue } from '../../scripts/bmad-runtime-worker';
-import { createAcceptedPlaceholderDispatchAdapter } from '../../scripts/governance-packet-dispatch-worker';
-import { runGovernanceRemediation } from '../../scripts/governance-remediation-runner';
-import { readGovernanceCurrentRun } from '../../scripts/governance-runtime-queue';
-import { readOrchestrationState } from '../../scripts/orchestration-state';
-import type { GovernanceExecutionResult } from '../../scripts/governance-hook-types';
+import { processQueue } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker';
+import { createAcceptedPlaceholderDispatchAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker';
+import { runGovernanceRemediation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner';
+import { readGovernanceCurrentRun } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue';
+import { readOrchestrationState } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import type { GovernanceExecutionResult } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 

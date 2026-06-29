@@ -280,7 +280,7 @@ function runObservedMainAgentInspect(
   expect(slash(parsed.cwd)).toBe(slash(target));
   expect(typeof parsed.exitCode).toBe('number');
   expect(Array.isArray(parsed.errors)).toBe(true);
-  expect(flags.usedRootScript, `${result.command} executed scripts/main-agent-orchestration.ts`).toBe(false);
+  expect(flags.usedRootScript, `${result.command} executed packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`).toBe(false);
   expect(flags.usedTsx, `${result.command} executed tsx`).toBe(false);
   expect(flags.usedTsNode, `${result.command} executed ts-node`).toBe(false);
   expect(flags.usedCompiledFallback, `${result.command} entered compiled fallback`).toBe(false);

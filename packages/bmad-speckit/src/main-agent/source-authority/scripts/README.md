@@ -2,7 +2,7 @@
 
 部署与开发便利脚本目录。
 
-> **Scoring 相关脚本已整合进 `bmad-speckit` CLI**。目标项目应使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores/check-score`。`scripts/*.ts` 保留为源仓库开发便利入口，不再是推荐调用方式。
+> **Scoring 相关脚本已整合进 `bmad-speckit` CLI**。目标项目应使用 `npx bmad-speckit score/coach/dashboard/sft-extract/scores/check-score`。`packages/bmad-speckit/src/**/*.ts` 保留为源仓库开发便利入口，不再是推荐调用方式。
 
 ## CLI 子命令对应关系
 
@@ -21,8 +21,8 @@
 | 脚本 | 用途 | 典型调用 |
 |------|------|----------|
 | `init-to-root.js` | 部署 _bmad、commands、rules 到项目根 | `node scripts/init-to-root.js` |
-| `eval-questions-cli.ts` | 评测题库 list/add/run | `npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1` |
-| `eval-question-generate.ts` | 从 coach 诊断生成 eval 题目 | `npx ts-node scripts/eval-question-generate.ts --run-id r1` |
+| `eval-questions-cli.ts` | 评测题库 list/add/run | `npx bmad-speckit eval-questions run --id q001 --version v1` |
+| `eval-question-generate.ts` | 从 coach 诊断生成 eval 题目 | `npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts --run-id r1` |
 | `accept-e2-s1.ts` / `accept-e2-s2.ts` / `accept-e4-s3.ts` 等 | 端到端验收脚本 | `npx ts-node scripts/accept-e2-s1.ts` |
 
 ## 与 scoring / bmad-speckit 关系

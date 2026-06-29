@@ -1,0 +1,6 @@
+{
+  "status": "pass",
+  "check": "surfaces-no-root-ts-authority",
+  "surfaceRootTsAuthorityCount": 0,
+  "findings": []
+}

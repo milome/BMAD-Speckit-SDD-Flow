@@ -216,7 +216,7 @@ function writeRichPreserveExistingRequirement(
       '      command: "npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts"',
       '      purpose: "Validate preserve-existing repair entry."',
       '      expected: "Targeted test passes."',
-      '      targetFiles: ["scripts/main-agent-orchestration.ts"]',
+      '      targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"]',
       '      traceRows: ["TRACE-900"]',
       '      evidenceRefs: ["EVD-900"]',
       '  currentTargetMap:',

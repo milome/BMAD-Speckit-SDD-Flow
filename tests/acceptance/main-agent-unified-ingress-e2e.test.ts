@@ -5,18 +5,18 @@ import { describe, expect, it } from 'vitest';
 import {
   runUnifiedIngress,
   type MainAgentHostKind,
-} from '../../scripts/main-agent-unified-ingress';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
 import {
   governanceEventTypeRegistryPolicyHash,
   governanceEventTypeRegistryHash,
   type GovernanceTransportEnvelope,
-} from '../../scripts/governance-transport-envelope';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { readOrchestrationState } from '../../scripts/orchestration-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { readOrchestrationState } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 
 function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `main-agent-ingress-${hostKind}-`));

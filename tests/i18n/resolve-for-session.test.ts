@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getDefaultConfig, type RuntimeConfig } from '../../scripts/bmad-config';
-import { resolveLanguagePolicyForSession } from '../../scripts/i18n/resolve-for-session';
+import { getDefaultConfig, type RuntimeConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveLanguagePolicyForSession } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session';
 
 function makeTestRuntimeConfig(): RuntimeConfig {
   const base = getDefaultConfig();

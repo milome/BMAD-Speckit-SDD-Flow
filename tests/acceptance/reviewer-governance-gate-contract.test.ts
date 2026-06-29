@@ -4,8 +4,8 @@ import {
   REVIEWER_GOVERNANCE_GATE_CONTRACT,
   REVIEWER_REQUIRED_ROLLOUT_PROOFS,
   REVIEWER_STRICT_ALIGNMENT_EVIDENCE,
-} from '../../scripts/reviewer-contract';
-import { buildReviewerRouteExplainability } from '../../scripts/reviewer-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract';
+import { buildReviewerRouteExplainability } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry';
 
 describe('reviewer governance gate contract', () => {
   it('freezes governance gate requirements instead of leaving them in planning docs only', () => {

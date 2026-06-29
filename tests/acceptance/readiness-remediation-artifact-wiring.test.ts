@@ -73,13 +73,13 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain(
       'the generated remediation artifact must include a `## Structured Deferred Gaps` section'
     );
-    expect(file).toContain('scripts/governance-remediation-runner.ts');
+    expect(file).toContain('packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts');
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
     expect(file).toContain('cursor packet generated');
     expect(file).toContain('claude packet generated');
     expect(file).toContain('Do not manually write `.cursor-packet.md` or `.claude-packet.md`');
     expect(file).toContain(
-      'Packets must be derived only from `scripts/governance-remediation-runner.ts`'
+      'Packets must be derived only from `packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts`'
     );
     expect(file).toContain(
       'The only allowed host-specific differences are `Host Kind` and `Execution Mode`'
@@ -171,13 +171,13 @@ describe('readiness remediation artifact wiring', () => {
     expect(file).toContain(
       'the generated remediation artifact must include a `## Structured Deferred Gaps` section'
     );
-    expect(file).toContain('scripts/governance-remediation-runner.ts');
+    expect(file).toContain('packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts');
     expect(file).toContain('_bmad/_config/governance-remediation.yaml');
     expect(file).toContain('cursor packet generated');
     expect(file).toContain('claude packet generated');
     expect(file).toContain('Do not manually write `.cursor-packet.md` or `.claude-packet.md`');
     expect(file).toContain(
-      'Packets must be derived only from `scripts/governance-remediation-runner.ts`'
+      'Packets must be derived only from `packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts`'
     );
     expect(file).toContain(
       'The only allowed host-specific differences are `Host Kind` and `Execution Mode`'

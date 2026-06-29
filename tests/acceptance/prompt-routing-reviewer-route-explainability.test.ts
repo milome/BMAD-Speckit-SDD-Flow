@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePromptHintUsage } from '../../scripts/prompt-routing-governance';
+import { resolvePromptHintUsage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance';
 
 describe('prompt-routing reviewer route explainability', () => {
   it('projects registry-backed reviewer route explainability when code-reviewer is in the governed skill chain', () => {

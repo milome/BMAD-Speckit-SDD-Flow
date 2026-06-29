@@ -12,13 +12,13 @@ import {
   getStrictness,
   shouldGenerateDoc,
   type StageName,
-} from '../../scripts/bmad-config';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 import {
   resolveRuntimePolicy,
   setRuntimePolicyShadowModeForTests,
   getRuntimePolicyShadowModeForTests,
   type RuntimeFlowId,
-} from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 type LegacySlice = {
   auditRequired: boolean;

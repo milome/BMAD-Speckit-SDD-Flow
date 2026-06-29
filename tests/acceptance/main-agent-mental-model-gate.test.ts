@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import {
   appendControlEventAndReplay,
   sha256Json,
-} from '../../scripts/requirement-record-control-store';
-import { validateRequirementRecordSchemaObject } from '../../scripts/requirement-record-live-schema-gate';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
+import { validateRequirementRecordSchemaObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate';
 
 type JsonObject = Record<string, unknown>;
 

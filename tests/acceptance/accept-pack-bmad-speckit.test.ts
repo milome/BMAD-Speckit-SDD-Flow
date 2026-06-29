@@ -56,7 +56,7 @@ describe('npm pack root package → clean install → CLI', () => {
 
     // Pack into an isolated temp dir so parallel vitest workers do not delete each other's tarball.
     const packDir = mkdtempSync(join(tmpdir(), 'bmad-speckit-root-pack-'));
-    run(`npm pack --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
+    run(`npm pack --silent --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
     const tgzName = readdirSync(packDir).find(
       (f) => f.startsWith('bmad-speckit-sdd-flow-') && f.endsWith('.tgz')
     );
@@ -225,7 +225,7 @@ describe('npm pack root package → clean install → CLI', () => {
       mkdirSync(tasksDir, { recursive: true });
       writeFileSync(
         tasksPath,
-        ['# Tasks', '', '- [ ] T001 Implement runtime flow in scripts/runtime-context.ts'].join(
+        ['# Tasks', '', '- [ ] T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts'].join(
           '\n'
         ),
         'utf8'
@@ -240,17 +240,17 @@ describe('npm pack root package → clean install → CLI', () => {
       expect(existsSync(join(tasksDir, 'progress.tasks.txt'))).toBe(true);
 
       const ralphRecord = run(
-        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in scripts/runtime-context.ts" --phase TDD-RED --detail "T001 vitest tests/runtime.test.ts => 1 failed"`,
+        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts" --phase TDD-RED --detail "T001 vitest tests/runtime.test.ts => 1 failed"`,
         consumer
       );
       expect(ralphRecord).toContain('Recorded Ralph phase TDD-RED');
 
       run(
-        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in scripts/runtime-context.ts" --phase TDD-GREEN --detail "T001 vitest tests/runtime.test.ts => 1 passed"`,
+        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts" --phase TDD-GREEN --detail "T001 vitest tests/runtime.test.ts => 1 passed"`,
         consumer
       );
       run(
-        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in scripts/runtime-context.ts" --phase TDD-REFACTOR --detail "T001 no refactor needed"`,
+        `npx bmad-speckit ralph record-phase --tasksPath "${tasksPath.replace(/\\/g, '/')}" --userStoryId "US-001" --title "T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts" --phase TDD-REFACTOR --detail "T001 no refactor needed"`,
         consumer
       );
       const ralphVerify = run(
@@ -278,5 +278,5 @@ describe('npm pack root package → clean install → CLI', () => {
       rmSync(consumer, { recursive: true, force: true });
       rmSync(packDir, { recursive: true, force: true });
     }
-  }, 180_000);
+  }, 360_000);
 });

@@ -41,12 +41,12 @@ describe('validate-consumer-governance script safety', () => {
     expect(content).not.toContain("Run-Step 'verify-execution-closure'");
   });
 
-  it('requires installed party-mode helpers and does not require consumer scripts/party-mode-gate-check.ts', () => {
+  it('requires installed party-mode helpers and does not require consumer installed party-mode runtime checker', () => {
     expect(content).toContain("Run-Step 'verify-party-mode-helper-surfaces'");
     expect(content).toContain('.cursor/hooks/party-mode-read-current-session.cjs');
     expect(content).toContain('_bmad/runtime/hooks/party-mode-read-current-session.cjs');
     expect(content).toContain('consumerScriptsRequired = $false');
-    expect(content).not.toContain("Join-Path $ConsumerRoot 'scripts/party-mode-gate-check.ts'");
+    expect(content).not.toContain("Join-Path $ConsumerRoot 'installed party-mode runtime checker'");
   });
 
   it('forbids unexpected worker-era hook files on the accepted consumer surface', () => {

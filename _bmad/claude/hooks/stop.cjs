@@ -3,8 +3,8 @@
 'use strict';
 
 /**
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceStopHookResult} GovernanceStopHookResult
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} GovernanceWorkerResult
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceStopHookResult} GovernanceStopHookResult
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceWorkerResult} GovernanceWorkerResult
  */
 
 const fs = require('node:fs');
@@ -72,8 +72,8 @@ function resolvePacketHardCloseoutHelper() {
 }
 
 /**
- * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
- * @returns {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection}
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
+ * @returns {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceExecutorRoutingProjection}
  */
 function buildExecutorRoutingFromHints(journeyContractHints) {
   const normalizedHints = Array.isArray(journeyContractHints) ? journeyContractHints : [];
@@ -97,7 +97,7 @@ function buildExecutorRoutingFromHints(journeyContractHints) {
 }
 
 /**
- * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | null | undefined} journeyContractHints
  * @returns {string}
  */
 function renderJourneyContractSignals(journeyContractHints) {
@@ -127,11 +127,11 @@ function upsertSummaryLine(lines, prefix, value) {
 }
 
 /**
- * @param {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} workerResult
- * @param {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | undefined} journeyContractHints
- * @param {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection} executorRouting
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceWorkerResult} workerResult
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceJourneyContractHintProjection[] | undefined} journeyContractHints
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceExecutorRoutingProjection} executorRouting
  * @param {string | null} stopReason
- * @returns {import('../../../scripts/governance-hook-types').GovernanceRemediationAuditTrace}
+ * @returns {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceRemediationAuditTrace}
  */
 function buildNormalizedRemediationAuditTrace(
   workerResult,
@@ -165,8 +165,8 @@ function buildNormalizedRemediationAuditTrace(
 }
 
 /**
- * @param {import('../../../scripts/governance-hook-types').GovernanceWorkerResult} workerResult
- * @param {import('../../../scripts/governance-hook-types').GovernanceRemediationAuditTrace} remediationAuditTrace
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceWorkerResult} workerResult
+ * @param {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceRemediationAuditTrace} remediationAuditTrace
  * @returns {string[]}
  */
 function buildNormalizedRunnerSummaryLines(workerResult, remediationAuditTrace) {

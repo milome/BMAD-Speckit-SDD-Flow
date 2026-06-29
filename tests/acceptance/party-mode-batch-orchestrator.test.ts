@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildCheckpointWindowState, startSession } from '../../scripts/party-mode-runtime';
+import { buildCheckpointWindowState, startSession } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode batch orchestrator', () => {
   it('defaults checkpoint handling to auto-continue and reserves heartbeat to the facilitator', () => {

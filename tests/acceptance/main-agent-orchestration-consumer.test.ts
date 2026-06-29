@@ -7,8 +7,8 @@ import type {
   CompiledPromptRef,
   ExecutionPacket,
   RecommendationPacket,
-} from '../../scripts/orchestration-dispatch-contract';
-import { packetArtifactPath } from '../../scripts/orchestration-dispatch-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
+import { packetArtifactPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
   buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
@@ -22,23 +22,23 @@ import {
   resolveMainAgentOrchestrationSurface,
   writeMainAgentRunLoopTaskReport,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { runUnifiedIngressAsync } from '../../scripts/main-agent-unified-ingress';
-import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
+import { runUnifiedIngressAsync } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
+import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import {
   createDefaultOrchestrationState,
   writeOrchestrationState,
-} from '../../scripts/orchestration-state';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
-import { runAuditorHost } from '../../scripts/run-auditor-host';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
-import type { ImplementationEntryGate } from '../../scripts/runtime-governance';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+import type { ImplementationEntryGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'status',
@@ -513,7 +513,7 @@ function writeConfirmedReadinessRecord(root: string): string {
       {
         id: 'ART-001',
         artifactType: 'code',
-        path: 'scripts/main-agent-orchestration.ts',
+        path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
         producer: 'main-agent-orchestration',
         sourceOfTruthRole: 'implementation',
         traceRefs: ['TRACE-001'],
@@ -562,7 +562,7 @@ function writeConfirmedReadinessRecord(root: string): string {
       artifactPaths: [
         {
           id: 'PATH-001',
-          path: 'scripts/main-agent-orchestration.ts',
+          path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
           traceRows: ['TRACE-001'],
           evidenceRefs: ['EVD-001'],
         },
@@ -570,7 +570,7 @@ function writeConfirmedReadinessRecord(root: string): string {
       canonicalArtifacts: [
         {
           id: 'ART-001',
-          targetPathOrField: 'scripts/main-agent-orchestration.ts',
+          targetPathOrField: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
           traceRows: ['TRACE-001'],
           evidenceRefs: ['EVD-001'],
         },
@@ -594,7 +594,7 @@ function writeConfirmedReadinessRecord(root: string): string {
     targetModificationPaths: [
       {
         id: 'TARGET-MOD-001',
-        path: 'scripts/main-agent-orchestration.ts',
+        path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
         artifactRefs: ['ART-001'],

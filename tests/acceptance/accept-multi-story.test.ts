@@ -12,7 +12,7 @@ import {
   acquireLock,
   releaseLock,
   getLock,
-} from '../../scripts/bmad-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state';
 import { existsSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 

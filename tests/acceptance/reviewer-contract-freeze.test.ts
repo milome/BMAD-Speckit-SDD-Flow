@@ -32,7 +32,7 @@ import {
   STORY_AUDIT_CANONICAL_PROFILE,
   getReviewerProfileFromDefinitionSource,
   isReviewerProfileId,
-} from '../../scripts/reviewer-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract';
 
 describe('reviewer contract freeze', () => {
   it('freezes reviewer identity without conflating product identity and host-visible executor names', () => {

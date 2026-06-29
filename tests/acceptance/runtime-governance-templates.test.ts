@@ -2,9 +2,9 @@
  * §A.7 T9：模板覆盖、reason 含 template:<id>、test:scoring 由 CI 闸门覆盖。
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { loadConfig } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
-import { assertValidRuntimePolicyTemplatePatch } from '../../scripts/runtime-governance-template-schema';
+import { loadConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
+import { assertValidRuntimePolicyTemplatePatch } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-template-schema';
 import { resetTriggerConfigCache } from '../../packages/scoring/trigger/trigger-loader';
 
 describe('runtime-governance templates (T9)', () => {

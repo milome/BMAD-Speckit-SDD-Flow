@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { appendTddTrace } from '../../scripts/ralph-method/write-tracking-files';
+import { appendTddTrace } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files';
 
 const tempRoots: string[] = [];
 
@@ -19,7 +19,7 @@ function writeTasksFile(root: string, relativePath: string): string {
     tasksPath,
     `# Tasks
 
-- [ ] T001 Implement runtime flow in scripts/runtime-context.ts
+- [ ] T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts
 - [x] T002 Update docs/how-to.md with operator guidance
 `,
     'utf8'
@@ -34,7 +34,7 @@ function writeSingleProductionTaskFile(root: string, relativePath: string): stri
     tasksPath,
     `# Tasks
 
-- [ ] T001 Implement runtime flow in scripts/runtime-context.ts
+- [ ] T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts
 `,
     'utf8'
   );
@@ -49,7 +49,7 @@ afterEach(() => {
 
 describe('speckit-cli implement Ralph integration', () => {
   it('prepares standalone Ralph tracking files from tasks.md', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const root = makeTempRoot();
     const tasksPath = writeTasksFile(root, path.join('specs', 'story-1', 'tasks.md'));
 
@@ -77,7 +77,7 @@ describe('speckit-cli implement Ralph integration', () => {
     expect(prd.userStories).toHaveLength(2);
     expect(prd.userStories[0]).toMatchObject({
       id: 'US-001',
-      title: 'T001 Implement runtime flow in scripts/runtime-context.ts',
+      title: 'T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts',
       involvesProductionCode: true,
       passes: false,
     });
@@ -91,7 +91,7 @@ describe('speckit-cli implement Ralph integration', () => {
   });
 
   it('writes BMAD tracking files into implementation-artifacts', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const root = makeTempRoot();
     const tasksPath = writeTasksFile(
       root,
@@ -133,7 +133,7 @@ describe('speckit-cli implement Ralph integration', () => {
   });
 
   it('verifies implement tracking through the shared Ralph compliance gate', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const root = makeTempRoot();
     const tasksPath = writeTasksFile(root, path.join('specs', 'story-1', 'tasks.md'));
 
@@ -145,7 +145,7 @@ describe('speckit-cli implement Ralph integration', () => {
     appendTddTrace({
       progressPath: prepared.paths.progressPath,
       userStoryId: 'US-001',
-      title: 'T001 Implement runtime flow in scripts/runtime-context.ts',
+      title: 'T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts',
       storyLogTimestamp: '2026-04-19T12:00:00.000Z',
       phases: [
         { phase: 'TDD-RED', detail: 'T001 vitest tests/runtime.test.ts => 1 failed' },
@@ -172,7 +172,7 @@ describe('speckit-cli implement Ralph integration', () => {
   });
 
   it('injects resolved Ralph paths and verification gate into the implement agent command', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const root = makeTempRoot();
     const tasksPath = writeTasksFile(root, path.join('specs', 'story-1', 'tasks.md'));
     const prepared = speckitCli.prepareImplementRalphTracking(
@@ -195,7 +195,7 @@ describe('speckit-cli implement Ralph integration', () => {
   });
 
   it('records TDD-RED/TDD-GREEN/TDD-REFACTOR incrementally and only closes the story on the final phase', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const root = makeTempRoot();
     const tasksPath = writeSingleProductionTaskFile(
       root,
@@ -212,7 +212,7 @@ describe('speckit-cli implement Ralph integration', () => {
         tasksPath,
         mode: 'standalone',
         userStoryId: 'US-001',
-        title: 'T001 Implement runtime flow in scripts/runtime-context.ts',
+        title: 'T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts',
         phase: 'TDD-RED',
         detail: 'T001 vitest tests/runtime.test.ts => 1 failed',
         storyLogTimestamp: '2026-04-19T12:00:00+08:00',
@@ -228,7 +228,7 @@ describe('speckit-cli implement Ralph integration', () => {
     expect(progress).toContain('[TDD-GREEN] _pending_');
     expect(progress).toContain('[TDD-REFACTOR] _pending_');
     expect(progress).not.toContain(
-      'US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
+      'US-001: T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts - PASSED'
     );
     expect(progress).toContain('Status: PENDING');
     expect(progress).toContain('Completed: 0');
@@ -239,7 +239,7 @@ describe('speckit-cli implement Ralph integration', () => {
         tasksPath,
         mode: 'standalone',
         userStoryId: 'US-001',
-        title: 'T001 Implement runtime flow in scripts/runtime-context.ts',
+        title: 'T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts',
         phase: 'TDD-GREEN',
         detail: 'T001 vitest tests/runtime.test.ts => 1 passed',
         storyLogTimestamp: '2026-04-19T12:01:00+08:00',
@@ -253,7 +253,7 @@ describe('speckit-cli implement Ralph integration', () => {
     };
     expect(progress).toContain('[TDD-GREEN] T001 vitest tests/runtime.test.ts => 1 passed');
     expect(progress).not.toContain(
-      'US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
+      'US-001: T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts - PASSED'
     );
     expect(progress).toContain('Status: PENDING');
     expect(progress).toContain('Completed: 0');
@@ -264,7 +264,7 @@ describe('speckit-cli implement Ralph integration', () => {
         tasksPath,
         mode: 'standalone',
         userStoryId: 'US-001',
-        title: 'T001 Implement runtime flow in scripts/runtime-context.ts',
+        title: 'T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts',
         phase: 'TDD-REFACTOR',
         detail: 'T001 no refactor needed',
         storyLogTimestamp: '2026-04-19T12:02:00+08:00',
@@ -278,7 +278,7 @@ describe('speckit-cli implement Ralph integration', () => {
     };
     expect(progress).toContain('[TDD-REFACTOR] T001 no refactor needed');
     expect(progress).toContain(
-      'US-001: T001 Implement runtime flow in scripts/runtime-context.ts - PASSED'
+      'US-001: T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts - PASSED'
     );
     expect(progress).toContain('Status: PASSED');
     expect(progress).toContain('Completed: 1');
@@ -286,7 +286,7 @@ describe('speckit-cli implement Ralph integration', () => {
   });
 
   it('injects script-enforced phase hook commands into the implement agent command', async () => {
-    const speckitCli = await import('../../scripts/speckit-cli');
+    const speckitCli = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli');
     const root = makeTempRoot();
     const tasksPath = writeSingleProductionTaskFile(
       root,

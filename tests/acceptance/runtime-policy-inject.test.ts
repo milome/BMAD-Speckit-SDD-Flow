@@ -7,11 +7,11 @@ import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,
 } from '../helpers/runtime-registry-fixture';
-import { defaultRuntimeContextFile, readRuntimeContext } from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, readRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 const repoRoot = process.cwd();
 
@@ -997,7 +997,16 @@ describe('runtime-policy-inject (dual host entry)', () => {
   });
 
   it('does not fall back to root .bmad/runtime-context.json when no explicit context file is provided', () => {
-    const emit = path.join(repoRoot, 'scripts', 'emit-runtime-policy.ts');
+    const emit = path.join(
+      repoRoot,
+      'packages',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'scripts',
+      'emit-runtime-policy.ts'
+    );
     const r = spawnSync(
       process.execPath,
       [

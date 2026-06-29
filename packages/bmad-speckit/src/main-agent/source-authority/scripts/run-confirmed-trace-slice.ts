@@ -321,13 +321,21 @@ function buildPacket(input) {
 }
 
 function runIngest(packetPath, recordPath, recordedBy) {
+  const packageBin = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    '..',
+    '..',
+    'bin',
+    'bmad-speckit.js'
+  );
   const command = [
-    'npx',
-    'ts-node',
-    '--project',
-    'tsconfig.node.json',
-    '--transpile-only',
-    'scripts/ingest-implementation-evidence.ts',
+    process.execPath,
+    packageBin,
+    'main-agent',
+    'ingest-implementation-evidence',
     '--evidence',
     packetPath,
     '--requirement-record',
@@ -335,16 +343,17 @@ function runIngest(packetPath, recordPath, recordedBy) {
     '--recorded-by',
     recordedBy,
     '--json',
-  ].join(' ');
-  const result = spawnSync(command, {
+  ];
+  const result = spawnSync(command[0], command.slice(1), {
     cwd: process.cwd(),
     encoding: 'utf8',
-    shell: true,
+    shell: false,
     windowsHide: true,
     maxBuffer: 32 * 1024 * 1024,
   });
+  const commandText = command.map((value) => (/\s/u.test(value) ? JSON.stringify(value) : value)).join(' ');
   return {
-    command,
+    command: commandText,
     exitCode: typeof result.status === 'number' ? result.status : result.error ? 2 : 0,
     stdout: result.stdout || '',
     stderr: result.stderr || '',
@@ -355,7 +364,7 @@ function runIngest(packetPath, recordPath, recordedBy) {
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: node scripts/run-confirmed-trace-slice.js --trace TRACE-001 [--record <json>] [--source <md>] [--json]');
+    console.log('Usage: bmad-speckit main-agent run-confirmed-trace-slice --trace TRACE-001 [--record <json>] [--source <md>] [--json]');
     return 0;
   }
   const traceId = text(args.trace);

@@ -158,7 +158,7 @@ function rewriteRepoRootRuntimeAssetRequest(request, relativePath) {
   const normalizedRequest = request.replace(/\\/g, '/');
   const match = normalizedRequest.match(/^((?:\.\.\/)+)_bmad\/(.+)$/u);
   if (!match) return request;
-  const target = path.join(packageRoot, '_bmad', ...match[2].split('/'));
+  const target = path.join(distRoot, 'source-authority', '_bmad', ...match[2].split('/'));
   const candidates = [target, `${target}.js`, `${target}.json`, path.join(target, 'index.js')];
   if (!candidates.some((runtimeTarget) => fs.existsSync(runtimeTarget))) {
     throw new Error(
@@ -240,6 +240,7 @@ const runtimeAssetDirectories = [
 const sourceAuthorityAssetDirectories = [
   '.specify',
   '_bmad',
+  'docs/reference',
   'packages/bmad-speckit/bin',
   'packages/bmad-speckit/src',
   'packages/ralph-method',
@@ -282,6 +283,8 @@ if (fs.existsSync(packageDistRoot)) {
 }
 
 for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
+// Source-authority wrappers may require ../_bmad assets while runtime imports are rewritten.
+copySourceAuthorityAssetDirectory('_bmad');
 for (const file of files) copyRuntimeFile(file);
 
 function packageRuntimeTypeScriptDistRelativePath(relativePath) {

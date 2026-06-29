@@ -1,0 +1,7 @@
+{
+  "status": "pass",
+  "check": "root-internal-graph-zero",
+  "rootInternalEdgeCount": 0,
+  "activeExternalRootTsRefCount": 0,
+  "edges": []
+}

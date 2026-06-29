@@ -25,7 +25,7 @@ Legacy compatibility references such as `.claude/state/bmad-progress.yaml`, `com
 
 1. **Resolve active Requirement**: use explicit `recordId` / `requirementSetId` / `runId` from the host-session activation request, or `_bmad-output/runtime/requirement-records/index.json`; do not infer the active run from `.claude/state/**`, handoff, dashboard, score, SFT, bmad-help, or old runtime context.
 2. **Load runtime config**:
-   - `scripts/bmad-config.ts`
+   - `packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts`
    - resolve:
      - `audit_granularity.mode`
      - `auto_continue.enabled`
@@ -207,7 +207,7 @@ legacy_commit_gate:
   denial_reason:
     - 当前 stage 审计未通过
     - 未检测到审计报告
-  verifier: scripts/parse-bmad-audit-result.ts
+  verifier: packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts
   verifier_condition: "status === 'PASS'"
 ```
 

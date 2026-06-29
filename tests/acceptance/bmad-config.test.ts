@@ -22,8 +22,8 @@ import {
   type AuditGranularityMode,
   type StageName,
   type ModeConfig,
-} from '../../scripts/bmad-config';
-import { getI18nConfig } from '../../scripts/bmad-config';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { getI18nConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 
 describe('bmad-config', () => {
   describe('Environment Detection', () => {
@@ -327,7 +327,7 @@ describe('bmad-config', () => {
     it('should enable auto continue from cli flag', () => {
       vi.stubGlobal('process', {
         ...process,
-        argv: ['node', 'scripts/bmad-config.ts', '--continue'],
+        argv: ['node', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts', '--continue'],
       });
 
       const config = loadConfig();
@@ -339,7 +339,7 @@ describe('bmad-config', () => {
       vi.stubGlobal('process', {
         ...process,
         env: process.env,
-        argv: ['node', 'scripts/bmad-config.ts', '--continue'],
+        argv: ['node', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts', '--continue'],
       });
 
       const config = loadConfig();

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDeterministicSoakReport,
   evaluateSoakReport,
-} from '../../scripts/main-agent-soak-runner';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner';
 
 describe('main-agent soak 8h contract', () => {
   it('requires 8h evidence, replayable recovery timelines, and >=95% recovery success', () => {

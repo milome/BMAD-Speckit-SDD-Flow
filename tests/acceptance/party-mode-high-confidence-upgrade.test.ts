@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertGateProfileSelectionAllowed,
   inferGateProfileId,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,

@@ -1,51 +1,27 @@
-const fs = require('node:fs');
-const path = require('node:path');
+const { main } = require('../source-authority/scripts/main-agent-delivery-truth-gate');
 
-function resolveOutputPath(context) {
-  const raw = context.args.reportPath || context.args.output || '';
-  if (!raw) {
-    return path.join(
-      context.cwd,
-      '_bmad-output',
-      'runtime',
-      'gates',
-      'main-agent-delivery-truth-gate-report.json'
-    );
+function runtimeArgsFromContext(context) {
+  const argv = [];
+  for (const [key, value] of Object.entries(context.args || {})) {
+    if (key === 'action') continue;
+    argv.push(`--${key}`);
+    argv.push(String(value));
   }
-  return path.isAbsolute(raw) ? raw : path.resolve(context.cwd, raw);
-}
-
-function maybeWriteReport(context, report) {
-  if (context.args.writeReport !== 'true' && !context.args.reportPath && !context.args.output) {
-    return null;
-  }
-  const reportPath = resolveOutputPath(context);
-  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  return reportPath;
+  return argv;
 }
 
 function deliveryTruthGateAction(context) {
-  const report = {
-    reportType: 'main_agent_delivery_truth_gate_package_runtime',
-    generatedAt: new Date().toISOString(),
-    completionAllowed: false,
-    deliveryStatus: 'partial',
-    completionLanguage: 'partial_only',
-    mode: 'package_runtime_module',
-    checks: [
-      {
-        id: 'package-runtime-dispatch',
-        passed: true,
-        summary: 'delivery truth gate command resolved through package runtime',
-      },
-    ],
-  };
-  const reportPath = maybeWriteReport(context, report);
-  return {
-    report,
-    reportPath,
-  };
+  const previousCwd = process.cwd();
+  try {
+    process.chdir(context.cwd);
+    const exitCode = main(runtimeArgsFromContext(context));
+    return {
+      exitCode,
+      suppressStdout: true,
+    };
+  } finally {
+    process.chdir(previousCwd);
+  }
 }
 
 module.exports = {

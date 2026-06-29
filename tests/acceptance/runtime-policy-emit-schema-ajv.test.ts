@@ -3,8 +3,8 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
-import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
-import { stableStringifyPolicy } from '../../scripts/stable-runtime-policy-json';
+import { resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { stableStringifyPolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json';
 
 const repoRoot = process.cwd();
 

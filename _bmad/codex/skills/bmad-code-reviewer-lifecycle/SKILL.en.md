@@ -54,7 +54,7 @@ See `_bmad/_config/eval-lifecycle-report-paths.yaml` or `_bmad-output/implementa
 This skill uses `runAuditorHost` to close the “audit → host close-out” loop:
 
 - **Function**: `scoring/orchestrator/parse-and-write.ts`
-- **CLI**: `scripts/run-auditor-host.ts`
+- **CLI**: `bmad-speckit run-auditor-host`
 - **Acceptance**: `npm run accept:e3-s3`
 
 ## Main Agent Orchestration Surface

@@ -13,7 +13,7 @@ const BUNDLE_SCAN_PATHS = ['packages/runtime-emit/dist', '.cursor/hooks', '.clau
 const BUNDLE_FORBIDDEN_STRINGS = [
   {
     id: 'root-orchestration-bundle-marker',
-    text: '// ../../scripts/main-agent-orchestration.ts',
+    text: '// ../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
   },
   {
     id: 'synthetic-consecutive-no-new-gap',

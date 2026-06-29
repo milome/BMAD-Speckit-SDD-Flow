@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildProjectRegistryFromSprintStatus } from '../../scripts/runtime-context-registry';
+import { buildProjectRegistryFromSprintStatus } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context project sync', () => {
   it('derives active epic/story ids from sprint-status development_status', () => {

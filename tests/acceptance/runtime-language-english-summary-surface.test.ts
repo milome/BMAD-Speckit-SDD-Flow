@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { stableStringifyPolicy } from '../../scripts/stable-runtime-policy-json';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { stableStringifyPolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('runtime language english summary surface', () => {
   it('keeps summary-facing policy serialization machine-safe and english-oriented', () => {

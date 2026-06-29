@@ -14,9 +14,9 @@ import { describe, expect, it } from 'vitest';
 import {
   createGovernancePacketExecutionRecord,
   readGovernancePacketExecutionRecord,
-} from '../../scripts/governance-packet-execution-store';
-import { processPendingExecutionRecords } from '../../scripts/governance-packet-dispatch-worker';
-import { createGovernanceHostDispatchAdapter } from '../../scripts/governance-host-dispatch-adapter';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
+import { processPendingExecutionRecords } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker';
+import { createGovernanceHostDispatchAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter';
 import { linkRepoNodeModulesIntoProject } from '../helpers/runtime-registry-fixture';
 
 const runHeadlessE2E = process.env.BMAD_RUN_CURSOR_HEADLESS_E2E === '1';

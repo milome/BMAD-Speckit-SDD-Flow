@@ -5,12 +5,12 @@ import path from 'node:path';
 import {
   buildProjectRegistryFromSprintStatus,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import {
   projectContextPath,
   readRuntimeContext,
   writeRuntimeContextFromSprintStatus,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context project sync', () => {
   it('writes project context derived from sprint-status and keeps it aligned with registry', () => {

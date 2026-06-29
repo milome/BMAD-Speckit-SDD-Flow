@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('runtime language english policy reason surface', () => {
   it('keeps reason output english-oriented and machine-safe under english mode expectations', () => {

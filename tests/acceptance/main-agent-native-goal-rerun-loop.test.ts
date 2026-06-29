@@ -54,7 +54,7 @@ function writeDoneTaskReport(root: string, sessionId: string, packetId: string):
       {
         packetId,
         status: 'done',
-        filesChanged: ['scripts/main-agent-orchestration.ts'],
+        filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'],
         validationsRun: ['native-goal-rerun-loop-success'],
         evidence: ['native goal rerun loop success TaskReport'],
         downstreamContext: ['native goal progress restored'],

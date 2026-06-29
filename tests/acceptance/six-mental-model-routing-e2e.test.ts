@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { validateRequirementRecordSchemaObject } from '../../scripts/requirement-record-live-schema-gate';
+import { validateRequirementRecordSchemaObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate';
 import {
   MODELS,
   NEXT_MODEL,

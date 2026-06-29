@@ -6,13 +6,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import * as yaml from 'js-yaml';
-import { loadConfig } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy, type RuntimeFlowId } from '../../scripts/runtime-governance';
+import { loadConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy, type RuntimeFlowId } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 import {
   scoringEnabledForTriggerStage,
   resetTriggerConfigCache,
 } from '../../packages/scoring/trigger/trigger-loader';
-import type { StageName } from '../../scripts/bmad-config';
+import type { StageName } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 
 const SCORING_YAML = join(process.cwd(), '_bmad', '_config', 'scoring-trigger-modes.yaml');
 

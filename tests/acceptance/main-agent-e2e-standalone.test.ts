@@ -3,11 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveMainAgentOrchestrationSurface } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('main-agent standalone E2E orchestration', () => {

@@ -35,10 +35,19 @@ describe('main-agent public dispatch root TypeScript guard', () => {
     assert.doesNotMatch(publicMainAgent, TS_NODE_PATTERN);
   });
 
-  it('retains the root orchestration script only as source-dev compatibility surface', () => {
+  it('uses package source authority after root orchestration TypeScript hard-cut', () => {
     const rootScript = path.join(PROJECT_ROOT, 'scripts', 'main-agent-orchestration.ts');
+    const packageSourceAuthority = path.join(
+      PACKAGE_ROOT,
+      'src',
+      'main-agent',
+      'source-authority',
+      'scripts',
+      'main-agent-orchestration.ts'
+    );
 
-    assert.equal(fs.existsSync(rootScript), true);
+    assert.equal(fs.existsSync(rootScript), false);
+    assert.equal(fs.existsSync(packageSourceAuthority), true);
   });
 
   it('keeps package runtime tests plain JavaScript without root TypeScript imports', () => {

@@ -35,7 +35,7 @@ This skill lets the agent run the right scripts when the user asks in natural la
 
 **Reuse note**:
 
-- This skill does not implement discovery, Coach, or SFT logic; it reuses `scripts/coach-diagnose.ts` and `scripts/sft-extract.ts`.
+- This skill does not implement discovery, Coach, or SFT logic; it reuses `bmad-speckit coach` and `bmad-speckit sft-extract`.
 - Coach: without `--run-id`, the script uses `discoverLatestRunId` for the latest timestamp; by default it diagnoses `scenario=real_dev`; same as `/bmad-coach`. For `eval_question` samples, pass `--scenario eval_question` explicitly.
 - SFT: same as `/bmad-sft-extract` via `npx bmad-speckit sft-extract`; supports `--output`, `--min-score` (default 90, cannot be below 90).
 

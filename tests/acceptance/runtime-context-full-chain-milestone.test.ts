@@ -9,9 +9,9 @@ import {
   buildRunContext,
   writeRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
-import { writeRuntimeContextFromSprintStatus } from '../../scripts/runtime-context';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { writeRuntimeContextFromSprintStatus } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 
 describe('runtime-context milestone: full runtime chain', () => {

@@ -1,6 +1,6 @@
 /**
  * Check-score subcommand: check if epic/story has scoring records.
- * Ported from scripts/check-story-score-written.ts to JS for CLI integration.
+ * Ported from packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts to JS for CLI integration.
  *
  * Exit codes: 0=has records, 1=no records or param error
  */

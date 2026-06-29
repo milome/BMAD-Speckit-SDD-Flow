@@ -3,12 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { evaluateSoakReport, runWallClockSoak } from '../../scripts/main-agent-soak-runner';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { evaluateSoakReport, runWallClockSoak } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 function waitForFile(filePath: string, timeoutMs: number): Promise<void> {
   const started = Date.now();

@@ -181,7 +181,7 @@ describe('bmad-help and BMADS runtime boundary', () => {
       expect(JSON.stringify(output)).toContain(
         '_bmad/_config/orchestration-governance.contract.yaml'
       );
-      expect(JSON.stringify(output)).toContain('scripts/orchestration-dispatch-contract.ts');
+      expect(JSON.stringify(output)).toContain('packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts');
       expect(JSON.stringify(output)).toContain('_bmad/_config/stage-mapping.yaml');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

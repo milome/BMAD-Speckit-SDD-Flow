@@ -2,7 +2,7 @@
  * Speckit CLI - Unified command entry for speckit-workflow
  *
  * Usage:
- *   npx ts-node scripts/speckit-cli.ts <command> [options]
+ *   npx bmad-speckit <command> [options]
  *
  * Commands:
  *   constitution  - §0.5 Establish project principles
@@ -19,9 +19,9 @@
  *   version       - Show version info
  *
  * Examples:
- *   npx ts-node scripts/speckit-cli.ts constitution --projectPath ./
- *   npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1
- *   npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md
+ *   npx bmad-speckit constitution --projectPath ./
+ *   npx bmad-speckit specify --epic 4 --story 1
+ *   npx bmad-speckit implement --tasksPath specs/.../tasks.md
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -150,7 +150,7 @@ const VERSION = '2.0.1';
 function printUsage(command?: string): void {
   if (command && COMMANDS[command]) {
     const config = COMMANDS[command];
-    console.log(`\nUsage: npx ts-node scripts/speckit-cli.ts ${command} [options]\n`);
+    console.log(`\nUsage: npx bmad-speckit ${command} [options]\n`);
     console.log(`Description: ${config.description}\n`);
     console.log('Required Arguments:');
     config.requiredArgs.forEach((arg) => {
@@ -170,7 +170,7 @@ function printUsage(command?: string): void {
 Speckit CLI - Unified command entry for speckit-workflow
 Version: ${VERSION}
 
-Usage: npx ts-node scripts/speckit-cli.ts <command> [options]
+Usage: npx bmad-speckit <command> [options]
 
 Commands:
 ${Object.entries(COMMANDS)
@@ -182,10 +182,10 @@ Global Options:
   --version     Show version info
 
 Examples:
-  npx ts-node scripts/speckit-cli.ts constitution --projectPath ./
-  npx ts-node scripts/speckit-cli.ts specify --epic 4 --story 1
-  npx ts-node scripts/speckit-cli.ts plan --epic 4 --story 1 --specPath specs/.../spec.md
-  npx ts-node scripts/speckit-cli.ts implement --tasksPath specs/.../tasks.md
+  npx bmad-speckit constitution --projectPath ./
+  npx bmad-speckit specify --epic 4 --story 1
+  npx bmad-speckit plan --epic 4 --story 1 --specPath specs/.../spec.md
+  npx bmad-speckit implement --tasksPath specs/.../tasks.md
 
 See docs/speckit-cli-complete-mapping.md for full documentation.
 `);

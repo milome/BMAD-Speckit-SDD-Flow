@@ -8,16 +8,16 @@ import {
   markMainAgentPacketDispatched,
   runMainAgentAutomaticLoop,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { main, runCodexWorkerAdapter } from '../../scripts/main-agent-codex-worker-adapter';
+import { main, runCodexWorkerAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter';
 import {
   governanceEventTypeRegistryPolicyHash,
   governanceEventTypeRegistryHash,
-} from '../../scripts/governance-transport-envelope';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 const SOURCE_DOCUMENT_HASH =
   'sha256:1111111111111111111111111111111111111111111111111111111111111111';

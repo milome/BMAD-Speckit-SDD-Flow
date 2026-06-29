@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureProjectRuntimeContext } from '../../scripts/runtime-context';
+import { ensureProjectRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   readRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 const REPO_ROOT = path.join(import.meta.dirname, '..', '..');
 const SYNC_SUB = 'bmad-speckit sync-runtime-context-from-sprint';

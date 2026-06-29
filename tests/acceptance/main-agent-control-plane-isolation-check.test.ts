@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainControlPlaneIsolationCheck } from '../../scripts/main-agent-control-plane-isolation-check';
+import { mainControlPlaneIsolationCheck } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-control-plane-isolation-check';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 

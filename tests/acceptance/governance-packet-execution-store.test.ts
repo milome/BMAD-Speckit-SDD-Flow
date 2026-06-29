@@ -7,7 +7,7 @@ import {
   governanceExecutionRecordPath,
   listGovernancePacketExecutionRecords,
   readGovernancePacketExecutionRecord,
-} from '../../scripts/governance-packet-execution-store';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
 
 describe('governance packet execution store', () => {
   it('creates and persists a pending dispatch execution record idempotently', () => {
