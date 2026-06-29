@@ -102,16 +102,17 @@ function findCanonicalBmadRoot(startDir: string): string | null {
     }
   }
 
-  let current = path.resolve(startDir);
-  while (true) {
+  let current: string | null = path.resolve(startDir);
+  while (current) {
     const candidate = path.join(current, '_bmad');
     if (fs.existsSync(path.join(candidate, 'commands', 'bmad-help.md'))) {
       return candidate;
     }
     const parent = path.dirname(current);
-    if (parent === current) return null;
+    if (parent === current) break;
     current = parent;
   }
+  return null;
 }
 
 export function runDevelopmentJourneyMatrix(input: {
