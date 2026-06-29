@@ -53,6 +53,16 @@ function runBlockedJson(command: string, cwd: string, env: NodeJS.ProcessEnv = p
   throw new Error(`Expected command to block: ${command}`);
 }
 
+function parseLegacyJsonReport<T extends Record<string, unknown>>(output: string): T {
+  const parsed = JSON.parse(output) as T & {
+    data?: {
+      stdout?: string;
+    };
+  };
+  const stdout = parsed.data?.stdout?.trim();
+  return stdout ? (JSON.parse(stdout) as T) : parsed;
+}
+
 function writeLayer1PrdCompletionEvidence(root: string): void {
   const prdRelativePath = '_bmad-output/planning-artifacts/dev/prd.md';
   const productBriefRelativePath = '_bmad-output/planning-artifacts/product-brief-consumer.md';
@@ -295,12 +305,12 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         `npx --no-install bmad-speckit main-agent:delivery-truth-gate --cwd . --json --reportPath "${reportPath}"`,
         target
       );
-      const report = JSON.parse(deliveryOutput) as {
+      const report = parseLegacyJsonReport<{
         completionAllowed: boolean;
         completionLanguage: string;
         deliveryStatus: string;
         missingEvidence: string[];
-      };
+      }>(deliveryOutput);
       expect(report.completionAllowed).toBe(false);
       expect(report.completionLanguage).toBe('blocked_only');
       expect(report.deliveryStatus).toBe('blocked');
@@ -672,13 +682,13 @@ describe('Codex consumer five-layer main-agent e2e', () => {
         ].join(' '),
         target
       );
-      const delivery = JSON.parse(deliveryOutput) as {
+      const delivery = parseLegacyJsonReport<{
         reportType: string;
         completionAllowed: boolean;
         completionLanguage: string;
         deliveryStatus: string;
         failedEvidence?: string[];
-      };
+      }>(deliveryOutput);
       expect(delivery.reportType).toBe('main_agent_delivery_truth_gate');
       expect(delivery.completionAllowed).toBe(false);
       expect(delivery.completionLanguage).toBe('partial_only');

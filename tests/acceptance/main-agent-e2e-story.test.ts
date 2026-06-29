@@ -50,6 +50,7 @@ describe('main-agent story E2E orchestration', () => {
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        host: 'codex',
         hydratePacket: true,
       });
       expect(dispatchPlan).toMatchObject({

@@ -210,7 +210,7 @@ function expectProviderSkillChainContract(
     | undefined
 ): void {
   expect(skillChain).toBeDefined();
-  expect(skillChain?.slice(-2)).toEqual(['docs-review', 'large-document-writer']);
+  expect(skillChain?.slice(-2)).toEqual(['code-reviewer', 'speckit-workflow']);
   expect(skillChain?.[0]).toBe(providerSkillItem?.matchedSkillId ?? 'provider-recommended-skill');
 }
 

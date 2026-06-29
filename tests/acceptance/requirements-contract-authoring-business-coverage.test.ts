@@ -612,9 +612,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
       sha256: '008846a38b07adf6113dc5d932ea1d51c75a9600bafc8d7d70edec3869cdcf40',
     });
     expect(metadata.sanitizedFixture).toMatchObject({
-      bytes: 15631,
+      bytes: 15159,
       lines: 473,
-      sha256: '7c4ca77e97607ed6aad7cd239390944bacc0124f9139d87e1c6b951817d9209d',
+      sha256: '7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e',
     });
     expect(byteLength(fixture)).toBe(metadata.sanitizedFixture.bytes);
     expect(lineCount(fixture)).toBe(metadata.sanitizedFixture.lines);
@@ -1158,9 +1158,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
         sha256: '4663d96263a67491b977e9555065d520ad720f5ffe00442b95eda69f9bd2d6e8',
       });
       expect(metadata.sanitizedFixture).toMatchObject({
-        bytes: 15631,
+        bytes: 15159,
         lines: 473,
-        sha256: '7c4ca77e97607ed6aad7cd239390944bacc0124f9139d87e1c6b951817d9209d',
+        sha256: '7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e',
       });
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
