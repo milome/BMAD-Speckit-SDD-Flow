@@ -283,6 +283,8 @@ if (fs.existsSync(packageDistRoot)) {
 }
 
 for (const directory of runtimeAssetDirectories) copyRuntimeAssetDirectory(directory);
+// Source-authority wrappers may require ../_bmad assets while runtime imports are rewritten.
+copySourceAuthorityAssetDirectory('_bmad');
 for (const file of files) copyRuntimeFile(file);
 
 function packageRuntimeTypeScriptDistRelativePath(relativePath) {
