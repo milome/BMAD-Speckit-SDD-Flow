@@ -3,7 +3,7 @@ import {
   createGovernanceExecutorPacket,
   renderGovernanceExecutorPacket,
   type GovernanceAttemptLoopState,
-} from '../../scripts/governance-remediation-runner';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner';
 
 function normalizeHostSpecificLines(input: string): string {
   return input

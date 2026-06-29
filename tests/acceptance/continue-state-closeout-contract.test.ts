@@ -3,7 +3,7 @@ import {
   canMainAgentContinue,
   canMainAgentContinueFromCloseout,
   type ContinueStateEvaluationInput,
-} from '../../scripts/continue-state-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract';
 
 describe('continue-state closeout contract', () => {
   it('allows continue only when closeout is approved, score/handoff persisted, and no blocking governance verdict remains', () => {

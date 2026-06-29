@@ -695,7 +695,7 @@ After receiving the passing conclusion of phase two and before entering phase th
 
 When step 2.3 determines that host close-out is missing and the report file exists, the main Agent executes:
 ```bash
-npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage story --artifactPath <Story document path> --reportPath <report path> --iterationCount 0
+npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage story --artifactPath <Story document path> --reportPath <report path> --iterationCount 0
 ```
 After the backfill run, confirm host close-out again until it is completed or the report no longer exists. Failure remains non-blocking.
 
@@ -1091,7 +1091,7 @@ Use `audit-prompts.md §5` for comprehensive validation. **Report parsable block
   - If the report parsable block uses the wrong dimensions, fix the report first and then run `runAuditorHost` again.
   - If the backfill fails, it remains non-blocking and the main flow continues.
 - #### Step 4.2: Run runAuditorHost (executed when step 4.3 determines host close-out is missing)
-  - When step 4.3 determines host close-out is missing and the report exists, the main Agent executes: `npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage implement --artifactPath <story document path> --reportPath <report path> --iterationCount {The cumulative number of fail rounds for this stage, 0 means one pass}`
+  - When step 4.3 determines host close-out is missing and the report exists, the main Agent executes: `npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage implement --artifactPath <story document path> --reportPath <report path> --iterationCount {The cumulative number of fail rounds for this stage, 0 means one pass}`
   - If the call fails, record the resultCode and do not block the process (non-blocking).
 - #### Unified host close-out after the audit passes (mandatory)
   - The sub-agent returns the fields required by the host runner in [Must do after passing the audit]; the main Agent uses steps 4.3/4.2 to verify completion and backfill when needed. **It must contain `--iteration-count {cumulative value}`**; stage=implement; failure remains non-blocking.

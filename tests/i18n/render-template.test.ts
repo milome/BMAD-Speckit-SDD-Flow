@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { renderTemplate, type RenderTemplateInput } from '../../scripts/i18n/render-template';
-import type { TemplateManifest } from '../../scripts/i18n/validate-template-manifest';
+import { renderTemplate, type RenderTemplateInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-template';
+import type { TemplateManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest';
 
 function createManifest(): TemplateManifest {
   return {

@@ -12,12 +12,12 @@ import {
   getAuditConvergence,
   getStageConfig,
   type StageName,
-} from '../../scripts/bmad-config';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 import {
   resolveRuntimePolicy,
   type RuntimeFlowId,
   type RuntimePolicy,
-} from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 function expectLegacyAlignedFields(
   policy: RuntimePolicy,

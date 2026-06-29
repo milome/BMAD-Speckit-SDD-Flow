@@ -5,7 +5,7 @@ description: "Migrate Main Agent consumer runtime from root scripts or compiled 
 
 # Main Agent Runtime Migration
 
-Use this skill when migrating Main Agent consumer-visible commands away from root `scripts/*.ts`, `tsx`, `ts-node`, or compiled fallback dispatch and into `packages/bmad-speckit`.
+Use this skill when migrating Main Agent consumer-visible commands away from root `packages/bmad-speckit/src/**/*.ts`, `tsx`, `ts-node`, or compiled fallback dispatch and into `packages/bmad-speckit`.
 
 ## Non-Negotiable Guardrails
 
@@ -61,7 +61,7 @@ Size parity rule:
 
 - Package runtime tests belong in `packages/bmad-speckit/tests/*.test.js`.
 - Package runtime tests must be plain JavaScript.
-- Package runtime tests must not import root `scripts/*.ts`.
+- Package runtime tests must not import root `packages/bmad-speckit/src/**/*.ts`.
 - Package runtime tests must not require `tsx` or `ts-node`.
 - Acceptance tests belong in `tests/acceptance/*.test.ts` when they validate source-repo governance, CI, regression, or install matrix behavior.
 - Consumer-visible CLI tests must call the package CLI, not root TypeScript orchestration scripts.

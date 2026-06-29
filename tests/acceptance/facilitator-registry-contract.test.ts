@@ -5,7 +5,7 @@ import {
   FACILITATOR_REGISTRY_VERSION,
   getFacilitatorRegistration,
   resolveFacilitatorRuntimeBindings,
-} from '../../scripts/facilitator-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-registry';
 
 describe('facilitator registry contract', () => {
   it('registers facilitator as a formal cross-host product object with explicit Claude agent mention routing', () => {

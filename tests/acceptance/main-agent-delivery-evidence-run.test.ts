@@ -94,7 +94,16 @@ describe('main-agent delivery evidence run', () => {
           '--project',
           path.join(process.cwd(), 'tsconfig.node.json'),
           '--transpile-only',
-          path.join(process.cwd(), 'scripts', 'main-agent-delivery-evidence-run.ts'),
+          path.join(
+            process.cwd(),
+            'packages',
+            'bmad-speckit',
+            'src',
+            'main-agent',
+            'source-authority',
+            'scripts',
+            'main-agent-delivery-evidence-run.ts'
+          ),
           '--skipSprintAudit',
         ],
         { cwd: root, encoding: 'utf8' }

@@ -2,20 +2,20 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createGovernancePacketExecutionRecord } from '../../scripts/governance-packet-execution-store';
+import { createGovernancePacketExecutionRecord } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
 import {
   createAcceptedPlaceholderDispatchAdapter,
   processPendingExecutionRecords,
-} from '../../scripts/governance-packet-dispatch-worker';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker';
 import {
   ingestGovernanceExecutionResult,
   ingestGovernanceTransportEnvelope,
-} from '../../scripts/governance-execution-result-ingestor';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-execution-result-ingestor';
 import {
   governanceEventTypeRegistryPolicyHash,
   governanceEventTypeRegistryHash,
   validateGovernanceTransportEnvelope,
-} from '../../scripts/governance-transport-envelope';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope';
 
 const GOVERNANCE_EVENT_TYPE_REGISTRY_POLICY = {
   controlFieldVocabulary: [

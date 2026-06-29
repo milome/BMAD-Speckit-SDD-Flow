@@ -3,12 +3,12 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import {
   evaluateSubagentCurrentAttemptRevalidation,
   runSubagentCurrentAttemptRevalidation,
-} from '../../scripts/subagent-current-attempt-revalidation';
-import { sha256Object } from '../../scripts/subagent-evidence-envelope';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-current-attempt-revalidation';
+import { sha256Object } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope';
 
 type SubagentCurrentAttemptRevalidationReport = ReturnType<
   typeof evaluateSubagentCurrentAttemptRevalidation
@@ -127,9 +127,12 @@ function envelope(root: string, artifactRefs: Record<string, unknown>[]) {
     traceRows: ['TRACE-036'],
     coveredRequirementIds: ['MUST-047', 'NEG-036'],
     taskRefs: ['TASK-SUBAGENT-CLOSEOUT-REVALIDATION'],
-    allowedWriteScope: ['scripts/**', 'tests/**'],
-    actualFilesChanged: ['scripts/subagent-current-attempt-revalidation.ts'],
-    diffHash: sha256Object({ changed: ['scripts/subagent-current-attempt-revalidation.ts'] }),
+    allowedWriteScope: [
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/**',
+      'tests/**',
+    ],
+    actualFilesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-current-attempt-revalidation.ts'],
+    diffHash: sha256Object({ changed: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-current-attempt-revalidation.ts'] }),
     workspaceRef: {
       kind: 'main_workspace',
       path: root,

@@ -8,7 +8,7 @@
 
 - `packages/bmad-speckit/src/**/*.js`
 - `scoring/**/*.ts`
-- `scripts/**/*.ts`
+- `packages/bmad-speckit/src/**/*.ts`
 
 排除：`**/__tests__/**`、`**/*.test.js`、`**/*.test.ts`。
 

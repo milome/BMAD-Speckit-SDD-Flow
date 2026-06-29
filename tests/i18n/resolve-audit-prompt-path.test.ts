@@ -5,8 +5,8 @@ import * as path from 'path';
 import {
   getAuditPromptLocaleFromRuntimeContext,
   resolveAuditPromptPath,
-} from '../../scripts/i18n/resolve-audit-prompt-path';
-import { resolveLocalizedMarkdownPath } from '../../scripts/i18n/resolve-localized-markdown-path';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path';
+import { resolveLocalizedMarkdownPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path';
 
 describe('resolveAuditPromptPath', () => {
   let tmp: string;

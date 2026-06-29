@@ -4,7 +4,7 @@ import {
   deriveImplementationReadinessStatus,
   implementationReadinessPassed,
   shouldUpgradeStandaloneTasksToStory,
-} from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('bmad-help runtime-governance helpers', () => {
   it('blocks story, bugfix, and standalone implementation when document audit is missing', () => {

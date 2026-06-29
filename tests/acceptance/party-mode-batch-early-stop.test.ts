@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateCheckpointWindowInput } from '../../scripts/party-mode-runtime';
+import { evaluateCheckpointWindowInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode batch early stop', () => {
   it('maps S to stop-and-output-current-conclusion inside the checkpoint window', () => {

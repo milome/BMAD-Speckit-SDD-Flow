@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createFacilitatorHeartbeat } from '../../scripts/party-mode-runtime';
+import { createFacilitatorHeartbeat } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode heartbeat responsibility', () => {
   it('assigns heartbeat to the facilitator and keeps it out of agent_turn accounting', () => {

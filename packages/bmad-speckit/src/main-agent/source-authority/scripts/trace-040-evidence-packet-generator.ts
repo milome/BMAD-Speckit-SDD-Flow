@@ -161,13 +161,13 @@ function updatePacket(args: ParsedArgs): JsonObject {
   packet.closeoutAttemptId = args.attemptId;
   packet.executionIterationId = `execution-iteration-TRACE-040-strict-closeout-proof-current-${token}`;
   packet.filesChanged = [
-    'scripts/strict-closeout-proof-gate.ts',
-    'scripts/control-event-log-rebaseline.ts',
-    'scripts/main-agent-delivery-closeout-gate.ts',
-    'scripts/final-closeout-evidence-runner.ts',
-    'scripts/controlled-ingest-atomic-committer.ts',
-    'scripts/requirement-record-event-reducer.ts',
-    'scripts/requirement-record-schema-evolution.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/final-closeout-evidence-runner.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-ingest-atomic-committer.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-event-reducer.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-schema-evolution.ts',
     'tests/acceptance/strict-closeout-proof-gate.test.ts',
   ];
   packet.diffSummary =

@@ -161,7 +161,7 @@ implementationConfirmation:
       - TRACE-001
   targetModificationPaths:
     - id: TARGET-001
-      path: scripts/run-required-commands-from-ai-tdd-manifest.ts
+      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts
       traceRows:
         - TRACE-001
       evidenceRefs:
@@ -186,14 +186,14 @@ implementationConfirmation:
         text: Compile prompt, run command, record evidence, then closeout.
     artifactPaths:
       - id: ART-001
-        path: scripts/run-required-commands-from-ai-tdd-manifest.ts
+        path: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts
         traceRows:
           - TRACE-001
         evidenceRefs:
           - EVD-001
     canonicalArtifacts:
       - id: ART-001
-        targetPathOrField: scripts/run-required-commands-from-ai-tdd-manifest.ts
+        targetPathOrField: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts
         traceRows:
           - TRACE-001
         evidenceRefs:

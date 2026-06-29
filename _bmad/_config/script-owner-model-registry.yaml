@@ -39,8 +39,8 @@ field_defaults:
   hookParityRequired: false
 scripts:
   - scriptId: main_agent_orchestration
-    path: scripts/main-agent-orchestration.ts
-    sourceRepoPath: "scripts/main-agent-orchestration.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent inspect --json"
@@ -73,8 +73,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: main_agent_unified_ingress
-    path: scripts/main-agent-unified-ingress.ts
-    sourceRepoPath: "scripts/main-agent-unified-ingress.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent unified-ingress --json"
@@ -102,8 +102,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: orchestration_state
-    path: scripts/orchestration-state.ts
-    sourceRepoPath: "scripts/orchestration-state.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -127,8 +127,8 @@ scripts:
     writesRequirementEvidence: false
     hookParityRequired: false
   - scriptId: orchestration_dispatch_contract
-    path: scripts/orchestration-dispatch-contract.ts
-    sourceRepoPath: "scripts/orchestration-dispatch-contract.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -153,8 +153,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_codex_worker_adapter
-    path: scripts/main-agent-codex-worker-adapter.ts
-    sourceRepoPath: "scripts/main-agent-codex-worker-adapter.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
@@ -185,8 +185,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: runtime_governance
-    path: scripts/runtime-governance.ts
-    sourceRepoPath: "scripts/runtime-governance.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -215,8 +215,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: runtime_governance_template_schema
-    path: scripts/runtime-governance-template-schema.ts
-    sourceRepoPath: "scripts/runtime-governance-template-schema.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-template-schema.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-template-schema.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -240,8 +240,8 @@ scripts:
     writesRequirementEvidence: false
     hookParityRequired: false
   - scriptId: runtime_governance_registry
-    path: scripts/runtime-governance-registry.ts
-    sourceRepoPath: "scripts/runtime-governance-registry.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-registry.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-registry.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -265,8 +265,8 @@ scripts:
     writesRequirementEvidence: false
     hookParityRequired: false
   - scriptId: resolve_active_requirement
-    path: scripts/resolve-active-requirement.ts
-    sourceRepoPath: "scripts/resolve-active-requirement.ts"
+    path: bmad-speckit main-agent resolve-active-requirement
+    sourceRepoPath: "bmad-speckit main-agent resolve-active-requirement"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -339,8 +339,8 @@ scripts:
     writesRequirementEvidence: false
     hookParityRequired: false
   - scriptId: emit_runtime_policy
-    path: scripts/emit-runtime-policy.ts
-    sourceRepoPath: "scripts/emit-runtime-policy.ts"
+    path: bmad-speckit emit-runtime-policy
+    sourceRepoPath: "bmad-speckit emit-runtime-policy"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -366,8 +366,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: assert_implementation_entry
-    path: scripts/assert-implementation-entry.ts
-    sourceRepoPath: "scripts/assert-implementation-entry.ts"
+    path: bmad-speckit assert-implementation-entry
+    sourceRepoPath: "bmad-speckit assert-implementation-entry"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -395,8 +395,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: user_story_mapping
-    path: scripts/user-story-mapping.ts
-    sourceRepoPath: "scripts/user-story-mapping.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -423,8 +423,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: orchestration_governance_contract
-    path: scripts/orchestration-governance-contract.ts
-    sourceRepoPath: "scripts/orchestration-governance-contract.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-governance-contract.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-governance-contract.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -450,8 +450,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: adaptive_intake_governance_gate
-    path: scripts/adaptive-intake-governance-gate.ts
-    sourceRepoPath: "scripts/adaptive-intake-governance-gate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -480,8 +480,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: adaptive_intake_proof_gate
-    path: scripts/adaptive-intake-proof-gate.ts
-    sourceRepoPath: "scripts/adaptive-intake-proof-gate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-proof-gate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-proof-gate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -508,8 +508,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_runtime_queue
-    path: scripts/governance-runtime-queue.ts
-    sourceRepoPath: "scripts/governance-runtime-queue.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -535,8 +535,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_stage_event_emitter
-    path: scripts/governance-stage-event-emitter.ts
-    sourceRepoPath: "scripts/governance-stage-event-emitter.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-stage-event-emitter.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-stage-event-emitter.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -562,8 +562,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_remediation_runner
-    path: scripts/governance-remediation-runner.ts
-    sourceRepoPath: "scripts/governance-remediation-runner.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -593,8 +593,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_remediation_artifact
-    path: scripts/governance-remediation-artifact.ts
-    sourceRepoPath: "scripts/governance-remediation-artifact.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -619,8 +619,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_remediation_config
-    path: scripts/governance-remediation-config.ts
-    sourceRepoPath: "scripts/governance-remediation-config.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -645,8 +645,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_packet_execution_store
-    path: scripts/governance-packet-execution-store.ts
-    sourceRepoPath: "scripts/governance-packet-execution-store.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -672,8 +672,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_packet_dispatch_worker
-    path: scripts/governance-packet-dispatch-worker.ts
-    sourceRepoPath: "scripts/governance-packet-dispatch-worker.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -697,8 +697,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_host_dispatch_adapter
-    path: scripts/governance-host-dispatch-adapter.ts
-    sourceRepoPath: "scripts/governance-host-dispatch-adapter.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -723,8 +723,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_execution_result_ingestor
-    path: scripts/governance-execution-result-ingestor.ts
-    sourceRepoPath: "scripts/governance-execution-result-ingestor.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-execution-result-ingestor.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-execution-result-ingestor.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -753,8 +753,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: governance_packet_reconciler
-    path: scripts/governance-packet-reconciler.ts
-    sourceRepoPath: "scripts/governance-packet-reconciler.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-reconciler.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-reconciler.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -781,8 +781,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: prompt_routing_governance
-    path: scripts/prompt-routing-governance.ts
-    sourceRepoPath: "scripts/prompt-routing-governance.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -808,8 +808,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: model_governance_hint_resolver
-    path: scripts/model-governance-hint-resolver.ts
-    sourceRepoPath: "scripts/model-governance-hint-resolver.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hint-resolver.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hint-resolver.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -833,8 +833,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: model_governance_policy_filter
-    path: scripts/model-governance-policy-filter.ts
-    sourceRepoPath: "scripts/model-governance-policy-filter.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -858,8 +858,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: governance_provider_adapter
-    path: scripts/governance-provider-adapter.ts
-    sourceRepoPath: "scripts/governance-provider-adapter.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -883,8 +883,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: reviewer_registry
-    path: scripts/reviewer-registry.ts
-    sourceRepoPath: "scripts/reviewer-registry.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -912,8 +912,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: reviewer_rollout_gate
-    path: scripts/reviewer-rollout-gate.ts
-    sourceRepoPath: "scripts/reviewer-rollout-gate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -937,8 +937,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: run_auditor_host
-    path: scripts/run-auditor-host.ts
-    sourceRepoPath: "scripts/run-auditor-host.ts"
+    path: bmad-speckit run-auditor-host
+    sourceRepoPath: "bmad-speckit run-auditor-host"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -972,8 +972,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: party_mode_runtime
-    path: scripts/party-mode-runtime.ts
-    sourceRepoPath: "scripts/party-mode-runtime.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1002,8 +1002,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: party_mode_gate_check
-    path: scripts/party-mode-gate-check.ts
-    sourceRepoPath: "scripts/party-mode-gate-check.ts"
+    path: installed party-mode runtime checker
+    sourceRepoPath: "installed party-mode runtime checker"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1027,8 +1027,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_quality_gate
-    path: scripts/main-agent-quality-gate.ts
-    sourceRepoPath: "scripts/main-agent-quality-gate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent quality-gate --json"
@@ -1054,8 +1054,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_release_gate
-    path: scripts/main-agent-release-gate.ts
-    sourceRepoPath: "scripts/main-agent-release-gate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent release-gate --json"
@@ -1082,8 +1082,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_delivery_truth_gate
-    path: scripts/main-agent-delivery-truth-gate.ts
-    sourceRepoPath: "scripts/main-agent-delivery-truth-gate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent delivery-truth-gate --json"
@@ -1112,8 +1112,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_delivery_evidence_run
-    path: scripts/main-agent-delivery-evidence-run.ts
-    sourceRepoPath: "scripts/main-agent-delivery-evidence-run.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent delivery-evidence-run --json"
@@ -1138,8 +1138,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_soak_runner
-    path: scripts/main-agent-soak-runner.ts
-    sourceRepoPath: "scripts/main-agent-soak-runner.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent soak-runner --json"
@@ -1164,8 +1164,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_host_matrix_pr_orchestrator
-    path: scripts/main-agent-host-matrix-pr-orchestrator.ts
-    sourceRepoPath: "scripts/main-agent-host-matrix-pr-orchestrator.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1189,8 +1189,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_dual_host_pr_orchestrator
-    path: scripts/main-agent-dual-host-pr-orchestrator.ts
-    sourceRepoPath: "scripts/main-agent-dual-host-pr-orchestrator.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent dual-host-pr-orchestrator --json"
@@ -1215,8 +1215,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: main_agent_chaos_scenarios
-    path: scripts/main-agent-chaos-scenarios.ts
-    sourceRepoPath: "scripts/main-agent-chaos-scenarios.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-chaos-scenarios.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-chaos-scenarios.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: package_cli
     consumerInvocation: "npx --no-install bmad-speckit main-agent chaos-scenarios --json"
@@ -1241,8 +1241,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: live_smoke_main_agent_runtime
-    path: scripts/live-smoke-main-agent-runtime.ts
-    sourceRepoPath: "scripts/live-smoke-main-agent-runtime.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1284,8 +1284,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: dashboard_generate
-    path: scripts/dashboard-generate.ts
-    sourceRepoPath: "scripts/dashboard-generate.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1377,8 +1377,8 @@ scripts:
     writesRequirementEvidence: true
     hookParityRequired: false
   - scriptId: sft_extract
-    path: scripts/sft-extract.ts
-    sourceRepoPath: "scripts/sft-extract.ts"
+    path: bmad-speckit sft-extract
+    sourceRepoPath: "bmad-speckit sft-extract"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1417,8 +1417,8 @@ scripts:
       keepCapability: true
       replacementBehavior: Export only governed canonical samples that passed sample routing, redaction, contamination, and split checks.
   - scriptId: analytics_sft_extract
-    path: scripts/analytics-sft-extract.ts
-    sourceRepoPath: "scripts/analytics-sft-extract.ts"
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts
+    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1454,8 +1454,8 @@ scripts:
       keepCapability: true
       replacementBehavior: Build analytics reports from requirement records and governed canonical samples, not raw score records.
   - scriptId: parse_and_write_score
-    path: scripts/parse-and-write-score.ts
-    sourceRepoPath: "scripts/parse-and-write-score.ts"
+    path: bmad-speckit score
+    sourceRepoPath: "bmad-speckit score"
     sourcePathKind: source_repo_provenance
     consumerInvocationKind: source_repo_only
     consumerInvocation: null
@@ -1496,7 +1496,7 @@ scripts:
       replacementBehavior: Materialize scores through ResolvedScoringPolicy and write controlled score gates into requirement records.
 target_new_scripts:
   - scriptId: resolve_active_requirement
-    path: scripts/resolve-active-requirement.ts
+    path: bmad-speckit main-agent resolve-active-requirement
     ownerModel: implementation_readiness
     secondaryModels:
       - execution_closure
@@ -1583,7 +1583,7 @@ target_new_scripts:
     writesRequirementEvidence: true
     hookParityRequired: true
   - scriptId: main_agent_delivery_closeout_gate
-    path: scripts/main-agent-delivery-closeout-gate.ts
+    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts
     ownerModel: delivery_confirmation
     stage: delivery_closeout
     producer: delivery_gate
@@ -1619,10 +1619,10 @@ registry_rules:
 script_behaviors_to_remove:
   - behaviorId: run_score_record_driven_sft_positive_samples
     affectedScripts:
-      - scripts/sft-extract.ts
-      - scripts/analytics-sft-extract.ts
+      - bmad-speckit sft-extract
+      - packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts
     replacement: requirement-record sample routing plus canonical samples.
   - behaviorId: run_score_record_as_score_control_source
     affectedScripts:
-      - scripts/parse-and-write-score.ts
+      - bmad-speckit score
     replacement: score materialization and score evaluation gateChecks under ResolvedScoringPolicy.

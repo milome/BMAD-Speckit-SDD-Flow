@@ -171,7 +171,7 @@ function writeSource(overrides = ''): string {
         detail: "Fixture fallback is source-provided"
     retainedScriptTypes:
       - category: "Fixture retained"
-        representativePaths: "fixture/scripts/*.ts"
+        representativePaths: "fixture/packages/bmad-speckit/src/**/*.ts"
         targetTreatment: "source-provided target"
         reason: "fixture reason"
     requirementGeneration:
@@ -430,7 +430,7 @@ ${
 ${
   includeCloseoutReviewPolicy
     ? `    - id: TARGET-MOD-005
-      path: "scripts/main-agent-delivery-closeout-gate.ts"
+      path: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts"
       changeType: validation_only
       intent: "Fixture target for suggested closeout command policy projection."
       ownerModel: delivery_confirmation
@@ -715,7 +715,7 @@ ${
       registryHash: "sha256:fixture-writer-registry"
       architectureConfirmationHash: "sha256:fixture-architecture"
     - writerId: implementation-evidence-ingest
-      scriptPath: "scripts/ingest-implementation-evidence.ts"
+      scriptPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts"
       scriptContentHash: "sha256:fixture-implementation-writer"
       ownerModel: execution_closure
       allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
@@ -747,7 +747,7 @@ ${
       registryHash: "sha256:fixture-writer-registry"
       architectureConfirmationHash: "sha256:fixture-architecture"
     - writerId: delivery-closeout-gate
-      scriptPath: "scripts/main-agent-delivery-closeout-gate.ts"
+      scriptPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts"
       scriptContentHash: "sha256:fixture-closeout-writer"
       ownerModel: delivery_confirmation
       allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
@@ -849,7 +849,7 @@ ${
 ${
   includeCloseoutReviewPolicy
     ? `    - id: CMD-SUGGESTED-FULL-AI-TDD-CLOSEOUT
-      command: "node scripts/main-agent-delivery-closeout-gate.ts --record REQ-UPLOAD-001 --json"
+      command: "node packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts --record REQ-UPLOAD-001 --json"
       traceRows: ["TRACE-001"]
       evidenceRefs: ["EVD-010"]
 `

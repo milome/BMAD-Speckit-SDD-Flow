@@ -126,7 +126,7 @@ _bmad-output/implementation-artifacts/
 2. Read `.claude/state/bmad-progress.yaml` (获取 current_context)
 3. **Read story state**: `.claude/state/stories/{epic}-{story}-progress.yaml`
 4. Read plan.md (从 story state 读取路径)
-5. **读取审计配置**: 调用 `scripts/bmad-config.ts` 的`shouldAudit('tasks')` 确定是否执行审计
+5. **读取审计配置**: 调用 `packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts` 的`shouldAudit('tasks')` 确定是否执行审计
 
 **配置检查逻辑**:
 ```typescript
@@ -374,7 +374,7 @@ MainAgentDispatchRequest({
 
 PASS 时执行
 ```bash
-npx ts-node scripts/run-auditor-host.ts \
+npx --no-install bmad-speckit run-auditor-host \
   --projectRoot {projectRoot} \
   --stage tasks \
   --artifactPath specs/epic-{epic}-{epic-slug}/story-{story}-{slug}/tasks-E{epic}-S{story}.md \

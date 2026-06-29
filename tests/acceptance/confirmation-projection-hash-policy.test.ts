@@ -5,8 +5,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
-import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { runMainAgentConfirmationDriftRoute } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 const ROOT = process.cwd();
@@ -809,8 +809,11 @@ describe('confirmation projection hash policy', () => {
 
     const sourceSkill = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring');
     const targetSkill = path.join(tempDir, '.cursor', 'skills', 'requirements-contract-authoring');
+    const sourceSharedSkillRuntime = path.join(ROOT, '.cursor', 'shared', 'skill-runtime');
+    const targetSharedSkillRuntime = path.join(tempDir, '.cursor', 'shared', 'skill-runtime');
     fs.mkdirSync(path.dirname(targetSkill), { recursive: true });
     fs.cpSync(sourceSkill, targetSkill, { recursive: true });
+    fs.cpSync(sourceSharedSkillRuntime, targetSharedSkillRuntime, { recursive: true });
     fs.cpSync(path.join(ROOT, '_bmad', '_config'), path.join(tempDir, '_bmad', '_config'), {
       recursive: true,
     });

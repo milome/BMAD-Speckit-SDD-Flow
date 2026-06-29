@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildReviewCloseoutEnvelopeV1,
   buildReviewGovernanceClosureV1,
-} from '../../scripts/reviewer-schema';
-import { getReviewerRegistration } from '../../scripts/reviewer-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema';
+import { getReviewerRegistration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry';
 
 describe('reviewer governance closure parity', () => {
   it('reuses the same governance closure requirements for both hosts', () => {

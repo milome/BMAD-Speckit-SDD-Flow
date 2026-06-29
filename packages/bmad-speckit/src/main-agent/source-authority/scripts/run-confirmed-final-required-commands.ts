@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 
-const DYNAMIC_RUNNER = 'scripts/run-required-commands-from-ai-tdd-manifest.ts';
+const DYNAMIC_RUNNER =
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts';
 
 function main(argv) {
   const json = argv.includes('--json');
@@ -10,7 +11,7 @@ function main(argv) {
     legacyEvidenceOnly: true,
     notCompletionAuthority: true,
     message:
-      'run-confirmed-final-required-commands.js is a non-executing tombstone. Use scripts/run-required-commands-from-ai-tdd-manifest.ts.',
+      'run-confirmed-final-required-commands.js is a non-executing tombstone. Use bmad-speckit main-agent run-required-commands-from-ai-tdd-manifest.',
     replacement: DYNAMIC_RUNNER,
   };
   process.stdout.write(json ? `${JSON.stringify(output, null, 2)}\n` : `${output.message}\n`);

@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import {
   evaluateAiTddContractGate,
   mainAiTddContractGate,
-} from '../../scripts/ai-tdd-contract-gate';
-import { implementationConfirmationHash } from '../../scripts/target-artifact-realization-gate';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate';
+import { implementationConfirmationHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate';
 
 const ATTEMPT = 'attempt-ai-tdd-001';
 
@@ -126,13 +126,13 @@ function sourceText(input: {
       : input.targetModificationNoRefs
         ? [
             '  targetModificationPaths:',
-            '    - scripts/ai-tdd-contract-gate.ts',
+            '    - packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
             '    - tests/acceptance/ai-tdd-contract-gate.test.ts',
           ]
         : [
             '  targetModificationPaths:',
             '    - id: TARGET-MOD-001',
-            '      path: scripts/ai-tdd-contract-gate.ts',
+            '      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
             ...(input.targetModificationTraceRefsMissing
               ? []
               : [
@@ -216,7 +216,7 @@ function sourceText(input: {
     '      text: Acceptance evidence.',
     '      oracle: current-attempt command with artifact evidence',
     '      requiredCommandRefs: [CMD-001, CMD-002]',
-    `      artifactRefs: [${input.canonicalSurfaceOnly ? 'scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, scripts/ai-tdd-contract-gate.ts'}]`,
+    `      artifactRefs: [${input.canonicalSurfaceOnly ? 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts'}]`,
     ...orphanRows,
     '  traceRows:',
     '    - id: TRACE-001',
@@ -224,7 +224,7 @@ function sourceText(input: {
     '      evidenceRefs: [EVD-001]',
     `      deliveryEvidenceCommandRefs: [CMD-001, CMD-002${input.manifestProjectionOmitsCommand ? ', CMD-003' : ''}]`,
     '      acceptanceRefs: [ACC-001, E2E-001]',
-    `      artifactRefs: [${input.canonicalSurfaceOnly ? 'scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, scripts/ai-tdd-contract-gate.ts'}]`,
+    `      artifactRefs: [${input.canonicalSurfaceOnly ? 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts' : input.artifactIdOnly ? 'ART-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts' : 'CANONICAL-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts'}]`,
     ...(input.canonicalSurfaceOnly ? ['      canonicalSurfaceRefs: [ART-001]'] : []),
     '  failurePaths:',
     '    - id: FAIL-001',
@@ -324,7 +324,7 @@ function sourceText(input: {
     '        currentState: red proof required',
     '        targetState: AI-TDD manifest gates are ready',
     '    artifactPaths:',
-    '      - path: scripts/ai-tdd-contract-gate.ts',
+    '      - path: packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
     '        targetRole: contract execution manifest gate',
     '        traceRows: [TRACE-001]',
     '        evidenceRefs: [EVD-001]',
@@ -476,10 +476,10 @@ function writeFixture(
         oracle: 'current-attempt command with artifact evidence',
         requiredCommandRefs: ['CMD-001'],
         artifactRefs: options.canonicalSurfaceOnly
-          ? ['scripts/ai-tdd-contract-gate.ts']
+          ? ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
           : options.artifactIdOnly
-            ? ['ART-001', 'scripts/ai-tdd-contract-gate.ts']
-            : ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
+            ? ['ART-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
+            : ['CANONICAL-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts'],
       },
       ...(options.includeOrphans
         ? [
@@ -505,10 +505,10 @@ function writeFixture(
         ],
         acceptanceRefs: ['ACC-001', 'E2E-001'],
         artifactRefs: options.canonicalSurfaceOnly
-          ? ['scripts/ai-tdd-contract-gate.ts']
+          ? ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
           : options.artifactIdOnly
-            ? ['ART-001', 'scripts/ai-tdd-contract-gate.ts']
-            : ['CANONICAL-001', 'scripts/ai-tdd-contract-gate.ts'],
+            ? ['ART-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
+            : ['CANONICAL-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts'],
         ...(options.canonicalSurfaceOnly ? { canonicalSurfaceRefs: ['ART-001'] } : {}),
       },
     ],
@@ -656,11 +656,11 @@ function writeFixture(
                 },
               ]
             : options.targetModificationNoRefs
-              ? ['scripts/ai-tdd-contract-gate.ts', 'tests/acceptance/ai-tdd-contract-gate.test.ts']
+              ? ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts', 'tests/acceptance/ai-tdd-contract-gate.test.ts']
               : [
                   {
                     id: 'TARGET-MOD-001',
-                    path: 'scripts/ai-tdd-contract-gate.ts',
+                    path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
                     ...(options.targetModificationTraceRefsMissing
                       ? {}
                       : {
@@ -1114,12 +1114,12 @@ describe('ai tdd contract gate', () => {
         e2eTestPath: fixture.e2eTestPath,
       })
         .replace(
-          '      artifactRefs: [ART-001, scripts/ai-tdd-contract-gate.ts]',
-          '      artifactRefs: [ART-REPORT, ART-001, scripts/ai-tdd-contract-gate.ts]'
+          '      artifactRefs: [ART-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts]',
+          '      artifactRefs: [ART-REPORT, ART-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts]'
         )
         .replace(
-          '      artifactRefs: [ART-001, scripts/ai-tdd-contract-gate.ts]',
-          '      artifactRefs: [ART-REPORT, ART-001, scripts/ai-tdd-contract-gate.ts]'
+          '      artifactRefs: [ART-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts]',
+          '      artifactRefs: [ART-REPORT, ART-001, packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts]'
         )
         .replace(
           '  currentTargetMap:',

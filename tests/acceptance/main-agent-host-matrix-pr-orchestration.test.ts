@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { runHostMatrixPrOrchestration } from '../../scripts/main-agent-host-matrix-pr-orchestrator';
+import { runHostMatrixPrOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator';
 
 function fastPassingJourney(args: string[]): number {
   const reportPath = args[args.indexOf('--report-path') + 1];
@@ -265,7 +265,16 @@ describe('main-agent host-matrix PR orchestration', () => {
           '--project',
           path.join(process.cwd(), 'tsconfig.node.json'),
           '--transpile-only',
-          path.join(process.cwd(), 'scripts', 'main-agent-host-matrix-pr-orchestrator.ts'),
+          path.join(
+            process.cwd(),
+            'packages',
+            'bmad-speckit',
+            'src',
+            'main-agent',
+            'source-authority',
+            'scripts',
+            'main-agent-host-matrix-pr-orchestrator.ts'
+          ),
           '--provider',
           'mock',
           '--projectRoot',

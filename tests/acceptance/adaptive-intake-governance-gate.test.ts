@@ -2,12 +2,12 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { runAdaptiveIntakeGovernanceGate } from '../../scripts/adaptive-intake-governance-gate';
+import { runAdaptiveIntakeGovernanceGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate';
 import {
   readUserStoryMappingIndexOrDefault,
   writeUserStoryMappingIndex,
   type UserStoryMappingIndex,
-} from '../../scripts/user-story-mapping';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping';
 
 function bootstrapProject(root: string, index: UserStoryMappingIndex): void {
   const contractPath = path.join(

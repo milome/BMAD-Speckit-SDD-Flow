@@ -6,7 +6,7 @@ import {
   requirementRecordIndexPath,
   requirementRecordsRoot,
   resolveActiveRequirement,
-} from '../../scripts/resolve-active-requirement';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement';
 
 let root: string;
 

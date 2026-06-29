@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ensureReviewerRuntimeDefinition } from '../../scripts/reviewer-runtime-definition';
+import { ensureReviewerRuntimeDefinition } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { cpSync } from 'node:fs';
 import os from 'node:os';

@@ -50,7 +50,7 @@ references:
 
 本 Skill 统一通过 `runAuditorHost` 完成「审计→宿主收口」闭环：
 - **函数**：`scoring/orchestrator/parse-and-write.ts`
-- **CLI**：`scripts/run-auditor-host.ts`
+- **CLI**：`bmad-speckit run-auditor-host`
 - **验收**：`npm run accept:e3-s3`
 
 ## 主 Agent 编排面（强制）

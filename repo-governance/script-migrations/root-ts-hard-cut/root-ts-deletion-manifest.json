@@ -1,0 +1,2772 @@
+{
+  "schemaVersion": "root-ts-hard-cut-deletion-manifest/v1",
+  "generatedAt": "2026-06-29T02:18:45.804Z",
+  "contractPath": "docs/plans/2026-06-27-root-scripts-ts-hard-cut-goal-execution-plan.md",
+  "initialFilesystemCount": 197,
+  "initialTrackedCount": 29,
+  "expectedOriginalFilesystemCount": 197,
+  "expectedOriginalTrackedCount": 196,
+  "currentInventoryDiffersFromOriginalAudit": true,
+  "untrackedDeprecatedPath": "scripts/bmads-auto-cli.ts",
+  "trackedPathsMissingFromFilesystem": [],
+  "rows": [
+    {
+      "scriptPath": "scripts/adaptive-intake-governance-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:128dce35e3f18e5a173c8fd4cf2eaf6636e5d7a638340e6d1b4d31452c2e7cb6",
+      "sizeBytes": 16739,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-governance-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/adaptive-intake-proof-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0b7637d2c6b2e51c4f7f9f5631dbaf19bcc5402c092b36dec25693d31bdaa426",
+      "sizeBytes": 6523,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/adaptive-intake-proof-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ai-tdd-contract-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5c80e5127e4d4031cd86617a97e34334dd375c93806258b0b6a9a5783377191b",
+      "sizeBytes": 105713,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/analytics-cluster.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:1586249c629adc6127ff9d210381737a4481aa7f5d1852867d063680a44af931",
+      "sizeBytes": 2835,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/analytics-prompt-optimize.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ecb3bc247823918493b9d26c090e26f812f8f12f933da49858fe435b1e8207d9",
+      "sizeBytes": 3443,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/analytics-rule-suggest.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:7610006320014a93a2f414e5275c06230fdd0192e3e396153eee51467a24fce0",
+      "sizeBytes": 3555,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/analytics-sft-extract.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:3a47b630c960fb4f4613e98d51f723e0600610bcc2ff3d1f1d24a6b8cc788a9d",
+      "sizeBytes": 1383,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/architecture-confirmation-hash-recipe.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:4a1d062e6c6628c2902c33fd2221c823c56f2d69e898bd30093a07ef9c0184ba",
+      "sizeBytes": 5098,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/architecture-drift-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0f1a3d22599eadd03dd286eb071055845b05a887b4d31dac115acb214f4203ad",
+      "sizeBytes": 1676,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/assert-implementation-entry.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:d8b0952acc55e6b969a709b34527c0c745b3ac19405eaa6219c0afb723d6b7ef",
+      "sizeBytes": 2385,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/assert-implementation-entry.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/audit-scoring-convergence-policy.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:841d8d9d46161c57eb7bdda7eda83d8dfe1bac4e16fb6b5e507ae78f655bacee",
+      "sizeBytes": 6552,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/audit-stage-routing.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:c416ed38ad656ce47cabcd97684f3c93e4a7ed47a5afff9a4c042cff4d2a57be",
+      "sizeBytes": 21558,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-stage-routing.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/audit-triad-orchestrator.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:8316eb204166630cb836af07dbaacea3ef7f821ddc281ed3c50acaf4005c3382",
+      "sizeBytes": 15780,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/auditor-post-actions.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:b86ac66d1d27be6549ad4a3f1af8cfde1ad265c7fc2c28f26d57a623193ff081",
+      "sizeBytes": 1693,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-post-actions.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/auditor-spec.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a14709372f85d89a03c30c835c53b864525857ab532b150ec54ae737082a5baa",
+      "sizeBytes": 2805,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmad-config.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2ddab521fd9956ac2b2ff80dc54f9cc799624ee634cce607700442d4cb8caedb",
+      "sizeBytes": 33153,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmad-help-five-layer-progress-marker.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:7dc387e23fb8cee13aa55a47b9c365cdb350848194466676048a1e40ed2a2fe9",
+      "sizeBytes": 9325,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-five-layer-progress-marker.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmad-help-routing-state.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:cbe598f61a64ce100f727ad5ce330040bd18dcf37c783a46342e3ef330be6271",
+      "sizeBytes": 42415,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmad-runtime-worker.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:61aa383cb0484f18b549af8eeeaa75d7342e17714b43f2efc6ec2d1d0bb9f9fc",
+      "sizeBytes": 32066,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmad-state-reader.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:8ba3dd62ed945ebc16485acbef35820b871654884d35ae156524158cfe35f32e",
+      "sizeBytes": 4272,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state-reader.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmad-state.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:29ed781567e42197ac506eeb8e7cb87005ec43eb92be9fdec8795c88d4faa89b",
+      "sizeBytes": 7467,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-state.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/bmads-auto-cli.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ba9133df6289f8bc719b6f53cffd4edc40ecefef453406c71d32b0f930709130",
+      "sizeBytes": 714,
+      "disposition": "deprecated_public_cli_de_surface",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": null,
+      "notes": [
+        "Untracked deprecated compatibility CLI; delete during G010."
+      ]
+    },
+    {
+      "scriptPath": "scripts/check-story-score-written.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:478d536e64fdaf172a12670c795d54c567971881c93495125a0725de47e106f9",
+      "sizeBytes": 2828,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/coach-diagnose.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:27a9e7dfd9c0ac8b279a850e49b868e824818e335d01f5c805598dc4ed1f8720",
+      "sizeBytes": 6823,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/continue-state-contract.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:65fd1b54e93d6ff37a54881fdab23b881f824ab7750d83cb1e13b1e77f753a12",
+      "sizeBytes": 1617,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/continue-state-contract.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/control-event-log-rebaseline.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:9c8ac444ea18af91404e780dbfa4b87a2c041be0891b6e3c51db3ca3855f0f0c",
+      "sizeBytes": 4708,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/control-event-log-rebaseline.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/controlled-ingest-atomic-committer.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:4df2831123680b9bf3696c6798130634f5e3f1c9c927dc24725d66d98b928ac8",
+      "sizeBytes": 590,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-ingest-atomic-committer.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/controlled-readiness-audit-bridge.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:13603725fec56275dba879f2920a88963517509b2da110d30fb7d6444947357a",
+      "sizeBytes": 14940,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/create-second-story.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:df3f682364edc2f51c809348a702d1f9b9eab36ed07907fed1e727e09f160f57",
+      "sizeBytes": 501,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-second-story.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/create-test-story.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:c7965770734379362077ec07c2d42385a6bc264f0a2cb9b03e256afa9e4b4136",
+      "sizeBytes": 535,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/create-test-story.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/critical-auditor-profile.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:67f93fcaef3ec459e345c73089848bba09a30e58d1e11b397b7fad20fdbb8998",
+      "sizeBytes": 3281,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/dashboard-generate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ed5421bf3af405f0e4e01ed33b7b5742d36e1c557e050882373ed2e3002620e6",
+      "sizeBytes": 8588,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/dashboard-projection-mapping.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:48164ec22c00885f6a344837a728ff7ee21b71cee18bea49065eaf8a4b65f320",
+      "sizeBytes": 13175,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-projection-mapping.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/diagnose-bmad-state.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:96b84274cc576c5b76a692da1efbe2285082038d5a0cbeb78c42ebcc0d6449c7",
+      "sizeBytes": 9161,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/diagnose-bmad-state.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/e2e-dual-host-journey-runner.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:9bbc90575e6f704d7fbdd9b30de149f6510122079c65f5af61fc6e34b9df69cb",
+      "sizeBytes": 381,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-dual-host-journey-runner.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/e2e-host-matrix-journey-runner.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2223c90d9d245f23c887352f38a47f85990c28424c5a496a32a1c806096bc9cb",
+      "sizeBytes": 25776,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-host-matrix-journey-runner.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/e2e-verify-paths.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:01b230ffc02255351bd8ae638271b92f4da7287c0e932ddd9d6237baae9b1dc0",
+      "sizeBytes": 4342,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-verify-paths.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/emit-runtime-policy.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5fd7842faf3f820a6693ca41c4dbf06bb915539d9c2eae29ca11d850526155f2",
+      "sizeBytes": 28668,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/eval-question-generate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:4acfedacea9b5313c3b0455f662b3a234fae94aa651f7bdfe6937ed79981a209",
+      "sizeBytes": 5424,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/eval-questions-cli.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ea51f1fa823e544f4c94530b32057a66b7242a005ea2a3687ee27e50ab34cc49",
+      "sizeBytes": 8643,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-questions-cli.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/evidence-provenance.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a7d203fb9c53b6c0b899a9c0278284e7dfaf43dff447b105ac48f84a02f8408e",
+      "sizeBytes": 2051,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/evidence-provenance.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/execution-discipline-profiles.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0644bfca950f3073ebaebe2674e2f31e07965470644762a669c4d82fa1b1d5bb",
+      "sizeBytes": 4584,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/execution-intent-schema.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:b871315783c3b7330792900039bd66b5cf7190cbf28a12b645cbd9fe8416b4c5",
+      "sizeBytes": 22758,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-intent-schema.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/execution-strategy-selection.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:c2138f40f3befc716e90093d66cc409098158fb6bd34e840df13fd22cbb2c1c7",
+      "sizeBytes": 13228,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-strategy-selection.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/facilitator-registry.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:75b0639242e56283a3e9f0b25725bb411746da1bf152ef1e7da7da2ac37e2fa0",
+      "sizeBytes": 3274,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-registry.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/facilitator-runtime-definition.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:e0e11bd3613b3167546d558a17ec119126e9f277df41dfbabbd241dddc375548",
+      "sizeBytes": 9778,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-runtime-definition.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/final-closeout-evidence-runner.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2dcebf311b52a3eb3f9fff78e958553925814bd17cfaabff5e3f3f9155ab80e6",
+      "sizeBytes": 6463,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/final-closeout-evidence-runner.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-execution-result-ingestor.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:cf83be0458d25a2a63976e3431e407a0cce3d4ad8c78220091ae6f711912ce04",
+      "sizeBytes": 10332,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-execution-result-ingestor.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-hook-types.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6e0c51897040f5093a4cf013e19c79723a91285b4fa67f78dd69db726cf3fbb7",
+      "sizeBytes": 4187,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-host-dispatch-adapter.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:1881b2e083b401815ea04efa23e554239712916e8846081f039d41ae04f07c18",
+      "sizeBytes": 11855,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-packet-dispatch-worker.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:1d417aa30d6c131558540babe135b44483b62f4e0bba2d63ccf72ae33e92157a",
+      "sizeBytes": 9388,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-packet-execution-store.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:3b07c18a6d91686eec5859fcbba5162c1c4ec51b5676b1b60a7e137633eb1326",
+      "sizeBytes": 8629,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-packet-reconciler.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:8fab332a31b95842d4d50dc4269e242504345cf94ca37fd44ad4017bac6e37d6",
+      "sizeBytes": 5900,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-reconciler.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-provider-adapter.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2c42f9a2b56a83bc739006695c9e9567099a2199a55f65c93fccdf4e6cab0118",
+      "sizeBytes": 19030,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-remediation-artifact.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:eed3859cc0af563cd5061f92e77a8c65fbc4226ee75c8cae773ab2730f972d01",
+      "sizeBytes": 32960,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-remediation-config.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0290035daa912d5258f82ec97a154438a56c4cf1c8892e02ccc6bb14be802a12",
+      "sizeBytes": 12803,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-remediation-runner.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0bf8fe1ef17eb22b976abadc012ec548bfc92586158343d8ab98b142fe5a5823",
+      "sizeBytes": 57020,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-runtime-queue.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:af241f0ba86817de54dd1f98165a93467c5a58ab3855713674b5b452457f919a",
+      "sizeBytes": 3814,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-stage-event-emitter.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:eb098c417209b93a7e835116cbcbd0d5d5d62ba44ef683d11a6b5465520155d3",
+      "sizeBytes": 2707,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-stage-event-emitter.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/governance-transport-envelope.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:af3d9a74d554125794bf693be0dd9fecac0c04b053e48f33489337623b84d9fd",
+      "sizeBytes": 24537,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/host-runtime-mode.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:17ed7b18b8cbf35432aedc484817dfa6b5946c61253f7af43ed35d8aa647c1c6",
+      "sizeBytes": 13707,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/agent-display-names.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:e5889a967756a096418bceff9a62db6d683c9f96f250eabfdc3290108b3431e1",
+      "sizeBytes": 5600,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/agent-display-names.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/agent-manifest.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:84ec43b186c30d3ce347eb679160c8c476ee44f1a744af61cf17508ca8a07eca",
+      "sizeBytes": 2118,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/agent-manifest.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/detect-language.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:c4ada3f43f91469c7937a93f1c15d6ed2bca7f64d5d2a8467b24119eb0eb3733",
+      "sizeBytes": 3185,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/detect-language.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/field-meta-types.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:e275fea1a4ce3d4a251e5cb55ff1b57bab59da20bef7985fed3b01d13e0113d1",
+      "sizeBytes": 1391,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/field-meta-types.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/language-policy.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:24ef05619d0cb02d5135aebb811e1f3bac1784696637272b29c102654f1f94ae",
+      "sizeBytes": 4894,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/load-manifest.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:fa37139c930d321788d6f191f0388ea79fc857c7aa546c5d751bc21116543c3c",
+      "sizeBytes": 1196,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/load-manifest.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/materialize-facilitator-definition.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:2d691011d83f5509958819a9784c1a6a6ce1b69ca1d55f966cafe2ffa7db8155",
+      "sizeBytes": 207,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/materialize-facilitator-definition.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/party-mode-runtime-assets.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:fccb64cac0e878ef875303ead7eafcfa8e01f16abd9489e46f6ecbdab54f7af2",
+      "sizeBytes": 3646,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/placeholder-types.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:081bf1ac6d8adf43e4ab67cf4dc82c471a5aab74c4bfa92bfde4408a4eaec9b9",
+      "sizeBytes": 269,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/placeholder-types.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/print-resolved-audit-prompt.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:36e55bd980fe4c540b07447655b9af1280f97cc74bbd74c35377a2599147024a",
+      "sizeBytes": 1229,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/print-resolved-audit-prompt.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/protected-token-check.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:3c7b5d44dcadc54dbe48b99ff090254efe18d272960f63916a29e7b11322f1a8",
+      "sizeBytes": 1038,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/protected-token-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/render-audit-block-cli.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:c44ebdae318dad8f62718765fba9960a50030ed6a7be8ceab3e6c13122357c96",
+      "sizeBytes": 2033,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-audit-block-cli.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/render-field-view.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:118f83f7d201e7a69695d355ac03cb73d68c1b84308e44d1ea401d300b4792d8",
+      "sizeBytes": 5851,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-field-view.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/render-template.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:4be20601a732cf763c341002b4b984212ae7056d03d9fd1372963b55bda7db24",
+      "sizeBytes": 3598,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-template.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:dce5c85bc4218336adc95c9dfe02d5a613c70ab35aa3db0a568445b132d1b692",
+      "sizeBytes": 3658,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-audit-prompt-path.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/resolve-for-session-cli.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:c9f1f46d9f6f7339de746fd9159128795e23c3f7bdebe338a069e9ace6fd96b4",
+      "sizeBytes": 3330,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/resolve-for-session.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:06622be124391df0ac6edd2738fc81962bb47e26ec06a69da7f91f48eacaad3d",
+      "sizeBytes": 833,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/resolve-localized-markdown-path.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:12e216b0a9a451ccd2e98ae782a2a8c47f9750240e3296265934da05e989c777",
+      "sizeBytes": 1915,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-localized-markdown-path.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/sync-party-mode-mirrors.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:12a345aabe17939d5b78e6c7227d642d7db8721d2bd3297865efef1284528f24",
+      "sizeBytes": 2654,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/i18n/validate-template-manifest.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:629886a4b3835920ef846b2d5eb2cab6ef8ae708bff1ec0549809d14cf559940",
+      "sizeBytes": 3276,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/validate-template-manifest.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ingest-architecture-confirmation.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:bd4bff6cd538a729677e30f5ab1eafc8e1ae52da0c2f2776559b7de7f8e595a3",
+      "sizeBytes": 30804,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ingest-implementation-evidence.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:9e46c566d100813c556290c58df1abfd9172b7f3939fc4d5a26bf20477f558fa",
+      "sizeBytes": 55052,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/initialize-six-model-requirement-confirmation.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0b7ce63d4d2e49b0a38cd091d1ee0fcf7a968a0e796ad3cee85d9ac32339209b",
+      "sizeBytes": 8846,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/initialize-six-model-requirement-confirmation.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/live-smoke-main-agent-runtime.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:7f65a110e19f8d419faf7037969dc1d90e468872d2cfd047177c85710c957422",
+      "sizeBytes": 10052,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-main-agent-runtime.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/live-smoke-speckit-workflow.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:32f4dbc18769e06fa0cda23e67160319f210e4bee4582924a165bac32c5ab356",
+      "sizeBytes": 7133,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/live-smoke-speckit-workflow.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/long-run-runtime-policy.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:1d6451306a7da3cf884b65b7aeddbc0c902fa439686f2c60095a205ea4633ce6",
+      "sizeBytes": 5756,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:14054ee5eaefb203ccbde4dcb91290efe4bf293640316aa3f922d32edc46d055",
+      "sizeBytes": 2824,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-ai-tdd-closeout-remediation-adapter.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-audit-review-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6aefa1e3ab26b945d27222a27ea48f21d00b03e21f94193af4c23efdd7649194",
+      "sizeBytes": 16264,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-bmad-artifact-hardcut.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:94c16e7fd28cb4f355d64fc6c4aa1446606bcf78ae4e25a184f7bba92ad9dbe2",
+      "sizeBytes": 18429,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-artifact-hardcut.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:fc5d823a0ecafa69ca5f29cdc80945f7a5d1afc02976ff6108b1a19a4b751276",
+      "sizeBytes": 22413,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-chaos-scenarios.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:b9ff0fe441abee95f653f92014b76e497c94f2f6e78527a3a53887a348a6c9bc",
+      "sizeBytes": 5491,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-chaos-scenarios.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-codex-worker-adapter.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:8df80a03e8c2173abc619d88a6d8da9d469418f8bd03dabfe2b18c0867cf6ce9",
+      "sizeBytes": 59812,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-compiled-prompt-runner.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a859b0945c3aa59320ed3e2224b823ec900b06cc0d39c9494321d7cd9ab6dfa2",
+      "sizeBytes": 15427,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-control-plane-isolation-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:8a3a0561e492c87c9055956a6deb85c9de3a0fa085937415abb43f32202c0d90",
+      "sizeBytes": 11525,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-control-plane-isolation-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-data-governance-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:c98380fd3ca8845fe529cc77bb542cae8461d977a9064490e13b8ddd02a36246",
+      "sizeBytes": 13719,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-data-governance-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-dataset-release-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:709a7f1b09ef297f4c3b8db841679e0e66601b46c73641fcb4ffaa671f656128",
+      "sizeBytes": 32396,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dataset-release-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-decision-field-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:e7da299c5442f6190f281e57b52c29a7940881480c317460c8fee14b342d394a",
+      "sizeBytes": 5120,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-decision-field-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-delivery-closeout-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:f665cd34ef6db6256c4f65e38b55fa574058feb481376ce9019b540f682099d5",
+      "sizeBytes": 109120,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-delivery-evidence-run.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:523b2829aa3af262a080fe2f392cda0835ffa3b1a625040290fb41dcd1ae2041",
+      "sizeBytes": 5327,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-evidence-run.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-delivery-truth-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a678f9a8a7817b59eaf4ab03de17f9339ddda9be938aaaacfa66d6984f2c7ac5",
+      "sizeBytes": 15309,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-development-journey-matrix.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:22f86895c150df15882f696fa18f461a2ee0b6663315d7b7ae1d23eb1e4afc90",
+      "sizeBytes": 7535,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-development-journey-matrix.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:60d66b0d12961f9d4a7fe0655ce752bd874b66a97820d4a28386393e6b5c904d",
+      "sizeBytes": 381,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-entryflow-traceability-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:1fb0f0ca459763b5d4eaf897a1fe9d5bb349b823d0a30e4074c7e97e85c4f50f",
+      "sizeBytes": 18416,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-execution-closure-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:e883563ce30011d43d97bc9954b00cd53d39cf92cf5a96738260c70765ac5b73",
+      "sizeBytes": 21201,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-functional-resume-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:d2543b563935a8069b92dfc925b82921dd302ceb788530980318a8b44973800b",
+      "sizeBytes": 46101,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-functional-resume-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-governed-data-products.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:08c40539f5e37b13a34f7972d40a89bc3f13efc4e25e38f40753796ea47569d3",
+      "sizeBytes": 32263,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-governed-data-products.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6dd101268fa01a5c7dfc6a735daa2ea16bc0acda71db3b627ff97a75b292ed5c",
+      "sizeBytes": 19399,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-implementation-readiness-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:f1fadf4275a0b5541ea224fea292e3bd87a71fa40ab0e6b32b02606a77fb6ec5",
+      "sizeBytes": 31133,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-orchestration.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:768c2118456bfe5855db5f98c40b2293da5629b7b7eba77287666d080dcbd6d8",
+      "sizeBytes": 627,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-production-loop-ready-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:cc451776e24c9e99360cfc39d0a0929156bd349736333d9b1eba487c5dfc9e85",
+      "sizeBytes": 22625,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-quality-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:96ab514a85d8f040bc23da61fcee4da4976b1a73943e1a79d054248b4a219465",
+      "sizeBytes": 11571,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-release-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:956e5b78884b5c71770cfbb6cf48ac3cc48f65fed658fb63605f436040e16957",
+      "sizeBytes": 30305,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:00d900ff61875e0a7c759a8b87c4d266f2d4a0d218e17f5d5d9ab5bf30731e70",
+      "sizeBytes": 13744,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-scoring-gates-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:711fd8f44ae95a60475bc822ee83dbe030dfdd274fe68d5437295b9fb66338b6",
+      "sizeBytes": 15787,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-scoring-gates-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-soak-runner.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6b45a94fd679ea40990fea6d26f713ddea0785057ae72d05dc3771a090f3662e",
+      "sizeBytes": 27251,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-soak-runner.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-trace-status-policy-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:463fa1e486ddd14e0e4dbc52d72225fcb92416afd87d2a16619ec7dff312887d",
+      "sizeBytes": 10038,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/main-agent-unified-ingress.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6c1c219eb898cb04f1f83597bf95cef70a6806e04ca6f0c38bc263d78434362c",
+      "sizeBytes": 39122,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/model-governance-hint-resolver.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ff8ff0abd868193d7d67937367992924ba7c5750ff0fb3134ddedd7b700a4dee",
+      "sizeBytes": 1797,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hint-resolver.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/model-governance-hints-schema.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2911e161f3b2a3235b8d93582ea5d03760d6fd6986ef5f8ece29b48fbd0f1ef7",
+      "sizeBytes": 8890,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hints-schema.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/model-governance-policy-filter.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5d245eaa93f0023a5aff3ac4cd4710ddc695841c8af379586d7618f99c960bbd",
+      "sizeBytes": 6983,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/orchestration-dispatch-contract.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:b0bcebb36a44983998f28f1d2fdf00d6eba1b7df4405ebac248bde158a02cf84",
+      "sizeBytes": 18292,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/orchestration-governance-contract.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:32926916c7550e17462ee604b5c2a4be0be862d3d4cde47c90ef5f5c7236f461",
+      "sizeBytes": 2824,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-governance-contract.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/orchestration-state.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5fb3631f8d144ba06e60391451f9a56a0216057f65ae2923c586826d71e6f742",
+      "sizeBytes": 15293,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/parallel-mission-control.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:161d16d14159ec9b4068cb98ded1c684448c62686475c453198f5fac632177d5",
+      "sizeBytes": 18019,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parallel-mission-control.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/parse-and-write-score.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:8cfa46953e6c5b44ab472f6a548d0a8a4a282cbc7a45904ec1d1b9ff9e4c6ea1",
+      "sizeBytes": 6960,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-and-write-score.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/parse-bmad-audit-result.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:247c2b212404e15c7f3e4729288add8a351975fcd58a2f6f52dd4ba31d824420",
+      "sizeBytes": 3423,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-bmad-audit-result.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/party-mode-gate-check.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a334395c2436769876a6410b5bb14ca010efc9106c79e922a018a5a9bd13a96f",
+      "sizeBytes": 421,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-gate-check.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/party-mode-runtime.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5c198494f1b944d49784acc8b18336aca390efa5e46d676696cbb4615624b67e",
+      "sizeBytes": 61399,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/per-must-closure-evidence-index.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:847c23b97d70e9dcfc1d31f6db0cdcbacef930081d8fb3e7aa9a5855f425f1cc",
+      "sizeBytes": 17189,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/per-must-closure-evidence-index.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/pre-rerun-anti-false-positive-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:f29d6f5ee5343bd0640299046be06db14ebbc541180104b264e443210f17ffb5",
+      "sizeBytes": 5324,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/pre-rerun-anti-false-positive-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/prompt-routing-governance.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:337d1a662ff4abaa9e5c3d0c0508359dd629c477d001b236640393c2a894e78a",
+      "sizeBytes": 38838,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/prompt-routing-hints-schema.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:e3c884215e4210e40af413e4b947a6038b06b5aa56f49bd2b20c16697fb769e0",
+      "sizeBytes": 7146,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints-schema.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/prompt-routing-hints.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:35a59f4754ddb663abf883f7a3bfa2db09374016016e600cf18ffd00dac7d032",
+      "sizeBytes": 5954,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/query-validate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:61e837c184b48dceac96042621118885216db7028166a8e88849c514e4d2f114",
+      "sizeBytes": 1596,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/query-validate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/pathing.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:8fca32897539d94de003b21977d667cf94b0623bf9e7b44f6981a7e5af1ab97a",
+      "sizeBytes": 57,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/progress-format.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:92e8a4cf7bb1489eb1c926518d20e79a5598c029d26f6c5f408eb9aa7f0f4a81",
+      "sizeBytes": 65,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/progress-format.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/schema.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:1f05e35bd162de73623f35201d7e9534e2549a9f196a24bb684862b1ed87f745",
+      "sizeBytes": 56,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/speckit-implement.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:aa784e03bbbb0be4b736c92b171489534f9190ab57b0025f7aef91194a092691",
+      "sizeBytes": 67,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/speckit-implement.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/types.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:407afd5b7ed5defae2142445c0bfe2520a05be8d44cd404860ef4212be7e34fe",
+      "sizeBytes": 55,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/verify-pass-consistency.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:85d115720bc1a933d44207572607e7f0c70216ec495f895a2c2f44f1817c0055",
+      "sizeBytes": 73,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-pass-consistency.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/verify-ralph-compliance.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:1795110caf867ff89373b2d794045b86c127da1d19f16cb9815111444aa6c49b",
+      "sizeBytes": 73,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-ralph-compliance.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/verify-tdd-trace.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:7156d64796ccec53b930854a61c6bc9980ed5abc6786eafda868fc5a916031f8",
+      "sizeBytes": 66,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/verify-tdd-trace.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/ralph-method/write-tracking-files.ts",
+      "tracked": true,
+      "existsAtInventory": true,
+      "sha256": "sha256:3d999b8c2e471ca2dcd1d08fa50e3fe0d1dd8985626a9cf170ed3413bb01e58b",
+      "sizeBytes": 70,
+      "disposition": "tracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reconfirmation-runtime.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:499b747d7229d80c2de6561bfd9347acf157f6cd253a694d04af5a3549c4152f",
+      "sizeBytes": 14489,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reconfirmation-runtime.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/record-main-agent-inspect-readiness-closure.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:3b57885bbb11d7be157030f3e6dab4242ee01db3daacda5de8c3fea3cb362102",
+      "sizeBytes": 24724,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/requirement-record-control-store.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ff42c11292d9766467028817b37a42d4f4645fa03716aa89af8edd668581032a",
+      "sizeBytes": 46823,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/requirement-record-event-reducer.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:bea9cd848a659f8aa294838cf0d3a1b5acbcb759a2bc61996be0c1211e1b9d6a",
+      "sizeBytes": 435,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-event-reducer.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/requirement-record-live-schema-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:e884f69f816bf23bf14387d47e7306ef88ff7e562d2ef484cafefea0a9c5830f",
+      "sizeBytes": 2948,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/requirement-record-schema-evolution.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2896729943b9a670848b664e98399cb01cb10eca471cb7ace95a3ced1e216e41",
+      "sizeBytes": 575,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-schema-evolution.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/resolve-active-requirement.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:f5ac9a8be72ddb020f74a215cf10234091b9081f822414977d31332cf959fecf",
+      "sizeBytes": 29173,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reviewer-contract.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:c45ddfce5eb4263e6a6fae09879fecfceccd47c1fb0e7566d95d9eec102e563e",
+      "sizeBytes": 11105,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reviewer-registry.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a554a99cbd9f5652971330c0d2b8ac6af4c3aeccfb873a58f6acfbda7c190dc5",
+      "sizeBytes": 17724,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reviewer-rollout-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:950d8dbf91c0de24696a88296ac4a8542b8ce9fbf8dbcf63982d23b2290c0853",
+      "sizeBytes": 1597,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reviewer-runtime-definition.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6139ec1d2511fc8aa9cc489cf7f9195ad77fbae7c38009a5a0bc76c4f14b9720",
+      "sizeBytes": 4832,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-runtime-definition.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reviewer-schema.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:067a2a83300f556949205d5e22b1cc3bc97f9825a80ec031f66126f40d130cc3",
+      "sizeBytes": 16635,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/reviewer-shared-core.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:b5d14d397dd7c1b1e2e35ef0adb0ea73f71420ad12277865c6f5b3fbe63d83c5",
+      "sizeBytes": 3520,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-shared-core.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/run-auditor-host.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a33768e1983f72f5e9c7866a56a6b7b3e2949b1335fc0ec8b8a6b613bece2e73",
+      "sizeBytes": 19641,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/run-fresh-regression-matrix.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:dd311792d5448f6005a775476629bdb0d981bb4d6fa605f6a2722865e0696226",
+      "sizeBytes": 11863,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:e4b4fac538148ef78bb9610c5b3f102fee5a03565f2acaa1e079d25456bd23b4",
+      "sizeBytes": 49223,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-context-registry.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:23101e777a92626e810982a35e446c7e1f016984deb512869216a23bb9cf4c21",
+      "sizeBytes": 21759,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-context.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2311131ef13cf7d645c09257c056544b34a3d97d56114a1df45efff0d89e4312",
+      "sizeBytes": 16769,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-governance-registry.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0f1c044a5da9ebb1d0b1237305d77ead414532eb37c3f0e049b28d1154e4e254",
+      "sizeBytes": 1098,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-registry.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-governance-template-schema.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2bb5be536a3e626fde56d4467f6caae19b10bdce4324895bbcee9ed971fab66c",
+      "sizeBytes": 2358,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance-template-schema.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-governance.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:cfa6236b33f9c1e7a2e7fec6985c9f01f94db9e7e3ec6733b868ce9f7a3c8981",
+      "sizeBytes": 21286,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-scoring-data-path.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ffd570149d8f598216dc4334f5a600e9b12613ca57b501e7745cb8b8348062d9",
+      "sizeBytes": 536,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-scoring-data-path.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/runtime-step-state.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:b83d91a0d9ce22cb4e2d8833f9cbe287c86cdee685550f64b2169ff65ccc6621",
+      "sizeBytes": 1929,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-step-state.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/scores-summary.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:c35838715b87520c29afa42673b1c10561e8da018dc9ff31092b2ab41b3d7e71",
+      "sizeBytes": 3907,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/sdd-artifact-manifest.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:a16e80dc9974b4b4133ffe79999df219eb487c4aa37cf07f3ecf3e7c8d030fa9",
+      "sizeBytes": 10472,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/sdd-artifact-manifest.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/sft-extract.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:768d484a5ed4061cc313b8243fd0a581b0699f8508726f89ae787bf6ee088b32",
+      "sizeBytes": 2140,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/sft-extract.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/six-model-runtime-decision.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ea2cfc5cf17fc5cf79343814873eaeb36fefece90a72e5f024a7a3ae014dc51c",
+      "sizeBytes": 12943,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/skill-inventory-provider.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:2a943758a7b22bfad5322491510158e73256a74623960468cf00ad1c2206fbe3",
+      "sizeBytes": 8452,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-inventory-provider.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/skill-orchestration-audit.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:7cb700a56bdcb9511b4a6bb9d17b62ba7cc558d8069da3b23e6bef877f7cac68",
+      "sizeBytes": 11245,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-orchestration-audit.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/skill-semantic-features-config.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:64d09d0c45b3811345b913b848715d5929df28832067b51d86739e4cd0bc1b8e",
+      "sizeBytes": 3329,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-semantic-features-config.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/speckit-cli.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:7f61645dcf73dd90db6b0552f728255c89784cc21e2c1ccab8f9d22621e4b244",
+      "sizeBytes": 21895,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/speckit-cli.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/sprint-status-authorized-update.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:4b69c74009a1104a36b46b58c98966fc46ceff768271081a512dceba10e4ea5f",
+      "sizeBytes": 8373,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/sprint-status-authorized-update.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/stable-runtime-policy-json.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:3c6130f4491d952e7b0cf274d1446ced6af4a6d8a7df629cbb9026bd7cdae50c",
+      "sizeBytes": 787,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/start-dashboard.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:7f9dc1a54222d56dc1b08abecb6c5594bc327a01b47edd0588422418d09ebf50",
+      "sizeBytes": 689,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/start-dashboard.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/strict-closeout-proof-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:bc98a57c057645e3e2fa08f6b5abf643b15c6c7f92c38b39826bf306080aa22a",
+      "sizeBytes": 30200,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/strict-command-resolution-preflight.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:865d2a6d38e73c764d396ddcc06bf906e4349f82160cab1a2e36a7a37e9a6229",
+      "sizeBytes": 17929,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/subagent-current-attempt-revalidation.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:aa62b3a0b1b858436de7ba2890a28e6baffbd7b978b7e392117bf882f5734c0b",
+      "sizeBytes": 15448,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-current-attempt-revalidation.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/subagent-evidence-envelope.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:47480f80b85f9113c3ededcae6dacec21259d73551f569b7bc36d95f99e994ed",
+      "sizeBytes": 27159,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/subagent-surface-inventory.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:6edf1190ff166cdeab4d4d24505ab096a0a87ad9c1348cecb1c4ab786da95d7f",
+      "sizeBytes": 30023,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/supervised-worker-runtime.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:bbc6280ca332b9a9a818f72c486ebed7e621cafb3878c0ce2d13bbe6c8095c20",
+      "sizeBytes": 5445,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/target-artifact-realization-gate.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:0fd18755dd8e45ef09f8d1869e1b662cc82ab681e0ba80a1baeecc9b6ff8897d",
+      "sizeBytes": 68807,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/test-locks.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ab23483a111bcc3061e199ab2c3bdda02660da4b399acf4bdf3c447955a90a07",
+      "sizeBytes": 1065,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-locks.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/test-story-flow.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:bd21e4fcf17c33f658cad22e997bb4f41dfd8434ad00536ae5dc8bff73b70a5d",
+      "sizeBytes": 2923,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/test-story-flow.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/trace-040-evidence-packet-generator.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:d80ad0da2ba448e9de020f5e298b7fc004d806fa7df6f6984edb2854ad42d62f",
+      "sizeBytes": 9445,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/trace-closure-matrix.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:bc1b0fb4044c103aba70bf6fa47232b0166a986b36d52eae717101e38e687a0a",
+      "sizeBytes": 8007,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-closure-matrix.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/update-runtime-audit-index.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5c1f88c894e64676d6199bcdcd52b50430c2789c7fce1b85d27d35e2ec444dd8",
+      "sizeBytes": 1631,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/update-runtime-audit-index.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/update-specify-passed.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5744e11d0a4fc6e8f8535ea9dd189335c03130089d68ecc58480f63e4d649824",
+      "sizeBytes": 811,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/update-specify-passed.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/user-story-mapping.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:26cfe4d4510f8767dc528f57f5120c9bb3173159e15d05867d2af68bc7bb06af",
+      "sizeBytes": 10656,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/validate-single-source-whitelist.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:ba2c364ea47bea3d4cbba7db14fdf3545748196db7afca7b7dfcca3e6e5cffe3",
+      "sizeBytes": 5297,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-single-source-whitelist.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/verify-agent-files.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:3c3cd0860d1b4db7fb75a3954d86b1e3a707a1e0d9946899feffabb73b2160ec",
+      "sizeBytes": 3810,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-agent-files.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/verify-cursor-audit-granularity.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:30d6ee5594d0df37cb52d2995f7275c8609ba5ba4d8b4f38d24b5853121402d0",
+      "sizeBytes": 2354,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-cursor-audit-granularity.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/verify-story-mode.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:5db389157fc817fab9340fa25f0c64e48526d8de00d47c2c1f496c8c77d5ec19",
+      "sizeBytes": 5064,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-story-mode.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    },
+    {
+      "scriptPath": "scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+      "tracked": false,
+      "existsAtInventory": true,
+      "sha256": "sha256:633086a9682413dbf175ec5ec6c75adf79db434a8520886f6e6d2d2837da6120",
+      "sizeBytes": 10077,
+      "disposition": "untracked_package_source_equivalent",
+      "deletionRequired": true,
+      "deletionAllowedAfterGates": true,
+      "packageSourceEquivalent": "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-policy-snapshot-and-recovery-context.ts",
+      "notes": [
+        "Package source equivalent exists; active callers must switch before deletion."
+      ]
+    }
+  ]
+}

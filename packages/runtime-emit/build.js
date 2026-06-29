@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Bundles package source-authority CLIs into dist/*.cjs:
- * - packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts ->emit-runtime-policy.cjs
+ * - packages/bmad-speckit/src/main-agent/source-authority/bmad-speckit emit-runtime-policy ->emit-runtime-policy.cjs
  * - packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/resolve-for-session-cli.ts ->resolve-for-session.cjs
  * - packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/render-audit-block-cli.ts ->render-audit-block.cjs
  * Invoked by prepare/prepublishOnly and `npm run build` from this package.
@@ -93,9 +93,9 @@ const sourceAuthorityScriptsRoot = path.join(
   'source-authority',
   'scripts'
 );
-const auditIndexEntry = path.join(repoRoot, 'scripts', 'update-runtime-audit-index.ts');
-const auditorPostActionsEntry = path.join(repoRoot, 'scripts', 'auditor-post-actions.ts');
-const auditorHostEntry = path.join(repoRoot, 'scripts', 'run-auditor-host.ts');
+const auditIndexEntry = path.join(sourceAuthorityScriptsRoot, 'update-runtime-audit-index.ts');
+const auditorPostActionsEntry = path.join(sourceAuthorityScriptsRoot, 'auditor-post-actions.ts');
+const auditorHostEntry = path.join(sourceAuthorityScriptsRoot, 'run-auditor-host.ts');
 const bundles = [
   {
     entry: path.join(sourceAuthorityScriptsRoot, 'emit-runtime-policy.ts'),

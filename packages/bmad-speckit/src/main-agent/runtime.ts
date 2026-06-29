@@ -36,6 +36,7 @@ const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
 const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
+const { hostMatrixPrOrchestratorAction } = require('./actions/host-matrix-pr-orchestrator');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
 const {
   initializeSixModelRequirementConfirmationAction,
@@ -60,6 +61,9 @@ const { requirementRecordControlStoreAction } = require('./actions/requirement-r
 const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
 const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
+const {
+  runRequiredCommandsFromAiTddManifestAction,
+} = require('./actions/run-required-commands-from-ai-tdd-manifest');
 const { runtimePolicySnapshotCheckAction } = require('./actions/runtime-policy-snapshot-check');
 const { runtimeScoringDataPathAction } = require('./actions/runtime-scoring-data-path');
 const { scoringGatesCheckAction } = require('./actions/scoring-gates-check');
@@ -106,6 +110,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'requirement-record-live-schema-gate': requirementRecordLiveSchemaGateAction,
   'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
   'resolve-active-requirement': resolveActiveRequirementAction,
+  'run-required-commands-from-ai-tdd-manifest': runRequiredCommandsFromAiTddManifestAction,
   'runtime-scoring-data-path': runtimeScoringDataPathAction,
   'six-model-runtime-decision': sixModelRuntimeDecisionAction,
   'adaptive-intake-governance-gate': adaptiveIntakeGovernanceGateAction,
@@ -197,6 +202,7 @@ const SUPPORTED_ACTIONS = new Set([
   'unified-ingress',
   'delivery-closeout-gate',
   'delivery-evidence-run',
+  'host-matrix-pr-orchestrator',
   'soak-runner',
   'dual-host-pr-orchestrator',
   'chaos-scenarios',
@@ -395,7 +401,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'release-gate') {
-    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, releaseGateAction(context)));
+    return emitLegacyResult(releaseGateAction(context));
   }
 
   if (context.action === 'quality-gate') {
@@ -403,10 +409,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'delivery-truth-gate') {
-    return emitResponse(
-      context,
-      envelope(context, 'package_runtime_ready', 0, deliveryTruthGateAction(context))
-    );
+    return emitLegacyResult(deliveryTruthGateAction(context));
   }
 
   if (context.action === 'codex-worker-adapter') {
@@ -442,10 +445,11 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'delivery-evidence-run') {
-    return emitResponse(
-      context,
-      envelope(context, 'package_runtime_ready', 0, deliveryEvidenceRunAction(context))
-    );
+    return emitLegacyResult(deliveryEvidenceRunAction(context));
+  }
+
+  if (context.action === 'host-matrix-pr-orchestrator') {
+    return emitLegacyResult(hostMatrixPrOrchestratorAction(context));
   }
 
   if (context.action === 'soak-runner') {
@@ -466,9 +470,16 @@ async function runMainAgentRuntime(context) {
   const packageRuntimeReadyAction =
     PACKAGE_RUNTIME_READY_ACTIONS[context.action] || loadWave312PackageRuntimeAction(context.action);
   if (packageRuntimeReadyAction) {
+    const data = packageRuntimeReadyAction(context);
     return emitResponse(
       context,
-      envelope(context, 'package_runtime_ready', 0, packageRuntimeReadyAction(context))
+      envelope(
+        context,
+        data.status || 'package_runtime_ready',
+        typeof data.exitCode === 'number' ? data.exitCode : 0,
+        data,
+        Array.isArray(data.errors) ? data.errors : []
+      )
     );
   }
 }

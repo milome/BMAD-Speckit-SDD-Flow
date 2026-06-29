@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveImplementationEntryGate } from '../../scripts/runtime-governance';
+import { resolveImplementationEntryGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('implementation entry gate matrix', () => {
   const emptySources = {

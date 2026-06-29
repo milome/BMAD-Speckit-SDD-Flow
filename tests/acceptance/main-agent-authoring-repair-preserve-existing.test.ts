@@ -248,7 +248,7 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
       ...backRef.split('\n'),
       '  targetModificationPaths:',
       '    - id: TARGET-MOD-001',
-      '      path: scripts/main-agent-orchestration.ts',
+      '      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
       '      changeType: modify',
       '      coverageRole: modify',
       '      intent: "Implement preserve-existing repair."',
@@ -384,7 +384,7 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
       '      command: "npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts"',
       '      purpose: "Validate preserve-existing repair loop."',
       '      expected: "All tests pass."',
-      '      targetFiles: ["scripts/main-agent-orchestration.ts"]',
+      '      targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"]',
       '      traceRows: ["TRACE-001"]',
       '      evidenceRefs: ["EVD-001"]',
       ...backRef.split('\n'),
@@ -1203,7 +1203,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         'legacy business edge remains human readable [MUST-001]'
       );
       const targetPathRows = confirmation.targetModificationPaths as Array<Record<string, unknown>>;
-      expect(targetPathRows.find((row) => row.path === 'scripts/main-agent-orchestration.ts')).toMatchObject({
+      expect(targetPathRows.find((row) => row.path === 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts')).toMatchObject({
         changeType: 'modify',
         coverageRole: 'modify',
       });

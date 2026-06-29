@@ -8,8 +8,8 @@ import {
   runMainAgentAutomaticLoop,
   writeMainAgentRunLoopTaskReport,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { createDefaultOrchestrationState, writeOrchestrationStateAtPath } from '../../scripts/orchestration-state';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { createDefaultOrchestrationState, writeOrchestrationStateAtPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

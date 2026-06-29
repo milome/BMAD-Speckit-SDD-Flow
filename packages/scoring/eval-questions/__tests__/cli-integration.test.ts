@@ -9,7 +9,16 @@ import { execSync } from 'child_process';
 import { loadManifest } from '../manifest-loader';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const CLI_SCRIPT = path.resolve(REPO_ROOT, 'scripts', 'eval-questions-cli.ts');
+const CLI_SCRIPT = path.resolve(
+  REPO_ROOT,
+  'packages',
+  'bmad-speckit',
+  'src',
+  'main-agent',
+  'source-authority',
+  'scripts',
+  'eval-questions-cli.ts'
+);
 const TS_NODE_BIN = path.resolve(REPO_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js');
 const TSCONFIG = path.resolve(REPO_ROOT, 'tsconfig.node.json');
 

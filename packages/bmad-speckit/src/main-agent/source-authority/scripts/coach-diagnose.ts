@@ -1,11 +1,11 @@
 /**
  * Story 4.2 / 6.1 / 6.2 CLI: AI Coach 诊断入口
  * 用法：
- *   npx ts-node scripts/coach-diagnose.ts                     # 无参：discovery 最新 run_id → 诊断
- *   npx ts-node scripts/coach-diagnose.ts --run-id=sample-run --format=json
- *   npx ts-node scripts/coach-diagnose.ts --epic 3            # Story 6.2: 仅诊断 Epic 3
- *   npx ts-node scripts/coach-diagnose.ts --story 3.3         # Story 6.2: 仅诊断 Story 3.3
- *   npx ts-node scripts/coach-diagnose.ts --limit 50          # discovery 最多考虑 50 条
+ *   npx bmad-speckit coach                     # 无参：discovery 最新 run_id → 诊断
+ *   npx bmad-speckit coach --run-id=sample-run --format=json
+ *   npx bmad-speckit coach --epic 3            # Story 6.2: 仅诊断 Epic 3
+ *   npx bmad-speckit coach --story 3.3         # Story 6.2: 仅诊断 Story 3.3
+ *   npx bmad-speckit coach --limit 50          # discovery 最多考虑 50 条
  */
 import { coachDiagnose, discoverLatestRunId, formatToMarkdown } from '../packages/scoring/coach';
 import { getScoringDataPath } from '../packages/scoring/constants/path';

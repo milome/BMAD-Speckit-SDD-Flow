@@ -611,7 +611,7 @@ The Artifact and Automation Plan View must make planned outputs visible before i
 
 When planned work touches runtime governance, hooks, no-hook execution, recovery, bmad-help routing, dashboard, scoring, or SFT, the artifact plan must also show:
 
-- `scripts/resolve-active-requirement.ts` or the equivalent skill/project resolver as the startup locator.
+- `bmad-speckit main-agent resolve-active-requirement` or the equivalent skill/project resolver as the startup locator.
 - `_bmad-output/runtime/requirement-records/index.json` as locator projection only.
 - `_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json` as the reloaded control record.
 - `_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json`.

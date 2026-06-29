@@ -12,12 +12,12 @@ import {
   getAuditConvergence,
   getStageConfig,
   type StageName,
-} from '../../scripts/bmad-config';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 import {
   resolveRuntimePolicy,
   type RuntimeFlowId,
   type RuntimePolicy,
-} from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 /** 与 `runtime-governance-matrix.test.ts` 同规则；抛出以便护栏测 `toThrow`。 */
 export function assertLegacyAlignedRuntimePolicy(

@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainIngestImplementationEvidence } from '../../scripts/ingest-implementation-evidence';
+import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
 
 function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
@@ -149,9 +149,9 @@ function writeFixture(root: string): {
         traceRows: ['TRACE-003'],
         taskRefs: ['TASK-DELIVERY-CORE-EVIDENCE'],
         evidenceRefs: ['EVD-006'],
-        filesChanged: ['scripts/ingest-implementation-evidence.ts'],
+        filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts'],
         implementationDelta: {
-          filesChanged: ['scripts/ingest-implementation-evidence.ts'],
+          filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts'],
           diffSummaryRef: 'diff-summary.md',
           behaviorAffecting: true,
           negativeAssertionArtifactRefs: [

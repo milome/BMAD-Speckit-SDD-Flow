@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { evaluateDeliveryTruthGate } from '../../scripts/main-agent-delivery-truth-gate';
+import { evaluateDeliveryTruthGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate';
 import {
   buildPrTopology,
   buildParallelMissionPlan,
@@ -145,7 +145,16 @@ describe('main-agent delivery truth gate', () => {
           '--project',
           path.join(process.cwd(), 'tsconfig.node.json'),
           '--transpile-only',
-          path.join(process.cwd(), 'scripts', 'main-agent-delivery-truth-gate.ts'),
+          path.join(
+            process.cwd(),
+            'packages',
+            'bmad-speckit',
+            'src',
+            'main-agent',
+            'source-authority',
+            'scripts',
+            'main-agent-delivery-truth-gate.ts'
+          ),
           '--cwd',
           root,
           '--reportPath',
@@ -179,7 +188,16 @@ describe('main-agent delivery truth gate', () => {
           '--project',
           path.join(process.cwd(), 'tsconfig.node.json'),
           '--transpile-only',
-          path.join(process.cwd(), 'scripts', 'main-agent-delivery-truth-gate.ts'),
+          path.join(
+            process.cwd(),
+            'packages',
+            'bmad-speckit',
+            'src',
+            'main-agent',
+            'source-authority',
+            'scripts',
+            'main-agent-delivery-truth-gate.ts'
+          ),
           '--cwd',
           root,
         ],

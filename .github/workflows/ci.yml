@@ -38,7 +38,7 @@ jobs:
       - name: Build scoring package
         run: npm run build:scoring
 
-      - name: Build runtime-emit package (esbuild bundle from scripts/emit-runtime-policy.ts)
+      - name: Build runtime-emit package from package runtime policy source
         run: npm run build:runtime-emit
 
       - name: Lint
@@ -96,6 +96,9 @@ jobs:
 
       - name: Build Main Agent dist runtime
         run: npm run build:main-agent-dist
+
+      - name: Validate no root TypeScript scripts
+        run: npm run validate:no-root-scripts-ts
 
       - name: Verify requirements contract source writes
         run: npm run verify:requirements-contract-source-writes

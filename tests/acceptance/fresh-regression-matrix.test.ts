@@ -11,7 +11,7 @@ import {
   runOptionalNpmScript,
   resolveHostMatrixGateMode,
   resolveDualHostGateMode,
-} from '../../scripts/run-fresh-regression-matrix';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix';
 
 describe('fresh-regression-matrix helpers', () => {
   let tmpBase: string;
@@ -170,7 +170,7 @@ describe('fresh-regression-matrix helpers', () => {
 
   it('keeps runtime dashboard and SFT smoke help commands in the fresh regression matrix', () => {
     const source = fs.readFileSync(
-      path.resolve(__dirname, '../../scripts/run-fresh-regression-matrix.ts'),
+      path.resolve(__dirname, '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-fresh-regression-matrix.ts'),
       'utf8'
     );
 

@@ -657,8 +657,8 @@ no_hook_equivalents:
     ownerModel: execution_closure
     trigger: codex_cli_or_main_agent_ingress
     paths:
-      - scripts/main-agent-unified-ingress.ts
-      - scripts/main-agent-orchestration.ts
+      - packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts
+      - packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts
     inputArtifacts:
       - cli_invocation
       - workspace_context
@@ -680,7 +680,7 @@ no_hook_equivalents:
     ownerModel: execution_closure
     trigger: codex_worker_dispatch
     paths:
-      - scripts/main-agent-codex-worker-adapter.ts
+      - packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts
       - _bmad/codex/agents/codex-no-hooks-worker.toml
     inputArtifacts:
       - governance_packet
@@ -705,8 +705,8 @@ no_hook_equivalents:
     ownerModel: audit_review
     trigger: codex_execution_result_ingest
     paths:
-      - scripts/governance-execution-result-ingestor.ts
-      - scripts/governance-packet-reconciler.ts
+      - packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-execution-result-ingestor.ts
+      - packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-reconciler.ts
     inputArtifacts:
       - execution_result
       - rerun_gate_result

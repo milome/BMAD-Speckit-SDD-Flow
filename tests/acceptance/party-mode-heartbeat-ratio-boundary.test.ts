@@ -8,7 +8,7 @@ import {
   createFacilitatorHeartbeat,
   evaluateGate,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode heartbeat ratio boundary', () => {
   it('keeps facilitator heartbeat records out of gate statistics', () => {

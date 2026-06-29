@@ -11,7 +11,7 @@ import {
   HOST_NATIVE_AGENT_TURN_REASON,
   recoverSession,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode runtime owner', () => {
   it('starts a session with canonical paths and gate profile metadata', () => {

@@ -10,7 +10,7 @@ import {
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainWriteRuntimePolicySnapshotAndRecoveryContext } from '../../scripts/write-runtime-policy-snapshot-and-recovery-context';
+import { mainWriteRuntimePolicySnapshotAndRecoveryContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-policy-snapshot-and-recovery-context';
 
 function writeFixture(root: string): void {
   cpSync(path.join(process.cwd(), '_bmad'), path.join(root, '_bmad'), { recursive: true });

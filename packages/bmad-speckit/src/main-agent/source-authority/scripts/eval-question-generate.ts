@@ -5,7 +5,7 @@
  *
  * CLI 参数：--run-id, --input (coach JSON), --version, --outputDir
  *
- * 示例：npx ts-node scripts/eval-question-generate.ts --run-id r1 --version v1
+ * 示例：npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts --run-id r1 --version v1
  *
  * 退出码：0=成功，1=错误
  */
@@ -113,7 +113,7 @@ async function main(): Promise<void> {
 
   if (!runId && !inputPath) {
     console.error(
-      'Usage: npx ts-node scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]'
+      'Usage: npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts --run-id <id> | --input <path> [--version v1|v2] [--outputDir <dir>]'
     );
     process.exit(1);
   }

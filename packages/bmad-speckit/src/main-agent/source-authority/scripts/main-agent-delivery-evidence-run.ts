@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import { buildEvidenceProvenance } from './evidence-provenance';
 
 type ProviderMode = 'mock' | 'real';
-const TOOL_ROOT = path.resolve(__dirname, '..');
 const PKG_RUNTIME = __dirname.includes(`${path.sep}dist${path.sep}`);
 
 interface StepResult {
@@ -49,26 +48,15 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
   return out;
 }
 
-function tsNodeScript(scriptPath: string, args: string[] = []): string[] {
-  return [
-    process.execPath,
-    path.join(TOOL_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    '--project',
-    path.join(TOOL_ROOT, 'tsconfig.node.json'),
-    '--transpile-only',
-    path.join(TOOL_ROOT, scriptPath),
-    ...args,
-  ];
+function packageCliMainAgent(action: string, args: string[] = []): string[] {
+  const packageBin = PKG_RUNTIME
+    ? path.resolve(__dirname, '..', '..', '..', '..', 'bin', 'bmad-speckit.js')
+    : path.resolve(__dirname, '..', '..', '..', '..', 'bin', 'bmad-speckit.js');
+  return [process.execPath, packageBin, 'main-agent', action, ...args];
 }
 
-function runtimeScript(scriptPath: string, args: string[] = []): string[] {
-  if (!PKG_RUNTIME) return tsNodeScript(scriptPath, args);
-  const runtimeFile = path.basename(scriptPath).replace(/\.tsx?$/u, '.js');
-  return [process.execPath, path.join(__dirname, runtimeFile), ...args];
-}
-
-function runtimeCommandText(scriptPath: string, args: string[] = []): string {
-  return runtimeScript(scriptPath, args)
+function runtimeCommandText(action: string, args: string[] = []): string {
+  return packageCliMainAgent(action, args)
     .map((value) => (/\s/u.test(value) ? JSON.stringify(value) : value))
     .join(' ');
 }
@@ -105,7 +93,7 @@ function runStepWithEnv(
   return { id, command, exitCode };
 }
 
-function main(argv: string[]): number {
+export function mainDeliveryEvidenceRun(argv: string[]): number {
   const args = parseArgs(argv);
   const provider: ProviderMode = args.provider === 'real' ? 'real' : 'mock';
   const steps: StepResult[] = [];
@@ -130,11 +118,11 @@ function main(argv: string[]): number {
   ];
   const releaseGateCommand =
     provider === 'real'
-      ? runtimeCommandText('scripts/main-agent-host-matrix-pr-orchestrator.ts', [
+      ? runtimeCommandText('host-matrix-pr-orchestrator', [
           '--provider',
           'real',
         ])
-      : runtimeCommandText('scripts/main-agent-host-matrix-pr-orchestrator.ts', ['--provider', 'mock']);
+      : runtimeCommandText('host-matrix-pr-orchestrator', ['--provider', 'mock']);
   const releaseGateEnv = {
     MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: releaseGateCommand,
   };
@@ -151,7 +139,7 @@ function main(argv: string[]): number {
   steps.push(
     runStepWithEnv(
       'release-gate',
-      runtimeScript('scripts/main-agent-release-gate.ts', commonReleaseArgs),
+      packageCliMainAgent('release-gate', commonReleaseArgs),
       releaseGateEnv,
       true
     )
@@ -159,7 +147,7 @@ function main(argv: string[]): number {
 
   const truthGate = runStep(
     'delivery-truth-gate',
-    runtimeScript('scripts/main-agent-delivery-truth-gate.ts'),
+    packageCliMainAgent('delivery-truth-gate'),
     true
   );
   steps.push(truthGate);
@@ -185,5 +173,5 @@ function main(argv: string[]): number {
 }
 
 if (require.main === module) {
-  process.exitCode = main(process.argv.slice(2));
+  process.exitCode = mainDeliveryEvidenceRun(process.argv.slice(2));
 }

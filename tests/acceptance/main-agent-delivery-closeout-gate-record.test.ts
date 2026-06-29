@@ -3,8 +3,8 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const SUBSYSTEM_IDS = [
@@ -275,8 +275,8 @@ function subsystemAcceptance(subsystemId: string): Record<string, unknown> {
     functionalParity: {
       userVisibleBehaviorPreserved: true,
       replacementScripts: [
-        'scripts/main-agent-production-loop-ready-check.ts',
-        'scripts/main-agent-dataset-release-gate.ts',
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.ts',
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dataset-release-gate.ts',
       ],
       replacementArtifacts: [
         'production-loop-16-subsystems-extension.json',
@@ -350,8 +350,8 @@ function writeProductionArtifacts(
     functionalParity: {
       userVisibleBehaviorPreserved: true,
       replacementScripts: [
-        'scripts/main-agent-production-loop-ready-check.ts',
-        'scripts/main-agent-dataset-release-gate.ts',
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-production-loop-ready-check.ts',
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dataset-release-gate.ts',
       ],
       replacementArtifacts: [
         'production-loop-16-subsystems-extension.json',

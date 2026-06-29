@@ -3,10 +3,10 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const CONTROL_WRITER_SCRIPTS = [
-  'scripts/ingest-architecture-confirmation.ts',
-  'scripts/ingest-implementation-evidence.ts',
-  'scripts/main-agent-delivery-closeout-gate.ts',
-  'scripts/main-agent-implementation-readiness-gate.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
 ];
 
 function readProjectFile(filePath: string): string {
@@ -36,7 +36,7 @@ describe('requirement record control store enforcement', () => {
   });
 
   it('keeps mentor-events jsonl available only to governed data products and projections', () => {
-    const dataProducts = readProjectFile('scripts/main-agent-governed-data-products.ts');
+    const dataProducts = readProjectFile('packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-governed-data-products.ts');
     expect(dataProducts).toContain('mentor-events.jsonl');
     expect(dataProducts).not.toContain('appendControlEventAndReplay');
   });

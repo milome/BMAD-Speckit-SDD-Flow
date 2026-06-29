@@ -182,7 +182,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 0. （阶段零-前置）若 _bmad 存在且 party-mode 未做展示名优化，自动执行补丁
 1. 发起 Create Story 子任务（epic_num=4, story_num=1）
 2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
-3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`node scripts/assert-implementation-entry.ts --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
+3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`npx --no-install bmad-speckit assert-implementation-entry --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
 4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
 5. 审计通过即流程结束
 
@@ -715,7 +715,7 @@ prompt: |
 
 当 步骤 2.3 判定 host 未完成且报告文件存在时，主 Agent 执行：
 ```bash
-npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage story --artifactPath <Story 文档路径> --reportPath <报告路径> --iterationCount 0
+npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage story --artifactPath <Story 文档路径> --reportPath <报告路径> --iterationCount 0
 ```
 补跑后再次确认 host 已完成收口；若报告不存在则停止并明确缺失原因。若调用失败，必须自动重试、记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认存在真实 blocker。
 
@@ -1132,7 +1132,7 @@ cleanup 命令（按平台择一执行）：
   - 若报告可解析块维度错误，则先修正报告，再通过 `runAuditorHost` 重新收口。
   - 补跑失败时不得继续主流程；必须自动重试并记录每次失败原因与修复动作，直到获得 `closeout approved` 或确认真实 blocker。
 - #### 步骤 4.2：补跑 runAuditorHost（步骤 4.3 判定 host 未完成时执行）
-  - 当 步骤 4.3 判定 host 未完成且报告存在时，主 Agent 执行：`npx ts-node scripts/run-auditor-host.ts --projectRoot <projectRoot> --stage implement --artifactPath <story 文档路径> --reportPath <报告路径> --iterationCount {本 stage 累计 fail 轮数，0 表示一次通过}`
+  - 当 步骤 4.3 判定 host 未完成且报告存在时，主 Agent 执行：`npx --no-install bmad-speckit run-auditor-host --projectRoot <projectRoot> --stage implement --artifactPath <story 文档路径> --reportPath <报告路径> --iterationCount {本 stage 累计 fail 轮数，0 表示一次通过}`
   - 若调用失败，记录 `resultCode`、失败原因与修复动作，并自动重试；未获得 `closeout approved` 前不得提供完成选项。
 - #### 审计通过后统一 Host 收口（强制）
   - 子代理在【审计通过后必做】中返回 host 所需字段；主 Agent 通过 步骤 4.3/4.2 做完成态检查与补跑；**必须含 `--iteration-count {累计值}`**；stage=implement。若失败，必须自动重试并记录 `resultCode`、失败原因、修复动作；未获得 `closeout approved` 前不得结束。

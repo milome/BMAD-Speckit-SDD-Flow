@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-closure-gate';
-import { validateRequirementRecordSchemaObject } from '../../scripts/requirement-record-live-schema-gate';
+import { mainExecutionClosureGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate';
+import { validateRequirementRecordSchemaObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 

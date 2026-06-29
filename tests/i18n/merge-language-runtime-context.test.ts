@@ -8,7 +8,7 @@ import {
   mergeLanguagePolicyIntoProjectContext,
   projectContextPath,
   writeRuntimeContext,
-} from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('mergeLanguagePolicyIntoProjectContext', () => {
   it('merges languagePolicy when project context file exists', () => {

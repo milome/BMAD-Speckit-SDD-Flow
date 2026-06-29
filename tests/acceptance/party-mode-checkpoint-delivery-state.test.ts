@@ -9,7 +9,7 @@ import {
   recoverBatchProgress,
   startSession,
   writeBatchReceipt,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 function writeCheckpointArtifacts(
   root: string,

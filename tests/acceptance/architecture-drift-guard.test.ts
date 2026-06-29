@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { runArchitectureDriftCheck } from '../../scripts/architecture-drift-check';
+import { runArchitectureDriftCheck } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-drift-check';
 
 const ROOT = process.cwd();
 const ADR_PATH = path.join(

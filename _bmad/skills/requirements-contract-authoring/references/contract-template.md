@@ -417,7 +417,7 @@ Use this when `applicability.runtimeRecovery.applies: true`, `activeRequirementR
 
 ```yaml
   activeRequirementResolution:
-    resolver: scripts/resolve-active-requirement.ts
+    resolver: bmad-speckit main-agent resolve-active-requirement
     explicitArgs:
       - --record-id
       - --requirement-set-id

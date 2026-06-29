@@ -2,16 +2,16 @@ import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync } from
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createStubGovernanceProviderAdapter } from '../../scripts/governance-provider-adapter';
+import { createStubGovernanceProviderAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-provider-adapter';
 import {
   readGovernanceAttemptLoopState,
   runGovernanceRemediation,
-} from '../../scripts/governance-remediation-runner';
-import { writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner';
+import { writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 function createFixtureProject(): {
   root: string;

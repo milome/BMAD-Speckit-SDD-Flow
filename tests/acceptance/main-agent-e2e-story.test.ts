@@ -53,12 +53,12 @@ describe('main-agent story E2E orchestration', () => {
         hydratePacket: true,
       });
       expect(dispatchPlan).toMatchObject({
-        host: 'cursor',
+        host: 'codex',
         nextAction: 'dispatch_implement',
         taskType: 'implement',
         route: {
-          tool: 'mcp_task',
-          subtype: 'generalPurpose',
+          tool: 'codex',
+          subtype: 'worker:implement',
         },
       });
 

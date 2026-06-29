@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { REVIEWER_PROFILES } from '../../scripts/reviewer-contract';
-import { getReviewerRegistration } from '../../scripts/reviewer-registry';
+import { REVIEWER_PROFILES } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract';
+import { getReviewerRegistration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry';
 
 describe('reviewer cross-host parity', () => {
   it('keeps cursor and claude registrations on the same shared core and closeout contract', () => {

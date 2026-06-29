@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ensureFacilitatorRuntimeDefinition } from '../../scripts/facilitator-runtime-definition';
+import { ensureFacilitatorRuntimeDefinition } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-runtime-definition';
 
 const ROOT = process.cwd();
 const TEMP_ROOTS: string[] = [];

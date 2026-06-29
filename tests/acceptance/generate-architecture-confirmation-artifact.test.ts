@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   architectureConfirmationHashFor,
   resolveArchitectureConfirmationHashRecipe,
-} from '../../scripts/architecture-confirmation-hash-recipe';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(

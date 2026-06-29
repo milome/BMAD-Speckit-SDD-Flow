@@ -202,7 +202,11 @@ function buildRecoveryContext(input: {
 
 function resolveScoringPolicyRuleRoot(root: string): string {
   if (fs.existsSync(path.join(root, 'packages', 'scoring', 'rules'))) return root;
-  return path.resolve(__dirname, '..');
+  const sourceAuthorityRoot = path.resolve(__dirname, '..');
+  if (fs.existsSync(path.join(sourceAuthorityRoot, 'packages', 'scoring', 'rules'))) {
+    return sourceAuthorityRoot;
+  }
+  return path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
 }
 
 export function mainWriteRuntimePolicySnapshotAndRecoveryContext(argv: string[]): number {

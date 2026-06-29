@@ -3,10 +3,10 @@
 'use strict';
 
 /**
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceBackgroundTrigger} GovernanceBackgroundTrigger
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceExecutorRoutingProjection} GovernanceExecutorRoutingProjection
- * @typedef {import('../../../scripts/governance-hook-types').GovernanceJourneyContractHintProjection} GovernanceJourneyContractHintProjection
- * @typedef {import('../../../scripts/governance-hook-types').GovernancePostToolUseResult} GovernancePostToolUseResult
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceBackgroundTrigger} GovernanceBackgroundTrigger
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceExecutorRoutingProjection} GovernanceExecutorRoutingProjection
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernanceJourneyContractHintProjection} GovernanceJourneyContractHintProjection
+ * @typedef {import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types').GovernancePostToolUseResult} GovernancePostToolUseResult
  *
  * @typedef {{
  *   type?: string;

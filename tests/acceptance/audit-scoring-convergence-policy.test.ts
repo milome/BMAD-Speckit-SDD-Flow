@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   evaluateAuditScoringConvergence,
   type AuditScoringConvergenceInput,
-} from '../../scripts/audit-scoring-convergence-policy';
-import { resolveExecutionDisciplineProfile } from '../../scripts/execution-discipline-profiles';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy';
+import { resolveExecutionDisciplineProfile } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles';
 
 const policy = resolveExecutionDisciplineProfile('standalone_tasks').auditScoringConvergencePolicy;
 

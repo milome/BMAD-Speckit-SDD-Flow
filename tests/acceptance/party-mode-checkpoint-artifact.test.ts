@@ -7,7 +7,7 @@ import {
   evaluateGate,
   writeCheckpointArtifacts,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode checkpoint artifact', () => {
   it('auto-writes checkpoint JSON/Markdown and marks checkpoint_ready at the batch boundary', () => {

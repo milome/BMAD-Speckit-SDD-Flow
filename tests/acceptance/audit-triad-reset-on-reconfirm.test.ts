@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
-} from '../../scripts/audit-triad-orchestrator';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

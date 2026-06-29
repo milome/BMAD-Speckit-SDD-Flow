@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { listGovernancePacketExecutionRecords } from '../../scripts/governance-packet-execution-store';
-import { processQueue } from '../../scripts/bmad-runtime-worker';
+import { listGovernancePacketExecutionRecords } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
+import { processQueue } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker';
 import {
   createAutonomousFallbackDisabledFixture,
   writePendingGovernanceQueueItem,

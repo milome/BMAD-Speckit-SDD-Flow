@@ -208,8 +208,12 @@ function buildArtifacts(root: string): JsonObject[] {
     artifact({
       artifactType: 'source_implementation',
       sourceOfTruthRole: 'evidence',
-      path: 'scripts/resolve-active-requirement.ts',
-      contentHash: hashFile(root, 'scripts/resolve-active-requirement.ts'),
+      path:
+        'packages/bmad-speckit/src/main-agent/source-authority/bmad-speckit main-agent resolve-active-requirement',
+      contentHash: hashFile(
+        root,
+        'packages/bmad-speckit/src/main-agent/source-authority/bmad-speckit main-agent resolve-active-requirement'
+      ),
       producer: 'codex-execution',
       purpose:
         'active requirement resolver fallback, index repair projection, explicit selector recovery',
@@ -232,8 +236,12 @@ function buildArtifacts(root: string): JsonObject[] {
     artifact({
       artifactType: 'source_implementation',
       sourceOfTruthRole: 'evidence',
-      path: 'scripts/main-agent-implementation-readiness-gate.ts',
-      contentHash: hashFile(root, 'scripts/main-agent-implementation-readiness-gate.ts'),
+      path:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
+      contentHash: hashFile(
+        root,
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts'
+      ),
       producer: 'codex-execution',
       purpose: 'readiness gate writes audit_required activation metadata without scoring write',
       relatedRequirementIds: ['MUST-003', 'MUST-004', 'NEG-003'],
@@ -243,8 +251,12 @@ function buildArtifacts(root: string): JsonObject[] {
     artifact({
       artifactType: 'source_implementation',
       sourceOfTruthRole: 'evidence',
-      path: 'scripts/controlled-readiness-audit-bridge.ts',
-      contentHash: hashFile(root, 'scripts/controlled-readiness-audit-bridge.ts'),
+      path:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts',
+      contentHash: hashFile(
+        root,
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-readiness-audit-bridge.ts'
+      ),
       producer: 'codex-execution',
       purpose:
         'controlled audit/scoring bridge writes implementation_readiness RunScoreRecord with provenance',

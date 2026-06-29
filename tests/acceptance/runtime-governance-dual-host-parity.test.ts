@@ -2,9 +2,9 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
-import { stableStringifyPolicy } from '../../scripts/stable-runtime-policy-json';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
+import { stableStringifyPolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 const repoRoot = process.cwd();

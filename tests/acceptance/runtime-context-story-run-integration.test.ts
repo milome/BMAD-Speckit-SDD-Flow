@@ -8,7 +8,7 @@ import {
   buildRunContext,
   writeRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context story/run integration wiring', () => {
   it('persists registry with story contexts and run contexts in one runtime output tree', () => {

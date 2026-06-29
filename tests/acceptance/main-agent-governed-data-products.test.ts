@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainGovernedDataProducts } from '../../scripts/main-agent-governed-data-products';
+import { mainGovernedDataProducts } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-governed-data-products';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =

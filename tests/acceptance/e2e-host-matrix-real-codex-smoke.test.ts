@@ -3,12 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
-import { runHostMatrixJourneyRunner } from '../../scripts/e2e-host-matrix-journey-runner';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { runHostMatrixJourneyRunner } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-host-matrix-journey-runner';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import {
   buildPassImplementationEntryGate,
   buildSixModelResultsForImplementationReady,

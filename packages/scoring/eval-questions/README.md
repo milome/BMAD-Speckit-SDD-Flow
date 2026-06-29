@@ -20,8 +20,8 @@ Eval 题目管理与 Agent 回答生成。
 ## CLI 入口
 
 ```bash
-npx ts-node scripts/eval-questions-cli.ts
-npx ts-node scripts/eval-question-generate.ts
+npx bmad-speckit eval-questions
+npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts
 ```
 
 ## manifest 格式

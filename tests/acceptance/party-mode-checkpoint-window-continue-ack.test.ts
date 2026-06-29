@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildContinueImmediateAcknowledgement,
   evaluateCheckpointWindowInput,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode checkpoint window continue ack', () => {
   it('returns the canonical acknowledgement for immediate continue', () => {

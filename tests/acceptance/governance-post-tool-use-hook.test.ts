@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { afterEach, describe, expect, it } from 'vitest';
-import { governancePendingQueueFilePath } from '../../scripts/governance-runtime-queue';
-import type { GovernancePostToolUseResult } from '../../scripts/governance-hook-types';
+import { governancePendingQueueFilePath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue';
+import type { GovernancePostToolUseResult } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types';
 import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,

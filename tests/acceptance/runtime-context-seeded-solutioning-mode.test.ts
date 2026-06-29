@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureProjectRuntimeContext } from '../../scripts/runtime-context';
-import { readRuntimeContextRegistry } from '../../scripts/runtime-context-registry';
+import { ensureProjectRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import { readRuntimeContextRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context seeded_solutioning mode', () => {
   it('ensureProjectRuntimeContext defaults to seeded_solutioning without sprint-status', () => {

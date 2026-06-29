@@ -6,7 +6,7 @@ import {
   evaluateCheckpointWindowInput,
   resolveCheckpointWindowTimeout,
   startSession,
-} from '../../scripts/party-mode-runtime';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 
 describe('party-mode checkpoint window input', () => {
   it('rejects S/F/C outside the checkpoint window without caching or business reinterpretation', () => {

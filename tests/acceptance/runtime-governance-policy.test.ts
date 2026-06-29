@@ -11,8 +11,8 @@ import {
   shouldGenerateDoc,
   getAuditConvergence,
   getStageConfig,
-} from '../../scripts/bmad-config';
-import { resolveRuntimePolicy } from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('runtime-governance policy (legacy parity, story/specify)', () => {
   it('specify + flow story: legacy-aligned fields match bmad-config helpers', () => {

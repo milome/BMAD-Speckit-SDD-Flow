@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { startSession } from '../../scripts/party-mode-runtime';
+import { startSession } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/party-mode-runtime';
 import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRegistryAndProjectContext,

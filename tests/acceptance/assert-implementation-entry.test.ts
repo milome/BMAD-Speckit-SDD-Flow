@@ -2,8 +2,8 @@ import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainAssertImplementationEntry } from '../../scripts/assert-implementation-entry';
-import { runAuditorHost } from '../../scripts/run-auditor-host';
+import { mainAssertImplementationEntry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/assert-implementation-entry';
+import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 const repoRoot = process.cwd();

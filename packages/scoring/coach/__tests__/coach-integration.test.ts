@@ -71,7 +71,16 @@ describe('coach integration', () => {
   });
 
   it('is imported by production CLI paths', () => {
-    const coachCliPath = path.resolve(process.cwd(), 'scripts', 'coach-diagnose.ts');
+    const coachCliPath = path.resolve(
+      process.cwd(),
+      'packages',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'scripts',
+      'coach-diagnose.ts'
+    );
     const acceptPath = path.resolve(process.cwd(), 'tests', 'epic-acceptance', 'accept-e4-s2.ts');
     const coachCliSource = fs.readFileSync(coachCliPath, 'utf-8');
     const acceptSource = fs.readFileSync(acceptPath, 'utf-8');

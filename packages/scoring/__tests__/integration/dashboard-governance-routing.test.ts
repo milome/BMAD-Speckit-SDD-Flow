@@ -11,7 +11,16 @@ const FIXTURE_PATH = path.join(
   'data',
   '__fixtures-dashboard-epic-story'
 );
-const SCRIPT_PATH = path.join(process.cwd(), 'scripts', 'dashboard-generate.ts');
+const SCRIPT_PATH = path.join(
+  process.cwd(),
+  'packages',
+  'bmad-speckit',
+  'src',
+  'main-agent',
+  'source-authority',
+  'scripts',
+  'dashboard-generate.ts'
+);
 const GOVERNANCE_CURRENT_RUN = path.join(
   process.cwd(),
   '_bmad-output',

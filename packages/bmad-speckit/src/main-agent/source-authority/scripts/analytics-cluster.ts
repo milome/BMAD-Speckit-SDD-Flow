@@ -1,8 +1,8 @@
 /**
  * Story 5.4 CLI: 能力短板聚类分析
  * 用法：
- *   npx ts-node scripts/analytics-cluster.ts --dataPath scoring/data --minFrequency 2
- *   npx ts-node scripts/analytics-cluster.ts --dataPath scoring/data --output clusters.json
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts --dataPath scoring/data --minFrequency 2
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts --dataPath scoring/data --output clusters.json
  */
 import * as fs from 'fs';
 import * as path from 'path';

@@ -3,8 +3,8 @@ import {
   detectExplicitLanguageInstruction,
   classifyUserMessageLanguage,
   resolveAutoDetectedLanguage,
-} from '../../scripts/i18n/detect-language';
-import { resolveLanguagePolicy } from '../../scripts/i18n/language-policy';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/detect-language';
+import { resolveLanguagePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/language-policy';
 
 describe('language-policy', () => {
   describe('detectExplicitLanguageInstruction', () => {

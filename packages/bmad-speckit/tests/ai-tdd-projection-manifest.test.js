@@ -8,7 +8,7 @@ const {
   REQUIRED_HEADERS,
   parseProjectionCsv,
   loadAiTddProjectionManifests,
-} = require('../src/runtime/ai-tdd/projection-manifest');
+} = require('../dist/runtime/ai-tdd/projection-manifest');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');

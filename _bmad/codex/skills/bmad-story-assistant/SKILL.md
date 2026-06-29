@@ -182,7 +182,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 0. （阶段零-前置）若 _bmad 存在且 party-mode 未做展示名优化，自动执行补丁
 1. 发起 Create Story 子任务（epic_num=4, story_num=1）
 2. 产出 `_bmad-output/implementation-artifacts/epic-4-*/story-1-<slug>/4-1-<slug>.md` 后，发起 Story 文档审计
-3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`node scripts/assert-implementation-entry.ts --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
+3. 审计通过后，**必须先执行统一 Implementation Entry Gate 断言**（`implementation-readiness`；建议命令：`npx --no-install bmad-speckit assert-implementation-entry --cwd {project-root}` 或等价 `bmad-speckit assert-implementation-entry`）。仅当结果为 `decision=pass` 时，方可发起 Dev Story 实施子任务；若结果为 `block` 或 `reroute`，主 Agent 不得进入阶段三
 4. 实施完成后，**必须**发起实施后审计（audit-prompts.md §5）（本步骤为必须，非可选）
 5. 审计通过即流程结束
 

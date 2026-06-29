@@ -7,7 +7,7 @@ import {
   evaluateReverseAuditReadinessGate,
   evaluateTargetArtifactRealization,
   implementationConfirmationHash,
-} from '../../scripts/target-artifact-realization-gate';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate';
 
 const ATTEMPT = 'attempt-target-001';
 
@@ -641,7 +641,7 @@ describe('target artifact realization gate', () => {
         artifactType: 'source-authorized product code target',
         path: productCodePath.replace(/\\/gu, '/'),
         contentHash: sha256File(productCodePath),
-        producer: 'scripts/run-required-commands-from-ai-tdd-manifest.ts',
+        producer: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
         sourceOfTruthRole: 'evidence',
         status: 'active',
         inputVersion: ATTEMPT,

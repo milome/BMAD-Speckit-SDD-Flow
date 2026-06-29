@@ -64,16 +64,16 @@ export function linkRepoNodeModulesIntoProject(projectRoot: string): void {
     fs.symlinkSync(src, dest, 'dir');
   }
 }
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
   type RuntimeContextRegistry,
   type ReviewerLatestCloseoutRecord,
-} from '../../scripts/runtime-context-registry';
-import type { RuntimeFlowId } from '../../scripts/runtime-governance';
-import type { StageName } from '../../scripts/bmad-config';
-import type { ImplementationEntryGate } from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import type { RuntimeFlowId } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
+import type { StageName } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import type { ImplementationEntryGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 export interface MinimalRegistryOpts {
   flow?: RuntimeFlowId;

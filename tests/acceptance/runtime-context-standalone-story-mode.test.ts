@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureProjectRuntimeContext } from '../../scripts/runtime-context';
+import { ensureProjectRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context standalone_story mode', () => {
   it('detectRuntimeSourceMode resolves standalone_story when hasStoryOnly hint', () => {

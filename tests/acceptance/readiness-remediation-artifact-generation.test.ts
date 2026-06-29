@@ -162,7 +162,7 @@ function runReadinessRemediationRunnerCli(
     '--project',
     'tsconfig.node.json',
     '--transpile-only',
-    'scripts/governance-remediation-runner.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts',
     '--projectRoot',
     shellQuote(projectRoot),
     '--configPath',

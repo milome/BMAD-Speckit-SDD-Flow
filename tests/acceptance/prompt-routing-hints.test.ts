@@ -3,7 +3,7 @@ import {
   detectPromptRoutingHints,
   loadPromptRoutingRules,
   resolvePromptRoutingHintsFromText,
-} from '../../scripts/prompt-routing-hints';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-hints';
 
 const repoRoot = process.cwd();
 

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { REVIEWER_COMPATIBILITY_GUARDS } from '../../scripts/reviewer-contract';
+import { REVIEWER_COMPATIBILITY_GUARDS } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract';
 import {
   buildReviewerContractProjection,
   buildReviewerRouteExplainability,
-} from '../../scripts/reviewer-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry';
 
 describe('reviewer codex parity guard', () => {
   it('exposes codex as a real reviewer host instead of a no-op compatibility guard', () => {

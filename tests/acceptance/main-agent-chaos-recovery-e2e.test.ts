@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { runChaosScenarios } from '../../scripts/main-agent-chaos-scenarios';
+import { runChaosScenarios } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-chaos-scenarios';
 import { describe, expect, it } from 'vitest';
 
 describe('main-agent chaos recovery e2e', () => {

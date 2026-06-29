@@ -1,6 +1,6 @@
 /**
  * CLI: print resolved audit prompt path (JSON) for a references dir + stem template.
- * Usage: npx ts-node --transpile-only scripts/i18n/print-resolved-audit-prompt.ts <refsDir> <templateBasename> [projectRoot]
+ * Usage: npx ts-node --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/print-resolved-audit-prompt.ts <refsDir> <templateBasename> [projectRoot]
  * Locale: `_bmad-output/runtime/context/project.json` → languagePolicy.resolvedMode (not env). See AUDIT_PROMPTS_STRATEGY.md.
  */
 import * as fs from 'fs';

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { RecommendationPacket } from '../../scripts/orchestration-dispatch-contract';
+import type { RecommendationPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
   claimPendingPacket,
   completePendingPacket,
@@ -15,7 +15,7 @@ import {
   readOrchestrationState,
   resetGatesLoopProgress,
   writeOrchestrationState,
-} from '../../scripts/orchestration-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 
 describe('orchestration state contract', () => {
   it('writes and reads orchestration state for one interactive session', () => {

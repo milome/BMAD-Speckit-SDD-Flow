@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildGovernanceRemediationArtifact,
   writeGovernanceRemediationArtifact,
-} from '../../scripts/governance-remediation-artifact';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact';
 
 const repoRoot = process.cwd();
 

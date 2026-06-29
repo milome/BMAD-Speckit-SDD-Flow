@@ -218,8 +218,8 @@ describe('auditor host runner wiring in higher-level entry surfaces', () => {
     expect(flowMetrics).toContain('post-audit artifact');
     expect(runtimeContext).toContain('registry + activeScope + scoped context file');
     expect(runtimeContext).toContain('.speckit-state.yaml');
-    expect(sourceCode).toContain('scripts/run-auditor-host.ts');
-    expect(sourceCode).toContain('scripts/auditor-post-actions.ts');
+    expect(sourceCode).toContain('bmad-speckit run-auditor-host');
+    expect(sourceCode).toContain('packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-post-actions.ts');
     expect(speckitCli).toContain('底层 scoring CLI');
   });
 

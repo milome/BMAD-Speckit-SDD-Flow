@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { runSprintStatusAuthorizedUpdate } from '../../scripts/sprint-status-authorized-update';
+import { runSprintStatusAuthorizedUpdate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/sprint-status-authorized-update';
 
 function writeContract(root: string): string {
   const contractPath = path.join(

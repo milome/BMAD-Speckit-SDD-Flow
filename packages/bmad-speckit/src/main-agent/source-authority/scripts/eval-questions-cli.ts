@@ -5,7 +5,7 @@
  *
  * CLI 参数：list [--version v1|v2]; add --title "xxx" [--version]; run --id q001 --version v1 [--reportPath] [--no-agent]
  *
- * 示例：npx ts-node scripts/eval-questions-cli.ts run --id q001 --version v1
+ * 示例：npx bmad-speckit eval-questions run --id q001 --version v1
  *
  * 退出码：0=成功，1=参数错误
  */
@@ -80,7 +80,7 @@ function cmdAdd(title: string, version: string): void {
   if (!title || !String(title).trim()) {
     console.error('Error: --title 必填');
     console.error(
-      'Usage: npx ts-node scripts/eval-questions-cli.ts add --title "题目标题" [--version v1|v2]'
+      'Usage: npx bmad-speckit eval-questions add --title "题目标题" [--version v1|v2]'
     );
     process.exit(1);
   }
@@ -223,7 +223,7 @@ async function cmdRun(
 
 function printRunUsage(): void {
   console.error(
-    'Usage: npx ts-node scripts/eval-questions-cli.ts run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]'
+    'Usage: npx bmad-speckit eval-questions run --id <questionId> --version v1|v2 [--reportPath <path>] [--no-agent]'
   );
   console.error(
     '  --no-agent: 不调用 Agent，直接解析题目文件（默认：先 Agent 作答再 parseAndWriteScore）'
@@ -237,12 +237,12 @@ async function main(): Promise<void> {
 
   if (!subcommand || (subcommand !== 'list' && subcommand !== 'add' && subcommand !== 'run')) {
     console.error('Usage:');
-    console.error('  npx ts-node scripts/eval-questions-cli.ts list [--version v1|v2]');
+    console.error('  npx bmad-speckit eval-questions list [--version v1|v2]');
     console.error(
-      '  npx ts-node scripts/eval-questions-cli.ts add --title "xxx" [--version v1|v2]'
+      '  npx bmad-speckit eval-questions add --title "xxx" [--version v1|v2]'
     );
     console.error(
-      '  npx ts-node scripts/eval-questions-cli.ts run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]'
+      '  npx bmad-speckit eval-questions run --id <id> --version v1|v2 [--reportPath <path>] [--no-agent]'
     );
     process.exit(1);
   }

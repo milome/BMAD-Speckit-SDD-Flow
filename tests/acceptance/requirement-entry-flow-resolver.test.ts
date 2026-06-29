@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveImplementationEntryGate,
   type ImplementationEntryEvidenceSources,
-} from '../../scripts/runtime-governance';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 import './main-agent-entryflow-traceability-check.test';
 
 const EVIDENCE_SOURCES: ImplementationEntryEvidenceSources = {

@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { CompiledPromptRef } from '../../scripts/orchestration-dispatch-contract';
+import type { CompiledPromptRef } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import { resolveNativeGoalCommand } from '../../packages/bmad-speckit/src/main-agent/actions/native-goal-command';
 
 const roots: string[] = [];

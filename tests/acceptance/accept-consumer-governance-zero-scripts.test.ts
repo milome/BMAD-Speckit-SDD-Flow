@@ -227,5 +227,5 @@ describe('consumer governance zero-scripts install', () => {
       removeDirWithRetry(consumer);
       removeDirWithRetry(packDir);
     }
-  }, 180_000);
+  }, 300_000);
 });

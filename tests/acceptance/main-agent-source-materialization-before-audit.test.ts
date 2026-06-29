@@ -197,7 +197,7 @@ function writeSourceWithConfirmation(
       '      command: "npx vitest run tests/acceptance/main-agent-source-materialization-before-audit.test.ts"',
       '      purpose: "Validate source materialization gate."',
       '      expected: "Tests pass."',
-      '      targetFiles: ["scripts/main-agent-orchestration.ts"]',
+      '      targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"]',
       '      traceRows: ["TRACE-001"]',
       '      evidenceRefs: ["EVD-001"]',
       '  currentTargetMap:',

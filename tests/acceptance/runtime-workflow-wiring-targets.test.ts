@@ -15,7 +15,16 @@ describe('runtime workflow wiring targets', () => {
       'utf8'
     );
     const registryScript = readFileSync(
-      path.join(root, 'scripts', 'runtime-context-registry.ts'),
+      path.join(
+        root,
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'runtime-context-registry.ts'
+      ),
       'utf8'
     );
 

@@ -6,12 +6,12 @@ import {
   createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
   type AuditTriadRoundReceipt,
-} from '../../scripts/audit-triad-orchestrator';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
   resolveCriticalAuditorProfile,
   stageProfileForCallPoint,
   validateCriticalAuditorProfileForStage,
-} from '../../scripts/critical-auditor-profile';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/critical-auditor-profile';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,

@@ -1,0 +1,741 @@
+{
+  "status": "pass",
+  "mode": "apply",
+  "rootTsRefKinds": 141,
+  "topRefs": [
+    {
+      "path": "scripts/run-auditor-host.ts",
+      "count": 173
+    },
+    {
+      "path": "scripts/main-agent-orchestration.ts",
+      "count": 91
+    },
+    {
+      "path": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "count": 85
+    },
+    {
+      "path": "scripts/party-mode-gate-check.ts",
+      "count": 73
+    },
+    {
+      "path": "scripts/emit-runtime-policy.ts",
+      "count": 54
+    },
+    {
+      "path": "scripts/bmad-config.ts",
+      "count": 44
+    },
+    {
+      "path": "scripts/ai-tdd-contract-gate.ts",
+      "count": 41
+    },
+    {
+      "path": "scripts/governance-remediation-runner.ts",
+      "count": 38
+    },
+    {
+      "path": "scripts/parse-and-write-score.ts",
+      "count": 38
+    },
+    {
+      "path": "scripts/runtime-context.ts",
+      "count": 30
+    },
+    {
+      "path": "scripts/sft-extract.ts",
+      "count": 29
+    },
+    {
+      "path": "scripts/coach-diagnose.ts",
+      "count": 27
+    },
+    {
+      "path": "scripts/runtime-governance.ts",
+      "count": 24
+    },
+    {
+      "path": "scripts/resolve-active-requirement.ts",
+      "count": 23
+    },
+    {
+      "path": "scripts/main-agent-codex-worker-adapter.ts",
+      "count": 23
+    },
+    {
+      "path": "scripts/reviewer-registry.ts",
+      "count": 21
+    },
+    {
+      "path": "scripts/governance-remediation-config.ts",
+      "count": 21
+    },
+    {
+      "path": "scripts/eval-questions-cli.ts",
+      "count": 21
+    },
+    {
+      "path": "scripts/main-agent-implementation-readiness-gate.ts",
+      "count": 18
+    },
+    {
+      "path": "scripts/prompt-routing-hints.ts",
+      "count": 18
+    },
+    {
+      "path": "scripts/orchestration-dispatch-contract.ts",
+      "count": 17
+    },
+    {
+      "path": "scripts/reviewer-schema.ts",
+      "count": 15
+    },
+    {
+      "path": "scripts/ingest-implementation-evidence.ts",
+      "count": 15
+    },
+    {
+      "path": "scripts/requirement-record-control-store.ts",
+      "count": 15
+    },
+    {
+      "path": "scripts/main-agent-quality-gate.ts",
+      "count": 13
+    },
+    {
+      "path": "scripts/governance-packet-execution-store.ts",
+      "count": 13
+    },
+    {
+      "path": "scripts/assert-implementation-entry.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/adaptive-intake-governance-gate.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/governance-remediation-artifact.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/orchestration-state.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/runtime-governance-template-schema.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/runtime-context-registry.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/audit-scoring-convergence-policy.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/dashboard-generate.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/main-agent-delivery-closeout-gate.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/reviewer-rollout-gate.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/runtime-governance-registry.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/i18n/party-mode-runtime-assets.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/reviewer-contract.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/reviewer-shared-core.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/parse-bmad-audit-result.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/main-agent-release-gate.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/bmad-help-routing-state.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/controlled-readiness-audit-bridge.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/subagent-evidence-envelope.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/governance-execution-result-ingestor.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/governance-packet-reconciler.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/execution-intent-schema.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/model-governance-hints-schema.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/prompt-routing-hints-schema.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/main-agent-unified-ingress.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/governance-packet-dispatch-worker.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/orchestration-governance-contract.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/user-story-mapping.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/audit-triad-orchestrator.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/execution-strategy-selection.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/i18n/agent-display-names.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/long-run-runtime-policy.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/main-agent-compiled-prompt-runner.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/analytics-sft-extract.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/governance-host-dispatch-adapter.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/strict-closeout-proof-gate.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/i18n/render-audit-block-cli.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/facilitator-runtime-definition.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/i18n/resolve-for-session-cli.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/i18n/render-template.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/main-agent-chaos-scenarios.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/main-agent-delivery-truth-gate.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/governance-provider-adapter.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/model-governance-hint-resolver.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/model-governance-policy-filter.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/prompt-routing-governance.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/controlled-ingest-atomic-committer.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/requirement-record-event-reducer.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/requirement-record-schema-evolution.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/i18n/load-manifest.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/governance-runtime-queue.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "count": 5
+    }
+  ],
+  "changedFiles": [
+    "_bmad/bmm/workflows/3-solutioning/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    "_bmad/bmm/workflows/3-solutioning/check-implementation-readiness/steps/step-06-final-assessment.md",
+    "_bmad/claude/agents/auditors/requirements-contract-critical-auditor.md",
+    "_bmad/claude/agents/bmad-master.md",
+    "_bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md",
+    "_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md",
+    "_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md",
+    "_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md",
+    "_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md",
+    "_bmad/claude/rules/bmad-story-assistant.md",
+    "_bmad/claude/skills/bmad-bug-assistant/SKILL.en.md",
+    "_bmad/claude/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "_bmad/claude/skills/speckit-workflow/references/audit-prompts.en.md",
+    "_bmad/claude/skills/speckit-workflow/references/audit-prompts.md",
+    "_bmad/claude/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "_bmad/claude/skills/speckit-workflow/SKILL.en.md",
+    "_bmad/claude/skills/speckit-workflow/SKILL.md",
+    "_bmad/claude/skills/speckit-workflow/SKILL.zh.md",
+    "_bmad/codex/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    "_bmad/codex/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    "_bmad/codex/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    "_bmad/codex/skills/bmad-story-assistant/SKILL.md",
+    "_bmad/codex/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "_bmad/codex/skills/speckit-workflow/references/audit-prompts.en.md",
+    "_bmad/codex/skills/speckit-workflow/references/audit-prompts.md",
+    "_bmad/codex/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "_bmad/codex/skills/speckit-workflow/SKILL.en.md",
+    "_bmad/codex/skills/speckit-workflow/SKILL.md",
+    "_bmad/codex/skills/speckit-workflow/SKILL.zh.md",
+    "_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    "_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    "_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.en.md",
+    "_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md",
+    "_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "_bmad/cursor/skills/bmad-bug-assistant/SKILL.en.md",
+    "_bmad/cursor/skills/bmad-bug-assistant/SKILL.md",
+    "_bmad/cursor/skills/bmad-bug-assistant/SKILL.zh.md",
+    "_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    "_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    "_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    "_bmad/cursor/skills/bmad-story-assistant/SKILL.en.md",
+    "_bmad/cursor/skills/bmad-story-assistant/SKILL.md",
+    "_bmad/cursor/skills/bmad-story-assistant/SKILL.zh.md",
+    "_bmad/cursor/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "_bmad/cursor/skills/speckit-workflow/references/audit-prompts.en.md",
+    "_bmad/cursor/skills/speckit-workflow/references/audit-prompts.md",
+    "_bmad/cursor/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "_bmad/cursor/skills/speckit-workflow/SKILL.en.md",
+    "_bmad/cursor/skills/speckit-workflow/SKILL.md",
+    "_bmad/cursor/skills/speckit-workflow/SKILL.zh.md",
+    "_bmad/shared/contract-execution-manifest/README.md",
+    "_bmad/shared/critical-auditor-profile/critical-auditor-profile.json",
+    "_bmad/shared/critical-auditor-profile/requirements-contract-critical-auditor-profile.json",
+    "_bmad/skills/bmad-eval-analytics/SKILL.en.md",
+    "_bmad/skills/bmad-eval-analytics/SKILL.md",
+    "_bmad/skills/bmad-eval-analytics/SKILL.zh.md",
+    "_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    "_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    "_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "_bmad/skills/main-agent-runtime-migration/SKILL.md",
+    "_bmad/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/README.md",
+    "_bmad/skills/requirements-contract-authoring/references/contract-template.md",
+    "_bmad/skills/requirements-contract-authoring/SKILL.md",
+    "_bmad/_config/AUDIT_PROMPTS_STRATEGY.md",
+    "_bmad/_config/bmads-runtime.yaml",
+    "_bmad/_config/code-reviewer-config.yaml",
+    "_bmad/_config/hooks-owner-model-registry.yaml",
+    "_bmad/_config/main-agent-quality-gate.thresholds.json",
+    "_bmad/_config/runtime-granularity-stages.yaml",
+    "_bmad/_config/runtime-mandatory-gates.yaml",
+    "_bmad/_config/script-owner-model-registry.yaml",
+    ".codex/shared/contract-execution-manifest/README.md",
+    ".codex/shared/critical-auditor-profile/critical-auditor-profile.json",
+    ".codex/shared/critical-auditor-profile/requirements-contract-critical-auditor-profile.json",
+    ".codex/skills/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    ".codex/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    ".codex/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    ".codex/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    ".codex/skills/bmad-eval-analytics/SKILL.en.md",
+    ".codex/skills/bmad-eval-analytics/SKILL.md",
+    ".codex/skills/bmad-eval-analytics/SKILL.zh.md",
+    ".codex/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    ".codex/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    ".codex/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    ".codex/skills/main-agent-runtime-migration/SKILL.md",
+    ".codex/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/README.md",
+    ".codex/skills/requirements-contract-authoring/references/contract-template.md",
+    ".codex/skills/requirements-contract-authoring/SKILL.md",
+    ".codex/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    ".codex/skills/speckit-workflow/references/audit-prompts.en.md",
+    ".codex/skills/speckit-workflow/references/audit-prompts.md",
+    ".codex/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    ".codex/skills/speckit-workflow/SKILL.en.md",
+    ".codex/skills/speckit-workflow/SKILL.md",
+    ".codex/skills/speckit-workflow/SKILL.zh.md",
+    ".claude/agents/auditors/requirements-contract-critical-auditor.md",
+    ".claude/agents/bmad-master.md",
+    ".claude/agents/layers/bmad-layer4-speckit-gaps.md",
+    ".claude/agents/layers/bmad-layer4-speckit-implement.md",
+    ".claude/agents/layers/bmad-layer4-speckit-plan.md",
+    ".claude/agents/layers/bmad-layer4-speckit-specify.md",
+    ".claude/agents/layers/bmad-layer4-speckit-tasks.md",
+    ".claude/hooks/emit-runtime-policy.cjs",
+    ".claude/hooks/render-audit-block.cjs",
+    ".claude/hooks/resolve-for-session.cjs",
+    ".claude/rules/bmad-story-assistant.md",
+    ".claude/skills/bmad-bug-assistant/SKILL.en.md",
+    ".claude/skills/bmad-bug-assistant/SKILL.md",
+    ".claude/skills/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    ".claude/skills/bmad-eval-analytics/SKILL.en.md",
+    ".claude/skills/bmad-eval-analytics/SKILL.md",
+    ".claude/skills/bmad-eval-analytics/SKILL.zh.md",
+    ".claude/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    ".claude/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    ".claude/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    ".claude/skills/main-agent-runtime-migration/SKILL.md",
+    ".claude/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/README.md",
+    ".claude/skills/requirements-contract-authoring/references/contract-template.md",
+    ".claude/skills/requirements-contract-authoring/SKILL.md",
+    ".claude/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    ".claude/skills/speckit-workflow/references/audit-prompts.en.md",
+    ".claude/skills/speckit-workflow/references/audit-prompts.md",
+    ".claude/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    ".claude/skills/speckit-workflow/SKILL.en.md",
+    ".claude/skills/speckit-workflow/SKILL.md",
+    ".claude/skills/speckit-workflow/SKILL.zh.md",
+    ".cursor/agents/code-reviewer-config.yaml",
+    ".cursor/hooks/emit-runtime-policy.cjs",
+    ".cursor/hooks/render-audit-block.cjs",
+    ".cursor/hooks/resolve-for-session.cjs",
+    ".cursor/shared/contract-execution-manifest/README.md",
+    ".cursor/shared/critical-auditor-profile/critical-auditor-profile.json",
+    ".cursor/shared/critical-auditor-profile/requirements-contract-critical-auditor-profile.json",
+    ".cursor/skills/bmad-bug-assistant/SKILL.en.md",
+    ".cursor/skills/bmad-bug-assistant/SKILL.md",
+    ".cursor/skills/bmad-bug-assistant/SKILL.zh.md",
+    ".cursor/skills/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    ".cursor/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    ".cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    ".cursor/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    ".cursor/skills/bmad-eval-analytics/SKILL.en.md",
+    ".cursor/skills/bmad-eval-analytics/SKILL.md",
+    ".cursor/skills/bmad-eval-analytics/SKILL.zh.md",
+    ".cursor/skills/bmad-story-assistant/SKILL.en.md",
+    ".cursor/skills/bmad-story-assistant/SKILL.md",
+    ".cursor/skills/bmad-story-assistant/SKILL.zh.md",
+    ".cursor/skills/main-agent-runtime-migration/SKILL.md",
+    ".cursor/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/README.md",
+    ".cursor/skills/requirements-contract-authoring/references/contract-template.md",
+    ".cursor/skills/requirements-contract-authoring/SKILL.md",
+    ".cursor/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    ".cursor/skills/speckit-workflow/references/audit-prompts.en.md",
+    ".cursor/skills/speckit-workflow/references/audit-prompts.md",
+    ".cursor/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    ".cursor/skills/speckit-workflow/SKILL.en.md",
+    ".cursor/skills/speckit-workflow/SKILL.md",
+    ".cursor/skills/speckit-workflow/SKILL.zh.md",
+    "tests/acceptance/accept-claude-runtime-isolation.test.ts",
+    "tests/acceptance/accept-cursor-regression-gate.test.ts",
+    "tests/acceptance/accept-layer4-e2e.test.ts",
+    "tests/acceptance/accept-pack-bmad-speckit.test.ts",
+    "tests/acceptance/accept-runtime.test.ts",
+    "tests/acceptance/accept-score-channel-isolation.test.ts",
+    "tests/acceptance/ai-tdd-contract-gate.test.ts",
+    "tests/acceptance/architecture-confirmation-ingest.test.ts",
+    "tests/acceptance/auditor-host-wiring-skill-contract.test.ts",
+    "tests/acceptance/bmad-config.test.ts",
+    "tests/acceptance/bmad-help-renderer.test.ts",
+    "tests/acceptance/e2e-host-matrix-journey-runner.test.ts",
+    "tests/acceptance/fresh-regression-matrix.test.ts",
+    "tests/acceptance/governance-remediation-runner.test.ts",
+    "tests/acceptance/implementation-evidence-ingest.test.ts",
+    "tests/acceptance/main-agent-ai-tdd-closeout-remediation-adapter.test.ts",
+    "tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts",
+    "tests/acceptance/main-agent-delivery-closeout-gate-record.test.ts",
+    "tests/acceptance/main-agent-dist-consumer-runtime.test.ts",
+    "tests/acceptance/main-agent-execution-audit-ledger.test.ts",
+    "tests/acceptance/main-agent-implementation-readiness-gate-record.test.ts",
+    "tests/acceptance/main-agent-native-goal-closeout-gate.test.ts",
+    "tests/acceptance/main-agent-native-goal-rerun-loop.test.ts",
+    "tests/acceptance/main-agent-orchestration-consumer.test.ts",
+    "tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts",
+    "tests/acceptance/main-agent-quality-gate-thresholds.test.ts",
+    "tests/acceptance/main-agent-release-gate-contract.test.ts",
+    "tests/acceptance/main-agent-runtime-policy-snapshot-check.test.ts",
+    "tests/acceptance/main-agent-scoring-gates-check.test.ts",
+    "tests/acceptance/main-agent-source-materialization-before-audit.test.ts",
+    "tests/acceptance/pre-rerun-anti-false-positive-gate.test.ts",
+    "tests/acceptance/readiness-remediation-artifact-generation.test.ts",
+    "tests/acceptance/readiness-remediation-artifact-wiring.test.ts",
+    "tests/acceptance/render-requirements-confirmation-html.test.ts",
+    "tests/acceptance/requirement-record-control-store-enforcement.test.ts",
+    "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts",
+    "tests/acceptance/requirements-contract-checkpoint-automation.test.ts",
+    "tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts",
+    "tests/acceptance/requirements-contract-consumer-target-authority.test.ts",
+    "tests/acceptance/requirements-contract-hook-bundle-source-authority.test.ts",
+    "tests/acceptance/requirements-contract-source-mutation-gate.test.ts",
+    "tests/acceptance/resolve-active-requirement.test.ts",
+    "tests/acceptance/run-required-commands-from-ai-tdd-manifest.test.ts",
+    "tests/acceptance/six-mental-model-decision-matrix.test.ts",
+    "tests/acceptance/speckit-cli-implement-ralph.test.ts",
+    "tests/acceptance/speckit-workflow-live-smoke-contract.test.ts",
+    "tests/acceptance/subagent-current-attempt-revalidation.test.ts",
+    "tests/acceptance/subagent-evidence-envelope.test.ts",
+    "tests/acceptance/subagent-surface-inventory.test.ts",
+    "tests/acceptance/target-artifact-realization-gate.test.ts",
+    "tests/acceptance/validate-consumer-governance-script.test.ts",
+    "tests/fixtures/requirements/REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING/trace-execution/implement-1780118139102/model_packet.json",
+    "tests/fixtures/requirements/REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER/source.requirement.md",
+    "tests/fixtures/requirements/REQ-CHECKPOINT-AUTOMATION/source.requirement.md",
+    "packages/bmad-speckit/.cursor/agents/code-reviewer-config.yaml",
+    "packages/bmad-speckit/.cursor/commands/bmad-eval-questions.md",
+    "packages/bmad-speckit/.cursor/hooks/emit-runtime-policy.cjs",
+    "packages/bmad-speckit/.cursor/hooks/governance-execution-result-ingestor.cjs",
+    "packages/bmad-speckit/.cursor/hooks/governance-packet-dispatch-worker.cjs",
+    "packages/bmad-speckit/.cursor/hooks/governance-packet-reconciler.cjs",
+    "packages/bmad-speckit/.cursor/hooks/governance-remediation-runner.cjs",
+    "packages/bmad-speckit/.cursor/hooks/governance-runtime-worker.cjs",
+    "packages/bmad-speckit/.cursor/hooks/render-audit-block.cjs",
+    "packages/bmad-speckit/.cursor/hooks/resolve-for-session.cjs",
+    "packages/bmad-speckit/.cursor/skills/bmad-bug-assistant/SKILL.en.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-bug-assistant/SKILL.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-bug-assistant/SKILL.zh.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-eval-analytics/SKILL.en.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-eval-analytics/SKILL.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-eval-analytics/SKILL.zh.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-story-assistant/SKILL.en.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-story-assistant/SKILL.md",
+    "packages/bmad-speckit/.cursor/skills/bmad-story-assistant/SKILL.zh.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/references/audit-prompts.en.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/references/audit-prompts.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/SKILL.en.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/SKILL.md",
+    "packages/bmad-speckit/.cursor/skills/speckit-workflow/SKILL.zh.md",
+    "packages/bmad-speckit/src/commands/check-score.ts",
+    "packages/bmad-speckit/src/commands/coach.ts",
+    "packages/bmad-speckit/src/commands/dashboard.ts",
+    "packages/bmad-speckit/src/commands/score.ts",
+    "packages/bmad-speckit/src/commands/scores.ts",
+    "packages/bmad-speckit/src/commands/sft-extract.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/packages/bmad-speckit/src/commands/score.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-cluster.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/auditor-spec.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/check-story-score-written.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/coach-diagnose.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/eval-question-generate.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/final-closeout-evidence-runner.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/print-resolved-audit-prompt.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/parse-and-write-score.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/README.md",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/README.md.source.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-final-required-commands.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/sft-extract.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-040-evidence-packet-generator.ts",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/validate-consumer-governance.ps1",
+    "packages/bmad-speckit/src/main-agent/source-authority/scripts/write-runtime-policy-snapshot-and-recovery-context.cjs",
+    "packages/bmad-speckit/_bmad/bmm/workflows/3-solutioning/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    "packages/bmad-speckit/_bmad/bmm/workflows/3-solutioning/check-implementation-readiness/steps/step-06-final-assessment.md",
+    "packages/bmad-speckit/_bmad/claude/agents/auditors/requirements-contract-critical-auditor.md",
+    "packages/bmad-speckit/_bmad/claude/agents/bmad-master.md",
+    "packages/bmad-speckit/_bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md",
+    "packages/bmad-speckit/_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md",
+    "packages/bmad-speckit/_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md",
+    "packages/bmad-speckit/_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md",
+    "packages/bmad-speckit/_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md",
+    "packages/bmad-speckit/_bmad/claude/rules/bmad-story-assistant.md",
+    "packages/bmad-speckit/_bmad/claude/skills/bmad-bug-assistant/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/references/audit-prompts.en.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/references/audit-prompts.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/SKILL.md",
+    "packages/bmad-speckit/_bmad/claude/skills/speckit-workflow/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/codex/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/codex/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    "packages/bmad-speckit/_bmad/codex/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/codex/skills/bmad-story-assistant/SKILL.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/references/audit-prompts.en.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/references/audit-prompts.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/SKILL.md",
+    "packages/bmad-speckit/_bmad/codex/skills/speckit-workflow/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    "packages/bmad-speckit/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    "packages/bmad-speckit/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "packages/bmad-speckit/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.en.md",
+    "packages/bmad-speckit/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md",
+    "packages/bmad-speckit/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-bug-assistant/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-bug-assistant/SKILL.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-bug-assistant/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-story-assistant/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-story-assistant/SKILL.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/bmad-story-assistant/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/references/audit-prompts.en.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/references/audit-prompts.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/SKILL.md",
+    "packages/bmad-speckit/_bmad/cursor/skills/speckit-workflow/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/shared/contract-execution-manifest/README.md",
+    "packages/bmad-speckit/_bmad/shared/critical-auditor-profile/critical-auditor-profile.json",
+    "packages/bmad-speckit/_bmad/shared/critical-auditor-profile/requirements-contract-critical-auditor-profile.json",
+    "packages/bmad-speckit/_bmad/skills/bmad-eval-analytics/SKILL.en.md",
+    "packages/bmad-speckit/_bmad/skills/bmad-eval-analytics/SKILL.md",
+    "packages/bmad-speckit/_bmad/skills/bmad-eval-analytics/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    "packages/bmad-speckit/_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    "packages/bmad-speckit/_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "packages/bmad-speckit/_bmad/skills/main-agent-runtime-migration/SKILL.md",
+    "packages/bmad-speckit/_bmad/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/README.md",
+    "packages/bmad-speckit/_bmad/skills/requirements-contract-authoring/references/contract-template.md",
+    "packages/bmad-speckit/_bmad/skills/requirements-contract-authoring/SKILL.md",
+    "packages/bmad-speckit/_bmad/_config/AUDIT_PROMPTS_STRATEGY.md",
+    "packages/bmad-speckit/_bmad/_config/bmads-runtime.yaml",
+    "packages/bmad-speckit/_bmad/_config/code-reviewer-config.yaml",
+    "packages/bmad-speckit/_bmad/_config/hooks-owner-model-registry.yaml",
+    "packages/bmad-speckit/_bmad/_config/main-agent-quality-gate.thresholds.json",
+    "packages/bmad-speckit/_bmad/_config/runtime-granularity-stages.yaml",
+    "packages/bmad-speckit/_bmad/_config/runtime-mandatory-gates.yaml",
+    "packages/bmad-speckit/_bmad/_config/script-owner-model-registry.yaml",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/bmm/workflows/3-solutioning/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/bmm/workflows/3-solutioning/check-implementation-readiness/steps/step-06-final-assessment.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/agents/bmad-master.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/agents/layers/bmad-layer4-speckit-gaps.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/agents/layers/bmad-layer4-speckit-implement.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/agents/layers/bmad-layer4-speckit-plan.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/agents/layers/bmad-layer4-speckit-specify.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/agents/layers/bmad-layer4-speckit-tasks.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/hooks/emit-runtime-policy-cli.cjs",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/rules/bmad-story-assistant.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/bmad-bug-assistant/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/references/audit-prompts.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/references/audit-prompts.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/SKILL.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/claude/skills/speckit-workflow/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/commands/bmad-eval-questions.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/core/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/core/workflows/party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/hooks/emit-runtime-policy-cli.cjs",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/hooks/README.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-bug-assistant/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-bug-assistant/SKILL.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-bug-assistant/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-code-reviewer-lifecycle/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-story-assistant/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-story-assistant/SKILL.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/bmad-story-assistant/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/references/audit-doc-comment-checklist.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/references/audit-prompts.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/references/audit-prompts.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/references/doc-comment-standards-by-language.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/SKILL.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/cursor/skills/speckit-workflow/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/skills/bmad-eval-analytics/SKILL.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/skills/bmad-eval-analytics/SKILL.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/skills/bmad-eval-analytics/SKILL.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.en.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/skills/bmad-party-mode/steps/step-02-discussion-orchestration.zh.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/_config/AUDIT_PROMPTS_STRATEGY.md",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/_config/code-reviewer-config.yaml",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/_config/runtime-granularity-stages.yaml",
+    "packages/bmad-speckit/_bmad-output/install-state/238959ff-45a0-4402-8b33-285ab46c0468/surface/_bmad/_config/runtime-mandatory-gates.yaml",
+    "packages/runtime-emit/build.js",
+    "packages/scoring/docs/RUN_ID_CONVENTION.md",
+    "packages/scoring/eval-questions/README.md",
+    "packages/scoring/orchestrator/README.md",
+    "packages/scoring/__tests__/integration/dashboard-epic-aggregate.test.ts",
+    "packages/scoring/__tests__/integration/dashboard-runtime-snapshot.test.ts"
+  ],
+  "changedFileCount": 411
+}

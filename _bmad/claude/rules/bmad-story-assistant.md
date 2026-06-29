@@ -189,7 +189,7 @@ subagent_type: general-purpose
 test -f _bmad/_config/bmad-story-config.yaml && echo "PASS: config exists"
 
 # 验证配置加载脚本存在
-test -f scripts/bmad-config.ts && echo "PASS: bmad-config.ts exists"
+test -f packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config.ts && echo "PASS: bmad-config.ts exists"
 ```
 
 #### 行为矩阵验证

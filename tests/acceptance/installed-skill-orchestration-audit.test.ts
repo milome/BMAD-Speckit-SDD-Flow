@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   auditInstalledSkillOrchestration,
   type SkillOrchestrationAuditEntry,
-} from '../../scripts/skill-orchestration-audit';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/skill-orchestration-audit';
 
 function bySkillId(
   entries: SkillOrchestrationAuditEntry[],

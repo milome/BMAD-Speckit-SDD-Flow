@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { REVIEWER_PROFILES } from '../../scripts/reviewer-contract';
+import { REVIEWER_PROFILES } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-contract';
 import {
   REVIEWER_REGISTRY_VERSION,
   REVIEWER_SHARED_CORE_VERSION,
@@ -7,7 +7,7 @@ import {
   getReviewerRegistration,
   isReviewerAuditEntryStage,
   listReviewerRegistrations,
-} from '../../scripts/reviewer-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry';
 
 describe('reviewer registry contract', () => {
   it('registers every frozen reviewer profile with host routes and host closeout binding', () => {

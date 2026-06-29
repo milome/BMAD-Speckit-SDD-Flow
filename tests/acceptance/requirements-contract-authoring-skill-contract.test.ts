@@ -543,10 +543,10 @@ describe('requirements-contract-authoring published contract', () => {
   it('keeps skill resolver candidates aligned with supported host surfaces', () => {
     const resolverFiles = [
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
-      'scripts/main-agent-implementation-readiness-gate.ts',
-      'scripts/ai-tdd-contract-gate.ts',
-      'scripts/strict-command-resolution-preflight.ts',
-      'scripts/target-artifact-realization-gate.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts',
     ];
 
     for (const relativePath of resolverFiles) {

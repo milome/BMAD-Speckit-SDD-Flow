@@ -121,6 +121,9 @@ function replaySourceAuthorityRuntime(context, action) {
 function createPackageRuntimeReportAction({ action, checkSummary }) {
   return function packageRuntimeReportAction(context) {
     const sourceAuthorityRuntimeProof = replaySourceAuthorityRuntime(context, action);
+    const replayPassed =
+      sourceAuthorityRuntimeProof.status === 'source_authority_runtime_replayed' &&
+      sourceAuthorityRuntimeProof.exitCode === 0;
     const report = {
       reportType: reportTypeFor(action),
       generatedAt: new Date().toISOString(),
@@ -137,7 +140,7 @@ function createPackageRuntimeReportAction({ action, checkSummary }) {
       checks: [
         {
           id: 'package-source-authority-runtime-replay',
-          passed: sourceAuthorityRuntimeProof.status === 'source_authority_runtime_replayed',
+          passed: replayPassed,
           summary: checkSummary,
         },
       ],
@@ -145,6 +148,19 @@ function createPackageRuntimeReportAction({ action, checkSummary }) {
     return {
       report,
       reportPath: maybeWriteReport(context, action, report),
+      status: replayPassed ? 'package_runtime_ready' : 'source_authority_runtime_failed',
+      exitCode: replayPassed ? 0 : sourceAuthorityRuntimeProof.exitCode || 1,
+      errors: replayPassed
+        ? []
+        : [
+            {
+              code: 'source_authority_runtime_failed',
+              message:
+                sourceAuthorityRuntimeProof.stderr ||
+                sourceAuthorityRuntimeProof.stdout ||
+                `source-authority runtime failed for ${action}`,
+            },
+          ],
     };
   };
 }

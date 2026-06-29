@@ -6,8 +6,8 @@ import {
   createGovernancePacketExecutionRecord,
   readGovernancePacketExecutionRecord,
   updateGovernancePacketExecutionRecord,
-} from '../../scripts/governance-packet-execution-store';
-import { reconcileGovernanceExecutionRecords } from '../../scripts/governance-packet-reconciler';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
+import { reconcileGovernanceExecutionRecords } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-reconciler';
 
 function setupRoot(): string {
   const root = mkdtempSync(path.join(os.tmpdir(), 'gov-packet-reconciler-'));

@@ -135,7 +135,7 @@ specs/
 2. Resolve active RequirementRecord via explicit IDs or `_bmad-output/runtime/requirement-records/index.json`
 3. **Read story projection**: `_bmad-output/runtime/requirement-records/<requirement-set-id>/artifacts/bmad-workflow-routing-<run-id>.json`
 4. Read plan.md (从 story state 读取路径)
-5. **读取审计配置**: 调用 `_bmad/_config/bmad-story-config.yaml` 的`shouldAudit('gaps')` 确定是否执行审计
+5. **读取审计配置**: 调用 `packages/bmad-speckit/src/main-agent/source-authority/_bmad/_config/bmad-story-config.yaml` 的`shouldAudit('gaps')` 确定是否执行审计
 
 **配置检查逻辑**:
 ```typescript
@@ -314,7 +314,7 @@ MainAgentDispatchRequest({
 
 PASS 时执行
 ```bash
-npx --no-install bmad-speckit run-auditor-host.ts \\
+npx --no-install bmad-speckit run-auditor-host \\
   --projectRoot {projectRoot} \\
   --stage gaps \\
   --artifactPath specs/epic-{epic}-{epic-slug}/story-{story}-{story-slug}/IMPLEMENTATION_GAPS-E{epic}-S{story}.md \\

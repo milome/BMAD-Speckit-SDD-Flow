@@ -1,0 +1,329 @@
+{
+  "status": "pass",
+  "mode": "apply",
+  "rootTsRefKinds": 132,
+  "topRefs": [
+    {
+      "path": "scripts/main-agent-orchestration.ts",
+      "count": 91
+    },
+    {
+      "path": "scripts/run-required-commands-from-ai-tdd-manifest.ts",
+      "count": 85
+    },
+    {
+      "path": "scripts/bmad-config.ts",
+      "count": 44
+    },
+    {
+      "path": "scripts/ai-tdd-contract-gate.ts",
+      "count": 41
+    },
+    {
+      "path": "scripts/runtime-context.ts",
+      "count": 30
+    },
+    {
+      "path": "scripts/governance-remediation-runner.ts",
+      "count": 25
+    },
+    {
+      "path": "scripts/runtime-governance.ts",
+      "count": 24
+    },
+    {
+      "path": "scripts/main-agent-codex-worker-adapter.ts",
+      "count": 23
+    },
+    {
+      "path": "scripts/reviewer-registry.ts",
+      "count": 21
+    },
+    {
+      "path": "scripts/governance-remediation-config.ts",
+      "count": 21
+    },
+    {
+      "path": "scripts/main-agent-implementation-readiness-gate.ts",
+      "count": 18
+    },
+    {
+      "path": "scripts/prompt-routing-hints.ts",
+      "count": 18
+    },
+    {
+      "path": "scripts/orchestration-dispatch-contract.ts",
+      "count": 17
+    },
+    {
+      "path": "scripts/reviewer-schema.ts",
+      "count": 15
+    },
+    {
+      "path": "scripts/ingest-implementation-evidence.ts",
+      "count": 15
+    },
+    {
+      "path": "scripts/requirement-record-control-store.ts",
+      "count": 15
+    },
+    {
+      "path": "scripts/main-agent-quality-gate.ts",
+      "count": 13
+    },
+    {
+      "path": "scripts/governance-packet-execution-store.ts",
+      "count": 13
+    },
+    {
+      "path": "scripts/adaptive-intake-governance-gate.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/governance-remediation-artifact.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/orchestration-state.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/runtime-governance-template-schema.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/runtime-context-registry.ts",
+      "count": 12
+    },
+    {
+      "path": "scripts/audit-scoring-convergence-policy.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/dashboard-generate.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/main-agent-delivery-closeout-gate.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/reviewer-rollout-gate.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/runtime-governance-registry.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/i18n/party-mode-runtime-assets.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/reviewer-contract.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/reviewer-shared-core.ts",
+      "count": 11
+    },
+    {
+      "path": "scripts/parse-bmad-audit-result.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/main-agent-release-gate.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/bmad-help-routing-state.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/controlled-readiness-audit-bridge.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/subagent-evidence-envelope.ts",
+      "count": 10
+    },
+    {
+      "path": "scripts/governance-execution-result-ingestor.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/governance-packet-reconciler.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/execution-intent-schema.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/model-governance-hints-schema.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/prompt-routing-hints-schema.ts",
+      "count": 9
+    },
+    {
+      "path": "scripts/i18n/resolve-audit-prompt-path.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/main-agent-unified-ingress.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/governance-packet-dispatch-worker.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/orchestration-governance-contract.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/user-story-mapping.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/audit-triad-orchestrator.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/execution-strategy-selection.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/i18n/agent-display-names.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/long-run-runtime-policy.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/main-agent-compiled-prompt-runner.ts",
+      "count": 8
+    },
+    {
+      "path": "scripts/analytics-sft-extract.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/governance-host-dispatch-adapter.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/strict-closeout-proof-gate.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/i18n/render-audit-block-cli.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/facilitator-runtime-definition.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/i18n/resolve-for-session-cli.ts",
+      "count": 7
+    },
+    {
+      "path": "scripts/i18n/render-template.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/main-agent-chaos-scenarios.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/main-agent-delivery-truth-gate.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/governance-provider-adapter.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/model-governance-hint-resolver.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/model-governance-policy-filter.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/prompt-routing-governance.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/controlled-ingest-atomic-committer.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/requirement-record-event-reducer.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/requirement-record-schema-evolution.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/i18n/load-manifest.ts",
+      "count": 6
+    },
+    {
+      "path": "scripts/governance-runtime-queue.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/main-agent-dual-host-pr-orchestrator.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/main-agent-host-matrix-pr-orchestrator.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/party-mode-runtime.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/stable-runtime-policy-json.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/target-artifact-realization-gate.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/eval-question-generate.ts",
+      "count": 5
+    },
+    {
+      "path": "scripts/i18n/print-resolved-audit-prompt.ts",
+      "count": 4
+    },
+    {
+      "path": "scripts/adaptive-intake-proof-gate.ts",
+      "count": 4
+    },
+    {
+      "path": "scripts/governance-stage-event-emitter.ts",
+      "count": 4
+    },
+    {
+      "path": "scripts/live-smoke-main-agent-runtime.ts",
+      "count": 4
+    },
+    {
+      "path": "scripts/main-agent-delivery-evidence-run.ts",
+      "count": 4
+    }
+  ],
+  "changedFiles": [],
+  "changedFileCount": 0
+}

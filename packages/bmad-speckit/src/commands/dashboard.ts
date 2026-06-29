@@ -1,6 +1,6 @@
 /**
  * Dashboard subcommand: generate project health dashboard Markdown.
- * Ported from scripts/dashboard-generate.ts to JS for CLI integration.
+ * Ported from packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts to JS for CLI integration.
  *
  * Exit codes: 0=success, 1=no data or error
  */

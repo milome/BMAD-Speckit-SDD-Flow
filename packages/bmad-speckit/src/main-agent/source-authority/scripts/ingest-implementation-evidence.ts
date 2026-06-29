@@ -866,7 +866,8 @@ function evidencePacketArtifact(
     requirementSetId,
     path: normalizePathForRecord(evidencePath),
     contentHash: sha256File(evidencePath),
-    producer: 'scripts/ingest-implementation-evidence.ts',
+    producer:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
     purpose: 'externally indexed controlled implementation evidence packet',
     relatedRequirementIds: [
       ...arrayOfStrings(packet.traceRows),

@@ -10,7 +10,16 @@ describe('runtime workflow entrypoint contract', () => {
       'utf8'
     );
     const registrySource = readFileSync(
-      path.join(root, 'scripts', 'runtime-context-registry.ts'),
+      path.join(
+        root,
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'runtime-context-registry.ts'
+      ),
       'utf8'
     );
 

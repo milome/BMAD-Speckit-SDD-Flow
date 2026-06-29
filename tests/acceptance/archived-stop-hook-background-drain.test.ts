@@ -11,17 +11,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { governancePendingQueueFilePath } from '../../scripts/governance-runtime-queue';
-import type { GovernanceStopHookResult } from '../../scripts/governance-hook-types';
+import { governancePendingQueueFilePath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-runtime-queue';
+import type { GovernanceStopHookResult } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-hook-types';
 import {
   governanceAttemptLoopStatePath,
   runGovernanceRemediation,
-} from '../../scripts/governance-remediation-runner';
-import { writeRuntimeContext } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner';
+import { writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import {
   linkRepoNodeModulesIntoProject,
   linkRepoScriptsIntoProject,

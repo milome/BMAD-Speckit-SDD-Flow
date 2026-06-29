@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import * as runtimeContext from '../../scripts/runtime-context';
-import * as runtimeRegistry from '../../scripts/runtime-context-registry';
+import * as runtimeContext from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import * as runtimeRegistry from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context auto trigger contract', () => {
   it('exposes unified auto-trigger helpers for sourceMode detection and project/story/run bootstrapping', () => {

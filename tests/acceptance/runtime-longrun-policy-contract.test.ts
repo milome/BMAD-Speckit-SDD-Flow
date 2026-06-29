@@ -3,8 +3,8 @@ import {
   applyLongRunPolicyToState,
   LONG_RUN_RUNTIME_POLICY,
   validateLongRunPolicy,
-} from '../../scripts/long-run-runtime-policy';
-import { createDefaultOrchestrationState } from '../../scripts/orchestration-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/long-run-runtime-policy';
+import { createDefaultOrchestrationState } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 
 describe('runtime long-run policy contract', () => {
   it('fails closed on missing fields and writes replayable long-run state', () => {

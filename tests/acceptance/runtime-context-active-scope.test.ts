@@ -3,7 +3,7 @@ import {
   defaultRuntimeContextRegistry,
   resolveActiveScope,
   resolveContextPathFromActiveScope,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context active scope', () => {
   it('prefers run over story over epic over project', () => {

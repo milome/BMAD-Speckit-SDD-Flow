@@ -162,7 +162,7 @@ describe('requirements contract source mutation gate', () => {
           writeText(
             root,
             'docs/requirements/domain-mismatch.md',
-            '# Multi Timeframe Consumer UX\n\n目标文件：`scripts/main-agent-orchestration.ts`\n\n## 验收标准\n\n主图摘要必须展示所有启用周期。\n'
+            '# Multi Timeframe Consumer UX\n\n目标文件：`packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`\n\n## 验收标准\n\n主图摘要必须展示所有启用周期。\n'
           ),
         options: {
           requiredCommand:

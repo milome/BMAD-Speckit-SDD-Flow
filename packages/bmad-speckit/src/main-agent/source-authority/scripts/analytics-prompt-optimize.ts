@@ -1,8 +1,8 @@
 /**
  * Story 5.5 B08: Prompt 优化建议 CLI
  * 用法：
- *   npx ts-node scripts/analytics-prompt-optimize.ts --dataPath scoring/data
- *   npx ts-node scripts/analytics-prompt-optimize.ts --dataPath scoring/data --clustersPath clusters.json
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts --dataPath scoring/data
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-prompt-optimize.ts --dataPath scoring/data --clustersPath clusters.json
  */
 import * as fs from 'fs';
 import * as path from 'path';

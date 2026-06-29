@@ -2,14 +2,14 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resolveRalphTrackingPaths } from '../../scripts/ralph-method/pathing';
+import { resolveRalphTrackingPaths } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/pathing';
 import {
   appendTddTrace,
   createRalphTrackingFiles,
   markUserStoryPassed,
   recomputeProgressCounters,
-} from '../../scripts/ralph-method/write-tracking-files';
-import type { RalphUserStory } from '../../scripts/ralph-method/types';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/write-tracking-files';
+import type { RalphUserStory } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types';
 
 const tempRoots: string[] = [];
 

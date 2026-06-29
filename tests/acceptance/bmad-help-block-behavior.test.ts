@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readBmadHelpRoutingModel } from './helpers/bmad-help-doc-helpers';
-import { resolveImplementationEntryGate } from '../../scripts/runtime-governance';
+import { resolveImplementationEntryGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 describe('bmad-help implementation block behavior', () => {
   it('prevents implementation-first recommendations when readiness is not clean or repair-closed', () => {

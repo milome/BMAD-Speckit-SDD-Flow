@@ -4,8 +4,8 @@ const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildBmadHelpOutput, renderBmadHelp } = require('../src/runtime/bmad-help-renderer');
-const { buildBmadsOutput } = require('../src/runtime/bmads-renderer');
+const { buildBmadHelpOutput, renderBmadHelp } = require('../dist/runtime/bmad-help-renderer');
+const { buildBmadsOutput } = require('../dist/runtime/bmads-renderer');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const PACKAGE_CLI = path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');

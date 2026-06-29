@@ -241,7 +241,7 @@ This assessment identified [X] issues across [Y] categories including four-signa
 
 After saving the final report, you must also generate a governance remediation artifact at `{remediationArtifactFile}`.
 
-Use `npx ts-node --transpile-only scripts/governance-remediation-runner.ts` and populate the arguments from the completed readiness report using these fixed rules.
+Use `npx --no-install bmad-speckit main-agent governance-remediation-runner` and populate the arguments from the completed readiness report using these fixed rules.
 
 Before running the command, load provider and packet output policy from `{project-root}/_bmad/_config/governance-remediation.yaml`.
 This config is the canonical source for:
@@ -286,7 +286,7 @@ Hard rules:
 - `cursor packet generated` and `claude packet generated` are mandatory unless config explicitly disables them
 - packet generation must reuse governance-owned routing fields; packet selection does not change blocker ownership or root target
 - Do not manually write `.cursor-packet.md` or `.claude-packet.md`
-- Packets must be derived only from `scripts/governance-remediation-runner.ts` / `writeGovernanceExecutorPacket()`
+- Packets must be derived only from `packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts` / `writeGovernanceExecutorPacket()`
 - The only allowed host-specific differences are `Host Kind` and `Execution Mode`; all other packet sections must come from the same remediation artifact body
 - Host packet files must be blocked at PreToolUse if the model attempts to write them directly
 

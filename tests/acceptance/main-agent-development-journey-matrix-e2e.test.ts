@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { runDevelopmentJourneyMatrix } from '../../scripts/main-agent-development-journey-matrix';
+import { runDevelopmentJourneyMatrix } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-development-journey-matrix';
 
 describe('main-agent development journey matrix e2e', () => {
   it('covers hooks no-hooks codex ingress and delivery truth sequence checkpoints', () => {

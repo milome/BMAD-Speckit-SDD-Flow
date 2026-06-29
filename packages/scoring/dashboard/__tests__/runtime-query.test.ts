@@ -11,7 +11,7 @@ import { SIX_MENTAL_MODEL_ORDER } from '../six-model-projection';
 import {
   createGovernancePacketExecutionRecord,
   updateGovernancePacketExecutionRecord,
-} from '../../../../scripts/governance-packet-execution-store';
+} from '../../../bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
 
 function makeEvent(overrides: Partial<RuntimeEvent> = {}): RuntimeEvent {
   return {

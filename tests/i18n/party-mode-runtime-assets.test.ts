@@ -4,7 +4,7 @@ import {
   resolveCursorPartyModeAsset,
   resolveFacilitatorSourceAsset,
   resolvePartyModeSpeakerProfile,
-} from '../../scripts/i18n/party-mode-runtime-assets';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/party-mode-runtime-assets';
 
 describe('party-mode runtime assets', () => {
   it('resolves canonical workflow assets through the shared localized markdown resolver', () => {

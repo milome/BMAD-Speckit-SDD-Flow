@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   ensureFacilitatorRuntimeDefinition,
   materializeFacilitatorDefinition,
-} from '../../scripts/facilitator-runtime-definition';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-runtime-definition';
 
 const repoRoot = process.cwd();
 

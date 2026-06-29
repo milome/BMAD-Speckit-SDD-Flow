@@ -3,14 +3,14 @@ import * as fs from 'node:fs';
 import os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { packetArtifactPath } from '../../scripts/orchestration-dispatch-contract';
-import { readOrchestrationState } from '../../scripts/orchestration-state';
-import { runAuditorHost } from '../../scripts/run-auditor-host';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { packetArtifactPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
+import { readOrchestrationState } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import {
   linkRepoNodeModulesIntoProject,
   writeMinimalRequirementRecordContext,

@@ -1,7 +1,7 @@
 /**
  * Story 5.5 B07: SFT 数据集提取 CLI
  * 用法：
- *   npx ts-node scripts/analytics-sft-extract.ts --dataPath scoring/data --output scoring/data/sft-dataset.jsonl
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-sft-extract.ts --dataPath scoring/data --output scoring/data/sft-dataset.jsonl
  */
 import * as path from 'path';
 import { extractSftDataset } from '../packages/scoring/analytics/sft-extractor';

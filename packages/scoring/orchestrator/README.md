@@ -22,5 +22,5 @@
 ## CLI 调用方式
 
 ```bash
-npx ts-node scripts/parse-and-write-score.ts [options]
+npx ts-node bmad-speckit score [options]
 ```

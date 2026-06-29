@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePromptHintUsage } from '../../scripts/prompt-routing-governance';
+import { resolvePromptHintUsage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/prompt-routing-governance';
 import {
   createStubModelGovernanceHintProvider,
   resolveModelGovernanceHintCandidate,
-} from '../../scripts/model-governance-hint-resolver';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-hint-resolver';
 import {
   filterModelGovernanceHintCandidate,
   toPromptRoutingHintsCompat,
-} from '../../scripts/model-governance-policy-filter';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/model-governance-policy-filter';
 
 describe('model-governance policy filter', () => {
   it('strips model attempts to override blocker ownership before governance consumes the hint', async () => {

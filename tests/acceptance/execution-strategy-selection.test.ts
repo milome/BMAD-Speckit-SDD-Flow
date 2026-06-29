@@ -10,7 +10,7 @@ import {
   selectExecutionStrategy,
   toExecutionStrategySelectionEvent,
   validateExecutionStrategySelectionEvent,
-} from '../../scripts/execution-strategy-selection';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-strategy-selection';
 
 const HASH_A = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const HASH_B = 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';

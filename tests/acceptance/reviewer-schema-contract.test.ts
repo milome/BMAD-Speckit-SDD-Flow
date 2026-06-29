@@ -11,7 +11,7 @@ import {
   buildReviewGovernanceClosureV1,
   buildRunAuditorHostInput,
   deriveReviewCloseoutEnvelopeV1,
-} from '../../scripts/reviewer-schema';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema';
 
 describe('reviewer schema contract', () => {
   it('validates minimal review input/output/handoff/closeout fixtures', () => {

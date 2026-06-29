@@ -395,9 +395,9 @@ function receiptProof(recordPath: string, events: JsonObject[]): JsonObject {
 function schemaEvolutionProof(record: JsonObject): JsonObject {
   const store = nested(record.controlStore);
   const requiredScripts = [
-    'scripts/requirement-record-event-reducer.ts',
-    'scripts/controlled-ingest-atomic-committer.ts',
-    'scripts/requirement-record-schema-evolution.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-event-reducer.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/controlled-ingest-atomic-committer.ts',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-schema-evolution.ts',
   ];
   const packageScriptDir = __dirname;
   const packageSourceAuthorityDir = path.resolve(packageScriptDir, '..');

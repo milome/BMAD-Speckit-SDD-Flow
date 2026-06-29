@@ -6,7 +6,7 @@ describe('runtime hooks and worker', () => {
     const sessionStart = readFileSync('.claude/hooks/session-start.cjs', 'utf8');
     const postToolUse = readFileSync('.claude/hooks/post-tool-use.cjs', 'utf8');
     const stop = readFileSync('.claude/hooks/stop.cjs', 'utf8');
-    const worker = readFileSync('scripts/bmad-runtime-worker.ts', 'utf8');
+    const worker = readFileSync('packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker.ts', 'utf8');
 
     expect(sessionStart).toContain('checkpoint');
     expect(postToolUse).toContain('event');

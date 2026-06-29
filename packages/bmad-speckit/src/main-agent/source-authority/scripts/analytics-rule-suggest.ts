@@ -1,8 +1,8 @@
 /**
  * Story 5.5 B09: 规则自优化建议 CLI
  * 用法：
- *   npx ts-node scripts/analytics-rule-suggest.ts --dataPath scoring/data
- *   npx ts-node scripts/analytics-rule-suggest.ts --dataPath scoring/data --clustersPath clusters.json --rulesDir scoring/rules
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts --dataPath scoring/data
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/analytics-rule-suggest.ts --dataPath scoring/data --clustersPath clusters.json --rulesDir scoring/rules
  */
 import * as fs from 'fs';
 import * as path from 'path';

@@ -18,9 +18,9 @@
   },
   "sanitizedFixture": {
     "path": "tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md",
-    "bytes": 15159,
+    "bytes": 15631,
     "lines": 473,
-    "sha256": "7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e"
+    "sha256": "7c4ca77e97607ed6aad7cd239390944bacc0124f9139d87e1c6b951817d9209d"
   },
   "sanitization": {
     "removedBlock": "implementationConfirmation",

@@ -1,9 +1,9 @@
 /**
  * Story 6.4: /bmad-scores CLI 入口
  * 用法：
- *   npx ts-node scripts/scores-summary.ts                 # 全部摘要
- *   npx ts-node scripts/scores-summary.ts --epic 3       # Epic 3 汇总
- *   npx ts-node scripts/scores-summary.ts --story 3.3    # Story 3.3 明细
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts                 # 全部摘要
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts --epic 3       # Epic 3 汇总
+ *   npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts --story 3.3    # Story 3.3 明细
  */
 import { getScoringDataPath } from '../packages/scoring/constants/path';
 import {

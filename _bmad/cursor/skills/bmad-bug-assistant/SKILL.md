@@ -545,7 +545,7 @@ Amelia 开发 的规范已在上方 5 条中列出，子代理按内联执行即
 
 **Host 调用示例**（在项目根目录执行）：
 ```bash
-npx ts-node scripts/run-auditor-host.ts \
+npx --no-install bmad-speckit run-auditor-host \
   --projectRoot <projectRoot> \
   --stage bugfix \
   --artifactPath <BUGFIX 文档路径> \

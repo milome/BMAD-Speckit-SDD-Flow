@@ -1,6 +1,6 @@
 /**
  * Scores subcommand: display scoring summary table.
- * Ported from scripts/scores-summary.ts to JS for CLI integration.
+ * Ported from packages/bmad-speckit/src/main-agent/source-authority/scripts/scores-summary.ts to JS for CLI integration.
  *
  * Exit codes: 0=success, 1=error
  */

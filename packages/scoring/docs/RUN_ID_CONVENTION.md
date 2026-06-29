@@ -3,7 +3,7 @@
 **版本**：1.0  
 **状态**：已定稿  
 **生效**：E6 Story 6.3、6.4（REQ-UX-2）实施前  
-**对齐**：scoring/orchestrator、scoring/writer、scripts/parse-and-write-score.ts、bmad-code-reviewer-lifecycle
+**对齐**：scoring/orchestrator、scoring/writer、bmad-speckit score、bmad-code-reviewer-lifecycle
 
 ---
 
@@ -73,7 +73,7 @@
 
 ## 4. 调用方职责
 
-### 4.1 scripts/parse-and-write-score.ts
+### 4.1 bmad-speckit score
 
 - 当前：`runId = args.runId ?? \`cli-${Date.now()}\``。
 - **建议**：支持 `--epic`、`--story` 时生成约定格式，如 `dev-e{epic}-s{story}-{stage}-${Date.now()}`。

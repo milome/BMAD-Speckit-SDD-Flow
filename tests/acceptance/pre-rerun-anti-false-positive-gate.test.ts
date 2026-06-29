@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { evaluatePreRerunAntiFalsePositiveGate } from '../../scripts/pre-rerun-anti-false-positive-gate';
+import { evaluatePreRerunAntiFalsePositiveGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/pre-rerun-anti-false-positive-gate';
 
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -47,7 +47,7 @@ describe('pre-rerun anti false positive gate', () => {
           '      - currentPath: legacy_completion_event',
           '        completionProofPolicy: legacy_only',
           '    scriptConvergence:',
-          '      - scriptOrConfigPath: scripts/main-agent-delivery-closeout-gate.ts',
+          '      - scriptOrConfigPath: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts',
           '  confirmationRender:',
           `    reportPath: ${path.join(root, 'confirmation-render-report.json').replace(/\\/gu, '/')}`,
           '',

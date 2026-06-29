@@ -91,6 +91,7 @@ function sourcePathFromRuntimeHeader(runtime: string): string | null {
 
 function normalizeForComparison(content: string): string {
   return content
+    .replace(/\r\n/gu, '\n')
     .replace(/\.en\.md/gu, '.md')
     .replace(/\.zh\.md/gu, '.md')
     .replace(

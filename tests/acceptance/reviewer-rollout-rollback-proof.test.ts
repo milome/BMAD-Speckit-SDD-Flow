@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReviewerRolloutGate } from '../../scripts/reviewer-rollout-gate';
+import { buildReviewerRolloutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-rollout-gate';
 import { suggestRollback } from '../../packages/scoring/gate/rollback';
 
 describe('reviewer rollout rollback proof', () => {

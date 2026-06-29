@@ -2,15 +2,15 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createGovernancePacketExecutionRecord } from '../../scripts/governance-packet-execution-store';
+import { createGovernancePacketExecutionRecord } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store';
 import {
   createAcceptedPlaceholderDispatchAdapter,
   processPendingExecutionRecords,
-} from '../../scripts/governance-packet-dispatch-worker';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker';
 import {
   ingestGovernanceExecutionResult,
   ingestGovernanceRerunGateResult,
-} from '../../scripts/governance-execution-result-ingestor';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-execution-result-ingestor';
 
 describe('governance rerun gate closure', () => {
   it('closes remediation only when rerun gate passes', async () => {

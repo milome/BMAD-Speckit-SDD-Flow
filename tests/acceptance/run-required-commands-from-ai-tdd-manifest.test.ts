@@ -2,11 +2,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainRunRequiredCommandsFromAiTddManifest } from '../../scripts/run-required-commands-from-ai-tdd-manifest';
+import { mainRunRequiredCommandsFromAiTddManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest';
 
-const dynamicRunnerPath = 'scripts/run-required-commands-from-ai-tdd-manifest.ts';
+const dynamicRunnerPath = 'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts';
 const legacyRunnerPath = 'scripts/run-confirmed-final-required-commands.js';
-const finalCloseoutRunnerPath = 'scripts/final-closeout-evidence-runner.ts';
+const finalCloseoutRunnerPath = 'packages/bmad-speckit/src/main-agent/source-authority/scripts/final-closeout-evidence-runner.ts';
 
 const globalContractTraceabilityPolicy = {
   schemaVersion: 'global-contract-traceability-policy/v1',
@@ -93,7 +93,7 @@ function fixture(
 ) {
   const testFile = path.join(root, 'tests', 'acceptance', 'fixture.test.ts');
   writeText(testFile, 'import { it } from "vitest"; it("runner fixture", () => {});\n');
-  const targetPath = 'scripts/run-required-commands-from-ai-tdd-manifest.ts';
+  const targetPath = 'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts';
   const targetRows =
     mode === 'missing-target-modification-paths'
       ? []
@@ -191,7 +191,7 @@ function fixture(
       '  artifactAutomationPlan:',
       '    - id: CANONICAL-001',
       '      artifactType: report',
-      '      path: scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      '      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
       '      producer: runner-fixture',
       '      sourceOfTruthRole: evidence',
       '      traceRows: [TRACE-001]',
@@ -215,12 +215,12 @@ function fixture(
       '        currentState: missing',
       '        targetState: runner',
       '    artifactPaths:',
-      '      - path: scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      '      - path: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
       '        traceRows: [TRACE-001]',
       '        evidenceRefs: [EVD-001]',
       '    canonicalArtifacts:',
       '      - id: CANONICAL-001',
-      '        targetPathOrField: scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      '        targetPathOrField: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
       '        traceRows: [TRACE-001]',
       '        evidenceRefs: [EVD-001]',
       '    existingArtifacts:',
@@ -379,7 +379,7 @@ describe('manifest driven required command runner contract', () => {
           path.join(evidenceDir, 'legacy-guard-test-report.json').replace(/\\/gu, '/'),
           path.join(evidenceDir, 'final-closeout-runner-test-report.json').replace(/\\/gu, '/'),
           path
-            .resolve('scripts/run-required-commands-from-ai-tdd-manifest.ts')
+            .resolve('packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts')
             .replace(/\\/gu, '/'),
         ])
       );

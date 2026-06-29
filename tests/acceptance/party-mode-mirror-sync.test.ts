@@ -6,7 +6,7 @@ import {
   RELATIVE_FILES,
   stripGeneratedHeader,
   syncPartyModeMirrors,
-} from '../../scripts/i18n/sync-party-mode-mirrors';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/sync-party-mode-mirrors';
 
 const ROOT = process.cwd();
 const CANONICAL_ROOT = path.join(ROOT, '_bmad', 'core', 'skills', 'bmad-party-mode');

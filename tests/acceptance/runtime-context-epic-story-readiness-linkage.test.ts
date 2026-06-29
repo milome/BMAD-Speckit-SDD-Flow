@@ -8,7 +8,7 @@ import {
   buildStoryContextsFromSprintStatus,
   writeRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context epic/story readiness linkage', () => {
   it('keeps epic and story readiness data together inside registry for create-story routing', () => {

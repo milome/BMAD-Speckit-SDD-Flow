@@ -3,8 +3,8 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainStrictCloseoutProofGate } from '../../scripts/strict-closeout-proof-gate';
-import { implementationConfirmationHash } from '../../scripts/target-artifact-realization-gate';
+import { mainStrictCloseoutProofGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate';
+import { implementationConfirmationHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate';
 
 const EVENT_HASH = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { FieldMetaRegistry } from '../../scripts/i18n/field-meta-types';
+import type { FieldMetaRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/field-meta-types';
 
 describe('field-meta-types', () => {
   it('accepts the repository field meta registry shape', () => {

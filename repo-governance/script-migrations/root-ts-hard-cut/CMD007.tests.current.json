@@ -1,0 +1,6 @@
+{
+  "status": "pass",
+  "check": "tests-no-root-ts-authority",
+  "testRootTsAuthorityCount": 0,
+  "findings": []
+}

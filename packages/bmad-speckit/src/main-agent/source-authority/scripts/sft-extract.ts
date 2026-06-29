@@ -5,7 +5,7 @@
  *
  * CLI 参数：--min-score, --output
  *
- * 示例：npx ts-node scripts/sft-extract.ts --min-score 80
+ * 示例：npx bmad-speckit sft-extract --min-score 80
  *
  * 退出码：0=成功，1=错误
  */

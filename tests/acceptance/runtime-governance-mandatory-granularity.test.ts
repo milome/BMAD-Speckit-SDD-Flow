@@ -5,8 +5,8 @@ import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import * as yaml from 'js-yaml';
-import { loadConfig, type StageName } from '../../scripts/bmad-config';
-import { resolveRuntimePolicy, type RuntimeFlowId } from '../../scripts/runtime-governance';
+import { loadConfig, type StageName } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { resolveRuntimePolicy, type RuntimeFlowId } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 
 const CFG_ROOT = join(import.meta.dirname, '..', '..', '_bmad', '_config');
 const ILLEGAL = join(import.meta.dirname, '..', 'fixtures', 'runtime-governance-illegal');

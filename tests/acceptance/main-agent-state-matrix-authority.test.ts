@@ -9,6 +9,7 @@ import {
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
+  writeFakeReqTraceSkill,
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
 
@@ -24,6 +25,7 @@ describe('Main Agent state matrix authority', () => {
       },
     });
     try {
+      writeFakeReqTraceSkill(auditFixture.root);
       writeCompiledImplementPacket({ root: auditFixture.root, fixture: auditFixture });
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: auditFixture.root,
@@ -79,10 +81,11 @@ describe('Main Agent state matrix authority', () => {
           architecture_confirmation: { status: 'pass' },
           implementation_readiness: { status: 'pass' },
         },
-      });
-      try {
-        const result = runMainAgentAutomaticLoop({
-          projectRoot: blockedLoopFixture.root,
+    });
+    try {
+      writeFakeReqTraceSkill(blockedLoopFixture.root);
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: blockedLoopFixture.root,
           recordId: blockedLoopFixture.recordId,
           requirementSetId: blockedLoopFixture.requirementSetId,
           runId: blockedLoopFixture.runId,

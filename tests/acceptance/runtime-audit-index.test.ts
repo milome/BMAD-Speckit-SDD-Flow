@@ -7,7 +7,7 @@ import {
   syncAuditIndexFromAllReports,
   writeRuntimeContextRegistry,
   defaultRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime audit index', () => {
   it('indexes structured bugfix/tasks audit reports into runtime registry auditIndex', () => {

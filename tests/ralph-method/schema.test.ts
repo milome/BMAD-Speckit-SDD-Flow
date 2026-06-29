@@ -3,8 +3,8 @@ import {
   assertValidRalphPrdDocument,
   parseRalphPrdDocument,
   RalphSchemaValidationError,
-} from '../../scripts/ralph-method/schema';
-import { RALPH_PRD_SCHEMA_VERSION, type RalphPrdDocument } from '../../scripts/ralph-method/types';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/schema';
+import { RALPH_PRD_SCHEMA_VERSION, type RalphPrdDocument } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ralph-method/types';
 
 function makeBaseDocument(): RalphPrdDocument {
   return {

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureProjectRuntimeContext } from '../../scripts/runtime-context';
-import { readRuntimeContextRegistry } from '../../scripts/runtime-context-registry';
+import { ensureProjectRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import { readRuntimeContextRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context full_bmad mode', () => {
   it('ensureProjectRuntimeContext uses full_bmad when sprint-status exists', () => {

@@ -5,7 +5,7 @@
  *
  * CLI 参数：--strategy (epic_story_window|run_id), --dataPath, --epic, --story, --windowHours, --output (默认 _bmad-output/dashboard.md)
  *
- * 示例：npx ts-node scripts/dashboard-generate.ts --epic 2
+ * 示例：npx ts-node packages/bmad-speckit/src/main-agent/source-authority/scripts/dashboard-generate.ts --epic 2
  *
  * 退出码：0=成功，1=无数据或错误
  */

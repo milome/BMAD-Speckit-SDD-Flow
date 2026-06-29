@@ -7,7 +7,7 @@ import {
   readRuntimeContextRegistry,
   runtimeContextRegistryPath,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context-registry io', () => {
   it('creates, writes, and reads registry under _bmad-output/runtime/registry.json', () => {

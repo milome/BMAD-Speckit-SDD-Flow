@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
-import { resolveArchitectureConfirmationHashRecipe } from '../../scripts/architecture-confirmation-hash-recipe';
+import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const ARCH_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
 
@@ -256,7 +256,7 @@ function writeReadinessFixture(
       {
         id: 'CANONICAL-001',
         artifactType: 'code',
-        path: 'scripts/main-agent-implementation-readiness-gate.ts',
+        path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
         producer: 'readiness-gate',
         sourceOfTruthRole: 'implementation',
         traceRows: ['TRACE-001'],
@@ -304,7 +304,7 @@ function writeReadinessFixture(
       artifactPaths: [
         {
           id: 'PATH-001',
-          path: 'scripts/main-agent-implementation-readiness-gate.ts',
+          path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
           traceRows: ['TRACE-001'],
           evidenceRefs: ['EVD-001'],
         },
@@ -312,7 +312,7 @@ function writeReadinessFixture(
       canonicalArtifacts: [
         {
           id: 'CANONICAL-001',
-          targetPathOrField: 'scripts/main-agent-implementation-readiness-gate.ts',
+          targetPathOrField: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
           traceRows: ['TRACE-001'],
           evidenceRefs: ['EVD-001'],
         },
@@ -336,7 +336,7 @@ function writeReadinessFixture(
     targetModificationPaths: [
       {
         id: 'TARGET-MOD-001',
-        path: 'scripts/main-agent-implementation-readiness-gate.ts',
+        path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
       },

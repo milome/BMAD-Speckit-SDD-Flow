@@ -1,5 +1,5 @@
 # Runtime mandatory gates: (flow, stage) pairs where mandatoryGate must be true.
-# Referenced by scripts/runtime-governance.ts; rule id appears in policy.reason when hit.
+# Referenced by packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts; rule id appears in policy.reason when hit.
 version: "1.0"
 gates:
   - id: mandatory_post_audit_story

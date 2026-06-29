@@ -8,8 +8,8 @@ import {
   buildRunContext,
   writeRuntimeContextRegistry,
   runtimeContextRegistryPath,
-} from '../../scripts/runtime-context-registry';
-import { writeRuntimeContextFromSprintStatus } from '../../scripts/runtime-context';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { writeRuntimeContextFromSprintStatus } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 
 describe('runtime-context story lifecycle wiring', () => {
   it('keeps project registry, project context, story contexts, and active run aligned for a story lifecycle transition', () => {

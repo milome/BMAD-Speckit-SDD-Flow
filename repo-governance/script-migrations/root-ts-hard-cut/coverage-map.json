@@ -1,0 +1,261 @@
+{
+  "schemaVersion": "root-ts-hard-cut-coverage-map/v1",
+  "contractPath": "docs/plans/2026-06-27-root-scripts-ts-hard-cut-goal-execution-plan.md",
+  "sourcePlanHash": "sha256:315858757a5ac41926710b2382908f64e64adec86dcfc90807bd861d31ceff45",
+  "generatedAt": "2026-06-29T02:18:45.806Z",
+  "obligations": [
+    {
+      "sourceId": "SRC-001",
+      "taskIds": [
+        "G001",
+        "G010",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC001",
+        "ACC002",
+        "ACC018"
+      ],
+      "commandIds": [
+        "CMD001",
+        "CMD003",
+        "CMD010",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-002",
+      "taskIds": [
+        "G002",
+        "G011"
+      ],
+      "acceptanceIds": [
+        "ACC003",
+        "ACC004",
+        "ACC014"
+      ],
+      "commandIds": [
+        "CMD004",
+        "CMD011",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-003",
+      "taskIds": [
+        "G003",
+        "G011",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC005",
+        "ACC006"
+      ],
+      "commandIds": [
+        "CMD004",
+        "CMD005",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-004",
+      "taskIds": [
+        "G005",
+        "G011",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC009",
+        "ACC010",
+        "ACC020"
+      ],
+      "commandIds": [
+        "CMD007",
+        "CMD014",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-005",
+      "taskIds": [
+        "G004",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC007",
+        "ACC008",
+        "ACC020"
+      ],
+      "commandIds": [
+        "CMD006",
+        "CMD018",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-006",
+      "taskIds": [
+        "G006",
+        "G009",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC011",
+        "ACC012",
+        "ACC013"
+      ],
+      "commandIds": [
+        "CMD008",
+        "CMD012",
+        "CMD013",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-007",
+      "taskIds": [
+        "G007",
+        "G010",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC015",
+        "ACC016",
+        "ACC018"
+      ],
+      "commandIds": [
+        "CMD003",
+        "CMD009",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-008",
+      "taskIds": [
+        "G008",
+        "G009",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC017",
+        "ACC021"
+      ],
+      "commandIds": [
+        "CMD010",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-009",
+      "taskIds": [
+        "G001",
+        "G008",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC002",
+        "ACC017"
+      ],
+      "commandIds": [
+        "CMD001",
+        "CMD010",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-010",
+      "taskIds": [
+        "G002",
+        "G003",
+        "G004",
+        "G005",
+        "G006",
+        "G007",
+        "G008",
+        "G009",
+        "G010"
+      ],
+      "acceptanceIds": [
+        "ACC003",
+        "ACC005",
+        "ACC007",
+        "ACC009",
+        "ACC011",
+        "ACC015",
+        "ACC017"
+      ],
+      "commandIds": [
+        "CMD003",
+        "CMD004",
+        "CMD005",
+        "CMD006",
+        "CMD007",
+        "CMD008",
+        "CMD009",
+        "CMD010",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-011",
+      "taskIds": [
+        "G006",
+        "G009",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC012",
+        "ACC013",
+        "ACC021",
+        "ACC022"
+      ],
+      "commandIds": [
+        "CMD010",
+        "CMD012",
+        "CMD013",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-012",
+      "taskIds": [
+        "G010",
+        "G011",
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC018",
+        "ACC019",
+        "ACC023"
+      ],
+      "commandIds": [
+        "CMD003",
+        "CMD004",
+        "CMD005",
+        "CMD006",
+        "CMD007",
+        "CMD008",
+        "CMD009",
+        "CMD010",
+        "CMD011",
+        "CMD014",
+        "CMD015",
+        "CMD016",
+        "CMD019"
+      ]
+    },
+    {
+      "sourceId": "SRC-013",
+      "taskIds": [
+        "G012"
+      ],
+      "acceptanceIds": [
+        "ACC024"
+      ],
+      "commandIds": [
+        "CMD017",
+        "CMD020"
+      ]
+    }
+  ]
+}

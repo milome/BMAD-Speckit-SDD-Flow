@@ -238,7 +238,9 @@ function buildChecks(thresholds: Thresholds, args: QualityGateCliOptions): Check
   const missingCodexProofs = (thresholds.requiredCodexProofPaths ?? []).filter(
     (item) => !exists(item)
   );
-  const gateSource = readIfExists('scripts/main-agent-quality-gate.ts');
+  const gateSource = readIfExists(
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts'
+  );
   const forbiddenMarkers = thresholds.forbiddenTodoMarkers.filter((marker) =>
     gateSource.includes(marker)
   );

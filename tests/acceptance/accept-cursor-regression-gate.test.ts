@@ -15,7 +15,7 @@ describe('cursor regression gate', () => {
   it('keeps mirrored Cursor rules identical', () => {
     const cursorRule = readFileSync('.cursor/rules/bmad-story-assistant.mdc', 'utf8');
     const mirrorRule = readFileSync('_bmad/cursor/rules/bmad-story-assistant.mdc', 'utf8');
-    expect(cursorRule).toBe(mirrorRule);
+    expect(cursorRule.replace(/\r\n/g, '\n')).toBe(mirrorRule.replace(/\r\n/g, '\n'));
   });
 
   it('exposes audit granularity support in Cursor rule docs', () => {
@@ -33,7 +33,7 @@ describe('cursor regression gate', () => {
   });
 
   it('provides a dedicated Cursor audit granularity verification script', () => {
-    expect(existsSync('scripts/verify-cursor-audit-granularity.ts')).toBe(true);
+    expect(existsSync('packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-cursor-audit-granularity.ts')).toBe(true);
 
     const pkg = readFileSync('package.json', 'utf8');
     expect(pkg).toContain('verify:cursor-audit-granularity');

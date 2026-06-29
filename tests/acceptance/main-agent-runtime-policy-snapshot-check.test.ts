@@ -3,8 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainIngestImplementationEvidence } from '../../scripts/ingest-implementation-evidence';
-import { mainRuntimePolicySnapshotCheck } from '../../scripts/main-agent-runtime-policy-snapshot-check';
+import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
+import { mainRuntimePolicySnapshotCheck } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =
@@ -238,9 +238,9 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
     traceRows: ['TRACE-019'],
     taskRefs: ['TASK-FUNCTIONAL-RESUME'],
     evidenceRefs: ['EVD-005', 'EVD-022', 'EVD-026'],
-    filesChanged: ['scripts/main-agent-runtime-policy-snapshot-check.ts'],
+    filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts'],
     implementationDelta: {
-      filesChanged: ['scripts/main-agent-runtime-policy-snapshot-check.ts'],
+      filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts'],
       diffSummaryRef: path.relative(root, fixture.summaryPath).replace(/\\/g, '/'),
       behaviorAffecting: true,
       negativeAssertionArtifactRefs: [negativeRef],
@@ -250,7 +250,7 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
       {
         commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
         command:
-          'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',
+          'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts',
         runId: 'run-019',
         closeoutAttemptId: 'closeout-019',
         exitCode: 0,
@@ -266,7 +266,7 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
         {
           commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
           command:
-            'npx ts-node --project tsconfig.node.json --transpile-only scripts/main-agent-runtime-policy-snapshot-check.ts',
+            'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts',
           commandType: 'delivery_evidence',
           blockingIfMissing: true,
           traceRows: ['TRACE-019'],

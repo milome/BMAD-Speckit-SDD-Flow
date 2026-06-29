@@ -5,9 +5,9 @@ import path from 'node:path';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
-import { projectContextPath, writeRuntimeContext } from '../../scripts/runtime-context';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { projectContextPath, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 
 describe('runtime-policy registry consumption', () => {
   it('uses registry-backed explicit context instead of root fallback', () => {

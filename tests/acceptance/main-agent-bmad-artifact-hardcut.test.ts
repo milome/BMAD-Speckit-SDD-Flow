@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainBmadArtifactHardcut } from '../../scripts/main-agent-bmad-artifact-hardcut';
+import { mainBmadArtifactHardcut } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-artifact-hardcut';
 
 function writeFile(filePath: string, value: string): void {
   mkdirSync(path.dirname(filePath), { recursive: true });

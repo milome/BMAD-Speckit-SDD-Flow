@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildStoryContextsFromSprintStatus } from '../../scripts/runtime-context-registry';
+import { buildStoryContextsFromSprintStatus } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 describe('runtime-context story sync', () => {
   it('derives story contexts from sprint-status and binds artifact/spec roots', () => {

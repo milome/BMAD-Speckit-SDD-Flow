@@ -3,7 +3,7 @@ import {
   collectProtectedTokens,
   assertProtectedTokensPreserved,
   type ProtectedTokenManifest,
-} from '../../scripts/i18n/protected-token-check';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/protected-token-check';
 
 function createProtectedTokenManifest(): ProtectedTokenManifest {
   return {

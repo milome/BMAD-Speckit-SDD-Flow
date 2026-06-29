@@ -17,9 +17,9 @@
     "auditItemMappingPath": "_bmad/_config/audit-item-mapping.yaml",
     "dimensionContractsModule": "packages/scoring/contracts/dimension-contracts.ts",
     "scoreSchemaPath": "packages/scoring/schema/run-score-schema.json",
-    "orchestrationDispatchContractPath": "scripts/orchestration-dispatch-contract.ts",
-    "reviewerSchemaPath": "scripts/reviewer-schema.ts",
-    "auditScoringConvergencePolicyPath": "scripts/audit-scoring-convergence-policy.ts"
+    "orchestrationDispatchContractPath": "packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts",
+    "reviewerSchemaPath": "packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-schema.ts",
+    "auditScoringConvergencePolicyPath": "packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-scoring-convergence-policy.ts"
   },
   "stageProfileDefinitions": {
     "requirements_compiler": {

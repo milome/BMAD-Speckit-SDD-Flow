@@ -3,10 +3,10 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-config';
-import { loadPolicyContextFromRegistry } from '../../scripts/emit-runtime-policy';
-import { stableStringifyPolicy } from '../../scripts/stable-runtime-policy-json';
-import { mainEmitRuntimePolicy } from '../../scripts/emit-runtime-policy';
+import { resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
+import { loadPolicyContextFromRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
+import { stableStringifyPolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json';
+import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 import {
   linkRepoNodeModulesIntoProject,
   linkRepoScriptsIntoProject,

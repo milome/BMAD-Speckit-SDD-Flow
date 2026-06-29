@@ -9,14 +9,14 @@ import {
   runMainAgentReadinessAutoRemediation,
   runMainAgentAutomaticLoop,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { mainImplementationReadinessGate } from '../../scripts/main-agent-implementation-readiness-gate';
-import type { ResolvedRuntimeContext } from '../../scripts/resolve-active-requirement';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../scripts/runtime-context';
+import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
+import type { ResolvedRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement';
+import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   buildImplementationEntryIndexKey,
   writeRuntimeContextRegistry,
-} from '../../scripts/runtime-context-registry';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;

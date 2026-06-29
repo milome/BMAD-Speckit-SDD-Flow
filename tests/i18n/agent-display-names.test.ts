@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import {
   readAgentDisplayNamesRegistry,
   resolveLocalizedAgentDisplayProfile,
-} from '../../scripts/i18n/agent-display-names';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/i18n/agent-display-names';
 
 describe('agent display names registry', () => {
   const tempRoots: string[] = [];

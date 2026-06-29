@@ -5,15 +5,15 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mainAuditReviewGate } from '../../scripts/main-agent-audit-review-gate';
-import { mainDeliveryCloseoutGate } from '../../scripts/main-agent-delivery-closeout-gate';
-import { mainExecutionClosureGate } from '../../scripts/main-agent-execution-closure-gate';
+import { mainAuditReviewGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import { mainExecutionClosureGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate';
 import {
   resolveMainAgentOrchestrationSurface,
   runMainAgentConfirmationDriftRoute,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { resolveSixModelRuntimeDecision } from '../../scripts/six-model-runtime-decision';
-import { appendControlEventAndReplay } from '../../scripts/requirement-record-control-store';
+import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
+import { appendControlEventAndReplay } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 
 const ROOT = process.cwd();
 const INGEST = path.join(

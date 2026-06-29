@@ -7,7 +7,7 @@ import { runNativeGoalInvocation } from '../../packages/bmad-speckit/src/main-ag
 import type {
   CompiledPromptRef,
   ExecutionPacket,
-} from '../../scripts/orchestration-dispatch-contract';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 
 type NativeGoalSpawnSyncFn = (
   command: string,

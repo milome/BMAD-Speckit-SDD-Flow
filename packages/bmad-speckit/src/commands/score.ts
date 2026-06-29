@@ -1,6 +1,6 @@
 /**
  * Score subcommand: parse audit report and write scoring record.
- * Ported from scripts/parse-and-write-score.ts to JS for CLI integration.
+ * Ported from bmad-speckit score to JS for CLI integration.
  *
  * Exit codes: 0=success, 1=param/validation error, 3=trigger disabled
  */

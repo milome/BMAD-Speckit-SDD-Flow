@@ -9,8 +9,8 @@ import {
   runBmadHelpFiveLayerMatrix,
   validateLayer1PrdCompletionMarker,
   writeLayer1PrdCompletionMarker,
-} from '../../scripts/main-agent-bmad-help-five-layer-matrix';
-import { resolveBmadHelpRuntimePolicy } from '../../scripts/bmad-help-routing-state';
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-bmad-help-five-layer-matrix';
+import { resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-help-routing-state';
 
 describe('BMADS five-layer main-agent matrix', () => {
   function writeLayer1Inputs(root: string): void {

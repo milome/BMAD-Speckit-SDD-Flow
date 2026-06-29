@@ -38,7 +38,7 @@
 export EVAL_TARGET_API_KEY=sk-xxx
 export EVAL_TARGET_BASE_URL=https://api.moonshot.cn/v1
 export EVAL_TARGET_MODEL=moonshot-v1-8k
-npx ts-node scripts/eval-questions-cli.ts run --id q005 --version v1
+npx bmad-speckit eval-questions run --id q005 --version v1
 ```
 
 ---
