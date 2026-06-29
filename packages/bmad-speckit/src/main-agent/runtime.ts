@@ -324,6 +324,59 @@ function emitLegacyResult(result) {
   return result.exitCode ?? (result.ok === false ? 1 : 0);
 }
 
+function captureProcessWrites(callback) {
+  let stdout = '';
+  let stderr = '';
+  const originalStdoutWrite = process.stdout.write;
+  const originalStderrWrite = process.stderr.write;
+  process.stdout.write = function writeCapturedStdout(chunk, ...rest) {
+    stdout += String(chunk);
+    const callbackArg = rest.find((value) => typeof value === 'function');
+    if (callbackArg) callbackArg();
+    return true;
+  };
+  process.stderr.write = function writeCapturedStderr(chunk, ...rest) {
+    stderr += String(chunk);
+    const callbackArg = rest.find((value) => typeof value === 'function');
+    if (callbackArg) callbackArg();
+    return true;
+  };
+  try {
+    return {
+      result: callback(),
+      stdout,
+      stderr,
+    };
+  } finally {
+    process.stdout.write = originalStdoutWrite;
+    process.stderr.write = originalStderrWrite;
+  }
+}
+
+function emitLegacyAction(context, action) {
+  if (!context.json) return emitLegacyResult(action(context));
+
+  const captured = captureProcessWrites(() => action(context));
+  const exitCode = captured.result.exitCode ?? (captured.result.ok === false ? 1 : 0);
+  const status = exitCode === 0 ? 'package_runtime_ready' : 'legacy_action_blocked';
+  const message =
+    captured.stderr.trim() || captured.stdout.trim() || `${context.action} exited with code ${exitCode}`;
+  return emitResponse(
+    context,
+    envelope(
+      context,
+      status,
+      exitCode,
+      {
+        legacyResult: captured.result,
+        stdout: captured.stdout,
+        stderr: captured.stderr,
+      },
+      exitCode === 0 ? [] : [{ code: status, message }]
+    )
+  );
+}
+
 function errorResponse(context, code, message, exitCode = 1) {
   return envelope(context, code, exitCode, null, [{ code, message }]);
 }
@@ -401,7 +454,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'release-gate') {
-    return emitLegacyResult(releaseGateAction(context));
+    return emitLegacyAction(context, releaseGateAction);
   }
 
   if (context.action === 'quality-gate') {
@@ -409,7 +462,7 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'delivery-truth-gate') {
-    return emitLegacyResult(deliveryTruthGateAction(context));
+    return emitLegacyAction(context, deliveryTruthGateAction);
   }
 
   if (context.action === 'codex-worker-adapter') {
@@ -445,11 +498,11 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'delivery-evidence-run') {
-    return emitLegacyResult(deliveryEvidenceRunAction(context));
+    return emitLegacyAction(context, deliveryEvidenceRunAction);
   }
 
   if (context.action === 'host-matrix-pr-orchestrator') {
-    return emitLegacyResult(hostMatrixPrOrchestratorAction(context));
+    return emitLegacyAction(context, hostMatrixPrOrchestratorAction);
   }
 
   if (context.action === 'soak-runner') {
