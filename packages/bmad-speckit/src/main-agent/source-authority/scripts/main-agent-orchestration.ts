@@ -2927,6 +2927,13 @@ function projectedMustIdFromSourceRequirementId(sourceRequirementId: string | nu
   return `MUST-${match[1]}-${match[2].padStart(3, '0')}`;
 }
 
+function sourceTextDeclaresPositiveRequirementIds(sourceText: string): boolean {
+  return (
+    /(?:^|\n)\s{0,3}#{1,6}\s*(?:FR|NFR)-\d{1,3}\b/iu.test(sourceText) ||
+    /(?:^|\n)\s*\|\s*(?:FR|NFR)-\d{1,3}\s*\|/iu.test(sourceText)
+  );
+}
+
 function isForbiddenLineBasedMustId(value: unknown): boolean {
   return /^MUST-.*-L[0-9]+-[0-9]+$/u.test(normalizeText(String(value ?? '')).toUpperCase());
 }
@@ -3730,9 +3737,18 @@ function buildControlledMustCandidatesFromPlainSource(
   const sourceRel = toRootRelativePath(root, sourcePath);
   const grouped = new Map<string, ControlledMustCandidate>();
   const ungrouped: ControlledMustCandidate[] = [];
+  const structuredBlocks = extractStructuredSourceBlocks(root, sourcePath, sourceText);
+  const hasSourceBoundMustProjection =
+    sourceTextDeclaresPositiveRequirementIds(sourceText) ||
+    structuredBlocks.some((block) => {
+      const sourceRequirementId = sourceBlockRequirementId(block);
+      return Boolean(
+        sourceRequirementId && projectedMustIdFromSourceRequirementId(sourceRequirementId)
+      );
+    });
   const acceptsLegacyPlainSource =
-    options.requireSourceRequirementIds !== true;
-  for (const [blockIndex, row] of extractStructuredSourceBlocks(root, sourcePath, sourceText)
+    options.requireSourceRequirementIds !== true && !hasSourceBoundMustProjection;
+  for (const [blockIndex, row] of structuredBlocks
     .filter(
       (block) =>
         block.decision === 'mapped_to_must' ||
@@ -3748,7 +3764,7 @@ function buildControlledMustCandidatesFromPlainSource(
     })
     .entries()) {
     if (!row.projectedMustId) {
-      if (options.requireSourceRequirementIds === true) {
+      if (options.requireSourceRequirementIds === true || hasSourceBoundMustProjection) {
         continue;
       }
       const normalizedRequirement = normalizedRequirementTextFromBlock(row.block);
@@ -13848,10 +13864,12 @@ export function runMainAgentPreConfirmationDrilldown(
     isForbiddenLineBasedMustId(row.id)
   );
   const hasForbiddenLineBasedMustRequirements = forbiddenLineBasedMustRequirements.length > 0;
+  const requireSourceRequirementIdsForControlledCandidates =
+    sourcePrdInstanceLintRequired && detectedEntrySource !== 'session_requirements';
   const controlledCandidates =
     mustRequirements.length === 0
       ? buildControlledMustCandidatesFromPlainSource(root, semanticInputPath, sourceText, {
-          requireSourceRequirementIds: sourcePrdInstanceLintRequired,
+          requireSourceRequirementIds: requireSourceRequirementIdsForControlledCandidates,
         })
       : [];
   if (mustRequirements.length === 0) {
