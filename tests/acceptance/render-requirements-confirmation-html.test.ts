@@ -4415,7 +4415,7 @@ sequenceDiagram
       source,
       original
         .replace(
-          /    - id: TARGET-MOD-002\n      path: "/u,
+          / {4}- id: TARGET-MOD-002\n {6}path: "/u,
           `    - id: TARGET-MOD-SKILL-001
       path: "<skill-dir>/scripts/render-requirements-confirmation-html.ts"
       coverageRole: validation_only
