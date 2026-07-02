@@ -272,7 +272,7 @@ describe('npm pack root package → clean install → CLI', () => {
         input: stdin,
         encoding: 'utf8',
       });
-      expect(resolveRun.status).toBe(0);
+      expect(resolveRun.status, resolveRun.stderr || resolveRun.stdout).toBe(0);
       expect((resolveRun.stdout || '').trim()).toMatch(/"resolvedMode"\s*:\s*"en"/);
     } finally {
       rmSync(consumer, { recursive: true, force: true });

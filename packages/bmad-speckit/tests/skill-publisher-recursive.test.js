@@ -50,15 +50,32 @@ describe('SkillPublisher recursive workflow skill publishing', () => {
       path.join(bmadRoot, 'bmm', 'workflows', '2-plan-workflows', 'bmad-create-prd', 'workflow.md'),
       '# workflow\n',
     );
+    writeFile(
+      path.join(bmadRoot, 'bmm', 'workflows', '2-plan-workflows', 'bmad-create-prd', 'templates', 'prd-template.md'),
+      [
+        '# Product Requirements Document - Test',
+        '',
+        '## BMAD Discovery Layer',
+        '## Functional Requirements',
+        '## Source PRD Instance Lint Handoff',
+        '',
+      ].join('\n'),
+    );
 
     try {
       const result = SkillPublisher.publish(projectRoot, 'test-ai');
       const installedSkill = path.join(destRoot, 'bmad-create-prd', 'SKILL.md');
       const installedWorkflow = path.join(destRoot, 'bmad-create-prd', 'workflow.md');
+      const installedTemplate = path.join(destRoot, 'bmad-create-prd', 'templates', 'prd-template.md');
 
       assert.ok(result.published.includes('bmad-create-prd'), 'published skills should include bmad-create-prd');
       assert.ok(fs.existsSync(installedSkill), 'recursive workflow skill should be installed');
       assert.ok(fs.existsSync(installedWorkflow), 'workflow companion files should be installed');
+      assert.ok(fs.existsSync(installedTemplate), 'workflow template companion files should be installed');
+      assert.ok(
+        fs.readFileSync(installedTemplate, 'utf8').includes('## Source PRD Instance Lint Handoff'),
+        'installed template should come from canonical _bmad workflow source',
+      );
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

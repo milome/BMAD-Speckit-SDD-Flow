@@ -110,6 +110,11 @@ import {
   hasOpenReconfirmationRequest,
   requestSemanticReconfirmation,
 } from './reconfirmation-runtime';
+import {
+  lintRequirementsContractSourcePrd,
+  type EntrySource as SourcePrdAuthoringEntrySource,
+  type LintResult as SourcePrdInstanceLintResult,
+} from './lint-requirements-contract-source-prd';
 import { runNativeGoalInvocation as runNativeGoalInvocationUntyped } from '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker';
 
 const requireCommonJs = createRequire(__filename);
@@ -1593,6 +1598,7 @@ interface PreConfirmationPaths {
   validationAuthorityReport: string;
   projectionDomainSanityReport: string;
   sourceMutationDecision: string;
+  sourcePrdInstanceLintReport: string;
   authoringTransaction: string;
   draftSourcePreview: string;
   promotionReceipt: string;
@@ -1808,6 +1814,9 @@ export interface MainAgentPreConfirmationDrilldownResult extends PreConfirmation
   selectedAuthoringLane?: 'author-confirmation-ready-source';
   visibleAuthoringLaneMessage?: string;
   advisoryScan?: Record<string, unknown>;
+  entrySource?: SourcePrdAuthoringEntrySource;
+  sourcePrdInstanceLint?: SourcePrdInstanceLintResult;
+  sourcePrdInstanceLintReportPath?: string | null;
   status?: 'draft_updated_not_confirmation_ready';
   changedSections?: string[];
   currentBlockingReason?: string | null;
@@ -1841,6 +1850,7 @@ interface PreConfirmationRunOptions {
   source?: string;
   intakeSource?: string;
   targetSource?: string;
+  entrySource?: SourcePrdAuthoringEntrySource | string;
   recordId?: string;
   requirementSetId?: string;
   confirmationLanguage?: string;
@@ -1917,6 +1927,8 @@ interface ControlledMustCandidate {
   coverageReason?: string;
   confidence?: number;
   tableContext?: Record<string, unknown> | null;
+  sourceRequirementId?: string;
+  projectedMustId?: string;
   groupId?: string;
   originalText: string;
   normalizedRequirement: string;
@@ -2158,6 +2170,7 @@ function preConfirmationPaths(
     validationAuthorityReport: path.join(authoringDir, 'validation-authority-report.json'),
     projectionDomainSanityReport: path.join(authoringDir, 'projection-domain-sanity-report.json'),
     sourceMutationDecision: path.join(authoringDir, 'source-mutation-decision.json'),
+    sourcePrdInstanceLintReport: path.join(authoringDir, 'source-prd-instance-lint-report.json'),
     authoringTransaction: path.join(authoringDir, 'authoring-transaction.json'),
     draftSourcePreview: path.join(authoringDir, 'draft-source-preview.md'),
     promotionReceipt: path.join(authoringDir, 'promotion-receipt.json'),
@@ -2297,6 +2310,71 @@ function stagingTransactionEvidence(
 
 type RequirementsAuthoringEntryMode = 'existing_source' | 'intake_to_new_source';
 
+const SOURCE_PRD_AUTHORING_ENTRY_SOURCES: SourcePrdAuthoringEntrySource[] = [
+  'bmad_prd',
+  'session_requirements',
+  'source_prd_draft',
+];
+
+function normalizeSourcePrdAuthoringEntrySource(
+  value: unknown,
+  fallback: SourcePrdAuthoringEntrySource
+): SourcePrdAuthoringEntrySource {
+  const normalized = normalizeText(value);
+  if ((SOURCE_PRD_AUTHORING_ENTRY_SOURCES as string[]).includes(normalized)) {
+    return normalized as SourcePrdAuthoringEntrySource;
+  }
+  return fallback;
+}
+
+function detectSourcePrdAuthoringEntrySource(input: {
+  explicit?: unknown;
+  entryMode: RequirementsAuthoringEntryMode;
+  sourcePath: string;
+  sourceText: string;
+}): SourcePrdAuthoringEntrySource {
+  const fallback =
+    input.entryMode === 'intake_to_new_source'
+      ? 'session_requirements'
+      : input.sourcePath.replace(/\\/g, '/').includes('/bmad-create-prd/')
+        ? 'bmad_prd'
+        : 'source_prd_draft';
+  return normalizeSourcePrdAuthoringEntrySource(input.explicit, fallback);
+}
+
+function writeSourcePrdInstanceLintReport(input: {
+  root: string;
+  paths: PreConfirmationPaths;
+  sourcePath: string;
+  entrySource: SourcePrdAuthoringEntrySource;
+  lint: SourcePrdInstanceLintResult;
+  stage: 'pre_staging_source' | 'post_initial_session_draft';
+}): void {
+  fs.mkdirSync(input.paths.authoringDir, { recursive: true });
+  writeJsonUtf8(input.paths.sourcePrdInstanceLintReport, {
+    schemaVersion: 'requirements-contract-source-prd-instance-lint-report/v1',
+    stage: input.stage,
+    entrySource: input.entrySource,
+    sourcePath: toRootRelativePath(input.root, input.sourcePath),
+    sourcePrdDraftReady: input.lint.sourcePrdDraftReady,
+    status: input.lint.status,
+    blockedReason: input.lint.blockedReason,
+    ok: input.lint.ok,
+    counts: input.lint.counts,
+    issues: input.lint.issues,
+    nextRequiredAction: input.lint.ok
+      ? 'continue_staging_first_authoring_lane'
+      : 'continue_staging_repair_without_ready_claim',
+    readyStateBoundary: {
+      sourcePrdDraftReadyIsNotConfirmationReady: true,
+      sourcePrdDraftReadyIsNotImplementationReady: true,
+      sourcePrdDraftReadyIsNotDeliveryReady: true,
+    },
+    createdBy: 'main_agent_orchestration.source_prd_instance_lint_gate',
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 function assertKnownRequirementsAuthoringSubstate(substate: PreConfirmationDrilldownSubstate): void {
   const allowed = new Set<PreConfirmationDrilldownSubstate>([
     'intake_created',
@@ -2328,9 +2406,32 @@ function writeRequirementsAuthoringTransaction(input: {
   sourceStartHash: string;
   draftHash?: string | null;
   scaleRoutingDecision?: string | null;
+  sourcePrdEntrySource?: SourcePrdAuthoringEntrySource | null;
+  sourcePrdInstanceLint?: SourcePrdInstanceLintResult | null;
+  sourcePrdInstanceLintReportPath?: string | null;
   nextRequiredAction?: string | null;
 }): void {
   assertKnownRequirementsAuthoringSubstate(input.substate);
+  const previous = readJsonIfExists(input.paths.authoringTransaction);
+  const previousEntrySource =
+    normalizeSourcePrdAuthoringEntrySource(previous?.sourcePrdEntrySource, 'source_prd_draft');
+  const previousLint =
+    previous?.sourcePrdInstanceLint &&
+    typeof previous.sourcePrdInstanceLint === 'object' &&
+    !Array.isArray(previous.sourcePrdInstanceLint)
+      ? (previous.sourcePrdInstanceLint as Record<string, unknown>)
+      : null;
+  const nextLint = input.sourcePrdInstanceLint
+    ? {
+        ok: input.sourcePrdInstanceLint.ok,
+        status: input.sourcePrdInstanceLint.status,
+        sourcePrdDraftReady: input.sourcePrdInstanceLint.sourcePrdDraftReady,
+        blockedReason: input.sourcePrdInstanceLint.blockedReason,
+        issueCount: input.sourcePrdInstanceLint.issues.length,
+        counts: input.sourcePrdInstanceLint.counts,
+        reportPath: input.sourcePrdInstanceLintReportPath ?? null,
+      }
+    : previousLint;
   writeJsonUtf8(input.paths.authoringTransaction, {
     schemaVersion: 'requirements-authoring-transaction/v1',
     lane: 'author-confirmation-ready-source',
@@ -2344,6 +2445,8 @@ function writeRequirementsAuthoringTransaction(input: {
     sourceStartHash: input.sourceStartHash,
     draftHash: input.draftHash ?? null,
     scaleRoutingDecision: input.scaleRoutingDecision ?? null,
+    sourcePrdEntrySource: input.sourcePrdEntrySource ?? previousEntrySource,
+    sourcePrdInstanceLint: nextLint,
     nextRequiredAction: input.nextRequiredAction ?? null,
     updatedAt: new Date().toISOString(),
   });
@@ -2692,6 +2795,10 @@ function hasMandatoryRequirementLanguage(text: string): boolean {
   return /(?:必须|不得|禁止|需要|应当|不能|不允许|默认|确保|验收|支持|保持)/u.test(normalized);
 }
 
+function isExplicitMustStatement(text: string): boolean {
+  return /^MUST(?:-[A-Z0-9][A-Z0-9-]*)?\s*[:：]/iu.test(normalizeText(text));
+}
+
 function headingImpliesRequirement(headingPath: string[]): boolean {
   return headingPath.some((heading) =>
     /(?:requirements?|acceptance|behavior|scope|scenario|constraints?|defaults?|settings?|display|overview|验收|需求|行为|场景|约束|默认|设置|显示|功能)/iu.test(
@@ -2747,6 +2854,55 @@ function headingPathContainsCurrentTargetStateSection(headingPath: string[]): bo
   return headingPath.some((heading) => currentTargetMapSourceStateSectionKind(heading) !== null);
 }
 
+function headingPathAllowsMustProjection(headingPath: string[]): boolean {
+  return headingPath.some((heading) =>
+    /^(?:(?:\d+\.?\s+)*)?(?:functional requirements|non functional requirements|功能需求|非功能需求)$/iu.test(
+      normalizedHeadingLabel(heading)
+    )
+  );
+}
+
+function normalizeRequirementSourceId(value: unknown): string {
+  return normalizeText(String(value ?? '')).toUpperCase();
+}
+
+function tableContextRowValue(
+  tableContext: Record<string, unknown> | null | undefined,
+  keys: string[]
+): string {
+  const row =
+    tableContext?.row && typeof tableContext.row === 'object' && !Array.isArray(tableContext.row)
+      ? (tableContext.row as Record<string, unknown>)
+      : {};
+  for (const [key, value] of Object.entries(row)) {
+    if (keys.some((candidate) => normalizedHeadingLabel(candidate) === normalizedHeadingLabel(key))) {
+      return normalizeText(String(value ?? ''));
+    }
+  }
+  return '';
+}
+
+function sourceRequirementIdFromTableContext(
+  tableContext: Record<string, unknown> | null | undefined
+): string | null {
+  const id = normalizeRequirementSourceId(
+    tableContextRowValue(tableContext, ['ID', 'Requirement ID', 'Req ID'])
+  );
+  return /^(?:FR|NFR)-\d{1,3}$/u.test(id) ? id : null;
+}
+
+function projectedMustIdFromSourceRequirementId(sourceRequirementId: string | null): string | null {
+  const match = sourceRequirementId?.match(/^(FR|NFR)-(\d{1,3})$/u);
+  if (!match) {
+    return null;
+  }
+  return `MUST-${match[1]}-${match[2].padStart(3, '0')}`;
+}
+
+function isForbiddenLineBasedMustId(value: unknown): boolean {
+  return /^MUST-.*-L[0-9]+-[0-9]+$/u.test(normalizeText(String(value ?? '')).toUpperCase());
+}
+
 function headingPathImpliesCommentaryOnly(headingPath: string[]): boolean {
   return headingPath.some((heading) =>
     /(?:notes?|commentary|rationale|background|context|discussion|说明|备注|背景|上下文|讨论)/iu.test(
@@ -2789,6 +2945,7 @@ function classifyStructuredSourceBlock(input: {
       /(?:default|behavior|expected|验收|默认|行为|设置|显示|约束)/iu.test(
         JSON.stringify(input.tableContext ?? {})
       ));
+  const mustProjectionContext = headingPathAllowsMustProjection(input.headingPath);
   const unresolvedPlaceholder =
     requirementContext &&
     /(?:\bTBD\b|\bTBC\b|\bTODO\b|待定|未定|不明确|(?:^|[|\s])\?(?:[|\s]|$))/iu.test(
@@ -2796,6 +2953,9 @@ function classifyStructuredSourceBlock(input: {
     );
   if (hasMandatoryRequirementLanguage(normalized)) {
     signal.add('mandatory_language');
+  }
+  if (isExplicitMustStatement(normalized)) {
+    signal.add('explicit_must_statement');
   }
   if (headingImpliesRequirement(input.headingPath)) {
     signal.add('requirement_heading');
@@ -2833,10 +2993,12 @@ function classifyStructuredSourceBlock(input: {
     return { decision: 'mapped_to_non_goal', requirementSignal: [...signal] };
   }
   if (
-    signal.has('mandatory_language') ||
-    signal.has('requirement_table_row') ||
-    signal.has('numeric_layout_constraint') ||
-    (signal.has('requirement_heading') && normalized.length >= 12)
+    signal.has('explicit_must_statement') ||
+    (mustProjectionContext &&
+      (signal.has('mandatory_language') ||
+      signal.has('requirement_table_row') ||
+      signal.has('numeric_layout_constraint') ||
+      (signal.has('requirement_heading') && normalized.length >= 12)))
   ) {
     return { decision: 'mapped_to_must', requirementSignal: [...signal] };
   }
@@ -3515,46 +3677,90 @@ function buildControlledMustCandidatesFromPlainSource(
 ): ControlledMustCandidate[] {
   const sourceDocumentHash = sha256Text(sourceText);
   const sourceRel = toRootRelativePath(root, sourcePath);
-  return extractStructuredSourceBlocks(root, sourcePath, sourceText)
+  const grouped = new Map<string, ControlledMustCandidate>();
+  for (const row of extractStructuredSourceBlocks(root, sourcePath, sourceText)
     .filter((block) => block.decision === 'mapped_to_must')
-    .map((block, index) => ({
-      candidateId: `MUST-CAND-${requirementOrdinal(index)}`,
+    .map((block) => {
+      const sourceRequirementId = sourceBlockRequirementId(block);
+      return {
+        block,
+        sourceRequirementId,
+        projectedMustId: projectedMustIdFromSourceRequirementId(sourceRequirementId),
+      };
+    })
+    .filter((row) => Boolean(row.projectedMustId))) {
+    const projectedMustId = row.projectedMustId as string;
+    const existing = grouped.get(projectedMustId);
+    const normalizedRequirement = normalizedRequirementTextFromBlock(row.block);
+    if (existing) {
+      existing.sourceSpan = {
+        startLine: Math.min(existing.sourceSpan.startLine, row.block.sourceSpan.startLine),
+        endLine: Math.max(existing.sourceSpan.endLine, row.block.sourceSpan.endLine),
+      };
+      existing.blockId = uniqueNonEmpty([
+        normalizeText(existing.blockId),
+        normalizeText(row.block.blockId),
+      ]).join(',');
+      existing.coverageReason = uniqueNonEmpty([
+        normalizeText(existing.coverageReason),
+        row.block.requirementSignal.join(', '),
+      ]).join(', ');
+      existing.confidence = Math.max(existing.confidence ?? 0, row.block.requirementSignal.includes('mandatory_language') ? 0.95 : 0.8);
+      existing.originalText = uniqueNonEmpty([
+        existing.originalText,
+        row.block.rawText,
+      ]).join('\n\n');
+      existing.normalizedRequirement = uniqueNonEmpty([
+        existing.normalizedRequirement,
+        normalizedRequirement,
+      ]).join('\n');
+      continue;
+    }
+    grouped.set(projectedMustId, {
+      candidateId: '',
       sourcePath: sourceRel,
       sourceHash: sourceDocumentHash,
       sourceDocumentHash,
-      sourceSpan: block.sourceSpan,
-      headingPath: block.headingPath,
-      blockId: block.blockId,
-      blockKind: block.blockKind,
+      sourceSpan: row.block.sourceSpan,
+      headingPath: row.block.headingPath,
+      blockId: row.block.blockId,
+      blockKind: row.block.blockKind,
       requirementType: 'positive',
-      coverageDecision: block.decision,
-      coverageReason: block.requirementSignal.join(', ') || 'structured_source_block',
-      confidence: block.requirementSignal.includes('mandatory_language') ? 0.95 : 0.8,
-      tableContext: block.tableContext ?? null,
-      groupId: block.headingPath.join(' > ') || 'root',
-      originalText: block.rawText,
-      normalizedRequirement: block.normalizedText,
+      coverageDecision: row.block.decision,
+      coverageReason: row.block.requirementSignal.join(', ') || 'structured_source_block',
+      confidence: row.block.requirementSignal.includes('mandatory_language') ? 0.95 : 0.8,
+      tableContext: row.block.tableContext ?? null,
+      sourceRequirementId: row.sourceRequirementId ?? undefined,
+      projectedMustId,
+      groupId: row.block.headingPath.join(' > ') || 'root',
+      originalText: row.block.rawText,
+      normalizedRequirement,
       decision: 'accepted_for_draft',
       decisionReason:
-        'Structured source block is requirement-bearing and maps to a controlled draft MUST candidate.',
+        'FR/NFR source row maps to a stable controlled draft MUST projection.',
       requiresHumanReview: true,
-    }));
+    });
+  }
+  return Array.from(grouped.values()).map((candidate, index) => ({
+    ...candidate,
+    candidateId: `MUST-CAND-${requirementOrdinal(index)}`,
+  }));
 }
 
 function mustRequirementsFromControlledCandidates(
   requirementSetId: string,
   candidates: ControlledMustCandidate[]
 ): SourceMustRequirement[] {
-  const stablePrefix = sanitizeRequirementIdSegment(requirementSetId)
-    .replace(/[^A-Z0-9]+/giu, '-')
-    .replace(/^-|-$/gu, '')
-    .toUpperCase()
-    .slice(0, 24)
-    .replace(/^-|-$/gu, '');
+  void requirementSetId;
   return candidates
-    .filter((candidate) => candidate.decision === 'accepted_for_draft')
+    .filter(
+      (candidate) =>
+        candidate.decision === 'accepted_for_draft' &&
+        Boolean(candidate.projectedMustId) &&
+        !isForbiddenLineBasedMustId(candidate.projectedMustId)
+    )
     .map((candidate, index) => ({
-      id: `MUST-${stablePrefix ? `${stablePrefix}-` : ''}L${candidate.sourceSpan.startLine}-${requirementOrdinal(index)}`,
+      id: normalizeMustRef(candidate.projectedMustId, index),
       text: candidate.normalizedRequirement,
       source: 'controlled_plain_source_candidate' as const,
       sourceLine: candidate.sourceSpan.startLine,
@@ -3567,27 +3773,26 @@ function mustRequirementsFromControlledCandidates(
 }
 
 function sourceBlockRequirementId(block: StructuredSourceBlock): string | null {
+  const tableId = sourceRequirementIdFromTableContext(block.tableContext);
+  if (tableId) {
+    return tableId;
+  }
   const heading = block.headingPath.at(-1) ?? '';
-  const match = heading.match(/\b((?:FR|NFR|ACC)-\d+)\b/iu);
+  const match = heading.match(/\b((?:FR|NFR)-\d{1,3})\b/iu);
   return match ? match[1].toUpperCase() : null;
 }
 
-function businessSourceBlockId(block: StructuredSourceBlock, index: number): string {
-  const explicit = sourceBlockRequirementId(block);
-  if (explicit) {
-    return explicit;
+function normalizedRequirementTextFromBlock(block: StructuredSourceBlock): string {
+  if (block.blockKind === 'table_row') {
+    const requirement =
+      tableContextRowValue(block.tableContext, ['Requirement']) ||
+      tableContextRowValue(block.tableContext, ['Quality attribute']) ||
+      tableContextRowValue(block.tableContext, ['Behavior']);
+    if (requirement) {
+      return requirement;
+    }
   }
-  const heading = block.headingPath.join(' > ');
-  if (/(?:默认|default)/iu.test(heading)) {
-    return `DEFAULT-${requirementOrdinal(index)}`;
-  }
-  if (/(?:验收|acceptance)/iu.test(heading)) {
-    return `ACCEPTANCE-${requirementOrdinal(index)}`;
-  }
-  if (headingImpliesNonGoal(block.headingPath)) {
-    return `NON-GOAL-${requirementOrdinal(index)}`;
-  }
-  return `BUSINESS-${requirementOrdinal(index)}`;
+  return block.normalizedText;
 }
 
 function buildBusinessRequirementRows(input: {
@@ -3595,10 +3800,11 @@ function buildBusinessRequirementRows(input: {
   blocks: StructuredSourceBlock[];
   packetHash: string;
 }): Record<string, unknown>[] {
-  const rows = input.mustRequirements
+  void input.blocks;
+  return input.mustRequirements
     .map((requirement) => {
       const heading = requirement.headingPath?.at(-1) ?? '';
-      const match = heading.match(/\b((?:FR|NFR|ACC)-\d+)\b/iu);
+      const match = heading.match(/\b((?:FR|NFR)-\d{1,3})\b/iu);
       if (!match) {
         return null;
       }
@@ -3618,41 +3824,6 @@ function buildBusinessRequirementRows(input: {
       };
     })
     .filter((row): row is Record<string, unknown> => Boolean(row));
-  const existing = new Set(rows.map((row) => normalizeText(row.requirementId)));
-  for (const block of input.blocks) {
-    if (
-      ![
-        'mapped_to_must',
-        'mapped_to_non_goal',
-        'mapped_to_target_authority',
-        'mapped_to_validation_authority',
-      ].includes(block.decision)
-    ) {
-      continue;
-    }
-    const requirementId = businessSourceBlockId(block, rows.length);
-    if (existing.has(requirementId)) {
-      continue;
-    }
-    existing.add(requirementId);
-    rows.push({
-      id: `BUS-${requirementId}`,
-      requirementId,
-      title: block.headingPath.at(-1) ?? block.blockId,
-      text: block.normalizedText,
-      sourcePath: block.sourcePath,
-      sourceSpan: block.sourceSpan,
-      sourceDocumentHash: block.sourceDocumentHash,
-      headingPath: block.headingPath,
-      sourceBlockId: block.blockId,
-      coverageDecision: block.decision,
-      covers: [],
-      derivedFromMustRef: null,
-      derivedFromPacketHash: input.packetHash,
-      projectionStatus: 'synchronized',
-    });
-  }
-  return rows;
 }
 
 function buildOutOfScopeRows(input: {
@@ -3717,12 +3888,16 @@ function writeControlledMustCandidateArtifacts(input: {
   candidates: ControlledMustCandidate[];
   mustRequirements: SourceMustRequirement[];
   draftConfirmation?: Record<string, unknown> | null;
-  decision: 'draft_materialization_allowed' | 'controlled_must_candidates_missing';
+  decision:
+    | 'draft_materialization_allowed'
+    | 'controlled_must_candidates_missing'
+    | 'line_based_must_id_forbidden';
 }): void {
   const sourceDocumentHash = sha256Text(input.sourceText);
   const acceptedCandidates = input.candidates.filter(
     (candidate) => candidate.decision === 'accepted_for_draft'
   );
+  const failClosed = input.decision !== 'draft_materialization_allowed';
   const base = {
     sourcePath: toRootRelativePath(input.root, input.sourcePath),
     sourceDocumentHash,
@@ -3737,7 +3912,7 @@ function writeControlledMustCandidateArtifacts(input: {
     candidateCount: input.candidates.length,
     acceptedCandidateCount: acceptedCandidates.length,
     mustCount: input.mustRequirements.length,
-    failClosed: input.decision === 'controlled_must_candidates_missing',
+    failClosed,
     candidates: input.candidates,
     decision: input.decision,
   });
@@ -3748,7 +3923,7 @@ function writeControlledMustCandidateArtifacts(input: {
     candidateCount: input.candidates.length,
     acceptedCandidateCount: acceptedCandidates.length,
     mustCount: input.mustRequirements.length,
-    failClosed: input.decision === 'controlled_must_candidates_missing',
+    failClosed,
     mustRequirements: input.mustRequirements,
     implementationConfirmation: input.draftConfirmation ?? null,
     decision: input.decision,
@@ -3764,7 +3939,7 @@ function writeControlledMustCandidateArtifacts(input: {
     candidateCount: input.candidates.length,
     acceptedCandidateCount: acceptedCandidates.length,
     mustCount: input.mustRequirements.length,
-    failClosed: input.decision === 'controlled_must_candidates_missing',
+    failClosed,
     decision: input.decision,
     requiresUserConfirmationBeforeExecution: true,
     receiptHash: sha256Json({
@@ -4070,13 +4245,13 @@ function sourceRequirementDisplayRefsForCurrentTargetMap(
         !headingPathContainsCurrentTargetStateSection(requirement.headingPath ?? []) &&
         !headingPathImpliesCommentaryOnly(requirement.headingPath ?? [])
     )
-    .map((requirement, index) => ({
-    displayRef: `MUST-${requirementOrdinal(index)}`,
-    requirementRef: requirement.id,
-    text: requirement.text,
-    ...(requirement.sourceSpan ? { sourceSpan: requirement.sourceSpan } : {}),
-    ...(requirement.headingPath ? { headingPath: requirement.headingPath } : {}),
-  }));
+    .map((requirement) => ({
+      displayRef: requirement.id,
+      requirementRef: requirement.id,
+      text: requirement.text,
+      ...(requirement.sourceSpan ? { sourceSpan: requirement.sourceSpan } : {}),
+      ...(requirement.headingPath ? { headingPath: requirement.headingPath } : {}),
+    }));
 }
 
 function sourceTitleForCurrentTargetMap(sourceText: string, targetPaths: string[]): string {
@@ -13002,6 +13177,7 @@ function artifactMap(root: string, paths: PreConfirmationPaths): Record<string, 
     validationAuthorityReport: toRootRelativePath(root, paths.validationAuthorityReport),
     projectionDomainSanityReport: toRootRelativePath(root, paths.projectionDomainSanityReport),
     sourceMutationDecision: toRootRelativePath(root, paths.sourceMutationDecision),
+    sourcePrdInstanceLintReport: toRootRelativePath(root, paths.sourcePrdInstanceLintReport),
     draftSourcePreview: toRootRelativePath(root, paths.draftSourcePreview),
     draftImplementationConfirmation: toRootRelativePath(root, paths.draftImplementationConfirmation),
     authoringMaterializationReceipt: toRootRelativePath(
@@ -13060,8 +13236,20 @@ function buildPreConfirmationResult(input: {
   nextUserPrompt?: string | null;
   nextRequiredAction?: string | null;
   confirmationLanguage?: string | null;
+  entrySource?: SourcePrdAuthoringEntrySource;
+  sourcePrdInstanceLint?: SourcePrdInstanceLintResult | null;
 }): MainAgentPreConfirmationDrilldownResult {
   const issues = input.issues ?? [];
+  const transaction = readJsonIfExists(input.paths.authoringTransaction);
+  const persistedLintReport = readJsonIfExists(input.paths.sourcePrdInstanceLintReport) as
+    | SourcePrdInstanceLintResult
+    | null;
+  const sourcePrdInstanceLint = input.sourcePrdInstanceLint ?? persistedLintReport ?? null;
+  const entrySource = input.entrySource ?? (sourcePrdInstanceLint
+    ? normalizeSourcePrdAuthoringEntrySource(sourcePrdInstanceLint.entrySource, 'source_prd_draft')
+    : transaction?.sourcePrdEntrySource
+      ? normalizeSourcePrdAuthoringEntrySource(transaction.sourcePrdEntrySource, 'source_prd_draft')
+      : undefined);
   const confirmable = input.substate === 'user_confirmable' && issues.length === 0;
   const deliveryReadiness =
     input.renderReport?.deliveryReadiness &&
@@ -13087,6 +13275,11 @@ function buildPreConfirmationResult(input: {
       artifactWriteAllowed: false,
       appliesBefore: 'source_materialization',
     },
+    entrySource,
+    sourcePrdInstanceLint,
+    sourcePrdInstanceLintReportPath: fs.existsSync(input.paths.sourcePrdInstanceLintReport)
+      ? toRootRelativePath(input.root, input.paths.sourcePrdInstanceLintReport)
+      : null,
     status: input.status,
     changedSections: input.changedSections ?? input.updatedSourceSections ?? [],
     currentBlockingReason: input.currentBlockingReason ?? null,
@@ -13387,12 +13580,37 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const sourceText = fs.readFileSync(semanticInputPath, 'utf8');
   const sourceHashBefore = semanticSourceDocumentHashForText(sourceText);
+  const entrySource = detectSourcePrdAuthoringEntrySource({
+    explicit: options.entrySource,
+    entryMode,
+    sourcePath: semanticInputPath,
+    sourceText,
+  });
+  const preStagingSourcePrdLint =
+    entryMode === 'existing_source'
+      ? lintRequirementsContractSourcePrd({
+          source: semanticInputPath,
+          entrySource,
+          allowInlineConfirmation: true,
+          json: true,
+        })
+      : null;
   const stagingTransaction = createCriticalAuditorStagingTransaction({
     paths,
     recordId: identity.recordId,
     sourceStartHash: sourceHashBefore,
   });
   fs.mkdirSync(stagingTransaction.stagingDir, { recursive: true });
+  if (preStagingSourcePrdLint) {
+    writeSourcePrdInstanceLintReport({
+      root,
+      paths,
+      sourcePath: semanticInputPath,
+      entrySource,
+      lint: preStagingSourcePrdLint,
+      stage: 'pre_staging_source',
+    });
+  }
   writeRequirementsAuthoringTransaction({
     root,
     paths,
@@ -13402,6 +13620,11 @@ export function runMainAgentPreConfirmationDrilldown(
     intakePath,
     targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
     sourceStartHash: sourceHashBefore,
+    sourcePrdEntrySource: entrySource,
+    sourcePrdInstanceLint: preStagingSourcePrdLint,
+    sourcePrdInstanceLintReportPath: fs.existsSync(paths.sourcePrdInstanceLintReport)
+      ? toRootRelativePath(root, paths.sourcePrdInstanceLintReport)
+      : null,
     nextRequiredAction: 'run_initial_scale_assessment',
   });
   const explicitCheckpointEvidencePath = normalizeText(options.checkpointPersistenceEvidencePath)
@@ -13454,6 +13677,11 @@ export function runMainAgentPreConfirmationDrilldown(
     targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
     sourceStartHash: sourceHashBefore,
     scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || null,
+    sourcePrdEntrySource: entrySource,
+    sourcePrdInstanceLint: preStagingSourcePrdLint,
+    sourcePrdInstanceLintReportPath: fs.existsSync(paths.sourcePrdInstanceLintReport)
+      ? toRootRelativePath(root, paths.sourcePrdInstanceLintReport)
+      : null,
     nextRequiredAction: 'create_staging_draft',
   });
   if (initialScaleAssessment.issues.length > 0) {
@@ -13465,6 +13693,8 @@ export function runMainAgentPreConfirmationDrilldown(
       paths,
       substate: 'blocked_by_render_gate',
       issues: initialScaleAssessment.issues,
+      entrySource,
+      sourcePrdInstanceLint: preStagingSourcePrdLint,
       finalStandards: { singlePassCannotSkipAtomicDecompositionLoop: true },
     });
   }
@@ -13492,6 +13722,8 @@ export function runMainAgentPreConfirmationDrilldown(
         criticalAuditorProviderMode,
         blockingStage: 'critical_auditor_external_adapter_missing',
         sourceMutationPerformed: false,
+        entrySource,
+        sourcePrdInstanceLint: preStagingSourcePrdLint,
       });
     }
   }
@@ -13505,6 +13737,10 @@ export function runMainAgentPreConfirmationDrilldown(
   writeRequirementCoverageLedgerArtifact(paths.requirementCoverageLedger, coverageLedger);
 
   let mustRequirements = resolveSourceMustRequirements(semanticInputPath);
+  const forbiddenLineBasedMustRequirements = mustRequirements.filter((row) =>
+    isForbiddenLineBasedMustId(row.id)
+  );
+  const hasForbiddenLineBasedMustRequirements = forbiddenLineBasedMustRequirements.length > 0;
   const controlledCandidates =
     mustRequirements.length === 0
       ? buildControlledMustCandidatesFromPlainSource(root, semanticInputPath, sourceText)
@@ -13552,6 +13788,20 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const initialIssues: PreConfirmationDrilldownIssue[] = [];
   initialIssues.push(...userConfirmationPromotionIssues(sourceText, semanticInputPath, root));
+  if (forbiddenLineBasedMustRequirements.length > 0) {
+    initialIssues.push(
+      preConfirmationIssue(
+        'line_based_must_id_forbidden',
+        'Canonical implementationConfirmation.must[] must not contain line-based generated MUST ids; use MUST-FR-* or MUST-NFR-* source projections.',
+        [
+          toRootRelativePath(root, semanticInputPath),
+          'implementationConfirmation.must',
+          ...forbiddenLineBasedMustRequirements.map((row) => row.id),
+        ],
+        'semantic_kernel_authoring'
+      )
+    );
+  }
   if (coverageLedger.blockingIssues.includes('source_requirement_coverage_gap')) {
     initialIssues.push(
       preConfirmationIssue(
@@ -13579,7 +13829,7 @@ export function runMainAgentPreConfirmationDrilldown(
   initialIssues.push(...targetAuthority.issues, ...validationAuthority.issues, ...projectionSanity.issues);
 
   const draftConfirmation =
-    mustRequirements.length > 0
+    mustRequirements.length > 0 && !hasForbiddenLineBasedMustRequirements
       ? buildPreConfirmationImplementationConfirmation({
           root,
           sourcePath: semanticInputPath,
@@ -13599,6 +13849,12 @@ export function runMainAgentPreConfirmationDrilldown(
           auditConvergenceVerdict: 'audit_not_run',
         })
       : null;
+  const controlledMustArtifactDecision =
+    initialIssues.length === 0
+      ? 'draft_materialization_allowed'
+      : hasForbiddenLineBasedMustRequirements
+        ? 'line_based_must_id_forbidden'
+        : 'controlled_must_candidates_missing';
   writeControlledMustCandidateArtifacts({
     root,
     sourcePath: semanticInputPath,
@@ -13610,7 +13866,7 @@ export function runMainAgentPreConfirmationDrilldown(
     candidates: controlledCandidates,
     mustRequirements,
     draftConfirmation,
-    decision: initialIssues.length === 0 ? 'draft_materialization_allowed' : 'controlled_must_candidates_missing',
+    decision: controlledMustArtifactDecision,
   });
 
   if (initialIssues.length > 0 || !draftConfirmation) {
@@ -13639,6 +13895,8 @@ export function runMainAgentPreConfirmationDrilldown(
       substate: 'blocked_by_semantic_gap',
       issues: initialIssues,
       confirmationLanguage: language,
+      entrySource,
+      sourcePrdInstanceLint: preStagingSourcePrdLint,
       finalStandards: {
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: false,
         mustDecompositionPacketSynchronizedBeforeMaterialization: false,
@@ -13655,6 +13913,24 @@ export function runMainAgentPreConfirmationDrilldown(
     fs.writeFileSync(stagingTransaction.draftSource, materializedDraftText, 'utf8');
   }
   fs.copyFileSync(stagingTransaction.draftSource, paths.draftSourcePreview);
+  const effectiveSourcePrdLint =
+    preStagingSourcePrdLint ??
+    lintRequirementsContractSourcePrd({
+      source: paths.draftSourcePreview,
+      entrySource,
+      allowInlineConfirmation: true,
+      json: true,
+    });
+  if (!preStagingSourcePrdLint) {
+    writeSourcePrdInstanceLintReport({
+      root,
+      paths,
+      sourcePath: paths.draftSourcePreview,
+      entrySource,
+      lint: effectiveSourcePrdLint,
+      stage: 'post_initial_session_draft',
+    });
+  }
   writeRequirementsAuthoringTransaction({
     root,
     paths,
@@ -13666,6 +13942,9 @@ export function runMainAgentPreConfirmationDrilldown(
     sourceStartHash: sourceHashBefore,
     draftHash: sha256File(stagingTransaction.draftSource),
     scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || null,
+    sourcePrdEntrySource: entrySource,
+    sourcePrdInstanceLint: effectiveSourcePrdLint,
+    sourcePrdInstanceLintReportPath: toRootRelativePath(root, paths.sourcePrdInstanceLintReport),
     nextRequiredAction: 'run_critical_auditor_loop',
   });
   const previewText = fs.readFileSync(paths.draftSourcePreview, 'utf8');
@@ -13702,6 +13981,8 @@ export function runMainAgentPreConfirmationDrilldown(
       substate: 'blocked_by_render_gate',
       issues: [issue],
       confirmationLanguage: language,
+      entrySource,
+      sourcePrdInstanceLint: effectiveSourcePrdLint,
     });
   }
 
@@ -16982,6 +17263,8 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.intakeSource = argv[++index];
     } else if ((token === '--target-source' || token === '--targetSource') && argv[index + 1]) {
       out.targetSource = argv[++index];
+    } else if ((token === '--entry-source' || token === '--entrySource') && argv[index + 1]) {
+      out.entrySource = argv[++index];
     } else if (
       (token === '--target-path' || token === '--targetPath') &&
       argv[index + 1]
@@ -20573,6 +20856,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         source: args.source,
         intakeSource: args.intakeSource,
         targetSource: args.targetSource,
+        entrySource: args.entrySource,
         recordId: args.recordId,
         requirementSetId: args.requirementSetId,
         confirmationLanguage: args.confirmationLanguage,

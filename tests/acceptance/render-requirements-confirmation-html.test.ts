@@ -4408,6 +4408,65 @@ sequenceDiagram
     ).toBe(true);
   });
 
+  it('keeps skill-dir placeholder command paths aligned with target modification paths', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    fs.writeFileSync(
+      source,
+      original
+        .replace(
+          /    - id: TARGET-MOD-002\n      path: "/u,
+          `    - id: TARGET-MOD-SKILL-001
+      path: "<skill-dir>/scripts/render-requirements-confirmation-html.ts"
+      coverageRole: validation_only
+      intent: "Validate portable skill command target path coverage."
+      ownerModel: contract_gate
+      requirementRefs: []
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: []
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-002
+      path: "`
+        )
+        .replace(
+          /command: "npx vitest run [^"]*upload\.acceptance\.test\.ts"/u,
+          'command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source source.md"'
+        ),
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-skill-dir-target-path.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(report.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+      'target_modification_path_coverage_missing'
+    );
+    expect(report.targetModificationPathCoverage.missingCoverage).toEqual([]);
+    expect(
+      report.targetModificationPaths.some(
+        (row: any) => row.path === '<skill-dir>/scripts/render-requirements-confirmation-html.ts'
+      )
+    ).toBe(true);
+  });
+
   it('supports external artifact plan input without mutating the source', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');

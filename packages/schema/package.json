@@ -1,6 +1,6 @@
 {
   "name": "@bmad-speckit/schema",
-  "version": "2.1.8",
+  "version": "2.1.9",
   "description": "Shared BMAD schema assets for packaged runtime consumers",
   "license": "MIT",
   "files": [

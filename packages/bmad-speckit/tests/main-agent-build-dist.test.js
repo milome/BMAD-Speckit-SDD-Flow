@@ -97,6 +97,8 @@ const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
 ];
 const EXPECTED_SOURCE_AUTHORITY_ASSETS = [
   '.specify/templates/agent-file-template.md',
+  'packages/bmad-speckit/src/main-agent/source-authority/templates/requirements-contract-source-prd-template.md',
+  'packages/bmad-speckit/src/main-agent/source-authority/templates/requirements-contract-source-prd-template.schema.json',
   '_bmad-output/runtime/requirement-records/index.json',
   '_bmad-output/runtime/requirement-records/REQ-CI-GOVERNANCE-MAPPING-FIXTURE/requirement-record.json',
 ];
@@ -415,6 +417,42 @@ describe('main-agent dist build', () => {
       'utf8'
     );
     assert.match(freshRegressionMatrix, /process\.cwd\(\)/);
+
+    const sourcePrdRuleRegistry = path.join(
+      DIST_ROOT,
+      'source-authority',
+      'rules',
+      'requirements-contract-source-prd-rules.js'
+    );
+    const sourcePrdInstanceLint = path.join(
+      DIST_ROOT,
+      'source-authority',
+      'scripts',
+      'lint-requirements-contract-source-prd.js'
+    );
+    const sourcePrdTemplateLint = path.join(
+      DIST_ROOT,
+      'source-authority',
+      'scripts',
+      'lint-requirements-contract-source-template.js'
+    );
+    const sourcePrdTemplateSchema = path.join(
+      DIST_ROOT,
+      'source-authority',
+      'packages',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'templates',
+      'requirements-contract-source-prd-template.schema.json'
+    );
+    assert.equal(fs.existsSync(sourcePrdRuleRegistry), true, 'dist missing source PRD rule registry');
+    assert.equal(fs.existsSync(sourcePrdInstanceLint), true, 'dist missing source PRD instance lint CLI');
+    assert.equal(fs.existsSync(sourcePrdTemplateLint), true, 'dist missing source PRD template lint CLI');
+    assert.equal(fs.existsSync(sourcePrdTemplateSchema), true, 'dist missing source PRD template schema');
+    const instanceLintSource = fs.readFileSync(sourcePrdInstanceLint, 'utf8');
+    assert.match(instanceLintSource, /requirements-contract-source-prd-rules/u);
 
     const sourceAuthorityDistRoot = path.join(DIST_ROOT, 'source-authority');
     const sourceAuthorityPackageJsonFiles = collectPackageJsonFiles(sourceAuthorityDistRoot);

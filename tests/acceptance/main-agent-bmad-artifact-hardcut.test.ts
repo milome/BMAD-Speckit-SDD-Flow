@@ -89,6 +89,34 @@ function writeRecord(root: string, artifacts: Array<Record<string, unknown>> = [
 }
 
 describe('main-agent BMAD artifact hardcut', () => {
+  it('keeps the BMAD create-PRD template as discovery plus source PRD projection seed', () => {
+    const template = readFileSync(
+      path.join(
+        process.cwd(),
+        '_bmad',
+        'bmm',
+        'workflows',
+        '2-plan-workflows',
+        'bmad-create-prd',
+        'templates',
+        'prd-template.md'
+      ),
+      'utf8'
+    );
+
+    expect(template).toContain('## BMAD Discovery Layer');
+    expect(template).toContain('## Functional Requirements');
+    expect(template).toContain('## Non-Functional Requirements');
+    expect(template).toContain('## Negative Requirements And Not Done Conditions');
+    expect(template).toContain('## Trace Matrix Source');
+    expect(template).toContain('## Implementation Path Map');
+    expect(template).toContain('## Source Current State');
+    expect(template).toContain('## Source Target State');
+    expect(template).toContain('## Current Target Map');
+    expect(template).toContain('## Source PRD Instance Lint Handoff');
+    expect(template).not.toMatch(/^implementationConfirmation:\s*$/mu);
+  });
+
   it('passes when BMAD authoring paths are preserved and new runtime artifacts are requirement-scoped', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'bmad-hardcut-pass-'));
     try {

@@ -635,6 +635,25 @@ describe('requirements-contract-authoring published contract', () => {
     }
   });
 
+  it('documents source PRD entry normalization and staging-only gap-fill boundaries', () => {
+    for (const content of readSkillSurface('SKILL.md')) {
+      expect(content).toContain('source PRD entry normalization');
+      expect(content).toContain('entrySource=bmad_prd');
+      expect(content).toContain('entrySource=session_requirements');
+      expect(content).toContain('entrySource=source_prd_draft');
+      expect(content).toContain('All three entry sources must run source PRD instance lint');
+      expect(content).toContain('enter the same staging-first authoring lane');
+      expect(content).toContain('source PRD draft status below confirmation readiness');
+      expect(content).toContain('authoring gap-fill boundary');
+      expect(content).toContain('authoring/staging/draft-source.md');
+      expect(content).toContain('New rows must carry source refs');
+      expect(content).toContain('blocking question, open question, or `OUT-*` boundary');
+      expect(content).toContain('must not fabricate `ACC-*`, `E2E-*`, `CMD-*`, `TRACE-*`, `PATH-*`, or `CTM-*` rows');
+      expect(content).toContain('BMAD source refs are inputs, not PASS evidence');
+      expect(content).toContain('Critical Auditor, packet/source reconciliation, source PRD instance lint, and pre-render gates must re-verify them');
+    }
+  });
+
   it('publishes preConfirmationDrilldown metadata while keeping inline implementationConfirmation authoritative', () => {
     const skill = readSkillFile('SKILL.md');
     const template = readSkillFile(path.join('references', 'contract-template.md'));

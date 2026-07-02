@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
@@ -42,6 +43,37 @@ const sourceAuthorityWorkspaceRuntimePackages = new Set([
   'runtime-context',
   'scoring',
 ]);
+
+function runSourceAuthorityTemplateLint() {
+  const tsxCliPath = path.join(repoRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+  const lintScriptPath = path.join(
+    sourceAuthorityRoot,
+    'scripts',
+    'lint-requirements-contract-source-template.ts'
+  );
+  if (!fs.existsSync(tsxCliPath)) {
+    throw new Error(`source-authority template lint runtime missing: ${tsxCliPath}`);
+  }
+  if (!fs.existsSync(lintScriptPath)) {
+    throw new Error(`source-authority template lint script missing: ${lintScriptPath}`);
+  }
+  const result = spawnSync(process.execPath, [tsxCliPath, lintScriptPath, '--json'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    maxBuffer: 5 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        'source-authority requirements contract source PRD template lint failed',
+        result.stdout.trim(),
+        result.stderr.trim(),
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+}
 
 function isTypeScriptFamilyFile(relativePath) {
   return /\.(?:ts|tsx|cts|mts)$/u.test(relativePath.replace(/\\/g, '/'));
@@ -88,10 +120,19 @@ function collectRuntimeFiles(dir = sourceRoot, base = sourceRoot) {
     const isSourceAuthorityFile = relativePath.startsWith('source-authority/');
     const isSourceAuthorityDeclarationFile =
       isSourceAuthorityFile && isTypeScriptDeclarationFile(relativePath);
+    const allowedSourceAuthorityTemplateJsonAsset =
+      isSourceAuthorityFile &&
+      relativePath.startsWith('source-authority/templates/') &&
+      /\.json$/u.test(entry.name);
     const allowedRuntimeExtension = isSourceAuthorityFile
       ? /\.(?:cjs|mjs|py|ps1|sh|md)$/u
       : /\.cjs$/u;
-    if (!entry.isFile() || (!allowedRuntimeExtension.test(entry.name) && !isSourceAuthorityDeclarationFile)) {
+    if (
+      !entry.isFile() ||
+      (!allowedRuntimeExtension.test(entry.name) &&
+        !isSourceAuthorityDeclarationFile &&
+        !allowedSourceAuthorityTemplateJsonAsset)
+    ) {
       continue;
     }
     if (excludedRuntimeFiles.has(relativePath)) continue;
@@ -277,6 +318,8 @@ function copyRuntimeFile(relativePath) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text, 'utf8');
 }
+
+runSourceAuthorityTemplateLint();
 
 if (fs.existsSync(packageDistRoot)) {
   fs.rmSync(packageDistRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
