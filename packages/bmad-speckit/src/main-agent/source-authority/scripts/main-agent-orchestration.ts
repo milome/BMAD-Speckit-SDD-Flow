@@ -2316,6 +2316,32 @@ const SOURCE_PRD_AUTHORING_ENTRY_SOURCES: SourcePrdAuthoringEntrySource[] = [
   'source_prd_draft',
 ];
 
+function sourceTextDeclaresRequirementsContractSourcePrd(sourceText: string): boolean {
+  return (
+    /\bsourceKind\s*:\s*requirements_contract_source_prd\b/iu.test(sourceText) ||
+    /\bauthoritativeImplementationSource\s*:\s*true\b/iu.test(sourceText)
+  );
+}
+
+function shouldRunSourcePrdInstanceLint(input: {
+  explicit?: unknown;
+  entryMode: RequirementsAuthoringEntryMode;
+  sourcePath: string;
+  sourceText: string;
+}): boolean {
+  const explicit = normalizeText(input.explicit);
+  if ((SOURCE_PRD_AUTHORING_ENTRY_SOURCES as string[]).includes(explicit)) {
+    return true;
+  }
+  if (input.entryMode === 'intake_to_new_source') {
+    return true;
+  }
+  if (input.sourcePath.replace(/\\/g, '/').includes('/bmad-create-prd/')) {
+    return true;
+  }
+  return sourceTextDeclaresRequirementsContractSourcePrd(input.sourceText);
+}
+
 function normalizeSourcePrdAuthoringEntrySource(
   value: unknown,
   fallback: SourcePrdAuthoringEntrySource
@@ -2414,7 +2440,9 @@ function writeRequirementsAuthoringTransaction(input: {
   assertKnownRequirementsAuthoringSubstate(input.substate);
   const previous = readJsonIfExists(input.paths.authoringTransaction);
   const previousEntrySource =
-    normalizeSourcePrdAuthoringEntrySource(previous?.sourcePrdEntrySource, 'source_prd_draft');
+    previous?.sourcePrdEntrySource
+      ? normalizeSourcePrdAuthoringEntrySource(previous.sourcePrdEntrySource, 'source_prd_draft')
+      : null;
   const previousLint =
     previous?.sourcePrdInstanceLint &&
     typeof previous.sourcePrdInstanceLint === 'object' &&
@@ -3670,16 +3698,46 @@ function writeSourceMutationDecision(input: {
   return decision;
 }
 
+function legacyPlainSourceBlockImpliesMust(block: StructuredSourceBlock): boolean {
+  if (block.decision !== 'rejected_non_requirement') {
+    return false;
+  }
+  const signals = new Set(block.requirementSignal);
+  if (
+    signals.has('target_path') ||
+    signals.has('validation_command') ||
+    signals.has('non_goal_heading') ||
+    signals.has('current_target_state_projection_section') ||
+    signals.has('commentary_only_heading')
+  ) {
+    return false;
+  }
+  return (
+    signals.has('mandatory_language') ||
+    signals.has('requirement_table_row') ||
+    signals.has('numeric_layout_constraint') ||
+    (signals.has('requirement_heading') && normalizeText(block.normalizedText).length >= 12)
+  );
+}
+
 function buildControlledMustCandidatesFromPlainSource(
   root: string,
   sourcePath: string,
-  sourceText: string
+  sourceText: string,
+  options: { requireSourceRequirementIds?: boolean } = {}
 ): ControlledMustCandidate[] {
   const sourceDocumentHash = sha256Text(sourceText);
   const sourceRel = toRootRelativePath(root, sourcePath);
   const grouped = new Map<string, ControlledMustCandidate>();
-  for (const row of extractStructuredSourceBlocks(root, sourcePath, sourceText)
-    .filter((block) => block.decision === 'mapped_to_must')
+  const ungrouped: ControlledMustCandidate[] = [];
+  const acceptsLegacyPlainSource =
+    options.requireSourceRequirementIds !== true;
+  for (const [blockIndex, row] of extractStructuredSourceBlocks(root, sourcePath, sourceText)
+    .filter(
+      (block) =>
+        block.decision === 'mapped_to_must' ||
+        (acceptsLegacyPlainSource && legacyPlainSourceBlockImpliesMust(block))
+    )
     .map((block) => {
       const sourceRequirementId = sourceBlockRequirementId(block);
       return {
@@ -3688,7 +3746,40 @@ function buildControlledMustCandidatesFromPlainSource(
         projectedMustId: projectedMustIdFromSourceRequirementId(sourceRequirementId),
       };
     })
-    .filter((row) => Boolean(row.projectedMustId))) {
+    .entries()) {
+    if (!row.projectedMustId) {
+      if (options.requireSourceRequirementIds === true) {
+        continue;
+      }
+      const normalizedRequirement = normalizedRequirementTextFromBlock(row.block);
+      ungrouped.push({
+        candidateId: '',
+        sourcePath: sourceRel,
+        sourceHash: sourceDocumentHash,
+        sourceDocumentHash,
+        sourceSpan: row.block.sourceSpan,
+        headingPath: row.block.headingPath,
+        blockId: row.block.blockId,
+        blockKind: row.block.blockKind,
+        requirementType: 'positive',
+        coverageDecision: 'mapped_to_must',
+        coverageReason:
+          uniqueNonEmpty([
+            row.block.requirementSignal.join(', '),
+            'legacy_plain_source_must_fallback',
+          ]).join(', ') || 'legacy_plain_source_must_fallback',
+        confidence: row.block.requirementSignal.includes('mandatory_language') ? 0.95 : 0.8,
+        tableContext: row.block.tableContext ?? null,
+        groupId: row.block.headingPath.join(' > ') || `legacy_plain_source_${blockIndex}`,
+        originalText: row.block.rawText,
+        normalizedRequirement,
+        decision: 'accepted_for_draft',
+        decisionReason:
+          'Legacy plain source block maps to a stable draft MUST candidate without manufacturing source PRD FR/NFR ids.',
+        requiresHumanReview: true,
+      });
+      continue;
+    }
     const projectedMustId = row.projectedMustId as string;
     const existing = grouped.get(projectedMustId);
     const normalizedRequirement = normalizedRequirementTextFromBlock(row.block);
@@ -3741,7 +3832,7 @@ function buildControlledMustCandidatesFromPlainSource(
       requiresHumanReview: true,
     });
   }
-  return Array.from(grouped.values()).map((candidate, index) => ({
+  return [...Array.from(grouped.values()), ...ungrouped].map((candidate, index) => ({
     ...candidate,
     candidateId: `MUST-CAND-${requirementOrdinal(index)}`,
   }));
@@ -3751,16 +3842,25 @@ function mustRequirementsFromControlledCandidates(
   requirementSetId: string,
   candidates: ControlledMustCandidate[]
 ): SourceMustRequirement[] {
-  void requirementSetId;
+  const stablePrefix = sanitizeRequirementIdSegment(requirementSetId)
+    .replace(/[^A-Z0-9]+/giu, '-')
+    .replace(/^-|-$/gu, '')
+    .toUpperCase()
+    .slice(0, 24)
+    .replace(/^-|-$/gu, '');
   return candidates
     .filter(
       (candidate) =>
         candidate.decision === 'accepted_for_draft' &&
-        Boolean(candidate.projectedMustId) &&
-        !isForbiddenLineBasedMustId(candidate.projectedMustId)
+        (!candidate.projectedMustId || !isForbiddenLineBasedMustId(candidate.projectedMustId))
     )
     .map((candidate, index) => ({
-      id: normalizeMustRef(candidate.projectedMustId, index),
+      id: candidate.projectedMustId
+        ? normalizeMustRef(candidate.projectedMustId, index)
+        : normalizeMustRef(
+            `MUST-${stablePrefix ? `${stablePrefix}-` : ''}${requirementOrdinal(index)}`,
+            index
+          ),
       text: candidate.normalizedRequirement,
       source: 'controlled_plain_source_candidate' as const,
       sourceLine: candidate.sourceSpan.startLine,
@@ -13580,17 +13680,24 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const sourceText = fs.readFileSync(semanticInputPath, 'utf8');
   const sourceHashBefore = semanticSourceDocumentHashForText(sourceText);
-  const entrySource = detectSourcePrdAuthoringEntrySource({
+  const sourcePrdInstanceLintRequired = shouldRunSourcePrdInstanceLint({
     explicit: options.entrySource,
     entryMode,
     sourcePath: semanticInputPath,
     sourceText,
   });
+  const detectedEntrySource = detectSourcePrdAuthoringEntrySource({
+    explicit: options.entrySource,
+    entryMode,
+    sourcePath: semanticInputPath,
+    sourceText,
+  });
+  const entrySource = sourcePrdInstanceLintRequired ? detectedEntrySource : undefined;
   const preStagingSourcePrdLint =
-    entryMode === 'existing_source'
+    entryMode === 'existing_source' && sourcePrdInstanceLintRequired
       ? lintRequirementsContractSourcePrd({
           source: semanticInputPath,
-          entrySource,
+          entrySource: detectedEntrySource,
           allowInlineConfirmation: true,
           json: true,
         })
@@ -13606,7 +13713,7 @@ export function runMainAgentPreConfirmationDrilldown(
       root,
       paths,
       sourcePath: semanticInputPath,
-      entrySource,
+      entrySource: detectedEntrySource,
       lint: preStagingSourcePrdLint,
       stage: 'pre_staging_source',
     });
@@ -13743,7 +13850,9 @@ export function runMainAgentPreConfirmationDrilldown(
   const hasForbiddenLineBasedMustRequirements = forbiddenLineBasedMustRequirements.length > 0;
   const controlledCandidates =
     mustRequirements.length === 0
-      ? buildControlledMustCandidatesFromPlainSource(root, semanticInputPath, sourceText)
+      ? buildControlledMustCandidatesFromPlainSource(root, semanticInputPath, sourceText, {
+          requireSourceRequirementIds: sourcePrdInstanceLintRequired,
+        })
       : [];
   if (mustRequirements.length === 0) {
     mustRequirements = mustRequirementsFromControlledCandidates(
@@ -13915,18 +14024,20 @@ export function runMainAgentPreConfirmationDrilldown(
   fs.copyFileSync(stagingTransaction.draftSource, paths.draftSourcePreview);
   const effectiveSourcePrdLint =
     preStagingSourcePrdLint ??
-    lintRequirementsContractSourcePrd({
-      source: paths.draftSourcePreview,
-      entrySource,
-      allowInlineConfirmation: true,
-      json: true,
-    });
-  if (!preStagingSourcePrdLint) {
+    (sourcePrdInstanceLintRequired
+      ? lintRequirementsContractSourcePrd({
+          source: paths.draftSourcePreview,
+          entrySource: detectedEntrySource,
+          allowInlineConfirmation: true,
+          json: true,
+        })
+      : null);
+  if (!preStagingSourcePrdLint && effectiveSourcePrdLint) {
     writeSourcePrdInstanceLintReport({
       root,
       paths,
       sourcePath: paths.draftSourcePreview,
-      entrySource,
+      entrySource: detectedEntrySource,
       lint: effectiveSourcePrdLint,
       stage: 'post_initial_session_draft',
     });
@@ -13944,7 +14055,10 @@ export function runMainAgentPreConfirmationDrilldown(
     scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || null,
     sourcePrdEntrySource: entrySource,
     sourcePrdInstanceLint: effectiveSourcePrdLint,
-    sourcePrdInstanceLintReportPath: toRootRelativePath(root, paths.sourcePrdInstanceLintReport),
+    sourcePrdInstanceLintReportPath:
+      effectiveSourcePrdLint && fs.existsSync(paths.sourcePrdInstanceLintReport)
+        ? toRootRelativePath(root, paths.sourcePrdInstanceLintReport)
+        : null,
     nextRequiredAction: 'run_critical_auditor_loop',
   });
   const previewText = fs.readFileSync(paths.draftSourcePreview, 'utf8');
