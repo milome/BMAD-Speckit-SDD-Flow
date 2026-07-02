@@ -8,6 +8,7 @@
 - 📖 CRITICAL: ALWAYS read the complete step file before taking any action
 - 🛑 NO content generation - this is a wrap-up step
 - 📋 FINALIZE document and update workflow status
+- 🧪 RUN source PRD instance lint before marking any source draft as ready
 - 💬 FOCUS on completion, validation options, and next steps
 - 🎯 UPDATE workflow status files with completion information
 - ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
@@ -15,6 +16,10 @@
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Show your analysis before taking any action
+- 🧪 Run the canonical source PRD instance lint command against `{outputFile}` before workflow completion language:
+  `npx tsx packages/bmad-speckit/src/main-agent/source-authority/scripts/lint-requirements-contract-source-prd.ts --source "{outputFile}" --entry-source bmad_prd --json`
+- 🛑 If lint fails, record `source_prd_draft_blocked`, preserve the PRD for staging repair, and do not call it `source_prd_draft_ready`
+- ✅ If lint passes, record `source_prd_draft_ready`; this state is not `confirmation_ready`, `implementation_ready`, or `delivery_ready`
 - 💾 Update the main workflow status file with completion information (if exists)
 - 📖 Offer validation workflow options to user
 - 🚫 DO NOT load additional steps after this one
@@ -53,10 +58,21 @@ Update the main workflow status file if there is one:
 
 - Check workflow configuration for a status file (if one exists)
 - Update workflow_status["prd"] = "{outputFile}"
+- Update workflow_status["sourcePrdDraftStatus"] = "source_prd_draft_ready" only after the source PRD instance lint command exits 0
+- Update workflow_status["sourcePrdDraftStatus"] = "source_prd_draft_blocked" when the lint command returns issues
+- Store the lint JSON report path or output summary with the workflow status update
 - Save file, preserving all comments and structure
 - Mark current timestamp as completion time
 
-### 3. Validation Workflow Options
+### 3. Source PRD Instance Lint Result
+
+Report the exact lint result before offering downstream workflows:
+
+- `source_prd_draft_ready`: The PRD has the input structure required for requirements-contract-authoring.
+- `source_prd_draft_blocked`: The PRD is still a valid discovery artifact, but it must enter staging repair before any confirmation-ready claim.
+- Never state that source PRD draft readiness means confirmation, implementation, delivery, closeout, merge, or release readiness.
+
+### 4. Validation Workflow Options
 
 Offer validation workflows to ensure PRD is ready for implementation:
 
@@ -76,19 +92,22 @@ Offer validation workflows to ensure PRD is ready for implementation:
 - Validation can be done later if needed
 - Some teams prefer to validate during architecture reviews
 
-### 4. Suggest Next Workflows
+### 5. Suggest Next Workflows
 
 PRD complete. Invoke the `bmad-help` skill.
 
-### 5. Final Completion Confirmation
+### 6. Final Completion Confirmation
 
 - Confirm completion with user and summarize what has been accomplished
-- Document now contains: Executive Summary, Success Criteria, User Journeys, Domain Requirements (if applicable), Innovation Analysis (if applicable), Project-Type Requirements, Functional Requirements (capability contract), Non-Functional Requirements, and has been polished for flow and coherence
+- Document now contains: BMAD Discovery Layer, Product Context, Success Criteria, User Journeys, Functional Requirements, Non-Functional Requirements, Negative Requirements And Not Done Conditions, Trace Matrix Source, Implementation Path Map, Source Current State, Source Target State, and Current Target Map
 - Ask if they'd like to run validation workflow or proceed to next workflows
 
 ## SUCCESS METRICS:
 
 ✅ PRD document contains all required sections and has been polished
+✅ Source PRD instance lint has run before ready state language
+✅ Failed lint records `source_prd_draft_blocked` and routes the PRD to staging repair
+✅ Passing lint records `source_prd_draft_ready` without promoting to confirmation or implementation readiness
 ✅ All collaborative content properly saved and optimized
 ✅ Workflow status file updated with completion information (if exists)
 ✅ Validation workflow options clearly presented
@@ -99,6 +118,9 @@ PRD complete. Invoke the `bmad-help` skill.
 ## FAILURE MODES:
 
 ❌ Not updating workflow status file with completion information (if exists)
+❌ Marking `source_prd_draft_ready` without running source PRD instance lint
+❌ Treating `source_prd_draft_ready` as confirmation, implementation, delivery, merge, or release readiness
+❌ Blocking authoring repair because lint failed instead of routing to staging repair
 ❌ Not offering validation workflow options
 ❌ Missing clear next step guidance for user
 ❌ Not confirming document completeness with user

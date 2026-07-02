@@ -34,7 +34,14 @@ function commandRefsForTrace(row) {
 
 function extractPathRefs(command) {
   const refs = new Set();
-  const normalized = String(command ?? '').replace(/\r?\n/gu, ' ');
+  let normalized = String(command ?? '').replace(/\r?\n/gu, ' ');
+  normalized = normalized.replace(
+    /<[^>\s]+>[\\/][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|<[^>\s]+>[\\/][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md|txt)/giu,
+    (ref) => {
+      refs.add(normalizePathForReport(ref));
+      return ' '.repeat(ref.length);
+    }
+  );
   const matches = normalized.matchAll(
     /(?<![A-Za-z0-9_@.-])((?:[A-Za-z]:)?[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:test|spec)\.(?:tsx|ts|jsx|js|mjs|cjs)|[./\\A-Za-z0-9_-][A-Za-z0-9_./\\-]*\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md|txt))(?=$|[^A-Za-z0-9_.-])/giu
   );

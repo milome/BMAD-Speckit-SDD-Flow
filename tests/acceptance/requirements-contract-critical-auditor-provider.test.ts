@@ -48,7 +48,10 @@ describe('requirements contract Critical Auditor provider modes', () => {
         ...(fixture.request as any),
         gateDryRun: {
           ...((fixture.request as any).gateDryRun ?? {}),
+          verdict: 'PASS',
+          failedChecks: [],
           actionableBlockingIssueCount: 0,
+          actionableBlockingIssues: [],
         },
       };
       const requestForWriterPath = path.join(path.dirname(fixture.requestPath), 'critical-auditor-round-request-writer-fixture.json');

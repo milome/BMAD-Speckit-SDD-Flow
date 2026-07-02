@@ -1,4 +1,16 @@
 import { configDefaults, defineConfig } from 'vitest/config';
+
+const explicitArgs = new Set(process.argv.map((arg) => arg.replace(/\\/g, '/')));
+const consumerInstallFinalTests = [
+  'tests/acceptance/accept-install-consumer-cli.test.ts',
+  'tests/acceptance/accept-pack-bmad-speckit.test.ts',
+  'tests/acceptance/accept-root-package-bmad-speckit-bin.test.ts',
+  'tests/acceptance/accept-consumer-governance-zero-scripts.test.ts',
+  'tests/acceptance/main-agent-dist-consumer-runtime.test.ts',
+];
+const explicitlyRequested = (file: string) =>
+  explicitArgs.has(file) || [...explicitArgs].some((arg) => arg.endsWith(`/${file}`));
+
 /** Exclude bmad-speckit tests (use node:test); they run via test:bmad-speckit, invoked after vitest in npm test */
 export default defineConfig({
   test: {
@@ -12,12 +24,9 @@ export default defineConfig({
       '.worktrees/**/*',
       // Real wall-clock long-run evidence must be executed explicitly, not by default CI aggregation.
       'tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts',
-      // Consumer install/package final-state tests run in explicit CI steps with OS-level timeouts.
-      'tests/acceptance/accept-install-consumer-cli.test.ts',
-      'tests/acceptance/accept-pack-bmad-speckit.test.ts',
-      'tests/acceptance/accept-root-package-bmad-speckit-bin.test.ts',
-      'tests/acceptance/accept-consumer-governance-zero-scripts.test.ts',
-      'tests/acceptance/main-agent-dist-consumer-runtime.test.ts',
+      // Consumer install/package final-state tests stay out of default discovery,
+      // but exact file commands must still be runnable for contract evidence.
+      ...consumerInstallFinalTests.filter((file) => !explicitlyRequested(file)),
     ],
     /** Reduce flaky timeout failures for integration tests (parse-and-write, dashboard-epic-aggregate, hash) */
     testTimeout: 20000,

@@ -98,9 +98,63 @@ function writePlainSourceWithControlledCandidate(
     [
       '# Plain Controlled Candidate Requirement',
       '',
-      '## Behavior',
+      '## Functional Requirements',
       '',
-      'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
+      '| ID | Requirement | Source rationale | Acceptance link |',
+      '| --- | --- | --- | --- |',
+      '| FR-001 | The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed. | Prevent draft confirmation from being confused with user confirmation. | ACC-001 |',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
+function writePlainSourceWithUncontrolledNormativeProse(
+  root: string,
+  name = 'plain-uncontrolled-normative-prose.md'
+): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# DataService GDS Trigger Service PRD',
+      '',
+      '## Success Criteria',
+      '',
+      '最终产品包含以下能力，且全部属于同一目标状态，不拆分交付阶段或临时目标。',
+      '',
+      '## Data Contracts',
+      '',
+      'The file schema is fixed:',
+      '',
+      '| Field | Meaning |',
+      '| --- | --- |',
+      '| profile_id | The selected gateway profile. |',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
+function writeSourceWithLineBasedInlineMust(
+  root: string,
+  name = 'line-based-inline-must.md'
+): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Line Based Inline MUST Requirement',
+      '',
+      'implementationConfirmation:',
+      '  status: draft',
+      '  must:',
+      '    - id: MUST-REQ-DATASERVICE-GDS-TRIG-L104-002',
+      '      text: This line-based generated requirement must not enter canonical confirmation.',
       '',
     ].join('\n'),
     'utf8'
@@ -118,11 +172,19 @@ function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): 
       '',
       'The source document intentionally starts without an implementationConfirmation block.',
       '',
-      '## Requirements',
+      '## Functional Requirements',
       '',
-      '- MUST: Preserve the user-supplied requirement sentence as a first-class MUST row before rendering.',
-      '- MUST: Split every authored MUST row into packet-backed atomic tasks before materialization.',
-      '- MUST: Pass Critical Auditor only after the auditor can see all source-derived MUST references.',
+      '### FR-001 Source text preservation',
+      '',
+      'Preserve the user-supplied requirement sentence as a first-class MUST row before rendering.',
+      '',
+      '### FR-002 Atomic task decomposition',
+      '',
+      'Split every authored MUST row into packet-backed atomic tasks before materialization.',
+      '',
+      '### FR-003 Critical Auditor visibility',
+      '',
+      'Pass Critical Auditor only after the auditor can see all source-derived MUST references.',
       '',
     ].join('\n'),
     'utf8'
@@ -847,8 +909,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(candidates.candidates[0]).toMatchObject({
         candidateId: 'MUST-CAND-001',
         sourcePath: 'docs/requirements/plain-controlled-candidate.md',
-        sourceSpan: { startLine: 5, endLine: 5 },
-        headingPath: ['Plain Controlled Candidate Requirement', 'Behavior'],
+        sourceSpan: { startLine: 7, endLine: 7 },
+        headingPath: ['Plain Controlled Candidate Requirement', 'Functional Requirements'],
+        sourceRequirementId: 'FR-001',
+        projectedMustId: 'MUST-FR-001',
         decision: 'accepted_for_draft',
         requiresHumanReview: true,
       });
@@ -874,15 +938,103 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(mustRow).toMatchObject({
         text: 'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
         source: 'controlled_plain_source_candidate',
-        sourceLine: 5,
+        sourceLine: 7,
         sourcePath: 'docs/requirements/plain-controlled-candidate.md',
-        sourceSpan: { startLine: 5, endLine: 5 },
+        sourceSpan: { startLine: 7, endLine: 7 },
         candidateId: 'MUST-CAND-001',
       });
-      expect(mustRow.id).toMatch(/^MUST-REQSET-PRE-CONFIRMATION-L5-001$/u);
+      expect(mustRow.id).toBe('MUST-FR-001');
       expect(mustRow.sourceDocumentHash).toBe(candidates.sourceDocumentHash);
       expect(confirmation.status).toBe('draft');
       expect(confirmation.status).not.toBe('user_confirmed');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed instead of materializing line-based MUST ids from uncontrolled source prose', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-uncontrolled-prose-')
+    );
+    try {
+      const source = writePlainSourceWithUncontrolledNormativeProse(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-UNCONTROLLED-PROSE',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-UNCONTROLLED-PROSE',
+        ...authorityForSource(root, source),
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-UNCONTROLLED-PROSE',
+        'REQSET-PRE-CONFIRMATION-UNCONTROLLED-PROSE'
+      );
+      const issueCodes = result.blockingIssues.map((issue) => issue.code);
+      const candidates = readJson(paths.controlledMustCandidates);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+      const serializedCandidates = JSON.stringify(candidates);
+
+      expect(issueCodes).toContain('controlled_must_candidates_missing');
+      expect(issueCodes).not.toContain('line_based_must_id_allowed');
+      expect(candidates).toMatchObject({
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        decision: 'controlled_must_candidates_missing',
+      });
+      expect(draftProjection).toMatchObject({
+        candidateCount: 0,
+        acceptedCandidateCount: 0,
+        mustCount: 0,
+        failClosed: true,
+        implementationConfirmation: null,
+        decision: 'controlled_must_candidates_missing',
+      });
+      expect(serializedCandidates).not.toMatch(/MUST-[A-Z0-9-]+-L\d+-\d+/u);
+      expect(existsSync(paths.authoringMaterializationReceipt)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed without draft confirmation when inline implementationConfirmation contains line-based MUST ids', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-line-based-inline-must-')
+    );
+    try {
+      const source = writeSourceWithLineBasedInlineMust(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-LINE-BASED-INLINE-MUST',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-LINE-BASED-INLINE-MUST',
+        ...authorityForSource(root, source),
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-LINE-BASED-INLINE-MUST',
+        'REQSET-PRE-CONFIRMATION-LINE-BASED-INLINE-MUST'
+      );
+      const issueCodes = result.blockingIssues.map((issue) => issue.code);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+
+      expect(issueCodes).toContain('line_based_must_id_forbidden');
+      expect(draftProjection).toMatchObject({
+        implementationConfirmation: null,
+        decision: 'line_based_must_id_forbidden',
+      });
+      expect(JSON.stringify(draftProjection)).not.toMatch(
+        /MUST-[A-Z0-9-]+-L\d+-\d+[^"]*"text"/u
+      );
+      expect(readFileSync(source, 'utf8')).toContain(
+        'MUST-REQ-DATASERVICE-GDS-TRIG-L104-002'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1250,6 +1402,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const mustRows = confirmation.must as Array<{ id: string; text: string }>;
       const mustTexts = mustRows.map((row) => row.text);
       expect(mustRows).toHaveLength(3);
+      expect(mustRows.map((row) => row.id)).toEqual(['MUST-FR-001', 'MUST-FR-002', 'MUST-FR-003']);
+      expect(mustRows.some((row) => /^MUST-.*-L[0-9]+-[0-9]+$/u.test(row.id))).toBe(false);
       expect(mustTexts).toEqual(expectedMustTexts);
       expect(sourceText).toContain(expectedMustTexts[0]);
       expect(sourceText).toContain(expectedMustTexts[1]);

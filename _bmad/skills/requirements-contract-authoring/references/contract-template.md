@@ -40,11 +40,11 @@ implementationConfirmation:
   status: draft
   recordId: REQ-EXAMPLE-001
   requirementSetId: REQ-EXAMPLE-001
-  entryFlow: story | bugfix | standalone_tasks
-  entryFlowClass: full_story_entry | corrective_entry | task_packet_entry
-  workflowAdapter: bmad | speckit | direct | legacy
+  entryFlow: story
+  entryFlowClass: full_story_entry
+  workflowAdapter: bmad
   contractAuthoringRequired: true
-  confirmationLanguage: zh-CN | en-US | bilingual
+  confirmationLanguage: zh-CN
   confirmationProfile: implementation_confirmation
   requiredViewPacks: ["currentTargetMap"]
   optionalViewPacks: []
@@ -100,39 +100,60 @@ implementationConfirmation:
       applies: true
       reasonCode: requirements_contract_authoring_requires_ai_tdd_contract_execution_manifest
 
+  governanceEventTypeRegistryPolicy:
+    controlFieldVocabulary:
+      - artifactIndex
+      - contractChecks
+      - gateChecks
+    payloadKindContracts:
+      - payloadKind: artifactRefs
+        requiredFields: ["eventType", "artifactRefs"]
+        forbiddenFields: ["decision", "status"]
+        allowedControlWriteModes: ["artifact_only"]
+    controlWriteModePolicies:
+      - allowedControlWriteMode: artifact_only
+        allowedWritesControlFields: ["artifactIndex"]
+    eventSpecificRequirements: []
+
   must:
     - id: MUST-001
-      text: "User uploads a valid file, the file is persisted, and the file appears in the list."
+      text: "用户提交有效文件后，系统必须持久化文件记录，并在上传列表中展示该文件。"
       evidenceRefs: ["EVD-001"]
       coveredByTraceRows: ["TRACE-001"]
       coveredBySequenceViews: ["SEQ-001"]
       upstreamRequirementIds: ["PRD-001"]
       riskLevel: high
+      perMustOracle: "通过独立存储查询和列表断言同时证明持久化与可见性。"
   notDone:
     - id: NEG-001
-      text: "An empty file must not display success and must not create persistent side effects."
+      text: "空文件不得显示上传成功，也不得产生任何持久化副作用。"
       evidenceRefs: ["EVD-002"]
-      whyItBlocksCompletion: "Without this, smoke-only success can be misreported as complete."
+      whyItBlocksCompletion: "缺少该负向断言时，烟雾级成功可能被误报为完成。"
       negativeAssertionRequired: true
       coveredByFailurePath: ["FAIL-001"]
   mustNot:
     - id: OUT-001
-      text: "Batch upload is outside this confirmed scope."
-      scopeBoundary: "single file only"
+      text: "批量上传不属于本次确认范围。"
+      scopeBoundary: "本范围只确认单文件上传。"
       userApprovalRequiredIfChanged: true
       coveredByBoundaryView: ["BOUNDARY-001"]
+    - id: OUT-GOV-001
+      text: "确认页渲染、审计回执和只读报告不得替代交付完成证据。"
+      scopeBoundary: "治理视图只能解释确认边界，不能关闭业务需求。"
+      userApprovalRequiredIfChanged: true
+      coveredByBoundaryView: ["GOV-BOUNDARY-001"]
   evidence:
     - id: EVD-001
-      text: "Run positive upload acceptance and assert persisted state plus list visibility."
+      text: "运行正向上传验收，断言文件持久化状态和列表可见性。"
       gate: "npm run test:e2e -- upload"
-      oracle: "Independent storage query shows persisted file and UI/API list includes it."
+      oracle: "独立存储查询能看到文件记录，UI 或 API 列表也能看到同一文件。"
       requiredCommandRefs: ["CMD-DELIVERY-001"]
       artifactRefs: ["ART-EVD-001"]
       acceptanceType: acceptance_e2e
     - id: EVD-002
-      text: "Run invalid upload acceptance and assert no persistent side effects."
+      text: "运行无效上传验收，断言没有持久化副作用。"
       gate: "npm run test:e2e -- upload-invalid"
-      oracle: "Independent storage query shows no new file record."
+      oracle: "独立存储查询确认没有新增文件记录。"
       requiredCommandRefs: ["CMD-DELIVERY-002"]
       artifactRefs: ["ART-EVD-002"]
       acceptanceType: adversarial_e2e
@@ -140,74 +161,252 @@ implementationConfirmation:
 
   failurePaths:
     - id: FAIL-001
-      title: "Empty upload rejected"
-      trigger: "User submits an empty file."
-      expectedBehavior: "Show validation error and persist nothing."
-      forbiddenBehavior: "Do not show success, create a record, enqueue work, or mark requirement complete."
+      title: "空文件上传被拒绝"
+      trigger: "用户提交空文件。"
+      expectedBehavior: "系统显示校验错误，并且不持久化任何数据。"
+      forbiddenBehavior: "不得显示成功、创建记录、进入队列或标记需求完成。"
       blocksCompletionWhenViolated: true
       linkedNegIds: ["NEG-001"]
       linkedEvidenceIds: ["EVD-002"]
+      sequenceViewRefs: ["SEQ-002"]
       requiredAssertions:
-        - "Empty file returns an actionable validation error."
-        - "No file record or downstream artifact is created."
-      userVisibleOutcome: "The user sees a clear error and no false success state."
+        - "空文件返回可操作的校验错误。"
+        - "没有创建文件记录或下游产物。"
+      userVisibleOutcome: "用户看到明确错误，并且不会看到虚假成功状态。"
 
   edgeCases:
     - id: EDGE-001
       category: invalid_input
-      condition: "Empty, malformed, duplicate, unauthorized, missing config, interrupted, stale hash, orphan artifact, or pending rerun condition is observed."
-      expectedBehavior: "Fail closed or require explicit recovery according to linked IDs."
-      forbiddenBehavior: "Do not silently continue or claim closeout from a report/read model."
+      condition: "出现空文件、格式错误、重复提交、未授权、配置缺失、中断、陈旧哈希、孤儿产物或待重跑状态。"
+      expectedBehavior: "系统必须按关联 ID 失败关闭或要求显式恢复。"
+      forbiddenBehavior: "不得静默继续，也不得用报告或只读模型声明 closeout。"
       linkedFailurePathIds: ["FAIL-001"]
       linkedEvidenceIds: ["EVD-002"]
       blocksImplementation: false
 
+  acceptanceTests:
+    - id: ACC-001
+      suiteType: acceptance
+      file: "tests/acceptance/requirements-contract-gold-template-render.test.ts"
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      commandRefs: ["CMD-DELIVERY-001"]
+      oracle: "测试必须证明有效上传后存在持久化记录并可在列表查询到。"
+      positiveControl: true
+      mockOnly: false
+    - id: ACC-002
+      suiteType: adversarial_acceptance
+      file: "packages/bmad-speckit/src/main-agent/source-authority/tests/requirements-contract-source-template.test.ts"
+      covers: ["NEG-001"]
+      traceRows: ["TRACE-002"]
+      evidenceRefs: ["EVD-002"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      commandRefs: ["CMD-DELIVERY-002"]
+      oracle: "测试必须证明空文件返回校验错误且没有新增持久化记录。"
+      negativeControls: ["NEG-001"]
+      mockOnly: false
+  e2eSuites:
+    - id: E2E-001
+      suiteType: e2e
+      file: "tests/acceptance/requirements-contract-gold-template-render.test.ts"
+      covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001", "TRACE-002"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      commandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]
+      oracle: "端到端路径必须同时覆盖成功持久化和失败无副作用两个验收边界。"
+      mockOnly: false
+
   traceRows:
     - id: TRACE-001
-      covers: ["MUST-001", "NEG-001"]
+      covers: ["MUST-001"]
       taskRefs: ["TASK-001"]
-      evidenceRefs: ["EVD-001", "EVD-002"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
       contractValidationCommandRefs: ["CMD-CONTRACT-001"]
-      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]
-      sequenceViewRefs: ["SEQ-001", "SEQ-002"]
-      boundaryViewRefs: ["BOUNDARY-001"]
-      artifactRefs: ["ART-001", "ART-EVD-001", "ART-EVD-002"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-001"]
+      sequenceViewRefs: ["SEQ-001"]
+      flowViewRefs: ["FLOW-001"]
+      artifactRefs: ["ART-001", "ART-EVD-001"]
+      closureAssertion: "MUST-001 只有在持久化记录和列表可见性同时通过时才可关闭。"
+      targetStateAssertion: "有效文件上传后进入可查询的已保存状态。"
+      acceptanceSummary: "ACC-001 和 E2E-001 独立覆盖正向验收。"
+      status: PENDING
+      blockingReason: null
+    - id: TRACE-002
+      covers: ["NEG-001"]
+      taskRefs: ["TASK-002"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["ACC-002", "E2E-001"]
+      contractValidationCommandRefs: ["CMD-CONTRACT-001"]
+      deliveryEvidenceCommandRefs: ["CMD-DELIVERY-002"]
+      sequenceViewRefs: ["SEQ-002"]
+      flowViewRefs: ["FLOW-001"]
+      edgeCaseViewRefs: ["EDGEVIEW-001"]
+      artifactRefs: ["ART-001", "ART-EVD-002"]
+      closureAssertion: "NEG-001 只有在空文件无副作用断言通过时才可关闭。"
+      targetStateAssertion: "无效输入必须保持系统状态不变。"
+      acceptanceSummary: "ACC-002 和 E2E-001 独立覆盖负向验收。"
       status: PENDING
       blockingReason: null
 
   sequenceViews:
     - id: SEQ-001
-      title: "Happy path upload"
-      covers: ["MUST-001", "EVD-001"]
+      title: "有效文件上传正向路径"
+      visualKind: happy
+      scope: business
+      covers: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      acceptanceRefs: ["ACC-001", "E2E-001"]
+      mermaid: |
+        sequenceDiagram
+          actor User
+          participant Entry
+          participant Store
+          User->>Entry: 提交有效文件 [MUST-001]
+          Entry->>Store: 写入文件记录 [MUST-001]
+          Entry-->>User: 返回成功并显示列表项 [MUST-001]
     - id: SEQ-002
-      title: "Failure path empty upload"
-      covers: ["NEG-001", "EVD-002"]
+      title: "空文件上传失败路径"
+      visualKind: failure
+      scope: business
+      covers: ["NEG-001"]
+      traceRows: ["TRACE-002"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["ACC-002", "E2E-001"]
+      failurePathRefs: ["FAIL-001"]
+      mermaid: |
+        sequenceDiagram
+          actor User
+          participant Entry
+          participant Store
+          User->>Entry: 提交空文件 [NEG-001]
+          Entry-->>User: 返回校验错误 [NEG-001]
+          Entry->>Store: 保持无写入状态 [NEG-001]
   flowViews:
     - id: FLOW-001
-      title: "Upload state transitions"
+      title: "上传状态流"
+      visualKind: flow
+      scope: business
       covers: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001", "TRACE-002"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      acceptanceRefs: ["ACC-001", "ACC-002", "E2E-001"]
+      mermaid: |
+        flowchart TD
+          A["用户选择文件 [MUST-001]"] --> B{"文件是否有效 [MUST-001][NEG-001]"}
+          B -->|有效| C["保存记录 [MUST-001]"]
+          C --> D["列表展示文件 [MUST-001]"]
+          B -->|空文件| E["显示校验错误 [NEG-001]"]
+          E --> F["不创建记录 [NEG-001]"]
   edgeCaseViews:
     - id: EDGEVIEW-001
-      title: "Upload edge cases"
-      covers: ["NEG-001"]
-      cases: ["empty file", "missing config", "duplicate submit", "interrupted run", "hash mismatch", "orphan artifact", "pending rerun"]
+      title: "上传边界输入矩阵"
+      visualKind: edge
+      scope: business
+      covers: ["NEG-001", "EDGE-001"]
+      traceRows: ["TRACE-002"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["ACC-002", "E2E-001"]
+      failurePathRefs: ["FAIL-001"]
+      edgeCaseRefs: ["EDGE-001"]
+      cases: ["EDGE-001"]
+      mermaid: |
+        flowchart TD
+          A["检测边界输入 [EDGE-001]"] --> B["执行失败关闭策略 [NEG-001]"]
+          B --> C["验证无持久化副作用 [EVD-002]"]
   boundaryViews:
     - id: BOUNDARY-001
-      title: "Single upload boundary"
+      title: "单文件上传范围边界"
+      visualKind: boundary
+      scope: business
       covers: ["OUT-001"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["ACC-002"]
+      mermaid: |
+        flowchart TD
+          A["本次范围 [MUST-001]"] --> B["单文件上传"]
+          A -.禁止.-> C["批量上传 [OUT-001]"]
+    - id: GOV-BOUNDARY-001
+      title: "治理证据边界"
+      visualKind: boundary
+      scope: governance
+      covers: ["OUT-GOV-001"]
+      evidenceRefs: ["EVD-002"]
+      acceptanceRefs: ["ACC-002"]
+      mermaid: |
+        flowchart TD
+          A["确认页渲染 [OUT-GOV-001]"] --> B["只能解释范围"]
+          B -.不得替代.-> C["交付完成证据 [OUT-GOV-001]"]
+
+  targetModificationPaths:
+    - id: TARGET-MOD-001
+      path: "packages/example-upload/src/uploads/**"
+      coverageRole: implementation_target
+      changeType: code
+      intent: "实现单文件上传持久化、列表展示和空文件失败关闭。"
+      ownerModel: implementation
+      requirementRefs: ["MUST-001", "NEG-001"]
+      traceRefs: ["TRACE-001", "TRACE-002"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      artifactRefs: ["ART-001"]
+      requiresReconfirmationOnChange: true
+    - id: TARGET-MOD-002
+      path: "<skill-dir>/scripts/render-requirements-confirmation-html.ts"
+      coverageRole: validation_only
+      changeType: validation
+      intent: "渲染确认页并验证契约投影质量。"
+      ownerModel: contract_gate
+      traceRefs: ["TRACE-001", "TRACE-002"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+      artifactRefs: ["ART-EVD-001"]
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-003
+      path: "tests/acceptance/requirements-contract-gold-template-render.test.ts"
+      coverageRole: validation_only
+      changeType: test
+      intent: "验证 canonical contract template 能渲染 confirmable HTML。"
+      ownerModel: verification
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+      artifactRefs: ["ART-EVD-001"]
+      requiresReconfirmationOnChange: false
+    - id: TARGET-MOD-004
+      path: "packages/bmad-speckit/src/main-agent/source-authority/tests/requirements-contract-source-template.test.ts"
+      coverageRole: validation_only
+      changeType: test
+      intent: "验证 PRD source template 不形成第二套 schema。"
+      ownerModel: verification
+      traceRefs: ["TRACE-002"]
+      evidenceRefs: ["EVD-002"]
+      artifactRefs: ["ART-EVD-002"]
+      requiresReconfirmationOnChange: false
+
+  requirementBoundary:
+    business:
+      requirementIds: ["MUST-001", "NEG-001", "OUT-001", "EVD-001", "EVD-002"]
+      viewRefs: ["SEQ-001", "SEQ-002", "FLOW-001", "EDGEVIEW-001", "BOUNDARY-001"]
+      diagramRefs: ["SEQ-001", "SEQ-002", "FLOW-001", "EDGEVIEW-001", "BOUNDARY-001"]
+    governance:
+      requirementIds: ["OUT-GOV-001"]
+      viewRefs: ["GOV-BOUNDARY-001"]
+      diagramRefs: ["GOV-BOUNDARY-001"]
 
   artifactAutomationPlan:
     - artifactId: ART-001
-      path: "src/uploads/**"
+      path: "packages/example-upload/src/uploads/**"
       artifactType: code
       sourceOfTruthRole: implementation
       ownerModel: implementation
-      producer: dev agent
+      producer: implementation agent
       consumer: acceptance tests
-      inputArtifacts: ["source document"]
+      inputArtifacts: ["implementation source document"]
       outputArtifacts: ["upload behavior"]
-      recordEventTypes: ["implementation_delta"]
-      canAffectControlFlow: true
+      canAffectControlFlow: false
       userApprovalRequired: true
       retention: source_controlled
       cleanupPolicy: source_controlled
@@ -215,34 +414,218 @@ implementationConfirmation:
       containsSensitiveData: false
       trainingDataEligible: false
       group: executionEvidence
-      linkedRequirements: ["MUST-001", "NEG-001", "EVD-001", "EVD-002"]
+      linkedRequirements: ["MUST-001", "NEG-001"]
+      traceRows: ["TRACE-001", "TRACE-002"]
+      evidenceRefs: ["EVD-001", "EVD-002"]
+    - artifactId: ART-EVD-001
+      path: "tests/acceptance/requirements-contract-gold-template-render.test.ts"
+      artifactType: test
+      sourceOfTruthRole: evidence
+      ownerModel: verification
+      producer: test runner
+      consumer: contract gate
+      inputArtifacts: ["implementation source document"]
+      outputArtifacts: ["positive upload evidence"]
+      canAffectControlFlow: false
+      userApprovalRequired: false
+      retention: source_controlled
+      cleanupPolicy: source_controlled
+      orphanRisk: low
+      containsSensitiveData: false
+      trainingDataEligible: false
+      group: executionEvidence
+      linkedRequirements: ["MUST-001"]
+      traceRows: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+    - artifactId: ART-EVD-002
+      path: "packages/bmad-speckit/src/main-agent/source-authority/tests/requirements-contract-source-template.test.ts"
+      artifactType: test
+      sourceOfTruthRole: evidence
+      ownerModel: verification
+      producer: test runner
+      consumer: contract gate
+      inputArtifacts: ["implementation source document"]
+      outputArtifacts: ["negative upload evidence"]
+      canAffectControlFlow: false
+      userApprovalRequired: false
+      retention: source_controlled
+      cleanupPolicy: source_controlled
+      orphanRisk: low
+      containsSensitiveData: false
+      trainingDataEligible: false
+      group: executionEvidence
+      linkedRequirements: ["NEG-001"]
+      traceRows: ["TRACE-002"]
+      evidenceRefs: ["EVD-002"]
+
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    displayProfile: closed_loop_current_target_map
+    introduction: "本区展示上传能力从未受控到可验收闭环的现状与目标差异。"
+    sourceStateProjection:
+      mode: source_current_target_sections
+      currentSectionHeadings: ["Source Current State"]
+      targetSectionHeadings: ["Source Target State"]
+      currentRows:
+        - id: SOURCE-CURRENT-001
+          text: "当前上传示例缺少契约绑定的持久化和负向验收边界。"
+          sourceLine: 1
+      targetRows:
+        - id: SOURCE-TARGET-001
+          text: "目标状态必须用独立 ACC/E2E、trace 和 evidence 证明正向与负向行为。"
+          sourceLine: 2
+    currentSummary:
+      - title: "现状行为"
+        detail: "上传路径可能只有烟雾级成功信号，无法证明持久化和列表可见性。"
+    targetSummary:
+      - title: "目标行为"
+        detail: "有效文件持久化并可见，空文件失败关闭且无副作用。"
+    diffRows:
+      - dimension: "正向行为闭环"
+        currentState: "缺少每条 MUST 的独立验收边界。"
+        targetState: "MUST-001 绑定 TRACE-001、ACC-001、E2E-001 和 EVD-001。"
+        action: "add_per_must_acceptance"
+      - dimension: "负向行为闭环"
+        currentState: "空文件可能被烟雾级成功掩盖。"
+        targetState: "NEG-001 绑定 FAIL-001、EDGE-001、ACC-002 和 EVD-002。"
+        action: "add_negative_oracle"
+      - dimension: "目标路径可审计性"
+        currentState: "目标修改路径未显式列出。"
+        targetState: "targetModificationPaths[] 覆盖实现、渲染器和验证路径。"
+        action: "declare_target_paths"
+    process:
+      - phase: "Confirmation"
+        currentState: "示例合同可能无法渲染高质量 HTML。"
+        targetState: "renderer-backed gold contract 输出 confirmable HTML。"
+    artifactPaths:
+      - path: "packages/example-upload/src/uploads/**"
+        targetRole: "上传实现目标路径"
+        traceRows: ["TRACE-001", "TRACE-002"]
+        evidenceRefs: ["EVD-001", "EVD-002"]
+    canonicalArtifacts:
+      - id: CANONICAL-001
+        targetPathOrField: "packages/example-upload/src/uploads/**"
+        functionDescription: "单文件上传实现与验证边界。"
+        controlPlaneRole: implementation_surface
+        traceRows: ["TRACE-001", "TRACE-002"]
+        evidenceRefs: ["EVD-001", "EVD-002"]
+    pathRegistry:
+      - id: PATHREG-001
+        category: "Confirmation renderer"
+        fixedPath: "<skill-dir>/scripts/render-requirements-confirmation-html.ts"
+        sourceOfTruthRole: validation
+        description: "确认页只读渲染器。"
+        traceRows: ["TRACE-001", "TRACE-002"]
+        evidenceRefs: ["EVD-001", "EVD-002"]
+    existingArtifacts:
+      - id: LEGACY-001
+        currentPath: "legacy/upload-smoke-output"
+        currentFunction: "旧烟雾级上传输出。"
+        targetTreatment: "只能作为背景，不能作为完成证明。"
+        completionProofPolicy: legacy_only
+        traceRows: ["TRACE-002"]
+        evidenceRefs: ["EVD-002"]
 
   requiredCommands:
     - id: CMD-CONTRACT-001
       commandRef:
         skill: requirements-contract-authoring
         script: scripts/render-requirements-confirmation-html.ts
-      command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts --source <source-document.md> --out _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation.html --language zh-CN --record-id <recordId> --entry-flow <entryFlow> --mode confirmation --json"
-      purpose: "Validate source contract and render confirmation HTML."
+      command: "node <skill-dir>/scripts/render-requirements-confirmation-html.ts"
+      purpose: "验证源合同并渲染确认 HTML。"
     - id: CMD-DELIVERY-001
-      command: "npm run test:e2e -- upload"
-      purpose: "Produce delivery evidence for the positive path."
+      command: "npx vitest run tests/acceptance/requirements-contract-gold-template-render.test.ts"
+      purpose: "产生正向路径交付证据。"
     - id: CMD-DELIVERY-002
-      command: "npm run test:e2e -- upload-invalid"
-      purpose: "Produce delivery evidence for the negative path."
+      command: "npx vitest run packages/bmad-speckit/src/main-agent/source-authority/tests/requirements-contract-source-template.test.ts"
+      purpose: "产生负向路径交付证据。"
   suggestedCommands:
     - id: CMD-SUG-001
       command: "npm run lint"
-      purpose: "Optional quality trend signal; not a closeout proof unless required above."
+      purpose: "可选质量趋势信号；除非被上方必跑命令引用，否则不是 closeout 证明。"
 
   requiredContractChecks:
     - id: CC-001
       gate: implementation_confirmation_schema
       requiredBefore: implementation_readiness
       decisionField: contractChecks[].decision
+  implementationTasks:
+    - id: TASK-001
+      title: "实现有效上传持久化与列表可见性"
+      requirementRefs: ["MUST-001"]
+      targetPaths: ["packages/example-upload/src/uploads/**"]
+      traceRefs: ["TRACE-001"]
+      evidenceRefs: ["EVD-001"]
+    - id: TASK-002
+      title: "实现空文件失败关闭和无副作用断言"
+      requirementRefs: ["NEG-001"]
+      targetPaths: ["packages/example-upload/src/uploads/**"]
+      traceRefs: ["TRACE-002"]
+      evidenceRefs: ["EVD-002"]
+  aiTddContractExecutionManifestProjection:
+    schemaVersion: ai-tdd-contract-execution-manifest-projection/v1
+    applies: true
+    requiredSections:
+      - errorCaseCoverage
+      - commandTargetCollection
+      - traceClosureAssertions
+      - currentTargetMap
+      - canonicalSurfaceReconciliation
+      - legacyDenial
+      - closeoutProof
+      - evidenceTrustStates
+    atomicImplementationTaskLineage:
+      - taskId: TASK-001
+        requirementRefs: ["MUST-001"]
+        traceRefs: ["TRACE-001"]
+      - taskId: TASK-002
+        requirementRefs: ["NEG-001"]
+        traceRefs: ["TRACE-002"]
+    errorCaseCoverage:
+      - failurePathRef: FAIL-001
+        negRefs: ["NEG-001"]
+        acceptanceRefs: ["ACC-002", "E2E-001"]
+        viewRefs: ["SEQ-002", "EDGEVIEW-001"]
+      - edgeCaseRef: EDGE-001
+        failurePathRefs: ["FAIL-001"]
+        acceptanceRefs: ["ACC-002", "E2E-001"]
+        viewRefs: ["EDGEVIEW-001"]
+    commandTargets:
+      - commandRef: CMD-DELIVERY-001
+        targetFiles: ["tests/acceptance/requirements-contract-gold-template-render.test.ts"]
+        traceRefs: ["TRACE-001"]
+        evidenceRefs: ["EVD-001"]
+      - commandRef: CMD-DELIVERY-002
+        targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/tests/requirements-contract-source-template.test.ts"]
+        traceRefs: ["TRACE-002"]
+        evidenceRefs: ["EVD-002"]
+    traceClosure:
+      - traceRef: TRACE-001
+        acceptanceRefs: ["ACC-001", "E2E-001"]
+      - traceRef: TRACE-002
+        acceptanceRefs: ["ACC-002", "E2E-001"]
+    canonicalSurfaces:
+      - artifactRef: CANONICAL-001
+        traceRefs: ["TRACE-001", "TRACE-002"]
+        evidenceRefs: ["EVD-001", "EVD-002"]
+    legacyDenial:
+      - legacyRef: LEGACY-001
+        policy: legacy_only
+        evidenceRefs: ["EVD-002"]
+    closeoutProof:
+      - proofRef: closeoutReadinessPreview
+        requiredCommands: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]
+    evidenceTrustStates:
+      - evidenceRef: EVD-001
+        oracle: "独立存储查询和列表断言。"
+        commandRefs: ["CMD-DELIVERY-001"]
+      - evidenceRef: EVD-002
+        oracle: "独立存储查询确认无新增记录。"
+        commandRefs: ["CMD-DELIVERY-002"]
   closeoutReadinessPreview:
-    orphanPolicy: "orphan artifacts warn during execution and block only at closeout when relevant."
-    currentAttemptPolicy: "Delivery evidence must be produced inside the current closeoutAttemptId."
+    orphanPolicy: "执行期间孤儿产物只告警；相关时在 closeout 阶段阻断。"
+    currentAttemptPolicy: "交付证据必须产生于当前 closeoutAttemptId。"
+    recordClosedPolicy: "只有 controlled gate 写入 pass 决策后才能声明完成。"
     requiredCommands: ["CMD-DELIVERY-001", "CMD-DELIVERY-002"]
     blockingConditions: ["missing required evidence", "open blocker", "pending rerun", "orphan artifact", "stale hash"]
 ```

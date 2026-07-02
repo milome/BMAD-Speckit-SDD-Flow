@@ -492,10 +492,12 @@ describe('requirements contract sanitized real fixture coverage', () => {
           '',
           '- NOISE-ANCHOR: target current must validation wording here is commentary only and must not drive the current/target map.',
           '',
-          '## Requirements',
+          '## Functional Requirements',
           '',
-          '- The widget MUST show the compact status summary.',
-          '- The widget MUST preserve cancel rollback semantics.',
+          '| ID | Requirement | Source rationale | Acceptance link |',
+          '| --- | --- | --- | --- |',
+          '| FR-001 | The widget MUST show the compact status summary. | Operators need a clear current settings summary. | ACC-001 |',
+          '| FR-002 | The widget MUST preserve cancel rollback semantics. | Operators need safe rollback before applying changes. | ACC-002 |',
           '',
           '## Target Files',
           '',
@@ -731,6 +733,15 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const businessRequirementIds =
         ((draft.requirementBoundary as any).business.requirementIds as string[]) ?? [];
       const businessViews = (draft.businessViews as Array<Record<string, unknown>>) ?? [];
+      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map((frId) =>
+        `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
+      );
+
+      expect(mustRows.map((row) => row.id)).toEqual(expectedMustIds);
+      expect(new Set(mustRows.map((row) => row.id)).size).toBe(mustRows.length);
+      expect(mustRows.every((row) => /^MUST-(?:FR|NFR)-[0-9]{3}$/u.test(row.id))).toBe(true);
+      expect(mustRows.some((row) => /^MUST-.*-L[0-9]+-[0-9]+$/u.test(row.id))).toBe(false);
+      expect(businessRequirementIds).toEqual(metadata.requiredBusinessAnchors.frIds);
 
       for (const frId of metadata.requiredBusinessAnchors.frIds) {
         expect(
@@ -748,9 +759,10 @@ describe('requirements contract sanitized real fixture coverage', () => {
         expect(stringify(businessViews)).toContain(frId);
       }
 
-      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(true);
-      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(true);
-      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(true);
+      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(false);
+      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(false);
+      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(false);
+      expect(businessRequirementIds.some((id) => id.startsWith('BUSINESS-'))).toBe(false);
 
       for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
         expectTextContainsAll(draft.must, [period]);
@@ -856,10 +868,10 @@ describe('requirements contract sanitized real fixture coverage', () => {
         },
       });
       expect(currentTargetMapText).toContain('source-authorized product code targets');
-      expect(currentTargetMapText).toContain('MUST-001');
-      expect(currentTargetMapText).toContain('MUST-009');
-      expect(currentTargetMapText).toContain('MUST-010');
-      expect(currentTargetMapText).toContain('MUST-011');
+      expect(currentTargetMapText).toContain('MUST-FR-001');
+      expect(currentTargetMapText).toContain('MUST-FR-009');
+      expect(currentTargetMapText).not.toMatch(/\bMUST-\d{3}\b/u);
+      expect(currentTargetMapText).not.toMatch(/\bMUST-.*-L[0-9]+-[0-9]+\b/u);
       expect(currentTargetMapText).not.toContain('reconfirm_required');
       expect(currentTargetMapText).not.toContain('req-trace');
       expect(currentTargetMapText).not.toContain('controlled confirm-scope ingest');
@@ -988,10 +1000,19 @@ describe('requirements contract sanitized real fixture coverage', () => {
         ((confirmation.requirementBoundary as any).business.requirementIds as string[]) ?? [];
       const businessViews = (confirmation.businessViews as Array<Record<string, unknown>>) ?? [];
       const mustRows = confirmation.must as Array<{
+        id: string;
         sourcePath?: string;
         sourceSpan?: { startLine: number };
         headingPath?: string[];
       }>;
+      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map((frId) =>
+        `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
+      );
+      expect(mustRows.map((row) => row.id)).toEqual(expectedMustIds);
+      expect(new Set(mustRows.map((row) => row.id)).size).toBe(mustRows.length);
+      expect(mustRows.every((row) => /^MUST-(?:FR|NFR)-[0-9]{3}$/u.test(row.id))).toBe(true);
+      expect(mustRows.some((row) => /^MUST-.*-L[0-9]+-[0-9]+$/u.test(row.id))).toBe(false);
+      expect(businessRequirementIds).toEqual(metadata.requiredBusinessAnchors.frIds);
       for (const frId of metadata.requiredBusinessAnchors.frIds) {
         expect(businessRequirementIds).toContain(frId);
         expect(stringify(businessViews)).toContain(frId);
@@ -1005,9 +1026,10 @@ describe('requirements contract sanitized real fixture coverage', () => {
           `${frId} must stay source-span bound after promotion`
         ).toBe(true);
       }
-      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(true);
-      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(true);
-      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(true);
+      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(false);
+      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(false);
+      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(false);
+      expect(businessRequirementIds.some((id) => id.startsWith('BUSINESS-'))).toBe(false);
 
       for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
         expectTextContainsAll(confirmation.must, [period]);
