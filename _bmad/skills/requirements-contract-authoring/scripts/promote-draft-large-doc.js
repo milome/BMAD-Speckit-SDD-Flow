@@ -525,7 +525,7 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
       status: "manual_or_orchestrator_semantic_step_required",
       path: normalizePathForReport(defaults.sourceMutationDecision),
       command:
-        "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+        "npm exec --prefix <project_root> -- bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
     });
   }
 
@@ -792,7 +792,7 @@ function addNextRequiredActionsForErrors(result) {
     result.nextRequiredActions.push({
       action: "rerun_authoring_orchestrator_for_current_hashes",
       command:
-        "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+        "npm exec --prefix <project_root> -- bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
       reason:
         "source-mutation-decision.json is stale or not bound to the current target hash and draft manifest hash.",
     });
@@ -887,7 +887,7 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
         result.nextRequiredActions.push({
           action: "run_authoring_orchestrator_until_source_mutation_decision",
           command:
-            "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+            "npm exec --prefix <project_root> -- bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
         });
       }
       if (error === "encodingReport_required") {
