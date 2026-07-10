@@ -13,8 +13,23 @@ import {
 function sourceAuthorityProjectionFixture(): string {
   const negativeRows = Array.from({ length: 15 }, (_item, index) => {
     const ordinal = String(index + 1).padStart(3, '0');
-    return `| NEG-${ordinal} | Shortcut ${ordinal} does not count as completion. | Shortcut ${ordinal} must remain forbidden. | The negative assertion is not proven. | FAIL-${ordinal} | ACC-${ordinal} CMD-${ordinal} |`;
+    const closureOrdinal = String(index + 84).padStart(3, '0');
+    return `| NEG-${ordinal} | Shortcut ${ordinal} does not count as completion. | Shortcut ${ordinal} must remain forbidden. | The negative assertion is not proven. | FAIL-001 | ACC-${closureOrdinal} CMD-${closureOrdinal} |`;
   });
+  const negativeAcceptanceRows = Array.from({ length: 15 }, (_item, index) => {
+    const ordinal = String(index + 1).padStart(3, '0');
+    const closureOrdinal = String(index + 84).padStart(3, '0');
+    return `| ACC-${closureOrdinal} | NEG-${ordinal} independent acceptance | NEG-${ordinal} | artifact tests/acceptance/negative-${ordinal}.test.ts | Shortcut ${ordinal} must remain forbidden. | CMD-${closureOrdinal} TRACE-${closureOrdinal}; tests/acceptance/negative-${ordinal}.test.ts | PATH-${closureOrdinal} owns remediation. |`;
+  });
+  const negativeTraceRows = Array.from({ length: 15 }, (_item, index) => {
+    const ordinal = String(index + 1).padStart(3, '0');
+    const closureOrdinal = String(index + 84).padStart(3, '0');
+    return `| TRACE-${closureOrdinal} | NEG-${ordinal} | ACC-${closureOrdinal} | ACC-${closureOrdinal} E2E-001 | CMD-${closureOrdinal} | PATH-${closureOrdinal} |`;
+  });
+  const negativeIds = Array.from(
+    { length: 15 },
+    (_item, index) => `NEG-${String(index + 1).padStart(3, '0')}`
+  );
 
   return [
     '# Source Authority Projection',
@@ -43,13 +58,20 @@ function sourceAuthorityProjectionFixture(): string {
     '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
     '| --- | --- | --- | --- | --- | --- | --- |',
     '| ACC-001 | Widget acceptance | FR-001 | npm run authoring:lint; artifact tests/acceptance/widget-authoring.test.ts | The widget behavior is independently proven. | CMD-001 TRACE-001; tests/acceptance/widget-authoring.test.ts | PATH-001 owns remediation. |',
+    ...negativeAcceptanceRows,
     '',
     '## Test And Verification Paths',
     '',
     '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    '| E2E-001 | e2e | FR-001 | npm run authoring:lint | Exit code 0. | Widget behavior remains source-authorized. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns remediation. | tests/acceptance/widget-authoring.test.ts src/widget.ts |',
+    `| E2E-001 | e2e | MUST-FR-001 ${negativeIds.join(' ')} | npm run authoring:lint | Exit code 0. | Widget behavior remains source-authorized. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns remediation. | tests/acceptance/widget-authoring.test.ts src/widget.ts |`,
     '| CMD-001 | contract-validation | FR-001 | npm run authoring:lint | Exit code 0. | Lint rejects compiler drift. | ACC-001 E2E-001 TRACE-001 | PATH-001 owns remediation. | tests/acceptance/widget-authoring.test.ts src/widget.ts |',
+    '',
+    '## Trace Matrix Source',
+    '',
+    '| ID | Requirement | Acceptance | E2E coverage | Delivery evidence | Target path |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...negativeTraceRows,
     '',
     '## Implementation Path Map',
     '',
@@ -184,8 +206,8 @@ describe('requirements contract authoring authority grounding', () => {
         negativeAssertion: 'Shortcut 001 must remain forbidden.',
         whyItBlocksCompletion: 'The negative assertion is not proven.',
         sourceFailureRefs: ['FAIL-001'],
-        sourceAcceptanceRefs: ['ACC-001'],
-        sourceCommandRefs: ['CMD-001'],
+        sourceAcceptanceRefs: ['ACC-084'],
+        sourceCommandRefs: ['CMD-084'],
       });
     } finally {
       removeTempRoot(root);
@@ -213,6 +235,90 @@ describe('requirements contract authoring authority grounding', () => {
       expect(e2e.file).toBe('tests/acceptance/widget-authoring.test.ts');
       expect(acceptance.file).not.toBe('source_authorized_validation_command');
       expect(e2e.file).not.toBe('source_authorized_validation_command');
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('materializes source NEG rows as independent closures without inventing tasks', () => {
+    const root = createTempRoot('requirements-contract-negative-closure-authority-');
+    try {
+      const source = writeText(
+        root,
+        'docs/requirements/source-authority-projection.md',
+        sourceAuthorityProjectionFixture()
+      );
+
+      runAuthoring(root, source, 'REQ-NEGATIVE-CLOSURE-AUTHORITY');
+      const confirmation = readJson<{ implementationConfirmation: Record<string, unknown> }>(
+        artifacts(
+          root,
+          'REQ-NEGATIVE-CLOSURE-AUTHORITY',
+          'REQ-NEGATIVE-CLOSURE-AUTHORITY-SET'
+        ).draftImplementationConfirmation
+      ).implementationConfirmation;
+      const traceRows = confirmation.traceRows as Array<Record<string, unknown>>;
+      const acceptanceTests = confirmation.acceptanceTests as Array<Record<string, unknown>>;
+      const tasks = confirmation.atomicImplementationTaskList as Array<Record<string, unknown>>;
+      const taskIds = new Set(tasks.map((row) => row.id));
+      const expectedTraceIds = Array.from(
+        { length: 15 },
+        (_item, index) => `TRACE-${String(index + 84).padStart(3, '0')}`
+      );
+      const expectedAcceptanceIds = Array.from(
+        { length: 15 },
+        (_item, index) => `ACC-${String(index + 84).padStart(3, '0')}`
+      );
+      const negativeTraceRows = traceRows.filter((row) =>
+        expectedTraceIds.includes(String(row.id))
+      );
+      const negativeAcceptanceRows = acceptanceTests.filter((row) =>
+        expectedAcceptanceIds.includes(String(row.id))
+      );
+      const ownerTaskId = String((negativeTraceRows[0]?.taskRefs as string[])?.[0] ?? '');
+      const ownerTask = tasks.find((row) => row.id === ownerTaskId);
+      const taskToTrace = confirmation.atomicTaskToTraceMap as Record<string, string[]>;
+      const taskToAcceptance = confirmation.atomicTaskToAcceptanceMap as Record<string, string[]>;
+      const notDoneRows = confirmation.notDone as Array<Record<string, unknown>>;
+      const mustTrace = traceRows.find((row) => row.id === 'TRACE-001');
+
+      expect(negativeTraceRows.map((row) => row.id)).toEqual(expectedTraceIds);
+      expect(negativeAcceptanceRows.map((row) => row.id)).toEqual(expectedAcceptanceIds);
+      expect(tasks).toHaveLength(2);
+      expect(ownerTaskId).not.toBe('');
+      expect(taskIds.has(ownerTaskId)).toBe(true);
+      expect(negativeTraceRows.every((row) => (row.taskRefs as string[]).length === 1)).toBe(true);
+      expect(
+        negativeTraceRows.every((row, index) =>
+          (row.covers as string[]).includes(`NEG-${String(index + 1).padStart(3, '0')}`)
+        )
+      ).toBe(true);
+      expect(
+        negativeTraceRows.every((row) => (row.acceptanceRefs as string[]).includes('E2E-001'))
+      ).toBe(true);
+      expect(
+        negativeAcceptanceRows.every(
+          (row, index) =>
+            (row.covers as string[])[0] === `NEG-${String(index + 1).padStart(3, '0')}` &&
+            (row.traceRows as string[])[0] === expectedTraceIds[index]
+        )
+      ).toBe(true);
+      expect(negativeAcceptanceRows[0]?.file).toBe(
+        'tests/acceptance/negative-001.test.ts'
+      );
+      expect(negativeAcceptanceRows[14]?.file).toBe(
+        'tests/acceptance/negative-015.test.ts'
+      );
+      expect(ownerTask?.traceRows).toEqual(expect.arrayContaining(expectedTraceIds));
+      expect(ownerTask?.acceptanceRefs).toEqual(expect.arrayContaining(expectedAcceptanceIds));
+      expect(taskToTrace[ownerTaskId]).toEqual(expect.arrayContaining(expectedTraceIds));
+      expect(taskToAcceptance[ownerTaskId]).toEqual(
+        expect.arrayContaining(expectedAcceptanceIds)
+      );
+      expect(
+        notDoneRows.map((row) => row.coveredByTraceRows)
+      ).toEqual(expectedTraceIds.map((traceId) => [traceId]));
+      expect(mustTrace?.covers).toEqual(['MUST-FR-001']);
     } finally {
       removeTempRoot(root);
     }

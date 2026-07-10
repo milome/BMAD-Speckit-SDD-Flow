@@ -5557,17 +5557,20 @@ function buildPreConfirmationImplementationConfirmation(input: {
       ...ids,
     };
   });
-  const allTraceIds = perMustClosures.map((row) => row.traceId);
+  const perMustTraceIds = perMustClosures.map((row) => row.traceId);
   const allEvidenceIds = perMustClosures.map((row) => row.evidenceId);
-  const allAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
+  const perMustAcceptanceIds = perMustClosures.flatMap((row) => [
+    row.acceptanceId,
+    row.e2eId,
+  ]);
   const allFailureIds = perMustClosures.map((row) => row.failureId);
   const allEdgeIds = perMustClosures.map((row) => row.edgeId);
-  const notDoneRows =
+  let notDoneRows: Record<string, unknown>[] =
     sourceNegativeRequirementRows.length > 0
       ? sourceNegativeRequirementRows.map((row) => ({
           ...row,
           evidenceRefs: allEvidenceIds,
-          coveredByTraceRows: allTraceIds,
+          coveredByTraceRows: perMustTraceIds,
           coveredByFailurePath: allFailureIds,
         }))
       : [
@@ -5580,14 +5583,130 @@ function buildPreConfirmationImplementationConfirmation(input: {
               'Confirmation scope quality is separate from implementation completion evidence.',
             whyItBlocksCompletionZh: '需求范围确认质量与实现完成证据是不同层级。',
             negativeAssertionRequired: true,
-            coveredByTraceRows: allTraceIds,
+            coveredByTraceRows: perMustTraceIds,
             coveredByFailurePath: allFailureIds,
             ...backRef,
           },
         ];
+  const perMustClosureById = new Map(
+    perMustClosures.map((row) => [row.mustId, row])
+  );
+  const sourceTraceBlocks = structuredBlocks.filter(
+    (block) =>
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Trace Matrix Source')
+  );
+  const sourceE2eBlocks = new Map<string, StructuredSourceBlock>();
+  for (const block of structuredBlocks) {
+    if (
+      block.blockKind !== 'table_row' ||
+      !headingPathContainsExactSection(block.headingPath, 'Test And Verification Paths')
+    ) {
+      continue;
+    }
+    const sourceId = normalizeText(
+      tableContextRowValue(block.tableContext, ['ID'])
+    ).toUpperCase();
+    if (/^E2E-\d{1,3}$/u.test(sourceId)) {
+      sourceE2eBlocks.set(sourceId, block);
+    }
+  }
+  const negativeClosures = notDoneRows.flatMap((row) => {
+    const negId = normalizeText(row.id).toUpperCase();
+    const sourceTraceBlock = sourceTraceBlocks.find((block) =>
+      sourceReferenceIds(sourceTableRowText(block)).includes(negId)
+    );
+    if (!sourceTraceBlock) {
+      return [];
+    }
+    const sourceTraceRefs = sourceReferenceIds(sourceTableRowText(sourceTraceBlock));
+    const traceId = normalizeText(
+      tableContextRowValue(sourceTraceBlock.tableContext, ['ID'])
+    ).toUpperCase();
+    const acceptanceId =
+      stringsFrom(row.sourceAcceptanceRefs)
+        .map((ref) => ref.toUpperCase())
+        .find((ref) => /^ACC-\d{1,3}$/u.test(ref)) ??
+      sourceTraceRefs.find((ref) => /^ACC-\d{1,3}$/u.test(ref)) ??
+      '';
+    const sourceE2eId =
+      sourceTraceRefs.find((ref) => /^E2E-\d{1,3}$/u.test(ref)) ?? '';
+    const sourceE2eBlock = sourceE2eBlocks.get(sourceE2eId);
+    const owner = sourceE2eBlock
+      ? sourceReferenceIds(sourceTableRowText(sourceE2eBlock))
+          .map((ref) => perMustClosureById.get(ref))
+          .find((candidate) => candidate !== undefined)
+      : undefined;
+    if (
+      !/^NEG-\d{1,3}$/u.test(negId) ||
+      !/^TRACE-\d{1,3}$/u.test(traceId) ||
+      !/^ACC-\d{1,3}$/u.test(acceptanceId) ||
+      !/^E2E-\d{1,3}$/u.test(sourceE2eId) ||
+      !owner
+    ) {
+      return [];
+    }
+    const sourceFailureRefs = uniqueNonEmpty(
+      stringsFrom(row.sourceFailureRefs)
+    ).filter((ref) => allFailureIds.includes(ref));
+    return [
+      {
+        negId,
+        text: normalizeText(row.text),
+        negativeAssertion: normalizeText(row.negativeAssertion ?? row.text),
+        traceId,
+        acceptanceId,
+        sourceE2eId,
+        taskId: owner.materializeTaskId,
+        evidenceId: owner.evidenceId,
+        edgeId: owner.edgeId,
+        failurePathRefs:
+          sourceFailureRefs.length > 0 ? sourceFailureRefs : [owner.failureId],
+        deliveryCommandRefs: uniqueNonEmpty([
+          ...stringsFrom(row.sourceCommandRefs),
+          ...sourceTraceRefs.filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
+        ]),
+      },
+    ];
+  });
+  const negativeClosureByNegId = new Map(
+    negativeClosures.map((row) => [row.negId, row])
+  );
+  const allTraceIds = uniqueNonEmpty([
+    ...perMustTraceIds,
+    ...negativeClosures.map((row) => row.traceId),
+  ]);
+  const allAcceptanceIds = uniqueNonEmpty([
+    ...perMustAcceptanceIds,
+    ...negativeClosures.map((row) => row.acceptanceId),
+  ]);
+  notDoneRows = notDoneRows.map((row) => {
+    const closure = negativeClosureByNegId.get(normalizeText(row.id).toUpperCase());
+    return closure
+      ? {
+          ...row,
+          evidenceRefs: [closure.evidenceId],
+          coveredByTraceRows: [closure.traceId],
+          coveredByFailurePath: closure.failurePathRefs,
+        }
+      : row;
+  });
   const negativeRequirementIds = notDoneRows
     .map((row) => normalizeText(row.id))
     .filter(Boolean);
+  const unclosedNegativeRequirementIds = negativeRequirementIds.filter(
+    (id) => !negativeClosureByNegId.has(id)
+  );
+  const negativeRequirementIdsByE2e = new Map<string, string[]>();
+  for (const closure of negativeClosures) {
+    negativeRequirementIdsByE2e.set(
+      closure.sourceE2eId,
+      uniqueNonEmpty([
+        ...(negativeRequirementIdsByE2e.get(closure.sourceE2eId) ?? []),
+        closure.negId,
+      ])
+    );
+  }
   const businessProofClosure = {
     traceRows: allTraceIds,
     evidenceRefs: allEvidenceIds,
@@ -5703,6 +5822,15 @@ function buildPreConfirmationImplementationConfirmation(input: {
           row.acceptanceId,
           row.e2eId,
         ],
+      }) ?? validationAcceptanceTestFile,
+    ])
+  );
+  const acceptanceTestFilesByNegative = new Map(
+    negativeClosures.map((row) => [
+      row.negId,
+      sourceAuthorityTestFile({
+        blocks: structuredBlocks,
+        requirementRefs: [row.negId, row.acceptanceId, row.sourceE2eId],
       }) ?? validationAcceptanceTestFile,
     ])
   );
@@ -5855,8 +5983,17 @@ function buildPreConfirmationImplementationConfirmation(input: {
     atomicTaskRefs: row.taskIds,
     ...projectionBackRef(input.packetHash, row.mustId),
   }));
+  const negativeClosuresByTask = new Map<string, typeof negativeClosures>();
+  for (const closure of negativeClosures) {
+    negativeClosuresByTask.set(closure.taskId, [
+      ...(negativeClosuresByTask.get(closure.taskId) ?? []),
+      closure,
+    ]);
+  }
   const taskRows = perMustClosures.flatMap((row) => {
     const taskBackRef = projectionBackRef(input.packetHash, row.mustId);
+    const negativeTaskClosures =
+      negativeClosuresByTask.get(row.materializeTaskId) ?? [];
     return [
       {
         id: row.authorTaskId,
@@ -5874,8 +6011,14 @@ function buildPreConfirmationImplementationConfirmation(input: {
         id: row.materializeTaskId,
         text: `Materialize packet-backed source projections for ${row.mustId}: ${row.requirement.text}`,
         targetFiles: [rel(input.sourcePath), rel(input.paths.confirmationHtml)],
-        acceptanceRefs: [row.e2eId],
-        traceRows: [row.traceId],
+        acceptanceRefs: uniqueNonEmpty([
+          row.e2eId,
+          ...negativeTaskClosures.map((closure) => closure.acceptanceId),
+        ]),
+        traceRows: uniqueNonEmpty([
+          row.traceId,
+          ...negativeTaskClosures.map((closure) => closure.traceId),
+        ]),
         evidenceRefs: [row.evidenceId],
         redProofPlan: `Renderer blocks if ${row.mustId} lacks packet-backed trace, evidence, view, and acceptance coverage.`,
         primaryObservableBehaviors: [`${row.mustId} source projection is rendered`],
@@ -5887,15 +6030,25 @@ function buildPreConfirmationImplementationConfirmation(input: {
   const mustToAtomicTaskMap = Object.fromEntries(
     perMustClosures.map((row) => [row.mustId, row.taskIds])
   );
-  const atomicTaskToTraceMap = Object.fromEntries(
+  const atomicTaskToTraceMap: Record<string, string[]> = Object.fromEntries(
     perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, [row.traceId]]))
   );
-  const atomicTaskToAcceptanceMap = Object.fromEntries(
+  const atomicTaskToAcceptanceMap: Record<string, string[]> = Object.fromEntries(
     perMustClosures.flatMap((row) => [
       [row.authorTaskId, [row.acceptanceId]],
       [row.materializeTaskId, [row.e2eId]],
     ])
   );
+  for (const closure of negativeClosures) {
+    atomicTaskToTraceMap[closure.taskId] = uniqueNonEmpty([
+      ...(atomicTaskToTraceMap[closure.taskId] ?? []),
+      closure.traceId,
+    ]);
+    atomicTaskToAcceptanceMap[closure.taskId] = uniqueNonEmpty([
+      ...(atomicTaskToAcceptanceMap[closure.taskId] ?? []),
+      closure.acceptanceId,
+    ]);
+  }
   const atomicTaskToEvidenceMap = Object.fromEntries(
     perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, [row.evidenceId]]))
   );
@@ -6072,7 +6225,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       })),
     traceRows: perMustClosures.map((row) => ({
         id: row.traceId,
-        covers: [row.mustId, ...negativeRequirementIds],
+        covers: [row.mustId, ...unclosedNegativeRequirementIds],
         sourceRequirementTexts: [row.requirement.text],
         taskRefs: row.taskIds,
         evidenceRefs: [row.evidenceId],
@@ -6092,7 +6245,31 @@ function buildPreConfirmationImplementationConfirmation(input: {
         acceptanceSummary: `${row.mustId} links acceptance, evidence, failure path, edge case, target path, command, and view refs before user confirmation.`,
         status: 'PENDING',
         ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+      })).concat(
+        negativeClosures.map((row) => ({
+          id: row.traceId,
+          covers: [row.negId],
+          sourceRequirementTexts: [row.text],
+          taskRefs: [row.taskId],
+          evidenceRefs: [row.evidenceId],
+          contractValidationCommandRefs: commandIds,
+          deliveryEvidenceCommandRefs: row.deliveryCommandRefs,
+          acceptanceRefs: [row.acceptanceId, row.sourceE2eId],
+          failurePathRefs: row.failurePathRefs,
+          edgeCaseRefs: [row.edgeId],
+          sequenceViewRefs: sequenceViewIds,
+          flowViewRefs: flowViewIds,
+          edgeCaseViewRefs: edgeCaseViewIds,
+          boundaryViewRefs: boundaryViewIds,
+          artifactRefs: ['ART-001', 'ART-002'],
+          targetModificationPathRefs: targetPathIds,
+          closureAssertion: `${row.traceId} provides independent source-backed negative closure for ${row.negId}.`,
+          targetStateAssertion: `${row.negId} remains blocking until its independent acceptance evidence passes.`,
+          acceptanceSummary: `${row.negId} links source acceptance, failure path, task, command, and view refs before user confirmation.`,
+          status: 'PENDING',
+          ...projectionBackRef(input.packetHash, row.negId),
+        }))
+      ),
     acceptanceTests: perMustClosures.map((row) => ({
         id: row.acceptanceId,
         file: acceptanceTestFilesByMust.get(row.mustId) ?? validationAcceptanceTestFile,
@@ -6110,7 +6287,28 @@ function buildPreConfirmationImplementationConfirmation(input: {
         negativeControls: negativeRequirementIds,
         mockOnly: false,
         ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+      })).concat(
+        negativeClosures.map((row) => ({
+          id: row.acceptanceId,
+          file:
+            acceptanceTestFilesByNegative.get(row.negId) ??
+            validationAcceptanceTestFile,
+          covers: [row.negId],
+          sourceRequirementTexts: [row.text],
+          traceRows: [row.traceId],
+          evidenceRefs: [row.evidenceId],
+          commandRefs: row.deliveryCommandRefs,
+          failurePathRefs: row.failurePathRefs,
+          edgeCaseRefs: [row.edgeId],
+          expectedPreImplementationState: 'expected_red',
+          redProofPlan: `Before implementation, ${row.negId} acceptance must fail while the forbidden behavior remains possible.`,
+          oracle: row.negativeAssertion,
+          positiveControl: true,
+          negativeControls: [row.negId],
+          mockOnly: false,
+          ...projectionBackRef(input.packetHash, row.negId),
+        }))
+      ),
     acceptanceCriteria: perMustClosures.map((row) => ({
         id: row.acceptanceId,
         covers: [row.mustId],
@@ -6123,11 +6321,29 @@ function buildPreConfirmationImplementationConfirmation(input: {
         redProofPlan: `Acceptance criteria for ${row.mustId} must be red before the corresponding behavior/proof is implemented.`,
         oracle: `${row.mustId} acceptance criteria remain visible in the confirmation contract and linked to validation commands.`,
         ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+      })).concat(
+        negativeClosures.map((row) => ({
+          id: row.acceptanceId,
+          covers: [row.negId],
+          sourceRequirementTexts: [row.text],
+          traceRows: [row.traceId],
+          evidenceRefs: [row.evidenceId],
+          commandRefs: row.deliveryCommandRefs,
+          failurePathRefs: row.failurePathRefs,
+          edgeCaseRefs: [row.edgeId],
+          redProofPlan: `Acceptance criteria for ${row.negId} must be red while the forbidden behavior remains possible.`,
+          oracle: row.negativeAssertion,
+          ...projectionBackRef(input.packetHash, row.negId),
+        }))
+      ),
     e2eSuites: perMustClosures.map((row) => ({
         id: row.e2eId,
         file: acceptanceTestFilesByMust.get(row.mustId) ?? validationAcceptanceTestFile,
-        covers: [row.mustId, ...negativeRequirementIds],
+        covers: [
+          row.mustId,
+          ...unclosedNegativeRequirementIds,
+          ...(negativeRequirementIdsByE2e.get(row.e2eId) ?? []),
+        ],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
         evidenceRefs: [row.evidenceId],
@@ -6144,7 +6360,11 @@ function buildPreConfirmationImplementationConfirmation(input: {
       })),
     e2eScenarios: perMustClosures.map((row) => ({
         id: row.e2eId,
-        covers: [row.mustId, ...negativeRequirementIds],
+        covers: [
+          row.mustId,
+          ...unclosedNegativeRequirementIds,
+          ...(negativeRequirementIdsByE2e.get(row.e2eId) ?? []),
+        ],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
         evidenceRefs: [row.evidenceId],
