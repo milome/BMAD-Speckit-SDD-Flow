@@ -614,7 +614,7 @@ The Artifact and Automation Plan View must make planned outputs visible before i
 
 When planned work touches runtime governance, hooks, no-hook execution, recovery, bmad-help routing, dashboard, scoring, or SFT, the artifact plan must also show:
 
-- `bmad-speckit main-agent resolve-active-requirement` or the equivalent skill/project resolver as the startup locator.
+- `npm exec --prefix "<project_root>" -- bmad-speckit main-agent resolve-active-requirement` or the equivalent skill/project resolver as the startup locator, where `<project_root>` is read from `_bmad-output/config/bmad-speckit-install-manifest.json`.
 - `_bmad-output/runtime/requirement-records/index.json` as locator projection only.
 - `_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json` as the reloaded control record.
 - `_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json`.
@@ -888,16 +888,18 @@ Rules:
 
 ### 7a. Run Controlled Confirmation Ingest
 
-The normal post-confirmation entry is the highest-level `bmad-speckit` CLI command:
+The normal post-confirmation entry is the highest-level `bmad-speckit` CLI command, executed through project-local npm prefix resolution:
 
 ```bash
-bmad-speckit confirm-scope \
+npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope \
   --source <source-document.md> \
   --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json \
   --confirmation-text "<exact confirmation text from chat>" \
   --confirmed-by <user-or-agent-label> \
   --json
 ```
+
+Resolve `<project_root>` from `_bmad-output/config/bmad-speckit-install-manifest.json`. Do not run bare `bmad-speckit confirm-scope` from outside the consumer project tree.
 
 This entry must dispatch through the installed package runtime, equivalent to `bmad-speckit main-agent confirm-scope`, which then calls the skill-local `confirm-requirements-scope.js`, which in turn calls `ingest-confirmation-event.js`, updates the source bookkeeping, writes the requirement-scoped `requirement-record.json`, appends the confirmation event log and artifact index, and returns the generated paths. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but agents should not need to remember the lower-level wrapper during normal confirmation or orchestration. Consumer-facing instructions must not route through root TypeScript orchestration scripts. `render-requirements-confirmation-html.ts` remains read-only and must not absorb this responsibility.
 

@@ -800,7 +800,7 @@ Use this when `applicability.runtimeRecovery.applies: true`, `activeRequirementR
 
 ```yaml
   activeRequirementResolution:
-    resolver: bmad-speckit main-agent resolve-active-requirement
+    resolver: npm exec --prefix <project_root> -- bmad-speckit main-agent resolve-active-requirement
     explicitArgs:
       - --record-id
       - --requirement-set-id
@@ -992,7 +992,7 @@ The renderer is read-only. HTML render failure is blocked; there is no Markdown/
 After exact chat confirmation, the agent must immediately run the high-level confirmation ingest action:
 
 ```text
-bmad-speckit confirm-scope --source <source-document.md> --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json --confirmation-text "<exact confirmation text from chat>" --confirmed-by <user-or-agent-label> --json
+npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope --source <source-document.md> --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json --confirmation-text "<exact confirmation text from chat>" --confirmed-by <user-or-agent-label> --json
 ```
 
 This is the automated post-confirmation step that delegates to the skill-local controlled ingest wrapper, writes `confirmation_recorded`, and creates `_bmad-output/runtime/requirement-records/<recordId>/requirement-record.json`. Do not require the user or agent to remember lower-level ingest commands manually, and do not use a confirmed source document for readiness or prompt generation until this controlled record exists.

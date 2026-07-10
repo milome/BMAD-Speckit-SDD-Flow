@@ -162,6 +162,43 @@ function writeSourceWithLineBasedInlineMust(
   return source;
 }
 
+function writeSourceWithLegacyInlineMustAndFrNfrTables(
+  root: string,
+  name = 'legacy-inline-must-with-fr-nfr-tables.md'
+): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Legacy Inline MUST With Source Tables',
+      '',
+      'implementationConfirmation:',
+      '  status: draft',
+      '  must:',
+      '    - id: MUST-REQ-DATASERVICE-GDS-TRIG-L104-002',
+      '      text: This stale line-based projection must be ignored as an extraction source.',
+      '',
+      '## Functional Requirements',
+      '',
+      '| FR ID | Requirement | Source rationale | Acceptance link |',
+      '| --- | --- | --- | --- |',
+      '| FR-001 | The authoring lane must rebuild source-bound functional MUST rows from FR ID tables. | Prevent stale inline projection from controlling source authoring. | ACC-001 |',
+      '| FR-002 | The authoring lane must preserve every subsequent source-bound functional row in the same table. | Prevent table header loss after the first data row. | ACC-002 |',
+      '',
+      '## Non Functional Requirements',
+      '',
+      '| NFR ID | Requirement | Source rationale | Acceptance link |',
+      '| --- | --- | --- | --- |',
+      '| NFR-001 | The authoring lane must rebuild source-bound quality MUST rows from NFR ID tables. | Preserve controlled NFR coverage when replacing old projections. | ACC-003 |',
+      '| NFR-002 | The authoring lane must preserve every subsequent source-bound quality row in the same table. | Prevent table header loss after the first NFR data row. | ACC-004 |',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
 function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
   mkdirSync(path.dirname(source), { recursive: true });
@@ -952,6 +989,42 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
+  it('does not report controlled candidates missing when authority gates block existing source-bound candidates', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-candidates-authority-block-')
+    );
+    try {
+      const source = writePlainSourceWithControlledCandidate(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-CANDIDATES-AUTHORITY-BLOCK',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-CANDIDATES-AUTHORITY-BLOCK',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-CANDIDATES-AUTHORITY-BLOCK',
+        'REQSET-PRE-CONFIRMATION-CANDIDATES-AUTHORITY-BLOCK'
+      );
+      const issueCodes = result.blockingIssues.map((issue) => issue.code);
+      const candidates = readJson(paths.controlledMustCandidates);
+
+      expect(issueCodes).toContain('validation_authority_missing');
+      expect(issueCodes).not.toContain('controlled_must_candidates_missing');
+      expect(candidates).toMatchObject({
+        candidateCount: 1,
+        acceptedCandidateCount: 1,
+        mustCount: 1,
+        failClosed: true,
+        decision: 'pre_confirmation_gate_blocked',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed instead of materializing line-based MUST ids from uncontrolled source prose', () => {
     const root = mkdtempSync(
       path.join(os.tmpdir(), 'main-agent-pre-confirmation-uncontrolled-prose-')
@@ -1035,6 +1108,59 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(readFileSync(source, 'utf8')).toContain(
         'MUST-REQ-DATASERVICE-GDS-TRIG-L104-002'
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rebuilds controlled MUST rows from FR ID and NFR ID tables when stale line-based inline projection exists', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-fr-nfr-legacy-inline-')
+    );
+    try {
+      const source = writeSourceWithLegacyInlineMustAndFrNfrTables(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
+        requirementSetId: 'REQSET-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
+        ...authorityForSource(root, source),
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
+        'REQSET-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE'
+      );
+      const issueCodes = result.blockingIssues.map((issue) => issue.code);
+      const candidates = readJson(paths.controlledMustCandidates);
+      const draftProjection = readJson(paths.draftImplementationConfirmation);
+      const confirmation = draftProjection.implementationConfirmation;
+
+      expect(issueCodes).not.toContain('line_based_must_id_forbidden');
+      expect(issueCodes).not.toContain('controlled_must_candidates_missing');
+      expect(existsSync(paths.draftSourcePreview)).toBe(true);
+      expect(candidates).toMatchObject({
+        candidateCount: 4,
+        acceptedCandidateCount: 4,
+        mustCount: 4,
+        failClosed: false,
+        decision: 'draft_materialization_allowed',
+      });
+      expect(candidates.candidates.map((candidate: any) => candidate.sourceRequirementId)).toEqual([
+        'FR-001',
+        'FR-002',
+        'NFR-001',
+        'NFR-002',
+      ]);
+      expect(confirmation.must.map((row: any) => row.id)).toEqual([
+        'MUST-FR-001',
+        'MUST-FR-002',
+        'MUST-NFR-001',
+        'MUST-NFR-002',
+      ]);
+      expect(JSON.stringify(draftProjection)).not.toContain('MUST-REQ-DATASERVICE-GDS-TRIG-L104-002');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

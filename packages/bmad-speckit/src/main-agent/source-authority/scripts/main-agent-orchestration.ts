@@ -2962,6 +2962,17 @@ function sourceTextDeclaresPositiveRequirementIds(sourceText: string): boolean {
   );
 }
 
+function markdownTableHeadersForDataRow(lines: string[], rowIndex: number): string[] {
+  for (let index = rowIndex - 1; index >= 0 && isMarkdownTableRow(lines[index]); index -= 1) {
+    if (!isMarkdownTableSeparator(lines[index])) {
+      continue;
+    }
+    const headerLine = index > 0 ? lines[index - 1] : '';
+    return isMarkdownTableRow(headerLine) ? markdownTableCells(headerLine) : [];
+  }
+  return [];
+}
+
 function isForbiddenLineBasedMustId(value: unknown): boolean {
   return /^MUST-.*-L[0-9]+-[0-9]+$/u.test(normalizeText(String(value ?? '')).toUpperCase());
 }
@@ -3173,10 +3184,8 @@ function extractStructuredSourceBlocks(
       if (isMarkdownTableSeparator(line)) {
         continue;
       }
-      const headerLine = index > 1 && isMarkdownTableSeparator(lines[index - 1]) ? lines[index - 2] : '';
-      const headers = isMarkdownTableRow(headerLine)
-        ? markdownTableCells(headerLine)
-        : activeTableHeaders;
+      const scannedHeaders = markdownTableHeadersForDataRow(lines, index);
+      const headers = scannedHeaders.length > 0 ? scannedHeaders : activeTableHeaders;
       const cells = markdownTableCells(line);
       const row: Record<string, string> = {};
       cells.forEach((cell, cellIndex) => {
@@ -4220,7 +4229,8 @@ function writeControlledMustCandidateArtifacts(input: {
   decision:
     | 'draft_materialization_allowed'
     | 'controlled_must_candidates_missing'
-    | 'line_based_must_id_forbidden';
+    | 'line_based_must_id_forbidden'
+    | 'pre_confirmation_gate_blocked';
 }): void {
   const sourceDocumentHash = sha256Text(input.sourceText);
   const acceptedCandidates = input.candidates.filter(
@@ -14113,11 +14123,11 @@ export function runMainAgentPreConfirmationDrilldown(
   });
   writeRequirementCoverageLedgerArtifact(paths.requirementCoverageLedger, coverageLedger);
 
-  let mustRequirements = resolveSourceMustRequirements(semanticInputPath);
-  const forbiddenLineBasedMustRequirements = mustRequirements.filter((row) =>
+  const inlineMustRequirements = resolveSourceMustRequirements(semanticInputPath);
+  const forbiddenLineBasedMustRequirements = inlineMustRequirements.filter((row) =>
     isForbiddenLineBasedMustId(row.id)
   );
-  const hasForbiddenLineBasedMustRequirements = forbiddenLineBasedMustRequirements.length > 0;
+  let mustRequirements = inlineMustRequirements.filter((row) => !isForbiddenLineBasedMustId(row.id));
   const requireSourceRequirementIdsForControlledCandidates =
     sourcePrdInstanceLintRequired && detectedEntrySource !== 'session_requirements';
   const controlledCandidates =
@@ -14132,6 +14142,8 @@ export function runMainAgentPreConfirmationDrilldown(
       controlledCandidates
     );
   }
+  const hasForbiddenLineBasedMustRequirements =
+    forbiddenLineBasedMustRequirements.length > 0 && mustRequirements.length === 0;
 
   const explicitTargetPaths = normalizeStringList(options.targetPath);
   const explicitRequiredCommands = normalizeStringList(options.requiredCommand);
@@ -14169,7 +14181,7 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const initialIssues: PreConfirmationDrilldownIssue[] = [];
   initialIssues.push(...userConfirmationPromotionIssues(sourceText, semanticInputPath, root));
-  if (forbiddenLineBasedMustRequirements.length > 0) {
+  if (hasForbiddenLineBasedMustRequirements) {
     initialIssues.push(
       preConfirmationIssue(
         'line_based_must_id_forbidden',
@@ -14291,7 +14303,9 @@ export function runMainAgentPreConfirmationDrilldown(
       ? 'draft_materialization_allowed'
       : hasForbiddenLineBasedMustRequirements
         ? 'line_based_must_id_forbidden'
-        : 'controlled_must_candidates_missing';
+        : mustRequirements.length === 0
+          ? 'controlled_must_candidates_missing'
+          : 'pre_confirmation_gate_blocked';
   writeControlledMustCandidateArtifacts({
     root,
     sourcePath: semanticInputPath,
