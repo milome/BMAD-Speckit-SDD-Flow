@@ -3960,6 +3960,50 @@ function normalizedRequirementTextFromBlock(block: StructuredSourceBlock): strin
   return block.normalizedText;
 }
 
+function headingPathContainsExactSection(
+  headingPath: string[],
+  expectedSection: string
+): boolean {
+  const normalizedSection = normalizedHeadingLabel(expectedSection);
+  return headingPath.some(
+    (heading) => normalizedHeadingLabel(heading) === normalizedSection
+  );
+}
+
+function sourceTableRowText(block: StructuredSourceBlock): string {
+  const row =
+    block.tableContext?.row &&
+    typeof block.tableContext.row === 'object' &&
+    !Array.isArray(block.tableContext.row)
+      ? (block.tableContext.row as Record<string, unknown>)
+      : {};
+  return Object.values(row)
+    .map((value) => normalizeText(String(value ?? '')))
+    .filter(Boolean)
+    .join(' ');
+}
+
+function sourceReferenceIds(text: string): string[] {
+  return Array.from(
+    new Set(
+      (text.match(
+        /\b(?:MUST-(?:FR|NFR)-\d{1,3}|FR-\d{1,3}|NFR-\d{1,3}|NEG-\d{1,3}|OUT-\d{1,3}|FAIL-\d{1,3}|ACC-\d{1,3}|E2E-\d{1,3}|CMD-\d{1,3}|PATH-\d{1,3}|TRACE-\d{1,3})\b/giu
+      ) ?? []).map((ref) => ref.toUpperCase())
+    )
+  );
+}
+
+function sourceProjectionId(
+  block: StructuredSourceBlock,
+  prefix: 'OUT' | 'NEG',
+  index: number
+): string {
+  const sourceId = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+  return new RegExp(`^${prefix}-\\d{1,3}$`, 'u').test(sourceId)
+    ? sourceId
+    : `${prefix}-${requirementOrdinal(index)}`;
+}
+
 function buildBusinessRequirementRows(input: {
   mustRequirements: SourceMustRequirement[];
   blocks: StructuredSourceBlock[];
@@ -4003,18 +4047,39 @@ function buildOutOfScopeRows(input: {
   packetHash: string;
 }): Record<string, unknown>[] {
   const rows: Record<string, unknown>[] = [];
+  const hasCanonicalNonGoalSections = input.blocks.some(
+    (block) =>
+      headingPathContainsExactSection(block.headingPath, 'Out Of Scope') ||
+      headingPathContainsExactSection(
+        block.headingPath,
+        'Negative Requirements And Not Done Conditions'
+      )
+  );
   for (const block of input.blocks) {
-    if (block.decision !== 'mapped_to_non_goal') {
+    if (
+      block.decision !== 'mapped_to_non_goal' ||
+      (hasCanonicalNonGoalSections &&
+        !headingPathContainsExactSection(block.headingPath, 'Out Of Scope'))
+    ) {
       continue;
     }
+    const sourceEvidenceRefs = sourceReferenceIds(
+      tableContextRowValue(block.tableContext, ['Evidence'])
+    );
     rows.push({
-      id: `OUT-${requirementOrdinal(rows.length)}`,
-      text: block.normalizedText,
-      scopeBoundary: block.headingPath.join(' > ') || 'source non-goal',
+      id: sourceProjectionId(block, 'OUT', rows.length),
+      text:
+        tableContextRowValue(block.tableContext, ['Forbidden scope', 'Out of scope']) ||
+        block.normalizedText,
+      scopeBoundary:
+        tableContextRowValue(block.tableContext, ['Boundary assertion', 'Scope boundary']) ||
+        block.headingPath.join(' > ') ||
+        'source non-goal',
       sourcePath: block.sourcePath,
       sourceSpan: block.sourceSpan,
       sourceDocumentHash: block.sourceDocumentHash,
       headingPath: block.headingPath,
+      ...(sourceEvidenceRefs.length > 0 ? { sourceEvidenceRefs } : {}),
       userApprovalRequiredIfChanged: true,
       derivedFromMustRef: sourceBlockRequirementId(block) ?? null,
       derivedFromPacketHash: input.packetHash,
@@ -4022,6 +4087,122 @@ function buildOutOfScopeRows(input: {
     });
   }
   return rows;
+}
+
+function buildNegativeRequirementRows(input: {
+  blocks: StructuredSourceBlock[];
+  packetHash: string;
+}): Record<string, unknown>[] {
+  const rows: Record<string, unknown>[] = [];
+  for (const block of input.blocks) {
+    if (
+      block.decision !== 'mapped_to_non_goal' ||
+      !headingPathContainsExactSection(
+        block.headingPath,
+        'Negative Requirements And Not Done Conditions'
+      )
+    ) {
+      continue;
+    }
+    const sourceFailureRefs = sourceReferenceIds(
+      tableContextRowValue(block.tableContext, ['Failure refs'])
+    ).filter((ref) => ref.startsWith('FAIL-'));
+    const sourceEvidenceRefs = sourceReferenceIds(
+      tableContextRowValue(block.tableContext, ['Evidence refs'])
+    );
+    const sourceAcceptanceRefs = sourceEvidenceRefs.filter(
+      (ref) => ref.startsWith('ACC-') || ref.startsWith('E2E-')
+    );
+    const sourceCommandRefs = sourceEvidenceRefs.filter((ref) => ref.startsWith('CMD-'));
+    rows.push({
+      id: sourceProjectionId(block, 'NEG', rows.length),
+      text:
+        tableContextRowValue(block.tableContext, ['Not-done condition', 'Not done condition']) ||
+        block.normalizedText,
+      negativeAssertion:
+        tableContextRowValue(block.tableContext, ['Negative assertion']) ||
+        block.normalizedText,
+      whyItBlocksCompletion:
+        tableContextRowValue(block.tableContext, ['Blocks completion when']) ||
+        'The source-declared negative assertion is not proven.',
+      sourcePath: block.sourcePath,
+      sourceSpan: block.sourceSpan,
+      sourceDocumentHash: block.sourceDocumentHash,
+      headingPath: block.headingPath,
+      sourceFailureRefs,
+      sourceAcceptanceRefs,
+      sourceCommandRefs,
+      sourceEvidenceRefs,
+      negativeAssertionRequired: true,
+      derivedFromPacketHash: input.packetHash,
+      projectionStatus: 'synchronized',
+    });
+  }
+  return rows;
+}
+
+function isExecutableTestPath(candidatePath: string): boolean {
+  const normalized = candidatePath.replace(/\\/g, '/');
+  return (
+    /\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs|py)$/iu.test(normalized) ||
+    (/(?:^|\/)tests?\//iu.test(normalized) &&
+      /\.(?:ts|tsx|js|jsx|mjs|cjs|py)$/iu.test(normalized))
+  );
+}
+
+function sourceAuthorityTestFile(input: {
+  blocks: StructuredSourceBlock[];
+  requirementRefs: string[];
+}): string | null {
+  const requirementRefs = new Set(
+    input.requirementRefs.map((ref) => normalizeText(ref).toUpperCase()).filter(Boolean)
+  );
+  const sectionFields = [
+    {
+      section: 'Acceptance Evidence',
+      fields: ['Required evidence', 'Assertion source', 'Responsibility mapping'],
+    },
+    {
+      section: 'Test And Verification Paths',
+      fields: [
+        'Target files',
+        'Command or evidence path',
+        'Assertion source',
+        'Responsibility mapping',
+      ],
+    },
+    {
+      section: 'Implementation Path Map',
+      fields: ['Repository path', 'Assertion source', 'Responsibility mapping'],
+    },
+  ];
+  const candidates = sectionFields.flatMap(({ section, fields }) =>
+    input.blocks
+      .filter(
+        (block) =>
+          block.blockKind === 'table_row' &&
+          headingPathContainsExactSection(block.headingPath, section)
+      )
+      .map((block) => {
+        const refs = sourceReferenceIds(sourceTableRowText(block));
+        const paths = fields
+          .flatMap((field) => extractPathLikeTokens(tableContextRowValue(block.tableContext, [field])))
+          .map((candidatePath) => candidatePath.replace(/\\/g, '/'))
+          .filter(isExecutableTestPath);
+        return {
+          directlyLinked: refs.some((ref) => requirementRefs.has(ref)),
+          paths,
+        };
+      })
+  );
+  const directlyLinkedPath = candidates
+    .filter((candidate) => candidate.directlyLinked)
+    .flatMap((candidate) => candidate.paths)[0];
+  if (directlyLinkedPath) {
+    return directlyLinkedPath;
+  }
+  const sourcePaths = Array.from(new Set(candidates.flatMap((candidate) => candidate.paths)));
+  return sourcePaths.length === 1 ? sourcePaths[0] : null;
 }
 
 const CONFIRMATION_LOCALIZATION_FIELD_GROUPS = [
@@ -5314,6 +5495,10 @@ function buildPreConfirmationImplementationConfirmation(input: {
     blocks: structuredBlocks,
     packetHash: input.packetHash,
   });
+  const sourceNegativeRequirementRows = buildNegativeRequirementRows({
+    blocks: structuredBlocks,
+    packetHash: input.packetHash,
+  });
   const outOfScopeRows =
     sourceOutOfScopeRows.length > 0
       ? sourceOutOfScopeRows
@@ -5377,6 +5562,32 @@ function buildPreConfirmationImplementationConfirmation(input: {
   const allAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
   const allFailureIds = perMustClosures.map((row) => row.failureId);
   const allEdgeIds = perMustClosures.map((row) => row.edgeId);
+  const notDoneRows =
+    sourceNegativeRequirementRows.length > 0
+      ? sourceNegativeRequirementRows.map((row) => ({
+          ...row,
+          evidenceRefs: allEvidenceIds,
+          coveredByTraceRows: allTraceIds,
+          coveredByFailurePath: allFailureIds,
+        }))
+      : [
+          {
+            id: 'NEG-001',
+            text: 'The atomic decomposition packet and renderer confirmability must not be treated as implementation completion or delivery readiness.',
+            textZh: '原子拆解 packet 和 renderer 可确认状态不得被当作实现完成或交付就绪。',
+            evidenceRefs: allEvidenceIds,
+            whyItBlocksCompletion:
+              'Confirmation scope quality is separate from implementation completion evidence.',
+            whyItBlocksCompletionZh: '需求范围确认质量与实现完成证据是不同层级。',
+            negativeAssertionRequired: true,
+            coveredByTraceRows: allTraceIds,
+            coveredByFailurePath: allFailureIds,
+            ...backRef,
+          },
+        ];
+  const negativeRequirementIds = notDoneRows
+    .map((row) => normalizeText(row.id))
+    .filter(Boolean);
   const businessProofClosure = {
     traceRows: allTraceIds,
     evidenceRefs: allEvidenceIds,
@@ -5409,11 +5620,11 @@ function buildPreConfirmationImplementationConfirmation(input: {
             title: 'Product behavior failure path',
             visualKind: 'failure',
             scope: 'business',
-            covers: ['NEG-001', ...businessDiagramCoverRefs],
+            covers: [...negativeRequirementIds, ...businessDiagramCoverRefs],
             perMustRows: businessPerMustRows,
             ...businessProofClosure,
             failurePathRefs: allFailureIds,
-            mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Gate as Delivery gate\n  User->>Product: trigger invalid or missing proof condition [NEG-001]\n  Product-->>Gate: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Gate-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
+            mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Gate as Delivery gate\n  User->>Product: trigger invalid or missing proof condition [${negativeRequirementIds.join(', ')}]\n  Product-->>Gate: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Gate-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
           },
         ]
       : [];
@@ -5438,7 +5649,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
             covers: businessDiagramCoverRefs,
             perMustRows: businessPerMustRows,
             ...businessProofClosure,
-            mermaid: `flowchart TD\n  A[Open ${productSurfaceLabel} ${businessDiagramCoverRefs.join(' + ')}] --> B[Inspect source-declared behavior ${businessDiagramCoverRefs.join(' + ')}]\n  B --> C[Apply source-authorized product change ${allTraceIds.join(' + ')}]\n  C --> D[Respect source-declared boundaries NEG-001]\n  D --> E[Verify acceptance commands ${allEvidenceIds.join(' + ')}]\n  A -.-> R[${businessDiagramCoverRefs.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${allTraceIds.join(' + ')}]`,
+            mermaid: `flowchart TD\n  A[Open ${productSurfaceLabel} ${businessDiagramCoverRefs.join(' + ')}] --> B[Inspect source-declared behavior ${businessDiagramCoverRefs.join(' + ')}]\n  B --> C[Apply source-authorized product change ${allTraceIds.join(' + ')}]\n  C --> D[Respect source-declared boundaries ${negativeRequirementIds.join(' + ')}]\n  D --> E[Verify acceptance commands ${allEvidenceIds.join(' + ')}]\n  A -.-> R[${businessDiagramCoverRefs.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${allTraceIds.join(' + ')}]`,
           },
         ]
       : [];
@@ -5450,13 +5661,13 @@ function buildPreConfirmationImplementationConfirmation(input: {
             title: 'Product behavior edge cases',
             visualKind: 'edge',
             scope: 'business',
-            covers: ['NEG-001', ...businessDiagramCoverRefs],
+            covers: [...negativeRequirementIds, ...businessDiagramCoverRefs],
             cases: allEdgeIds,
             perMustRows: businessPerMustRows,
             ...businessProofClosure,
             failurePathRefs: allFailureIds,
             edgeCaseRefs: allEdgeIds,
-            mermaid: `flowchart TD\n  A[Edge signal ${allEdgeIds.join(' + ')}] --> B[Failure guard ${allFailureIds.join(' + ')}]\n  B --> C[Per-MUST trace proof ${allTraceIds.join(' + ')}]\n  C --> D[No silent completion NEG-001]`,
+            mermaid: `flowchart TD\n  A[Edge signal ${allEdgeIds.join(' + ')}] --> B[Failure guard ${allFailureIds.join(' + ')}]\n  B --> C[Per-MUST trace proof ${allTraceIds.join(' + ')}]\n  C --> D[No silent completion ${negativeRequirementIds.join(' + ')}]`,
           },
         ]
       : [];
@@ -5472,7 +5683,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
     ...businessEdgeCaseViews.map((row) => String(row.id)),
     'EDGEVIEW-001',
   ];
-  const acceptanceTestFile =
+  const validationAcceptanceTestFile =
     validationAuthorityRecords
       .flatMap((record) => record.commandFileRefs)
       .find((fileRef) => /(?:^|\/)tests?\//iu.test(fileRef.replace(/\\/g, '/'))) ??
@@ -5481,6 +5692,20 @@ function buildPreConfirmationImplementationConfirmation(input: {
       .flat()
       .find((fileRef) => /(?:^|\/)tests?\//iu.test(fileRef.replace(/\\/g, '/'))) ??
     'source_authorized_validation_command';
+  const acceptanceTestFilesByMust = new Map(
+    perMustClosures.map((row) => [
+      row.mustId,
+      sourceAuthorityTestFile({
+        blocks: structuredBlocks,
+        requirementRefs: [
+          row.mustId,
+          row.requirement.sourceRequirementId ?? '',
+          row.acceptanceId,
+          row.e2eId,
+        ],
+      }) ?? validationAcceptanceTestFile,
+    ])
+  );
   const targetPathRows = [
     ...targetAuthorityRecords.map((record, index) => ({
       id: `TARGET-MOD-${requirementOrdinal(index)}`,
@@ -5771,20 +5996,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       eventSpecificRequirements: [],
     },
     must: mustRows,
-    notDone: [
-      {
-        id: 'NEG-001',
-        text: 'The atomic decomposition packet and renderer confirmability must not be treated as implementation completion or delivery readiness.',
-        textZh: '原子拆解 packet 和 renderer 可确认状态不得被当作实现完成或交付就绪。',
-        evidenceRefs: allEvidenceIds,
-        whyItBlocksCompletion:
-          'Confirmation scope quality is separate from implementation completion evidence.',
-        whyItBlocksCompletionZh: '需求范围确认质量与实现完成证据是不同层级。',
-        negativeAssertionRequired: true,
-        coveredByFailurePath: allFailureIds,
-        ...backRef,
-      },
-    ],
+    notDone: notDoneRows,
     mustNot: outOfScopeRows,
     outOfScope: outOfScopeRows,
     mustExecutionDecompositionMatrix: matrixRows,
@@ -5830,7 +6042,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
           `Advance ${row.mustId} to delivery readiness, write/delete/publish/send/call external state without recovery proof, or merge it into an all-cover-all trace without independent evidence.`,
         forbiddenBehaviorZh: `${row.mustId} 不得进入交付就绪，也不得被合并进全覆盖 trace。`,
         blocksCompletionWhenViolated: true,
-        linkedNegIds: ['NEG-001'],
+        linkedNegIds: negativeRequirementIds,
         linkedEvidenceIds: [row.evidenceId],
         traceRows: [row.traceId],
         viewRefs: ['EDGEVIEW-001'],
@@ -5860,7 +6072,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       })),
     traceRows: perMustClosures.map((row) => ({
         id: row.traceId,
-        covers: [row.mustId, 'NEG-001'],
+        covers: [row.mustId, ...negativeRequirementIds],
         sourceRequirementTexts: [row.requirement.text],
         taskRefs: row.taskIds,
         evidenceRefs: [row.evidenceId],
@@ -5883,7 +6095,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       })),
     acceptanceTests: perMustClosures.map((row) => ({
         id: row.acceptanceId,
-        file: acceptanceTestFile,
+        file: acceptanceTestFilesByMust.get(row.mustId) ?? validationAcceptanceTestFile,
         covers: [row.mustId],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
@@ -5895,7 +6107,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         redProofPlan: `Before implementation, ${row.mustId} acceptance must fail without source-backed product behavior and packet-backed proof surfaces.`,
         oracle: `${row.mustId} cannot reach user_confirmable unless atomic decomposition loop, reconciliation, gates, and assertion evidence pass.`,
         positiveControl: true,
-        negativeControls: ['NEG-001'],
+        negativeControls: negativeRequirementIds,
         mockOnly: false,
         ...projectionBackRef(input.packetHash, row.mustId),
       })),
@@ -5914,8 +6126,8 @@ function buildPreConfirmationImplementationConfirmation(input: {
       })),
     e2eSuites: perMustClosures.map((row) => ({
         id: row.e2eId,
-        file: acceptanceTestFile,
-        covers: [row.mustId, 'NEG-001'],
+        file: acceptanceTestFilesByMust.get(row.mustId) ?? validationAcceptanceTestFile,
+        covers: [row.mustId, ...negativeRequirementIds],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
         evidenceRefs: [row.evidenceId],
@@ -5926,13 +6138,13 @@ function buildPreConfirmationImplementationConfirmation(input: {
         redProofPlan: `Before implementation, ${row.mustId} E2E proof must be red and cannot be satisfied by renderer smoke output.`,
         oracle: `Before controlled ingest, ${row.mustId} remains in requirement_confirmation and nextMentalModel is null.`,
         positiveControl: true,
-        negativeControls: ['NEG-001'],
+        negativeControls: negativeRequirementIds,
         mockOnly: false,
         ...projectionBackRef(input.packetHash, row.mustId),
       })),
     e2eScenarios: perMustClosures.map((row) => ({
         id: row.e2eId,
-        covers: [row.mustId, 'NEG-001'],
+        covers: [row.mustId, ...negativeRequirementIds],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
         evidenceRefs: [row.evidenceId],
@@ -5962,7 +6174,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       },
       governance: {
         description: 'Requirement confirmation drilldown quality gate.',
-        requirementIds: [...mustRefs, 'NEG-001'],
+        requirementIds: [...mustRefs, ...negativeRequirementIds],
         viewRefs: ['SEQ-001', 'FLOW-001', 'EDGEVIEW-001', ...boundaryViewIds],
         diagramRefs: ['SEQ-001', 'FLOW-001'],
       },
@@ -5974,14 +6186,14 @@ function buildPreConfirmationImplementationConfirmation(input: {
         id: 'SEQ-001',
         title: 'Requirement confirmation drilldown lane',
         scope: 'governance',
-        covers: [...mustRefs, 'NEG-001', ...allEvidenceIds],
+        covers: [...mustRefs, ...negativeRequirementIds, ...allEvidenceIds],
         perMustRows: perMustClosures.map((row) => ({
           mustRef: row.mustId,
           traceRows: [row.traceId],
           evidenceRefs: [row.evidenceId],
           assertion: `${row.mustId} keeps an independent governance trace closure.`,
         })),
-        mermaid: `sequenceDiagram\n  participant M as MainAgent\n  participant G as Gates\n  participant U as User\n  M->>G: per-MUST atomic drilldown before materialization [${mustRefs.join(', ')}]\n  G-->>M: PASS with per-MUST evidence [${allEvidenceIds.join(', ')}]\n  M-->>U: user_confirmable, not delivery ready [NEG-001]`,
+        mermaid: `sequenceDiagram\n  participant M as MainAgent\n  participant G as Gates\n  participant U as User\n  M->>G: per-MUST atomic drilldown before materialization [${mustRefs.join(', ')}]\n  G-->>M: PASS with per-MUST evidence [${allEvidenceIds.join(', ')}]\n  M-->>U: user_confirmable, not delivery ready [${negativeRequirementIds.join(', ')}]`,
       },
     ],
     flowViews: [
@@ -5990,14 +6202,14 @@ function buildPreConfirmationImplementationConfirmation(input: {
         id: 'FLOW-001',
         title: 'Pre-confirmation lane state flow',
         scope: 'governance',
-        covers: [...mustRefs, 'NEG-001'],
+        covers: [...mustRefs, ...negativeRequirementIds],
         perMustRows: perMustClosures.map((row) => ({
           mustRef: row.mustId,
           traceRows: [row.traceId],
           evidenceRefs: [row.evidenceId],
-          assertion: `${row.traceId} closes only ${row.mustId} plus NEG-001.`,
+          assertion: `${row.traceId} closes only ${row.mustId} plus ${negativeRequirementIds.join(', ')}.`,
         })),
-        mermaid: `flowchart TD\n  A[Source MUST atomic loop ${mustRefs.join(' + ')}] --> B[Per-MUST synchronized projections ${allTraceIds.join(' + ')}]\n  B --> C[Per-MUST render evidence ${allEvidenceIds.join(' + ')}]\n  C --> D[NEG-001 no delivery readiness]`,
+        mermaid: `flowchart TD\n  A[Source MUST atomic loop ${mustRefs.join(' + ')}] --> B[Per-MUST synchronized projections ${allTraceIds.join(' + ')}]\n  B --> C[Per-MUST render evidence ${allEvidenceIds.join(' + ')}]\n  C --> D[${negativeRequirementIds.join(' + ')} no delivery readiness]`,
       },
     ],
     edgeCaseViews: [
@@ -6006,7 +6218,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         id: 'EDGEVIEW-001',
         title: 'Missing drilldown surfaces fail closed',
         scope: 'governance',
-        covers: ['NEG-001'],
+        covers: negativeRequirementIds,
         cases: [...allEdgeIds, ...allFailureIds],
       },
     ],
@@ -6121,7 +6333,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         trainingDataEligible: false,
         traceRows: allTraceIds,
         evidenceRefs: allEvidenceIds,
-        linkedRequirements: [...mustRefs, 'NEG-001'],
+        linkedRequirements: [...mustRefs, ...negativeRequirementIds],
         ...backRef,
       },
       {
@@ -6144,7 +6356,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         trainingDataEligible: false,
         traceRows: allTraceIds,
         evidenceRefs: allEvidenceIds,
-        linkedRequirements: [...mustRefs, 'NEG-001'],
+        linkedRequirements: [...mustRefs, ...negativeRequirementIds],
         ...backRef,
       },
     ],
@@ -6165,7 +6377,11 @@ function buildPreConfirmationImplementationConfirmation(input: {
         title: 'Mental model progression boundary',
         impact:
           'Only controlled ingest may allow progression from requirement_confirmation to architecture_confirmation.',
-        requirementRefs: [...mustRefs, 'NEG-001', 'OUT-001'],
+        requirementRefs: [
+          ...mustRefs,
+          ...negativeRequirementIds,
+          ...outOfScopeRows.map((row) => normalizeText(row.id)).filter(Boolean),
+        ],
       },
     ],
   };
