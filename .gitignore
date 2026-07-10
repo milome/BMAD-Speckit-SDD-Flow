@@ -98,6 +98,8 @@ test-results/
 tests/typecheck/
 
 # Documentation archives
+/docs/adr/
+/docs/architecture/
 docs/BMAD/
 docs/design/
 docs/explanation/
