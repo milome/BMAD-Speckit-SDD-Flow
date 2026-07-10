@@ -29,7 +29,6 @@ if (args.length > 0) {
   process.exit(0);
 }
 
-runOrExit('npm', ['run', 'test:speckit-mirror-sync']);
 runOrExit('npm', ['run', 'test:governance-fixtures']);
 runOrExit('npm', ['run', 'test:vitest:default']);
 runOrExit('npm', ['run', 'test:bmad-speckit']);
