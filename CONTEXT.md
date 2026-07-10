@@ -164,6 +164,18 @@ _Avoid_: diagnostic artifact write, chat draft, external prompt generation
 The authoring decision that either allows Source Materialization or blocks it with source-bound reasons before the Implementation Source Document is changed.
 _Avoid_: best-effort write, late-only reverse audit, implicit checkpoint approval
 
+**Deterministic Generation Defect**:
+A reproducible authoring or renderer defect whose repair is fully derivable from existing source authority without new authority input.
+_Avoid_: authority gap, missing user decision, arbitrary fallback
+
+**Authority Gap**:
+A missing or invalid Target Authority, Validation Authority, user confirmation, or source-hash safety condition that authoring automation cannot fabricate.
+_Avoid_: auto-repairable blocker, renderer defect, inferred fallback
+
+**Auto-Repairing Source Materialization**:
+A Source Materialization attempt that repairs Deterministic Generation Defects before emitting its Source Mutation Decision.
+_Avoid_: blocker bypass, temporary generator, best-effort source write
+
 **Target Authority**:
 Source-bound proof that target modification paths refer to the intended project files.
 _Avoid_: hardcoded governance path, inferred fallback, unrelated test path
@@ -217,6 +229,8 @@ _Avoid_: draft block, diagnostic artifact, pre-write projection
 - An **Implementation Source Document** owns at most one **Implementation Confirmation Block**.
 - **Source Materialization** requires an allowing **Source Mutation Decision**.
 - A **Source Mutation Decision** consumes **Target Authority**, **Validation Authority**, and a **Requirement Coverage Ledger** before allowing source changes.
+- **Auto-Repairing Source Materialization** can repair **Deterministic Generation Defects**, but it cannot convert an **Authority Gap** into authority.
+- An **Authority Gap** blocks **Source Materialization** until source-bound or explicit authority is provided.
 - A **Diagnostic Authoring Artifact** cannot become an **Implementation Confirmation Block** without a new allowing **Source Mutation Decision**.
 - An **Execution-Ready Implementation Confirmation** requires explicit user confirmation and cannot be inferred from a draft block, diagnostic artifact, or pre-write projection.
 
@@ -333,6 +347,9 @@ _Avoid_: draft block, diagnostic artifact, pre-write projection
 > **Dev:** "Can req-trace compile a draft implementation confirmation if all pre-write gates passed?"
 > **Domain expert:** "No. Req-trace requires an **Execution-Ready Implementation Confirmation**, not a draft block or diagnostic artifact."
 
+> **Dev:** "Can authoring automatically fix every blocker before writing an implementation confirmation?"
+> **Domain expert:** "Only **Deterministic Generation Defects**. An **Authority Gap** still requires source-bound or explicit authority before **Source Materialization**."
+
 ## Flagged Ambiguities
 
 - "record_closed" was previously used as if it could be a **Current Mental Model**; resolved: it is only a derived **Record Lifecycle State** or terminal close event.
@@ -380,3 +397,4 @@ _Avoid_: draft block, diagnostic artifact, pre-write projection
 - "required command" could have meant any runnable check; resolved: execution readiness requires **Validation Authority**.
 - "draft artifact" could have meant a recoverable source mutation; resolved: blocked attempts write **Diagnostic Authoring Artifacts**, not source semantics.
 - "execution-ready" could have meant any complete-looking draft; resolved: only an **Execution-Ready Implementation Confirmation** with explicit user confirmation and required reverse-audit evidence can feed req-trace or model-packet generation.
+- "blocker" was used to mean both deterministic renderer/materializer defects and missing authority; resolved: **Deterministic Generation Defects** are repairable by **Auto-Repairing Source Materialization**, while an **Authority Gap** cannot be fabricated.

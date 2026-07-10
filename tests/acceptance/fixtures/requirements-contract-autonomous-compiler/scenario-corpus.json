@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "requirements-contract-autonomous-compiler-scenario-corpus/v1",
+  "dimensions": {
+    "inputKind": ["session_prompt", "existing_contract", "intake_document"],
+    "sourceShape": ["canonical", "noncanonical"],
+    "languageMode": ["en-US", "zh-CN", "bilingual"],
+    "targetAuthorityState": ["grounded", "missing", "conflict"],
+    "validationAuthorityState": ["grounded", "missing"],
+    "rendererOracleOutcome": ["pass", "blocking_issue"],
+    "environmentState": ["available", "packaged_install", "external_provider_unavailable"],
+    "promotionTargetState": ["new_target", "existing_target", "target_created_race"],
+    "staleProjectionState": ["none", "line_based", "wrong_language"],
+    "mermaidAssetState": ["present", "missing"],
+    "criticalAuditorProviderState": ["available", "required_unavailable"],
+    "issueCodeClass": ["known", "unknown"]
+  },
+  "highRiskCombinations": [
+    {
+      "id": "HR-001-session-prompt-zh-cn",
+      "values": {
+        "inputKind": "session_prompt",
+        "languageMode": "zh-CN"
+      }
+    },
+    {
+      "id": "HR-002-existing-target-stale-projection",
+      "values": {
+        "promotionTargetState": "existing_target",
+        "staleProjectionState": "line_based"
+      }
+    },
+    {
+      "id": "HR-003-authority-conflict-strict-render-pass",
+      "values": {
+        "targetAuthorityState": "conflict",
+        "rendererOracleOutcome": "pass"
+      }
+    },
+    {
+      "id": "HR-004-missing-mermaid-packaged-install",
+      "values": {
+        "environmentState": "packaged_install",
+        "mermaidAssetState": "missing"
+      }
+    },
+    {
+      "id": "HR-005-provider-unavailable-critical-auditor-required",
+      "values": {
+        "environmentState": "external_provider_unavailable",
+        "criticalAuditorProviderState": "required_unavailable"
+      }
+    },
+    {
+      "id": "HR-006-unknown-issue-zero-model-invariants",
+      "values": {
+        "rendererOracleOutcome": "pass",
+        "issueCodeClass": "unknown"
+      }
+    }
+  ]
+}

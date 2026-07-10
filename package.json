@@ -1,6 +1,6 @@
 {
   "name": "bmad-speckit-sdd-flow",
-  "version": "2.1.9",
+  "version": "2.1.11",
   "description": "Agent governance and AI-TDD control plane for requirement-contract-driven Main Agent orchestration, built on BMAD + Spec-Kit",
   "scripts": {
     "build": "npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && npm run build:ralph-method && npm run build:main-agent-dist",
@@ -17,7 +17,7 @@
     "setup:sh": "bash scripts/setup.sh",
     "setup:full": "pwsh scripts/setup.ps1 -Full",
     "setup:full:sh": "bash scripts/setup.sh -Full",
-    "test": "npm run test:speckit-mirror-sync && npm run test:governance-fixtures && npm run test:vitest:default && npm run test:bmad-speckit",
+    "test": "node tools/run-root-tests.cjs",
     "resolve-active-requirement": "node packages/bmad-speckit/bin/bmad-speckit.js main-agent resolve-active-requirement",
     "main-agent-orchestration": "node packages/bmad-speckit/bin/bmad-speckit.js main-agent-orchestration",
     "main-agent:confirm-scope": "node packages/bmad-speckit/bin/bmad-speckit.js main-agent-orchestration --action confirm-scope",
@@ -49,8 +49,8 @@
     "emit-runtime-policy": "node packages/bmad-speckit/bin/bmad-speckit.js emit-runtime-policy",
     "audit-prompt:resolve": "node packages/bmad-speckit/bin/bmad-speckit.js main-agent print-resolved-audit-prompt",
     "build:main-agent-dist": "npm run build:main-agent-dist --prefix packages/bmad-speckit",
-    "prepack": "npm run build:scoring && npm run build:runtime-context && npm run build:runtime-emit && npm run build:ralph-method && npm run build:main-agent-dist && npm run check:encoding && node scripts/normalize-pack-manifests.js prepare",
-    "postpack": "node scripts/normalize-pack-manifests.js restore",
+    "prepack": "npm run build:scoring 1>&2 && npm run build:runtime-context 1>&2 && npm run build:runtime-emit 1>&2 && npm run build:ralph-method 1>&2 && npm run build:main-agent-dist 1>&2 && npm run check:encoding 1>&2 && node scripts/normalize-pack-manifests.js prepare 1>&2",
+    "postpack": "node scripts/normalize-pack-manifests.js restore 1>&2",
     "test:vitest:default": "npx vitest run",
     "test:consumer-install-final": "npx vitest run --config vitest.consumer-install.config.ts tests/acceptance/accept-install-consumer-cli.test.ts tests/acceptance/accept-pack-bmad-speckit.test.ts tests/acceptance/accept-root-package-bmad-speckit-bin.test.ts tests/acceptance/accept-consumer-governance-zero-scripts.test.ts",
     "test:consumer-runtime-final": "npx vitest run --config vitest.consumer-install.config.ts tests/acceptance/main-agent-dist-consumer-runtime.test.ts",

@@ -60,6 +60,9 @@ const { releaseGateAction } = require('./actions/release-gate');
 const { requirementRecordControlStoreAction } = require('./actions/requirement-record-control-store');
 const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
 const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
+const {
+  requirementsContractSourceIntakeAction,
+} = require('./actions/requirements-contract-source-intake');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
 const {
   runRequiredCommandsFromAiTddManifestAction,
@@ -109,6 +112,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'requirement-record-control-store': requirementRecordControlStoreAction,
   'requirement-record-live-schema-gate': requirementRecordLiveSchemaGateAction,
   'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
+  'requirements-contract-source-intake': requirementsContractSourceIntakeAction,
   'resolve-active-requirement': resolveActiveRequirementAction,
   'run-required-commands-from-ai-tdd-manifest': runRequiredCommandsFromAiTddManifestAction,
   'runtime-scoring-data-path': runtimeScoringDataPathAction,
