@@ -10,16 +10,29 @@ import {
   readJson,
   removeTempRoot,
   runAuthoring,
+  runAuthoringWithTestLocalization,
   sha256File,
   writeConsumerRequirement,
   writeText,
 } from './helpers/requirements-contract-authoring-fixture';
 
 function largeCheckpointRequirement(root: string): string {
-  const rows = Array.from({ length: 80 }, (_unused, index) => {
-    const n = String(index + 1).padStart(2, '0');
-    return `- 默认显示场景 ${n} 必须保持主图摘要和设置面板同步。`;
-  });
+  const ordinals = Array.from({ length: 80 }, (_unused, index) =>
+    String(index + 1).padStart(3, '0')
+  );
+  const mustRefs = ordinals.map((ordinal) => `MUST-FR-${ordinal}`);
+  const requirementRows = ordinals.map(
+    (ordinal) =>
+      `| FR-${ordinal} | 默认显示场景 ${ordinal} 必须保持主图摘要和设置面板同步。 | ACC-${ordinal} |`
+  );
+  const acceptanceRows = ordinals.map(
+    (ordinal) =>
+      `| ACC-${ordinal} | 场景 ${ordinal} 同步验收 | MUST-FR-${ordinal} | pytest tests/test_multi_timeframe_settings.py | 场景 ${ordinal} 的主图摘要和设置面板保持同步。 | CMD-001 TRACE-${ordinal} | PATH-001 owns remediation. |`
+  );
+  const traceRows = ordinals.map(
+    (ordinal) =>
+      `| TRACE-${ordinal} | MUST-FR-${ordinal} | ACC-${ordinal} | ACC-${ordinal} E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 场景 ${ordinal} 的主图摘要和设置面板保持同步。 | MUST-FR-${ordinal} closes through ACC-${ordinal} and TRACE-${ordinal}. | PATH-001 owns remediation. |`
+  );
   return writeText(
     root,
     'docs/requirements/checkpoint-required.md',
@@ -28,11 +41,55 @@ function largeCheckpointRequirement(root: string): string {
       '',
       '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
       '',
-      '## 验收标准',
+      '## Functional Requirements',
       '',
-      ...rows,
+      '| ID | Requirement | Acceptance link |',
+      '| --- | --- | --- |',
+      ...requirementRows,
       '',
-      'pytest tests/test_multi_timeframe_settings.py 必须覆盖设置持久化。',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | 任一场景只更新一侧不能算完成。 | 每个场景的主图摘要和设置面板必须同时保持同步。 | 任一场景出现部分更新。 | FAIL-001 | ACC-001 CMD-001 |',
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      `| FAIL-001 | 任一默认显示场景的摘要或设置面板更新失败。 | 阻止部分提交，保留最近一次完整同步状态，并标记具体失败场景。 | NEG-001 | ACC-001 E2E-001 | ${mustRefs.join(' ')} |`,
+      '',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      ...acceptanceRows,
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| CMD-001 | delivery-evidence | ${mustRefs.join(' ')} NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 每个 MUST 通过对应 ACC/TRACE 独立证明同步行为。 | ${ordinals.map((ordinal) => `ACC-${ordinal} TRACE-${ordinal}`).join(' ')} TRACE-081 E2E-001 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |`,
+      `| E2E-001 | e2e | ${mustRefs.join(' ')} NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 所有 80 个场景完成同步或整体保持先前安全状态。 | CMD-001 TRACE-081 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |`,
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      ...traceRows,
+      '| TRACE-081 | NEG-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 任一场景部分更新时整体保持先前完整同步状态。 | NEG-001 closes through the E2E negative control. | PATH-001 owns remediation. |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| PATH-001 | \`vnpy/chart/multi_timeframe_widget.py\` | Widget owner | Implement atomic synchronization for all default display scenarios. | ${mustRefs.join(' ')} NEG-001 | 每个 MUST 的对应 ACC/TRACE 独立通过。 | CMD-001 E2E-001 | Widget owner owns rollback and remediation. |`,
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Forbidden scope | Boundary assertion | Evidence |',
+      '| --- | --- | --- | --- |',
+      '| OUT-001 | 不修改交易执行逻辑。 | 保持交易执行逻辑不变。 | ACC-001 |',
       '',
     ].join('\n')
   );
@@ -58,7 +115,9 @@ describe('requirements contract source mutation gate', () => {
       expect(decision.auditEvidenceDecision).toBe('block');
       expect(decision.sourceMutationPerformed).toBe(false);
       expect(draft.preConfirmationDrilldown.criticalAuditor.consecutiveNoNewGapRounds).toBe(0);
-      expect(draft.preConfirmationDrilldown.criticalAuditor.convergenceVerdict).toBe('audit_not_run');
+      expect(draft.preConfirmationDrilldown.criticalAuditor.convergenceVerdict).toBe(
+        'audit_not_run'
+      );
       expect(JSON.stringify(draft)).not.toContain('bounded_no_new_gap');
       expect(existsSync(paths.receipt1)).toBe(false);
       expectSourceHashUnchanged(source, beforeHash);
@@ -197,7 +256,7 @@ describe('requirements contract source mutation gate', () => {
     try {
       const source = writeConsumerRequirement(root);
 
-      const result = runAuthoring(root, source, 'REQ-DRAFT-ONLY', {
+      const result = runAuthoringWithTestLocalization(root, source, 'REQ-DRAFT-ONLY', {
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
         confirmationLanguage: 'zh-CN',

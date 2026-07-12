@@ -385,11 +385,30 @@ const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'confirmationRender',
 ]);
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
     if (!CONFIRMATION_BOOKKEEPING_FIELDS.has(key)) {
-      semantic[key] = value;
+      semantic[key] = stripProjectionHashBookkeeping(value);
     }
   }
   if (
@@ -491,6 +510,20 @@ function extractPathRefs(value) {
   );
   for (const match of matches) refs.add(match[1]);
   return [...refs];
+}
+
+function isNonProductTargetModification(row) {
+  const classifications = [row?.coverageRole, row?.changeType]
+    .map((value) =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/-/gu, '_')
+    )
+    .filter(Boolean);
+  return classifications.some((value) =>
+    ['validation_only', 'generated_output', 'runtime_output'].includes(value)
+  );
 }
 
 function hasOwn(value, key) {
@@ -2256,7 +2289,10 @@ function buildAiTddContractManifestCoverage(input) {
 
   const commandTargetRows = asArray(confirmation.requiredCommands).map((row) => {
     const id = row.id || row.commandId;
-    const files = extractPathRefs(String(row.command ?? ''));
+    const files = unique([
+      ...extractPathRefs(String(row.command ?? '')),
+      ...stringList(row.targetFiles).map((file) => normalizePathForReport(file)),
+    ]);
     const linkedTraceRows = asArray(traceRows).filter((trace) => commandRefsForTrace(trace).includes(id));
     const traceRefs = unique([...refsForRow(row, ['traceRows', 'traceRefs']), ...linkedTraceRows.map((trace) => trace.id)]);
     const evidenceRefs = unique([
@@ -2309,13 +2345,15 @@ function buildAiTddContractManifestCoverage(input) {
         evidenceRefs: refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']),
         sourceSection: 'artifactAutomationPlan',
       })),
-    ...asArray(targetModificationPaths).map((row) => ({
-      id: row.id,
-      pathOrField: row.path,
-      traceRefs: stringList(row.traceRefs),
-      evidenceRefs: stringList(row.evidenceRefs),
-      sourceSection: 'targetModificationPaths',
-    })),
+    ...asArray(targetModificationPaths)
+      .filter((row) => !isNonProductTargetModification(row))
+      .map((row) => ({
+        id: row.id,
+        pathOrField: row.path,
+        traceRefs: stringList(row.traceRefs),
+        evidenceRefs: stringList(row.evidenceRefs),
+        sourceSection: 'targetModificationPaths',
+      })),
   ].filter((row) => row.id || row.pathOrField).map((row) => {
     const missing = [
       ...(row.pathOrField ? [] : ['canonical_surface_path_or_field_missing']),
@@ -3612,7 +3650,20 @@ function buildCoverage(input) {
       if (!file) continue;
       const absolute = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
       if (!fs.existsSync(absolute)) {
-        blockingIssues.push(blocking('acceptance_test_file_missing', `${rowId} references missing file ${file}`, [rowId, file]));
+        const issue = warning(
+          'acceptance_test_file_missing',
+          `${rowId} references missing file ${file}`,
+          [rowId, file]
+        );
+        if (
+          String(row.expectedPreImplementationState ?? '')
+            .trim()
+            .toLowerCase() === 'expected_red'
+        ) {
+          warnings.push(issue);
+        } else {
+          blockingIssues.push(blocking(issue.code, issue.message, issue.refs));
+        }
       }
     }
     validateRefs(row.covers, new Set([...idSet.must, ...idSet.notDone]), 'acceptance_unknown_requirement_ref', rowId);

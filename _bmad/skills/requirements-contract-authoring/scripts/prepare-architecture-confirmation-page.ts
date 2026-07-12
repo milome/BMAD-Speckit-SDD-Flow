@@ -141,7 +141,7 @@ function requireArgs(args) {
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: node prepare-architecture-confirmation-page.ts --source <source.md> --requirement-record <record.json> --run-id <id> --target-paths <json|file> --consumer-impact-scan <json|file> --governance-impact-scan <json|file> --full-architecture-trigger-matrix <json|file> [--out <html>] [--json]');
+    console.log('Usage: node prepare-architecture-confirmation-page.ts --source <source.md> --requirement-record <record.json> --run-id <id> --target-paths <json|file> --consumer-impact-scan <json|file> --governance-impact-scan <json|file> --full-architecture-trigger-matrix <json|file> [--localization <json|file>] [--out <html>] [--json]');
     return 0;
   }
   requireArgs(args);
@@ -164,16 +164,26 @@ function main(argv) {
         args.requirementRecord,
         '--confirmed-by',
         args.checkedBy || 'architecture-confirmation-prepare',
+        '--persist-state-check',
         '--json',
       ],
       'architecture_confirmation_state_checked',
       true
     );
     const stateCheckOutput = parseOptionalJsonOutput(stateCheckStep);
-    if (!stateCheckOutput.event || stateCheckStep.status === 2 || stateCheckStep.status === null) {
+    if (
+      !stateCheckOutput.event ||
+      stateCheckOutput.diagnosticOnly !== false ||
+      !stateCheckOutput.controlEventHash ||
+      !stateCheckOutput.receiptPath ||
+      stateCheckStep.status === 2 ||
+      stateCheckStep.status === null
+    ) {
       throw new Error(`architecture_confirmation_state_checked did not record a controlled state check: ${stateCheckStep.stdout}\n${stateCheckStep.stderr}`);
     }
     stateCheckStep.controlEvent = stateCheckOutput.event;
+    stateCheckStep.controlEventHash = stateCheckOutput.controlEventHash;
+    stateCheckStep.controlReceiptPath = stateCheckOutput.receiptPath;
     steps.push(stateCheckStep);
   }
 
@@ -194,8 +204,11 @@ function main(argv) {
     args.governanceImpactScan,
     '--full-architecture-trigger-matrix',
     args.fullArchitectureTriggerMatrix,
+    '--language',
+    args.language,
     '--json',
   ];
+  if (args.localization) producerArgs.push('--localization', args.localization);
   for (const passthrough of ['decision', 'outcome', 'riskStatement', 'rollbackPlan', 'evidenceRefs', 'relatedRequirementIds']) {
     if (args[passthrough]) producerArgs.push(`--${passthrough.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)}`, args[passthrough]);
   }
@@ -231,6 +244,8 @@ function main(argv) {
       eventType: step.controlEvent?.eventType,
       decision: step.controlEvent?.decision,
       stateTransition: step.controlEvent?.stateTransition,
+      controlEventHash: step.controlEventHash,
+      receiptPath: step.controlReceiptPath,
     })),
     architectureConfirmationPath: normalize(architecturePath),
     htmlPath: normalize(htmlPath),

@@ -46,7 +46,9 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   return `{${Object.keys(value as Record<string, unknown>)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`)
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
     .join(',')}}`;
 }
 
@@ -75,6 +77,19 @@ function readInlineConfirmation(source: string): any {
     }
   }
   return (yaml.load(lines.slice(start, end).join('\n')) as any).implementationConfirmation;
+}
+
+function rewriteInlineConfirmation(source: string, confirmation: Record<string, unknown>): void {
+  const text = readFileSync(source, 'utf8');
+  const start = text.indexOf('implementationConfirmation:');
+  if (start < 0) {
+    throw new Error('implementationConfirmation block missing');
+  }
+  const serialized = yaml.dump(
+    { implementationConfirmation: confirmation },
+    { lineWidth: -1, noRefs: true, sortKeys: false }
+  );
+  writeFileSync(source, `${text.slice(0, start)}${serialized}`, 'utf8');
 }
 
 function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE'): string {
@@ -427,7 +442,11 @@ function authoringPaths(root: string, recordId: string) {
   };
 }
 
-function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, round: number, verdict: string) {
+function expectReceiptBinding(
+  paths: ReturnType<typeof authoringPaths>,
+  round: number,
+  verdict: string
+) {
   const request = readJson(paths.request(round));
   const receiptEnvelope = readJson(paths.receipt(round));
   const receipt = receiptEnvelope.criticalAuditorReceipt;
@@ -487,7 +506,8 @@ function writePromotionReceipt(
         : ['draft'],
     statusValue: options.statusValue ?? 'draft',
     confirmationReady: false,
-    safePromotionAsDraft: options.promotionStage === 'current-source-receipt-refresh' ? false : true,
+    safePromotionAsDraft:
+      options.promotionStage === 'current-source-receipt-refresh' ? false : true,
     requiresUserConfirmationBeforeExecution: true,
     manifestPath: `${sourceRel}.manifest.json`,
     targetHash,
@@ -553,7 +573,11 @@ function initGitTracking(root: string, files: string[]): void {
 
 function markSourceUserConfirmed(source: string): void {
   const text = readFileSync(source, 'utf8');
-  writeFileSync(source, text.replace(/\n {2}status: draft\n/u, '\n  status: user_confirmed\n'), 'utf8');
+  writeFileSync(
+    source,
+    text.replace(/\n {2}status: draft\n/u, '\n  status: user_confirmed\n'),
+    'utf8'
+  );
 }
 
 function writeSinglePassScaleArtifacts(root: string, source: string, recordId: string): void {
@@ -784,12 +808,13 @@ function writeBlockedResponse(
       },
     ],
     validatedGaps: [],
-        sourceMaterializationFindings: [
-          {
-            code: 'audit_dependency_unavailable',
-            message: 'Audit dependency unavailable; this blocker is not a projection metadata synchronization issue.',
-          },
-        ],
+    sourceMaterializationFindings: [
+      {
+        code: 'audit_dependency_unavailable',
+        message:
+          'Audit dependency unavailable; this blocker is not a projection metadata synchronization issue.',
+      },
+    ],
     rationale: `Round ${request.roundIndex} blocked on non-semantic audit dependency.`,
     ...overrides,
   };
@@ -992,6 +1017,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
             '      visualKind: happy',
             '      scope: business',
             '      covers: ["MUST-001"]',
+            '      mermaid: |-',
+            '        sequenceDiagram',
+            '          actor User',
+            '          participant Product',
+            '          User->>Product: request repair',
+            '          Product-->>User: return repaired projection',
             '    - id: SEQ-BUSINESS-FAILURE-001',
             '      title: "Legacy business failure path"',
             '      visualKind: failure',
@@ -1038,18 +1069,18 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
             '  edgeCaseViews:',
             '    - id: EDGEVIEW-BUSINESS-001',
             '      title: "Legacy business edge view"',
-             '      visualKind: edge',
-             '      scope: business',
-             '      covers: ["MUST-001", "NEG-001"]',
-             '      cases:',
-             '        - "legacy business edge remains human readable [MUST-001]"',
-             '        - "EDGE-001"',
+            '      visualKind: edge',
+            '      scope: business',
+            '      covers: ["MUST-001", "NEG-001"]',
+            '      cases:',
+            '        - "legacy business edge remains human readable [MUST-001]"',
+            '        - "EDGE-001"',
             '    - id: EDGEVIEW-001',
             '      title: "Stale response is rejected"',
             '      covers: ["NEG-001"]',
             '      cases: ["EDGE-001"]',
           ].join('\n')
-      );
+        );
       sourceText = sourceText
         .replace(
           [
@@ -1101,7 +1132,42 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           ].join('\n')
         )
         .replace('      coverageRole: validate', '')
-        .replace('      coverageRole: modify', '');
+        .replace('      coverageRole: modify', '')
+        .replace(
+          '      command: "npx vitest run tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts"',
+          '      command: "rg -n -e \'repair\' -- packages/bmad-speckit/src/main-agent/source-authority/scripts"'
+        )
+        .replace(
+          '      targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"]',
+          '      targetFiles: []'
+        );
+      sourceText = sourceText
+        .replace(
+          /(    - id: FAIL-001\n[\s\S]*?      linkedEvidenceIds: \["EVD-001"\]\n)(      derivedFromMustRef: MUST-001\n)/u,
+          '$1      ownerMustRefs: ["MUST-001"]\n'
+        )
+        .replace(
+          /(    - id: TARGET-MOD-001\n[\s\S]*?)(      derivedFromMustRef: MUST-001\n)/u,
+          '$1'
+        )
+        .replace(/(    - id: ART-001\n[\s\S]*?)(      derivedFromMustRef: MUST-001\n)/u, '$1')
+        .replace(/(    - id: CMD-001\n[\s\S]*?)(      derivedFromMustRef: MUST-001\n)/u, '$1');
+      const projectedProductTarget = path.join(
+        root,
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'main-agent-orchestration.ts'
+      );
+      mkdirSync(path.dirname(projectedProductTarget), { recursive: true });
+      writeFileSync(
+        projectedProductTarget,
+        'export const preserveExistingRepair = true;\n',
+        'utf8'
+      );
       sourceText = [
         sourceText,
         '',
@@ -1177,8 +1243,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const traceRowsById = new Map(confirmation.traceRows.map((row: any) => [row.id, row]));
       for (const view of businessViews) {
         expect(view.traceRows, `${view.id} traceRows`).toEqual(expect.arrayContaining(traceIds));
-        expect(view.evidenceRefs, `${view.id} evidenceRefs`).toEqual(expect.arrayContaining(evidenceIds));
-        expect(view.acceptanceRefs, `${view.id} acceptanceRefs`).toEqual(expect.arrayContaining(acceptanceIds));
+        expect(view.evidenceRefs, `${view.id} evidenceRefs`).toEqual(
+          expect.arrayContaining(evidenceIds)
+        );
+        expect(view.acceptanceRefs, `${view.id} acceptanceRefs`).toEqual(
+          expect.arrayContaining(acceptanceIds)
+        );
         for (const traceRef of view.traceRows) {
           const trace = traceRowsById.get(traceRef) as any;
           expect(
@@ -1193,17 +1263,23 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           ).toContain(view.id);
         }
       }
-      expect(businessViews.find((view: any) => view.visualKind === 'failure')?.failurePathRefs).toEqual(
-        expect.arrayContaining(confirmation.failurePaths.map((row: any) => row.id))
-      );
+      expect(
+        businessViews.find((view: any) => view.visualKind === 'failure')?.failurePathRefs
+      ).toEqual(expect.arrayContaining(confirmation.failurePaths.map((row: any) => row.id)));
       expect(businessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs).toEqual(
         expect.arrayContaining(confirmation.edgeCases.map((row: any) => row.id))
       );
-      expect(businessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs).not.toContain(
-        'legacy business edge remains human readable [MUST-001]'
-      );
+      expect(
+        businessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs
+      ).not.toContain('legacy business edge remains human readable [MUST-001]');
       const targetPathRows = confirmation.targetModificationPaths as Array<Record<string, unknown>>;
-      expect(targetPathRows.find((row) => row.path === 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts')).toMatchObject({
+      expect(
+        targetPathRows.find(
+          (row) =>
+            row.path ===
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
+        )
+      ).toMatchObject({
         changeType: 'modify',
         coverageRole: 'modify',
       });
@@ -1221,17 +1297,45 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         visible: [],
         hidden: [],
       });
-      expect((confirmation.currentTargetMap.diffRows as Array<Record<string, unknown>>).map((row) => row.id)).toContain(
-        'CT-DIFF-002'
+      expect(
+        (confirmation.currentTargetMap.diffRows as Array<Record<string, unknown>>).map(
+          (row) => row.id
+        )
+      ).toContain('CT-DIFF-002');
+      expect(currentTargetMapText).not.toContain(
+        'Current source anchors for default/visibility behavior include'
       );
-      expect(currentTargetMapText).not.toContain('Current source anchors for default/visibility behavior include');
       expect(currentTargetMapText).not.toContain('Target source-defined periods');
       expect(currentTargetMapText).not.toContain('CURRENT-EVIDENCE-NOISE');
       expect(currentTargetMapText).not.toMatch(/(?:include|includes|periods|entries)[^.;]*1m/iu);
       expect(currentTargetMapText).not.toContain('Residual Risk Statement');
       expect(currentTargetMapText).not.toContain('still not user confirmed');
-      expect(currentTargetMapText).not.toContain('Listed tests are required future implementation evidence');
+      expect(currentTargetMapText).not.toContain(
+        'Listed tests are required future implementation evidence'
+      );
       expect(currentTargetMapText).not.toContain('untracked package.json');
+      const happyView = businessViews.find((view: any) => view.id === 'SEQ-BUSINESS-001');
+      expect(String(happyView?.mermaid)).toContain('User->>Product: request repair [MUST-001]');
+      expect(String(happyView?.mermaid)).toContain(
+        'Product-->>User: return repaired projection [MUST-001]'
+      );
+      expect(
+        confirmation.requiredCommands.find((row: any) => row.id === 'CMD-001')?.targetFiles
+      ).toEqual([
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+      ]);
+      for (const [group, id] of [
+        ['failurePaths', 'FAIL-001'],
+        ['targetModificationPaths', 'TARGET-MOD-001'],
+        ['artifactAutomationPlan', 'ART-001'],
+        ['requiredCommands', 'CMD-001'],
+      ]) {
+        expect(
+          confirmation[group].find((row: any) => (row.id ?? row.artifactId) === id)
+            ?.derivedFromMustRef,
+          `${group}.${id} derivedFromMustRef`
+        ).toBe('MUST-001');
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1357,7 +1461,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         sourceMaterializationFindings: [
           {
             code: 'source_packet_projection_metadata_drift',
-            message: 'source packet projection metadata drift is a blocker, not audit incompleteness.',
+            message:
+              'source packet projection metadata drift is a blocker, not audit incompleteness.',
           },
         ],
       });
@@ -1500,6 +1605,69 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     }
   });
 
+  it('resynchronizes stale packet projection metadata without changing semantic hashes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-packet-metadata-resync-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const paths = authoringPaths(root, recordId);
+      const confirmation = readInlineConfirmation(source);
+      confirmation.status = 'user_confirmed';
+      delete confirmation.failurePaths[0].derivedFromMustRef;
+      rewriteInlineConfirmation(source, confirmation);
+      writePromotionReceipt(root, source, recordId, `${recordId}-SET`, {
+        statusValue: 'user_confirmed',
+        promotionStage: 'current-source-receipt-refresh',
+      });
+      const beforeText = readFileSync(source, 'utf8');
+      const beforeExtraction = extractImplementationConfirmationForHash(beforeText);
+      const beforeSourceHash = sourceDocumentHashForContract(
+        beforeText,
+        beforeExtraction.blockText,
+        beforeExtraction.confirmation
+      );
+      const beforeConfirmationHash = implementationConfirmationHashForContract(
+        beforeExtraction.confirmation
+      );
+      const oldPacketHash = confirmation.failurePaths[0].derivedFromPacketHash;
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      expect(result.packetHash).toEqual(expect.stringMatching(/^sha256:[a-f0-9]{64}$/u));
+      expect(result.packetHash).not.toBe(oldPacketHash);
+      const afterText = readFileSync(source, 'utf8');
+      const afterExtraction = extractImplementationConfirmationForHash(afterText);
+      expect(
+        sourceDocumentHashForContract(
+          afterText,
+          afterExtraction.blockText,
+          afterExtraction.confirmation
+        )
+      ).toBe(beforeSourceHash);
+      expect(implementationConfirmationHashForContract(afterExtraction.confirmation)).toBe(
+        beforeConfirmationHash
+      );
+      expect(afterExtraction.confirmation.failurePaths[0]).toMatchObject({
+        derivedFromPacketHash: result.packetHash,
+        projectionStatus: 'synchronized',
+      });
+      const dryRun = readJson(
+        path.join(paths.dir, 'pre-render-must-decomposition-gate-dry-run-round-1.json')
+      );
+      expect(
+        dryRun.blockingIssues?.map((issue: Record<string, unknown>) => issue.code) ?? []
+      ).not.toContain('source_row_independently_invented');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('source gap fix materialization required only applies to new valid gap', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-gap-fix-scope-'));
     try {
@@ -1527,7 +1695,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 sourceText: 'Invalid target field should fail materialization.',
                 targetField: 'implementationConfirmation.unknownField',
                 newValue: { id: 'MUST-INVALID-TARGET', text: 'Invalid target field.' },
-                reason: 'The materializer must reject target fields that do not match the action type.',
+                reason:
+                  'The materializer must reject target fields that do not match the action type.',
                 mustRefs: ['MUST-001'],
                 requirementIds: ['REQ-INVALID-TARGET'],
               },
@@ -1800,9 +1969,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(confirmation.evidence.map((row: any) => row.id)).toContain('EVD-REPAIR-001');
       expect(confirmation.traceRows.map((row: any) => row.id)).toContain('TRACE-REPAIR-001');
       expect(confirmation.acceptanceTests.map((row: any) => row.id)).toContain('ACC-REPAIR-001');
-      expect(confirmation.acceptanceCriteria.map((row: any) => row.id)).toContain(
-        'ACC-REPAIR-001'
-      );
+      expect(confirmation.acceptanceCriteria.map((row: any) => row.id)).toContain('ACC-REPAIR-001');
       expect(confirmation.e2eSuites.map((row: any) => row.id)).toContain('E2E-REPAIR-001');
       expect(confirmation.e2eScenarios.map((row: any) => row.id)).toContain('E2E-REPAIR-001');
       expect(confirmation.businessViews.map((row: any) => row.id)).toContain(
@@ -1849,7 +2016,207 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(restartedRequest.implementationConfirmationHash).toBe(
         result.implementationConfirmationHash
       );
-      expect(result.artifacts.some((artifact: string) => artifact.includes('/archive/'))).toBe(true);
+      expect(result.artifacts.some((artifact: string) => artifact.includes('/archive/'))).toBe(
+        true
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('marks a confirmed source reconfirm_required when a validated gap changes semantics', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-confirmed-gap-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      markSourceUserConfirmed(source);
+      writePromotionReceipt(root, source, recordId, `${recordId}-SET`, {
+        statusValue: 'user_confirmed',
+        promotionStage: 'current-source-receipt-refresh',
+      });
+      const paths = authoringPaths(root, recordId);
+
+      const initial = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(initial.blockingStage).toBe('critical_auditor_round_required');
+      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
+
+      const repaired = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(repaired).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_round_required',
+        nextRequiredAction: 'write_critical_auditor_round_response',
+      });
+      const confirmation = readInlineConfirmation(source);
+      expect(confirmation.status).toBe('reconfirm_required');
+      expect(confirmation.must.map((row: any) => row.id)).toContain('MUST-REBUILT-001');
+      expect(confirmation.reconfirmationRequest).toMatchObject({
+        required: true,
+        reasonCode: 'controlled_authoring_repair_changed_confirmed_scope',
+        persuasiveRationale: {
+          whyReconfirmNow: expect.any(String),
+          riskIfSkipped: expect.any(String),
+          whyEvidenceIsSufficient: expect.any(String),
+        },
+        evidenceBundle: {
+          sufficiencyVerdict: 'sufficient',
+          items: expect.arrayContaining([
+            expect.objectContaining({
+              sourceRefs: expect.any(Array),
+              proofRefs: expect.any(Array),
+            }),
+          ]),
+        },
+        diffSummary: expect.any(Array),
+        allowedUserActions: expect.arrayContaining(['confirm_current_version']),
+      });
+      expect(
+        confirmation.reconfirmationRequest.evidenceBundle.items[0]
+      ).not.toHaveProperty('id');
+      expect(
+        confirmation.reconfirmationRequest.diffSummary.every(
+          (item: Record<string, unknown>) => !Object.hasOwn(item, 'id')
+        )
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes business failure, edge-case, and existing trace closure repairs', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-business-failure-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-BUSINESS-FAILURE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      const confirmation = readInlineConfirmation(source);
+      const existingFailure = confirmation.failurePaths.find((row: any) => row.id === 'FAIL-001');
+      const existingEdge = confirmation.edgeCases.find((row: any) => row.id === 'EDGE-001');
+      const existingTrace = confirmation.traceRows.find((row: any) => row.id === 'TRACE-001');
+      const actionBase = {
+        sourceSpan: { startLine: 20, endLine: 24 },
+        sourceText: 'Close consumer business failure behavior without authoring-governance prose.',
+        reason: 'Critical Auditor found missing business failure closure.',
+        mustRefs: ['MUST-001'],
+        requirementIds: ['MUST-001', 'TRACE-001'],
+      };
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-BUSINESS-FAILURE-CLOSURE',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-FAIL-001',
+                type: 'upsert_failure_path',
+                targetField: 'implementationConfirmation.failurePaths',
+                newValue: {
+                  ...existingFailure,
+                  trigger: 'Consumer runtime dependency becomes unavailable.',
+                  expectedBehavior: 'The affected business lane fails closed without hot-path blocking.',
+                },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-FAIL-050',
+                type: 'upsert_failure_path',
+                targetField: 'implementationConfirmation.failurePaths',
+                newValue: {
+                  id: 'FAIL-050',
+                  title: 'Active-symbol quote polling CPU budget breach',
+                  trigger: 'Active-symbol quote polling exceeds the confirmed CPU budget.',
+                  expectedBehavior: 'The product rejects or degrades the affected polling lane.',
+                  forbiddenBehavior: 'Continue unbounded polling on the hot path.',
+                  blocksCompletionWhenViolated: true,
+                  linkedNegIds: ['NEG-001'],
+                  linkedEvidenceIds: ['EVD-001'],
+                },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-EDGE-001',
+                type: 'upsert_edge_case',
+                targetField: 'implementationConfirmation.edgeCases',
+                newValue: {
+                  ...existingEdge,
+                  category: 'runtime_dependency_failure',
+                  condition: 'The consumer runtime dependency becomes unavailable mid-session.',
+                  expectedBehavior: 'The affected business lane fails closed and remains observable.',
+                  linkedFailurePathIds: ['FAIL-001'],
+                },
+                ...actionBase,
+              },
+              {
+                actionId: 'REPAIR-TRACE-001',
+                type: 'upsert_trace',
+                targetField: 'implementationConfirmation.traceRows',
+                newValue: {
+                  ...existingTrace,
+                  failurePathRefs: ['FAIL-001', 'FAIL-050'],
+                  edgeCaseRefs: ['EDGE-001'],
+                },
+                ...actionBase,
+              },
+            ],
+          },
+        ],
+      });
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      const repaired = readInlineConfirmation(source);
+      expect(repaired.failurePaths.find((row: any) => row.id === 'FAIL-001')).toMatchObject({
+        trigger: 'Consumer runtime dependency becomes unavailable.',
+        expectedBehavior: 'The affected business lane fails closed without hot-path blocking.',
+      });
+      expect(repaired.failurePaths.map((row: any) => row.id)).toContain('FAIL-050');
+      expect(repaired.edgeCases.find((row: any) => row.id === 'EDGE-001')).toMatchObject({
+        category: 'runtime_dependency_failure',
+        linkedFailurePathIds: ['FAIL-001'],
+      });
+      expect(repaired.traceRows.find((row: any) => row.id === 'TRACE-001')).toMatchObject({
+        failurePathRefs: ['FAIL-001', 'FAIL-050'],
+        edgeCaseRefs: ['EDGE-001'],
+      });
+      expect(repaired.acceptanceTests.find((row: any) => row.id === 'ACC-001')).toMatchObject({
+        failurePathRefs: ['FAIL-001', 'FAIL-050'],
+        edgeCaseRefs: ['EDGE-001'],
+      });
+      expect(repaired.e2eSuites.find((row: any) => row.id === 'E2E-001')).toMatchObject({
+        failurePathRefs: ['FAIL-001', 'FAIL-050'],
+        edgeCaseRefs: ['EDGE-001'],
+      });
+      expect(repaired.sourceGapFixes.at(-1).appliedActions).toHaveLength(4);
+      expect(repaired.sourceGapFixes.at(-1).targetFieldsChanged).toEqual(
+        expect.arrayContaining(['failurePaths', 'edgeCases', 'traceRows'])
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1909,6 +2276,1066 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         '系统必须保留源文档中的新增业务需求，不得只审计 inline MUST。'
       );
       expect(repairedSource).toContain('验收：repair packet 必须包含源文档新增需求。');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('reuses source-owned atomic tasks and projections without cartesian relabeling', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-owned-projections-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const confirmation = readInlineConfirmation(source);
+      const packetHash = fixedHash('a');
+      const owned = (mustRef: string) => ({
+        derivedFromMustRef: mustRef,
+        derivedFromPacketHash: packetHash,
+        projectionStatus: 'synchronized',
+      });
+
+      confirmation.must = [
+        confirmation.must[0],
+        {
+          id: 'MUST-002',
+          text: 'Persist the second independently verifiable product behavior.',
+          evidenceRefs: ['EVD-002'],
+          coveredByTraceRows: ['TRACE-002'],
+          coveredBySequenceViews: ['SEQ-001'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.notDone = [
+        confirmation.notDone[0],
+        {
+          id: 'NEG-002',
+          text: 'Telemetry exporter success must not control product hot-path safety.',
+          evidenceRefs: ['EVD-001'],
+          whyItBlocksCompletion: 'Exporter coupling would block product hot paths.',
+          negativeAssertionRequired: true,
+          coveredByTraceRows: ['TRACE-NEG-002'],
+          coveredByFailurePath: ['FAIL-NEG-002'],
+        },
+      ];
+      confirmation.atomicImplementationTaskList = [
+        {
+          id: 'TASK-001-A',
+          text: 'Implement the first product behavior.',
+          targetFiles: ['src/first.ts'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: ['First behavior is observable.'],
+          primaryAcceptanceOracles: ['ACC-001 proves the first behavior.'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'TASK-001-B',
+          text: 'Handle the first product failure boundary.',
+          targetFiles: ['src/first-failure.ts'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: ['First failure boundary is observable.'],
+          primaryAcceptanceOracles: ['FAIL-001 is rejected safely.'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'TASK-002-A',
+          text: 'Implement the second product behavior.',
+          targetFiles: ['src/second.ts'],
+          traceRows: ['TRACE-002'],
+          evidenceRefs: ['EVD-002'],
+          primaryObservableBehaviors: ['Second behavior is observable.'],
+          primaryAcceptanceOracles: ['ACC-002 proves the second behavior.'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.mustExecutionDecompositionMatrix = [
+        {
+          id: 'MDM-001',
+          mustRef: 'MUST-001',
+          atomicTaskRefs: ['TASK-001-A', 'TASK-001-B'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'MDM-002',
+          mustRef: 'MUST-002',
+          atomicTaskRefs: ['TASK-002-A'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.evidence = [
+        confirmation.evidence[0],
+        {
+          id: 'EVD-002',
+          covers: ['MUST-002'],
+          text: 'Second behavior evidence.',
+          gate: 'npm run test:second',
+          oracle: 'The second behavior is independently verified.',
+          requiredCommandRefs: ['CMD-002'],
+          artifactRefs: ['ART-001'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.traceRows = [
+        { ...confirmation.traceRows[0], covers: ['MUST-001'], ...owned('MUST-001') },
+        {
+          id: 'TRACE-002',
+          covers: ['MUST-002'],
+          taskRefs: ['TASK-002-A'],
+          evidenceRefs: ['EVD-002'],
+          contractValidationCommandRefs: ['CMD-002'],
+          deliveryEvidenceCommandRefs: ['CMD-002'],
+          acceptanceRefs: ['ACC-002', 'E2E-002'],
+          artifactRefs: ['ART-001'],
+          status: 'PENDING',
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.acceptanceTests = [
+        confirmation.acceptanceTests[0],
+        {
+          id: 'ACC-002',
+          file: 'tests/second.test.ts',
+          covers: ['MUST-002'],
+          traceRows: ['TRACE-002'],
+          evidenceRefs: ['EVD-002'],
+          commandRefs: ['CMD-002'],
+          oracle: 'Second acceptance oracle.',
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.e2eSuites = [
+        confirmation.e2eSuites[0],
+        {
+          id: 'E2E-002',
+          file: 'tests/second.e2e.ts',
+          covers: ['MUST-002'],
+          traceRows: ['TRACE-002'],
+          evidenceRefs: ['EVD-002'],
+          commandRefs: ['CMD-002'],
+          oracle: 'Second end-to-end oracle.',
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.failurePaths = [
+        {
+          ...confirmation.failurePaths[0],
+          ownerMustRefs: ['MUST-001'],
+          traceRows: ['TRACE-001'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'FAIL-002',
+          title: 'Second behavior fails',
+          trigger: 'The second behavior cannot persist.',
+          expectedBehavior: 'Fail closed without partial state.',
+          forbiddenBehavior: 'Do not report success.',
+          ownerMustRefs: ['MUST-002'],
+          linkedEvidenceIds: ['EVD-002'],
+          traceRows: ['TRACE-001', 'TRACE-002'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.edgeCases = [
+        { ...confirmation.edgeCases[0], ...owned('MUST-001') },
+        {
+          id: 'EDGE-002',
+          category: 'second_boundary',
+          condition: 'Second behavior receives boundary input.',
+          expectedBehavior: 'Preserve deterministic state.',
+          forbiddenBehavior: 'Do not silently truncate.',
+          linkedFailurePathIds: ['FAIL-002'],
+          linkedEvidenceIds: ['EVD-002'],
+          traceRows: ['TRACE-002'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.targetModificationPaths = [
+        {
+          ...confirmation.targetModificationPaths[0],
+          id: 'TARGET-MOD-001',
+          path: 'src/first.ts',
+          requirementRefs: ['MUST-001'],
+          traceRefs: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'TARGET-MOD-002',
+          path: 'src/second.ts',
+          changeType: 'modify',
+          coverageRole: 'modify',
+          requirementRefs: ['MUST-002'],
+          traceRefs: ['TRACE-002'],
+          evidenceRefs: ['EVD-002'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.requiredCommands = [
+        {
+          ...confirmation.requiredCommands[0],
+          id: 'CMD-001',
+          targetFiles: ['src/first.ts', 'src/second.ts'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          perMustRows: [{ mustRef: 'MUST-001', assertion: 'First behavior passes.' }],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'CMD-002',
+          command: 'npm run test:second',
+          purpose: 'Validate the second behavior.',
+          targetFiles: ['src/second.ts'],
+          traceRows: ['TRACE-001', 'TRACE-002'],
+          evidenceRefs: ['EVD-002'],
+          perMustRows: [{ mustRef: 'MUST-002', assertion: 'Second behavior passes.' }],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.currentTargetMap.currentSummary = [
+        {
+          id: 'CT-GLOBAL-001',
+          title: 'Shared current-state context',
+          detail: 'This row is global context, not a per-MUST projection.',
+          requirementRefs: ['MUST-001', 'MUST-002'],
+          traceRows: ['TRACE-001', 'TRACE-002'],
+          evidenceRefs: ['EVD-001', 'EVD-002'],
+        },
+      ];
+      confirmation.currentTargetMap.diffRows = [
+        {
+          id: 'CT-MUST-001',
+          dimension: 'First behavior',
+          currentState: 'Missing',
+          targetState: 'Implemented',
+          requirementRefs: ['MUST-001'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+        },
+        {
+          id: 'CT-MUST-002',
+          dimension: 'Second behavior',
+          currentState: 'Missing',
+          targetState: 'Implemented',
+          requirementRefs: ['MUST-002'],
+          traceRows: ['TRACE-002'],
+          evidenceRefs: ['EVD-002'],
+        },
+      ];
+      rewriteInlineConfirmation(source, confirmation);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+
+      const packet = readJson(paths.packet).must_decomposition_packet;
+      const first = packet.mustPackets.find((row: any) => row.mustRef === 'MUST-001');
+      const second = packet.mustPackets.find((row: any) => row.mustRef === 'MUST-002');
+
+      expect(first.mustAtomicTasks.map((row: any) => row.id)).toEqual(['TASK-001-A', 'TASK-001-B']);
+      expect(second.mustAtomicTasks.map((row: any) => row.id)).toEqual(['TASK-002-A']);
+      expect(first.atomicityCompleteness).toMatchObject({
+        expectedTaskCount: 2,
+        actualTaskCount: 2,
+      });
+      expect(second.atomicityCompleteness).toMatchObject({
+        expectedTaskCount: 1,
+        actualTaskCount: 1,
+      });
+      expect(first.mustEvidenceProjection.map((row: any) => row.id)).toEqual(['EVD-001']);
+      expect(second.mustEvidenceProjection.map((row: any) => row.id)).toEqual(['EVD-002']);
+      expect(first.mustTraceProjection.map((row: any) => row.id)).toEqual(['TRACE-001']);
+      expect(second.mustTraceProjection.map((row: any) => row.id)).toEqual(['TRACE-002']);
+      expect(first.mustFailureEdgeProjection.map((row: any) => row.id)).toEqual([
+        'FAIL-001',
+        'EDGE-001',
+      ]);
+      expect(second.mustFailureEdgeProjection.map((row: any) => row.id)).toEqual([
+        'FAIL-002',
+        'EDGE-002',
+      ]);
+      expect(first.mustTargetPathProjection.map((row: any) => row.id)).toEqual(['TARGET-MOD-001']);
+      expect(second.mustTargetPathProjection.map((row: any) => row.id)).toEqual(['TARGET-MOD-002']);
+      expect(first.mustCommandProjection.map((row: any) => row.id)).toEqual(['CMD-001']);
+      expect(second.mustCommandProjection.map((row: any) => row.id)).toEqual(['CMD-002']);
+      expect(first.mustCurrentTargetProjection.map((row: any) => row.id)).toContain('CT-MUST-001');
+      expect(first.mustCurrentTargetProjection.map((row: any) => row.id)).not.toContain(
+        'CT-GLOBAL-001'
+      );
+      expect(second.mustCurrentTargetProjection.map((row: any) => row.id)).toContain('CT-MUST-002');
+      expect(second.mustCurrentTargetProjection.map((row: any) => row.id)).not.toContain(
+        'CT-GLOBAL-001'
+      );
+      expect(first.questionCoverage.questions.length).toBeGreaterThan(0);
+      expect(first.questionCoverage.answers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            answer: expect.any(String),
+            evidenceRefs: expect.arrayContaining([expect.any(String)]),
+          }),
+        ])
+      );
+      expect(new Set(first.questionCoverage.answers.map((row: any) => row.category))).toEqual(
+        new Set(first.questionCoverage.answeredCategories)
+      );
+      expect(first.questionCoverage.answers.map((row: any) => row.category)).toEqual(
+        expect.arrayContaining(['scope_boundary', 'mental_model_progression'])
+      );
+      expect(
+        first.mustAtomicTasks.every(
+          (row: any) => !String(row.primaryObservableBehaviors).includes('artifact synchronization')
+        )
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('splits compound behavior oracles and removes semantic projection overassignment', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-semantic-scope-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const confirmation = readInlineConfirmation(source);
+      const packetHash = fixedHash('a');
+      const owned = (mustRef: string) => ({
+        derivedFromMustRef: mustRef,
+        derivedFromPacketHash: packetHash,
+        projectionStatus: 'synchronized',
+      });
+      const compoundOracle =
+        'Given a queue reaches its backlog limit, when work is submitted, then diagnostic state is recoverable from the latest snapshot, mutating commands are rejected with queue_backpressure, OrderIntent handoff requires ack or unsafe_paused timeout, and no tick payload is moved through the queue.';
+      const originalTargets = [
+        'src/unrelated_alpha.ts',
+        'src/unrelated_beta.ts',
+        'src/unrelated_gamma.ts',
+        'src/unrelated_delta.ts',
+        'src/unrelated_epsilon.ts',
+        'src/unrelated_zeta.ts',
+        'src/queue_snapshot.ts',
+        'src/control_queue.ts',
+        'src/order_intent.ts',
+        'src/tick_databus.ts',
+      ];
+      const authorityOnlyTargets = [
+        'src/runtime_bootstrap.ts',
+        'src/application_engine.ts',
+      ];
+
+      confirmation.must = [
+        {
+          ...confirmation.must[0],
+          text: 'Queue overflow preserves independent recovery, rejection, handoff, and tick isolation outcomes.',
+        },
+        {
+          id: 'MUST-002',
+          text: 'DataService metadata failure returns metadata_unavailable without creating MainTrading quote context.',
+          evidenceRefs: ['EVD-001'],
+          coveredByTraceRows: ['TRACE-002'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.notDone = [
+        confirmation.notDone[0],
+        {
+          id: 'NEG-002',
+          text: 'Telemetry exporter success must not control product hot-path safety.',
+          evidenceRefs: ['EVD-001'],
+          whyItBlocksCompletion: 'Exporter coupling would block product hot paths.',
+          negativeAssertionRequired: true,
+          coveredByTraceRows: ['TRACE-NEG-002'],
+          coveredByFailurePath: [],
+        },
+      ];
+      confirmation.atomicImplementationTaskList = [
+        {
+          id: 'TASK-001-001',
+          text: `Implement and prove MUST-001 atomic behavior 1: ${compoundOracle}`,
+          targetFiles: originalTargets,
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [compoundOracle],
+          primaryAcceptanceOracles: [compoundOracle],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'TASK-002-001',
+          text: 'Implement metadata unavailable behavior.',
+          targetFiles: [
+            'src/metadata.ts',
+            'src/queue_snapshot.ts',
+            'src/tick_databus.ts',
+            'tests/metadata.test.ts',
+          ],
+          traceRows: ['TRACE-002'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: ['Metadata failure returns metadata_unavailable.'],
+          primaryAcceptanceOracles: ['MainTrading quote context is not created.'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.mustExecutionDecompositionMatrix = [
+        {
+          id: 'MDM-001',
+          mustRef: 'MUST-001',
+          atomicTaskRefs: ['TASK-001-001'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'MDM-002',
+          mustRef: 'MUST-002',
+          atomicTaskRefs: ['TASK-002-001'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.traceRows = [
+        {
+          ...confirmation.traceRows[0],
+          covers: ['MUST-001'],
+          taskRefs: ['TASK-001-001'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'TRACE-002',
+          covers: ['MUST-002'],
+          taskRefs: ['TASK-002-001'],
+          evidenceRefs: ['EVD-001'],
+          contractValidationCommandRefs: ['CMD-001'],
+          deliveryEvidenceCommandRefs: ['CMD-001'],
+          acceptanceRefs: ['ACC-001'],
+          artifactRefs: ['ART-001'],
+          status: 'PENDING',
+          ...owned('MUST-002'),
+        },
+        {
+          id: 'TRACE-NEG-001',
+          covers: ['NEG-001'],
+          evidenceRefs: ['EVD-001'],
+          contractValidationCommandRefs: ['CMD-001'],
+          deliveryEvidenceCommandRefs: ['CMD-001'],
+          acceptanceRefs: ['ACC-NEG-001'],
+          artifactRefs: ['ART-001'],
+          status: 'PENDING',
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'TRACE-NEG-002',
+          covers: ['NEG-002'],
+          evidenceRefs: ['EVD-001'],
+          contractValidationCommandRefs: ['CMD-001'],
+          deliveryEvidenceCommandRefs: ['CMD-001'],
+          acceptanceRefs: ['ACC-NEG-002'],
+          artifactRefs: ['ART-001'],
+          status: 'PENDING',
+          ...owned('MUST-001'),
+        },
+      ];
+      confirmation.acceptanceTests = [
+        confirmation.acceptanceTests[0],
+        {
+          id: 'ACC-NEG-001',
+          file: 'tests/negative-isolation.test.ts',
+          covers: ['NEG-001'],
+          traceRows: ['TRACE-NEG-001'],
+          evidenceRefs: ['EVD-001'],
+          commandRefs: ['CMD-001'],
+          oracle: 'Exporter failure never blocks product hot paths.',
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'ACC-NEG-002',
+          file: 'tests/exporter-isolation.test.ts',
+          covers: ['NEG-002'],
+          traceRows: ['TRACE-NEG-002'],
+          evidenceRefs: ['EVD-001'],
+          commandRefs: ['CMD-001'],
+          oracle: 'Exporter failure never blocks product hot paths.',
+          ...owned('MUST-001'),
+        },
+      ];
+      confirmation.failurePaths = [
+        {
+          ...confirmation.failurePaths[0],
+          title: 'DataService metadata unavailable',
+          trigger: 'DataService metadata is unavailable.',
+          expectedBehavior:
+            'Return metadata_unavailable without creating MainTrading quote context.',
+          ownerMustRefs: ['MUST-001', 'MUST-002'],
+          traceRows: ['TRACE-001', 'TRACE-002'],
+          linkedEvidenceIds: ['EVD-001'],
+          ...owned('MUST-001'),
+        },
+        {
+          id: 'FAIL-NEG-002',
+          title: 'Telemetry exporter failure',
+          trigger: 'Telemetry exporter delivery fails.',
+          expectedBehavior: 'Product hot paths continue without waiting on exporter recovery.',
+          forbiddenBehavior: 'Exporter state must not control product hot-path progress.',
+          blocksCompletionWhenViolated: true,
+          linkedNegIds: ['NEG-002'],
+          traceRows: ['TRACE-NEG-002'],
+          acceptanceRefs: ['ACC-NEG-002'],
+          linkedEvidenceIds: ['EVD-001'],
+          derivedFromPacketHash: packetHash,
+          projectionStatus: 'synchronized',
+        },
+      ];
+      confirmation.edgeCases = [
+        confirmation.edgeCases[0],
+        {
+          id: 'EDGE-MUST-002',
+          category: 'metadata_failure_boundary',
+          condition: 'DataService metadata is unavailable before quote context creation.',
+          expectedBehavior: 'Return metadata_unavailable without creating quote context.',
+          forbiddenBehavior: 'Do not infer success from unrelated negative boundaries.',
+          linkedFailurePathIds: ['FAIL-001', 'FAIL-NEG-002'],
+          linkedNegIds: ['NEG-001', 'NEG-002'],
+          traceRows: ['TRACE-002'],
+          linkedEvidenceIds: ['EVD-001'],
+          derivedFromPacketHash: packetHash,
+          projectionStatus: 'synchronized',
+        },
+      ];
+      confirmation.targetModificationPaths = [
+        ...confirmation.targetModificationPaths,
+        ...authorityOnlyTargets.map((targetPath, index) => ({
+          ...confirmation.targetModificationPaths[0],
+          id: `TARGET-MOD-AUTHORITY-${index + 1}`,
+          path: targetPath,
+          changeType: 'modify',
+          coverageRole: 'modify',
+          requirementRefs: ['MUST-001'],
+          traceRefs: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          ...owned('MUST-001'),
+        })),
+        {
+          ...confirmation.targetModificationPaths[0],
+          id: 'TARGET-MOD-002-SCOPE',
+          path: 'src/metadata.ts',
+          traceRefs: ['TRACE-002'],
+          evidenceRefs: ['EVD-001'],
+          ...owned('MUST-002'),
+        },
+      ];
+      confirmation.requiredCommands = [
+        ...confirmation.requiredCommands,
+        {
+          ...confirmation.requiredCommands[0],
+          id: 'CMD-002',
+          command: 'npx vitest run tests/metadata.test.ts',
+          targetFiles: ['tests/metadata.test.ts'],
+          traceRows: ['TRACE-002'],
+          evidenceRefs: ['EVD-001'],
+          ...owned('MUST-002'),
+        },
+      ];
+      rewriteInlineConfirmation(source, confirmation);
+      writePromotionReceipt(root, source, recordId);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      const repaired = readInlineConfirmation(source);
+      const queueTasks = repaired.atomicImplementationTaskList.filter(
+        (row: any) => row.derivedFromMustRef === 'MUST-001'
+      );
+      expect(queueTasks).toHaveLength(5);
+      expect(queueTasks[0].id).toBe('TASK-001-001');
+      expect(queueTasks.slice(1).map((row: any) => row.id)).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
+          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
+          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
+          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
+        ])
+      );
+      expect(new Set(queueTasks.map((row: any) => row.id)).size).toBe(queueTasks.length);
+      expect(
+        queueTasks.every(
+          (row: any) =>
+            row.primaryObservableBehaviors.length === 1 &&
+            row.primaryAcceptanceOracles.length === 1 &&
+            row.targetFiles.length < originalTargets.length
+        ),
+        JSON.stringify(queueTasks.map((row: any) => ({ id: row.id, targetFiles: row.targetFiles })))
+      ).toBe(true);
+      const queueTasksByOutcome = Object.fromEntries(
+        [
+          'diagnostic state',
+          'mutating commands',
+          'requires ack',
+          'unsafe_paused timeout',
+          'tick payload',
+        ].map((outcome) => [
+          outcome,
+          queueTasks.find((row: any) => row.primaryObservableBehaviors[0].includes(outcome)),
+        ])
+      );
+      expect(
+        Object.values(queueTasksByOutcome).every(Boolean),
+        JSON.stringify(queueTasks.map((row: any) => row.primaryObservableBehaviors[0]))
+      ).toBe(true);
+      expect(queueTasksByOutcome['diagnostic state'].targetFiles).toContain(
+        'src/queue_snapshot.ts'
+      );
+      expect(queueTasksByOutcome['mutating commands'].targetFiles).toContain(
+        'src/control_queue.ts'
+      );
+      expect(queueTasksByOutcome['requires ack'].targetFiles).toContain('src/order_intent.ts');
+      expect(queueTasksByOutcome['unsafe_paused timeout'].targetFiles).toContain(
+        'src/order_intent.ts'
+      );
+      expect(queueTasksByOutcome['tick payload'].targetFiles).toContain('src/tick_databus.ts');
+      expect(
+        [...new Set(queueTasks.flatMap((row: any) => row.targetFiles))]
+      ).toEqual(expect.arrayContaining(authorityOnlyTargets));
+      expect(
+        repaired.atomicImplementationTaskList.find((row: any) => row.id === 'TASK-002-001')
+          .targetFiles
+      ).toEqual(['src/metadata.ts', 'tests/metadata.test.ts']);
+      expect(
+        repaired.mustExecutionDecompositionMatrix.find((row: any) => row.mustRef === 'MUST-001')
+          .atomicTaskRefs
+      ).toEqual(queueTasks.map((row: any) => row.id));
+      expect(repaired.traceRows.find((row: any) => row.id === 'TRACE-001').taskRefs).toEqual(
+        queueTasks.map((row: any) => row.id)
+      );
+      expect(
+        repaired.acceptanceTests.find((row: any) => row.id === 'ACC-NEG-001').derivedFromMustRef
+      ).toBe('MUST-002');
+      expect(
+        repaired.traceRows.find((row: any) => row.id === 'TRACE-NEG-001').derivedFromMustRef
+      ).toBe('MUST-002');
+      expect(repaired.acceptanceTests.find((row: any) => row.id === 'ACC-NEG-002')).toMatchObject({
+        derivedFromRequirementRef: 'NEG-002',
+      });
+      expect(
+        repaired.acceptanceTests.find((row: any) => row.id === 'ACC-NEG-002').derivedFromMustRef
+      ).toBeUndefined();
+      expect(repaired.traceRows.find((row: any) => row.id === 'TRACE-NEG-002')).toMatchObject({
+        derivedFromRequirementRef: 'NEG-002',
+      });
+      expect(
+        repaired.traceRows.find((row: any) => row.id === 'TRACE-NEG-002').derivedFromMustRef
+      ).toBeUndefined();
+      expect(repaired.failurePaths[0].ownerMustRefs).toEqual(['MUST-002']);
+      expect(repaired.failurePaths[0].derivedFromMustRef).toBe('MUST-002');
+      expect(repaired.failurePaths.find((row: any) => row.id === 'FAIL-NEG-002')).toMatchObject({
+        derivedFromRequirementRef: 'NEG-002',
+      });
+      expect(
+        repaired.failurePaths.find((row: any) => row.id === 'FAIL-NEG-002').derivedFromMustRef
+      ).toBeUndefined();
+      expect(repaired.edgeCases.find((row: any) => row.id === 'EDGE-MUST-002')).toMatchObject({
+        derivedFromMustRef: 'MUST-002',
+      });
+      expect(
+        repaired.edgeCases.find((row: any) => row.id === 'EDGE-MUST-002').derivedFromRequirementRef
+      ).toBeUndefined();
+
+      const packet = readJson(authoringPaths(root, recordId).packet).must_decomposition_packet;
+      expect(
+        packet.mustPackets.flatMap((mustPacket: any) =>
+          mustPacket.mustAcceptanceProjection.map((row: any) => row.id)
+        )
+      ).not.toContain('ACC-NEG-001');
+      expect(
+        packet.mustPackets.flatMap((mustPacket: any) =>
+          mustPacket.mustTraceProjection.map((row: any) => row.id)
+        )
+      ).not.toContain('TRACE-NEG-001');
+      expect(
+        packet.mustPackets.flatMap((mustPacket: any) =>
+          mustPacket.mustFailureEdgeProjection.map((row: any) => row.id)
+        )
+      ).not.toContain('FAIL-NEG-002');
+      expect(
+        packet.mustPackets
+          .find((mustPacket: any) => mustPacket.mustRef === 'MUST-002')
+          .mustFailureEdgeProjection.map((row: any) => row.id)
+      ).toContain('EDGE-MUST-002');
+      const reconciliation = readJson(authoringPaths(root, recordId).reconciliation);
+      expect(
+        reconciliation.issues.filter((issue: any) =>
+          ['ACC-NEG-002', 'TRACE-NEG-002', 'FAIL-NEG-002', 'EDGE-MUST-002'].some((id) =>
+            issue.refs?.includes(id)
+          )
+        )
+      ).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses the controlled MUST text to repair partial single-task atomic coverage and stale convergence', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-must-text-atomicity-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const confirmation = readInlineConfirmation(source);
+      const packetHash = fixedHash('a');
+      const owned = {
+        derivedFromMustRef: 'MUST-001',
+        derivedFromPacketHash: packetHash,
+        projectionStatus: 'synchronized',
+      };
+      confirmation.must[0].text =
+        'Main Trading Process can accept, reject, or submit OrderIntent after risk and idempotency checks.';
+      confirmation.atomicImplementationTaskList = [
+        {
+          id: 'TASK-001',
+          text: 'Reject invalid OrderIntent with a stable reason.',
+          targetFiles: ['docs/requirements/rich-source.md'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [
+            'Given a risk-invalid intent, when processed, then it is rejected with a stable reason.',
+          ],
+          primaryAcceptanceOracles: [
+            'Given a risk-invalid intent, when processed, then it is rejected with a stable reason.',
+          ],
+          ...owned,
+        },
+      ];
+      confirmation.mustExecutionDecompositionMatrix = [
+        {
+          id: 'MDM-001',
+          mustRef: 'MUST-001',
+          atomicTaskRefs: ['TASK-001'],
+          ...owned,
+        },
+      ];
+      confirmation.traceRows[0].taskRefs = ['TASK-001'];
+      confirmation.targetModificationPaths = [
+        ...confirmation.targetModificationPaths,
+        {
+          ...confirmation.targetModificationPaths[0],
+          id: 'TARGET-MOD-ORDER-INTENT',
+          path: 'vnpy/trader/order_intent_processor.py',
+          requirementRefs: ['MUST-001'],
+          ...owned,
+        },
+      ];
+      confirmation.requiredCommands = [
+        ...confirmation.requiredCommands,
+        {
+          ...confirmation.requiredCommands[0],
+          id: 'CMD-ORDER-INTENT',
+          command: 'pytest tests/trader/test_order_intent_processor.py',
+          targetFiles: ['tests/trader/test_order_intent_processor.py'],
+          ...owned,
+        },
+      ];
+      confirmation.preConfirmationDrilldown.criticalAuditor = {
+        minimumRounds: 3,
+        consecutiveNoNewGapRounds: 3,
+        latestReceiptHash: fixedHash('f'),
+        convergenceVerdict: 'bounded_no_new_gap',
+      };
+      rewriteInlineConfirmation(source, confirmation);
+      writePromotionReceipt(root, source, recordId);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      const repaired = readInlineConfirmation(source);
+      const tasks = repaired.atomicImplementationTaskList.filter(
+        (row: any) => row.derivedFromMustRef === 'MUST-001'
+      );
+      expect(tasks).toHaveLength(3);
+      expect(tasks.map((row: any) => row.primaryObservableBehaviors[0])).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/\baccept\b/iu),
+          expect.stringMatching(/\breject\b/iu),
+          expect.stringMatching(/\bsubmit\b/iu),
+        ])
+      );
+      expect(tasks.every((row: any) => row.targetFiles.length > 0)).toBe(true);
+      expect(
+        tasks.every((row: any) =>
+          row.targetFiles.every((targetFile: string) => !targetFile.startsWith('docs/'))
+        )
+      ).toBe(true);
+      expect(repaired.preConfirmationDrilldown.criticalAuditor).toMatchObject({
+        minimumRounds: 3,
+        consecutiveNoNewGapRounds: 0,
+        latestReceiptHash: null,
+        convergenceVerdict: 'audit_not_run',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fully decomposes compound task oracles in one repair pass and remains idempotent', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-atomic-fixed-point-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      const confirmation = readInlineConfirmation(source);
+      const packetHash = fixedHash('a');
+      const owned = {
+        derivedFromMustRef: 'MUST-001',
+        derivedFromPacketHash: packetHash,
+        projectionStatus: 'synchronized',
+      };
+      const compoundOracle =
+        'Given a stop-loss/take-profit line create or drag reaches an immediately closeable price, when the user selects 确认立即平仓, then Chart submits ConfirmedImmediateCloseIntent to MainTrading, previous LineRuleGraph revision remains active until MainTrading acceptance, TriggerService never evaluates the draft line, MainTrading validates market-data state、trade-context state、quote freshness、position availability、active close orders、LineRuleGraph revision、idempotency key、risk and trading session, accepted intents flow through OrderIntentProcessor, rejected intents return stable immediate_close reason and restore previous line price, and Chart send_order count remains 0.';
+      const visibleStateOracle =
+        'Given fault injection, when status is queried, then state and reason are visible.';
+      const visibleStateWithoutLogsOracle =
+        'Given fault injection, when status is queried, then state and reason are visible without reading raw logs.';
+      const hotPathWithoutExporterOracle =
+        'Given collector/exporter failure, when services continue, then hot paths continue under local safety state without waiting on exporter.';
+      const hotPathOracle =
+        'Given collector/exporter failure, when services continue, then hot paths continue under local safety state.';
+      confirmation.must[0].text = compoundOracle;
+      confirmation.atomicImplementationTaskList = [
+        {
+          id: 'TASK-001',
+          text: compoundOracle,
+          targetFiles: [
+            'vnpy/trader/subprocess_price_line_handlers.py',
+            'vnpy/trader/order_intent_processor.py',
+            'vnpy/trader/trigger_service/line_rule_graph.py',
+          ],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [compoundOracle],
+          primaryAcceptanceOracles: [compoundOracle],
+          ...owned,
+        },
+        {
+          id: 'TASK-002',
+          text: visibleStateOracle,
+          targetFiles: ['vnpy/trader/runtime_supervisor.py'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [visibleStateOracle],
+          primaryAcceptanceOracles: [visibleStateOracle],
+          ...owned,
+        },
+        {
+          id: 'TASK-003',
+          text: visibleStateWithoutLogsOracle,
+          targetFiles: ['vnpy/trader/runtime_supervisor.py'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [visibleStateWithoutLogsOracle],
+          primaryAcceptanceOracles: [visibleStateWithoutLogsOracle],
+          ...owned,
+        },
+        {
+          id: 'TASK-004',
+          text: hotPathWithoutExporterOracle,
+          targetFiles: ['vnpy/trader/runtime_supervisor.py'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [hotPathWithoutExporterOracle],
+          primaryAcceptanceOracles: [hotPathWithoutExporterOracle],
+          ...owned,
+        },
+        {
+          id: 'TASK-005',
+          text: hotPathOracle,
+          targetFiles: ['vnpy/trader/runtime_supervisor.py'],
+          traceRows: ['TRACE-001'],
+          evidenceRefs: ['EVD-001'],
+          primaryObservableBehaviors: [hotPathOracle],
+          primaryAcceptanceOracles: [hotPathOracle],
+          ...owned,
+        },
+      ];
+      confirmation.mustExecutionDecompositionMatrix = [
+        {
+          id: 'MDM-001',
+          mustRef: 'MUST-001',
+          atomicTaskRefs: ['TASK-001', 'TASK-002', 'TASK-003'],
+          ...owned,
+        },
+      ];
+      confirmation.traceRows[0].taskRefs = ['TASK-001', 'TASK-002', 'TASK-003'];
+      const initialTaskIds = ['TASK-001', 'TASK-002', 'TASK-003', 'TASK-004', 'TASK-005'];
+      confirmation.mustToAtomicTaskMap = {
+        'MUST-001': ['TASK-001', 'TASK-002', 'TASK-003'],
+      };
+      confirmation.atomicTaskToTraceMap = Object.fromEntries(
+        initialTaskIds.map((taskId) => [taskId, ['TRACE-001']])
+      );
+      confirmation.atomicTaskToAcceptanceMap = Object.fromEntries(
+        initialTaskIds.map((taskId) => [taskId, ['ACC-001']])
+      );
+      confirmation.atomicTaskToEvidenceMap = Object.fromEntries(
+        initialTaskIds.map((taskId) => [taskId, ['EVD-001']])
+      );
+      confirmation.atomicTaskToTargetPathMap = Object.fromEntries(
+        initialTaskIds.map((taskId) => [
+          taskId,
+          [
+            taskId === 'TASK-002'
+              ? 'TARGET-MOD-002'
+              : taskId === 'TASK-003'
+                ? 'TARGET-MOD-003'
+                : 'TARGET-MOD-001',
+          ],
+        ])
+      );
+      confirmation.atomicTaskToCommandMap = Object.fromEntries(
+        initialTaskIds.map((taskId) => [taskId, ['CMD-001']])
+      );
+      confirmation.aiTddContractExecutionManifestProjection = {
+        ...confirmation.aiTddContractExecutionManifestProjection,
+        atomicImplementationTaskLineage: {
+          mustToAtomicTaskMap: {
+            'MUST-001': ['TASK-001', 'TASK-002', 'TASK-003'],
+          },
+          atomicTaskToTraceMap: confirmation.atomicTaskToTraceMap,
+          atomicTaskToAcceptanceMap: confirmation.atomicTaskToAcceptanceMap,
+          atomicTaskToEvidenceMap: confirmation.atomicTaskToEvidenceMap,
+          atomicTaskToTargetPathMap: confirmation.atomicTaskToTargetPathMap,
+          atomicTaskToCommandMap: confirmation.atomicTaskToCommandMap,
+        },
+      };
+      rewriteInlineConfirmation(source, confirmation);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      const firstResult = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(firstResult.blockingStage).toBe('critical_auditor_round_required');
+      const firstSourceHash = sha256Text(readFileSync(source, 'utf8'));
+      const firstRequestHash = readJson(paths.request(1)).requestHash;
+      const firstConfirmation = readInlineConfirmation(source);
+      const firstTasks = firstConfirmation.atomicImplementationTaskList.filter(
+        (row: any) => row.derivedFromMustRef === 'MUST-001'
+      );
+      const firstTaskIds = firstTasks.map((row: any) => row.id);
+      const firstOracles = firstTasks.map((row: any) => row.primaryAcceptanceOracles[0]);
+      expect(firstTasks.length).toBeGreaterThan(3);
+      expect(firstOracles).not.toContain(hotPathWithoutExporterOracle);
+      const collectorExporterHotPathOracles = firstOracles.filter((oracle: string) =>
+        oracle.includes('hot paths')
+      );
+      expect(collectorExporterHotPathOracles).toEqual(
+        expect.arrayContaining([
+          'Given collector failure, when services continue, then hot paths continue under local safety state.',
+          'Given exporter failure, when services continue, then hot paths continue under local safety state.',
+          'Given collector failure, when services continue, then hot paths must not wait on exporter.',
+          'Given exporter failure, when services continue, then hot paths must not wait on exporter.',
+        ])
+      );
+      expect(collectorExporterHotPathOracles).toHaveLength(4);
+      expect(
+        firstConfirmation.mustExecutionDecompositionMatrix.find(
+          (row: any) => row.mustRef === 'MUST-001'
+        ).atomicTaskRefs
+      ).toEqual(firstTaskIds);
+      expect(firstConfirmation.mustToAtomicTaskMap['MUST-001']).toEqual(firstTaskIds);
+      expect(
+        firstConfirmation.aiTddContractExecutionManifestProjection.atomicImplementationTaskLineage
+          .mustToAtomicTaskMap['MUST-001']
+      ).toEqual(firstTaskIds);
+      const firstPacketMust = readJson(paths.packet).must_decomposition_packet.mustPackets.find(
+        (row: any) => row.mustRef === 'MUST-001'
+      );
+      expect(firstPacketMust.atomicityCompleteness).toEqual({
+        splitRule: 'one_task_per_independent_behavior_surface_oracle',
+        completenessVerdict: 'complete',
+        expectedTaskCount: firstTaskIds.length,
+        actualTaskCount: firstTaskIds.length,
+      });
+      expect(firstPacketMust.mustExecutionDecompositionMatrix[0].atomicTaskRefs).toEqual(
+        firstTaskIds
+      );
+      expect(firstConfirmation.traceRows[0].taskRefs).toEqual(firstTaskIds);
+      for (const field of [
+        'atomicTaskToTraceMap',
+        'atomicTaskToAcceptanceMap',
+        'atomicTaskToEvidenceMap',
+        'atomicTaskToTargetPathMap',
+        'atomicTaskToCommandMap',
+      ]) {
+        expect(Object.keys(firstConfirmation[field])).toEqual(firstTaskIds);
+        expect(
+          Object.keys(
+            firstConfirmation.aiTddContractExecutionManifestProjection
+              .atomicImplementationTaskLineage[field]
+          )
+        ).toEqual(firstTaskIds);
+      }
+      expect(firstConfirmation.atomicTaskToTargetPathMap['TASK-002']).toEqual([
+        'TARGET-MOD-002',
+        'TARGET-MOD-003',
+      ]);
+      const withoutRawLogsTask = firstTasks.find((row: any) =>
+        row.primaryAcceptanceOracles[0].includes('without reading raw logs')
+      );
+      expect(withoutRawLogsTask).toBeTruthy();
+      expect(firstConfirmation.atomicTaskToTargetPathMap[withoutRawLogsTask.id]).toEqual([
+        'TARGET-MOD-003',
+      ]);
+
+      const secondResult = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      const secondTasks = readInlineConfirmation(source).atomicImplementationTaskList.filter(
+        (row: any) => row.derivedFromMustRef === 'MUST-001'
+      );
+      const secondConfirmation = readInlineConfirmation(source);
+      const changedProjectionKeys = [
+        ...new Set([...Object.keys(firstConfirmation), ...Object.keys(secondConfirmation)]),
+      ]
+        .filter(
+          (key) =>
+            JSON.stringify(firstConfirmation[key]) !== JSON.stringify(secondConfirmation[key])
+        )
+        .sort();
+
+      expect({
+        changedProjectionKeys,
+        rawSourceStable: sha256Text(readFileSync(source, 'utf8')) === firstSourceHash,
+        sourceHashStable: secondResult.sourceDocumentHash === firstResult.sourceDocumentHash,
+        confirmationHashStable:
+          secondResult.implementationConfirmationHash ===
+          firstResult.implementationConfirmationHash,
+        packetHashStable: secondResult.packetHash === firstResult.packetHash,
+        requestHashStable: readJson(paths.request(1)).requestHash === firstRequestHash,
+        tasksStable: JSON.stringify(secondTasks) === JSON.stringify(firstTasks),
+        secondIssueCodes: secondResult.blockingIssues.map((issue: any) => issue.code),
+      }).toEqual({
+        changedProjectionKeys: [],
+        rawSourceStable: true,
+        sourceHashStable: true,
+        confirmationHashStable: true,
+        packetHashStable: true,
+        requestHashStable: true,
+        tasksStable: true,
+        secondIssueCodes: [],
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1979,7 +3406,9 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         criticalAuditorResponse: paths.response(1),
       });
 
-      const archiveArtifact = result.artifacts.find((artifact: string) => artifact.includes('/archive/'));
+      const archiveArtifact = result.artifacts.find((artifact: string) =>
+        artifact.includes('/archive/')
+      );
       expect(archiveArtifact).toBeTruthy();
       const archiveDir = path.join(root, archiveArtifact as string);
       const archiveManifest = readJson(path.join(archiveDir, 'archive-manifest.json'));
@@ -1998,6 +3427,95 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(restartedRequest.roundIndex).toBe(1);
       expect(restartedRequest.previousReceipts).toEqual([]);
       expect(result.consecutiveNoNewGapRounds).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resumes pending validated-gap source promotion before rebuilding the old-source dry-run', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-pending-promotion-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      const sourceBeforeGap = readFileSync(source, 'utf8');
+      const promotionReceiptBeforeGap = readFileSync(paths.promotionReceipt, 'utf8');
+      const requestBeforeGap = readFileSync(paths.request(1), 'utf8');
+      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
+      const responseBeforeGap = readFileSync(paths.response(1), 'utf8');
+
+      const completed = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+      const archiveArtifact = completed.artifacts.find((artifact: string) =>
+        artifact.includes('/archive/')
+      );
+      expect(archiveArtifact).toBeTruthy();
+      const archivedReceipt = readFileSync(
+        path.join(root, archiveArtifact as string, path.basename(paths.receipt(1))),
+        'utf8'
+      );
+      const repairDraftPath = path.join(paths.dir, 'authoring-repair-draft-source.md');
+      const sourceMutationDecisionPath = path.join(paths.dir, 'source-mutation-decision.json');
+      expect(existsSync(repairDraftPath)).toBe(true);
+      expect(readJson(sourceMutationDecisionPath)).toMatchObject({
+        finalDecision: 'allow_source_materialization',
+        sourceMutationPerformed: false,
+        sourceDocumentHashBefore: sha256Text(sourceBeforeGap),
+        sourceDocumentHashAfter: sha256Text(readFileSync(repairDraftPath, 'utf8')),
+      });
+
+      // Recreate the durable state left when execution stops after the allow decision
+      // and before the promotion helper replaces the authoritative source.
+      writeFileSync(source, sourceBeforeGap, 'utf8');
+      writeFileSync(paths.promotionReceipt, promotionReceiptBeforeGap, 'utf8');
+      writeFileSync(paths.request(1), requestBeforeGap, 'utf8');
+      writeFileSync(paths.response(1), responseBeforeGap, 'utf8');
+      writeFileSync(paths.receipt(1), archivedReceipt, 'utf8');
+      makeCheckpointReceiptsStale(paths);
+
+      const resumed = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(resumed, JSON.stringify(resumed.blockingIssues, null, 2)).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_round_required',
+        nextRequiredAction: 'write_critical_auditor_round_response',
+        consecutiveNoNewGapRounds: 0,
+      });
+      expect(readInlineConfirmation(source).must.map((row: any) => row.id)).toContain(
+        'MUST-REBUILT-001'
+      );
+      expect(readJson(paths.request(1))).toMatchObject({
+        roundIndex: 1,
+        sourceDocumentHash: resumed.sourceDocumentHash,
+        implementationConfirmationHash: resumed.implementationConfirmationHash,
+        packetHash: resumed.packetHash,
+        previousReceipts: [],
+      });
+      expect(resumed.blockingIssues.map((issue: any) => issue.code)).not.toContain(
+        'critical_auditor_response_gate_dry_run_hash_mismatch'
+      );
+      expect(existsSync(paths.response(1))).toBe(false);
+      expect(existsSync(paths.receipt(1))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -2179,7 +3697,9 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
   });
 
   it('refreshes current-source checkpoint receipts before stale promotion receipt refresh', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-checkpoint-receipt-refresh-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'authoring-repair-checkpoint-receipt-refresh-')
+    );
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
@@ -2300,7 +3820,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         ok: false,
         status: 'blocked',
         blockingStage: 'current_source_promotion_refresh_failed_before_audit',
-        nextRequiredAction: 'rerun_skill_local_current_source_promotion_or_fix_promotion_gate_blockers',
+        nextRequiredAction:
+          'rerun_skill_local_current_source_promotion_or_fix_promotion_gate_blockers',
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'authoring_temporary_executable_helper_present'
@@ -2370,6 +3891,134 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     }
   });
 
+  it('refreshes a published round request when the current gate dry-run binding changes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-stale-gate-request-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      const currentRequest = readJson(paths.request(1));
+      const staleRequest = structuredClone(currentRequest);
+      staleRequest.gateDryRun = {
+        ...staleRequest.gateDryRun,
+        gateDryRunHash: fixedHash('e'),
+        actionableBlockingIssueCount: 1,
+        actionableBlockingIssues: [
+          {
+            code: 'source_row_independently_invented',
+            message: 'A projection row still carries stale packet metadata.',
+            refs: ['failurePaths', 'FAIL-001'],
+          },
+        ],
+        reconciliation: {
+          ...staleRequest.gateDryRun.reconciliation,
+          verdict: 'fail',
+          issueCount: 1,
+        },
+      };
+      staleRequest.requestHash = sha256Json({ ...staleRequest, requestHash: null });
+      writeFileSync(paths.request(1), `${JSON.stringify(staleRequest, null, 2)}\n`, 'utf8');
+      writeNoNewGapResponse(paths.request(1), paths.response(1));
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_response_invalid');
+      expect(result.nextRequiredAction).toBe('write_current_critical_auditor_round_response');
+      const refreshedRequest = readJson(paths.request(1));
+      expect(refreshedRequest.requestHash).not.toBe(staleRequest.requestHash);
+      expect(refreshedRequest.gateDryRun.gateDryRunHash).not.toBe(fixedHash('e'));
+      expect(refreshedRequest.gateDryRun.actionableBlockingIssueCount).toBe(0);
+      expect(refreshedRequest.gateDryRun.reconciliation.issueCount).toBe(0);
+      expect(result.artifacts).toContain(rootRelative(root, paths.request(1)));
+      expect(existsSync(paths.receipt(1))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('derives projection backrefs through explicit negative failure ownership and command targets', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-negative-owner-chain-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeRichSource(root, recordId);
+      let sourceText = readFileSync(source, 'utf8')
+        .replace(
+          '      linkedNegIds: ["NEG-001"]\n      linkedEvidenceIds: ["EVD-001"]',
+          [
+            '      linkedNegIds: ["NEG-001"]',
+            '      linkedEvidenceIds: ["EVD-001"]',
+            '      ownerMustRefs: ["MUST-001"]',
+          ].join('\n')
+        )
+        .replace(
+          '      covers: ["MUST-001", "NEG-001"]\n      taskRefs: ["TASK-001"]',
+          '      covers: ["NEG-001"]\n      taskRefs: ["TASK-001"]'
+        )
+        .replace(
+          /(    - id: TRACE-001\n[\s\S]*?      status: PENDING\n)      derivedFromMustRef: MUST-001\n/u,
+          '$1'
+        )
+        .replace(
+          /(    - id: TARGET-MOD-002\n[\s\S]*?      ownerModel: acceptance_tests\n)[\s\S]*?(      derivedFromMustRef: MUST-001\n)/u,
+          [
+            '$1',
+            '      requirementRefs: []',
+            '      traceRefs: []',
+            '      evidenceRefs: []',
+            '      artifactRefs: []',
+          ].join('\n') + '\n'
+        )
+        .replace(
+          '      targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"]',
+          '      targetFiles: ["tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts"]'
+        )
+        .replace(
+          /(    - id: CMD-001\n[\s\S]*?      evidenceRefs: \["EVD-001"\]\n)      derivedFromMustRef: MUST-001\n/u,
+          '$1'
+        );
+      writeFileSync(source, sourceText, 'utf8');
+      writePromotionReceipt(root, source, recordId);
+      initGitTracking(root, [source]);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      const confirmation = readInlineConfirmation(source);
+      expect(confirmation.traceRows.find((row: any) => row.id === 'TRACE-001')).toMatchObject({
+        derivedFromMustRef: 'MUST-001',
+      });
+      expect(confirmation.requiredCommands.find((row: any) => row.id === 'CMD-001')).toMatchObject({
+        derivedFromMustRef: 'MUST-001',
+      });
+      expect(
+        confirmation.targetModificationPaths.find((row: any) => row.id === 'TARGET-MOD-002')
+      ).toMatchObject({
+        derivedFromMustRef: 'MUST-001',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects no-new-gap when gate dry-run exposes actionable blockers', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-gate-blocker-'));
     try {
@@ -2379,7 +4028,19 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const corrupted = original
         .replace(/^ {6,8}derivedFromMustRef: MUST-001\n/gm, '')
         .replace(/^ {6,8}derivedFromPacketHash: sha256:a{64}\n/gm, '')
-        .replace(/^ {6,8}projectionStatus: synchronized\n/gm, '');
+        .replace(/^ {6,8}projectionStatus: synchronized\n/gm, '')
+        .replace(
+          '  failurePaths:\n',
+          [
+            '  failurePaths:',
+            '    - id: FAIL-ORPHAN-001',
+            '      title: "Orphan failure path"',
+            '      trigger: "No requirement or trace ownership exists."',
+            '      expectedBehavior: "Remain blocked until ownership is explicit."',
+            '      forbiddenBehavior: "Do not infer ownership without an existing relationship."',
+            '      blocksCompletionWhenViolated: true',
+          ].join('\n') + '\n'
+        );
       writeFileSync(source, corrupted, 'utf8');
       writePromotionReceipt(root, source, recordId);
       const paths = authoringPaths(root, recordId);
@@ -2401,7 +4062,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
-      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+      const resultCodes = result.blockingIssues.map((issue: any) => issue.code);
+      expect(resultCodes, JSON.stringify(resultCodes)).toContain(
         'critical_auditor_no_new_gap_forbidden_by_gate_dry_run_blockers'
       );
       expect(existsSync(paths.receipt(1))).toBe(false);

@@ -55,6 +55,25 @@ function stableStringify(value) {
     .join(',')}}`;
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const bookkeepingFields = new Set([
     'status',
@@ -67,7 +86,9 @@ function semanticConfirmationForHash(confirmation) {
   ]);
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
-    if (!bookkeepingFields.has(key)) semantic[key] = value;
+    if (!bookkeepingFields.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
   }
   normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;

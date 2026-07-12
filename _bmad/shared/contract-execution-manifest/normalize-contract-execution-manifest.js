@@ -18,6 +18,30 @@ function strings(value) {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
 
+function isTestFileRef(value) {
+  const normalized = text(value).replace(/\\/gu, '/').toLowerCase();
+  const fileName = normalized.split('/').pop() ?? '';
+  if (!/\.(?:py|tsx?|jsx?|mjs|cjs|java|kt|go|rs|cs|rb|php|feature)$/u.test(fileName)) {
+    return false;
+  }
+  return (
+    /(?:^|\/)(?:tests?|__tests__)(?:\/|$)/u.test(normalized) ||
+    /(?:^|[._-])(?:test|spec)(?:[._-]|$)/u.test(fileName)
+  );
+}
+
+function extractCommandFileRefs(command) {
+  const refs = new Set();
+  const tokens = text(command).replace(/\r?\n/gu, ' ').match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
+  for (const token of tokens) {
+    const ref = token.replace(/^['"]|['"]$/gu, '');
+    if (/(?:^|[\\/])[^\\/]+\.(?:py|tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref)) {
+      refs.add(ref.replace(/\\/gu, '/'));
+    }
+  }
+  return [...refs];
+}
+
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
   if (!value || typeof value !== 'object') return JSON.stringify(value);
@@ -31,6 +55,24 @@ function equivalent(left, right) {
   return stableStringify(left) === stableStringify(right);
 }
 
+function equivalentCommandTargetAliases(commandTargets, commandTargetCollection) {
+  if (equivalent(commandTargets, commandTargetCollection)) return true;
+  if (!Array.isArray(commandTargets) || !isObject(commandTargetCollection)) return false;
+  if (
+    commandTargets.length === 0 ||
+    !commandTargets.every((value) => typeof value === 'string' && text(value))
+  ) {
+    return false;
+  }
+  const canonicalRefs = strings(
+    commandTargetCollection.requiredCommandRefs ?? commandTargetCollection.commandRefs
+  );
+  if (canonicalRefs.length === 0) return false;
+  const legacySet = [...new Set(commandTargets.map(text))].sort();
+  const canonicalSet = [...new Set(canonicalRefs)].sort();
+  return equivalent(legacySet, canonicalSet);
+}
+
 function normalizeRequiredCommands(manifest, confirmation) {
   const existing = objects(manifest.requiredCommands);
   if (existing.length > 0) return existing;
@@ -40,13 +82,14 @@ function normalizeRequiredCommands(manifest, confirmation) {
     role: text(row.role) || text(row.commandRole) || text(row.gate),
     expectedMode: text(row.expectedMode) || text(row.expectedExitCodeAfterImplementation),
     files: [
+      ...extractCommandFileRefs(row.command),
       text(row.file),
       text(row.path),
       text(row.testFile),
       text(row.testPath),
       ...strings(row.files),
       ...strings(row.testFiles),
-      ...strings(row.targetFiles),
+      ...strings(row.targetFiles).filter(isTestFileRef),
     ].filter(Boolean),
     traceRefs: strings(row.traceRows).concat(strings(row.traceRefs)),
     evidenceRefs: strings(row.evidenceRefs),
@@ -59,7 +102,7 @@ function normalizeCommandTargets(manifest, audit) {
   if (commandTargets !== undefined) audit.aliasesUsed.push('commandTargets');
   if (commandTargetCollection !== undefined) audit.aliasesUsed.push('commandTargetCollection');
   if (commandTargets !== undefined && commandTargetCollection !== undefined) {
-    if (!equivalent(commandTargets, commandTargetCollection)) {
+    if (!equivalentCommandTargetAliases(commandTargets, commandTargetCollection)) {
       audit.blockingReasons.push(
         'MANIFEST_ALIAS_CONFLICT:commandTargets:commandTargetCollection'
       );

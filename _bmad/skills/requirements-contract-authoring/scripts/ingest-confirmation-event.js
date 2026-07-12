@@ -54,10 +54,31 @@ function stableStringify(value) {
     .join(',')}}`;
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
-    if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
   }
   normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
@@ -298,6 +319,13 @@ function confirmationTextFromArgs(args) {
   return String(args.confirmationText ?? '');
 }
 
+function replaceImplementationConfirmationBlock(extracted, replacementLines) {
+  return extracted.lines
+    .slice(0, extracted.start)
+    .concat(replacementLines, extracted.lines.slice(extracted.end))
+    .join('\n');
+}
+
 function updateSourceDocument(sourceText, extracted, update) {
   const confirmationPhrase =
     typeof update.confirmInstruction === 'string' && update.confirmInstruction.trim()
@@ -329,9 +357,7 @@ function updateSourceDocument(sourceText, extracted, update) {
   for (let i = 0; i < trailingBlankLines; i += 1) {
     replacementLines.push('');
   }
-  const lines = [...extracted.lines];
-  lines.splice(extracted.start, extracted.end - extracted.start, ...replacementLines);
-  return lines.join('\n');
+  return replaceImplementationConfirmationBlock(extracted, replacementLines);
 }
 
 function updateSourceBookkeeping(sourceText, extracted, update) {
@@ -362,9 +388,7 @@ function updateSourceBookkeeping(sourceText, extracted, update) {
   for (let i = 0; i < trailingBlankLines; i += 1) {
     replacementLines.push('');
   }
-  const lines = [...extracted.lines];
-  lines.splice(extracted.start, extracted.end - extracted.start, ...replacementLines);
-  return lines.join('\n');
+  return replaceImplementationConfirmationBlock(extracted, replacementLines);
 }
 
 function controlEventLogPathForRecord(recordPath) {

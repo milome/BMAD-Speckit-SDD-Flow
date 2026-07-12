@@ -779,6 +779,10 @@ Rules:
 - Do not treat the user's normal conversation language as an implicit language selection.
 - Preserve the selected language for this source document's confirmation flow.
 - If the implementation source document is later changed semantically and confirmation must be regenerated, reuse the previously selected language unless the user asks to change it.
+- For `zh-CN` or `bilingual`, every renderer-checked Chinese projection must be a semantically equivalent translation authored by the main-session authoring agent. A fixed Chinese prefix wrapped around the source text is not a translation.
+- If genuine Chinese projections are missing, fail closed before Critical Auditor execution, hashing, source promotion, or rendering. Do not fall back to English and do not synthesize CJK marker text.
+- `author-confirmation-ready-source` may return `localization_translation_required` and write `authoring/localization-request.json`. The authoring agent must translate every request entry, preserve its `sourceTextHash`, attest semantic equivalence, and write a `requirements-contract-localization-response/v1` response.
+- Resume the same transaction with `--localization-response <response.json>`. A stale, partial, non-CJK, source-identical, or synthetic-wrapper response must remain blocked.
 
 ### 6. Render The HTML Confirmation Page
 
@@ -805,6 +809,24 @@ Required outputs:
 - `confirmation.html`
 - `confirmation-summary.json`
 - `confirmation-render-report.json`
+
+When HTML rendering runs after `authoring-repair`, transaction recovery, or another
+post-promotion repair path, the main agent must register the current render through the
+controlled orchestration action before presenting the page:
+
+```bash
+main-agent-orchestration --action register-pre-confirmation-render \
+  --source <source-document.md> \
+  --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json \
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
+  --record-id <recordId> \
+  --requirement-set-id <requirementSetId>
+```
+
+This action validates current semantic hashes, confirmability, pre-render drilldown evidence,
+and the HTML file hash before updating the draft RequirementRecord. It must not record user
+confirmation, append `confirmation_recorded`, or advance beyond `requirement_confirmation`.
+Never repair this mismatch by directly editing `requirement-record.json`.
 
 The renderer must follow [html-confirmation-renderer-spec.md](references/html-confirmation-renderer-spec.md). It is a read-only renderer and must not modify the source document, set `status: user_confirmed`, write gate decisions, or create control events.
 
@@ -834,6 +856,7 @@ node <skill-dir>/scripts/prepare-architecture-confirmation-page.ts \
   --consumer-impact-scan <json-array-or-file> \
   --governance-impact-scan <json-array-or-file> \
   --full-architecture-trigger-matrix <json-array-or-file> \
+  --localization <authoring-agent-zh-CN-localization.json> \
   --out _bmad-output/runtime/requirement-records/<recordId>/architecture/architecture-confirmation-<runId>.html \
   --language zh-CN \
   --json
@@ -845,6 +868,15 @@ The prepare entry is part of this skill. It must automatically:
 - generate requirement-scoped `architecture-confirmation-<runId>.json`,
 - render the user-facing architecture confirmation HTML,
 - write a prepare report with the internal step results and the user-facing confirmation instruction.
+
+For `zh-CN` or `bilingual`, the main-session authoring agent must create the localization
+bundle before prepare. The bundle must contain semantic Chinese projections for every
+consumer impact row, governance impact row, trigger row, risk statement, rollback plan,
+and every required business/governance diagram title, description, and Mermaid label.
+The producer persists these projections as `*Zh` fields. The renderer only selects the
+requested projection and must fail closed when any required Chinese projection is
+missing or non-CJK; it must not translate business content, synthesize fixed prefixes,
+or fall back to English.
 
 The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat. Do not expose stale check or JSON producer commands as manual user steps.
 
@@ -864,7 +896,7 @@ The architecture renderer is a read-only projection over `architecture-confirmat
 
 The page must show the requirement-scoped decision, consumer impact scan, governance impact scan, full architecture trigger matrix, target paths, hash recipe, stale input hashes, risk statement, rollback plan, evidence refs, exact confirmation phrase, and artifact metadata.
 
-If the prepare entry, producer, or architecture renderer reports missing core fields, hash mismatch, recipe mismatch, missing impact scans, missing trigger matrix, or missing target paths, stop before Implementation Readiness. Do not use an older architecture HTML projection or a manually assembled fallback page.
+If the prepare entry, producer, or architecture renderer reports missing core fields, hash mismatch, recipe mismatch, missing impact scans, missing trigger matrix, missing target paths, or missing localization projections, stop before Implementation Readiness. Do not use an older architecture HTML projection or a manually assembled fallback page.
 
 ### 7. Confirm In Chat With Hashes
 

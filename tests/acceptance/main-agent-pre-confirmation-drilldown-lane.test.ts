@@ -38,14 +38,57 @@ function checkedProjectionQualityRuleCodesForRequest(input: any): string[] {
 
 function writeDraftSource(root: string, name = 'source.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
+  const sourcePath = `docs/requirements/${name}`;
+  const command = `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${name}`;
   mkdirSync(path.dirname(source), { recursive: true });
   writeFileSync(
     source,
     [
       '# Draft Requirement',
       '',
-      '- MUST: 主 Agent 的需求确认 lane 只能在原子拆解、投影同步、审计收敛和预渲染门禁通过后渲染确认页。',
-      'The lane must not claim delivery readiness before controlled confirmation ingest.',
+      '## Functional Requirements',
+      '',
+      '| ID | Requirement | Acceptance link |',
+      '| --- | --- | --- |',
+      '| FR-001 | 主 Agent 的需求确认 lane 只能在原子拆解、投影同步、审计收敛和预渲染门禁通过后渲染确认页。 | ACC-001 |',
+      '',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | controlled confirmation ingest 前不得宣称 delivery readiness。 | 未完成受控确认时保持非交付就绪。 | 确认流程被绕过或错误宣称交付完成。 | FAIL-001 | ACC-001 CMD-001 |',
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | 原子拆解、投影同步、审计收敛或预渲染门禁任一未通过。 | 阻止确认页进入可确认状态，并保持 requirement_confirmation lane。 | NEG-001 | ACC-001 E2E-001 | MUST-FR-001 |',
+      '',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      `| ACC-001 | Authoring lane gate closure | MUST-FR-001 NEG-001 | ${command} | 所有前置门禁通过后才允许渲染，缺任一门禁时保持阻塞。 | CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. |`,
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| CMD-001 | delivery-evidence | MUST-FR-001 NEG-001 | ${command} | Exit code 0. | 所有前置门禁通过后才允许渲染，未受控确认前不得宣称交付就绪。 | ACC-001 E2E-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | ${sourcePath} |`,
+      `| E2E-001 | e2e | MUST-FR-001 NEG-001 | ${command} | Exit code 0. | Authoring lane preserves fail-closed confirmation behavior. | ACC-001 CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | ${sourcePath} |`,
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 所有前置门禁通过后才允许渲染。 | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+      '| TRACE-002 | NEG-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 未受控确认前保持非交付就绪。 | NEG-001 closes through ACC-001 negative control. | PATH-001 owns remediation. |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| PATH-001 | \`${sourcePath}\` | Requirements authoring owner | Preserve the fail-closed authoring lane contract. | MUST-FR-001 NEG-001 | ACC-001 passes. | ACC-001 CMD-001 TRACE-001 TRACE-002 | Requirements authoring owner owns remediation. |`,
       '',
     ].join('\n'),
     'utf8'
@@ -201,6 +244,8 @@ function writeSourceWithLegacyInlineMustAndFrNfrTables(
 
 function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): string {
   const source = path.join(root, 'docs', 'requirements', name);
+  const sourcePath = `docs/requirements/${name}`;
+  const command = `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${name}`;
   mkdirSync(path.dirname(source), { recursive: true });
   writeFileSync(
     source,
@@ -211,17 +256,122 @@ function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): 
       '',
       '## Functional Requirements',
       '',
-      '### FR-001 Source text preservation',
+      '| ID | Requirement | Acceptance link |',
+      '| --- | --- | --- |',
+      '| FR-001 | Preserve the user-supplied requirement sentence as a first-class MUST row before rendering. | ACC-001 |',
+      '| FR-002 | Split every authored MUST row into packet-backed atomic tasks before materialization. | ACC-002 |',
+      '| FR-003 | Pass Critical Auditor only after the auditor can see all source-derived MUST references. | ACC-003 |',
       '',
-      'Preserve the user-supplied requirement sentence as a first-class MUST row before rendering.',
+      '## Negative Requirements And Not Done Conditions',
       '',
-      '### FR-002 Atomic task decomposition',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | A shared or missing projection does not count as source-driven closure. | Every source MUST keeps an independent packet, trace, acceptance, command, and target mapping. | Any source MUST is absent or only covered by a generic shared row. | FAIL-001 | ACC-001 ACC-002 ACC-003 CMD-001 |',
       '',
-      'Split every authored MUST row into packet-backed atomic tasks before materialization.',
+      '## Failure Matrix',
       '',
-      '### FR-003 Critical Auditor visibility',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | A source MUST is omitted, over-compressed, or hidden from Critical Auditor. | Block source promotion and retain the staging draft until independent projection closure is restored. | NEG-001 | ACC-001 ACC-002 ACC-003 E2E-001 | MUST-FR-001 MUST-FR-002 MUST-FR-003 |',
       '',
-      'Pass Critical Auditor only after the auditor can see all source-derived MUST references.',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      `| ACC-001 | Source sentence preservation | MUST-FR-001 | ${command} | The source sentence remains a first-class MUST row. | CMD-001 TRACE-001 | PATH-001 owns remediation. |`,
+      `| ACC-002 | Atomic packet decomposition | MUST-FR-002 | ${command} | The MUST has packet-backed atomic tasks before materialization. | CMD-001 TRACE-002 | PATH-001 owns remediation. |`,
+      `| ACC-003 | Critical Auditor visibility | MUST-FR-003 NEG-001 | ${command} | Critical Auditor receives all current source-derived MUST and projection refs. | CMD-001 TRACE-003 TRACE-004 | PATH-001 owns remediation. |`,
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| CMD-001 | delivery-evidence | MUST-FR-001 MUST-FR-002 MUST-FR-003 NEG-001 | ${command} | Exit code 0. | Each source MUST closes through its own ACC and TRACE row. | ACC-001 ACC-002 ACC-003 E2E-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | PATH-001 owns remediation. | ${sourcePath} |`,
+      `| E2E-001 | e2e | MUST-FR-001 MUST-FR-002 MUST-FR-003 NEG-001 | ${command} | Exit code 0. | Source authoring preserves independent closure through promotion gating. | ACC-001 ACC-002 ACC-003 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | PATH-001 owns remediation. | ${sourcePath} |`,
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | The source sentence remains a first-class MUST row. | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+      '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Atomic tasks exist before materialization. | MUST-FR-002 closes through ACC-002 and TRACE-002. | PATH-001 owns remediation. |',
+      '| TRACE-003 | MUST-FR-003 | ACC-003 | ACC-003 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Critical Auditor sees all source-derived refs. | MUST-FR-003 closes through ACC-003 and TRACE-003. | PATH-001 owns remediation. |',
+      '| TRACE-004 | NEG-001 | ACC-003 | ACC-003 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Missing or shared-only projection remains blocking. | NEG-001 closes through ACC-003 negative control. | PATH-001 owns remediation. |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| PATH-001 | \`${sourcePath}\` | Source authoring owner | Preserve source MUST, packet, trace, acceptance, and auditor visibility. | MUST-FR-001 MUST-FR-002 MUST-FR-003 NEG-001 | ACC-001, ACC-002, and ACC-003 pass independently. | ACC-001 ACC-002 ACC-003 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | Source authoring owner owns rollback and remediation. |`,
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
+function writeSourceWithBusinessFailureMatrix(
+  root: string,
+  name = 'source-with-business-failure-matrix.md'
+): string {
+  const source = path.join(root, 'docs', 'requirements', name);
+  mkdirSync(path.dirname(source), { recursive: true });
+  writeFileSync(
+    source,
+    [
+      '# Consumer Market Data Requirement',
+      '',
+      '## Functional Requirements',
+      '',
+      '| FR ID | Requirement | Source rationale | Acceptance link |',
+      '| --- | --- | --- | --- |',
+      '| FR-001 | Consumer attaches to a compatible market-data manifest before treating quotes as live. | Avoid unsafe stale or incompatible data use. | ACC-001 |',
+      '| FR-002 | Trigger evaluation fails closed on continuity timeout or gap, applies an idempotent paused state before emitting an order intent, and resumes only after recovery evidence plus an acceptance assertion pass. | Prevent unsafe automatic trading. | ACC-002 |',
+      '',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | Incompatible market data must not be treated as live. | The consumer remains non-live and emits no order intent. | Schema mismatch can still reach trigger evaluation. | FAIL-001 | ACC-003 CMD-001 |',
+      '| NEG-002 | A detected stream gap must not be ignored. | Trigger evaluation pauses before another order intent. | A stream gap can produce an automatic order intent. | FAIL-002 | ACC-004 CMD-001 |',
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence |',
+      '| --- | --- | --- | --- | --- |',
+      '| FAIL-001 | DataBus schema mismatch; impact: consumer attach is unsafe. | Consumer rejects live attach with schema_mismatch and remains in incompatible non-live state. | NEG-001 | ACC-003 |',
+      '| FAIL-002 | Ordered tick sequence gap; impact: trigger correctness is unsafe. | TriggerService pauses automatic evaluation before any new OrderIntent and records tick_gap. | NEG-002 | ACC-004 |',
+      '',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| ACC-001 | Compatible manifest attach | MUST-FR-001 | npx vitest run tests/market-data-consumer.test.ts | Compatible data attaches before quotes become live. | CMD-001 TRACE-001 | PATH-001 owns remediation. |',
+      '| ACC-002 | Gap-safe trigger evaluation | MUST-FR-002 | npx vitest run tests/market-data-consumer.test.ts | Timeout or gap pauses evaluation before any order intent and resumes only after recovery proof. | CMD-001 TRACE-002 | PATH-001 owns remediation. |',
+      '| ACC-003 | Incompatible schema rejection | NEG-001 | npx vitest run tests/market-data-consumer.test.ts | Schema mismatch remains non-live and emits no order intent. | CMD-001 TRACE-003 | PATH-001 owns remediation. |',
+      '| ACC-004 | Tick gap rejection | NEG-002 | npx vitest run tests/market-data-consumer.test.ts | Tick gap pauses automatic evaluation before a new order intent. | CMD-001 TRACE-004 | PATH-001 owns remediation. |',
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Compatible data attaches before quotes become live. | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+      '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Timeout or gap pauses evaluation before order intent and resumes only after recovery proof. | MUST-FR-002 closes through ACC-002 and TRACE-002. | PATH-001 owns remediation. |',
+      '| TRACE-003 | NEG-001 | ACC-003 | ACC-003 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Schema mismatch remains non-live and emits no order intent. | NEG-001 closes through ACC-003 negative control. | PATH-001 owns remediation. |',
+      '| TRACE-004 | NEG-002 | ACC-004 | ACC-004 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Tick gap pauses automatic evaluation before a new order intent. | NEG-002 closes through ACC-004 negative control. | PATH-001 owns remediation. |',
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| CMD-001 | delivery-evidence | MUST-FR-001 MUST-FR-002 NEG-001 NEG-002 | npx vitest run tests/market-data-consumer.test.ts | Exit code 0. | Each requirement closes through its independent ACC and TRACE row. | ACC-001 ACC-002 ACC-003 ACC-004 E2E-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | PATH-001 owns remediation. | tests/market-data-consumer.test.ts src/market-data-consumer.ts |',
+      '| E2E-001 | e2e | MUST-FR-001 MUST-FR-002 NEG-001 NEG-002 | npx vitest run tests/market-data-consumer.test.ts | Exit code 0. | Consumer attach, gap handling, and negative controls remain fail closed. | ACC-001 ACC-002 ACC-003 ACC-004 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | PATH-001 owns remediation. | tests/market-data-consumer.test.ts src/market-data-consumer.ts |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| PATH-001 | `src/market-data-consumer.ts` | Market data consumer owner | Implement compatible attach and fail-closed gap handling. | MUST-FR-001 MUST-FR-002 NEG-001 NEG-002 | ACC-001 through ACC-004 pass independently. | ACC-001 ACC-002 ACC-003 ACC-004 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | Market data consumer owner owns rollback and remediation. |',
       '',
     ].join('\n'),
     'utf8'
@@ -369,7 +519,10 @@ function sha256Json(value: unknown): string {
   return sha256Text(stableStringify(value));
 }
 
-function authorityForSource(root: string, source: string): {
+function authorityForSource(
+  root: string,
+  source: string
+): {
   targetPath: string;
   requiredCommand: string;
 } {
@@ -395,6 +548,28 @@ function writeValidationAuthorityTarget(root: string): {
   return {
     targetPath,
     requiredCommand: `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${targetPath}`,
+  };
+}
+
+function writeConsumerMarketDataAuthorityTarget(root: string): {
+  targetPath: string;
+  requiredCommand: string;
+} {
+  const targetPath = 'src/market-data-consumer.ts';
+  const testPath = 'tests/market-data-consumer.test.ts';
+  const absoluteTargetPath = path.join(root, targetPath);
+  const absoluteTestPath = path.join(root, testPath);
+  mkdirSync(path.dirname(absoluteTargetPath), { recursive: true });
+  mkdirSync(path.dirname(absoluteTestPath), { recursive: true });
+  writeFileSync(absoluteTargetPath, 'export const marketDataConsumer = true;\n', 'utf8');
+  writeFileSync(
+    absoluteTestPath,
+    "import { marketDataConsumer } from '../src/market-data-consumer';\nvoid marketDataConsumer;\n",
+    'utf8'
+  );
+  return {
+    targetPath,
+    requiredCommand: `npx vitest run ${testPath}`,
   };
 }
 
@@ -549,17 +724,15 @@ function expectArtifactContract(file: string, recordId: string): void {
     : null;
   const inputRefs = Array.isArray(artifact.inputRefs)
     ? artifact.inputRefs
-    : checkpointReceiptRefs && checkpointReceiptRefs.length === artifact.resumeLedger.checkpointReceiptRefs.length
+    : checkpointReceiptRefs &&
+        checkpointReceiptRefs.length === artifact.resumeLedger.checkpointReceiptRefs.length
       ? checkpointReceiptRefs
       : null;
   expect(Array.isArray(inputRefs), `${file} inputRefs`).toBe(true);
   expect(inputRefs?.length ?? 0, `${file} inputRefs length`).toBeGreaterThan(0);
 }
 
-function expectCheckpointAutoPromoted(
-  result: any,
-  paths: ReturnType<typeof artifacts>
-): void {
+function expectCheckpointAutoPromoted(result: any, paths: ReturnType<typeof artifacts>): void {
   expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
     'checkpoint_required_before_source_materialization'
   );
@@ -651,6 +824,52 @@ function artifacts(root: string, recordId: string, requirementSetId = recordId) 
   };
 }
 
+function runWithAuthoringLocalization(
+  root: string,
+  options: Parameters<typeof runMainAgentPreConfirmationDrilldown>[1]
+) {
+  const first = runMainAgentPreConfirmationDrilldown(root, options);
+  if (first.substate !== 'localization_translation_required') {
+    return first;
+  }
+  const requestPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    first.recordId,
+    'authoring',
+    'localization-request.json'
+  );
+  const request = readJson(requestPath);
+  const responsePath = path.join(path.dirname(requestPath), 'localization-response.test.json');
+  writeFileSync(
+    responsePath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'requirements-contract-localization-response/v1',
+        requestHash: request.requestHash,
+        sourceDocumentHash: request.sourceDocumentHash,
+        confirmationLanguage: request.confirmationLanguage,
+        providerMode: 'main_session_authoring_agent',
+        semanticEquivalenceAttested: true,
+        translations: request.entries.map((entry: any) => ({
+          key: entry.key,
+          sourceTextHash: entry.sourceTextHash,
+          translatedText: `${entry.rowId} 的${entry.field}中文语义译文`,
+        })),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  return runMainAgentPreConfirmationDrilldown(root, {
+    ...options,
+    localizationResponseFile: responsePath,
+  });
+}
+
 function cleanCriticalAuditorRound(input: any) {
   const { roundIndex, gateDryRun, packetProjectionSummary } = input;
   return {
@@ -710,7 +929,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const source = writeDraftSource(root);
       const beforeSourceText = readFileSync(source, 'utf8');
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runWithAuthoringLocalization(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-E2E',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-E2E',
@@ -733,7 +952,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         threeConsecutiveNoNewValidGapRoundsRequired: true,
         mustDecompositionPacketSynchronizedBeforeMaterialization: true,
         packetSourceReconciliationPassesBidirectionally: true,
-        preRenderGateBlocksMissingCoreSurfaces: false,
+        preRenderGateBlocksMissingCoreSurfaces: true,
         rendererShowsFullDrilldownInteraction: true,
       });
 
@@ -811,7 +1030,13 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(packet.lifecycle.singlePassBypassPrevented).toBe(true);
       expect(packet.lifecycle.materializedAfterStatus).toBe('synchronized');
       expect(packet.consecutiveNoNewValidGapRounds).toBe(3);
-      expect(packet.mustPackets[0].mustAtomicTasks.length).toBeGreaterThanOrEqual(2);
+      expect(packet.mustPackets[0].mustAtomicTasks.length).toBeGreaterThanOrEqual(1);
+      expect(packet.mustPackets[0].atomicityCompleteness.actualTaskCount).toBe(
+        packet.mustPackets[0].mustAtomicTasks.length
+      );
+      expect(packet.mustPackets[0].atomicityCompleteness.expectedTaskCount).toBe(
+        packet.mustPackets[0].mustAtomicTasks.length
+      );
       expect(mustGate.verdict).toBe('PASS');
       expect(mustGate.confirmability).toBe('confirmable');
       expect(mustGate.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
@@ -822,12 +1047,94 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
+  it('registers a current confirmation render without recording user confirmation', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-render-registration-')
+    );
+    try {
+      const recordId = 'REQ-PRE-CONFIRMATION-RENDER-REGISTRATION';
+      const requirementSetId = `${recordId}-SET`;
+      const source = writeDraftSource(root);
+      const result = runWithAuthoringLocalization(root, {
+        source,
+        recordId,
+        requirementSetId,
+        confirmationLanguage: 'zh-CN',
+        ...authorityForSource(root, source),
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+      const paths = artifacts(root, recordId, requirementSetId);
+      const recordPath = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        recordId,
+        'requirement-record.json'
+      );
+      const renderReport = readJson(paths.renderReport);
+      const staleRecord = readJson(recordPath);
+      staleRecord.sourceDocumentHash = `sha256:${'1'.repeat(64)}`;
+      staleRecord.implementationConfirmationHash = `sha256:${'2'.repeat(64)}`;
+      staleRecord.confirmationPageHash = `sha256:${'3'.repeat(64)}`;
+      staleRecord.preConfirmationDrilldownLane.substate = 'blocked_by_render_gate';
+      writeFileSync(recordPath, `${JSON.stringify(staleRecord, null, 2)}\n`, 'utf8');
+
+      expect(result.substate).toBe('user_confirmable');
+      const captured = captureMainAgentCli([
+        '--cwd',
+        root,
+        '--action',
+        'register-pre-confirmation-render',
+        '--source',
+        source,
+        '--render-report',
+        paths.renderReport,
+        '--requirement-record',
+        recordPath,
+        '--record-id',
+        recordId,
+        '--requirement-set-id',
+        requirementSetId,
+      ]);
+
+      expect(captured.exitCode, captured.stderr).toBe(0);
+      const payload = JSON.parse(captured.stdout);
+      expect(payload).toMatchObject({
+        ok: true,
+        action: 'register-pre-confirmation-render',
+        substate: 'user_confirmable',
+        sourceDocumentHash: renderReport.sourceDocumentHash,
+        implementationConfirmationHash: renderReport.implementationConfirmationHash,
+        confirmationPageHash: renderReport.confirmationPageHash,
+      });
+      const registeredRecord = readJson(recordPath);
+      expect(registeredRecord).toMatchObject({
+        status: 'draft',
+        lastEventType: 'pre_confirmation_drilldown_user_confirmable',
+        sourceDocumentHash: renderReport.sourceDocumentHash,
+        implementationConfirmationHash: renderReport.implementationConfirmationHash,
+        confirmationPageHash: renderReport.confirmationPageHash,
+        preConfirmationDrilldownLane: {
+          currentMentalModel: 'requirement_confirmation',
+          substate: 'user_confirmable',
+          controlledIngestRequiredBeforeProgression: true,
+        },
+      });
+      expect(registeredRecord.confirmationHistory ?? []).not.toContainEqual(
+        expect.objectContaining({ eventType: 'confirmation_recorded' })
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects single_pass because it would skip the atomic decomposition loop', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-single-pass-'));
     try {
       const source = writeDraftSource(root);
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runWithAuthoringLocalization(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-SINGLE-PASS',
         ...authorityForSource(root, source),
@@ -849,7 +1156,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     try {
       const source = writeDraftSourceWithoutMust(root);
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runWithAuthoringLocalization(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-MISSING-MUST',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-MISSING-MUST',
@@ -906,7 +1213,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
   });
 
   it('materializes controlled MUST candidates from plain source before draft confirmation', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-plain-candidate-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-plain-candidate-')
+    );
     try {
       const source = writePlainSourceWithControlledCandidate(root);
 
@@ -1102,12 +1411,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         implementationConfirmation: null,
         decision: 'line_based_must_id_forbidden',
       });
-      expect(JSON.stringify(draftProjection)).not.toMatch(
-        /MUST-[A-Z0-9-]+-L\d+-\d+[^"]*"text"/u
-      );
-      expect(readFileSync(source, 'utf8')).toContain(
-        'MUST-REQ-DATASERVICE-GDS-TRIG-L104-002'
-      );
+      expect(JSON.stringify(draftProjection)).not.toMatch(/MUST-[A-Z0-9-]+-L\d+-\d+[^"]*"text"/u);
+      expect(readFileSync(source, 'utf8')).toContain('MUST-REQ-DATASERVICE-GDS-TRIG-L104-002');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1160,7 +1465,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         'MUST-NFR-001',
         'MUST-NFR-002',
       ]);
-      expect(JSON.stringify(draftProjection)).not.toContain('MUST-REQ-DATASERVICE-GDS-TRIG-L104-002');
+      expect(JSON.stringify(draftProjection)).not.toContain(
+        'MUST-REQ-DATASERVICE-GDS-TRIG-L104-002'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1192,8 +1499,12 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ]);
 
       expect(captured.exitCode).toBe(1);
-      expect(captured.stderr).toContain('[requirements-contract-authoring] scale assessment started');
-      expect(captured.stderr).toContain('[requirements-contract-authoring] scale assessment result');
+      expect(captured.stderr).toContain(
+        '[requirements-contract-authoring] scale assessment started'
+      );
+      expect(captured.stderr).toContain(
+        '[requirements-contract-authoring] scale assessment result'
+      );
       expect(captured.stdout).toContain('controlled_must_candidates_missing');
 
       const parsed = JSON.parse(captured.stdout);
@@ -1222,7 +1533,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
   });
 
   it('does not create or mutate docs/plans source without Critical Auditor and promotion evidence', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-plans-no-receipt-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-plans-no-receipt-')
+    );
     try {
       const source = writePlansDraftSource(root);
       const beforeSourceText = readFileSync(source, 'utf8');
@@ -1279,7 +1592,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const source = writeDraftSource(root);
       const authority = writeValidationAuthorityTarget(root);
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runWithAuthoringLocalization(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-NO-AUDITOR',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-NO-AUDITOR',
@@ -1350,9 +1663,17 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           )
         )
       ).toBe(true);
-      expect(readFileSync(source, 'utf8')).toBe(original);
-      expect(readFileSync(source, 'utf8')).toContain('CUSTOM-PRESERVE-ANCHOR');
-      expect(readFileSync(source, 'utf8')).toContain('customAuditRows:');
+      const repairedText = readFileSync(source, 'utf8');
+      const repairedConfirmation = readImplementationConfirmation(source);
+      expect(repairedText).toContain('CUSTOM-PRESERVE-ANCHOR');
+      expect(repairedText).toContain('customAuditRows:');
+      expect(repairedConfirmation.must.map((row: any) => row.id)).toContain('MUST-900');
+      expect(repairedConfirmation.notDone.map((row: any) => row.id)).toContain('NEG-900');
+      expect(repairedConfirmation.mustNot.map((row: any) => row.id)).toContain('OUT-900');
+      expect(repairedConfirmation.customAuditRows).toEqual([
+        { id: 'CUSTOM-ROW-900', text: 'custom section must stay' },
+      ]);
+      expect(repairedText.length).toBeGreaterThan(original.length);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1366,7 +1687,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const source = writeDraftSource(root);
       const seenRounds: number[] = [];
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runWithAuthoringLocalization(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-REAL-AUDIT-LOOP',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-REAL-AUDIT-LOOP',
@@ -1544,7 +1865,13 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         expect(mustPacket.sourceRequirementText).toBe(
           expectedMustTexts[mustRefs.indexOf(mustPacket.mustRef)]
         );
-        expect(mustPacket.mustAtomicTasks.length).toBeGreaterThanOrEqual(2);
+        expect(mustPacket.mustAtomicTasks.length).toBeGreaterThanOrEqual(1);
+        expect(mustPacket.atomicityCompleteness.actualTaskCount).toBe(
+          mustPacket.mustAtomicTasks.length
+        );
+        expect(mustPacket.atomicityCompleteness.expectedTaskCount).toBe(
+          mustPacket.mustAtomicTasks.length
+        );
         expect(
           mustPacket.mustAtomicTasks.every(
             (task: any) => task.derivedFromMustRef === mustPacket.mustRef
@@ -1572,15 +1899,27 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ]);
       const traceRowsById = new Map(confirmation.traceRows.map((row: any) => [row.id, row]));
       for (const view of sourceDefinedBusinessViews) {
-        expect(view.traceRows, `${view.id} traceRows`).toEqual(
-          expect.arrayContaining(confirmation.traceRows.map((row: any) => row.id))
-        );
-        expect(view.evidenceRefs, `${view.id} evidenceRefs`).toEqual(
-          expect.arrayContaining(confirmation.evidence.map((row: any) => row.id))
-        );
-        expect(view.acceptanceRefs, `${view.id} acceptanceRefs`).toEqual(
-          expect.arrayContaining(confirmation.acceptanceTests.map((row: any) => row.id))
-        );
+        expect(view.traceRows.length, `${view.id} traceRows`).toBeGreaterThan(0);
+        expect(view.evidenceRefs.length, `${view.id} evidenceRefs`).toBeGreaterThan(0);
+        expect(view.acceptanceRefs.length, `${view.id} acceptanceRefs`).toBeGreaterThan(0);
+        expect(
+          view.traceRows.every((ref: string) => traceRowsById.has(ref)),
+          `${view.id} traceRows resolve`
+        ).toBe(true);
+        expect(
+          view.evidenceRefs.every((ref: string) =>
+            confirmation.evidence.some((row: any) => row.id === ref)
+          ),
+          `${view.id} evidenceRefs resolve`
+        ).toBe(true);
+        expect(
+          view.acceptanceRefs.every((ref: string) =>
+            [...confirmation.acceptanceTests, ...confirmation.e2eSuites].some(
+              (row: any) => row.id === ref
+            )
+          ),
+          `${view.id} acceptanceRefs resolve`
+        ).toBe(true);
         for (const traceRef of view.traceRows) {
           const trace = traceRowsById.get(traceRef) as any;
           expect(
@@ -1596,9 +1935,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           expect(trace.evidenceRefs.some((ref: string) => view.evidenceRefs.includes(ref))).toBe(
             true
           );
-          expect(trace.acceptanceRefs.some((ref: string) => view.acceptanceRefs.includes(ref))).toBe(
-            true
-          );
+          expect(
+            trace.acceptanceRefs.some((ref: string) => view.acceptanceRefs.includes(ref))
+          ).toBe(true);
         }
       }
       expect(
@@ -1608,6 +1947,74 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(
         sourceDefinedBusinessViews.find((view: any) => view.visualKind === 'edge')?.edgeCaseRefs
       ).toEqual(expect.arrayContaining(confirmation.edgeCases.map((row: any) => row.id)));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes source Failure Matrix rows as consumer business failure paths', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-business-failure-matrix-'));
+    try {
+      const source = writeSourceWithBusinessFailureMatrix(root);
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        recordId: 'REQ-BUSINESS-FAILURE-MATRIX',
+        requirementSetId: 'REQSET-BUSINESS-FAILURE-MATRIX',
+        confirmationLanguage: 'en-US',
+        ...writeConsumerMarketDataAuthorityTarget(root),
+        criticalAuditorRound: (input) => ({
+          verdict: 'no_new_valid_gap',
+          gateDryRunHash: input.gateDryRun.hash,
+          reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
+          checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+          checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
+          reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
+          priorFindingsDisposition: [
+            {
+              findingRef: `ROUND-${input.roundIndex}-BUSINESS-FAILURE-MATRIX`,
+              disposition: 'unchanged',
+              evidenceRefs: [input.gateDryRun.reportPath],
+            },
+          ],
+          rejectedGapCandidates: [
+            {
+              id: `REJ-BUSINESS-FAILURE-MATRIX-${input.roundIndex}`,
+              reason: 'source business failure matrix is projected into the packet and source',
+            },
+          ],
+          rationale:
+            'The source-defined consumer failure paths remain visible and independently traceable.',
+        }),
+      });
+
+      const paths = artifacts(root, 'REQ-BUSINESS-FAILURE-MATRIX');
+      expect(result.blockingIssues, JSON.stringify(result.blockingIssues, null, 2)).toEqual([]);
+      const confirmation = readDraftPreviewImplementationConfirmation(paths);
+      const packet = readJson(paths.packet).must_decomposition_packet;
+      const failurePaths = confirmation.failurePaths as Array<Record<string, unknown>>;
+
+      expect(failurePaths.map((row) => row.id)).toEqual(['FAIL-001', 'FAIL-002']);
+      expect(failurePaths[0]).toMatchObject({
+        title: 'DataBus schema mismatch',
+        trigger: 'DataBus schema mismatch; impact: consumer attach is unsafe.',
+        expectedBehavior:
+          'Consumer rejects live attach with schema_mismatch and remains in incompatible non-live state.',
+        linkedNegIds: ['NEG-001'],
+      });
+      expect(failurePaths[1]).toMatchObject({
+        title: 'Ordered tick sequence gap',
+        trigger: 'Ordered tick sequence gap; impact: trigger correctness is unsafe.',
+        expectedBehavior:
+          'TriggerService pauses automatic evaluation before any new OrderIntent and records tick_gap.',
+        linkedNegIds: ['NEG-002'],
+      });
+      expect(JSON.stringify(failurePaths).toLowerCase()).not.toContain('drilldown');
+      expect(
+        packet.mustPackets
+          .flatMap((row: any) => row.mustFailureEdgeProjection)
+          .map((row: any) => row.id)
+      ).toEqual(expect.arrayContaining(['FAIL-001', 'FAIL-002']));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1820,7 +2227,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         'language_required_before_render'
       );
       expect(result.currentBlockingReason).toBe('confirmation_language_not_selected');
-      expect(result.nextRequiredAction).toBe('select_confirmation_language_then_render_confirmation');
+      expect(result.nextRequiredAction).toBe(
+        'select_confirmation_language_then_render_confirmation'
+      );
       expect(result.nextUserPrompt).toContain('确认页语言');
       expect(result.changedSections ?? []).toContain('TARGET-MOD-001');
       expect(result.updatedSourceSections ?? []).toContain('TARGET-MOD-001');
@@ -1857,7 +2266,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         const source = writeDraftSource(root);
         const recordId = `REQ-PRE-CONFIRMATION-${surface.slice(1).toUpperCase()}-SKILL`;
 
-        const result = runMainAgentPreConfirmationDrilldown(root, {
+        const result = runWithAuthoringLocalization(root, {
           source,
           recordId,
           requirementSetId: `${recordId}-SET`,

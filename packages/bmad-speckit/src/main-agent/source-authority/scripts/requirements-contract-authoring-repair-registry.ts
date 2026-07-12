@@ -367,7 +367,7 @@ const entries = [
     'confirmation_language_content_english_only',
     'confirmation_localization_materialization',
     'confirmationLanguage is zh-CN or bilingual and renderer-checked confirmation fields have English raw text without Chinese projection fields.',
-    'Materialize textZh, fieldZh, and localized.zh-CN projections in author-confirmation-ready-source before hashing, audit, promotion, and render.'
+    'Emit a current-hash localization request and require the main-session authoring agent to provide complete, semantically equivalent Chinese projections before hashing, audit, promotion, and render. Synthetic CJK wrapper text is forbidden.'
   ),
   inputRequired(
     'target_authority_missing',

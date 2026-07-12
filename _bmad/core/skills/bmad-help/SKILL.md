@@ -1,9 +1,17 @@
 ---
 name: bmad-help
-description: 'Analyzes current state and user query to answer BMad questions or recommend the next workflow or agent. Derives flow, contextMaturity, complexity, and implementationReadinessStatus before recommending recommended / allowed but not recommended / blocked paths.'
+description: 'Use only for explicit upstream BMAD workflow, method, agent, or catalog guidance. Do not use for generic next-step, continue, status, or what-now questions when an active RequirementRecord may exist; those route to bmads or bmad-speckit governed runtime. Derives flow, contextMaturity, complexity, and implementationReadinessStatus for read-only recommendations.'
 ---
 
 Follow the instructions in ./workflow.md.
+
+## Natural-Language Routing Boundary
+
+Generic next-step, continue, status, or what-now requests are not standalone `bmad-help`
+activation when an active RequirementRecord may exist. Route those requests to `bmads` /
+`bmad-speckit` first so governed runtime state decides the next safe action. Use `bmad-help`
+only when the user explicitly asks for upstream BMAD workflow, method, agent, or catalog
+guidance, or when no governed runtime record exists.
 
 ## Required Response Behavior
 

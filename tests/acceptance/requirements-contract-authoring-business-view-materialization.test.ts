@@ -29,6 +29,54 @@ function businessViewSource(): string {
     '| --- | --- |',
     '| NFR-001 | Trigger stream processing MUST fail closed on stale data. |',
     '',
+    '## Negative Requirements And Not Done Conditions',
+    '',
+    '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+    '| --- | --- | --- | --- | --- | --- |',
+    '| NEG-001 | Partial routing or identity rewriting cannot count as successful trigger processing. | Rejected ticks must not mutate stream state or emit a downstream route. | A stale or malformed tick is partially routed, rewrites identity, or changes stream state. | FAIL-001 | ACC-004 CMD-004 |',
+    '',
+    '## Failure Matrix',
+    '',
+    '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+    '| --- | --- | --- | --- | --- | --- |',
+    '| FAIL-001 | A GDS trigger tick is stale, malformed, or cannot preserve its HKFE symbol and exchange identity. | Reject the tick without partial routing, preserve the last valid stream state, and expose a recoverable data-quality failure. | NEG-001 | ACC-001 ACC-002 ACC-003 ACC-004 E2E-001 | MUST-FR-001 MUST-FR-002 MUST-NFR-001 |',
+    '',
+    '## Acceptance Evidence',
+    '',
+    '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| ACC-001 | DataService trigger routing | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Every valid GDS trigger tick is routed through DataService exactly once. | CMD-001 TRACE-001 | PATH-001 owns routing. |',
+    '| ACC-002 | HKFE identity preservation | MUST-FR-002 | python -m pytest tests/trader/test_gateway_profile_registry.py | Routed ticks retain their HKFE symbol and exchange identity without rewriting. | CMD-002 TRACE-002 | PATH-002 owns identity preservation. |',
+    '| ACC-003 | Stale-data rejection | MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Stale or malformed ticks are rejected without partial routing or stream-state mutation. | CMD-003 TRACE-003 | PATH-003 owns fail-closed behavior. |',
+    '| ACC-004 | No partial routing | NEG-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Rejected ticks emit no downstream route and leave stream state and identity unchanged. | CMD-004 TRACE-004 | PATH-003 owns rollback. |',
+    '',
+    '## Test And Verification Paths',
+    '',
+    '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| CMD-001 | delivery-evidence | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Valid trigger ticks enter DataService exactly once. | ACC-001 E2E-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
+    '| CMD-002 | delivery-evidence | MUST-FR-002 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | HKFE symbol and exchange identity remain unchanged end to end. | ACC-002 E2E-001 TRACE-002 | PATH-002 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
+    '| CMD-003 | delivery-evidence | MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Stale data is rejected before any route or state mutation. | ACC-003 E2E-001 TRACE-003 | PATH-003 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
+    '| CMD-004 | delivery-evidence | NEG-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Rejected ticks produce no partial route or stream-state mutation. | ACC-004 E2E-001 TRACE-004 | PATH-003 owns rollback. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
+    '| E2E-001 | e2e | MUST-FR-001 MUST-FR-002 MUST-NFR-001 NEG-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Valid ticks route with identity preserved; stale ticks fail closed without partial effects. | ACC-001 ACC-002 ACC-003 ACC-004 CMD-001 CMD-002 CMD-003 CMD-004 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | PATH-001 PATH-002 PATH-003 own remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
+    '',
+    '## Trace Matrix Source',
+    '',
+    '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Valid trigger ticks enter DataService exactly once. | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+    '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-001 | CMD-002 | CMD-002 | none | PATH-002 | none | HKFE identity remains unchanged through routing. | MUST-FR-002 closes through ACC-002 and TRACE-002. | PATH-002 owns remediation. |',
+    '| TRACE-003 | MUST-NFR-001 | ACC-003 | ACC-003 E2E-001 | CMD-003 | CMD-003 | none | PATH-003 | none | Stale data is rejected before route or state mutation. | MUST-NFR-001 closes through ACC-003 and TRACE-003. | PATH-003 owns remediation. |',
+    '| TRACE-004 | NEG-001 | ACC-004 | ACC-004 E2E-001 | CMD-004 | CMD-004 | none | PATH-003 | none | Rejected ticks produce no downstream route or stream-state mutation. | NEG-001 closes through ACC-004 and TRACE-004. | PATH-003 owns rollback. |',
+    '',
+    '## Implementation Path Map',
+    '',
+    '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| PATH-001 | `src/dataservice/gds_trigger.py` | Routing owner | Route valid GDS trigger ticks through DataService exactly once. | MUST-FR-001 | ACC-001 passes. | ACC-001 CMD-001 TRACE-001 | Routing owner owns implementation and rollback. |',
+    '| PATH-002 | `src/dataservice/gds_trigger.py` | Identity owner | Preserve HKFE symbol and exchange identity through routing. | MUST-FR-002 | ACC-002 passes. | ACC-002 CMD-002 TRACE-002 | Identity owner owns implementation and rollback. |',
+    '| PATH-003 | `src/dataservice/gds_trigger.py` | Data-quality owner | Reject stale or malformed ticks before route or state mutation. | MUST-NFR-001 NEG-001 | ACC-003 and ACC-004 pass without partial effects. | ACC-003 ACC-004 CMD-003 CMD-004 TRACE-003 TRACE-004 | Data-quality owner owns implementation and rollback. |',
+    '',
     '## Out Of Scope',
     '',
     '- Manual live trading execution is out of scope.',
@@ -132,9 +180,10 @@ describe('requirements contract authoring business view materialization', () => 
       expect(generated).not.toContain('stale target content');
 
       const paths = artifacts(root, recordId, `${recordId}-SET`);
-      const decision = JSON.parse(
-        readFileSync(paths.sourceMutationDecision, 'utf8')
-      ) as Record<string, unknown>;
+      const decision = JSON.parse(readFileSync(paths.sourceMutationDecision, 'utf8')) as Record<
+        string,
+        unknown
+      >;
       expect(decision.sourceMutationAllowed).toBe(true);
       expect(decision.sourceMutationPerformed).toBe(true);
       expect(decision.sourceDocumentExistedBefore).toBe(true);

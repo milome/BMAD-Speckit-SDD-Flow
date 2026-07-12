@@ -2,11 +2,11 @@
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-function stripModeArgs(argv) {
+function stripForcedArgs(argv) {
   const out = [];
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--mode') {
+    if (arg === '--mode' || arg === '--audit-stage') {
       index += 1;
       continue;
     }
@@ -45,7 +45,14 @@ function runStageAudit(argv, config) {
   }
 
   const coreScript = path.join(__dirname, 'reverse_audit_contract.js');
-  const coreArgs = [coreScript, ...stripModeArgs(argv), '--mode', config.mode];
+  const coreArgs = [
+    coreScript,
+    ...stripForcedArgs(argv),
+    '--mode',
+    config.mode,
+    '--audit-stage',
+    config.stage,
+  ];
   const result = spawnSync(process.execPath, coreArgs, {
     cwd: process.cwd(),
     encoding: 'utf8',

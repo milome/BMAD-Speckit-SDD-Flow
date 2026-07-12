@@ -472,6 +472,9 @@ describe('requirement-record.schema.json', () => {
         ],
         commandBindings: [{ id: 'CMD-001', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
         artifactBindings: [{ id: 'ART-001', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
+        targetPathBindings: [
+          { id: 'TARGET-MOD-001', traceRefs: ['TRACE-001'], evidenceRefs: ['EVD-001'] },
+        ],
         derivedFromRequirementRefs: ['MUST-001', 'NEG-001'],
         derivedFromTraceRefs: ['TRACE-001'],
         derivedFromEvidenceRefs: ['EVD-001'],

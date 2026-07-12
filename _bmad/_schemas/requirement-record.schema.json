@@ -1558,6 +1558,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/readinessOverlayBinding" }
         },
+        "targetPathBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
         "derivedFromRequirementRefs": {
           "type": "array",
           "items": { "$ref": "#/$defs/nonEmptyString" }

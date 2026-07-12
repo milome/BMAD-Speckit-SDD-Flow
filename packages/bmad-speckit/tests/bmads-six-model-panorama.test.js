@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 const { buildBmadsOutput, renderBmads } = require('../src/runtime/bmads-renderer');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -119,15 +120,127 @@ function awaitingCloseoutRecord(id = 'REQ-AWAIT-CLOSEOUT') {
 function implementationReadyRecord(id = 'REQ-READY') {
   return {
     recordId: id,
+    requirementSetId: `${id}-SET`,
     title: 'Ready requirement',
+    status: 'user_confirmed',
     currentMentalModel: 'implementation_readiness',
     sourceDocumentHash: 'sha256:source-ready',
     implementationConfirmationHash: 'sha256:confirmation-ready',
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        sourceDocumentHash: 'sha256:source-ready',
+        implementationConfirmationHash: 'sha256:confirmation-ready',
+      },
+    ],
     sixModelResults: {
       implementation_readiness: { status: 'pass' },
     },
     updatedAt: '2026-06-01T00:01:00.000Z',
   };
+}
+
+function sha256File(filePath) {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function writeUsableCompiledImplementPacket(root, record) {
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    record.recordId
+  );
+  const traceRoot = path.join(recordRoot, 'trace-execution', 'implement-ready');
+  const packetRoot = path.join(recordRoot, 'prompts', 'prompt-packets');
+  fs.mkdirSync(traceRoot, { recursive: true });
+  fs.mkdirSync(packetRoot, { recursive: true });
+
+  const manifestHash = 'sha256:manifest-ready';
+  const sourceProjectionHash = 'sha256:source-projection-ready';
+  const modelPacketPath = path.join(traceRoot, 'model_packet.json');
+  const humanPromptPath = path.join(traceRoot, 'human_prompt.txt');
+  const auditReceiptPath = path.join(traceRoot, 'audit_receipt.json');
+  const goalExecutionPath = path.join(traceRoot, 'goal_execution.md');
+  fs.writeFileSync(
+    modelPacketPath,
+    `${JSON.stringify(
+      {
+        artifactRole: 'execution_authority',
+        sourceDocumentHash: record.sourceDocumentHash,
+        implementationConfirmationHash: record.implementationConfirmationHash,
+        contractExecutionManifest: {
+          schemaVersion: 'contract-execution-manifest/v1',
+          builderVersion: 'contract-execution-manifest-builder/v1',
+          manifestHash,
+          sourceProjectionHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+        },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(humanPromptPath, 'compiled implementation prompt\n', 'utf8');
+  fs.writeFileSync(goalExecutionPath, '# Goal Execution\n', 'utf8');
+  fs.writeFileSync(
+    auditReceiptPath,
+    `${JSON.stringify(
+      {
+        decision: 'pass',
+        sourceDocumentHash: record.sourceDocumentHash,
+        implementationConfirmationHash: record.implementationConfirmationHash,
+        contractExecutionManifest: {
+          schemaVersion: 'contract-execution-manifest/v1',
+          builderVersion: 'contract-execution-manifest-builder/v1',
+          manifestHash,
+          sourceProjectionHash,
+        },
+        goalCommand: {
+          mode: 'native_goal_document_ref',
+          documentPath: goalExecutionPath,
+          documentHash: sha256File(goalExecutionPath),
+        },
+        humanPromptRequiredFragmentsPassed: true,
+        goalDocumentRequiredFragmentsPassed: true,
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+
+  const packetPath = path.join(packetRoot, 'implement-ready.json');
+  fs.writeFileSync(
+    packetPath,
+    `${JSON.stringify(
+      {
+        packetId: 'implement-ready',
+        parentSessionId: record.requirementSetId || record.recordId,
+        phase: 'implement',
+        taskType: 'implement',
+        authorityMode: 'compiled_implementation_confirmation',
+        compilerBlock: null,
+        compiledPromptRef: {
+          modelPacketPath,
+          modelPacketHash: sha256File(modelPacketPath),
+          humanPromptPath,
+          humanPromptHash: sha256File(humanPromptPath),
+          auditReceiptPath,
+          auditReceiptHash: sha256File(auditReceiptPath),
+          goalExecutionPath,
+          goalExecutionHash: sha256File(goalExecutionPath),
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+        },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
 }
 
 function executionClosurePassedRecord(id = 'REQ-EXECUTION-CLOSED') {
@@ -156,6 +269,40 @@ function sectionBetween(text, startHeading, endHeading) {
 }
 
 describe('bmads Six Mental Models panorama', () => {
+  it('does not infer requirement confirmation pass from hashes on a draft record', () => {
+    const record = {
+      recordId: 'REQ-DRAFT-HASHES',
+      requirementSetId: 'REQ-DRAFT-HASHES-SET',
+      status: 'draft',
+      sourceDocumentHash: 'sha256:source-draft',
+      implementationConfirmationHash: 'sha256:confirmation-draft',
+      preConfirmationDrilldownLane: {
+        currentMentalModel: 'requirement_confirmation',
+        controlledIngestRequiredBeforeProgression: true,
+      },
+      architectureConfirmationState: {
+        status: 'missing',
+        reasonCode: 'blocked_until_controlled_requirement_confirmation_ingest',
+      },
+      updatedAt: '2026-07-11T00:00:00.000Z',
+    };
+    const root = makeRoot([record], record.recordId);
+    try {
+      const text = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'expanded' }));
+
+      assert.match(text, /current mental model: requirement_confirmation/);
+      assert.match(text, /schema model status: not_established/);
+      assert.match(
+        text,
+        /Evidence source: hashes present but controlled user confirmation is missing/
+      );
+      assert.doesNotMatch(text, /Requirement Confirmation \(requirement_confirmation\)[\s\S]*?Status: pass/);
+      assert.doesNotMatch(text, /current mental model: architecture_confirmation/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('runs from a consumer project without a local _bmad source tree', () => {
     const root = makeConsumerLikeRoot([implementationReadyRecord()], 'REQ-READY');
     try {
@@ -322,6 +469,92 @@ describe('bmads Six Mental Models panorama', () => {
     }
   });
 
+  it('requires controlled dispatch-plan before implementation when readiness passes without compiled artifacts', () => {
+    const record = implementationReadyRecord('REQ-DISPATCH-PLAN-REQUIRED');
+    const root = makeRoot([record], record.recordId);
+    try {
+      const output = buildBmadsOutput({ projectRoot: root, budget: 'expanded' });
+      const text = renderBmads(output);
+      const recommended = sectionBetween(
+        text,
+        '## Recommended Next Steps',
+        '## Available Next Actions'
+      );
+      const recommendedNow = sectionBetween(text, '### Recommended Now', '### Core Skills');
+
+      assert.equal(output.aiTdd.primaryRecord.currentMentalModel, 'implementation_readiness');
+      assert.equal(
+        output.aiTdd.primaryRecord.requirementSetId,
+        'REQ-DISPATCH-PLAN-REQUIRED-SET'
+      );
+      assert.equal(output.aiTdd.primaryRecord.effectiveCurrentModel, 'implementation_readiness');
+      assert.equal(output.aiTdd.primaryRecord.compiledPacket.status, 'missing');
+      assert.equal(output.aiTdd.primaryRecord.nextSafeAction, 'dispatch-plan');
+      assert.equal(output.orchestration.nextAction, 'dispatch-plan');
+      assert.equal(output.orchestration.pendingPacketStatus, 'missing_compiled_packet');
+      assert.match(
+        recommended,
+        /Run controlled dispatch-plan to compile model_packet\.json, human_prompt\.txt, audit_receipt\.json, and goal_execution\.md/
+      );
+      assert.match(
+        recommended,
+        /Only run dispatch_implement after the synchronized artifacts, hashes, and contract manifest validate/
+      );
+      assert.match(recommendedNow, /Current route: implementation_readiness/);
+      assert.match(recommendedNow, /Next safe action: dispatch-plan/);
+      assert.doesNotMatch(
+        recommendedNow,
+        /Please inspect the current RequirementRecord route/
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('allows dispatch_implement only after compiled artifacts, hashes, and contract manifest validate', () => {
+    const record = implementationReadyRecord('REQ-DISPATCH-IMPLEMENT-READY');
+    const root = makeRoot([record], record.recordId);
+    writeUsableCompiledImplementPacket(root, record);
+    try {
+      const output = buildBmadsOutput({ projectRoot: root, budget: 'expanded' });
+      const text = renderBmads(output);
+      const recommendedNow = sectionBetween(text, '### Recommended Now', '### Core Skills');
+
+      assert.equal(output.aiTdd.primaryRecord.compiledPacket.status, 'usable');
+      assert.equal(output.aiTdd.primaryRecord.effectiveCurrentModel, 'execution_closure');
+      assert.equal(output.aiTdd.primaryRecord.nextSafeAction, 'dispatch_implement');
+      assert.equal(output.orchestration.pendingPacketStatus, 'compiled_packet_ready');
+      assert.match(recommendedNow, /Current route: execution_closure/);
+      assert.match(recommendedNow, /Next safe action: dispatch_implement/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores an uninvoked plan-only native goal handoff after compiled artifacts validate', () => {
+    const record = implementationReadyRecord('REQ-DISPATCH-IMPLEMENT-PLAN-ONLY-HANDOFF');
+    record.nativeGoalHandoff = {
+      schemaVersion: 'native-goal-handoff/v1',
+      packetId: 'implement-plan-only',
+      taskReportPath: '_bmad-output/runtime/governance/task-reports/plan-only.json',
+      imported: false,
+      importStatus: 'awaiting_task_report',
+    };
+    const root = makeRoot([record], record.recordId);
+    writeUsableCompiledImplementPacket(root, record);
+    try {
+      const output = buildBmadsOutput({ projectRoot: root, budget: 'expanded' });
+
+      assert.equal(output.aiTdd.primaryRecord.compiledPacket.status, 'usable');
+      assert.equal(output.aiTdd.primaryRecord.effectiveCurrentModel, 'execution_closure');
+      assert.equal(output.aiTdd.primaryRecord.nextSafeAction, 'dispatch_implement');
+      assert.equal(output.aiTdd.primaryRecord.nativeGoalHandoff, null);
+      assert.equal(output.orchestration.nextAction, 'dispatch_implement');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('recommends req-trace for /goal only when the active record is current and safe', () => {
     const root = makeRoot([implementationReadyRecord()], 'REQ-READY');
     try {
@@ -476,7 +709,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.equal(output.aiTdd.primaryRecord.recordId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
       assert.equal(output.aiTdd.primaryBecause, 'indexed_active_record');
       assert.equal(output.orchestration.source, 'ai_tdd_runtime_decision');
-      assert.equal(output.orchestration.sessionId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE');
+      assert.equal(output.orchestration.sessionId, 'REQ-CI-GOVERNANCE-MAPPING-FIXTURE-SET');
       assert.equal(output.quickStart, null);
       assert.match(text, /You are looking at the AI-TDD runtime state for REQ-CI-GOVERNANCE-MAPPING-FIXTURE\./);
       assert.match(text, /recordId: REQ-CI-GOVERNANCE-MAPPING-FIXTURE \(first safe action\)/);
@@ -579,7 +812,7 @@ describe('bmads Six Mental Models panorama', () => {
     }
   });
 
-  it('renders six-model panorama statuses from inferred record evidence instead of pending fallback', () => {
+  it('renders six-model panorama statuses from controlled confirmation evidence', () => {
     const record = implementationReadyRecord('REQ-INFERRED-MODEL-STATUS');
     delete record.currentMentalModel;
     delete record.sixModelResults;
@@ -590,11 +823,54 @@ describe('bmads Six Mental Models panorama', () => {
 
       assert.match(text, /1\/6\. Requirement Confirmation \(requirement_confirmation\)/);
       assert.match(text, /Status: pass/);
-      assert.match(text, /Evidence source: inferred from sourceDocumentHash \+ implementationConfirmationHash/);
+      assert.match(
+        text,
+        /Evidence source: controlled confirmation_recorded event with matching hashes/
+      );
       assert.match(text, /2\/6\. Architecture Confirmation \(architecture_confirmation\)/);
       assert.match(text, /Evidence source: inferred from architectureConfirmationHash/);
       assert.match(text, /3\/6\. Implementation Readiness \(implementation_readiness\)/);
       assert.match(text, /Status: current \(not_established; missing readiness gate evidence\)/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders architecture confirmation pass from canonical active state when six-model result is absent', () => {
+    const record = implementationReadyRecord('REQ-CANONICAL-ARCHITECTURE-STATE');
+    delete record.sixModelResults.architecture_confirmation;
+    record.architectureConfirmationState = {
+      status: 'active',
+      currentArchitectureConfirmationRunId: 'ARCH-READY-001',
+      currentArchitectureConfirmationHash: 'sha256:architecture-ready',
+      lastEventType: 'architecture_confirmation_recorded',
+    };
+    record.architectureConfirmations = [
+      {
+        eventType: 'architecture_confirmation_recorded',
+        decision: 'full_architecture_confirmed',
+        architectureConfirmationArtifactHash: 'sha256:architecture-ready',
+        confirmedBy: 'user',
+      },
+    ];
+    const root = makeRoot([record], record.recordId);
+    try {
+      const text = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'expanded' }));
+      const panorama = sectionBetween(
+        text,
+        '## Six Mental Model Panorama',
+        '## Runtime Workflow Guidance'
+      );
+
+      assert.match(
+        panorama,
+        /2\/6\. Architecture Confirmation \(architecture_confirmation\)[\s\S]*?Status: pass/
+      );
+      assert.match(
+        panorama,
+        /Evidence source: canonical active architectureConfirmationState with matching controlled confirmation/
+      );
+      assert.doesNotMatch(panorama, /missing architecture confirmation evidence/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

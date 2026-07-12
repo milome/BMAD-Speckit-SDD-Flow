@@ -31,6 +31,11 @@ const PROMOTION_STAGE_POLICIES = {
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: false,
   },
+  "projection-metadata-resync": {
+    allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
+    confirmationReadyOnSuccess: false,
+    safePromotionAsDraft: false,
+  },
 };
 
 function promotionPolicyFor(stage) {
@@ -48,7 +53,7 @@ function usage() {
     "  --require <text>        Required literal text. May be repeated.",
     "  --min-bytes <n>         Minimum UTF-8 byte count.",
     "  --retry-receipt <path>  Retry receipt JSON path.",
-    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default), authoring-draft, or current-source-receipt-refresh.",
+    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default), authoring-draft, current-source-receipt-refresh, or projection-metadata-resync.",
     "  --scale-assessment <path> Required authoring scale assessment JSON for guarded source writes.",
     "  --scale-routing-decision <path> Required scale routing decision JSON for guarded source writes.",
     "  --source-mutation-decision <path> Required source mutation decision JSON for guarded source writes.",
@@ -401,6 +406,7 @@ function guardedPromotionRequired(args, targetPath) {
   return (
     args.promotionStage === "authoring-draft" ||
     args.promotionStage === "current-source-receipt-refresh" ||
+    args.promotionStage === "projection-metadata-resync" ||
     isDocsPlansTarget(targetPath)
   );
 }
@@ -1152,6 +1158,68 @@ function main() {
         return failed.exitCode;
       }
     }
+    if (args.promotionStage === "projection-metadata-resync") {
+      const targetState = currentTargetState(targetPath);
+      if (!targetState.exists) {
+        const failed = fail(
+          receipt,
+          "semantic_decision_required:projection_metadata_target_missing",
+          {
+            promotionStage: args.promotionStage,
+            requiredCondition: "target must exist for metadata-only resynchronization",
+          },
+          { ...args, draft: draftPath, target: targetPath },
+          manifest
+        );
+        writeReceipt(failed.receipt, args.json);
+        return failed.exitCode;
+      }
+      const draftText = fs.readFileSync(draftPath, "utf8");
+      const targetText = fs.readFileSync(targetPath, "utf8");
+      const draftConfirmation = extractImplementationConfirmation(draftText);
+      const targetConfirmation = extractImplementationConfirmation(targetText);
+      const draftSemanticHashes = {
+        sourceDocumentHash: sourceDocumentHashFor(
+          draftText,
+          draftConfirmation.blockText,
+          draftConfirmation.confirmation
+        ),
+        implementationConfirmationHash: implementationConfirmationHashFor(
+          draftConfirmation.confirmation
+        ),
+      };
+      const targetSemanticHashes = {
+        sourceDocumentHash: sourceDocumentHashFor(
+          targetText,
+          targetConfirmation.blockText,
+          targetConfirmation.confirmation
+        ),
+        implementationConfirmationHash: implementationConfirmationHashFor(
+          targetConfirmation.confirmation
+        ),
+      };
+      if (
+        draftSemanticHashes.sourceDocumentHash !== targetSemanticHashes.sourceDocumentHash ||
+        draftSemanticHashes.implementationConfirmationHash !==
+          targetSemanticHashes.implementationConfirmationHash
+      ) {
+        const failed = fail(
+          receipt,
+          "semantic_decision_required:projection_metadata_semantic_hash_mismatch",
+          {
+            promotionStage: args.promotionStage,
+            requiredCondition:
+              "sourceDocumentHash and implementationConfirmationHash must remain unchanged",
+            targetSemanticHashes,
+            draftSemanticHashes,
+          },
+          { ...args, draft: draftPath, target: targetPath },
+          manifest
+        );
+        writeReceipt(failed.receipt, args.json);
+        return failed.exitCode;
+      }
+    }
 
     let effectiveArgs = args;
     if (args.autoRepair && guardedPromotionRequired(args, targetPath)) {
@@ -1205,7 +1273,11 @@ function main() {
       return failed.exitCode;
     }
 
-    if (args.promotionStage === "authoring-draft" || args.promotionStage === "current-source-receipt-refresh") {
+    if (
+      args.promotionStage === "authoring-draft" ||
+      args.promotionStage === "current-source-receipt-refresh" ||
+      args.promotionStage === "projection-metadata-resync"
+    ) {
       receipt.audit = {
         status: null,
         ok: true,
@@ -1213,12 +1285,16 @@ function main() {
         reason:
           args.promotionStage === "current-source-receipt-refresh"
             ? "current_source_receipt_refresh_is_not_confirmation_ready"
-            : "authoring_draft_is_not_confirmation_ready",
+            : args.promotionStage === "projection-metadata-resync"
+              ? "projection_metadata_resync_is_semantic_hash_neutral"
+              : "authoring_draft_is_not_confirmation_ready",
       };
       receipt.residualRisks.push(
         args.promotionStage === "current-source-receipt-refresh"
           ? "reverse_audit_not_run_current_source_receipt_refresh"
-          : "reverse_audit_not_run_authoring_draft"
+          : args.promotionStage === "projection-metadata-resync"
+            ? "reverse_audit_not_run_projection_metadata_resync"
+            : "reverse_audit_not_run_authoring_draft"
       );
     } else {
       const audit = runReverseAudit(draftPath);

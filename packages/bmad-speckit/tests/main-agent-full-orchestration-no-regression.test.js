@@ -92,4 +92,26 @@ describe('main-agent full orchestration no-regression bridge', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('routes pre-confirmation render registration aliases through source-authority orchestration', async () => {
+    const root = makeConsumerRoot();
+    try {
+      for (const action of [
+        'register-pre-confirmation-render',
+        'register_pre_confirmation_render',
+      ]) {
+        const result = await captureRuntime(['--action', action, '--cwd', root, '--json'], root);
+        const output = `${result.stdout}\n${result.stderr}`;
+
+        assert.notEqual(result.exitCode, 0);
+        assert.doesNotMatch(output, /unsupported_main_agent_action/);
+        assert.match(
+          output,
+          /register-pre-confirmation-render requires --source, --render-report, and --requirement-record/
+        );
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

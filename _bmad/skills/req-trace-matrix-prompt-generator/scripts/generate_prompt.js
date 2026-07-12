@@ -241,10 +241,42 @@ function profileHashFor(profile) {
   return sha256(stableStringify(clone));
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
-    if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
+  }
+  normalizePreConfirmationDrilldownForHash(semantic);
+  return semantic;
+}
+
+function legacyProjectionInclusiveConfirmationForHash(confirmation) {
+  const semantic = {};
+  for (const [key, value] of Object.entries(confirmation ?? {})) {
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = value;
+    }
   }
   normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
@@ -300,6 +332,15 @@ function sourceDocumentHashFor(sourceText, blockText, confirmation) {
 
 function implementationConfirmationHashFor(confirmation) {
   return sha256(stableStringify(semanticConfirmationForHash(confirmation)));
+}
+
+function legacyProjectionInclusiveHashesFor(sourceText, blockText, confirmation) {
+  const semantic = legacyProjectionInclusiveConfirmationForHash(confirmation);
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  return {
+    sourceDocumentHash: sha256(sourceText.replace(blockText, normalizedBlock)),
+    implementationConfirmationHash: sha256(stableStringify(semantic)),
+  };
 }
 
 function extractConfirmationBlock(text) {
@@ -364,26 +405,66 @@ function validateRequirementRecord(args, sourceText, blockText, confirmation) {
   const event = latestConfirmationEvent(record);
   const sourceHash = sourceDocumentHashFor(sourceText, blockText, confirmation);
   const confirmationHash = implementationConfirmationHashFor(confirmation);
-  const mismatches = [];
-
-  if (event.sourceDocumentHash !== sourceHash) mismatches.push('sourceDocumentHash');
-  if (event.implementationConfirmationHash !== confirmationHash) {
-    mismatches.push('implementationConfirmationHash');
-  }
-  if (record.sourceDocumentHash && record.sourceDocumentHash !== sourceHash) {
-    mismatches.push('record.sourceDocumentHash');
-  }
-  if (record.implementationConfirmationHash && record.implementationConfirmationHash !== confirmationHash) {
-    mismatches.push('record.implementationConfirmationHash');
-  }
+  const mismatchesFor = (candidateSourceHash, candidateConfirmationHash) => {
+    const mismatches = [];
+    if (event.sourceDocumentHash !== candidateSourceHash) mismatches.push('sourceDocumentHash');
+    if (event.implementationConfirmationHash !== candidateConfirmationHash) {
+      mismatches.push('implementationConfirmationHash');
+    }
+    if (record.sourceDocumentHash && record.sourceDocumentHash !== candidateSourceHash) {
+      mismatches.push('record.sourceDocumentHash');
+    }
+    if (
+      record.implementationConfirmationHash &&
+      record.implementationConfirmationHash !== candidateConfirmationHash
+    ) {
+      mismatches.push('record.implementationConfirmationHash');
+    }
+    return mismatches;
+  };
+  const mismatches = mismatchesFor(sourceHash, confirmationHash);
 
   if (mismatches.length > 0) {
+    const legacyHashes = legacyProjectionInclusiveHashesFor(sourceText, blockText, confirmation);
+    const legacyMismatches = mismatchesFor(
+      legacyHashes.sourceDocumentHash,
+      legacyHashes.implementationConfirmationHash
+    );
+    if (
+      legacyMismatches.length === 0 &&
+      (legacyHashes.sourceDocumentHash !== sourceHash ||
+        legacyHashes.implementationConfirmationHash !== confirmationHash)
+    ) {
+      return {
+        record,
+        event,
+        sourceDocumentHash: legacyHashes.sourceDocumentHash,
+        implementationConfirmationHash: legacyHashes.implementationConfirmationHash,
+        confirmationHashAuthority: {
+          recipe: 'legacy_projection_bookkeeping_inclusive/v1',
+          compatibilityDecision: 'accepted_existing_confirmation',
+          canonicalSourceDocumentHash: sourceHash,
+          canonicalImplementationConfirmationHash: confirmationHash,
+        },
+      };
+    }
     throw new BlockedInput(
       'BLOCK: CONFIRMATION_RECORD_HASH_MISMATCH',
       `Latest confirmationHistory[] hash does not match current source document: ${mismatches.join(', ')}`
     );
   }
-  return { record, event, sourceDocumentHash: sourceHash, implementationConfirmationHash: confirmationHash };
+  return {
+    record,
+    event,
+    sourceDocumentHash: sourceHash,
+    implementationConfirmationHash: confirmationHash,
+    confirmationHashAuthority: {
+      recipe: 'canonical_projection_bookkeeping_excluded/v2',
+      compatibilityDecision: 'current_recipe',
+      canonicalSourceDocumentHash: sourceHash,
+      canonicalImplementationConfirmationHash: confirmationHash,
+    },
+  };
 }
 
 function ids(items) {
@@ -801,6 +882,55 @@ function drilldownReceiptRefs(drilldown) {
   return [];
 }
 
+function governedCriticalAuditorReceiptRefs(
+  requirementRecordPath,
+  record,
+  sourceDocumentHash,
+  implementationConfirmationHash
+) {
+  const recordId = String(record?.recordId ?? '').trim();
+  if (!requirementRecordPath || !recordId) return [];
+  const authoringDir = path.join(path.dirname(path.resolve(requirementRecordPath)), 'authoring');
+  const refs = [];
+  for (const roundIndex of [1, 2, 3]) {
+    const receiptPath = path.join(
+      authoringDir,
+      `critical-auditor-receipt-round-${roundIndex}.json`
+    );
+    if (!fs.existsSync(receiptPath)) return [];
+    let root;
+    try {
+      root = readJson(receiptPath);
+    } catch {
+      return [];
+    }
+    const receipt = root?.criticalAuditorReceipt ?? root;
+    const verdict = String(receipt?.convergenceDecision?.verdict ?? '').trim();
+    if (
+      !receipt ||
+      typeof receipt !== 'object' ||
+      Array.isArray(receipt) ||
+      receipt.schemaVersion !== 'critical-auditor-receipt/v1' ||
+      String(receipt.recordId ?? '').trim() !== recordId ||
+      Number(receipt.roundIndex) !== roundIndex ||
+      String(receipt.sourceDocumentHash ?? '').trim() !== sourceDocumentHash ||
+      String(receipt.implementationConfirmationHash ?? '').trim() !==
+        implementationConfirmationHash ||
+      !['no_new_valid_gap', 'no_new_confirmation_blocking_gap'].includes(verdict) ||
+      objects(receipt.validatedGaps).length > 0
+    ) {
+      return [];
+    }
+    refs.push(normalizePathSafe(receiptPath));
+  }
+  return refs;
+}
+
+function resolvedDrilldownReceiptRefs(drilldown, governedReceiptRefs = []) {
+  const declaredRefs = drilldownReceiptRefs(drilldown);
+  return declaredRefs.length >= 3 ? declaredRefs : governedReceiptRefs;
+}
+
 function reconciliationRef(drilldown) {
   return refValue(drilldown?.reconciliationReportRef) || refValue(drilldown?.packetSourceReconciliation, 'reportPath');
 }
@@ -896,7 +1026,7 @@ function requirementClosureFor(confirmation, id) {
   return { traceRows, evidenceRows, acceptanceRows, commandRows };
 }
 
-function validateCompilerContract(confirmation, record = {}) {
+function validateCompilerContract(confirmation, record = {}, options = {}) {
   const reasons = [];
   const manifest = confirmation.aiTddContractExecutionManifestProjection;
   const requiredSections = strings(manifest?.requiredSections);
@@ -920,7 +1050,11 @@ function validateCompilerContract(confirmation, record = {}) {
   failIf(!drilldown || typeof drilldown !== 'object', reasons, 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED');
   failIf(!refValue(drilldown?.semanticKernelRef), reasons, 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED');
   failIf(!refValue(drilldown?.mustDecompositionPacketRef), reasons, 'PRE_CONFIRMATION_DRILLDOWN_REQUIRED');
-  failIf(drilldownReceiptRefs(drilldown).length < 3, reasons, 'CRITICAL_AUDITOR_THREE_ROUNDS_REQUIRED');
+  failIf(
+    resolvedDrilldownReceiptRefs(drilldown, options.criticalAuditorReceiptRefs).length < 3,
+    reasons,
+    'CRITICAL_AUDITOR_THREE_ROUNDS_REQUIRED'
+  );
   failIf(!reconciliationRef(drilldown) || !reconciliationPassed(drilldown), reasons, 'PACKET_SOURCE_RECONCILIATION_REQUIRED');
   failIf(!preRenderGateRef(drilldown), reasons, 'PRE_RENDER_GATE_REPORT_REQUIRED');
   failIf(
@@ -1023,6 +1157,7 @@ function validateCompilerContract(confirmation, record = {}) {
   }
 
   for (const row of objects(confirmation.targetModificationPaths)) {
+    if (isValidationOnlyTarget(row)) continue;
     const rowId = String(row.id ?? row.path ?? 'TARGET-MOD-UNKNOWN');
     failIf(!hasAny(row.traceRows) && !hasAny(row.traceRefs), reasons, `TARGET_MODIFICATION_TRACE_BINDING_REQUIRED:${rowId}`);
     failIf(!hasAny(row.evidenceRefs), reasons, `TARGET_MODIFICATION_EVIDENCE_BINDING_REQUIRED:${rowId}`);
@@ -1065,16 +1200,31 @@ function targetModificationPathValue(row) {
   return String(row.path ?? row.targetPath ?? row.file ?? row.glob ?? '').trim();
 }
 
+function isValidationOnlyTarget(row) {
+  if (!row || typeof row !== 'object') return false;
+  return [row.changeType, row.coverageRole].some(
+    (value) => String(value ?? '').trim().toLowerCase() === 'validation_only'
+  );
+}
+
 function deriveAllowedWriteScope(confirmation) {
   const directTargets = Array.isArray(confirmation.targetModificationPaths)
     ? confirmation.targetModificationPaths.flatMap((item) =>
-        typeof item === 'string' ? [item] : [targetModificationPathValue(item)].filter(Boolean)
+        typeof item === 'string'
+          ? [item]
+          : isValidationOnlyTarget(item)
+            ? []
+            : [targetModificationPathValue(item)].filter(Boolean)
       )
     : [];
   const taskTargets = objects(confirmation.atomicImplementationTaskList).flatMap((task) =>
     Array.isArray(task.targetModificationPaths)
       ? task.targetModificationPaths.flatMap((item) =>
-          typeof item === 'string' ? [item] : [targetModificationPathValue(item)].filter(Boolean)
+          typeof item === 'string'
+            ? [item]
+            : isValidationOnlyTarget(item)
+              ? []
+              : [targetModificationPathValue(item)].filter(Boolean)
         )
       : []
   );
@@ -1132,6 +1282,12 @@ function compilerInputContext(args) {
   const executionDisciplineProfile = validateExecutionDisciplineProfile(
     readOptionalJson(args.executionDisciplineProfileRef)
   );
+  const criticalAuditorReceiptRefs = governedCriticalAuditorReceiptRefs(
+    args.requirementRecord,
+    recordValidation.record,
+    recordValidation.sourceDocumentHash,
+    recordValidation.implementationConfirmationHash
+  );
   return {
     sourcePath,
     sourceText,
@@ -1141,9 +1297,11 @@ function compilerInputContext(args) {
     latestConfirmationEvent: recordValidation.event,
     sourceDocumentHash: recordValidation.sourceDocumentHash,
     implementationConfirmationHash: recordValidation.implementationConfirmationHash,
+    confirmationHashAuthority: recordValidation.confirmationHashAuthority,
     registry,
     gates,
     executionDisciplineProfile,
+    criticalAuditorReceiptRefs,
   };
 }
 
@@ -1247,7 +1405,7 @@ function buildTraceSlices(confirmation) {
   });
 }
 
-function buildPreConfirmationDrilldown(sourcePath, confirmation) {
+function buildPreConfirmationDrilldown(sourcePath, confirmation, governedReceiptRefs = []) {
   const drilldown = confirmation.preConfirmationDrilldown ?? {};
   return {
     ...drilldown,
@@ -1255,7 +1413,9 @@ function buildPreConfirmationDrilldown(sourcePath, confirmation) {
     mustDecompositionPacket: optionalArtifactRef(sourcePath, refValue(drilldown.mustDecompositionPacketRef)),
     reconciliationReport: optionalArtifactRef(sourcePath, reconciliationRef(drilldown)),
     preRenderGateReport: optionalArtifactRef(sourcePath, preRenderGateRef(drilldown)),
-    criticalAuditorReceipts: drilldownReceiptRefs(drilldown).map((ref) => optionalArtifactRef(sourcePath, ref)),
+    criticalAuditorReceipts: resolvedDrilldownReceiptRefs(drilldown, governedReceiptRefs).map(
+      (ref) => optionalArtifactRef(sourcePath, ref)
+    ),
     artifactProofPolicy: 'input_lineage_only_not_delivery_or_closeout_proof',
   };
 }
@@ -1352,6 +1512,7 @@ function buildModelPacket(context, args) {
     recordPath: normalizePathSafe(path.resolve(args.requirementRecord)),
     sourceDocumentHash: context.sourceDocumentHash,
     implementationConfirmationHash: context.implementationConfirmationHash,
+    confirmationHashAuthority: context.confirmationHashAuthority,
   });
   return {
     schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
@@ -1431,7 +1592,11 @@ function buildModelPacket(context, args) {
         'write_strict_TaskReport_before_returning_to_main_agent',
       ],
     },
-    preConfirmationDrilldown: buildPreConfirmationDrilldown(context.sourcePath, confirmation),
+    preConfirmationDrilldown: buildPreConfirmationDrilldown(
+      context.sourcePath,
+      confirmation,
+      context.criticalAuditorReceiptRefs
+    ),
     contractExecutionManifest,
     requiredCommands: objects(confirmation.requiredCommands).map((command) => ({
       id: commandId(command),
@@ -2236,7 +2401,9 @@ function manifestAliasBlockingReasons(packet) {
 
 function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta) {
   const validationReasons = [
-    ...validateCompilerContract(context.confirmation, context.record),
+    ...validateCompilerContract(context.confirmation, context.record, {
+      criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
+    }),
     ...promptMeta.audit.missing.map((fragment) => `HUMAN_PROMPT_REQUIRED_FRAGMENT_MISSING:${fragment}`),
     ...(promptMeta.goalDocumentAudit?.missing ?? []).map(
       (fragment) => `GOAL_DOCUMENT_REQUIRED_FRAGMENT_MISSING:${fragment}`
@@ -2249,6 +2416,7 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
     blockingReasons: validationReasons,
     sourceDocumentHash: context.sourceDocumentHash,
     implementationConfirmationHash: context.implementationConfirmationHash,
+    confirmationHashAuthority: context.confirmationHashAuthority,
     createdBy: 'req-trace-matrix-prompt-generator',
     createdAt: new Date().toISOString(),
     inputRefs: {
@@ -2379,7 +2547,9 @@ function compileArtifacts(args) {
   const outDir = path.resolve(args.outDir);
   try {
     context = compilerInputContext(args);
-    const blockingReasons = validateCompilerContract(context.confirmation, context.record);
+    const blockingReasons = validateCompilerContract(context.confirmation, context.record, {
+      criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
+    });
     if (blockingReasons.length > 0) {
       const receipt = buildBlockedReceipt(
         args,

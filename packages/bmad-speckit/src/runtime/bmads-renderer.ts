@@ -137,6 +137,7 @@ const BMADS_TEXT = {
       'Requirement contract authoring: use skill `requirements-contract-authoring`; typical action/lane: author-confirmation-ready-source.',
       'Architecture confirmation: prepare_architecture_confirmation is a runtime route and next safe action, not a skill.',
       'Implementation readiness: run_implementation_readiness_gate is a runtime gate action, not a skill.',
+      'Execution input compilation: dispatch-plan must compile and validate the requirement-scoped model packet before dispatch_implement.',
       'Delivery confirmation: confirm-closeout-acceptance is a controlled command-like action, not a skill.',
     ],
     reconfirmationRoutes: [
@@ -154,6 +155,11 @@ const BMADS_TEXT = {
       'Repair and reconfirm the requirement source first, because stale confirmation evidence blocks later mental models.',
     recommendedActionDefault: (primary) =>
       `Run ${primary.nextSafeAction}, because ${effectiveRuntimeRoute(primary)} is the current AI-TDD control position.`,
+    recommendedDispatchPlanSteps: [
+      'Run controlled dispatch-plan to compile model_packet.json, human_prompt.txt, audit_receipt.json, and goal_execution.md for the current requirement.',
+      'Validate the synchronized artifact hashes and ContractExecutionManifest against the current confirmed source hashes.',
+      'Only run dispatch_implement after the synchronized artifacts, hashes, and contract manifest validate.',
+    ],
     recommendedGoal: (skill) => `Use ${skill} only after the first safe-action blocker is clear.`,
     recommendedBmadHelp:
       'Use `bmad-speckit bmad-help` only when you need the BMAD Method workflow panorama, not to override this runtime safety route.',
@@ -322,6 +328,7 @@ const BMADS_TEXT = {
       '需求契约编写：使用技能 `requirements-contract-authoring`；常用动作/lane：author-confirmation-ready-source。',
       '架构确认：prepare_architecture_confirmation 是 runtime route 和下一安全动作，不是技能。',
       '实现就绪：run_implementation_readiness_gate 是 runtime gate action，不是技能。',
+      '执行输入编译：必须先由 dispatch-plan 为当前需求编译并验证 model packet，之后才允许 dispatch_implement。',
       '交付确认：confirm-closeout-acceptance 是受控命令型动作，不是技能。',
     ],
     reconfirmationRoutes: [
@@ -338,6 +345,11 @@ const BMADS_TEXT = {
       '先修复并重新确认需求源，因为过期确认凭证会阻塞后续心智模型。',
     recommendedActionDefault: (primary) =>
       `先执行 ${primary.nextSafeAction}，因为 ${effectiveRuntimeRoute(primary)} 是当前 AI-TDD 控制位置。`,
+    recommendedDispatchPlanSteps: [
+      '为当前需求执行受控 dispatch-plan，编译 model_packet.json、human_prompt.txt、audit_receipt.json 和 goal_execution.md。',
+      '根据当前已确认源 hash 验证四个同步产物的 hash 和 ContractExecutionManifest。',
+      '只有同步产物、hash 和 contract manifest 全部验证通过后，才执行 dispatch_implement。',
+    ],
     recommendedGoal: (skill) => `只有第一安全动作的阻塞清除后才使用 ${skill}。`,
     recommendedBmadHelp:
       '只有需要 BMAD 方法学全景时才运行 `bmad-speckit bmad-help`，不要用它覆盖本页 runtime 安全路线。',
@@ -816,11 +828,19 @@ function resolveMainAgentOrchestrationSurface(projectRoot, labels = textBundle()
       primaryDecision.blockerSummary && primaryDecision.blockerSummary !== 'none'
         ? [primaryDecision.blockerSummary]
         : [];
+    const compiledPacketStatus =
+      primaryDecision.compiledPacket?.status === 'usable'
+        ? 'compiled_packet_ready'
+        : primaryDecision.compiledPacket?.status === 'invalid'
+          ? 'invalid_compiled_packet'
+          : 'missing_compiled_packet';
     return {
       source: 'ai_tdd_runtime_decision',
       nextAction: primaryDecision.nextSafeAction,
       ready: primaryDecision.hasSafetyBlocker !== true,
-      pendingPacketStatus: primaryDecision.delivery?.awaiting ? 'awaiting_user_acceptance' : 'none',
+      pendingPacketStatus: primaryDecision.delivery?.awaiting
+        ? 'awaiting_user_acceptance'
+        : compiledPacketStatus,
       sessionId: primaryDecision.requirementSetId || primaryDecision.recordId,
       stageSummary: {
         currentMentalModelStatus: primaryDecision.effectiveSchemaModelStatus || primaryDecision.schemaModelStatus,
@@ -1094,6 +1114,13 @@ function recommendedPrimaryAction(primary, labels) {
 
 function renderRecommendedNextSteps(runtime, labels) {
   const primary = runtime.primaryRecord;
+  if (primary?.nextSafeAction === 'dispatch-plan') {
+    return [
+      schemaHeading(labels.headingSchema, 'recommendedNextSteps'),
+      '',
+      ...labels.recommendedDispatchPlanSteps.map((step, index) => `${index + 1}. ${step}`),
+    ];
+  }
   return [
     schemaHeading(labels.headingSchema, 'recommendedNextSteps'),
     '',
@@ -1232,6 +1259,18 @@ function recommendedNowAction(primary, language) {
   }
   const route = effectiveRuntimeRoute(primary);
   const next = primary.nextSafeAction;
+  if (next === 'dispatch-plan') {
+    return actionDisplay({
+      kind: 'dispatch_plan',
+      executable: true,
+      label: 'controlled dispatch packet compilation',
+      actionToken: 'bmad-speckit main-agent-orchestration --action dispatch-plan --host codex',
+      suggestedPrompt: zh
+        ? '继续当前 RequirementRecord。先执行受控 dispatch-plan，由 req-trace 编译 model_packet.json、human_prompt.txt、audit_receipt.json 和 goal_execution.md，验证当前 hash 与 ContractExecutionManifest；验证通过前不要执行 dispatch_implement。'
+        : 'Continue the current RequirementRecord by running controlled dispatch-plan. Use req-trace to compile model_packet.json, human_prompt.txt, audit_receipt.json, and goal_execution.md, then validate current hashes and ContractExecutionManifest. Do not run dispatch_implement until validation passes.',
+      renderAsCode: true,
+    });
+  }
   if (next === 'dispatch_implement' && primary.nativeGoalHandoff) {
     return actionDisplay({
       kind: 'managed_native_goal_handoff',
@@ -1402,6 +1441,15 @@ function renderRecommendedNow(runtime, labels, language) {
       lines.push(`TaskReport path: ${handoff.taskReportPath}`);
       lines.push('Return to main agent after /goal writes TaskReport');
       lines.push(handoff.returnCommand);
+    } else if (action.kind === 'dispatch_plan') {
+      lines.push(
+        `受控动作：${renderActionToken(action)}`,
+        '该动作由 req-trace 为当前需求编译四个同步执行产物，并验证 hash 与 ContractExecutionManifest。',
+        '验证通过前不得执行 dispatch_implement。',
+        '',
+        '推荐提示词：',
+        action.suggestedPrompt
+      );
     } else if (action.kind === 'suggested_prompt') {
       lines.push('这个 route 没有专属公开技能，请复制下面提示词执行。', '', '推荐提示词：');
       lines.push(
@@ -1427,6 +1475,15 @@ function renderRecommendedNow(runtime, labels, language) {
     lines.push(`TaskReport path: ${handoff.taskReportPath}`);
     lines.push('Return to main agent after /goal writes TaskReport');
     lines.push(handoff.returnCommand);
+  } else if (action.kind === 'dispatch_plan') {
+    lines.push(
+      `Controlled action: ${renderActionToken(action)}`,
+      'This action uses req-trace to compile the four synchronized execution artifacts for the current requirement and validate their hashes and ContractExecutionManifest.',
+      'Do not run dispatch_implement until validation passes.',
+      '',
+      'Suggested prompt:',
+      action.suggestedPrompt
+    );
   } else if (action.kind === 'suggested_prompt') {
     lines.push('This route has no dedicated public skill. Use the suggested prompt below.', '', 'Suggested prompt:');
     lines.push(

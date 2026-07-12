@@ -86,6 +86,14 @@ export function sha256Json(value: unknown): string {
   return sha256Text(JSON.stringify(withoutUndefined(value)));
 }
 
+function sha256FileIfPresent(value: unknown): string {
+  const file = text(value);
+  if (!file || file === '<missing-path>') return '';
+  const absolute = path.isAbsolute(file) ? file : path.resolve(file);
+  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) return '';
+  return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex')}`;
+}
+
 export function readJson(file: string): JsonObject {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -425,6 +433,33 @@ function normalizeArchitectureStatus(value: unknown, fallback: string): string {
   return ['active', 'stale', 'blocked', 'missing', 'superseded'].includes(status)
     ? status
     : fallback;
+}
+
+function normalizeArchitectureConfirmationState(value: unknown): JsonObject | null {
+  const source = nested(value);
+  if (Object.keys(source).length === 0) return null;
+  const currentHash = text(source.currentArchitectureConfirmationHash);
+  const requestedStatus = text(source.status);
+  const status =
+    currentHash && ['active', 'stale', 'blocked'].includes(requestedStatus)
+      ? requestedStatus
+      : 'missing';
+  const out: JsonObject = { status };
+  for (const field of [
+    'currentArchitectureConfirmationRunId',
+    'currentArchitectureConfirmationHash',
+    'currentArchitectureConfirmationPath',
+    'resolvedRecipeHash',
+    'lastEventType',
+  ]) {
+    const normalized = text(source[field]);
+    if (normalized) out[field] = normalized;
+  }
+  const staleInputs = normalizeHashMap(source.staleInputs);
+  if (Object.keys(staleInputs).length > 0) out.staleInputs = staleInputs;
+  const updatedAt = text(source.updatedAt);
+  if (updatedAt && !Number.isNaN(Date.parse(updatedAt))) out.updatedAt = updatedAt;
+  return out;
 }
 
 function normalizeHashMap(value: unknown, fallback: JsonObject = {}): JsonObject {
@@ -992,11 +1027,28 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   if (implementationEntryGate) out.implementationEntryGate = implementationEntryGate;
   else delete out.implementationEntryGate;
   if (out.runtimePolicySnapshotRef) {
-    out.runtimePolicySnapshotRef = normalizeArtifactRef(
+    const runtimePolicySnapshotRef = normalizeArtifactRef(
       nested(out.runtimePolicySnapshotRef),
       recordId,
       requirementSetId
     );
+    const contentHash =
+      text(runtimePolicySnapshotRef.contentHash) ||
+      sha256FileIfPresent(runtimePolicySnapshotRef.path);
+    if (contentHash) {
+      runtimePolicySnapshotRef.contentHash = contentHash;
+      out.runtimePolicySnapshotRef = runtimePolicySnapshotRef;
+    } else {
+      delete out.runtimePolicySnapshotRef;
+    }
+  }
+  const architectureConfirmationState = normalizeArchitectureConfirmationState(
+    out.architectureConfirmationState
+  );
+  if (architectureConfirmationState) {
+    out.architectureConfirmationState = architectureConfirmationState;
+  } else {
+    delete out.architectureConfirmationState;
   }
   const confirmationHistory = objects(out.confirmationHistory);
   out.confirmationHistory =

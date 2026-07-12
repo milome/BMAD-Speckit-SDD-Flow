@@ -294,6 +294,7 @@ ${inventedTraceBackRef}
       traceRows: ["TRACE-001"]
       evidenceRefs: ["EVD-001"]
       commandRefs: ["CMD-001"]
+${overrides.includes('MISSING_ERROR_CASE_ACCEPTANCE_REFS') ? '' : '      failurePathRefs: ["FAIL-001"]\n      edgeCaseRefs: ["EDGE-001"]'}
       expectedPreImplementationState: expected_red
       oracle: "Gate fails before artifacts exist and passes with synchronized artifacts."
       positiveControl: true
@@ -308,6 +309,7 @@ ${inventedTraceBackRef}
       traceRows: ["TRACE-001"]
       evidenceRefs: ["EVD-001"]
       commandRefs: ["CMD-001"]
+${overrides.includes('MISSING_ERROR_CASE_ACCEPTANCE_REFS') ? '' : '      failurePathRefs: ["FAIL-001"]\n      edgeCaseRefs: ["EDGE-001"]'}
       expectedPreImplementationState: expected_red
       oracle: "End-to-end gate CLI behavior."
       positiveControl: true
@@ -2065,6 +2067,11 @@ describe('requirements contract checkpoint automation', () => {
         'packet projection not materialized',
         'PROJECTION_NOT_MATERIALIZED',
         'packet_projection_not_materialized',
+      ],
+      [
+        'failure and edge rows lack reciprocal acceptance coverage',
+        'MISSING_ERROR_CASE_ACCEPTANCE_REFS',
+        'ai_tdd_manifest_failure_path_acceptance_coverage_missing',
       ],
     ];
 

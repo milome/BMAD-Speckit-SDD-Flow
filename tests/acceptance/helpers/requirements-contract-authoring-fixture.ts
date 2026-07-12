@@ -135,7 +135,12 @@ export function stagingTransactionDir(root: string, recordId: string): string {
   return entries[0];
 }
 
-export function roundArtifact(root: string, recordId: string, kind: 'request' | 'response' | 'receipt', roundIndex = 1): string {
+export function roundArtifact(
+  root: string,
+  recordId: string,
+  kind: 'request' | 'response' | 'receipt',
+  roundIndex = 1
+): string {
   const base = stagingTransactionDir(root, recordId);
   const file =
     kind === 'request'
@@ -192,8 +197,14 @@ export function writeCheckpointPersistenceEvidence(root: string, recordId: strin
   return evidencePath;
 }
 
-export function stagingMustDecompositionPacket(root: string, recordId: string): Record<string, unknown> {
-  const packetFile = path.join(stagingTransactionDir(root, recordId), 'must_decomposition_packet.json');
+export function stagingMustDecompositionPacket(
+  root: string,
+  recordId: string
+): Record<string, unknown> {
+  const packetFile = path.join(
+    stagingTransactionDir(root, recordId),
+    'must_decomposition_packet.json'
+  );
   const parsed = readJson<{ must_decomposition_packet?: Record<string, unknown> }>(packetFile);
   if (!parsed.must_decomposition_packet) {
     throw new Error(`must_decomposition_packet missing from ${packetFile}`);
@@ -232,14 +243,14 @@ export function buildValidResponseFromRequest(
   const actionableBlockingIssues = Array.isArray(gateDryRun.actionableBlockingIssues)
     ? (gateDryRun.actionableBlockingIssues as Array<Record<string, unknown>>)
     : [];
-  const reviewedMustRefs = Array.isArray(request.mustRefs)
-    ? (request.mustRefs as string[])
-    : [];
+  const reviewedMustRefs = Array.isArray(request.mustRefs) ? (request.mustRefs as string[]) : [];
   const projectionSummary = request.packetProjectionSummary as Record<string, unknown> | undefined;
   const projectionRefs = Array.isArray(projectionSummary?.projectionRefs)
     ? (projectionSummary.projectionRefs as string[])
     : [];
-  const projectionQualityGate = request.projectionQualityGate as Record<string, unknown> | undefined;
+  const projectionQualityGate = request.projectionQualityGate as
+    | Record<string, unknown>
+    | undefined;
   const checkedProjectionQualityRuleCodes = Array.isArray(projectionQualityGate?.requiredRuleCodes)
     ? (projectionQualityGate.requiredRuleCodes as string[])
     : [];
@@ -345,6 +356,70 @@ export function runAuthoring(
   });
 }
 
+export function writeTestLocalizationResponse(
+  root: string,
+  recordId: string,
+  relativePath = 'localization-response.test.json'
+): string {
+  const requestPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'authoring',
+    'localization-request.json'
+  );
+  const request = readJson<{
+    requestHash: string;
+    sourceDocumentHash: string;
+    confirmationLanguage: string;
+    entries: Array<{
+      key: string;
+      rowId: string;
+      field: string;
+      sourceTextHash: string;
+    }>;
+  }>(requestPath);
+  return writeText(
+    root,
+    relativePath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'requirements-contract-localization-response/v1',
+        requestHash: request.requestHash,
+        sourceDocumentHash: request.sourceDocumentHash,
+        confirmationLanguage: request.confirmationLanguage,
+        providerMode: 'main_session_authoring_agent',
+        semanticEquivalenceAttested: true,
+        translations: request.entries.map((entry) => ({
+          key: entry.key,
+          sourceTextHash: entry.sourceTextHash,
+          translatedText: `${entry.rowId} 的${entry.field}中文语义译文`,
+        })),
+      },
+      null,
+      2
+    )}\n`
+  );
+}
+
+export function runAuthoringWithTestLocalization(
+  root: string,
+  source: string,
+  recordId: string,
+  options: Record<string, unknown> = {}
+) {
+  const first = runAuthoring(root, source, recordId, options);
+  if (first.substate !== 'localization_translation_required') {
+    return first;
+  }
+  return runAuthoring(root, source, recordId, {
+    ...options,
+    localizationResponseFile: writeTestLocalizationResponse(root, recordId),
+  });
+}
+
 export function runIntakeAuthoring(
   root: string,
   intakeSource: string,
@@ -365,7 +440,10 @@ export function issueCodes(result: { blockingIssues?: Array<{ code: string }> })
   return (result.blockingIssues ?? []).map((issue) => issue.code);
 }
 
-export function writeConsumerRequirement(root: string, relativePath = 'docs/requirements/multi-timeframe.md') {
+export function writeConsumerRequirement(
+  root: string,
+  relativePath = 'docs/requirements/multi-timeframe.md'
+) {
   return writeText(
     root,
     relativePath,
@@ -374,32 +452,66 @@ export function writeConsumerRequirement(root: string, relativePath = 'docs/requ
       '',
       '目标文件：`vnpy/chart/multi_timeframe_widget.py`, `vnpy/chart/multi_timeframe_settings_dialog.py`, `vnpy/trader/ui/widget.py`',
       '',
-      '## 默认显示',
+      '## Functional Requirements',
       '',
-      '| 项目 | 默认 | 行为 |',
-      '|---|---|---|',
-      '| 主图摘要 | 开启 | 主图摘要展示所有启用周期和指标。 |',
-      '| 设置面板 | 开启 | 设置面板默认显示可编辑周期列表。 |',
+      '| ID | Requirement | Acceptance link |',
+      '| --- | --- | --- |',
+      '| FR-001 | 主图摘要必须展示所有启用周期和指标。 | ACC-001 |',
+      '| FR-002 | 设置面板必须显示可编辑周期列表并实时预览修改。 | ACC-002 |',
+      '| FR-003 | 取消操作必须回滚全部预览变更。 | ACC-003 |',
+      '| FR-004 | OK 操作必须持久化设置并刷新图表。 | ACC-004 |',
       '',
-      '## 设置面板',
+      '## Negative Requirements And Not Done Conditions',
       '',
-      '- 支持批量操作启用和禁用多个周期。',
-      '- 实时预览在用户修改设置时立即更新主图摘要。',
-      '- 取消时回滚所有预览变更。',
-      '- OK 按钮持久化设置并刷新图表。',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | 仅更新确认页或内存预览不能算完成。 | 持久化失败时必须保留先前设置且不得宣称保存成功。 | 失败后状态被部分写入或错误显示成功。 | FAIL-001 | ACC-003 ACC-004 CMD-001 |',
       '',
-      '## 验收标准',
+      '## Failure Matrix',
       '',
-      '- 1366x768 分辨率下必须可用，不遮挡 OK 和取消按钮。',
-      '- pytest tests/test_multi_timeframe_settings.py 必须覆盖设置持久化。',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | 设置校验、持久化或刷新失败。 | 阻止提交，保留最近一次有效设置，并向用户显示可恢复错误。 | NEG-001 | ACC-001 ACC-002 ACC-003 ACC-004 E2E-001 | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 |',
       '',
-      '```text',
-      'This fenced block must not become a requirement candidate.',
-      '```',
+      '## Acceptance Evidence',
       '',
-      '## 非目标',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| ACC-001 | 摘要显示 | MUST-FR-001 | pytest tests/test_multi_timeframe_settings.py | 所有启用周期和指标都出现在摘要中。 | CMD-001 TRACE-001 | PATH-001 owns implementation and remediation. |',
+      '| ACC-002 | 设置预览 | MUST-FR-002 | pytest tests/test_multi_timeframe_settings.py | 编辑周期后预览立即反映新配置。 | CMD-001 TRACE-002 | PATH-002 owns implementation and remediation. |',
+      '| ACC-003 | 取消回滚 | MUST-FR-003 NEG-001 | pytest tests/test_multi_timeframe_settings.py | 取消后恢复修改前设置且无持久化副作用。 | CMD-001 TRACE-003 TRACE-005 | PATH-002 owns implementation and remediation. |',
+      '| ACC-004 | 保存刷新 | MUST-FR-004 NEG-001 | pytest tests/test_multi_timeframe_settings.py | 保存成功后设置持久化且图表刷新一次。 | CMD-001 TRACE-004 TRACE-005 | PATH-003 owns implementation and remediation. |',
       '',
-      '本需求不重写交易引擎。',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| CMD-001 | delivery-evidence | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 每个 MUST 使用对应 ACC/TRACE oracle 独立闭环。 | ACC-001 ACC-002 ACC-003 ACC-004 E2E-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 TRACE-005 | PATH-001 PATH-002 PATH-003 own remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py vnpy/chart/multi_timeframe_settings_dialog.py vnpy/trader/ui/widget.py |',
+      '| E2E-001 | e2e | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 用户完成预览、取消、保存和刷新闭环。 | ACC-001 ACC-002 ACC-003 ACC-004 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 TRACE-005 | PATH-001 PATH-002 PATH-003 own remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py vnpy/chart/multi_timeframe_settings_dialog.py vnpy/trader/ui/widget.py |',
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | OUT-001 | 所有启用周期和指标都出现在摘要中。 | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+      '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-001 | CMD-001 | CMD-001 | none | PATH-002 | none | 编辑周期后预览立即反映新配置。 | MUST-FR-002 closes through ACC-002 and TRACE-002. | PATH-002 owns remediation. |',
+      '| TRACE-003 | MUST-FR-003 | ACC-003 | ACC-003 E2E-001 | CMD-001 | CMD-001 | none | PATH-002 | none | 取消后恢复修改前设置且无持久化副作用。 | MUST-FR-003 closes through ACC-003 and TRACE-003. | PATH-002 owns remediation. |',
+      '| TRACE-004 | MUST-FR-004 | ACC-004 | ACC-004 E2E-001 | CMD-001 | CMD-001 | none | PATH-003 | none | 保存成功后设置持久化且图表刷新一次。 | MUST-FR-004 closes through ACC-004 and TRACE-004. | PATH-003 owns remediation. |',
+      '| TRACE-005 | NEG-001 | ACC-003 ACC-004 | ACC-003 ACC-004 E2E-001 | CMD-001 | CMD-001 | none | PATH-002 PATH-003 | none | 失败时保留先前设置且不显示保存成功。 | NEG-001 closes through negative controls in ACC-003 and ACC-004. | PATH-002 PATH-003 own remediation. |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| PATH-001 | `vnpy/chart/multi_timeframe_widget.py` | Widget owner | Render enabled periods and refresh the chart. | MUST-FR-001 MUST-FR-004 | ACC-001 and ACC-004 pass. | ACC-001 ACC-004 CMD-001 TRACE-001 TRACE-004 | Widget owner owns implementation and rollback. |',
+      '| PATH-002 | `vnpy/chart/multi_timeframe_settings_dialog.py` | Dialog owner | Implement preview, cancel, validation, and rollback. | MUST-FR-002 MUST-FR-003 NEG-001 | ACC-002 and ACC-003 pass. | ACC-002 ACC-003 CMD-001 TRACE-002 TRACE-003 TRACE-005 | Dialog owner owns implementation and rollback. |',
+      '| PATH-003 | `vnpy/trader/ui/widget.py` | UI owner | Persist accepted settings and trigger one refresh. | MUST-FR-004 NEG-001 | ACC-004 passes without partial writes. | ACC-004 CMD-001 TRACE-004 TRACE-005 | UI owner owns implementation and rollback. |',
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Forbidden scope | Boundary assertion | Evidence |',
+      '| --- | --- | --- | --- |',
+      '| OUT-001 | 本需求不重写交易引擎。 | 保持交易引擎不变。 | ACC-001 |',
       '',
     ].join('\n')
   );
@@ -417,10 +529,55 @@ export function writeMinimalConsumerRequirement(
       '',
       '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
       '',
-      '## 验收标准',
+      '## Functional Requirements',
       '',
-      '- 主图摘要必须展示所有启用周期。',
-      '- pytest tests/test_multi_timeframe_settings.py 必须覆盖主图摘要显示。',
+      '| ID | Requirement | Acceptance link |',
+      '| --- | --- | --- |',
+      '| FR-001 | 主图摘要必须展示所有启用周期。 | ACC-001 |',
+      '',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | 仅生成确认页不能算完成功能。 | 摘要缺少任一启用周期时不得宣称完成。 | 摘要显示不完整。 | FAIL-001 | ACC-001 CMD-001 |',
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | 启用周期配置缺失或无效。 | 保留最近一次有效摘要并显示配置错误，不输出不完整摘要。 | NEG-001 | ACC-001 E2E-001 | MUST-FR-001 |',
+      '',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| ACC-001 | 主图摘要显示 | MUST-FR-001 NEG-001 | pytest tests/test_multi_timeframe_settings.py | 主图摘要展示全部启用周期，配置无效时保持先前有效摘要。 | CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. |',
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| CMD-001 | delivery-evidence | MUST-FR-001 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 主图摘要展示全部启用周期，失败时保持安全状态。 | ACC-001 E2E-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |',
+      '| E2E-001 | e2e | MUST-FR-001 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 用户看到完整摘要或明确配置错误。 | ACC-001 CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |',
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 主图摘要展示全部启用周期。 | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+      '| TRACE-002 | NEG-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 配置无效时保持先前有效摘要且不宣称成功。 | NEG-001 closes through ACC-001 negative control. | PATH-001 owns remediation. |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| PATH-001 | `vnpy/chart/multi_timeframe_widget.py` | Widget owner | Render enabled periods and preserve the last valid summary on invalid input. | MUST-FR-001 NEG-001 | ACC-001 passes. | ACC-001 CMD-001 TRACE-001 TRACE-002 | Widget owner owns implementation and rollback. |',
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Forbidden scope | Boundary assertion | Evidence |',
+      '| --- | --- | --- | --- |',
+      '| OUT-001 | 不修改交易执行逻辑。 | 保持交易执行逻辑不变。 | ACC-001 |',
       '',
     ].join('\n')
   );

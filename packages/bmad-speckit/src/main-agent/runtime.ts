@@ -232,6 +232,8 @@ const ORCHESTRATION_ACTIONS = new Set([
   'confirmation-drift-route',
   'repair-confirmation-bookkeeping',
   'confirmation-bookkeeping-repair',
+  'register-pre-confirmation-render',
+  'register_pre_confirmation_render',
   'pre-confirmation-drilldown',
   'pre_confirmation_drilldown',
   'author-confirmation-ready-source',

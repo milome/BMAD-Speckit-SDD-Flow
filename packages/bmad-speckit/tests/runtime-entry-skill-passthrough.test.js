@@ -100,6 +100,27 @@ describe('runtime entry skill passthrough contract', () => {
     }
   });
 
+  it('bmads-style entry automatically compiles the governed dispatch packet at passing readiness', () => {
+    const rootSkill = read(
+      path.join(PROJECT_ROOT, '_bmad', 'skills', 'bmad-speckit', 'SKILL.md')
+    );
+    const aliasSkill = read(path.join(PROJECT_ROOT, '_bmad', 'skills', 'bmads', 'SKILL.md'));
+    const command = read(path.join(PROJECT_ROOT, '_bmad', 'commands', 'bmads.md'));
+
+    for (const text of [rootSkill, aliasSkill, command]) {
+      assert.match(text, /automatically execute the controlled `dispatch-plan`/);
+      assert.match(text, /implementation_readiness=pass/);
+      assert.match(text, /compiled packet is missing or unusable/);
+      assert.match(text, /--record-id <primary\.recordId>/);
+      assert.match(text, /--requirement-set-id <primary\.requirementSetId>/);
+      assert.doesNotMatch(text, /--recordId <primary\.recordId>/);
+      assert.doesNotMatch(text, /--requirementSetId <primary\.requirementSetId>/);
+      assert.match(text, /re-render the BMADS runtime console/);
+      assert.match(text, /must not execute `dispatch_implement`/);
+      assert.match(text, /must not start the implementation run loop/);
+    }
+  });
+
   it('bmad-help entry skills explicitly forbid replacing workflow sections with summaries', () => {
     for (const file of [
       path.join(PROJECT_ROOT, '_bmad', 'skills', 'bmad-help', 'SKILL.md'),

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  buildMainAgentDispatchInstruction,
   importNativeGoalTaskReport,
   resolveMainAgentOrchestrationSurface,
   runMainAgentAutomaticLoop,
@@ -223,6 +224,28 @@ function writeImportTaskReport(
 }
 
 describe('main-agent automatic run-loop', () => {
+  it('keeps controlled dispatch-plan at dispatch_implement until native goal is actually invoked', () => {
+    const fixture = materializeRunLoopFixture();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        ...runLoopArgs(fixture),
+        host: 'codex',
+        hydratePacket: true,
+      });
+      const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
+      const surface = resolveMainAgentOrchestrationSurface({
+        ...runLoopArgs(fixture),
+      });
+
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+      expect(record.nativeGoalHandoff).toBeUndefined();
+      expect(surface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(surface.mainAgentStageSummary?.nextAction).toBe('dispatch_implement');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
   it('executes inspect dispatch claim dispatch report complete and final inspect from one call', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
@@ -776,6 +799,7 @@ describe('main-agent automatic run-loop', () => {
         schemaVersion: 'native-goal-handoff/v1',
         packetId: compiled.packet.packetId,
         taskReportPath: compiled.packet.compiledPromptRef.taskReportPath,
+        invoked: true,
         imported: false,
       };
       fs.writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');

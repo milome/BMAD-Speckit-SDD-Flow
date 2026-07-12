@@ -23,6 +23,14 @@ npx --no-install bmad-speckit bmads
 
 On Windows PowerShell, if `npx` resolves to a blocked PowerShell shim, use `npx.cmd --no-install bmad-speckit bmads`.
 
+Before the final render, inspect the primary RequirementRecord. When it is at `implementation_readiness=pass`, `nextSafeAction=dispatch-plan`, and the compiled packet is missing or unusable, automatically execute the controlled `dispatch-plan` with the exact inspected identities:
+
+```text
+main-agent-orchestration --action dispatch-plan --host <active-host> --record-id <primary.recordId> --requirement-set-id <primary.requirementSetId>
+```
+
+After compilation, validate `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, `goal_execution.md`, their hashes, packet authority, `ContractExecutionManifest`, and audit receipt, then re-render the BMADS runtime console. Do not ask the user to copy a suggested prompt. This transition must not execute `dispatch_implement` and must not start the implementation run loop. Fail closed on any blocker.
+
 The default command response must preserve these sections:
 
 - Status Summary

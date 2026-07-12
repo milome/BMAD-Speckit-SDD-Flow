@@ -140,6 +140,11 @@ interface RedProofRow {
   proofSource: string;
 }
 
+interface RedProofExecutionResult {
+  state: MatrixState;
+  failureClass: string;
+}
+
 const AI_TDD_COMMAND_IDS = new Set([
   'CMD-AI-TDD-CONTRACT-GATE',
   'CMD-AI-TDD-CONTRACT-CLOSEOUT-GATE',
@@ -207,6 +212,18 @@ function normalizePath(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
+function isTestFileRef(value: string): boolean {
+  const normalized = normalizePath(value).toLowerCase();
+  const fileName = path.posix.basename(normalized);
+  if (!/\.(?:py|tsx?|jsx?|mjs|cjs|java|kt|go|rs|cs|rb|php|feature)$/u.test(fileName)) {
+    return false;
+  }
+  return (
+    /(?:^|\/)(?:tests?|__tests__)(?:\/|$)/u.test(normalized) ||
+    /(?:^|[._-])(?:test|spec)(?:[._-]|$)/u.test(fileName)
+  );
+}
+
 function readJson(file: string): JsonObject {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
@@ -237,8 +254,14 @@ function commandFileRefs(row: JsonObject): string[] {
     text(row.testPath),
     ...strings(row.files),
     ...strings(row.testFiles),
-    ...strings(row.targetFiles),
+    ...strings(row.targetFiles).filter(isTestFileRef),
   ])
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
+function commandTargetFileRefs(row: JsonObject): string[] {
+  return unique([...commandFileRefs(row), ...strings(row.targetFiles)])
     .filter(Boolean)
     .map(normalizePath);
 }
@@ -339,10 +362,7 @@ function extractCommandFileRefs(command: string): string[] {
   const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, '');
-    if (
-      /(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) &&
-      (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))
-    ) {
+    if (/(?:^|[\\/])[^\\/]+\.(?:py|tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref)) {
       refs.add(ref);
     }
   }
@@ -539,9 +559,7 @@ function derivedAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
   const traceByCommand = traceCommandIndex(confirmation);
   return objects(confirmation.requiredCommands).flatMap((command, index) => {
     const id = commandId(command);
-    const files = commandFileRefs(command).filter((file) =>
-      /\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs)$/iu.test(file)
-    );
+    const files = commandFileRefs(command).filter(isTestFileRef);
     if (files.length === 0) return [];
     const linkedTraces = traceByCommand.get(id) ?? [];
     const covers = unique([
@@ -656,6 +674,8 @@ function targetModificationPaths(confirmation: JsonObject): JsonObject[] {
     ...objects(confirmation.targetModificationPaths).map((row, index) => ({
       id: text(row.id) || `TARGET-MOD-${index + 1}`,
       path: text(row.path) || text(row.targetPath) || text(row.targetPathOrField),
+      changeType: text(row.changeType),
+      coverageRole: text(row.coverageRole),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
       artifactRefs: idRefs(row, ['artifactRefs']),
@@ -974,7 +994,7 @@ function commandTargetCollection(confirmation: JsonObject): JsonObject {
       const id = commandId(row);
       const traceRefs = idRefs(row, ['traceRows', 'traceRefs']);
       const evidenceRefs = idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']);
-      const files = commandFileRefs(row);
+      const files = commandTargetFileRefs(row);
       const linkedTraceRows = traceRows.filter((trace) => commandRefs(trace).includes(id));
       const collectedTraceRefs = unique([
         ...traceRefs,
@@ -1445,6 +1465,15 @@ function applyReadinessAutoRemediationOverlay(
       objects(overlay.commandBindings),
       (row, patch) => {
         const out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRows));
+        return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
+      }
+    ),
+    targetModificationPaths: applyOverlayRows(
+      objects(confirmation.targetModificationPaths),
+      objects(overlay.targetPathBindings),
+      (row, patch) => {
+        let out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRefs));
+        out = mergeUniqueRefs(out, 'traceRefs', strings(patch.traceRefs));
         return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
       }
     ),
@@ -1983,10 +2012,6 @@ function acceptanceFromManifest(manifest: JsonObject): AcceptanceRow[] {
   ];
 }
 
-function commandById(manifest: JsonObject): Map<string, JsonObject> {
-  return new Map(objects(manifest.requiredCommands).map((row) => [text(row.id), row]));
-}
-
 function preProofFor(row: AcceptanceRow, manifest: JsonObject): RedProofRow | undefined {
   return (objects(manifest.preImplementationRedProofs) as unknown as RedProofRow[]).find(
     (proof) => proof.acceptanceId === row.id || row.commandRefs.includes(proof.commandId)
@@ -1999,40 +2024,69 @@ function invalidRedOutput(output: string): boolean {
   );
 }
 
+function redProofCommandFor(row: AcceptanceRow, manifest: JsonObject): JsonObject | undefined {
+  const commands = objects(manifest.requiredCommands);
+  const commandsById = new Map(commands.map((command) => [commandId(command), command]));
+  const directCommands = row.commandRefs.map((ref) => commandsById.get(ref)).filter(Boolean);
+  const testFiles = row.files.filter(isTestFileRef).map(normalizePath);
+  const coversTestFiles = (command: JsonObject): boolean => {
+    const commandFiles = new Set(commandFileRefs(command).filter(isTestFileRef).map(normalizePath));
+    return testFiles.length > 0 && testFiles.every((file) => commandFiles.has(file));
+  };
+  const directTestCommand = directCommands.find(coversTestFiles);
+  if (directTestCommand) return directTestCommand;
+
+  const coveringCommandsByText = new Map<string, JsonObject>();
+  for (const command of commands.filter(coversTestFiles)) {
+    const commandText = text(command.command);
+    if (commandText && !coveringCommandsByText.has(commandText)) {
+      coveringCommandsByText.set(commandText, command);
+    }
+  }
+  if (coveringCommandsByText.size === 1) {
+    return [...coveringCommandsByText.values()][0];
+  }
+  return directCommands[0];
+}
+
 function executePreImplementationRedProof(
   row: AcceptanceRow,
   manifest: JsonObject,
-  timeoutMs: number
+  timeoutMs: number,
+  executionCache?: Map<string, RedProofExecutionResult>
 ): RedProofRow | undefined {
-  const commands = commandById(manifest);
-  const command = row.commandRefs.map((ref) => commands.get(ref)).find(Boolean);
+  const command = redProofCommandFor(row, manifest);
   const commandText = text(command?.command);
   if (!commandText) return undefined;
-  const result = spawnSync(commandText, {
-    cwd: process.cwd(),
-    shell: true,
-    encoding: 'utf8',
-    timeout: timeoutMs,
-    windowsHide: true,
-  });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   const commandIdValue = text(command?.id) || row.commandRefs[0] || '';
-  if (result.error || result.status === null || invalidRedOutput(output)) {
-    return {
-      acceptanceId: row.id,
-      commandId: commandIdValue,
-      state: 'invalid_red',
-      oracle: row.oracle,
-      failureClass: result.error ? 'runner_crash' : 'environment_error',
-      proofSource: 'execute_red_proof',
-    };
+  let execution = executionCache?.get(commandText);
+  if (!execution) {
+    const result = spawnSync(commandText, {
+      cwd: process.cwd(),
+      shell: true,
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      windowsHide: true,
+    });
+    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+    execution =
+      result.error || result.status === null || invalidRedOutput(output)
+        ? {
+            state: 'invalid_red',
+            failureClass: result.error ? 'runner_crash' : 'environment_error',
+          }
+        : {
+            state: result.status === 0 ? 'unexpected_green' : 'expected_red',
+            failureClass: result.status === 0 ? 'unexpected_pass' : 'oracle_failure',
+          };
+    executionCache?.set(commandText, execution);
   }
   return {
     acceptanceId: row.id,
     commandId: commandIdValue,
-    state: result.status === 0 ? 'unexpected_green' : 'expected_red',
+    state: execution.state,
     oracle: row.oracle,
-    failureClass: result.status === 0 ? 'unexpected_pass' : 'oracle_failure',
+    failureClass: execution.failureClass,
     proofSource: 'execute_red_proof',
   };
 }
@@ -2040,19 +2094,36 @@ function executePreImplementationRedProof(
 function preImplementationState(
   row: AcceptanceRow,
   manifest: JsonObject,
-  options: { executeRedProof?: boolean; redProofCommandTimeoutMs?: number } = {}
+  options: {
+    executeRedProof?: boolean;
+    redProofCommandTimeoutMs?: number;
+    redProofExecutionCache?: Map<string, RedProofExecutionResult>;
+  } = {}
 ): MatrixRow {
+  const expectedPreImplementationState = row.expectedPreImplementationState ?? 'expected_red';
   const missingFiles = row.files.filter((file) => !fileExists(file));
+  const missingTestPlan =
+    expectedPreImplementationState === 'expected_red' && row.files.length === 0;
   const controlledProof =
-    preProofFor(row, manifest) ??
-    (options.executeRedProof
-      ? executePreImplementationRedProof(row, manifest, options.redProofCommandTimeoutMs ?? 120000)
-      : undefined);
+    missingTestPlan || missingFiles.length > 0
+      ? undefined
+      : (preProofFor(row, manifest) ??
+        (options.executeRedProof
+          ? executePreImplementationRedProof(
+              row,
+              manifest,
+              options.redProofCommandTimeoutMs ?? 120000,
+              options.redProofExecutionCache
+            )
+          : undefined));
   const proofState =
     controlledProof?.failureClass && INVALID_RED_FAILURE_CLASSES.has(controlledProof.failureClass)
       ? 'invalid_red'
       : controlledProof?.state;
-  const state = missingFiles.length > 0 ? 'missing_test' : (proofState ?? 'missing_plan');
+  const state =
+    missingTestPlan || missingFiles.length > 0
+      ? 'missing_test'
+      : (proofState ?? 'missing_plan');
   const reasons =
     state === 'expected_red'
       ? controlledProof && !controlledProof.oracle
@@ -2068,10 +2139,10 @@ function preImplementationState(
   return matrixRow({
     id: row.id,
     category: row.id.startsWith('E2E-') || row.kind === 'e2e' ? 'E2E' : 'ACC',
-    expectedPreImplementationState: row.expectedPreImplementationState ?? 'expected_red',
+    expectedPreImplementationState,
     currentState: state,
     oracle: controlledProof?.oracle || row.oracle,
-    commandRefs: row.commandRefs,
+    commandRefs: controlledProof?.commandId ? [controlledProof.commandId] : row.commandRefs,
     refs: [
       ...row.covers,
       ...row.traceRefs,
@@ -2123,6 +2194,7 @@ function modeMatrix(input: {
   const preOptions = {
     executeRedProof: input.executeRedProof,
     redProofCommandTimeoutMs: input.redProofCommandTimeoutMs,
+    redProofExecutionCache: new Map<string, RedProofExecutionResult>(),
   };
   const acceptanceRows =
     input.mode === 'pre-implementation'

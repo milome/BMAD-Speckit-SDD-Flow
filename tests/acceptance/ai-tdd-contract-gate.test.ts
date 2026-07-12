@@ -68,14 +68,20 @@ function sourceText(input: {
   omitErrorCaseAcceptanceRefs?: boolean;
   manifestProjectionAddsCommand?: boolean;
   manifestProjectionOmitsCommand?: boolean;
+  acceptanceCommand?: string;
+  requiredCommandTargetFiles?: string[];
+  omitAcceptanceTestFiles?: boolean;
+  fallbackTestCommand?: string;
 }): string {
   const status = input.status ?? 'user_confirmed';
   const targetPath = input.targetPath ?? 'evidence/target.json';
   const testPath = input.testPath ?? 'tests/acceptance/ai-tdd-fixture.test.ts';
   const e2eTestPath = input.e2eTestPath ?? 'tests/e2e/ai-tdd-fixture.e2e.test.ts';
-  const acceptanceCommandText = input.nonTestCommand
-    ? 'node scripts/non-test-command.js'
-    : `npx vitest run ${testPath.replace(/\\/gu, '/')}`;
+  const acceptanceCommandText =
+    input.acceptanceCommand ??
+    (input.nonTestCommand
+      ? 'node scripts/non-test-command.js'
+      : `npx vitest run ${testPath.replace(/\\/gu, '/')}`);
   const e2eCommandText = input.nonTestCommand
     ? 'node scripts/non-test-command.js'
     : `npx vitest run ${e2eTestPath.replace(/\\/gu, '/')}`;
@@ -84,7 +90,9 @@ function sourceText(input: {
     acceptance.push(
       '  acceptanceTests:',
       '    - id: ACC-001',
-      `      file: ${testPath.replace(/\\/gu, '/')}`,
+      ...(input.omitAcceptanceTestFiles
+        ? []
+        : [`      file: ${testPath.replace(/\\/gu, '/')}`]),
       `      covers: [${input.brokenRefs ? 'MUST-MISSING' : input.accCoversNegOnly ? 'NEG-001' : 'MUST-001'}]`,
       ...(input.omitErrorCaseAcceptanceRefs
         ? []
@@ -101,7 +109,9 @@ function sourceText(input: {
     acceptance.push(
       '  e2eSuites:',
       '    - id: E2E-001',
-      `      file: ${e2eTestPath.replace(/\\/gu, '/')}`,
+      ...(input.omitAcceptanceTestFiles
+        ? []
+        : [`      file: ${e2eTestPath.replace(/\\/gu, '/')}`]),
       `      covers: [${input.brokenRefs ? 'NEG-MISSING' : 'NEG-001'}]`,
       ...(input.omitErrorCaseAcceptanceRefs
         ? []
@@ -255,20 +265,36 @@ function sourceText(input: {
     '      oracle: fixture acceptance oracle',
     '      traceRows: [TRACE-001]',
     '      evidenceRefs: [EVD-001]',
+    ...(input.requiredCommandTargetFiles && input.requiredCommandTargetFiles.length > 0
+      ? [
+          '      targetFiles:',
+          ...input.requiredCommandTargetFiles.map(
+            (targetFile) => `        - ${targetFile.replace(/\\/gu, '/')}`
+          ),
+        ]
+      : []),
     '    - id: CMD-002',
     `      command: ${e2eCommandText}`,
     '      oracle: fixture e2e negative-control oracle',
     '      traceRows: [TRACE-001]',
     '      evidenceRefs: [EVD-001]',
-    ...(input.manifestProjectionAddsCommand || input.manifestProjectionOmitsCommand
+    ...(input.fallbackTestCommand
       ? [
           '    - id: CMD-003',
-          `      command: ${acceptanceCommandText}`,
-          '      oracle: fixture closeout review oracle',
+          `      command: ${input.fallbackTestCommand}`,
+          '      oracle: fixture fallback test oracle',
           '      traceRows: [TRACE-001]',
           '      evidenceRefs: [EVD-001]',
         ]
-      : []),
+      : input.manifestProjectionAddsCommand || input.manifestProjectionOmitsCommand
+        ? [
+            '    - id: CMD-003',
+            `      command: ${acceptanceCommandText}`,
+            '      oracle: fixture closeout review oracle',
+            '      traceRows: [TRACE-001]',
+            '      evidenceRefs: [EVD-001]',
+          ]
+        : []),
     ...(input.includeOrphans
       ? [
           '    - id: CMD-ORPHAN',
@@ -386,6 +412,10 @@ function writeFixture(
     sourceInRequirementsDir?: boolean;
     manifestProjectionAddsCommand?: boolean;
     manifestProjectionOmitsCommand?: boolean;
+    acceptanceCommand?: string;
+    requiredCommandTargetFiles?: string[];
+    omitAcceptanceTestFiles?: boolean;
+    fallbackTestCommand?: string;
   } = {}
 ) {
   const testPath = path.join(root, 'tests', 'acceptance', 'ai-tdd-fixture.test.ts');
@@ -441,6 +471,10 @@ function writeFixture(
       omitErrorCaseAcceptanceRefs: options.omitErrorCaseAcceptanceRefs,
       manifestProjectionAddsCommand: options.manifestProjectionAddsCommand,
       manifestProjectionOmitsCommand: options.manifestProjectionOmitsCommand,
+      acceptanceCommand: options.acceptanceCommand,
+      requiredCommandTargetFiles: options.requiredCommandTargetFiles,
+      omitAcceptanceTestFiles: options.omitAcceptanceTestFiles,
+      fallbackTestCommand: options.fallbackTestCommand,
     })
   );
   const confirmation = {
@@ -476,10 +510,18 @@ function writeFixture(
         oracle: 'current-attempt command with artifact evidence',
         requiredCommandRefs: ['CMD-001'],
         artifactRefs: options.canonicalSurfaceOnly
-          ? ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
+          ? [
+              'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+            ]
           : options.artifactIdOnly
-            ? ['ART-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
-            : ['CANONICAL-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts'],
+            ? [
+                'ART-001',
+                'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+              ]
+            : [
+                'CANONICAL-001',
+                'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+              ],
       },
       ...(options.includeOrphans
         ? [
@@ -505,10 +547,18 @@ function writeFixture(
         ],
         acceptanceRefs: ['ACC-001', 'E2E-001'],
         artifactRefs: options.canonicalSurfaceOnly
-          ? ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
+          ? [
+              'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+            ]
           : options.artifactIdOnly
-            ? ['ART-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts']
-            : ['CANONICAL-001', 'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts'],
+            ? [
+                'ART-001',
+                'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+              ]
+            : [
+                'CANONICAL-001',
+                'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+              ],
         ...(options.canonicalSurfaceOnly ? { canonicalSurfaceRefs: ['ART-001'] } : {}),
       },
     ],
@@ -553,6 +603,9 @@ function writeFixture(
         oracle: 'fixture acceptance oracle',
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
+        ...(options.requiredCommandTargetFiles
+          ? { targetFiles: options.requiredCommandTargetFiles }
+          : {}),
       },
       {
         id: 'CMD-002',
@@ -563,7 +616,17 @@ function writeFixture(
         traceRows: ['TRACE-001'],
         evidenceRefs: ['EVD-001'],
       },
-      ...(options.includeOrphans
+      ...(options.fallbackTestCommand
+        ? [
+            {
+              id: 'CMD-003',
+              command: options.fallbackTestCommand,
+              oracle: 'fixture fallback test oracle',
+              traceRows: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            },
+          ]
+        : options.includeOrphans
         ? [
             {
               id: 'CMD-ORPHAN',
@@ -656,7 +719,10 @@ function writeFixture(
                 },
               ]
             : options.targetModificationNoRefs
-              ? ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts', 'tests/acceptance/ai-tdd-contract-gate.test.ts']
+              ? [
+                  'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
+                  'tests/acceptance/ai-tdd-contract-gate.test.ts',
+                ]
               : [
                   {
                     id: 'TARGET-MOD-001',
@@ -705,7 +771,7 @@ function writeFixture(
                 acceptanceTests: [
                   {
                     id: 'ACC-001',
-                    file: testPathRef,
+                    ...(options.omitAcceptanceTestFiles ? {} : { file: testPathRef }),
                     covers: [options.accCoversNegOnly ? 'NEG-001' : 'MUST-001'],
                     ...(options.omitErrorCaseAcceptanceRefs
                       ? {}
@@ -725,7 +791,7 @@ function writeFixture(
                 e2eSuites: [
                   {
                     id: 'E2E-001',
-                    file: e2eTestPathRef,
+                    ...(options.omitAcceptanceTestFiles ? {} : { file: e2eTestPathRef }),
                     covers: ['NEG-001'],
                     ...(options.omitErrorCaseAcceptanceRefs
                       ? {}
@@ -824,6 +890,31 @@ function writeFixture(
   return { sourcePath, record, recordPath, testPath, e2eTestPath };
 }
 
+function withControlledRedProofs(record: Report): Report {
+  return {
+    ...record,
+    aiTddContractGate: {
+      ...reportObject(record, 'aiTddContractGate'),
+      preImplementationRedProofs: [
+        {
+          acceptanceId: 'ACC-001',
+          commandId: 'CMD-001',
+          state: 'expected_red',
+          oracle: 'controlled acceptance red proof oracle',
+          failureClass: 'oracle_failure',
+        },
+        {
+          acceptanceId: 'E2E-001',
+          commandId: 'CMD-002',
+          state: 'expected_red',
+          oracle: 'controlled e2e red proof oracle',
+          failureClass: 'oracle_failure',
+        },
+      ],
+    },
+  };
+}
+
 describe('ai tdd contract gate', () => {
   it('blocks unconfirmed source in pre-implementation mode', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-unconfirmed-'));
@@ -882,6 +973,72 @@ describe('ai tdd contract gate', () => {
       expect(
         reportArray(report, 'redGreenMatrix').some((row) => row.currentState === 'missing_test')
       ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not require missing production targetFiles before implementation', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-future-production-target-'));
+    try {
+      const fixture = writeFixture(root, {
+        requiredCommandTargetFiles: ['src/future-service.py'],
+      });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: withControlledRedProofs(fixture.record),
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.blockingReasons).not.toContain(
+        'required_command_file_missing:src/future-service.py'
+      );
+      expect(report.decision, JSON.stringify(report.blockingReasons)).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires missing test targetFiles before implementation', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-future-test-target-'));
+    try {
+      const fixture = writeFixture(root, {
+        requiredCommandTargetFiles: ['tests/trader/test_future_service.py'],
+      });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: withControlledRedProofs(fixture.record),
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.decision).toBe('blocked');
+      expect(report.blockingReasons).toContain(
+        'required_command_file_missing:tests/trader/test_future_service.py'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires Python test files referenced directly by required commands', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-python-command-test-'));
+    try {
+      const fixture = writeFixture(root, {
+        acceptanceCommand: 'python -m pytest -q tests/trader/test_missing_command_target.py',
+      });
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: withControlledRedProofs(fixture.record),
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+      });
+      expect(report.decision).toBe('blocked');
+      expect(report.blockingReasons).toContain(
+        'required_command_file_missing:tests/trader/test_missing_command_target.py'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1857,6 +2014,163 @@ describe('ai tdd contract gate', () => {
           }),
         ])
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('executes each unique red proof command only once per gate evaluation', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-deduplicate-red-command-'));
+    try {
+      const fixture = writeFixture(root, { nonTestCommand: true });
+      const counterPath = path.join(root, 'red-command-count.txt');
+      writeText(
+        path.join(root, 'scripts', 'non-test-command.js'),
+        [
+          "const fs = require('node:fs');",
+          `const counter = ${JSON.stringify(counterPath.replace(/\\/gu, '/'))};`,
+          "const count = fs.existsSync(counter) ? Number(fs.readFileSync(counter, 'utf8')) : 0;",
+          "fs.writeFileSync(counter, String(count + 1), 'utf8');",
+          'process.exit(1);',
+          '',
+        ].join('\n')
+      );
+      const command = `node "${path.join(root, 'scripts', 'non-test-command.js').replace(/\\/gu, '/')}"`;
+      writeText(
+        fixture.sourcePath,
+        readFileSync(fixture.sourcePath, 'utf8').replace(
+          /node scripts\/non-test-command\.js/gu,
+          command
+        )
+      );
+
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: fixture.record,
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+        executeRedProof: true,
+        redProofCommandTimeoutMs: 5000,
+      });
+
+      expect(reportArray(report, 'redGreenMatrix')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'ACC-001', currentState: 'expected_red' }),
+          expect.objectContaining({ id: 'E2E-001', currentState: 'expected_red' }),
+        ])
+      );
+      expect(readFileSync(counterPath, 'utf8')).toBe('1');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires test authoring instead of executing static commands without test files', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-static-command-no-test-'));
+    try {
+      const fixture = writeFixture(root, {
+        nonTestCommand: true,
+        omitAcceptanceTestFiles: true,
+      });
+      writeText(path.join(root, 'scripts', 'non-test-command.js'), 'process.exit(0);\n');
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: fixture.record,
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+        executeRedProof: true,
+        redProofCommandTimeoutMs: 5000,
+      });
+
+      expect(report.decision).toBe('blocked');
+      expect(report.blockingReasons).toContain('acceptance_test_file_missing');
+      expect(report.blockingReasons).not.toContain('unexpected_green');
+      expect(reportArray(report, 'redGreenMatrix')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'ACC-001',
+            currentState: 'missing_test',
+            blockingReasons: ['acceptance_test_file_missing'],
+          }),
+          expect.objectContaining({
+            id: 'E2E-001',
+            currentState: 'missing_test',
+            blockingReasons: ['acceptance_test_file_missing'],
+          }),
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses an existing test command that covers the declared acceptance files', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-fallback-test-command-'));
+    try {
+      const staticMarker = path.join(root, 'static-command-ran.txt');
+      const redCounter = path.join(root, 'fallback-test-count.txt');
+      const redScript = path.join(root, 'fallback-red-proof.js');
+      const testPath = path.join(root, 'tests', 'acceptance', 'ai-tdd-fixture.test.ts');
+      const e2eTestPath = path.join(root, 'tests', 'e2e', 'ai-tdd-fixture.e2e.test.ts');
+      const fallbackTestCommand = [
+        'node',
+        `"${redScript.replace(/\\/gu, '/')}"`,
+        `"${testPath.replace(/\\/gu, '/')}"`,
+        `"${e2eTestPath.replace(/\\/gu, '/')}"`,
+      ].join(' ');
+      const fixture = writeFixture(root, {
+        nonTestCommand: true,
+        fallbackTestCommand,
+      });
+      writeText(
+        path.join(root, 'scripts', 'non-test-command.js'),
+        [
+          "const fs = require('node:fs');",
+          `fs.writeFileSync(${JSON.stringify(staticMarker.replace(/\\/gu, '/'))}, 'ran', 'utf8');`,
+          'process.exit(0);',
+          '',
+        ].join('\n')
+      );
+      writeText(
+        redScript,
+        [
+          "const fs = require('node:fs');",
+          `const counter = ${JSON.stringify(redCounter.replace(/\\/gu, '/'))};`,
+          "const count = fs.existsSync(counter) ? Number(fs.readFileSync(counter, 'utf8')) : 0;",
+          "fs.writeFileSync(counter, String(count + 1), 'utf8');",
+          'process.exit(1);',
+          '',
+        ].join('\n')
+      );
+
+      const report = evaluateAiTddContractGate({
+        sourcePath: fixture.sourcePath,
+        record: fixture.record,
+        recordPath: fixture.recordPath,
+        mode: 'pre-implementation',
+        attemptId: ATTEMPT,
+        executeRedProof: true,
+        redProofCommandTimeoutMs: 5000,
+      });
+
+      expect(reportArray(report, 'redGreenMatrix')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'ACC-001',
+            currentState: 'expected_red',
+            commandRefs: ['CMD-003'],
+          }),
+          expect.objectContaining({
+            id: 'E2E-001',
+            currentState: 'expected_red',
+            commandRefs: ['CMD-003'],
+          }),
+        ])
+      );
+      expect(readFileSync(redCounter, 'utf8')).toBe('1');
+      expect(() => readFileSync(staticMarker, 'utf8')).toThrow();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

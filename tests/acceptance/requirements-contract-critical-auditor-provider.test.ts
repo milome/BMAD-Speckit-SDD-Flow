@@ -54,7 +54,10 @@ describe('requirements contract Critical Auditor provider modes', () => {
           actionableBlockingIssues: [],
         },
       };
-      const requestForWriterPath = path.join(path.dirname(fixture.requestPath), 'critical-auditor-round-request-writer-fixture.json');
+      const requestForWriterPath = path.join(
+        path.dirname(fixture.requestPath),
+        'critical-auditor-round-request-writer-fixture.json'
+      );
       writeFileSync(requestForWriterPath, `${JSON.stringify(requestForWriter, null, 2)}\n`, 'utf8');
       const script = path.join(
         process.cwd(),
@@ -92,6 +95,8 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(response.checkedProjectionQualityRuleCodes).toEqual(
         (fixture.request as any).projectionQualityGate.requiredRuleCodes
       );
+      expect(response.transactionId).toBe((fixture.request as any).transactionId);
+      expect(response.namespaceVersion).toBe((fixture.request as any).namespaceVersion);
     } finally {
       removeTempRoot(root);
     }
@@ -205,9 +210,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
           'business_visual_generic_or_compressed',
         ]),
       });
-      expect(request.auditStandards.join('\n')).toContain(
-        'per-MUST independent acceptance'
-      );
+      expect(request.auditStandards.join('\n')).toContain('per-MUST independent acceptance');
       expect(request.requiredResponseSchema.checkedProjectionQualityRuleCodes).toEqual(
         request.projectionQualityGate.requiredRuleCodes
       );
@@ -251,8 +254,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
         maxCriticalAuditorRounds: 1,
       });
       const receiptPath = roundArtifact(root, recordId, 'receipt', 1);
-      const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(receiptPath)
-        .criticalAuditorReceipt;
+      const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+        receiptPath
+      ).criticalAuditorReceipt;
 
       expect(issueCodes(result)).toContain('critical_auditor_no_new_gap_convergence_not_reached');
       expect(existsSync(receiptPath)).toBe(true);
@@ -261,9 +265,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(receipt.namespaceVersion).toBe(fixture.request.namespaceVersion);
       expect(receipt.roundIndex).toBe(1);
       expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
-      expect(existsSync(artifacts(root, recordId, `${recordId}-SET`).sourceMaterializationReceipt)).toBe(
-        false
-      );
+      expect(
+        existsSync(artifacts(root, recordId, `${recordId}-SET`).sourceMaterializationReceipt)
+      ).toBe(false);
     } finally {
       removeTempRoot(root);
     }
@@ -297,9 +301,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
 
       expect(issueCodes(result)).toContain('critical_auditor_response_request_hash_mismatch');
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(false);
-      expect(readJson<Record<string, unknown>>(sourcePromotionDecisionPath(root, recordId)).finalDecision).toBe(
-        'block_source_promotion'
-      );
+      expect(
+        readJson<Record<string, unknown>>(sourcePromotionDecisionPath(root, recordId)).finalDecision
+      ).toBe('block_source_promotion');
       expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
     } finally {
       removeTempRoot(root);
@@ -375,9 +379,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
         'critical_auditor_no_new_gap_forbidden_by_gate_dry_run_blockers'
       );
       expect(receipt.falsePositiveProofs).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ blockerCode: expect.any(String) }),
-        ])
+        expect.arrayContaining([expect.objectContaining({ blockerCode: expect.any(String) })])
       );
     } finally {
       removeTempRoot(root);
@@ -427,9 +429,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
         'critical_auditor_no_new_gap_forbidden_by_gate_dry_run_blockers'
       );
       expect(receipt.falsePositiveProofs).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ blockerCode: expect.any(String) }),
-        ])
+        expect.arrayContaining([expect.objectContaining({ blockerCode: expect.any(String) })])
       );
     } finally {
       removeTempRoot(root);
@@ -450,7 +450,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
       const responseDir = path.join(root, 'auditor-responses');
       mkdirSync(responseDir, { recursive: true });
 
-      const request1 = readJson<Record<string, unknown>>(roundArtifact(root, recordId, 'request', 1));
+      const request1 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 1)
+      );
       const responseFile = path.join(root, 'critical-auditor-current-round-response.json');
       writeFileSync(
         responseFile,
@@ -468,9 +470,13 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(true);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 2))).toBe(false);
       expect(issueCodes(afterRound1)).toContain('critical_auditor_response_file_missing');
-      expect(issueCodes(afterRound1)).not.toContain('critical_auditor_response_request_hash_mismatch');
+      expect(issueCodes(afterRound1)).not.toContain(
+        'critical_auditor_response_request_hash_mismatch'
+      );
 
-      const request2 = readJson<Record<string, unknown>>(roundArtifact(root, recordId, 'request', 2));
+      const request2 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 2)
+      );
       const stagedResponse2 = roundArtifact(root, recordId, 'response', 2);
       expect(existsSync(stagedResponse2)).toBe(false);
       const response2 = path.join(responseDir, 'critical-auditor-round-response-2.json');
@@ -492,7 +498,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 2))).toBe(true);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 3))).toBe(false);
       expect(issueCodes(afterRound2)).toContain('critical_auditor_response_file_missing');
-      expect(issueCodes(afterRound2)).not.toContain('critical_auditor_response_request_hash_mismatch');
+      expect(issueCodes(afterRound2)).not.toContain(
+        'critical_auditor_response_request_hash_mismatch'
+      );
 
       const consumedRequest2 = readJson<Record<string, unknown>>(
         roundArtifact(root, recordId, 'request', 2)
@@ -500,11 +508,11 @@ describe('requirements contract Critical Auditor provider modes', () => {
       const consumedReceipt2 = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
         roundArtifact(root, recordId, 'receipt', 2)
       ).criticalAuditorReceipt;
-      expect(consumedRequest2.requestHash).toBe(
-        consumedReceipt2.requestHash
-      );
+      expect(consumedRequest2.requestHash).toBe(consumedReceipt2.requestHash);
 
-      const request3 = readJson<Record<string, unknown>>(roundArtifact(root, recordId, 'request', 3));
+      const request3 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 3)
+      );
       const response3 = path.join(responseDir, 'critical-auditor-round-response-3.json');
       writeFileSync(
         response3,
@@ -529,12 +537,16 @@ describe('requirements contract Critical Auditor provider modes', () => {
       const finalRequest3 = readJson<Record<string, unknown>>(
         roundArtifact(root, recordId, 'request', 3)
       );
-      expect(readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
-        roundArtifact(root, recordId, 'receipt', 2)
-      ).criticalAuditorReceipt.requestHash).toBe(finalRequest2.requestHash);
-      expect(readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
-        roundArtifact(root, recordId, 'receipt', 3)
-      ).criticalAuditorReceipt.requestHash).toBe(finalRequest3.requestHash);
+      expect(
+        readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+          roundArtifact(root, recordId, 'receipt', 2)
+        ).criticalAuditorReceipt.requestHash
+      ).toBe(finalRequest2.requestHash);
+      expect(
+        readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+          roundArtifact(root, recordId, 'receipt', 3)
+        ).criticalAuditorReceipt.requestHash
+      ).toBe(finalRequest3.requestHash);
       expect(issueCodes(third)).not.toContain('critical_auditor_response_request_hash_mismatch');
     } finally {
       removeTempRoot(root);
@@ -570,7 +582,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
 
   it('critical auditor response dir CLI aliases reach pre-confirmation provider', () => {
     for (const flag of ['--critical-auditor-response-dir', '--criticalAuditorResponseDir']) {
-      const root = createTempRoot(`requirements-contract-response-dir-cli-${flag.replace(/[^a-z]/gi, '-')}-`);
+      const root = createTempRoot(
+        `requirements-contract-response-dir-cli-${flag.replace(/[^a-z]/gi, '-')}-`
+      );
       const originalWrite = process.stdout.write;
       let stdout = '';
       try {

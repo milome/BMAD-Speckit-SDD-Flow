@@ -94,6 +94,156 @@ function readJsonOption(value, label) {
   return parsed;
 }
 
+function readJsonObjectOption(value, label) {
+  if (!value) throw new Error(`missing ${label}`);
+  const maybePath = path.resolve(value);
+  const raw = fs.existsSync(maybePath) ? fs.readFileSync(maybePath, 'utf8') : value;
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${label} must be a JSON object`);
+  }
+  return parsed;
+}
+
+function hasCjk(value) {
+  return /[\u3400-\u9fff]/u.test(text(value));
+}
+
+function requireZhProjection(value, label) {
+  const projected = text(value);
+  if (!projected || !hasCjk(projected)) {
+    throw new Error(`missing zh-CN authoring projection: ${label}`);
+  }
+  return projected;
+}
+
+function localizeRows(rows, projections, options) {
+  const bySource = new Map(
+    array(projections)
+      .map((projection) => object(projection))
+      .filter((projection) => text(projection[options.projectionSourceField]))
+      .map((projection) => [text(projection[options.projectionSourceField]), projection])
+  );
+  return rows.map((row, index) => {
+    const sourceKey = text(row[options.sourceField]);
+    const projection = bySource.get(sourceKey);
+    if (!projection) {
+      throw new Error(
+        `missing zh-CN authoring projection: ${options.label}[${index}] ${options.sourceField}=${sourceKey}`
+      );
+    }
+    const localized = {};
+    for (const field of options.fields) {
+      localized[`${field}Zh`] = requireZhProjection(
+        projection[field],
+        `${options.label}[${index}].${field}`
+      );
+    }
+    return { ...row, ...localized };
+  });
+}
+
+function localizeDiagrams(diagrams, projections, label) {
+  const byId = new Map(
+    array(projections)
+      .map((projection) => object(projection))
+      .filter((projection) => text(projection.id))
+      .map((projection) => [text(projection.id), projection])
+  );
+  return diagrams.map((diagram, index) => {
+    const projection = byId.get(text(diagram.id));
+    if (!projection) {
+      throw new Error(`missing zh-CN authoring projection: ${label}[${index}].id=${text(diagram.id)}`);
+    }
+    const mermaidZh = requireZhProjection(projection.mermaid, `${label}[${index}].mermaid`);
+    if (inferMermaidKind(mermaidZh) !== inferMermaidKind(diagram.mermaid)) {
+      throw new Error(`zh-CN Mermaid kind mismatch: ${label}[${index}].mermaid`);
+    }
+    return {
+      ...diagram,
+      titleZh: requireZhProjection(projection.title, `${label}[${index}].title`),
+      descriptionZh: requireZhProjection(
+        projection.description,
+        `${label}[${index}].description`
+      ),
+      mermaidZh,
+    };
+  });
+}
+
+function inferMermaidKind(value) {
+  const source = text(value);
+  if (/^sequenceDiagram\b/iu.test(source)) return 'sequence';
+  if (/^classDiagram\b/iu.test(source)) return 'class';
+  if (/^stateDiagram(?:-v2)?\b/iu.test(source)) return 'state';
+  if (/^(?:flowchart|graph)\b/iu.test(source)) return 'flowchart';
+  return 'unknown';
+}
+
+function applyZhLocalization({
+  localization,
+  consumerImpactScan,
+  governanceImpactScan,
+  fullArchitectureTriggerMatrix,
+  businessArchitectureDiagrams,
+  governanceArchitectureDiagrams,
+}) {
+  if (text(localization.language) !== 'zh-CN') {
+    throw new Error('zh-CN authoring localization bundle must declare language=zh-CN');
+  }
+  if (text(localization.projectionSource) !== 'authoring_agent') {
+    throw new Error(
+      'zh-CN authoring localization bundle must declare projectionSource=authoring_agent'
+    );
+  }
+  return {
+    localization: {
+      language: 'zh-CN',
+      projectionSource: 'authoring_agent',
+    },
+    decisionZh: requireZhProjection(localization.decision, 'decision'),
+    outcomeZh: requireZhProjection(localization.outcome, 'outcome'),
+    riskStatementZh: requireZhProjection(localization.riskStatement, 'riskStatement'),
+    rollbackPlanZh: requireZhProjection(localization.rollbackPlan, 'rollbackPlan'),
+    consumerImpactScan: localizeRows(consumerImpactScan, localization.consumerImpactScan, {
+      label: 'consumerImpactScan',
+      sourceField: 'category',
+      projectionSourceField: 'sourceCategory',
+      fields: ['category', 'status', 'summary', 'description', 'requiredDecision'],
+    }),
+    governanceImpactScan: localizeRows(
+      governanceImpactScan,
+      localization.governanceImpactScan,
+      {
+        label: 'governanceImpactScan',
+        sourceField: 'category',
+        projectionSourceField: 'sourceCategory',
+        fields: ['category', 'status', 'summary', 'description', 'requiredDecision'],
+      }
+    ),
+    fullArchitectureTriggerMatrix: localizeRows(
+      fullArchitectureTriggerMatrix,
+      localization.fullArchitectureTriggerMatrix,
+      {
+        label: 'fullArchitectureTriggerMatrix',
+        sourceField: 'trigger',
+        projectionSourceField: 'sourceTrigger',
+        fields: ['trigger', 'decision', 'reason', 'requiredDecision'],
+      }
+    ),
+    businessArchitectureDiagrams: localizeDiagrams(
+      businessArchitectureDiagrams,
+      localization.businessArchitectureDiagrams,
+      'businessArchitectureDiagrams'
+    ),
+    governanceArchitectureDiagrams: localizeDiagrams(
+      governanceArchitectureDiagrams,
+      localization.governanceArchitectureDiagrams,
+      'governanceArchitectureDiagrams'
+    ),
+  };
+}
+
 function extractImplementationConfirmation(sourceText) {
   const lines = sourceText.replace(/\r\n/g, '\n').split('\n');
   const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
@@ -113,10 +263,31 @@ function extractImplementationConfirmation(sourceText) {
   return { blockText, confirmation: parsed.implementationConfirmation };
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
-    if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
   }
   normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
@@ -1384,9 +1555,12 @@ function buildArtifact(args) {
   const recordPath = path.resolve(args.requirementRecord);
   const outPath = path.resolve(args.out);
   const targetPaths = readJsonOption(args.targetPaths, 'targetPaths').map((item) => normalizeRepoPath(item));
-  const consumerImpactScan = readJsonOption(args.consumerImpactScan, 'consumerImpactScan');
-  const governanceImpactScan = readJsonOption(args.governanceImpactScan, 'governanceImpactScan');
-  const fullArchitectureTriggerMatrix = readJsonOption(args.fullArchitectureTriggerMatrix, 'fullArchitectureTriggerMatrix');
+  let consumerImpactScan = readJsonOption(args.consumerImpactScan, 'consumerImpactScan');
+  let governanceImpactScan = readJsonOption(args.governanceImpactScan, 'governanceImpactScan');
+  let fullArchitectureTriggerMatrix = readJsonOption(
+    args.fullArchitectureTriggerMatrix,
+    'fullArchitectureTriggerMatrix'
+  );
   if (targetPaths.length === 0) throw new Error('targetPaths must not be empty');
   if (consumerImpactScan.length === 0) throw new Error('consumerImpactScan must not be empty');
   if (governanceImpactScan.length === 0) throw new Error('governanceImpactScan must not be empty');
@@ -1400,14 +1574,14 @@ function buildArtifact(args) {
   const targetPathsHash = sha256Text(stableStringify(targetPaths));
   const consumerImpactScanHash = sha256Text(stableStringify(consumerImpactScan));
   const governanceImpactScanHash = sha256Text(stableStringify(governanceImpactScan));
-  const businessArchitectureDiagrams = buildBusinessArchitectureDiagrams({
+  let businessArchitectureDiagrams = buildBusinessArchitectureDiagrams({
     confirmation,
     targetPaths,
     consumerImpactScan,
     fullArchitectureTriggerMatrix,
     evidenceRefs,
   });
-  const governanceArchitectureDiagrams = buildGovernanceArchitectureDiagrams({
+  let governanceArchitectureDiagrams = buildGovernanceArchitectureDiagrams({
     recordId: text(confirmation.recordId) || text(record.recordId),
     runId,
     targetPaths,
@@ -1416,6 +1590,24 @@ function buildArtifact(args) {
     fullArchitectureTriggerMatrix,
     evidenceRefs,
   });
+  const language = text(args.language) || text(confirmation.confirmationLanguage) || 'zh-CN';
+  let localizationFields = {};
+  if (language === 'zh-CN' || language === 'bilingual') {
+    if (!args.localization) throw new Error('missing zh-CN authoring localization bundle');
+    localizationFields = applyZhLocalization({
+      localization: readJsonObjectOption(args.localization, 'localization'),
+      consumerImpactScan,
+      governanceImpactScan,
+      fullArchitectureTriggerMatrix,
+      businessArchitectureDiagrams,
+      governanceArchitectureDiagrams,
+    });
+    consumerImpactScan = localizationFields.consumerImpactScan;
+    governanceImpactScan = localizationFields.governanceImpactScan;
+    fullArchitectureTriggerMatrix = localizationFields.fullArchitectureTriggerMatrix;
+    businessArchitectureDiagrams = localizationFields.businessArchitectureDiagrams;
+    governanceArchitectureDiagrams = localizationFields.governanceArchitectureDiagrams;
+  }
   const artifact = {
     schemaVersion: 'architecture-confirmation/v1',
     recordId: text(confirmation.recordId) || text(record.recordId),
@@ -1427,6 +1619,14 @@ function buildArtifact(args) {
     workflowAdapter: text(confirmation.workflowAdapter),
     decision: text(args.decision) || 'full_architecture_confirmed',
     outcome: text(args.outcome) || text(args.decision) || 'full_architecture_confirmed',
+    language,
+    ...(localizationFields.localization
+      ? {
+          localization: localizationFields.localization,
+          decisionZh: localizationFields.decisionZh,
+          outcomeZh: localizationFields.outcomeZh,
+        }
+      : {}),
     sourceDocumentHash: sourceHash,
     implementationConfirmationHash: implementationHash,
     architectureConfirmationHashRecipe: recipe,
@@ -1443,6 +1643,12 @@ function buildArtifact(args) {
     architectureDiagrams: businessArchitectureDiagrams,
     riskStatement: text(args.riskStatement) || 'Architecture confirmation risk statement must be reviewed in the source confirmation context.',
     rollbackPlan: text(args.rollbackPlan) || 'Rollback by rejecting this architecture confirmation and regenerating a new requirement-scoped artifact.',
+    ...(localizationFields.localization
+      ? {
+          riskStatementZh: localizationFields.riskStatementZh,
+          rollbackPlanZh: localizationFields.rollbackPlanZh,
+        }
+      : {}),
     evidenceRefs,
     staleInputs: {
       sourceDocumentHash: sourceHash,

@@ -415,8 +415,14 @@ describe('requirements contract sanitized real fixture coverage', () => {
   it('fails generic current-target rows and partial business visual coverage per business MUST', () => {
     const issues = collectProjectionQualityIssues({
       must: [
-        { id: 'MUST-001', text: 'Business timeframe selector must preserve hidden period defaults.' },
-        { id: 'MUST-002', text: 'Business timeframe selector must apply explicit visible period settings.' },
+        {
+          id: 'MUST-001',
+          text: 'Business timeframe selector must preserve hidden period defaults.',
+        },
+        {
+          id: 'MUST-002',
+          text: 'Business timeframe selector must apply explicit visible period settings.',
+        },
       ],
       traceRows: [
         { id: 'TRACE-001', covers: ['MUST-001'] },
@@ -449,7 +455,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
     const currentTargetIssue = issues.find(
       (issue) => issue.code === 'current_target_map_not_product_specific'
     );
-    const visualIssue = issues.find((issue) => issue.code === 'business_visual_generic_or_compressed');
+    const visualIssue = issues.find(
+      (issue) => issue.code === 'business_visual_generic_or_compressed'
+    );
 
     expect(currentTargetIssue?.refs).toEqual(['currentTargetMap', 'MUST-001', 'MUST-002']);
     expect(visualIssue?.refs).toEqual(['businessVisuals', 'MUST-002']);
@@ -614,9 +622,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
       sha256: '008846a38b07adf6113dc5d932ea1d51c75a9600bafc8d7d70edec3869cdcf40',
     });
     expect(metadata.sanitizedFixture).toMatchObject({
-      bytes: 15159,
-      lines: 473,
-      sha256: '7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e',
+      bytes: 27762,
+      lines: 541,
+      sha256: '4e71bf5f1766f81bbd6f11b5052d3ae7f3c8ced7059606a23480998a579acc06',
     });
     expect(byteLength(fixture)).toBe(metadata.sanitizedFixture.bytes);
     expect(lineCount(fixture)).toBe(metadata.sanitizedFixture.lines);
@@ -708,11 +716,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
         targetPath: metadata.requiredBusinessAnchors.targetPaths,
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
       });
-      const paths = artifacts(
-        root,
-        'REQ-REAL-BUSINESS-COVERAGE',
-        'REQ-REAL-BUSINESS-COVERAGE-SET'
-      );
+      const paths = artifacts(root, 'REQ-REAL-BUSINESS-COVERAGE', 'REQ-REAL-BUSINESS-COVERAGE-SET');
       const draft = readJson<{ implementationConfirmation: Record<string, unknown> }>(
         paths.draftImplementationConfirmation
       ).implementationConfirmation;
@@ -733,8 +737,8 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const businessRequirementIds =
         ((draft.requirementBoundary as any).business.requirementIds as string[]) ?? [];
       const businessViews = (draft.businessViews as Array<Record<string, unknown>>) ?? [];
-      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map((frId) =>
-        `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
+      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map(
+        (frId) => `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
       );
 
       expect(mustRows.map((row) => row.id)).toEqual(expectedMustIds);
@@ -783,38 +787,66 @@ describe('requirements contract sanitized real fixture coverage', () => {
 
       expect(traceRows.length).toBeGreaterThanOrEqual(mustRows.length);
       expect(
-        traceRows.some((row) => row.id === 'TRACE-001' && (row.covers as string[]).length === mustRows.length + 1)
+        traceRows.some(
+          (row) => row.id === 'TRACE-001' && (row.covers as string[]).length === mustRows.length + 1
+        )
       ).toBe(false);
       for (const must of mustRows) {
-        const coveringRows = traceRows.filter((row) => ((row.covers as string[]) ?? []).includes(must.id));
-        expect(coveringRows.length, `${must.id} requires an independent TRACE row`).toBeGreaterThanOrEqual(1);
-        expect(coveringRows.some((row) => ((row.covers as string[]) ?? []).length < mustRows.length)).toBe(
-          true
+        const coveringRows = traceRows.filter((row) =>
+          ((row.covers as string[]) ?? []).includes(must.id)
         );
-        expect(mustToAtomicTaskMap[must.id]?.length, `${must.id} mustToAtomicTaskMap`).toBeGreaterThan(0);
+        expect(
+          coveringRows.length,
+          `${must.id} requires an independent TRACE row`
+        ).toBeGreaterThanOrEqual(1);
+        expect(
+          coveringRows.some((row) => ((row.covers as string[]) ?? []).length < mustRows.length)
+        ).toBe(true);
+        expect(
+          mustToAtomicTaskMap[must.id]?.length,
+          `${must.id} mustToAtomicTaskMap`
+        ).toBeGreaterThan(0);
       }
       for (const trace of traceRows) {
-        expect((trace.failurePathRefs as string[])?.length, `${trace.id} failurePathRefs`).toBeGreaterThan(0);
-        expect((trace.edgeCaseRefs as string[])?.length, `${trace.id} edgeCaseRefs`).toBeGreaterThan(0);
+        expect(
+          (trace.failurePathRefs as string[])?.length,
+          `${trace.id} failurePathRefs`
+        ).toBeGreaterThan(0);
+        expect(
+          (trace.edgeCaseRefs as string[])?.length,
+          `${trace.id} edgeCaseRefs`
+        ).toBeGreaterThan(0);
       }
       for (const taskId of Object.values(mustToAtomicTaskMap).flat()) {
-        expect(atomicTaskToTraceMap[taskId]?.length, `${taskId} atomicTaskToTraceMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToTraceMap[taskId]?.length,
+          `${taskId} atomicTaskToTraceMap`
+        ).toBeGreaterThan(0);
         expect(
           atomicTaskToAcceptanceMap[taskId]?.length,
           `${taskId} atomicTaskToAcceptanceMap`
         ).toBeGreaterThan(0);
-        expect(atomicTaskToEvidenceMap[taskId]?.length, `${taskId} atomicTaskToEvidenceMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToEvidenceMap[taskId]?.length,
+          `${taskId} atomicTaskToEvidenceMap`
+        ).toBeGreaterThan(0);
         expect(
           atomicTaskToTargetPathMap[taskId]?.length,
           `${taskId} atomicTaskToTargetPathMap`
         ).toBeGreaterThan(0);
-        expect(atomicTaskToCommandMap[taskId]?.length, `${taskId} atomicTaskToCommandMap`).toBeGreaterThan(0);
+        expect(
+          atomicTaskToCommandMap[taskId]?.length,
+          `${taskId} atomicTaskToCommandMap`
+        ).toBeGreaterThan(0);
       }
       for (const acceptanceRow of [
         ...((draft.acceptanceTests as Array<Record<string, unknown>>) ?? []),
         ...((draft.e2eSuites as Array<Record<string, unknown>>) ?? []),
       ]) {
-        expect(String(acceptanceRow.redProofPlan ?? '').trim(), `${acceptanceRow.id} redProofPlan`).not.toBe('');
+        expect(
+          String(acceptanceRow.redProofPlan ?? '').trim(),
+          `${acceptanceRow.id} redProofPlan`
+        ).not.toBe('');
       }
       expect(manifest.requiredSections).toEqual(
         expect.arrayContaining([
@@ -845,7 +877,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
       );
 
       const outOfScopeRows = (draft.outOfScope as Array<Record<string, unknown>>) ?? [];
-      expect(stringify(outOfScopeRows)).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
+      expect(stringify(outOfScopeRows)).toContain(
+        metadata.requiredBusinessAnchors.outOfScopeTimeline
+      );
       expect(
         ((draft.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
           row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
@@ -870,14 +904,18 @@ describe('requirements contract sanitized real fixture coverage', () => {
       expect(currentTargetMapText).toContain('source-authorized product code targets');
       expect(currentTargetMapText).toContain('MUST-FR-001');
       expect(currentTargetMapText).toContain('MUST-FR-009');
-      expect(currentTargetMapText).not.toMatch(/\bMUST-\d{3}\b/u);
+      expect(currentTargetMapText).not.toMatch(/(?:^|[^A-Z0-9-])MUST-\d{3}\b/u);
       expect(currentTargetMapText).not.toMatch(/\bMUST-.*-L[0-9]+-[0-9]+\b/u);
       expect(currentTargetMapText).not.toContain('reconfirm_required');
       expect(currentTargetMapText).not.toContain('req-trace');
       expect(currentTargetMapText).not.toContain('controlled confirm-scope ingest');
-      expect(currentTargetMapText).not.toMatch(/source document hash|sourceDocumentHash|implementation readiness/iu);
+      expect(currentTargetMapText).not.toMatch(
+        /source document hash|sourceDocumentHash|implementation readiness/iu
+      );
       expect(currentTargetMapText).not.toMatch(/current-attempt product implementation evidence/iu);
-      expect(currentTargetMapText).not.toMatch(/source describes behavior|source defines current behavior/iu);
+      expect(currentTargetMapText).not.toMatch(
+        /source describes behavior|source defines current behavior/iu
+      );
       expect(currentTargetMapText).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
       for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
         expect(currentTargetMapText).toContain(targetPath);
@@ -885,7 +923,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
       for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
         expect(currentTargetMapText).toContain(period);
       }
-      expect(currentTargetMapText).not.toContain('Pre-confirmation drilldown remains inside requirement_confirmation');
+      expect(currentTargetMapText).not.toContain(
+        'Pre-confirmation drilldown remains inside requirement_confirmation'
+      );
       expect(currentTargetMapText).not.toContain('Draft requirement');
       expect(currentTargetMapText).not.toContain('User-confirmable requirement');
       expect(currentTargetMapText).not.toContain('requirement_confirmation draft');
@@ -1005,8 +1045,8 @@ describe('requirements contract sanitized real fixture coverage', () => {
         sourceSpan?: { startLine: number };
         headingPath?: string[];
       }>;
-      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map((frId) =>
-        `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
+      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map(
+        (frId) => `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
       );
       expect(mustRows.map((row) => row.id)).toEqual(expectedMustIds);
       expect(new Set(mustRows.map((row) => row.id)).size).toBe(mustRows.length);
@@ -1180,9 +1220,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
         sha256: '4663d96263a67491b977e9555065d520ad720f5ffe00442b95eda69f9bd2d6e8',
       });
       expect(metadata.sanitizedFixture).toMatchObject({
-        bytes: 15159,
-        lines: 473,
-        sha256: '7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e',
+        bytes: 27762,
+        lines: 541,
+        sha256: '4e71bf5f1766f81bbd6f11b5052d3ae7f3c8ced7059606a23480998a579acc06',
       });
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });

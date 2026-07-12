@@ -11,7 +11,10 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import type { ResolvedRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import {
+  defaultRuntimeContextFile,
+  writeRuntimeContext,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   buildImplementationEntryIndexKey,
@@ -203,6 +206,7 @@ function makeSourceFixture(
     semanticGap?: boolean;
     uniqueProjectionGap?: boolean;
     ambiguousProjectionGap?: boolean;
+    validationOnlyTargetGap?: boolean;
   } = {}
 ): {
   sourcePath: string;
@@ -492,8 +496,10 @@ function makeSourceFixture(
       {
         id: 'TARGET-MOD-001',
         path: testPath.replace(/\\/gu, '/'),
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
+        changeType: options.validationOnlyTargetGap ? 'validation_only' : 'modify',
+        coverageRole: options.validationOnlyTargetGap ? 'validation_only' : 'implementation',
+        traceRows: options.validationOnlyTargetGap ? [] : ['TRACE-001'],
+        evidenceRefs: options.validationOnlyTargetGap ? [] : ['EVD-001'],
         artifactRefs: ['ART-001'],
       },
     ],
@@ -740,7 +746,49 @@ describe('main-agent readiness auto remediation lane', () => {
     }
   });
 
-  it('blocks source-authority readiness blockers instead of auto-writing implementation contract semantics', () => {
+  it('routes missing tests to bounded authoring without writing placeholder red tests', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-test-authoring-'));
+    try {
+      const { recordPath, testPath, reportPath } = makeSourceFixture(root, {
+        missingCommandFile: true,
+      });
+      const relativeTestPath = path.relative(root, testPath).replace(/\\/g, '/');
+      writeJson(reportPath, {
+        decision: 'blocked',
+        blockingReasons: [`required_command_file_missing:${relativeTestPath}`],
+      });
+
+      const result = runMainAgentReadinessAutoRemediation({
+        projectRoot: root,
+        recordPath,
+        args: { readinessReportPath: reportPath },
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe('blocked');
+      expect(result.requiredNextAction).toBe('dispatch_test_authoring');
+      expect(result.filesChanged).toEqual([]);
+      expect(fs.existsSync(testPath)).toBe(false);
+      expect(result.blockerActions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            blocker: `required_command_file_missing:${relativeTestPath}`,
+            classification: 'requires_test_authoring',
+            action: 'dispatch_bounded_test_authoring',
+            autoRemediationAllowed: false,
+          }),
+        ])
+      );
+
+      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, any>;
+      expect(record.aiTddContractGate?.preImplementationRedProofs).toBeUndefined();
+      expect(record.contractChecks).toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('routes missing test blockers without auto-writing implementation contract semantics', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-auto-remediate-'));
     try {
       const { recordPath, testPath, reportPath } = makeSourceFixture(root, {
@@ -777,22 +825,21 @@ describe('main-agent readiness auto remediation lane', () => {
       expect(result.taskReport?.evidence).toEqual(
         expect.arrayContaining([
           expect.stringContaining(
-            'requires_source_amendment:source_amendment_required:requirement_pre_implementation_missing_plan'
+            'requires_test_authoring:dispatch_test_authoring:requirement_pre_implementation_missing_test'
           ),
           expect.stringContaining(
-            'requires_source_amendment:source_amendment_required:pre_implementation_red_proof_missing'
+            'requires_test_authoring:dispatch_test_authoring:required_command_file_missing:'
           ),
           expect.stringContaining(
-            'requires_source_amendment:source_amendment_required:trace_acceptance_binding_missing'
+            'requires_test_authoring:dispatch_test_authoring:acceptance_test_file_missing'
           ),
         ])
       );
       expect(result.taskReport?.driftFlags).toEqual(
         expect.arrayContaining([
-          'source_amendment_required',
-          'requirement_pre_implementation_missing_plan',
-          'pre_implementation_red_proof_missing',
-          'trace_acceptance_binding_missing',
+          'dispatch_test_authoring',
+          'requirement_pre_implementation_missing_test',
+          'acceptance_test_file_missing',
         ])
       );
 
@@ -808,14 +855,14 @@ describe('main-agent readiness auto remediation lane', () => {
         ])
       );
       expect(record.extensionRefs).toEqual([]);
-      expect(result.finalSurface.mainAgentNextAction).toBe('source_amendment_required');
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_test_authoring');
       expect(result.finalSurface.mainAgentReady).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it('writes controlled expected-red proof when source already declares acceptance and e2e plans', () => {
+  it('persists expected-red proof only after executing declared acceptance and e2e commands', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-red-proof-'));
     try {
       const { recordPath, reportPath } = makeSourceFixture(root);
@@ -870,12 +917,12 @@ describe('main-agent readiness auto remediation lane', () => {
           expect.objectContaining({
             acceptanceId: 'ACC-001',
             state: 'expected_red',
-            proofSource: 'main_agent_readiness_auto_remediation',
+            proofSource: 'execute_red_proof',
           }),
           expect.objectContaining({
             acceptanceId: 'E2E-001',
             state: 'expected_red',
-            proofSource: 'main_agent_readiness_auto_remediation',
+            proofSource: 'execute_red_proof',
           }),
         ])
       );
@@ -948,6 +995,63 @@ describe('main-agent readiness auto remediation lane', () => {
           ),
         ])
       );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('derives validation-only target trace and evidence bindings without mutating confirmed source', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-readiness-validation-target-overlay-')
+    );
+    try {
+      const { recordPath, sourcePath, reportPath } = makeSourceFixture(root, {
+        validationOnlyTargetGap: true,
+      });
+      const beforeSource = fs.readFileSync(sourcePath, 'utf8');
+      expect(beforeSource).toContain('"coverageRole": "validation_only"');
+      expect(beforeSource).toContain('"traceRows": []');
+      expect(
+        mainImplementationReadinessGate([
+          '--requirement-record',
+          recordPath,
+          '--implementation-run-kind',
+          'first-implementation',
+          '--evaluated-at',
+          '2026-05-26T00:00:01.000Z',
+        ])
+      ).toBe(1);
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: root,
+        recordId: 'REQ-AUTO-REMEDIATE',
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        args: {
+          implementationRunKind: 'first-implementation',
+          readinessReportPath: reportPath,
+        },
+      });
+
+      expect(result.status, JSON.stringify(result.taskReport, null, 2)).toBe('completed');
+      expect(fs.readFileSync(sourcePath, 'utf8')).toBe(beforeSource);
+      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, any>;
+      expect(record.aiTddContractGate?.readinessAutoRemediationOverlay).toEqual(
+        expect.objectContaining({
+          schemaVersion: 'readiness-auto-remediation-overlay/v1',
+          sourceMutationPolicy: 'non_semantic_projection_only',
+          targetPathBindings: [
+            expect.objectContaining({
+              id: 'TARGET-MOD-001',
+              traceRefs: ['TRACE-001'],
+              evidenceRefs: ['EVD-001'],
+            }),
+          ],
+        })
+      );
+      expect(record.sixModelResults?.implementation_readiness?.status).toBe('pass');
+      expect(record.readinessBaselineMetadata?.status).toBe('current');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

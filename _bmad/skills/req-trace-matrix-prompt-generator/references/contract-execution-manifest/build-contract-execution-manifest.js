@@ -37,6 +37,18 @@ function normalizePath(value) {
   return text(value).replace(/\\/gu, '/');
 }
 
+function isTestFileRef(value) {
+  const normalized = normalizePath(value).toLowerCase();
+  const fileName = normalized.split('/').pop() ?? '';
+  if (!/\.(?:py|tsx?|jsx?|mjs|cjs|java|kt|go|rs|cs|rb|php|feature)$/u.test(fileName)) {
+    return false;
+  }
+  return (
+    /(?:^|\/)(?:tests?|__tests__)(?:\/|$)/u.test(normalized) ||
+    /(?:^|[._-])(?:test|spec)(?:[._-]|$)/u.test(fileName)
+  );
+}
+
 function commandId(row) {
   return text(row.id) || text(row.commandId);
 }
@@ -60,14 +72,32 @@ function extractCommandFileRefs(command) {
   const tokens = text(command).replace(/\r?\n/gu, ' ').match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, '');
-    if (
-      /(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) &&
-      (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))
-    ) {
+    if (/(?:^|[\\/])[^\\/]+\.(?:py|tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref)) {
       refs.add(normalizePath(ref));
     }
   }
   return [...refs];
+}
+
+function commandFileRefs(row) {
+  return unique([
+    ...extractCommandFileRefs(text(row.command)),
+    text(row.file),
+    text(row.path),
+    text(row.testFile),
+    text(row.testPath),
+    ...strings(row.files),
+    ...strings(row.testFiles),
+    ...strings(row.targetFiles).filter(isTestFileRef),
+  ])
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
+function commandTargetFileRefs(row) {
+  return unique([...commandFileRefs(row), ...strings(row.targetFiles)])
+    .filter(Boolean)
+    .map(normalizePath);
 }
 
 function requirementRows(confirmation) {
@@ -383,7 +413,7 @@ function commandTargetCollection(confirmation) {
         ...idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']),
         ...linkedTraceRows.flatMap((trace) => strings(trace.evidenceRefs)),
       ]);
-      const files = extractCommandFileRefs(text(row.command));
+      const files = commandTargetFileRefs(row);
       const missing = [
         ...(files.length > 0 ? [] : ['command_target_files_missing']),
         ...(traceRefs.length > 0 ? [] : ['command_target_trace_refs_missing']),
@@ -687,7 +717,7 @@ function buildDerivedContractExecutionManifest(input) {
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),
       expectedMode: text(row.expectedMode) || text(row.expectedExitCodeAfterImplementation),
-      files: extractCommandFileRefs(text(row.command)),
+      files: commandFileRefs(row),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
     })),

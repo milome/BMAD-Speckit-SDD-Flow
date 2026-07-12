@@ -147,6 +147,33 @@ describe('shared ContractExecutionManifest canonicalization', () => {
     );
   });
 
+  it('accepts a legacy command id list covered by the canonical command target collection', () => {
+    const source = confirmation({
+      aiTddContractExecutionManifestProjection: {
+        schemaVersion: 'contract-execution-manifest/v1',
+        requiredSections: ['commandTargets', 'closeoutProof'],
+        commandTargets: ['CMD-002', 'CMD-001'],
+        commandTargetCollection: {
+          requiredCommandRefs: ['CMD-001', 'CMD-002'],
+          targetModificationPathRefs: ['TARGET-MOD-001'],
+        },
+        closeoutProof: { requiredCommands: ['CMD-001'] },
+      },
+    });
+
+    const manifest = buildContractExecutionManifest({ confirmation: source });
+
+    expect(manifest.commandTargetCollection).toEqual({
+      requiredCommandRefs: ['CMD-001', 'CMD-002'],
+      targetModificationPathRefs: ['TARGET-MOD-001'],
+    });
+    expect(manifest).not.toHaveProperty('commandTargets');
+    expect(manifest.aliasAudit).toMatchObject({
+      aliasesUsed: expect.arrayContaining(['commandTargets', 'commandTargetCollection']),
+      blockingReasons: [],
+    });
+  });
+
   it('preserves artifact sourceProjectionHash during artifact-only drift audit', () => {
     const manifest = buildContractExecutionManifest({ confirmation: confirmation() });
     const audit = auditContractExecutionManifest({

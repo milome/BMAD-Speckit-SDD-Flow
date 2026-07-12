@@ -224,6 +224,7 @@ export type PreConfirmationDrilldownSubstate =
   | 'intake_created'
   | 'initial_scale_assessed'
   | 'staging_draft_created'
+  | 'localization_translation_required'
   | 'critical_auditor_round_required'
   | 'checkpoint_persistence_required'
   | 'source_mutation_decision_required'
@@ -391,10 +392,12 @@ export type MainAgentRunLoopExecutor = (
 type ReadinessRemediationClassification =
   | 'derive_without_reconfirm'
   | 'requires_source_amendment'
+  | 'requires_test_authoring'
   | 'requires_user_decision';
 
 type ReadinessRemediationNextAction =
   | 'run_deterministic_projection_repair'
+  | 'dispatch_test_authoring'
   | 'source_amendment_required'
   | 'blocked_by_unresolved_user_decision';
 
@@ -1614,6 +1617,8 @@ interface PreConfirmationPaths {
   promotionReceipt: string;
   draftImplementationConfirmation: string;
   authoringMaterializationReceipt: string;
+  localizationRequest: string;
+  localizationMaterializationReceipt: string;
   scaleAssessmentInitial: string;
   scaleAssessmentPostPacket: string;
   scaleAssessmentPostMaterialization: string;
@@ -1698,6 +1703,9 @@ const CRITICAL_AUDITOR_REPAIR_ACTION_TYPES = [
   'add_out',
   'add_evidence',
   'add_trace',
+  'upsert_trace',
+  'upsert_failure_path',
+  'upsert_edge_case',
   'add_acc',
   'add_e2e',
   'add_business_view',
@@ -1706,8 +1714,7 @@ const CRITICAL_AUDITOR_REPAIR_ACTION_TYPES = [
   'replace_validation_command',
 ] as const;
 
-type CriticalAuditorRepairActionType =
-  (typeof CRITICAL_AUDITOR_REPAIR_ACTION_TYPES)[number];
+type CriticalAuditorRepairActionType = (typeof CRITICAL_AUDITOR_REPAIR_ACTION_TYPES)[number];
 
 interface CriticalAuditorRepairAction {
   actionId: string;
@@ -1741,13 +1748,21 @@ const CRITICAL_AUDITOR_REPAIR_ACTION_TARGET_FIELDS: Record<
   ],
   add_evidence: ['evidence', 'implementationConfirmation.evidence'],
   add_trace: ['traceRows', 'implementationConfirmation.traceRows'],
+  upsert_trace: ['traceRows', 'implementationConfirmation.traceRows'],
+  upsert_failure_path: ['failurePaths', 'implementationConfirmation.failurePaths'],
+  upsert_edge_case: ['edgeCases', 'implementationConfirmation.edgeCases'],
   add_acc: [
     'acceptanceTests',
     'acceptanceCriteria',
     'implementationConfirmation.acceptanceTests',
     'implementationConfirmation.acceptanceCriteria',
   ],
-  add_e2e: ['e2eSuites', 'e2eScenarios', 'implementationConfirmation.e2eSuites', 'implementationConfirmation.e2eScenarios'],
+  add_e2e: [
+    'e2eSuites',
+    'e2eScenarios',
+    'implementationConfirmation.e2eSuites',
+    'implementationConfirmation.e2eScenarios',
+  ],
   add_business_view: ['businessViews', 'implementationConfirmation.businessViews'],
   add_business_visual: [
     'businessVisuals',
@@ -1800,7 +1815,9 @@ interface CriticalAuditorRoundResult {
   sourceHash?: string;
   packetHash?: string;
   gapCandidates?: Record<string, unknown>[];
-  validatedGaps?: Array<Record<string, unknown> & { repairActions?: CriticalAuditorRepairAction[] }>;
+  validatedGaps?: Array<
+    Record<string, unknown> & { repairActions?: CriticalAuditorRepairAction[] }
+  >;
   rejectedGapCandidates?: Record<string, unknown>[];
   mutationPressureFindings?: Record<string, unknown>[];
   overBroadTaskFindings?: Record<string, unknown>[];
@@ -1864,6 +1881,7 @@ interface PreConfirmationRunOptions {
   recordId?: string;
   requirementSetId?: string;
   confirmationLanguage?: string;
+  localizationResponseFile?: string;
   mode?: string;
   skipDrilldownArtifacts?: boolean;
   targetPath?: string | string[];
@@ -1935,7 +1953,11 @@ interface ControlledMustCandidate {
   headingPath: string[];
   blockId?: string;
   blockKind?: StructuredSourceBlockKind;
-  requirementType?: 'positive' | 'negative_constraint' | 'target_authority' | 'validation_authority';
+  requirementType?:
+    | 'positive'
+    | 'negative_constraint'
+    | 'target_authority'
+    | 'validation_authority';
   coverageDecision?: RequirementCoverageDecision;
   coverageReason?: string;
   confidence?: number;
@@ -1974,6 +1996,54 @@ interface StructuredSourceBlock {
   tableContext?: Record<string, unknown> | null;
 }
 
+interface BusinessFailurePathRow {
+  id: string;
+  title: string;
+  trigger: string;
+  expectedBehavior: string;
+  linkedNegIds: string[];
+  sourceAcceptanceRefs: string[];
+  sourceTraceRefs: string[];
+  sourceE2eRefs: string[];
+  ownerMustRefs: string[];
+  sourcePath: string;
+  sourceSpan: { startLine: number; endLine: number };
+  sourceDocumentHash: string;
+  headingPath: string[];
+}
+
+interface SourceMustProjectionAuthority {
+  mustRef: string;
+  sourceRequirementId: string;
+  oracle: string;
+  responsibilityMapping: string;
+  closureAssertion: string;
+  acceptanceRefs: string[];
+  e2eRefs: string[];
+  traceRefs: string[];
+  contractCommandRefs: string[];
+  deliveryCommandRefs: string[];
+  pathRefs: string[];
+  targetFiles: string[];
+  testFiles: string[];
+  viewRefs: string[];
+  evidenceRefs: string[];
+  sourceEvidenceRefs: string[];
+}
+
+interface SourceBusinessJourneyRow {
+  id: string;
+  actor: string;
+  trigger: string;
+  requiredFlow: string;
+  completionState: string;
+  mustRefs: string[];
+  traceRefs: string[];
+  evidenceRefs: string[];
+  acceptanceRefs: string[];
+  failurePathRefs: string[];
+}
+
 interface RequirementCoverageLedger {
   schemaVersion: 'requirements-authoring-coverage-ledger/v1';
   sourcePath: string;
@@ -1994,12 +2064,19 @@ interface TargetAuthorityRecord {
   id: string;
   path: string;
   pathKind: 'source' | 'test' | 'doc' | 'config' | 'script' | 'external';
+  coverageRole?: 'modify' | 'validation_only';
   source: 'explicit_option' | 'source_document';
   sourceSpan: { startLine: number; endLine: number } | null;
   sourceDocumentHash: string;
   confidence: number;
   reason: string;
   explicit: boolean;
+  sourcePathId?: string;
+  sourceMustRefs?: string[];
+  sourceTraceRefs?: string[];
+  sourceAcceptanceRefs?: string[];
+  sourceOracle?: string;
+  responsibilityMapping?: string;
 }
 
 interface ValidationAuthorityRecord {
@@ -2014,6 +2091,14 @@ interface ValidationAuthorityRecord {
   executable: boolean;
   derivationReason: string;
   blocksSourceMutationWhenMissing: boolean;
+  sourceCommandId?: string;
+  sourceMustRefs?: string[];
+  sourceTraceRefs?: string[];
+  sourceAcceptanceRefs?: string[];
+  sourcePathRefs?: string[];
+  sourceOracle?: string;
+  responsibilityMapping?: string;
+  sourceTargetFiles?: string[];
 }
 
 interface CurrentTargetMapBuildResult {
@@ -2187,8 +2272,19 @@ function preConfirmationPaths(
     authoringTransaction: path.join(authoringDir, 'authoring-transaction.json'),
     draftSourcePreview: path.join(authoringDir, 'draft-source-preview.md'),
     promotionReceipt: path.join(authoringDir, 'promotion-receipt.json'),
-    draftImplementationConfirmation: path.join(authoringDir, 'draft-implementation-confirmation.json'),
-    authoringMaterializationReceipt: path.join(authoringDir, 'authoring-materialization-receipt.json'),
+    draftImplementationConfirmation: path.join(
+      authoringDir,
+      'draft-implementation-confirmation.json'
+    ),
+    authoringMaterializationReceipt: path.join(
+      authoringDir,
+      'authoring-materialization-receipt.json'
+    ),
+    localizationRequest: path.join(authoringDir, 'localization-request.json'),
+    localizationMaterializationReceipt: path.join(
+      authoringDir,
+      'localization-materialization-receipt.json'
+    ),
     scaleAssessmentInitial: path.join(authoringDir, 'scale-assessment-initial.json'),
     scaleAssessmentPostPacket: path.join(authoringDir, 'scale-assessment-post-packet.json'),
     scaleAssessmentPostMaterialization: path.join(
@@ -2414,11 +2510,14 @@ function writeSourcePrdInstanceLintReport(input: {
   });
 }
 
-function assertKnownRequirementsAuthoringSubstate(substate: PreConfirmationDrilldownSubstate): void {
+function assertKnownRequirementsAuthoringSubstate(
+  substate: PreConfirmationDrilldownSubstate
+): void {
   const allowed = new Set<PreConfirmationDrilldownSubstate>([
     'intake_created',
     'initial_scale_assessed',
     'staging_draft_created',
+    'localization_translation_required',
     'critical_auditor_round_required',
     'checkpoint_persistence_required',
     'source_mutation_decision_required',
@@ -2452,10 +2551,9 @@ function writeRequirementsAuthoringTransaction(input: {
 }): void {
   assertKnownRequirementsAuthoringSubstate(input.substate);
   const previous = readJsonIfExists(input.paths.authoringTransaction);
-  const previousEntrySource =
-    previous?.sourcePrdEntrySource
-      ? normalizeSourcePrdAuthoringEntrySource(previous.sourcePrdEntrySource, 'source_prd_draft')
-      : null;
+  const previousEntrySource = previous?.sourcePrdEntrySource
+    ? normalizeSourcePrdAuthoringEntrySource(previous.sourcePrdEntrySource, 'source_prd_draft')
+    : null;
   const previousLint =
     previous?.sourcePrdInstanceLint &&
     typeof previous.sourcePrdInstanceLint === 'object' &&
@@ -2570,6 +2668,25 @@ function dumpImplementationConfirmation(confirmation: Record<string, unknown>): 
     .trimEnd();
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(
   confirmation: Record<string, unknown>
 ): Record<string, unknown> {
@@ -2582,7 +2699,11 @@ function semanticConfirmationForHash(
     'reconfirmationRequest',
     'confirmationRender',
   ]);
-  const semantic = Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
+  const semantic = Object.fromEntries(
+    Object.entries(confirmation)
+      .filter(([key]) => !bookkeeping.has(key))
+      .map(([key, value]) => [key, stripProjectionHashBookkeeping(value)])
+  );
   const drilldown = recordObject(semantic.preConfirmationDrilldown);
   const semanticKernelRef = recordObject(drilldown.semanticKernelRef);
   const mustDecompositionPacketRef = recordObject(drilldown.mustDecompositionPacketRef);
@@ -2600,7 +2721,8 @@ function semanticConfirmationForHash(
   if (Object.keys(criticalAuditor).length > 0) {
     const stableCriticalAuditor = Object.fromEntries(
       Object.entries(criticalAuditor).filter(
-        ([key]) => !['consecutiveNoNewGapRounds', 'latestReceiptHash', 'convergenceVerdict'].includes(key)
+        ([key]) =>
+          !['consecutiveNoNewGapRounds', 'latestReceiptHash', 'convergenceVerdict'].includes(key)
       )
     );
     semantic.preConfirmationDrilldown = {
@@ -2630,9 +2752,9 @@ function implementationConfirmationHashForPreConfirmation(
   return sha256Json(semanticConfirmationForHash(confirmation));
 }
 
-function projectionBackRef(packetHash: string, mustRef = 'MUST-001'): Record<string, unknown> {
+function projectionBackRef(packetHash: string, mustRef?: string): Record<string, unknown> {
   return {
-    derivedFromMustRef: mustRef,
+    ...(mustRef ? { derivedFromMustRef: mustRef } : {}),
     derivedFromPacketHash: packetHash,
     projectionStatus: 'synchronized',
   };
@@ -2649,12 +2771,315 @@ function normalizeMustRef(value: unknown, index: number): string {
     : `MUST-${requirementOrdinal(index)}`;
 }
 
-function atomicTaskIdsForMust(index: number, total: number): [string, string] {
-  if (total === 1) {
-    return ['TASK-001', 'TASK-002'];
-  }
+function atomicTaskIdsForMust(index: number, total: number, count = 1): string[] {
+  const normalizedCount = Math.max(1, count);
   const ordinal = requirementOrdinal(index);
-  return [`TASK-${ordinal}-AUTHOR`, `TASK-${ordinal}-MATERIALIZE`];
+  if (total === 1) {
+    return Array.from(
+      { length: normalizedCount },
+      (_, taskIndex) => `TASK-${requirementOrdinal(taskIndex)}`
+    );
+  }
+  return Array.from(
+    { length: normalizedCount },
+    (_, taskIndex) => `TASK-${ordinal}-${requirementOrdinal(taskIndex)}`
+  );
+}
+
+function controlledMustBehaviorText(value: string): string {
+  return normalizeText(value).replace(
+    /^The implementation must provide this product behavior:\s*/iu,
+    ''
+  );
+}
+
+function coordinatedListItems(value: string): string[] {
+  return uniqueNonEmpty(
+    normalizeText(value)
+      .replace(/\s*\/\s*/gu, ',')
+      .replace(/、/gu, ',')
+      .replace(/,\s*(?:and|or)\s+/giu, ',')
+      .replace(/\s+(?:and|or)\s+/giu, ',')
+      .split(',')
+      .map((item) => normalizeText(item.replace(/[.!?]+$/u, '')))
+      .filter((item) => item.length >= 2)
+  );
+}
+
+function requirementSubject(value: string): string {
+  const normalized = controlledMustBehaviorText(value);
+  const match = normalized.match(
+    /^(.*?)(?:\bcan\b|\bmust\b|\bshall\b|\bwill\b|\bcontinues?\b|\bremains?\b|\bruns?\b|\bproceeds?\b|\boperates?\b|\bcompletes?\b)/iu
+  );
+  return normalizeText(match?.[1] ?? '');
+}
+
+function gerundPhraseToBase(value: string): string {
+  return normalizeText(value).replace(/^([A-Za-z][A-Za-z-]*?)ing\b/u, '$1');
+}
+
+function atomicPredicateListUnits(value: string): string[] {
+  const source = normalizeText(value).replace(/[.!?]+$/u, '');
+  if (!source) return [];
+
+  const withoutMatch = source.match(/^(.*?)\s+without\s+(.+)$/iu);
+  if (withoutMatch) {
+    const positiveUnits = atomicPredicateListUnits(withoutMatch[1]);
+    const subject = requirementSubject(source);
+    const boundary = subject
+      ? `${subject} must not ${gerundPhraseToBase(withoutMatch[2])}.`
+      : `${normalizeText(withoutMatch[1])} without ${normalizeText(withoutMatch[2])}.`;
+    return uniqueNonEmpty([
+      ...(positiveUnits.length > 0 ? positiveUnits : [`${normalizeText(withoutMatch[1])}.`]),
+      boundary,
+    ]).slice(0, 12);
+  }
+
+  const everyHasMatch = source.match(/^every\s+(.+?)\s+has\s+(.+)$/iu);
+  if (everyHasMatch) {
+    const actions = coordinatedListItems(everyHasMatch[1]);
+    if (actions.length > 1) {
+      return actions.map((action) => `Every ${action} has ${normalizeText(everyHasMatch[2])}.`);
+    }
+  }
+
+  const modalVerbListMatch = source.match(
+    /^(.*?\bcan\s+)([a-z][a-z-]*),\s*([a-z][a-z-]*),?\s*(?:or|and)\s+([a-z][a-z-]*)(\s+.+)$/iu
+  );
+  if (modalVerbListMatch) {
+    const [, prefix, first, second, third, suffix] = modalVerbListMatch;
+    return [first, second, third].map(
+      (verb) => `${normalizeText(prefix)} ${verb}${suffix.replace(/[.!?]+$/u, '')}.`
+    );
+  }
+
+  const slashListMatch = source.match(
+    /^(.*?)([A-Za-z][A-Za-z-]*(?:\/[A-Za-z][A-Za-z-]*){1,})(.*)$/u
+  );
+  if (slashListMatch) {
+    const [, prefix, list, suffix] = slashListMatch;
+    return coordinatedListItems(list).map(
+      (item) => `${normalizeText(prefix)} ${item}${suffix.replace(/[.!?]+$/u, '')}.`
+    );
+  }
+
+  const predicateListMatch = source.match(
+    /^([^,;]*?\b(?:manage|manages|bind|binds|preserve|preserves|validate|validates|record|records|publish|publishes|create|creates|update|updates|delete|deletes|support|supports|require|requires|cover|covers)\s+)(.+)$/iu
+  );
+  if (predicateListMatch) {
+    const [, prefix, remainder] = predicateListMatch;
+    const suffixMatch = remainder.match(/^(.*?)(\s+(?:to|after|before|while|until)\s+.+)$/iu);
+    const listText = normalizeText(suffixMatch?.[1] ?? remainder);
+    const suffix = suffixMatch?.[2] ?? '';
+    const items = coordinatedListItems(listText);
+    if (items.length > 1) {
+      return items.map(
+        (item) => `${normalizeText(prefix)} ${item}${suffix.replace(/[.!?]+$/u, '')}.`
+      );
+    }
+  }
+  return [source];
+}
+
+function atomicBehaviorOracleUnits(requirementText: string, oracleText: string): string[] {
+  const source =
+    normalizeText(oracleText) || controlledMustBehaviorText(normalizeText(requirementText));
+  const givenUnits = source
+    .split(/(?=\bGiven\b)/gu)
+    .map(normalizeText)
+    .filter((value) => value.length >= 20);
+  if (givenUnits.length > 1) {
+    return uniqueNonEmpty(givenUnits).slice(0, 12);
+  }
+  const semicolonUnits = source
+    .split(/[；;]+/gu)
+    .map(normalizeText)
+    .filter((value) => value.length >= 8);
+  if (semicolonUnits.length > 1) {
+    return uniqueNonEmpty(semicolonUnits).slice(0, 12);
+  }
+  const thenMatch = source.match(/^(.*?\bthen\b)\s+(.+)$/iu);
+  if (thenMatch) {
+    const scenarioPrefix = normalizeText(thenMatch[1]);
+    let outcomeUnits = atomicPredicateListUnits(thenMatch[2]).filter((value) => value.length >= 8);
+    if (outcomeUnits.length <= 1) {
+      outcomeUnits = thenMatch[2]
+        .split(/,\s+(?:and\s+)?/giu)
+        .map((value) => normalizeText(value.replace(/^and\s+/iu, '')))
+        .filter((value) => value.length >= 8);
+    }
+    if (outcomeUnits.length > 1) {
+      return uniqueNonEmpty(
+        outcomeUnits.map((outcome) => `${scenarioPrefix} ${outcome.replace(/[.!?]+$/u, '')}.`)
+      ).slice(0, 12);
+    }
+  }
+  const predicateUnits = atomicPredicateListUnits(source);
+  if (predicateUnits.length > 1) {
+    return uniqueNonEmpty(predicateUnits).slice(0, 12);
+  }
+  const sentenceUnits = source
+    .split(/(?<=[.!?])\s+(?=[A-Z])/gu)
+    .map(normalizeText)
+    .filter((value) => value.length >= 20);
+  return uniqueNonEmpty(sentenceUnits.length > 1 ? sentenceUnits : [source]).slice(0, 12);
+}
+
+function fullyDecomposedAtomicBehaviorOracleUnits(
+  requirementText: string,
+  oracleText: string
+): string[] {
+  const maxUnits = 64;
+  const seen = new Set<string>();
+  let units = atomicBehaviorOracleUnits(requirementText, oracleText);
+  for (let round = 0; round < 8; round += 1) {
+    const fingerprint = stableStringify(units);
+    if (seen.has(fingerprint)) return units;
+    seen.add(fingerprint);
+    const nextUnits = uniqueStrings(
+      units.flatMap((unit) => atomicBehaviorOracleUnits('', unit))
+    ).slice(0, maxUnits);
+    if (stableStringify(nextUnits) === fingerprint) return units;
+    units = nextUnits;
+  }
+  return units;
+}
+
+function isDocumentationTargetPath(targetFile: string): boolean {
+  return /(?:^|\/)(?:docs?|requirements?)(?:\/|$)/iu.test(targetFile.replace(/\\/g, '/'));
+}
+
+function atomicUnitAllowsDocumentationTarget(unit: string): boolean {
+  return /\b(?:document|documentation|requirement|traceability|readme|contract source)\b/iu.test(
+    unit
+  );
+}
+
+function targetFileSemanticScore(unit: string, targetFile: string): number {
+  const unitTokens = new Set(semanticBusinessTokens(unit));
+  const targetTokens = semanticBusinessTokens(
+    targetFile
+      .replace(/\\/g, '/')
+      .replace(/([a-z0-9])([A-Z])/gu, '$1 $2')
+      .replace(/[_./-]+/gu, ' ')
+  );
+  return targetTokens.reduce((total, token) => {
+    if (unitTokens.has(token)) return total + token.length;
+    const partialMatch = [...unitTokens].some(
+      (unitToken) =>
+        unitToken.length >= 4 &&
+        token.length >= 4 &&
+        (unitToken.includes(token) || token.includes(unitToken))
+    );
+    return total + (partialMatch ? Math.min(token.length, 6) : 0);
+  }, 0);
+}
+
+function targetFilesForAtomicUnit(
+  unit: string,
+  targetFiles: string[],
+  fallbackTargetFiles: string[] = targetFiles
+): string[] {
+  const uniqueTargets = uniqueNonEmpty(targetFiles);
+  if (uniqueTargets.length <= 1) return uniqueTargets;
+  const scored = uniqueTargets
+    .map((targetFile, index) => {
+      return { targetFile, index, score: targetFileSemanticScore(unit, targetFile) };
+    })
+    .filter((row) => row.score > 0)
+    .sort((left, right) => right.score - left.score || left.index - right.index);
+  if (scored.length > 0) {
+    const selected = uniqueNonEmpty(scored.slice(0, 6).map((row) => row.targetFile));
+    const nonDocumentationTargets = selected.filter(
+      (targetFile) => !isDocumentationTargetPath(targetFile)
+    );
+    return !atomicUnitAllowsDocumentationTarget(unit) && nonDocumentationTargets.length > 0
+      ? nonDocumentationTargets
+      : selected;
+  }
+  const fallbackTargets = uniqueNonEmpty(fallbackTargetFiles).slice(0, 6);
+  const nonDocumentationFallbacks = fallbackTargets.filter(
+    (targetFile) => !isDocumentationTargetPath(targetFile)
+  );
+  return !atomicUnitAllowsDocumentationTarget(unit) && nonDocumentationFallbacks.length > 0
+    ? nonDocumentationFallbacks
+    : fallbackTargets;
+}
+
+function ensureAtomicTaskModificationAuthorityCoverage(
+  taskRows: Record<string, unknown>[],
+  modificationTargetsByMust: Map<string, string[]>
+): { taskRows: Record<string, unknown>[]; changed: boolean } {
+  const nextRows = taskRows.map((row) => ({
+    ...row,
+    targetFiles: asStringArray(row.targetFiles),
+  }));
+  let changed = false;
+  for (const [mustRef, authorityTargets] of modificationTargetsByMust.entries()) {
+    const taskIndexes = nextRows
+      .map((row, index) => ({
+        index,
+        mustRef: normalizeText(row.derivedFromMustRef || row.mustRef),
+      }))
+      .filter((row) => row.mustRef === mustRef)
+      .map((row) => row.index);
+    if (taskIndexes.length === 0) continue;
+    const authorityAssignmentCounts = new Map(taskIndexes.map((index) => [index, 0]));
+    const coveredTargets = new Set(
+      taskIndexes.flatMap((index) =>
+        asStringArray(nextRows[index]?.targetFiles).map((target) =>
+          target.replace(/\\/g, '/')
+        )
+      )
+    );
+    for (const targetFile of uniqueNonEmpty(authorityTargets)) {
+      const normalizedTarget = targetFile.replace(/\\/g, '/');
+      if (coveredTargets.has(normalizedTarget)) continue;
+      const eligibleTaskIndexes = isDocumentationTargetPath(targetFile)
+        ? taskIndexes.filter((index) =>
+            atomicUnitAllowsDocumentationTarget(
+              asStringArray(nextRows[index]?.primaryAcceptanceOracles)[0] ||
+                asStringArray(nextRows[index]?.primaryObservableBehaviors)[0] ||
+                normalizeText(nextRows[index]?.text)
+            )
+          )
+        : taskIndexes;
+      if (eligibleTaskIndexes.length === 0) continue;
+      const selectedIndex = eligibleTaskIndexes
+        .map((index) => {
+          const row = nextRows[index]!;
+          const unit =
+            asStringArray(row.primaryAcceptanceOracles)[0] ||
+            asStringArray(row.primaryObservableBehaviors)[0] ||
+            normalizeText(row.text);
+          return {
+            index,
+            score: targetFileSemanticScore(unit, targetFile),
+            authorityAssignmentCount: authorityAssignmentCounts.get(index) ?? 0,
+          };
+        })
+        .sort(
+          (left, right) =>
+            right.score - left.score ||
+            left.authorityAssignmentCount - right.authorityAssignmentCount ||
+            left.index - right.index
+        )[0]!.index;
+      nextRows[selectedIndex] = {
+        ...nextRows[selectedIndex],
+        targetFiles: uniqueNonEmpty([
+          ...asStringArray(nextRows[selectedIndex]?.targetFiles),
+          targetFile,
+        ]),
+      };
+      authorityAssignmentCounts.set(
+        selectedIndex,
+        (authorityAssignmentCounts.get(selectedIndex) ?? 0) + 1
+      );
+      coveredTargets.add(normalizedTarget);
+      changed = true;
+    }
+  }
+  return { taskRows: nextRows, changed };
 }
 
 function mdmIdForMust(index: number, total: number): string {
@@ -2665,7 +3090,10 @@ function perMustProjectionId(prefix: string, index: number, total: number): stri
   return total === 1 ? `${prefix}-001` : `${prefix}-${requirementOrdinal(index)}`;
 }
 
-function perMustProjectionIds(index: number, total: number): {
+function perMustProjectionIds(
+  index: number,
+  total: number
+): {
   traceId: string;
   evidenceId: string;
   acceptanceId: string;
@@ -2845,7 +3273,11 @@ function hasMandatoryRequirementLanguage(text: string): boolean {
   if (/\b(?:lacks?|missing|without|no)\s+(?:explicit\s+)?MUST\b/iu.test(normalized)) {
     return false;
   }
-  if (/\b(?:must|shall|required to|requires?|cannot|must not|forbidden|default|ensure)\b/iu.test(normalized)) {
+  if (
+    /\b(?:must|shall|required to|requires?|cannot|must not|forbidden|default|ensure)\b/iu.test(
+      normalized
+    )
+  ) {
     return true;
   }
   return /(?:必须|不得|禁止|需要|应当|不能|不允许|默认|确保|验收|支持|保持)/u.test(normalized);
@@ -2897,9 +3329,7 @@ function currentTargetMapSourceStateSectionKind(
     /^(?:source )?(?:target|to be|desired) (?:state|behavior|implementation|product state|outcome)$/iu.test(
       normalized
     ) ||
-    /^(?:目标态|目标状态|目标行为|目标实现状态|目标产品状态|目标能力|期望状态)$/u.test(
-      normalized
-    )
+    /^(?:目标态|目标状态|目标行为|目标实现状态|目标产品状态|目标能力|期望状态)$/u.test(normalized)
   ) {
     return 'target';
   }
@@ -2930,9 +3360,12 @@ function tableContextRowValue(
     tableContext?.row && typeof tableContext.row === 'object' && !Array.isArray(tableContext.row)
       ? (tableContext.row as Record<string, unknown>)
       : {};
-  for (const [key, value] of Object.entries(row)) {
-    if (keys.some((candidate) => normalizedHeadingLabel(candidate) === normalizedHeadingLabel(key))) {
-      return normalizeText(String(value ?? ''));
+  for (const candidate of keys) {
+    const candidateKey = normalizedHeadingLabel(candidate);
+    for (const [key, value] of Object.entries(row)) {
+      if (candidateKey === normalizedHeadingLabel(key)) {
+        return normalizeText(String(value ?? ''));
+      }
     }
   }
   return '';
@@ -3046,10 +3479,7 @@ function classifyStructuredSourceBlock(input: {
   if (/\b\d{3,4}x\d{3,4}\b/u.test(normalized)) {
     signal.add('numeric_layout_constraint');
   }
-  if (
-    input.blockKind === 'table_row' &&
-    requirementContext
-  ) {
+  if (input.blockKind === 'table_row' && requirementContext) {
     signal.add('requirement_table_row');
   }
   if (unresolvedPlaceholder) {
@@ -3070,9 +3500,9 @@ function classifyStructuredSourceBlock(input: {
     signal.has('explicit_must_statement') ||
     (mustProjectionContext &&
       (signal.has('mandatory_language') ||
-      signal.has('requirement_table_row') ||
-      signal.has('numeric_layout_constraint') ||
-      (signal.has('requirement_heading') && normalized.length >= 12)))
+        signal.has('requirement_table_row') ||
+        signal.has('numeric_layout_constraint') ||
+        (signal.has('requirement_heading') && normalized.length >= 12)))
   ) {
     return { decision: 'mapped_to_must', requirementSignal: [...signal] };
   }
@@ -3133,7 +3563,12 @@ function extractStructuredSourceBlocks(
       return;
     }
     for (const paragraphLine of paragraphLines) {
-      pushBlock(paragraphLine.lineNumber, paragraphLine.lineNumber, 'paragraph', paragraphLine.text);
+      pushBlock(
+        paragraphLine.lineNumber,
+        paragraphLine.lineNumber,
+        'paragraph',
+        paragraphLine.text
+      );
     }
     paragraphStart = null;
     paragraphLines = [];
@@ -3176,7 +3611,8 @@ function extractStructuredSourceBlocks(
     }
     if (isMarkdownTableRow(line)) {
       flushParagraph();
-      const isHeaderCandidate = index + 1 < lines.length && isMarkdownTableSeparator(lines[index + 1]);
+      const isHeaderCandidate =
+        index + 1 < lines.length && isMarkdownTableSeparator(lines[index + 1]);
       if (isHeaderCandidate) {
         activeTableHeaders = markdownTableCells(line);
         continue;
@@ -3227,11 +3663,11 @@ function buildRequirementCoverageLedger(input: {
     count('mapped_to_target_authority') +
     count('mapped_to_validation_authority');
   const coverageRatio =
-    requirementBearing.length === 0 ? 1 : Number((mappedCount / requirementBearing.length).toFixed(4));
+    requirementBearing.length === 0
+      ? 1
+      : Number((mappedCount / requirementBearing.length).toFixed(4));
   const blockingIssues =
-    blockedUnmappedRequirementCount > 0
-      ? ['source_requirement_coverage_gap']
-      : [];
+    blockedUnmappedRequirementCount > 0 ? ['source_requirement_coverage_gap'] : [];
   return {
     schemaVersion: 'requirements-authoring-coverage-ledger/v1',
     sourcePath: toRootRelativePath(input.root, input.sourcePath),
@@ -3261,11 +3697,19 @@ function normalizeStringList(value: string | string[] | undefined): string[] {
     return value.map((item) => normalizeText(item)).filter(Boolean);
   }
   const normalized = normalizeText(value);
-  return normalized ? normalized.split(/\n+/u).map((item) => normalizeText(item)).filter(Boolean) : [];
+  return normalized
+    ? normalized
+        .split(/\n+/u)
+        .map((item) => normalizeText(item))
+        .filter(Boolean)
+    : [];
 }
 
 function pathKindForTarget(targetPath: string): TargetAuthorityRecord['pathKind'] {
-  if (/\.(?:test|spec)\.(?:ts|tsx|js|py)$/iu.test(targetPath) || /(?:^|\/)tests?\//iu.test(targetPath)) {
+  if (
+    /\.(?:test|spec)\.(?:ts|tsx|js|py)$/iu.test(targetPath) ||
+    /(?:^|\/)tests?\//iu.test(targetPath)
+  ) {
     return 'test';
   }
   if (/\.(?:md|mdx|rst)$/iu.test(targetPath)) {
@@ -3296,6 +3740,16 @@ function extractPathLikeTokens(text: string): string[] {
   );
 }
 
+function extractDeclaredTargetPaths(text: string): string[] {
+  const directoryMatches = Array.from(
+    text.matchAll(/(?:^|[\s`"'])([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+(?:\/)?)(?=[\s`"',]|$)/gu),
+    (match) => normalizeText(match[1])
+  );
+  return uniqueNonEmpty([...extractPathLikeTokens(text), ...directoryMatches]).map(
+    (candidatePath) => candidatePath.replace(/\\/g, '/').replace(/\/+$/u, '')
+  );
+}
+
 function pathEscapesProjectRoot(root: string, candidatePath: string): boolean {
   if (/^(?:https?:|mailto:)/iu.test(candidatePath)) {
     return false;
@@ -3315,8 +3769,39 @@ function extractTargetAuthorityFromSource(input: {
   const sourceDocumentHash = sha256Text(input.sourceText);
   const records: TargetAuthorityRecord[] = [];
   for (const block of input.blocks) {
+    const implementationPathMapRow =
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Implementation Path Map');
+    if (block.decision !== 'mapped_to_target_authority' && !implementationPathMapRow) {
+      continue;
+    }
     const text = `${block.headingPath.join(' ')} ${block.normalizedText}`;
-    const paths = extractPathLikeTokens(text);
+    const paths = implementationPathMapRow
+      ? extractDeclaredTargetPaths(tableContextRowValue(block.tableContext, ['Repository path']))
+      : extractPathLikeTokens(text);
+    const sourcePathId = normalizeText(
+      tableContextRowValue(block.tableContext, ['ID'])
+    ).toUpperCase();
+    const sourceRefs = sourceReferenceIds(sourceTableRowText(block));
+    const sourceMustRefs = uniqueNonEmpty(
+      sourceRefs.map((ref) =>
+        /^MUST-(?:FR|NFR)-\d{1,3}$/u.test(ref)
+          ? ref
+          : (projectedMustIdFromSourceRequirementId(ref) ?? '')
+      )
+    );
+    const sourceTraceRefs = sourceRefs.filter((ref) => /^TRACE-\d{1,3}$/u.test(ref));
+    const sourceAcceptanceRefs = sourceRefs.filter(
+      (ref) => /^ACC-\d{1,3}$/u.test(ref) || /^E2E-\d{1,3}$/u.test(ref)
+    );
+    const sourceOracle = tableContextRowValue(block.tableContext, [
+      'Per-MUST oracle',
+      'Oracle',
+      'Completion rule',
+    ]);
+    const responsibilityMapping = tableContextRowValue(block.tableContext, [
+      'Responsibility mapping',
+    ]);
     for (const candidatePath of paths) {
       records.push({
         id: `TARGET-AUTH-${requirementOrdinal(records.length)}`,
@@ -3328,6 +3813,12 @@ function extractTargetAuthorityFromSource(input: {
         confidence: block.decision === 'mapped_to_target_authority' ? 0.95 : 0.8,
         reason: `Path-like token found in source block ${block.blockId}.`,
         explicit: false,
+        ...(sourcePathId ? { sourcePathId } : {}),
+        ...(sourceMustRefs.length > 0 ? { sourceMustRefs } : {}),
+        ...(sourceTraceRefs.length > 0 ? { sourceTraceRefs } : {}),
+        ...(sourceAcceptanceRefs.length > 0 ? { sourceAcceptanceRefs } : {}),
+        ...(sourceOracle ? { sourceOracle } : {}),
+        ...(responsibilityMapping ? { responsibilityMapping } : {}),
       });
     }
   }
@@ -3339,22 +3830,28 @@ function resolveTargetAuthority(input: {
   sourceText: string;
   explicitTargetPaths: string[];
   sourceRecords: TargetAuthorityRecord[];
-}): { accepted: TargetAuthorityRecord[]; rejected: Array<Record<string, unknown>>; issues: PreConfirmationDrilldownIssue[] } {
+}): {
+  accepted: TargetAuthorityRecord[];
+  rejected: Array<Record<string, unknown>>;
+  issues: PreConfirmationDrilldownIssue[];
+} {
   const sourceDocumentHash = sha256Text(input.sourceText);
-  const explicitRecords = input.explicitTargetPaths.map((targetPath, index): TargetAuthorityRecord => ({
-    id: `TARGET-AUTH-EXPLICIT-${requirementOrdinal(index)}`,
-    path: targetPath.replace(/\\/g, '/'),
-    pathKind: pathKindForTarget(targetPath),
-    source: 'explicit_option',
-    sourceSpan: null,
-    sourceDocumentHash,
-    confidence: 1,
-    reason: 'Provided by --target-path.',
-    explicit: true,
-  }));
+  const explicitRecords = input.explicitTargetPaths.map(
+    (targetPath, index): TargetAuthorityRecord => ({
+      id: `TARGET-AUTH-EXPLICIT-${requirementOrdinal(index)}`,
+      path: targetPath.replace(/\\/g, '/'),
+      pathKind: pathKindForTarget(targetPath),
+      source: 'explicit_option',
+      sourceSpan: null,
+      sourceDocumentHash,
+      confidence: 1,
+      reason: 'Provided by --target-path.',
+      explicit: true,
+    })
+  );
   const seen = new Set<string>();
   const rejected: Array<Record<string, unknown>> = [];
-  const candidateRecords = explicitRecords.length > 0 ? explicitRecords : input.sourceRecords;
+  const candidateRecords = [...explicitRecords, ...input.sourceRecords];
   const accepted = candidateRecords.filter((record) => {
     const normalizedPath = record.path.replace(/\\/g, '/');
     if (seen.has(normalizedPath)) {
@@ -3389,31 +3886,93 @@ function extractValidationCommandCandidates(blocks: StructuredSourceBlock[]): Ar
   command: string;
   sourceSpan: { startLine: number; endLine: number };
   sourceDocumentHash: string;
+  sourceCommandId?: string;
+  sourceMustRefs: string[];
+  sourceTraceRefs: string[];
+  sourceAcceptanceRefs: string[];
+  sourcePathRefs: string[];
+  sourceOracle: string;
+  responsibilityMapping: string;
+  sourceTargetFiles: string[];
 }> {
   const commands: Array<{
     command: string;
     sourceSpan: { startLine: number; endLine: number };
     sourceDocumentHash: string;
+    sourceCommandId?: string;
+    sourceMustRefs: string[];
+    sourceTraceRefs: string[];
+    sourceAcceptanceRefs: string[];
+    sourcePathRefs: string[];
+    sourceOracle: string;
+    responsibilityMapping: string;
+    sourceTargetFiles: string[];
   }> = [];
   const commandPattern =
-    /\b((?:npx\s+)?(?:pytest|vitest)(?:\s+run)?(?:\s+[-./A-Za-z0-9_*:=,@]+)*|npm\s+run\s+[A-Za-z0-9:_-]+|node\s+[-./A-Za-z0-9_]+\.js|python\s+-m\s+[A-Za-z0-9_.-]+(?:\s+[-./A-Za-z0-9_*:=,@]+)*)/giu;
+    /\b((?:npx\s+)?(?:pytest|vitest)(?:\s+run)?(?:\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_*:=,@]+))*|npm\s+run\s+[A-Za-z0-9:_-]+(?:\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_*:=,@]+))*|node\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_]+\.js)(?:\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_*:=,@]+))*|python\s+-m\s+[A-Za-z0-9_.-]+(?:\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_*:=,@]+))*|rg\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_*:=,@]+)(?:\s+(?:"[^"]+"|'[^']+'|[-./A-Za-z0-9_*:=,@]+))*)/giu;
   for (const block of blocks) {
-    for (const match of block.normalizedText.matchAll(commandPattern)) {
+    const sourceId = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+    const sourceCommandId = /^CMD-\d{1,3}$/u.test(sourceId) ? sourceId : undefined;
+    const sourceRowText = sourceTableRowText(block);
+    const sourceRefs = sourceReferenceIds(sourceRowText);
+    const sourceMustRefs = sourceRefs.filter((ref) => /^MUST-(?:FR|NFR)-\d{1,3}$/u.test(ref));
+    const sourceTraceRefs = sourceRefs.filter((ref) => /^TRACE-\d{1,3}$/u.test(ref));
+    const sourceAcceptanceRefs = sourceRefs.filter(
+      (ref) => /^ACC-\d{1,3}$/u.test(ref) || /^E2E-\d{1,3}$/u.test(ref)
+    );
+    const sourcePathRefs = sourceRefs.filter((ref) => /^PATH-\d{1,3}$/u.test(ref));
+    const commandCell =
+      tableContextRowValue(block.tableContext, ['Command or evidence path', 'Command']) ||
+      block.normalizedText;
+    const sourceOracle = tableContextRowValue(block.tableContext, [
+      'Per-MUST oracle',
+      'Oracle',
+      'Completion rule',
+    ]);
+    const responsibilityMapping = tableContextRowValue(block.tableContext, [
+      'Responsibility mapping',
+    ]);
+    const sourceTargetFiles = extractDeclaredTargetPaths(
+      tableContextRowValue(block.tableContext, ['Target files'])
+    );
+    for (const match of commandCell.matchAll(commandPattern)) {
       const command = normalizeText(match[1]);
       if (command) {
         commands.push({
           command,
           sourceSpan: block.sourceSpan,
           sourceDocumentHash: block.sourceDocumentHash,
+          ...(sourceCommandId ? { sourceCommandId } : {}),
+          sourceMustRefs,
+          sourceTraceRefs,
+          sourceAcceptanceRefs,
+          sourcePathRefs,
+          sourceOracle,
+          responsibilityMapping,
+          sourceTargetFiles,
         });
       }
     }
   }
-  return commands;
+  const identifiedCommands = new Set(
+    commands.filter((row) => row.sourceCommandId).map((row) => row.command)
+  );
+  const seen = new Set<string>();
+  return commands.filter((row) => {
+    if (!row.sourceCommandId && identifiedCommands.has(row.command)) {
+      return false;
+    }
+    const key = row.sourceCommandId ? `${row.sourceCommandId}\0${row.command}` : row.command;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 function isExecutableValidationCommand(command: string): boolean {
-  return /^(?:npx\s+)?(?:vitest|pytest)(?:\s+run)?\b|^npm\s+run\s+\S+|^node\s+\S+\.js\b|^python\s+-m\s+\S+/iu.test(
+  return /^(?:npx\s+)?(?:vitest|pytest)(?:\s+run)?\b|^npm\s+run\s+\S+|^node\s+(?:"[^"]+"|'[^']+'|\S+\.js)\b|^python\s+-m\s+\S+|^rg\s+\S+/iu.test(
     command
   );
 }
@@ -3465,7 +4024,9 @@ function commandReferencesTarget(command: string, targetRecords: TargetAuthority
   if (directTargetMatch) {
     return true;
   }
-  const targetTokens = targetRecords.flatMap((record) => sourceAuthorityIdentifierTokens(record.path));
+  const targetTokens = targetRecords.flatMap((record) =>
+    sourceAuthorityIdentifierTokens(record.path)
+  );
   const commandTokens = new Set(sourceAuthorityIdentifierTokens(normalizedCommand));
   return targetTokens.some((token) => commandTokens.has(token));
 }
@@ -3492,16 +4053,25 @@ function validationTargetRecordsForCommandRefs(input: {
       id: `TARGET-AUTH-CMD-${requirementOrdinal(input.validationRecordIndex)}-${requirementOrdinal(records.length)}`,
       path: commandFileRef,
       pathKind: pathKindForTarget(commandFileRef),
+      coverageRole: 'validation_only',
       source: 'explicit_option',
       sourceSpan: null,
       sourceDocumentHash: input.sourceDocumentHash,
       confidence: 1,
-      reason: 'Validation command references this file; it is tracked as validation-only target coverage.',
+      reason:
+        'Validation command references this file; it is tracked as validation-only target coverage.',
       explicit: true,
     });
     existing.add(commandFileRef);
   }
   return records;
+}
+
+function hasStrongModificationAuthority(record: TargetAuthorityRecord): boolean {
+  return (
+    /^TARGET-AUTH-EXPLICIT-/u.test(record.id) ||
+    /^(?:PATH|CTM)-\d{1,3}$/u.test(normalizeText(record.sourcePathId).toUpperCase())
+  );
 }
 
 function buildValidationAuthority(input: {
@@ -3518,17 +4088,47 @@ function buildValidationAuthority(input: {
 } {
   const sourceDocumentHash = sha256Text(input.sourceText);
   const sourceCommands = extractValidationCommandCandidates(input.blocks);
-  const explicit = input.explicitCommands.map((command): {
-    command: string;
-    sourceSpan: { startLine: number; endLine: number } | null;
-    sourceDocumentHash: string;
-    source: 'explicit_option' | 'source_document';
-  } => ({
-    command,
-    sourceSpan: null,
-    sourceDocumentHash,
-    source: 'explicit_option',
-  }));
+  const sourceCommandIdCounts = new Map<string, number>();
+  for (const block of input.blocks) {
+    if (block.blockKind !== 'table_row') {
+      continue;
+    }
+    const sourceCommandId = normalizeText(
+      tableContextRowValue(block.tableContext, ['ID'])
+    ).toUpperCase();
+    if (!/^CMD-\d{1,3}$/u.test(sourceCommandId)) {
+      continue;
+    }
+    sourceCommandIdCounts.set(
+      sourceCommandId,
+      (sourceCommandIdCounts.get(sourceCommandId) ?? 0) + 1
+    );
+  }
+  const duplicateSourceCommandIds = [...sourceCommandIdCounts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([sourceCommandId]) => sourceCommandId);
+  const explicit = input.explicitCommands.map(
+    (
+      command
+    ): {
+      command: string;
+      sourceSpan: { startLine: number; endLine: number } | null;
+      sourceDocumentHash: string;
+      source: 'explicit_option' | 'source_document';
+    } => ({
+      command,
+      sourceSpan: null,
+      sourceDocumentHash,
+      source: 'explicit_option',
+      sourceMustRefs: [],
+      sourceTraceRefs: [],
+      sourceAcceptanceRefs: [],
+      sourcePathRefs: [],
+      sourceOracle: '',
+      responsibilityMapping: '',
+      sourceTargetFiles: [],
+    })
+  );
   const sourceDerived = sourceCommands.map((command) => ({
     ...command,
     source: 'source_document' as const,
@@ -3538,7 +4138,11 @@ function buildValidationAuthority(input: {
   const acceptedTargetRecords = [...input.targetRecords];
   const explicitCommandCount = explicit.length;
   for (const candidate of [...explicit, ...sourceDerived]) {
-    if (candidate.source === 'source_document' && explicitCommandCount > 0 && accepted.length === 0) {
+    if (
+      candidate.source === 'source_document' &&
+      explicitCommandCount > 0 &&
+      accepted.length === 0
+    ) {
       rejected.push({
         ...candidate,
         reason: 'source_validation_command_not_used_after_explicit_command_rejection',
@@ -3547,8 +4151,13 @@ function buildValidationAuthority(input: {
     }
     const executable = isExecutableValidationCommand(candidate.command);
     const targetLinked =
-      input.targetRecords.length === 0 || commandReferencesTarget(candidate.command, input.targetRecords);
+      input.targetRecords.length === 0 ||
+      commandReferencesTarget(candidate.command, input.targetRecords);
     const commandFileRefs = extractCommandFileRefs(candidate.command);
+    const sourceDeclaredTestAuthority =
+      candidate.source === 'source_document' &&
+      Boolean(candidate.sourceCommandId) &&
+      commandFileRefs.some((commandFileRef) => pathKindForTarget(commandFileRef) === 'test');
     const escapingCommandRefs = commandFileRefs.filter((commandFileRef) =>
       pathEscapesProjectRoot(input.root, commandFileRef)
     );
@@ -3564,7 +4173,7 @@ function buildValidationAuthority(input: {
       });
       continue;
     }
-    if (!targetLinked) {
+    if (!targetLinked && !sourceDeclaredTestAuthority) {
       rejected.push({ ...candidate, reason: 'validation_command_not_linked_to_target_path' });
       continue;
     }
@@ -3574,6 +4183,14 @@ function buildValidationAuthority(input: {
       sourceDocumentHash,
       validationRecordIndex: accepted.length,
     });
+    for (const record of acceptedTargetRecords) {
+      if (
+        commandFileRefs.includes(record.path.replace(/\\/g, '/')) &&
+        !hasStrongModificationAuthority(record)
+      ) {
+        record.coverageRole = 'validation_only';
+      }
+    }
     acceptedTargetRecords.push(...commandTargetRecords);
     accepted.push({
       id: `CMD-AUTH-${requirementOrdinal(accepted.length)}`,
@@ -3588,21 +4205,41 @@ function buildValidationAuthority(input: {
       derivationReason:
         candidate.source === 'explicit_option'
           ? 'Provided by --required-command and linked to target authority.'
-          : 'Source document declares an executable validation command linked to target authority.',
+          : sourceDeclaredTestAuthority
+            ? 'Source CMD row declares an executable project-local validation-only test target.'
+            : 'Source document declares an executable validation command linked to target authority.',
       blocksSourceMutationWhenMissing: true,
+      ...(candidate.sourceCommandId ? { sourceCommandId: candidate.sourceCommandId } : {}),
+      sourceMustRefs: candidate.sourceMustRefs ?? [],
+      sourceTraceRefs: candidate.sourceTraceRefs ?? [],
+      sourceAcceptanceRefs: candidate.sourceAcceptanceRefs ?? [],
+      sourcePathRefs: candidate.sourcePathRefs ?? [],
+      sourceOracle: candidate.sourceOracle ?? '',
+      responsibilityMapping: candidate.responsibilityMapping ?? '',
+      sourceTargetFiles: candidate.sourceTargetFiles ?? [],
     });
   }
-  const issues =
-    accepted.length === 0
-      ? [
-          preConfirmationIssue(
-            'validation_authority_missing',
-            'No executable validation command authority was found; source materialization is blocked.',
-            ['--required-command', 'validation-authority-report.json'],
-            'validation_authority'
-          ),
-        ]
-      : [];
+  const issues: PreConfirmationDrilldownIssue[] = [];
+  if (duplicateSourceCommandIds.length > 0) {
+    issues.push(
+      preConfirmationIssue(
+        'validation_authority_duplicate_source_command_id',
+        'Every source validation authority row must declare a unique stable CMD-nnn ID; duplicate IDs must not be silently renumbered.',
+        duplicateSourceCommandIds,
+        'validation_authority'
+      )
+    );
+  }
+  if (accepted.length === 0) {
+    issues.push(
+      preConfirmationIssue(
+        'validation_authority_missing',
+        'No executable validation command authority was found; source materialization is blocked.',
+        ['--required-command', 'validation-authority-report.json'],
+        'validation_authority'
+      )
+    );
+  }
   return { accepted, acceptedTargetRecords, rejected, issues };
 }
 
@@ -3611,8 +4248,16 @@ function writeAuthorityReports(input: {
   root: string;
   sourcePath: string;
   sourceText: string;
-  targetAuthority: { accepted: TargetAuthorityRecord[]; rejected: Array<Record<string, unknown>>; issues: PreConfirmationDrilldownIssue[] };
-  validationAuthority: { accepted: ValidationAuthorityRecord[]; rejected: Array<Record<string, unknown>>; issues: PreConfirmationDrilldownIssue[] };
+  targetAuthority: {
+    accepted: TargetAuthorityRecord[];
+    rejected: Array<Record<string, unknown>>;
+    issues: PreConfirmationDrilldownIssue[];
+  };
+  validationAuthority: {
+    accepted: ValidationAuthorityRecord[];
+    rejected: Array<Record<string, unknown>>;
+    issues: PreConfirmationDrilldownIssue[];
+  };
 }): void {
   const base = {
     sourcePath: toRootRelativePath(input.root, input.sourcePath),
@@ -3648,16 +4293,19 @@ function projectionDomainSanityCheck(input: {
   validationRecords: ValidationAuthorityRecord[];
 }): { report: Record<string, unknown>; issues: PreConfirmationDrilldownIssue[] } {
   const sourceRel = toRootRelativePath(input.root, input.sourcePath);
-  const sourceHintsConsumer =
-    /(?:chart|trader|widget|settings|consumer|产品|界面|设置)/iu.test(
-      input.sourceText
-    );
+  const sourceHintsConsumer = /(?:chart|trader|widget|settings|consumer|产品|界面|设置)/iu.test(
+    input.sourceText
+  );
   const offendingTargets = input.targetRecords
     .map((record) => record.path)
-    .filter((targetPath) => /(?:^|\/)scripts\/main-agent-|(?:^|\/)tests\/acceptance\/main-agent-/iu.test(targetPath));
+    .filter((targetPath) =>
+      /(?:^|\/)scripts\/main-agent-|(?:^|\/)tests\/acceptance\/main-agent-/iu.test(targetPath)
+    );
   const offendingCommands = input.validationRecords
     .map((record) => record.command)
-    .filter((command) => /tests\/acceptance\/main-agent-|scripts\/main-agent-orchestration/iu.test(command));
+    .filter((command) =>
+      /tests\/acceptance\/main-agent-|scripts\/main-agent-orchestration/iu.test(command)
+    );
   const issues =
     sourceHintsConsumer && (offendingTargets.length > 0 || offendingCommands.length > 0)
       ? [
@@ -3717,8 +4365,7 @@ function writeSourceMutationDecision(input: {
     sourceDocumentHashBefore: input.sourceHashBefore,
     sourceDocumentHashAfter: input.sourceHashAfter ?? input.sourceHashBefore,
     targetRawHashBefore: input.targetRawHashBefore ?? input.sourceHashBefore,
-    targetRawHashAfter:
-      input.targetRawHashAfter ?? input.sourceHashAfter ?? input.sourceHashBefore,
+    targetRawHashAfter: input.targetRawHashAfter ?? input.sourceHashAfter ?? input.sourceHashBefore,
     semanticSourceHashBefore: input.semanticSourceHashBefore ?? input.sourceHashBefore,
     semanticSourceHashAfter:
       input.semanticSourceHashAfter ?? input.sourceHashAfter ?? input.sourceHashBefore,
@@ -3860,11 +4507,13 @@ function buildControlledMustCandidatesFromPlainSource(
         normalizeText(existing.coverageReason),
         row.block.requirementSignal.join(', '),
       ]).join(', ');
-      existing.confidence = Math.max(existing.confidence ?? 0, row.block.requirementSignal.includes('mandatory_language') ? 0.95 : 0.8);
-      existing.originalText = uniqueNonEmpty([
-        existing.originalText,
-        row.block.rawText,
-      ]).join('\n\n');
+      existing.confidence = Math.max(
+        existing.confidence ?? 0,
+        row.block.requirementSignal.includes('mandatory_language') ? 0.95 : 0.8
+      );
+      existing.originalText = uniqueNonEmpty([existing.originalText, row.block.rawText]).join(
+        '\n\n'
+      );
       existing.normalizedRequirement = uniqueNonEmpty([
         existing.normalizedRequirement,
         normalizedRequirement,
@@ -3891,8 +4540,7 @@ function buildControlledMustCandidatesFromPlainSource(
       originalText: row.block.rawText,
       normalizedRequirement,
       decision: 'accepted_for_draft',
-      decisionReason:
-        'FR/NFR source row maps to a stable controlled draft MUST projection.',
+      decisionReason: 'FR/NFR source row maps to a stable controlled draft MUST projection.',
       requiresHumanReview: true,
     });
   }
@@ -3960,14 +4608,9 @@ function normalizedRequirementTextFromBlock(block: StructuredSourceBlock): strin
   return block.normalizedText;
 }
 
-function headingPathContainsExactSection(
-  headingPath: string[],
-  expectedSection: string
-): boolean {
+function headingPathContainsExactSection(headingPath: string[], expectedSection: string): boolean {
   const normalizedSection = normalizedHeadingLabel(expectedSection);
-  return headingPath.some(
-    (heading) => normalizedHeadingLabel(heading) === normalizedSection
-  );
+  return headingPath.some((heading) => normalizedHeadingLabel(heading) === normalizedSection);
 }
 
 function sourceTableRowText(block: StructuredSourceBlock): string {
@@ -3986,9 +4629,11 @@ function sourceTableRowText(block: StructuredSourceBlock): string {
 function sourceReferenceIds(text: string): string[] {
   return Array.from(
     new Set(
-      (text.match(
-        /\b(?:MUST-(?:FR|NFR)-\d{1,3}|FR-\d{1,3}|NFR-\d{1,3}|NEG-\d{1,3}|OUT-\d{1,3}|FAIL-\d{1,3}|ACC-\d{1,3}|E2E-\d{1,3}|CMD-\d{1,3}|PATH-\d{1,3}|TRACE-\d{1,3})\b/giu
-      ) ?? []).map((ref) => ref.toUpperCase())
+      (
+        text.match(
+          /\b(?:MUST-(?:FR|NFR)-\d{1,3}|FR-\d{1,3}|NFR-\d{1,3}|NEG-\d{1,3}|OUT-\d{1,3}|FAIL-\d{1,3}|ACC-\d{1,3}|E2E-\d{1,3}|CMD-\d{1,3}|PATH-\d{1,3}|TRACE-\d{1,3}|UJ-\d{1,3})\b/giu
+        ) ?? []
+      ).map((ref) => ref.toUpperCase())
     )
   );
 }
@@ -4047,18 +4692,18 @@ function buildOutOfScopeRows(input: {
   packetHash: string;
 }): Record<string, unknown>[] {
   const rows: Record<string, unknown>[] = [];
-  const hasCanonicalNonGoalSections = input.blocks.some(
-    (block) =>
-      headingPathContainsExactSection(block.headingPath, 'Out Of Scope') ||
-      headingPathContainsExactSection(
-        block.headingPath,
-        'Negative Requirements And Not Done Conditions'
-      )
+  const hasCanonicalOutOfScopeSection = input.blocks.some((block) =>
+    headingPathContainsExactSection(block.headingPath, 'Out Of Scope')
   );
   for (const block of input.blocks) {
+    const belongsToNegativeRequirements = headingPathContainsExactSection(
+      block.headingPath,
+      'Negative Requirements And Not Done Conditions'
+    );
     if (
       block.decision !== 'mapped_to_non_goal' ||
-      (hasCanonicalNonGoalSections &&
+      belongsToNegativeRequirements ||
+      (hasCanonicalOutOfScopeSection &&
         !headingPathContainsExactSection(block.headingPath, 'Out Of Scope'))
     ) {
       continue;
@@ -4120,8 +4765,7 @@ function buildNegativeRequirementRows(input: {
         tableContextRowValue(block.tableContext, ['Not-done condition', 'Not done condition']) ||
         block.normalizedText,
       negativeAssertion:
-        tableContextRowValue(block.tableContext, ['Negative assertion']) ||
-        block.normalizedText,
+        tableContextRowValue(block.tableContext, ['Negative assertion']) || block.normalizedText,
       whyItBlocksCompletion:
         tableContextRowValue(block.tableContext, ['Blocks completion when']) ||
         'The source-declared negative assertion is not proven.',
@@ -4141,12 +4785,173 @@ function buildNegativeRequirementRows(input: {
   return rows;
 }
 
+function failurePathTitle(trigger: string): string {
+  return trigger.split(/\s*(?:;\s*impact\s*:|；\s*影响\s*[:：])\s*/iu, 1)[0]?.trim() || trigger;
+}
+
+function semanticBusinessTokens(value: string): string[] {
+  const stopWords = new Set([
+    'and',
+    'are',
+    'before',
+    'for',
+    'from',
+    'into',
+    'must',
+    'not',
+    'only',
+    'or',
+    'the',
+    'then',
+    'when',
+    'while',
+    'with',
+  ]);
+  return uniqueNonEmpty(
+    normalizeText(value)
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}_-]+/u)
+      .filter((token) => token.length >= 3 && !stopWords.has(token))
+  );
+}
+
+function businessFailureSemanticScore(
+  requirement: SourceMustRequirement,
+  failureRow: BusinessFailurePathRow
+): number {
+  const requirementTokens = new Set(
+    semanticBusinessTokens(
+      `${requirement.text} ${requirement.headingPath?.join(' ') ?? ''} ${
+        requirement.sourceRequirementId ?? ''
+      }`
+    )
+  );
+  const failureTokens = semanticBusinessTokens(
+    `${failureRow.title} ${failureRow.trigger} ${failureRow.expectedBehavior}`
+  );
+  return failureTokens.reduce(
+    (score, token) => score + (requirementTokens.has(token) ? token.length : 0),
+    0
+  );
+}
+
+function buildBusinessFailurePathRows(input: {
+  blocks: StructuredSourceBlock[];
+  mustRequirements: SourceMustRequirement[];
+}): BusinessFailurePathRow[] {
+  const mustRefs = new Set(input.mustRequirements.map((requirement) => requirement.id));
+  const traceBlocks = input.blocks.filter(
+    (block) =>
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Trace Matrix Source')
+  );
+  const testBlocks = input.blocks.filter(
+    (block) =>
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Test And Verification Paths')
+  );
+  const rows: BusinessFailurePathRow[] = [];
+  for (const block of input.blocks) {
+    if (
+      block.blockKind !== 'table_row' ||
+      !headingPathContainsExactSection(block.headingPath, 'Failure Matrix')
+    ) {
+      continue;
+    }
+    const sourceId = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+    if (!/^FAIL-\d{1,3}$/u.test(sourceId)) {
+      continue;
+    }
+    const id = sourceId;
+    const trigger =
+      tableContextRowValue(block.tableContext, ['Failure condition', 'Failure Trigger']) ||
+      block.normalizedText;
+    const expectedBehavior =
+      tableContextRowValue(block.tableContext, [
+        'Required system behavior',
+        'Required System Response',
+        'Required behavior',
+      ]) || block.normalizedText;
+    const linkedNegIds = sourceReferenceIds(
+      tableContextRowValue(block.tableContext, [
+        'Negative requirement refs',
+        'Negative requirement references',
+        'Negative refs',
+      ])
+    ).filter((ref) => ref.startsWith('NEG-'));
+    const sourceAcceptanceRefs = sourceReferenceIds(
+      tableContextRowValue(block.tableContext, ['Evidence', 'Acceptance refs'])
+    ).filter((ref) => ref.startsWith('ACC-') || ref.startsWith('E2E-'));
+    const linkedTraceBlocks = traceBlocks.filter((traceBlock) => {
+      const refs = sourceReferenceIds(sourceTableRowText(traceBlock));
+      return [...linkedNegIds, ...sourceAcceptanceRefs].some((ref) => refs.includes(ref));
+    });
+    const sourceTraceRefs = uniqueNonEmpty(
+      linkedTraceBlocks.map((traceBlock) =>
+        normalizeText(tableContextRowValue(traceBlock.tableContext, ['ID'])).toUpperCase()
+      )
+    ).filter((ref) => /^TRACE-\d{1,3}$/u.test(ref));
+    const traceRefs = uniqueNonEmpty(
+      linkedTraceBlocks.flatMap((traceBlock) => sourceReferenceIds(sourceTableRowText(traceBlock)))
+    );
+    const sourceE2eRefs = uniqueNonEmpty([
+      ...sourceAcceptanceRefs.filter((ref) => ref.startsWith('E2E-')),
+      ...traceRefs.filter((ref) => ref.startsWith('E2E-')),
+    ]);
+    const linkedTestBlocks = testBlocks.filter((testBlock) => {
+      const testId = normalizeText(
+        tableContextRowValue(testBlock.tableContext, ['ID'])
+      ).toUpperCase();
+      return sourceE2eRefs.includes(testId) || sourceAcceptanceRefs.includes(testId);
+    });
+    const ownerMustRefs = uniqueNonEmpty([
+      ...sourceReferenceIds(sourceTableRowText(block)),
+      ...traceRefs,
+      ...linkedTestBlocks.flatMap((testBlock) => sourceReferenceIds(sourceTableRowText(testBlock))),
+    ]).filter((ref) => mustRefs.has(ref));
+    rows.push({
+      id,
+      title: failurePathTitle(trigger),
+      trigger,
+      expectedBehavior,
+      linkedNegIds,
+      sourceAcceptanceRefs,
+      sourceTraceRefs,
+      sourceE2eRefs,
+      ownerMustRefs,
+      sourcePath: block.sourcePath,
+      sourceSpan: block.sourceSpan,
+      sourceDocumentHash: block.sourceDocumentHash,
+      headingPath: block.headingPath,
+    });
+  }
+  if (rows.length > 0) {
+    for (const row of rows) {
+      if (row.ownerMustRefs.length > 0) continue;
+      const rankedMatches = input.mustRequirements
+        .map((requirement) => ({
+          requirement,
+          score: businessFailureSemanticScore(requirement, row),
+        }))
+        .sort(
+          (left, right) =>
+            right.score - left.score || left.requirement.id.localeCompare(right.requirement.id)
+        );
+      const bestMatch = rankedMatches[0];
+      const runnerUp = rankedMatches[1];
+      if (bestMatch && bestMatch.score > 0 && bestMatch.score > (runnerUp?.score ?? -1)) {
+        row.ownerMustRefs = [bestMatch.requirement.id];
+      }
+    }
+  }
+  return rows;
+}
+
 function isExecutableTestPath(candidatePath: string): boolean {
   const normalized = candidatePath.replace(/\\/g, '/');
   return (
     /\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs|py)$/iu.test(normalized) ||
-    (/(?:^|\/)tests?\//iu.test(normalized) &&
-      /\.(?:ts|tsx|js|jsx|mjs|cjs|py)$/iu.test(normalized))
+    (/(?:^|\/)tests?\//iu.test(normalized) && /\.(?:ts|tsx|js|jsx|mjs|cjs|py)$/iu.test(normalized))
   );
 }
 
@@ -4186,7 +4991,9 @@ function sourceAuthorityTestFile(input: {
       .map((block) => {
         const refs = sourceReferenceIds(sourceTableRowText(block));
         const paths = fields
-          .flatMap((field) => extractPathLikeTokens(tableContextRowValue(block.tableContext, [field])))
+          .flatMap((field) =>
+            extractPathLikeTokens(tableContextRowValue(block.tableContext, [field]))
+          )
           .map((candidatePath) => candidatePath.replace(/\\/g, '/'))
           .filter(isExecutableTestPath);
         return {
@@ -4205,19 +5012,364 @@ function sourceAuthorityTestFile(input: {
   return sourcePaths.length === 1 ? sourcePaths[0] : null;
 }
 
+function sourceRefsFromTableField(block: StructuredSourceBlock, fields: string[]): string[] {
+  return sourceReferenceIds(tableContextRowValue(block.tableContext, fields));
+}
+
+function sourceRefsToMustRefs(refs: string[], mustRequirements: SourceMustRequirement[]): string[] {
+  const mustBySourceRef = new Map<string, string>();
+  for (const requirement of mustRequirements) {
+    mustBySourceRef.set(requirement.id, requirement.id);
+    const sourceRequirementId = normalizeText(requirement.sourceRequirementId).toUpperCase();
+    if (sourceRequirementId) {
+      mustBySourceRef.set(sourceRequirementId, requirement.id);
+    }
+    const projectedSourceRef = projectedMustIdFromSourceRequirementId(sourceRequirementId);
+    if (projectedSourceRef) {
+      mustBySourceRef.set(projectedSourceRef, requirement.id);
+    }
+  }
+  return uniqueNonEmpty(
+    refs
+      .map((ref) => mustBySourceRef.get(normalizeText(ref).toUpperCase()))
+      .filter((ref): ref is string => Boolean(ref))
+  );
+}
+
+function buildSourceMustProjectionAuthority(input: {
+  blocks: StructuredSourceBlock[];
+  mustRequirements: SourceMustRequirement[];
+  validationAuthorityRecords?: ValidationAuthorityRecord[];
+}): Map<string, SourceMustProjectionAuthority> {
+  const byMust = new Map<string, SourceMustProjectionAuthority>();
+  for (const requirement of input.mustRequirements) {
+    byMust.set(requirement.id, {
+      mustRef: requirement.id,
+      sourceRequirementId: normalizeText(requirement.sourceRequirementId).toUpperCase(),
+      oracle: requirement.text,
+      responsibilityMapping: '',
+      closureAssertion: '',
+      acceptanceRefs: [],
+      e2eRefs: [],
+      traceRefs: [],
+      contractCommandRefs: [],
+      deliveryCommandRefs: [],
+      pathRefs: [],
+      targetFiles: [],
+      testFiles: [],
+      viewRefs: [],
+      evidenceRefs: [],
+      sourceEvidenceRefs: [],
+    });
+  }
+
+  const append = (current: string[], next: string[]) => uniqueNonEmpty([...current, ...next]);
+  const updateRows = (
+    mustRefs: string[],
+    update: (row: SourceMustProjectionAuthority) => void
+  ): void => {
+    for (const mustRef of mustRefs) {
+      const row = byMust.get(mustRef);
+      if (row) {
+        update(row);
+      }
+    }
+  };
+
+  for (const block of input.blocks) {
+    if (block.blockKind !== 'table_row') {
+      continue;
+    }
+    const sourceId = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+    let mustRefs: string[] = [];
+    if (
+      headingPathContainsExactSection(block.headingPath, 'Functional Requirements') ||
+      headingPathContainsExactSection(block.headingPath, 'Non-Functional Requirements')
+    ) {
+      mustRefs = sourceRefsToMustRefs(
+        uniqueNonEmpty([sourceBlockRequirementId(block) ?? sourceId]),
+        input.mustRequirements
+      );
+    } else if (headingPathContainsExactSection(block.headingPath, 'Acceptance Evidence')) {
+      mustRefs = sourceRefsToMustRefs(
+        sourceRefsFromTableField(block, ['Covers', 'Requirement refs']),
+        input.mustRequirements
+      );
+    } else if (headingPathContainsExactSection(block.headingPath, 'Test And Verification Paths')) {
+      mustRefs = sourceRefsToMustRefs(
+        sourceRefsFromTableField(block, ['Covers', 'Requirement refs']),
+        input.mustRequirements
+      );
+    } else if (headingPathContainsExactSection(block.headingPath, 'Trace Matrix Source')) {
+      mustRefs = sourceRefsToMustRefs(
+        sourceRefsFromTableField(block, ['Covers', 'Requirement']),
+        input.mustRequirements
+      );
+    } else if (headingPathContainsExactSection(block.headingPath, 'Implementation Path Map')) {
+      mustRefs = sourceRefsToMustRefs(
+        sourceRefsFromTableField(block, ['Requirement refs', 'Covers']),
+        input.mustRequirements
+      );
+    }
+    if (mustRefs.length === 0) {
+      continue;
+    }
+
+    const explicitOracle = tableContextRowValue(block.tableContext, ['Per-MUST oracle', 'Oracle']);
+    const oracle = explicitOracle || tableContextRowValue(block.tableContext, ['Completion rule']);
+    const responsibilityMapping = tableContextRowValue(block.tableContext, [
+      'Responsibility mapping',
+    ]);
+    const closureAssertion = tableContextRowValue(block.tableContext, [
+      'Per-MUST closure assertion',
+    ]);
+    const allRefs = sourceReferenceIds(sourceTableRowText(block));
+    const acceptanceRefs = allRefs.filter((ref) => /^ACC-\d{1,3}$/u.test(ref));
+    const e2eRefs = allRefs.filter((ref) => /^E2E-\d{1,3}$/u.test(ref));
+    const evidenceRefs = allRefs.filter((ref) => /^EVD-\d{1,3}$/u.test(ref));
+    const traceRefs = allRefs.filter((ref) => /^TRACE-\d{1,3}$/u.test(ref));
+    const pathRefs = allRefs.filter((ref) => /^PATH-\d{1,3}$/u.test(ref));
+    const viewRefs = allRefs.filter((ref) => /^UJ-\d{1,3}$/u.test(ref));
+    const targetFiles = uniqueNonEmpty([
+      ...extractPathLikeTokens(tableContextRowValue(block.tableContext, ['Repository path'])),
+      ...extractPathLikeTokens(tableContextRowValue(block.tableContext, ['Target files'])),
+    ]).map((candidatePath) => candidatePath.replace(/\\/g, '/'));
+    const sourceEvidenceRefs = uniqueNonEmpty([
+      ...extractPathLikeTokens(
+        tableContextRowValue(block.tableContext, [
+          'Required evidence',
+          'Assertion source',
+          'Responsibility mapping',
+        ])
+      ),
+      ...targetFiles,
+    ]).map((candidatePath) => candidatePath.replace(/\\/g, '/'));
+    const contractCommandRefs = sourceRefsFromTableField(block, [
+      'Contract validation command refs',
+    ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref));
+    const deliveryCommandRefs = uniqueNonEmpty([
+      ...sourceRefsFromTableField(block, ['Delivery evidence command refs']),
+      ...(headingPathContainsExactSection(block.headingPath, 'Trace Matrix Source')
+        ? []
+        : allRefs.filter((ref) => /^CMD-\d{1,3}$/u.test(ref))),
+    ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref));
+
+    updateRows(mustRefs, (row) => {
+      if (explicitOracle || (!row.oracle && oracle)) {
+        row.oracle = oracle;
+      }
+      if (responsibilityMapping) {
+        row.responsibilityMapping = responsibilityMapping;
+      }
+      if (closureAssertion) {
+        row.closureAssertion = closureAssertion;
+      }
+      row.acceptanceRefs = append(row.acceptanceRefs, acceptanceRefs);
+      row.e2eRefs = append(row.e2eRefs, e2eRefs);
+      row.traceRefs = append(row.traceRefs, traceRefs);
+      row.contractCommandRefs = append(row.contractCommandRefs, contractCommandRefs);
+      row.deliveryCommandRefs = append(row.deliveryCommandRefs, deliveryCommandRefs);
+      row.pathRefs = append(row.pathRefs, pathRefs);
+      row.targetFiles = append(row.targetFiles, targetFiles);
+      row.testFiles = append(row.testFiles, targetFiles.filter(isExecutableTestPath));
+      row.viewRefs = append(row.viewRefs, viewRefs);
+      row.sourceEvidenceRefs = append(row.sourceEvidenceRefs, sourceEvidenceRefs);
+      row.evidenceRefs = append(row.evidenceRefs, evidenceRefs);
+    });
+  }
+
+  for (const record of input.validationAuthorityRecords ?? []) {
+    const sourceMappedMustRefs = sourceRefsToMustRefs(
+      record.sourceMustRefs ?? [],
+      input.mustRequirements
+    );
+    const mustRefs =
+      sourceMappedMustRefs.length > 0
+        ? sourceMappedMustRefs
+        : input.mustRequirements.length === 1
+          ? [input.mustRequirements[0].id]
+          : [];
+    updateRows(mustRefs, (row) => {
+      if (record.sourceOracle) {
+        row.oracle = record.sourceOracle;
+      }
+      if (record.responsibilityMapping) {
+        row.responsibilityMapping = record.responsibilityMapping;
+      }
+      row.deliveryCommandRefs = append(
+        row.deliveryCommandRefs,
+        uniqueNonEmpty([record.sourceCommandId])
+      );
+      row.traceRefs = append(row.traceRefs, record.sourceTraceRefs ?? []);
+      row.acceptanceRefs = append(
+        row.acceptanceRefs,
+        (record.sourceAcceptanceRefs ?? []).filter((ref) => ref.startsWith('ACC-'))
+      );
+      row.e2eRefs = append(
+        row.e2eRefs,
+        (record.sourceAcceptanceRefs ?? []).filter((ref) => ref.startsWith('E2E-'))
+      );
+      row.pathRefs = append(row.pathRefs, record.sourcePathRefs ?? []);
+      row.targetFiles = append(row.targetFiles, record.sourceTargetFiles ?? []);
+      row.testFiles = append(
+        row.testFiles,
+        uniqueNonEmpty([...record.commandFileRefs, ...(record.sourceTargetFiles ?? [])]).filter(
+          isExecutableTestPath
+        )
+      );
+    });
+  }
+
+  return byMust;
+}
+
+function buildSourceBusinessJourneyRows(input: {
+  blocks: StructuredSourceBlock[];
+  mustRequirements: SourceMustRequirement[];
+  sourceAuthority: Map<string, SourceMustProjectionAuthority>;
+  failurePathRefsForMust: (mustRef: string) => string[];
+}): SourceBusinessJourneyRow[] {
+  const traceBlocks = input.blocks.filter(
+    (block) =>
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Trace Matrix Source')
+  );
+  return input.blocks
+    .filter(
+      (block) =>
+        block.blockKind === 'table_row' &&
+        headingPathContainsExactSection(block.headingPath, 'User Journeys')
+    )
+    .map((block) => {
+      const id = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+      const linkedTraceBlocks = traceBlocks.filter((traceBlock) =>
+        sourceRefsFromTableField(traceBlock, ['View refs']).includes(id)
+      );
+      const mustRefs = uniqueNonEmpty(
+        linkedTraceBlocks.flatMap((traceBlock) =>
+          sourceRefsToMustRefs(
+            sourceRefsFromTableField(traceBlock, ['Covers', 'Requirement']),
+            input.mustRequirements
+          )
+        )
+      );
+      return {
+        id,
+        actor: tableContextRowValue(block.tableContext, ['Actor']) || 'Product user',
+        trigger: tableContextRowValue(block.tableContext, ['Trigger']) || 'Source-defined trigger',
+        requiredFlow:
+          tableContextRowValue(block.tableContext, ['Required flow']) || block.normalizedText,
+        completionState:
+          tableContextRowValue(block.tableContext, ['Completion state']) ||
+          'Source-defined completion state',
+        mustRefs,
+        traceRefs: uniqueNonEmpty(
+          mustRefs.flatMap((mustRef) => input.sourceAuthority.get(mustRef)?.traceRefs ?? [])
+        ),
+        evidenceRefs: uniqueNonEmpty(
+          mustRefs.flatMap((mustRef) => input.sourceAuthority.get(mustRef)?.evidenceRefs ?? [])
+        ),
+        acceptanceRefs: uniqueNonEmpty(
+          mustRefs.flatMap((mustRef) => [
+            ...(input.sourceAuthority.get(mustRef)?.acceptanceRefs ?? []),
+            ...(input.sourceAuthority.get(mustRef)?.e2eRefs ?? []),
+          ])
+        ),
+        failurePathRefs: uniqueNonEmpty(
+          mustRefs.flatMap((mustRef) => input.failurePathRefsForMust(mustRef))
+        ),
+      };
+    })
+    .filter((row) => /^UJ-\d{1,3}$/u.test(row.id) && row.mustRefs.length > 0);
+}
+
+function unownedSourceBusinessJourneyIds(
+  blocks: StructuredSourceBlock[],
+  mustRequirements: SourceMustRequirement[]
+): string[] {
+  const traceBlocks = blocks.filter(
+    (block) =>
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Trace Matrix Source')
+  );
+  return uniqueNonEmpty(
+    blocks
+      .filter(
+        (block) =>
+          block.blockKind === 'table_row' &&
+          headingPathContainsExactSection(block.headingPath, 'User Journeys')
+      )
+      .flatMap((block) => {
+        const id = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+        if (!/^UJ-\d{1,3}$/u.test(id)) {
+          return [];
+        }
+        const ownerMustRefs = uniqueNonEmpty(
+          traceBlocks
+            .filter((traceBlock) =>
+              sourceRefsFromTableField(traceBlock, ['View refs']).includes(id)
+            )
+            .flatMap((traceBlock) =>
+              sourceRefsToMustRefs(
+                sourceRefsFromTableField(traceBlock, ['Covers', 'Requirement']),
+                mustRequirements
+              )
+            )
+        );
+        return ownerMustRefs.length === 0 ? [id] : [];
+      })
+  );
+}
+
+function assignedValidationAuthorityCommandIds(records: ValidationAuthorityRecord[]): string[] {
+  const reservedSourceCommandIds = new Set(
+    records
+      .map((record) => normalizeText(record.sourceCommandId).toUpperCase())
+      .filter((commandId) => /^CMD-\d{1,3}$/u.test(commandId))
+  );
+  const assignedCommandIds = new Set<string>();
+  let fallbackCommandOrdinal = 0;
+  const nextFallbackCommandId = (): string => {
+    while (true) {
+      const candidate = `CMD-${requirementOrdinal(fallbackCommandOrdinal)}`;
+      fallbackCommandOrdinal += 1;
+      if (!reservedSourceCommandIds.has(candidate) && !assignedCommandIds.has(candidate)) {
+        return candidate;
+      }
+    }
+  };
+  return records.map((record) => {
+    const sourceCommandId = normalizeText(record.sourceCommandId).toUpperCase();
+    const id =
+      /^CMD-\d{1,3}$/u.test(sourceCommandId) && !assignedCommandIds.has(sourceCommandId)
+        ? sourceCommandId
+        : nextFallbackCommandId();
+    assignedCommandIds.add(id);
+    return id;
+  });
+}
+
 const CONFIRMATION_LOCALIZATION_FIELD_GROUPS = [
   { arrayKey: 'must', fields: ['text'] },
   { arrayKey: 'notDone', fields: ['text', 'whyItBlocksCompletion'] },
   { arrayKey: 'mustNot', fields: ['text', 'scopeBoundary'] },
   { arrayKey: 'outOfScope', fields: ['text', 'scopeBoundary'] },
   { arrayKey: 'evidence', fields: ['text', 'oracle'] },
-  { arrayKey: 'failurePaths', fields: ['title', 'trigger', 'expectedBehavior', 'forbiddenBehavior'] },
+  {
+    arrayKey: 'failurePaths',
+    fields: ['title', 'trigger', 'expectedBehavior', 'forbiddenBehavior'],
+  },
   { arrayKey: 'edgeCases', fields: ['condition', 'expectedBehavior', 'forbiddenBehavior'] },
   { arrayKey: 'openQuestions', fields: ['text', 'requiredDecision', 'impactIfUnresolved'] },
-  { arrayKey: 'traceRows', fields: ['closureAssertion', 'targetStateAssertion', 'acceptanceSummary'] },
+  {
+    arrayKey: 'traceRows',
+    fields: ['closureAssertion', 'targetStateAssertion', 'acceptanceSummary'],
+  },
 ] as const;
 
-function confirmationLanguageRequiresZhMaterialization(language: string | null | undefined): boolean {
+function confirmationLanguageRequiresZhMaterialization(
+  language: string | null | undefined
+): boolean {
   const normalized = normalizeText(language).toLowerCase();
   return normalized === 'zh-cn' || normalized === 'bilingual';
 }
@@ -4230,44 +5382,158 @@ function zhFieldName(field: string): string {
   return field === 'text' ? 'textZh' : `${field}Zh`;
 }
 
-function zhFieldLabel(field: string): string {
-  const labels: Record<string, string> = {
-    text: '确认文本',
-    whyItBlocksCompletion: '阻断完成原因',
-    scopeBoundary: '范围边界',
-    oracle: '验收判定',
-    title: '标题',
-    trigger: '触发条件',
-    expectedBehavior: '预期行为',
-    forbiddenBehavior: '禁止行为',
-    condition: '边界条件',
-    requiredDecision: '所需决策',
-    impactIfUnresolved: '未解决影响',
-    closureAssertion: '闭合断言',
-    targetStateAssertion: '目标状态断言',
-    acceptanceSummary: '验收摘要',
+const FORBIDDEN_SYNTHETIC_LOCALIZATION_MARKERS = ['请按源文档确认以下内容'] as const;
+
+interface ConfirmationLocalizationRequestEntry {
+  key: string;
+  arrayKey: string;
+  rowId: string;
+  field: string;
+  sourceText: string;
+  sourceTextHash: string;
+}
+
+interface ConfirmationLocalizationRequest extends Record<string, unknown> {
+  schemaVersion: 'requirements-contract-localization-request/v1';
+  requestHash: string;
+  transactionId: string;
+  namespaceVersion: string;
+  sourceDocumentHash: string;
+  confirmationLanguage: string;
+  providerMode: 'main_session_authoring_agent';
+  semanticEquivalenceRequired: true;
+  entries: ConfirmationLocalizationRequestEntry[];
+  entryCount: number;
+}
+
+function isGenuineZhProjection(value: unknown): boolean {
+  const text = normalizeText(value);
+  return (
+    hasCjkText(text) &&
+    !FORBIDDEN_SYNTHETIC_LOCALIZATION_MARKERS.some((marker) => text.includes(marker))
+  );
+}
+
+function localizationEntryKey(arrayKey: string, rowId: string, field: string): string {
+  return `${arrayKey}.${rowId}.${field}`;
+}
+
+function buildConfirmationLocalizationRequest(input: {
+  confirmation: Record<string, unknown>;
+  language: string;
+  sourceDocumentHash: string;
+  transaction: CriticalAuditorStagingTransaction;
+}): ConfirmationLocalizationRequest {
+  const entries: ConfirmationLocalizationRequestEntry[] = [];
+  for (const group of CONFIRMATION_LOCALIZATION_FIELD_GROUPS) {
+    for (const row of asRecordArray(input.confirmation[group.arrayKey])) {
+      const rowId = normalizeText(row.id) || 'ROW';
+      for (const field of group.fields) {
+        const sourceText = normalizeText(row[field]);
+        if (!sourceText || isGenuineZhProjection(sourceText)) {
+          continue;
+        }
+        entries.push({
+          key: localizationEntryKey(group.arrayKey, rowId, field),
+          arrayKey: group.arrayKey,
+          rowId,
+          field,
+          sourceText,
+          sourceTextHash: sha256Text(sourceText),
+        });
+      }
+    }
+  }
+  const requestBody = {
+    schemaVersion: 'requirements-contract-localization-request/v1' as const,
+    transactionId: input.transaction.transactionId,
+    namespaceVersion: input.transaction.namespaceVersion,
+    sourceDocumentHash: input.sourceDocumentHash,
+    confirmationLanguage: input.language,
+    providerMode: 'main_session_authoring_agent' as const,
+    semanticEquivalenceRequired: true as const,
+    entries,
+    entryCount: entries.length,
   };
-  return labels[field] ?? field;
+  return {
+    ...requestBody,
+    requestHash: sha256Json(requestBody),
+  };
 }
 
-function zhProjectionText(rowId: string, field: string, raw: unknown): string {
-  const text = normalizeText(raw);
-  if (!text) return '';
-  if (hasCjkText(text)) return text;
-  return `${rowId} ${zhFieldLabel(field)}：请按源文档确认以下内容：${text}`;
-}
-
-function existingZhProjection(row: Record<string, unknown>, field: string): string {
-  const direct = normalizeText(row[zhFieldName(field)]);
-  const localized = recordObject(row.localized);
-  const zhCn = recordObject(localized['zh-CN']);
-  const localizedValue = normalizeText(zhCn[field]);
-  return [direct, localizedValue].find(hasCjkText) ?? direct ?? localizedValue;
+function localizationTranslationsFromResponse(input: {
+  request: ConfirmationLocalizationRequest;
+  responsePath: string | null;
+}): {
+  translations: Map<string, string>;
+  issue: PreConfirmationDrilldownIssue | null;
+} {
+  if (input.request.entries.length === 0) {
+    return { translations: new Map(), issue: null };
+  }
+  if (!input.responsePath) {
+    return {
+      translations: new Map(),
+      issue: preConfirmationIssue(
+        'confirmation_localization_translation_required',
+        'English confirmation fields require semantic Chinese translations from the main-session authoring agent before hashing, audit, promotion, or render.',
+        ['localization-request.json'],
+        'confirmation_localization'
+      ),
+    };
+  }
+  const response = readJsonIfExists(input.responsePath);
+  const translations = asRecordArray(response?.translations);
+  const byKey = new Map(
+    translations
+      .map((row) => [normalizeText(row.key), row] as const)
+      .filter(([key]) => Boolean(key))
+  );
+  const invalidKeys: string[] = [];
+  if (
+    normalizeText(response?.schemaVersion) !== 'requirements-contract-localization-response/v1' ||
+    normalizeText(response?.requestHash) !== input.request.requestHash ||
+    normalizeText(response?.sourceDocumentHash) !== input.request.sourceDocumentHash ||
+    normalizeText(response?.confirmationLanguage) !== input.request.confirmationLanguage ||
+    normalizeText(response?.providerMode) !== 'main_session_authoring_agent' ||
+    response?.semanticEquivalenceAttested !== true
+  ) {
+    invalidKeys.push('response-envelope');
+  }
+  const resolved = new Map<string, string>();
+  for (const entry of input.request.entries) {
+    const row = byKey.get(entry.key);
+    const translatedText = normalizeText(row?.translatedText);
+    if (
+      !row ||
+      normalizeText(row.sourceTextHash) !== entry.sourceTextHash ||
+      !isGenuineZhProjection(translatedText) ||
+      translatedText === entry.sourceText
+    ) {
+      invalidKeys.push(entry.key);
+      continue;
+    }
+    resolved.set(entry.key, translatedText);
+  }
+  if (invalidKeys.length > 0 || resolved.size !== input.request.entries.length) {
+    return {
+      translations: resolved,
+      issue: preConfirmationIssue(
+        'confirmation_localization_response_invalid',
+        'Localization response must be current-hash-bound, complete, CJK-bearing, free of synthetic localization markers, and explicitly attest semantic equivalence.',
+        [input.responsePath, ...invalidKeys.slice(0, 20)],
+        'confirmation_localization'
+      ),
+    };
+  }
+  return { translations: resolved, issue: null };
 }
 
 function withZhProjection(
   row: Record<string, unknown>,
+  arrayKey: string,
   field: string,
+  translations: Map<string, string>,
   receipt: {
     fieldsAdded: string[];
     fieldsRepaired: string[];
@@ -4280,11 +5546,15 @@ function withZhProjection(
   if (!raw) return row;
   const id = normalizeText(row.id) || 'ROW';
   const fieldZh = zhFieldName(field);
-  const existing = existingZhProjection(row, field);
-  const zhText = hasCjkText(existing) ? existing : zhProjectionText(id, field, raw);
+  const zhText = isGenuineZhProjection(raw)
+    ? raw
+    : translations.get(localizationEntryKey(arrayKey, id, field)) || '';
+  if (!isGenuineZhProjection(zhText)) {
+    return row;
+  }
   const next: Record<string, unknown> = { ...row };
   const direct = normalizeText(next[fieldZh]);
-  if (!hasCjkText(direct)) {
+  if (direct !== zhText) {
     next[fieldZh] = zhText;
     (direct ? receipt.fieldsRepaired : receipt.fieldsAdded).push(`${id}.${fieldZh}`);
   } else {
@@ -4293,7 +5563,7 @@ function withZhProjection(
   const localized = recordObject(next.localized);
   const zhCn = recordObject(localized['zh-CN']);
   const localizedDirect = normalizeText(zhCn[field]);
-  if (!hasCjkText(localizedDirect)) {
+  if (localizedDirect !== zhText) {
     next.localized = {
       ...localized,
       'zh-CN': {
@@ -4314,9 +5584,35 @@ function materializeConfirmationLocalization(input: {
   confirmation: Record<string, unknown>;
   language: string | null;
   createdAt: string;
-}): { confirmation: Record<string, unknown>; receipt: Record<string, unknown> | null } {
+  sourceDocumentHash: string;
+  transaction: CriticalAuditorStagingTransaction;
+  responsePath: string | null;
+}): {
+  confirmation: Record<string, unknown>;
+  receipt: Record<string, unknown> | null;
+  request: ConfirmationLocalizationRequest | null;
+  issues: PreConfirmationDrilldownIssue[];
+} {
   if (!confirmationLanguageRequiresZhMaterialization(input.language)) {
-    return { confirmation: input.confirmation, receipt: null };
+    return { confirmation: input.confirmation, receipt: null, request: null, issues: [] };
+  }
+  const request = buildConfirmationLocalizationRequest({
+    confirmation: input.confirmation,
+    language: normalizeText(input.language),
+    sourceDocumentHash: input.sourceDocumentHash,
+    transaction: input.transaction,
+  });
+  const response = localizationTranslationsFromResponse({
+    request,
+    responsePath: input.responsePath,
+  });
+  if (response.issue) {
+    return {
+      confirmation: input.confirmation,
+      receipt: null,
+      request,
+      issues: [response.issue],
+    };
   }
   const receipt = {
     fieldsAdded: [] as string[],
@@ -4326,13 +5622,15 @@ function materializeConfirmationLocalization(input: {
     preservedFields: [] as string[],
   };
   const next: Record<string, unknown> = { ...input.confirmation };
-  const touchedGroups: Array<{ arrayKey: string; rowCount: number; fields: readonly string[] }> = [];
+  const touchedGroups: Array<{ arrayKey: string; rowCount: number; fields: readonly string[] }> =
+    [];
   for (const group of CONFIRMATION_LOCALIZATION_FIELD_GROUPS) {
     const rows = asRecordArray(next[group.arrayKey]);
     if (rows.length === 0) continue;
     next[group.arrayKey] = rows.map((row) =>
       group.fields.reduce(
-        (current, field) => withZhProjection(current, field, receipt),
+        (current, field) =>
+          withZhProjection(current, group.arrayKey, field, response.translations, receipt),
         row
       )
     );
@@ -4351,6 +5649,9 @@ function materializeConfirmationLocalization(input: {
       },
       confirmationLanguage: input.language,
       deterministic: true,
+      providerMode: 'main_session_authoring_agent',
+      semanticEquivalenceAttested: true,
+      localizationRequestHash: request.requestHash,
       rendererReadOnly: true,
       oldHashBoundReceiptReused: false,
       createdAt: input.createdAt,
@@ -4368,6 +5669,8 @@ function materializeConfirmationLocalization(input: {
       nextAuthorityStage:
         'semantic hash, implementationConfirmation hash, packet/source reconciliation, pre-render gate, and Critical Auditor receipts are computed after this materialization.',
     },
+    request,
+    issues: [],
   };
 }
 
@@ -4389,9 +5692,7 @@ function sourceDefinedBusinessViewCovers(
   businessIdToMust: Record<string, string>,
   fallbackMustRefs: string[]
 ): string[] {
-  const mapped = businessIds
-    .map((businessId) => businessIdToMust[businessId])
-    .filter(Boolean);
+  const mapped = businessIds.map((businessId) => businessIdToMust[businessId]).filter(Boolean);
   if (mapped.length > 0) return [...new Set(mapped)];
   return fallbackMustRefs;
 }
@@ -4491,12 +5792,32 @@ function collectTargetPathsForCurrentTargetMap(input: {
   targetAuthorityRecords?: TargetAuthorityRecord[];
   targetPathRows?: Record<string, unknown>[];
 }): string[] {
-  const paths = uniqueStrings([
+  const allPaths = uniqueStrings([
     ...(input.targetAuthorityRecords ?? []).map((record) => record.path),
     ...asRecordArray(input.targetPathRows).map((row) => normalizeText(row.path)),
   ]).map((targetPath) => targetPath.replace(/\\/g, '/'));
-  const productTargets = paths.filter((targetPath) => !isGeneratedRequirementArtifactPath(targetPath));
-  return productTargets.length > 0 ? productTargets : paths;
+  const productPaths = uniqueStrings([
+    ...(input.targetAuthorityRecords ?? [])
+      .filter((record) => record.coverageRole !== 'validation_only' && record.pathKind !== 'test')
+      .map((record) => record.path),
+    ...asRecordArray(input.targetPathRows)
+      .filter(
+        (row) =>
+          !['validation_only', 'generated_output'].includes(normalizeText(row.coverageRole)) &&
+          normalizeText(row.changeType) !== 'validation_only'
+      )
+      .map((row) => normalizeText(row.path)),
+  ]).map((targetPath) => targetPath.replace(/\\/g, '/'));
+  const productTargets = productPaths.filter(
+    (targetPath) => !isGeneratedRequirementArtifactPath(targetPath)
+  );
+  if (productTargets.length > 0) {
+    return productTargets;
+  }
+  const nonGeneratedTargets = allPaths.filter(
+    (targetPath) => !isGeneratedRequirementArtifactPath(targetPath)
+  );
+  return nonGeneratedTargets.length > 0 ? nonGeneratedTargets : allPaths;
 }
 
 function collectSourceTextForCurrentTargetMap(input: {
@@ -4706,9 +6027,7 @@ function sourceSpecificOverlaySummaryForCurrentTargetMap(sourceText: string): {
   const defaultVisibleOverlays = orderedPeriodList(defaults.visible);
   const defaultHiddenOverlays = orderedPeriodList(defaults.hidden);
   const overlayPeriodAnchors = orderedPeriodList(
-    defaults.rows.length > 0
-      ? defaults.rows.map((row) => row.period)
-      : []
+    defaults.rows.length > 0 ? defaults.rows.map((row) => row.period) : []
   );
   const hasStructuredDefaultVisibility =
     defaultVisibleOverlays.length > 0 || defaultHiddenOverlays.length > 0;
@@ -4787,7 +6106,10 @@ function sourceTitleForCurrentTargetMap(sourceText: string, targetPaths: string[
   return pathLabels || 'source-defined product behavior';
 }
 
-function currentTargetMapLineIsConfirmationGovernance(line: string, headingPath: string[]): boolean {
+function currentTargetMapLineIsConfirmationGovernance(
+  line: string,
+  headingPath: string[]
+): boolean {
   const text = `${headingPath.join(' ')} ${line}`;
   return (
     /(?:implementationConfirmation|confirmationRender|sourceDocumentHash|implementationConfirmationHash|confirmationPageHash|actualHtmlFileHash|reconfirm_required|draft_updated_not_confirmation_ready|user_confirmed|confirmedAt|confirmedBy)/iu.test(
@@ -4820,7 +6142,16 @@ function currentTargetMapHighlightRulePathCandidates(): string[] {
   return uniqueStrings([
     path.resolve(process.cwd(), '_bmad', '_config', 'current-target-map-highlight-rules.yaml'),
     path.resolve(__dirname, '..', '_bmad', '_config', 'current-target-map-highlight-rules.yaml'),
-    path.resolve(__dirname, '..', '..', '..', '..', '_bmad', '_config', 'current-target-map-highlight-rules.yaml'),
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      '_bmad',
+      '_config',
+      'current-target-map-highlight-rules.yaml'
+    ),
   ]);
 }
 
@@ -4851,7 +6182,10 @@ function loadCurrentTargetMapHighlightRules(): CurrentTargetMapHighlightRules {
     const category = recordObject(categories[name]);
     const categoryLimit = Number(limits[name] ?? 10);
     const rules = {
-      headingContext: compileCurrentTargetMapPatterns(category.headingContext, `${name}.headingContext`),
+      headingContext: compileCurrentTargetMapPatterns(
+        category.headingContext,
+        `${name}.headingContext`
+      ),
       lineMatch: compileCurrentTargetMapPatterns(category.lineMatch, `${name}.lineMatch`),
       priority: compileCurrentTargetMapPatterns(category.priority, `${name}.priority`),
       preferContextListItems: category.preferContextListItems !== false,
@@ -5034,24 +6368,29 @@ function currentTargetMapCategoryCandidateScore(
   const contextScore = currentTargetMapPatternScore(headingContextText, rules.headingContext, 3);
   const priorityScore = currentTargetMapPatternScore(candidate.text, rules.priority, 6);
   const listScore = candidate.isListItem ? 2 : 0;
-  const contextualListScore =
-    candidate.isListItem && contextScore > 0 && lineScore === 0 ? 10 : 0;
+  const contextualListScore = candidate.isListItem && contextScore > 0 && lineScore === 0 ? 10 : 0;
   const headingPenalty = candidate.isHeading ? -2 : 0;
-  return lineScore + contextScore + priorityScore + listScore + contextualListScore + headingPenalty;
+  return (
+    lineScore + contextScore + priorityScore + listScore + contextualListScore + headingPenalty
+  );
 }
 
 function currentTargetMapCandidateHasHeadingContext(
   candidate: CurrentTargetMapHighlightCandidate,
   rules: CurrentTargetMapHighlightCategoryRules
 ): boolean {
-  return currentTargetMapPatternScore(
-    currentTargetMapCandidateHeadingContextText(candidate),
-    rules.headingContext,
-    1
-  ) > 0;
+  return (
+    currentTargetMapPatternScore(
+      currentTargetMapCandidateHeadingContextText(candidate),
+      rules.headingContext,
+      1
+    ) > 0
+  );
 }
 
-function currentTargetMapHighlightCandidates(sourceText: string): CurrentTargetMapHighlightCandidate[] {
+function currentTargetMapHighlightCandidates(
+  sourceText: string
+): CurrentTargetMapHighlightCandidate[] {
   const lines = sourceAuthorityTextWithoutInlineConfirmation(sourceText).split(/\r?\n/u);
   const headingPath: string[] = [];
   const candidates: CurrentTargetMapHighlightCandidate[] = [];
@@ -5209,6 +6548,7 @@ function buildSourceSpecificCurrentTargetMap(input: {
   validationAuthorityRecords?: ValidationAuthorityRecord[];
   targetPathRows?: Record<string, unknown>[];
   commandRows?: Record<string, unknown>[];
+  sourceProjectionAuthority?: Map<string, SourceMustProjectionAuthority>;
   allTraceIds: string[];
   allEvidenceIds: string[];
   mustRefs: string[];
@@ -5232,11 +6572,12 @@ function buildSourceSpecificCurrentTargetMap(input: {
   const productSurface = sourceTitleForCurrentTargetMap(sourceText, effectiveTargetPaths);
   const overlaySummary = sourceSpecificOverlaySummaryForCurrentTargetMap(sourceText);
   const sourceStateProjection = currentTargetMapSourceStateProjection(sourceText);
-  const hasSourceStateSections =
-    sourceStateProjection.mode === 'source_current_target_sections';
+  const hasSourceStateSections = sourceStateProjection.mode === 'source_current_target_sections';
   const sourceHighlights = currentTargetMapSourceHighlights(sourceText);
   const sourceStateSectionTexts = new Set(
-    [...sourceStateProjection.currentRows, ...sourceStateProjection.targetRows].map((row) => row.text)
+    [...sourceStateProjection.currentRows, ...sourceStateProjection.targetRows].map(
+      (row) => row.text
+    )
   );
   const currentHighlightValues = hasSourceStateSections
     ? sourceStateProjection.currentRows.map((row) => row.text)
@@ -5245,7 +6586,9 @@ function buildSourceSpecificCurrentTargetMap(input: {
     ? sourceStateProjection.targetRows.map((row) => row.text)
     : sourceHighlights.targetHighlights;
   const controlHighlightValues = hasSourceStateSections
-    ? sourceHighlights.controlHighlights.filter((highlight) => sourceStateSectionTexts.has(highlight))
+    ? sourceHighlights.controlHighlights.filter((highlight) =>
+        sourceStateSectionTexts.has(highlight)
+      )
     : sourceHighlights.controlHighlights;
   const currentHighlightText = formatSourceHighlightList(
     currentHighlightValues,
@@ -5282,9 +6625,10 @@ function buildSourceSpecificCurrentTargetMap(input: {
   const traceRows = input.allTraceIds;
   const evidenceRefs = input.allEvidenceIds;
   const requirementRefs = input.mustRefs;
-  const backRef = input.packetHash ? projectionBackRef(input.packetHash, requirementRefs[0]) : {};
+  const backRef = input.packetHash ? projectionBackRef(input.packetHash) : {};
   const perMustCurrentTargetEntries = input.mustRequirements.map((requirement, index) => {
     const mustId = requirement.id;
+    const sourceAuthority = input.sourceProjectionAuthority?.get(mustId);
     const traceId = traceRows[index] ?? traceRows[0] ?? 'TRACE-UNBOUND';
     const evidenceId = evidenceRefs[index] ?? evidenceRefs[0] ?? 'EVD-UNBOUND';
     const sourceAnchor = [
@@ -5294,10 +6638,17 @@ function buildSourceSpecificCurrentTargetMap(input: {
       .filter(Boolean)
       .join(':');
     const requirementText = normalizeText(requirement.text).slice(0, 220);
+    const targetFiles = uniqueNonEmpty(sourceAuthority?.targetFiles ?? []);
+    const targetFileText = targetFiles.length > 0 ? targetFiles.join(', ') : targetPathText;
     return {
       mustId,
-      assertion: `${mustId} maps current ${productSurface} source anchor ${sourceAnchor || mustId} to target behavior in ${targetPathText}: ${requirementText}. Proof refs: ${traceId}, ${evidenceId}.`,
-      responsibility: `${mustId} remains independently reviewable in currentTargetMap for ${productSurface}; do not collapse it into an all-MUST row without ${traceId}.`,
+      requirementText,
+      targetFiles,
+      oracle: sourceAuthority?.oracle || requirementText,
+      responsibility:
+        sourceAuthority?.responsibilityMapping ||
+        `${mustId} remains independently reviewable in currentTargetMap for ${productSurface}; do not collapse it into an all-MUST row without ${traceId}.`,
+      assertion: `${mustId} maps current ${productSurface} source anchor ${sourceAnchor || mustId} to target behavior in ${targetFileText}: ${requirementText}. Proof refs: ${traceId}, ${evidenceId}.`,
     };
   });
   const perMustCurrentTargetAssertions = Object.fromEntries(
@@ -5310,13 +6661,28 @@ function buildSourceSpecificCurrentTargetMap(input: {
     perMustAssertions: perMustCurrentTargetAssertions,
     perMustResponsibilities: perMustCurrentTargetResponsibilities,
   };
+  const perMustDiffRows = perMustCurrentTargetEntries.map((row, index) => ({
+    id: `CT-MUST-${requirementOrdinal(index)}`,
+    dimension: `${row.mustId} product behavior`,
+    currentState: `Current source-defined state for ${row.mustId} is anchored in the requirement source and existing product targets.`,
+    targetState: `Target product behavior for ${row.mustId}: ${row.requirementText}`,
+    action: row.responsibility,
+    targetFiles: row.targetFiles,
+    oracle: row.oracle,
+    traceRows: [traceRows[index] ?? traceRows[0] ?? 'TRACE-UNBOUND'],
+    evidenceRefs: [evidenceRefs[index] ?? evidenceRefs[0] ?? 'EVD-UNBOUND'],
+    requirementRefs: [row.mustId],
+    ...(input.packetHash ? projectionBackRef(input.packetHash, row.mustId) : {}),
+  }));
   const diffRows = [
+    ...perMustDiffRows,
     {
       id: 'CT-DIFF-001',
       dimension: 'Product behavior semantics',
       currentState: `Current ${productSurface} product limitations and existing behavior: ${currentHighlightText}.`,
       targetState: `Target ${productSurface} after all confirmed MUST behavior is implemented in source-authorized product code targets (${targetPathText}): ${requirementTargetDescription}. Display refs: ${displayRequirementRefText}.`,
-      action: 'Implement only the source-authorized product behavior and keep each MUST bound to an independent TRACE/ACC/E2E proof row.',
+      action:
+        'Implement only the source-authorized product behavior and keep each MUST bound to an independent TRACE/ACC/E2E proof row.',
       traceRows,
       evidenceRefs,
       requirementRefs,
@@ -5338,8 +6704,10 @@ function buildSourceSpecificCurrentTargetMap(input: {
       id: 'CT-DIFF-003',
       dimension: 'Scope boundary',
       currentState: `Current source boundary remains explicit: ${outOfScopeText || 'source-defined OUT rows apply'}.`,
-      targetState: 'Target implementation respects the source-declared boundary and does not widen scope without reconfirmation.',
-      action: 'Keep OUT rows out of trace covers while preserving boundary proof through boundary/current-target views.',
+      targetState:
+        'Target implementation respects the source-declared boundary and does not widen scope without reconfirmation.',
+      action:
+        'Keep OUT rows out of trace covers while preserving boundary proof through boundary/current-target views.',
       traceRows,
       evidenceRefs,
       requirementRefs,
@@ -5350,7 +6718,8 @@ function buildSourceSpecificCurrentTargetMap(input: {
       dimension: 'Validation authority',
       currentState: `Current validation authority is declared but not delivery evidence until the current attempt runs it: ${commandText || 'source-authorized validation command required'}.`,
       targetState: `Target delivery proof comes from current-attempt commands tied to ${productSurface} targets and per-MUST oracles.`,
-      action: 'Require current-attempt validation output before any closeout or delivery-ready claim.',
+      action:
+        'Require current-attempt validation output before any closeout or delivery-ready claim.',
       traceRows,
       evidenceRefs,
       requirementRefs,
@@ -5428,7 +6797,8 @@ function buildSourceSpecificCurrentTargetMap(input: {
         {
           id: 'CT-TGT-002',
           title: 'Target proof boundary',
-          detail: 'Each MUST keeps independent trace, acceptance, E2E, failure, edge, target-path, and command evidence before delivery readiness.',
+          detail:
+            'Each MUST keeps independent trace, acceptance, E2E, failure, edge, target-path, and command evidence before delivery readiness.',
           traceRows,
           evidenceRefs,
           requirementRefs,
@@ -5499,6 +6869,10 @@ function buildPreConfirmationImplementationConfirmation(input: {
     blocks: structuredBlocks,
     packetHash: input.packetHash,
   });
+  const sourceBusinessFailureRows = buildBusinessFailurePathRows({
+    blocks: structuredBlocks,
+    mustRequirements: input.mustRequirements,
+  });
   const outOfScopeRows =
     sourceOutOfScopeRows.length > 0
       ? sourceOutOfScopeRows
@@ -5506,9 +6880,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
           {
             id: 'OUT-001',
             text: 'Forbidden: creating an additional mental model or a separate controller authority.',
-            textZh: '禁止新增第七个心智模型，也禁止新增独立主控权威。',
             scopeBoundary: 'Main Agent keeps the lane under the first mental model.',
-            scopeBoundaryZh: '主 Agent 将该 lane 保持在第一个心智模型内。',
             userApprovalRequiredIfChanged: true,
           },
         ];
@@ -5517,13 +6889,11 @@ function buildPreConfirmationImplementationConfirmation(input: {
     return {
       id: `BOUND-${requirementOrdinal(index)}`,
       title: `Boundary for ${outId}`,
-      titleZh: `${outId} 范围边界`,
       scope: 'business',
       covers: [outId],
       boundaryRefs: [outId],
       sourceRequirementTexts: [normalizeText(row.text)],
       assertion: `${outId} remains explicitly outside confirmed implementation scope.`,
-      assertionZh: `${outId} 必须保持在已确认实施范围之外。`,
       ...backRef,
     };
   });
@@ -5539,6 +6909,11 @@ function buildPreConfirmationImplementationConfirmation(input: {
   );
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
   const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
+  const sourceProjectionAuthority = buildSourceMustProjectionAuthority({
+    blocks: structuredBlocks,
+    mustRequirements: input.mustRequirements,
+    validationAuthorityRecords,
+  });
   const productSurfaceLabel = sourceTitleForCurrentTargetMap(
     input.sourceText ?? '',
     targetAuthorityRecords.map((record) => record.path)
@@ -5546,24 +6921,27 @@ function buildPreConfirmationImplementationConfirmation(input: {
   const totalMusts = input.mustRequirements.length;
   const perMustClosures = input.mustRequirements.map((requirement, index) => {
     const ids = perMustProjectionIds(index, totalMusts);
-    const [authorTaskId, materializeTaskId] = atomicTaskIdsForMust(index, totalMusts);
+    const sourceAuthority = sourceProjectionAuthority.get(requirement.id);
+    const oracle = sourceAuthority?.oracle || requirement.text;
+    const atomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(requirement.text, oracle);
+    const taskIds = atomicTaskIdsForMust(index, totalMusts, atomicUnits.length);
     return {
       requirement,
       index,
       mustId: requirement.id,
-      taskIds: [authorTaskId, materializeTaskId],
-      authorTaskId,
-      materializeTaskId,
+      taskIds,
+      authorTaskId: taskIds[0],
+      materializeTaskId: taskIds[taskIds.length - 1],
+      atomicUnits,
+      sourceAuthority,
       ...ids,
     };
   });
   const perMustTraceIds = perMustClosures.map((row) => row.traceId);
   const allEvidenceIds = perMustClosures.map((row) => row.evidenceId);
-  const perMustAcceptanceIds = perMustClosures.flatMap((row) => [
-    row.acceptanceId,
-    row.e2eId,
-  ]);
-  const allFailureIds = perMustClosures.map((row) => row.failureId);
+  const perMustAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
+  const allFailureIds =
+    sourceBusinessFailureRows.length > 0 ? sourceBusinessFailureRows.map((row) => row.id) : [];
   const allEdgeIds = perMustClosures.map((row) => row.edgeId);
   let notDoneRows: Record<string, unknown>[] =
     sourceNegativeRequirementRows.length > 0
@@ -5577,20 +6955,16 @@ function buildPreConfirmationImplementationConfirmation(input: {
           {
             id: 'NEG-001',
             text: 'The atomic decomposition packet and renderer confirmability must not be treated as implementation completion or delivery readiness.',
-            textZh: '原子拆解 packet 和 renderer 可确认状态不得被当作实现完成或交付就绪。',
             evidenceRefs: allEvidenceIds,
             whyItBlocksCompletion:
               'Confirmation scope quality is separate from implementation completion evidence.',
-            whyItBlocksCompletionZh: '需求范围确认质量与实现完成证据是不同层级。',
             negativeAssertionRequired: true,
             coveredByTraceRows: perMustTraceIds,
             coveredByFailurePath: allFailureIds,
             ...backRef,
           },
         ];
-  const perMustClosureById = new Map(
-    perMustClosures.map((row) => [row.mustId, row])
-  );
+  const perMustClosureById = new Map(perMustClosures.map((row) => [row.mustId, row]));
   const sourceTraceBlocks = structuredBlocks.filter(
     (block) =>
       block.blockKind === 'table_row' &&
@@ -5604,9 +6978,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
     ) {
       continue;
     }
-    const sourceId = normalizeText(
-      tableContextRowValue(block.tableContext, ['ID'])
-    ).toUpperCase();
+    const sourceId = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
     if (/^E2E-\d{1,3}$/u.test(sourceId)) {
       sourceE2eBlocks.set(sourceId, block);
     }
@@ -5629,8 +7001,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         .find((ref) => /^ACC-\d{1,3}$/u.test(ref)) ??
       sourceTraceRefs.find((ref) => /^ACC-\d{1,3}$/u.test(ref)) ??
       '';
-    const sourceE2eId =
-      sourceTraceRefs.find((ref) => /^E2E-\d{1,3}$/u.test(ref)) ?? '';
+    const sourceE2eId = sourceTraceRefs.find((ref) => /^E2E-\d{1,3}$/u.test(ref)) ?? '';
     const sourceE2eBlock = sourceE2eBlocks.get(sourceE2eId);
     const owner = sourceE2eBlock
       ? sourceReferenceIds(sourceTableRowText(sourceE2eBlock))
@@ -5646,9 +7017,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
     ) {
       return [];
     }
-    const sourceFailureRefs = uniqueNonEmpty(
-      stringsFrom(row.sourceFailureRefs)
-    ).filter((ref) => allFailureIds.includes(ref));
+    const sourceFailureRefs = uniqueNonEmpty(stringsFrom(row.sourceFailureRefs)).filter((ref) =>
+      allFailureIds.includes(ref)
+    );
     return [
       {
         negId,
@@ -5660,8 +7031,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         taskId: owner.materializeTaskId,
         evidenceId: owner.evidenceId,
         edgeId: owner.edgeId,
-        failurePathRefs:
-          sourceFailureRefs.length > 0 ? sourceFailureRefs : [owner.failureId],
+        failurePathRefs: sourceFailureRefs.length > 0 ? sourceFailureRefs : [owner.failureId],
         deliveryCommandRefs: uniqueNonEmpty([
           ...stringsFrom(row.sourceCommandRefs),
           ...sourceTraceRefs.filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
@@ -5669,9 +7039,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       },
     ];
   });
-  const negativeClosureByNegId = new Map(
-    negativeClosures.map((row) => [row.negId, row])
-  );
+  const negativeClosureByNegId = new Map(negativeClosures.map((row) => [row.negId, row]));
   const allTraceIds = uniqueNonEmpty([
     ...perMustTraceIds,
     ...negativeClosures.map((row) => row.traceId),
@@ -5691,12 +7059,77 @@ function buildPreConfirmationImplementationConfirmation(input: {
         }
       : row;
   });
-  const negativeRequirementIds = notDoneRows
-    .map((row) => normalizeText(row.id))
-    .filter(Boolean);
-  const unclosedNegativeRequirementIds = negativeRequirementIds.filter(
-    (id) => !negativeClosureByNegId.has(id)
+  const negativeRequirementIds = notDoneRows.map((row) => normalizeText(row.id)).filter(Boolean);
+  const failurePathRefsByMust = new Map(
+    perMustClosures.map((row) => [
+      row.mustId,
+      sourceBusinessFailureRows.length > 0
+        ? sourceBusinessFailureRows
+            .filter((failureRow) => failureRow.ownerMustRefs.includes(row.mustId))
+            .map((failureRow) => failureRow.id)
+        : [],
+    ])
   );
+  const failurePathRefsForMust = (mustId: string): string[] =>
+    failurePathRefsByMust.get(mustId) ?? [];
+  const sourceBusinessJourneyRows = buildSourceBusinessJourneyRows({
+    blocks: structuredBlocks,
+    mustRequirements: input.mustRequirements,
+    sourceAuthority: sourceProjectionAuthority,
+    failurePathRefsForMust,
+  });
+  const failurePathRows: Record<string, unknown>[] =
+    sourceBusinessFailureRows.length > 0
+      ? sourceBusinessFailureRows.map((failureRow) => {
+          const linkedNegativeClosures = failureRow.linkedNegIds.flatMap((negId) => {
+            const closure = negativeClosureByNegId.get(negId);
+            return closure ? [closure] : [];
+          });
+          const ownerClosures = failureRow.ownerMustRefs.flatMap((mustId) => {
+            const closure = perMustClosureById.get(mustId);
+            return closure ? [closure] : [];
+          });
+          const linkedEvidenceIds = uniqueNonEmpty([
+            ...linkedNegativeClosures.map((closure) => closure.evidenceId),
+            ...ownerClosures.map((closure) => closure.evidenceId),
+          ]);
+          const traceRows = uniqueNonEmpty([
+            ...linkedNegativeClosures.map((closure) => closure.traceId),
+            ...failureRow.sourceTraceRefs,
+            ...ownerClosures.map((closure) => closure.traceId),
+          ]);
+          return {
+            id: failureRow.id,
+            title: failureRow.title,
+            trigger: failureRow.trigger,
+            expectedBehavior: failureRow.expectedBehavior,
+            forbiddenBehavior: `Continue normal or live processing, emit downstream side effects, or suppress ${failureRow.id} while the declared failure condition remains active.`,
+            blocksCompletionWhenViolated: true,
+            linkedNegIds: failureRow.linkedNegIds,
+            linkedEvidenceIds,
+            traceRows,
+            acceptanceRefs: uniqueNonEmpty([
+              ...failureRow.sourceAcceptanceRefs,
+              ...failureRow.sourceE2eRefs,
+            ]),
+            sourcePath: failureRow.sourcePath,
+            sourceSpan: failureRow.sourceSpan,
+            sourceDocumentHash: failureRow.sourceDocumentHash,
+            headingPath: failureRow.headingPath,
+            ownerMustRefs: failureRow.ownerMustRefs,
+            viewRefs: ['SEQ-BUSINESS-FAILURE-001', 'EDGEVIEW-BUSINESS-001'],
+            requiredAssertions: [
+              `${failureRow.id} is detected before the affected operation emits live or automatic side effects.`,
+              `${failureRow.id} keeps the declared safe state until the required system behavior is observed.`,
+              `${failureRow.id} preserves every linked negative requirement while recovery is incomplete.`,
+            ],
+            ...projectionBackRef(
+              input.packetHash,
+              failureRow.ownerMustRefs.length === 1 ? failureRow.ownerMustRefs[0] : undefined
+            ),
+          };
+        })
+      : [];
   const negativeRequirementIdsByE2e = new Map<string, string[]>();
   for (const closure of negativeClosures) {
     negativeRequirementIdsByE2e.set(
@@ -5707,7 +7140,12 @@ function buildPreConfirmationImplementationConfirmation(input: {
       ])
     );
   }
-  const businessProofClosure = {
+  const businessMustProofClosure = {
+    traceRows: perMustTraceIds,
+    evidenceRefs: allEvidenceIds,
+    acceptanceRefs: perMustAcceptanceIds,
+  };
+  const businessFailureProofClosure = {
     traceRows: allTraceIds,
     evidenceRefs: allEvidenceIds,
     acceptanceRefs: allAcceptanceIds,
@@ -5717,36 +7155,72 @@ function buildPreConfirmationImplementationConfirmation(input: {
     traceRows: [row.traceId],
     evidenceRefs: [row.evidenceId],
     acceptanceRefs: [row.acceptanceId, row.e2eId],
-    failurePathRefs: [row.failureId],
+    failurePathRefs: failurePathRefsForMust(row.mustId),
     edgeCaseRefs: [row.edgeId],
     assertion: `${row.mustId} remains independently visible and accepted through ${row.traceId}.`,
   }));
   const businessSequenceViews =
-    businessRequirementIds.length > 0
-      ? [
-          {
-            id: 'SEQ-BUSINESS-001',
-            title: 'Product behavior happy path',
+    sourceBusinessJourneyRows.length > 0
+      ? sourceBusinessJourneyRows.map((journey) => {
+          const journeyClosures = journey.mustRefs.flatMap((mustRef) => {
+            const closure = perMustClosureById.get(mustRef);
+            return closure ? [closure] : [];
+          });
+          return {
+            id: `SEQ-${journey.id}`,
+            sourceJourneyRef: journey.id,
+            title: `${journey.id} ${journey.actor} journey`,
             visualKind: 'happy',
             scope: 'business',
-            covers: businessDiagramCoverRefs,
-            perMustRows: businessPerMustRows,
-            ...businessProofClosure,
-            mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Proof as Trace evidence\n  User->>Product: review confirmed behavior [${businessDiagramCoverRefs.join(', ')}]\n  Product-->>User: expose source-authorized target state [${businessDiagramCoverRefs.join(', ')}]\n  Product-->>Proof: bind proof closure [${allTraceIds.join(', ')}][${allEvidenceIds.join(', ')}]`,
-          },
-          {
-            id: 'SEQ-BUSINESS-FAILURE-001',
-            title: 'Product behavior failure path',
-            visualKind: 'failure',
-            scope: 'business',
-            covers: [...negativeRequirementIds, ...businessDiagramCoverRefs],
-            perMustRows: businessPerMustRows,
-            ...businessProofClosure,
-            failurePathRefs: allFailureIds,
-            mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Gate as Delivery gate\n  User->>Product: trigger invalid or missing proof condition [${negativeRequirementIds.join(', ')}]\n  Product-->>Gate: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Gate-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
-          },
-        ]
-      : [];
+            covers: journey.mustRefs,
+            perMustRows: journeyClosures.map((closure) => ({
+              mustRef: closure.mustId,
+              traceRows: [closure.traceId],
+              evidenceRefs: [closure.evidenceId],
+              acceptanceRefs: [closure.acceptanceId, closure.e2eId],
+              failurePathRefs: failurePathRefsForMust(closure.mustId),
+              edgeCaseRefs: [closure.edgeId],
+              assertion:
+                closure.sourceAuthority?.closureAssertion ||
+                `${closure.mustId} closes through the source-defined ${journey.id} journey.`,
+            })),
+            traceRows: journeyClosures.map((closure) => closure.traceId),
+            evidenceRefs: journeyClosures.map((closure) => closure.evidenceId),
+            acceptanceRefs: journeyClosures.flatMap((closure) => [
+              closure.acceptanceId,
+              closure.e2eId,
+            ]),
+            failurePathRefs: uniqueNonEmpty(
+              journeyClosures.flatMap((closure) => failurePathRefsForMust(closure.mustId))
+            ),
+            mermaid: `sequenceDiagram\n  actor User as ${journey.actor}\n  participant Product as Product\n  User->>Product: ${journey.trigger.replace(/[\r\n]+/gu, ' ')} [${journey.mustRefs.join(', ')}]\n  Product-->>User: ${journey.completionState.replace(/[\r\n]+/gu, ' ')} [${journey.mustRefs.join(', ')}]`,
+          };
+        })
+      : businessRequirementIds.length > 0
+        ? [
+            {
+              id: 'SEQ-BUSINESS-001',
+              title: 'Product behavior happy path',
+              visualKind: 'happy',
+              scope: 'business',
+              covers: businessDiagramCoverRefs,
+              perMustRows: businessPerMustRows,
+              ...businessMustProofClosure,
+              mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Proof as Trace evidence\n  User->>Product: review confirmed behavior [${businessDiagramCoverRefs.join(', ')}]\n  Product-->>User: expose source-authorized target state [${businessDiagramCoverRefs.join(', ')}]\n  Product-->>Proof: bind proof closure [${perMustTraceIds.join(', ')}][${allEvidenceIds.join(', ')}]`,
+            },
+            {
+              id: 'SEQ-BUSINESS-FAILURE-001',
+              title: 'Product behavior failure path',
+              visualKind: 'failure',
+              scope: 'business',
+              covers: [...negativeRequirementIds, ...businessDiagramCoverRefs],
+              perMustRows: businessPerMustRows,
+              ...businessFailureProofClosure,
+              failurePathRefs: allFailureIds,
+              mermaid: `sequenceDiagram\n  actor User\n  participant Product as Source-defined product behavior\n  participant Gate as Delivery gate\n  User->>Product: trigger invalid or missing proof condition [${negativeRequirementIds.join(', ')}]\n  Product-->>Gate: fail closed without delivery readiness [${allFailureIds.join(', ')}]\n  Gate-->>User: keep per-MUST closure visible [${allTraceIds.join(', ')}]`,
+            },
+          ]
+        : [];
   const businessFlowViews =
     businessRequirementIds.length > 0
       ? [
@@ -5757,8 +7231,8 @@ function buildPreConfirmationImplementationConfirmation(input: {
             scope: 'business',
             covers: businessDiagramCoverRefs,
             perMustRows: businessPerMustRows,
-            ...businessProofClosure,
-            mermaid: `stateDiagram-v2\n  [*] --> SourceDefined\n  SourceDefined --> Confirmable: per-MUST trace closure [${allTraceIds.join(', ')}]\n  SourceDefined --> Blocked: missing evidence or acceptance [${allEvidenceIds.join(', ')}]\n  Confirmable --> AwaitUserHash: scope confirmation only [${businessDiagramCoverRefs.join(', ')}]`,
+            ...businessMustProofClosure,
+            mermaid: `stateDiagram-v2\n  [*] --> SourceDefined\n  SourceDefined --> Confirmable: per-MUST trace closure [${perMustTraceIds.join(', ')}]\n  SourceDefined --> Blocked: missing evidence or acceptance [${allEvidenceIds.join(', ')}]\n  Confirmable --> AwaitUserHash: scope confirmation only [${businessDiagramCoverRefs.join(', ')}]`,
           },
           {
             id: 'FLOW-BUSINESS-001',
@@ -5767,8 +7241,8 @@ function buildPreConfirmationImplementationConfirmation(input: {
             scope: 'business',
             covers: businessDiagramCoverRefs,
             perMustRows: businessPerMustRows,
-            ...businessProofClosure,
-            mermaid: `flowchart TD\n  A[Open ${productSurfaceLabel} ${businessDiagramCoverRefs.join(' + ')}] --> B[Inspect source-declared behavior ${businessDiagramCoverRefs.join(' + ')}]\n  B --> C[Apply source-authorized product change ${allTraceIds.join(' + ')}]\n  C --> D[Respect source-declared boundaries ${negativeRequirementIds.join(' + ')}]\n  D --> E[Verify acceptance commands ${allEvidenceIds.join(' + ')}]\n  A -.-> R[${businessDiagramCoverRefs.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${allTraceIds.join(' + ')}]`,
+            ...businessMustProofClosure,
+            mermaid: `flowchart TD\n  A[Open ${productSurfaceLabel} ${businessDiagramCoverRefs.join(' + ')}] --> B[Inspect source-declared behavior ${businessDiagramCoverRefs.join(' + ')}]\n  B --> C[Apply source-authorized product change ${perMustTraceIds.join(' + ')}]\n  C --> D[Respect source-declared boundaries ${negativeRequirementIds.join(' + ')}]\n  D --> E[Verify acceptance commands ${allEvidenceIds.join(' + ')}]\n  A -.-> R[${businessDiagramCoverRefs.join(' + ')}]\n  R -.-> M[${businessDiagramCoverRefs.join(' + ')}]\n  M -.-> T[${perMustTraceIds.join(' + ')}]`,
           },
         ]
       : [];
@@ -5783,25 +7257,30 @@ function buildPreConfirmationImplementationConfirmation(input: {
             covers: [...negativeRequirementIds, ...businessDiagramCoverRefs],
             cases: allEdgeIds,
             perMustRows: businessPerMustRows,
-            ...businessProofClosure,
+            ...businessFailureProofClosure,
             failurePathRefs: allFailureIds,
             edgeCaseRefs: allEdgeIds,
             mermaid: `flowchart TD\n  A[Edge signal ${allEdgeIds.join(' + ')}] --> B[Failure guard ${allFailureIds.join(' + ')}]\n  B --> C[Per-MUST trace proof ${allTraceIds.join(' + ')}]\n  C --> D[No silent completion ${negativeRequirementIds.join(' + ')}]`,
           },
         ]
       : [];
-  const sequenceViewIds = [
-    ...businessSequenceViews.map((row) => String(row.id)),
-    'SEQ-001',
-  ];
-  const flowViewIds = [
-    ...businessFlowViews.map((row) => String(row.id)),
-    'FLOW-001',
-  ];
-  const edgeCaseViewIds = [
-    ...businessEdgeCaseViews.map((row) => String(row.id)),
-    'EDGEVIEW-001',
-  ];
+  const viewIdsForRequirement = (
+    views: Record<string, unknown>[],
+    requirementRef: string,
+    governanceViewId: string
+  ): string[] =>
+    uniqueNonEmpty([
+      ...views
+        .filter(
+          (view) =>
+            asStringArray(view.covers).includes(requirementRef) ||
+            asRecordArray(view.perMustRows).some(
+              (perMustRow) => normalizeText(perMustRow.mustRef) === requirementRef
+            )
+        )
+        .map((view) => normalizeText(view.id)),
+      governanceViewId,
+    ]);
   const validationAcceptanceTestFile =
     validationAuthorityRecords
       .flatMap((record) => record.commandFileRefs)
@@ -5822,7 +7301,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
           row.acceptanceId,
           row.e2eId,
         ],
-      }) ?? validationAcceptanceTestFile,
+      }) ??
+        row.sourceAuthority?.testFiles[0] ??
+        '',
     ])
   );
   const acceptanceTestFilesByNegative = new Map(
@@ -5834,38 +7315,139 @@ function buildPreConfirmationImplementationConfirmation(input: {
       }) ?? validationAcceptanceTestFile,
     ])
   );
+  const sourceMappedTargetPaths = new Set(
+    perMustClosures
+      .flatMap((row) => stringsFrom(row.sourceAuthority?.targetFiles))
+      .map((targetPath) => targetPath.replace(/\\/g, '/'))
+  );
+  const projectedTargetAuthorityRecords =
+    sourceMappedTargetPaths.size > 0
+      ? targetAuthorityRecords.filter(
+          (record) =>
+            record.explicit ||
+            hasStrongModificationAuthority(record) ||
+            record.coverageRole === 'validation_only' ||
+            sourceMappedTargetPaths.has(record.path.replace(/\\/g, '/'))
+        )
+      : targetAuthorityRecords;
+  const assignedCommandProjectionIds = assignedValidationAuthorityCommandIds(
+    validationAuthorityRecords
+  );
+  const commandContexts = validationAuthorityRecords.map((record, recordIndex) => {
+    const id = assignedCommandProjectionIds[recordIndex];
+    const sourceCommandId = normalizeText(record.sourceCommandId).toUpperCase();
+    const coveredMustRefs = uniqueNonEmpty([
+      ...(record.sourceMustRefs ?? []),
+      ...perMustClosures
+        .filter((row) =>
+          uniqueNonEmpty([
+            ...(row.sourceAuthority?.contractCommandRefs ?? []),
+            ...(row.sourceAuthority?.deliveryCommandRefs ?? []),
+          ]).includes(sourceCommandId)
+        )
+        .map((row) => row.mustId),
+    ]).filter((mustRef) => mustRefs.includes(mustRef));
+    const effectiveMustRefs =
+      coveredMustRefs.length > 0 ? coveredMustRefs : totalMusts === 1 ? mustRefs : [];
+    return {
+      record,
+      id,
+      effectiveMustRefs,
+      coveredClosures: perMustClosures.filter((row) => effectiveMustRefs.includes(row.mustId)),
+    };
+  });
+  const negativeOwnerMustRefByClosureRef = new Map<string, string>();
+  for (const closure of negativeClosures) {
+    const ownerMustRef =
+      perMustClosures.find((row) => row.taskIds.includes(closure.taskId))?.mustId ?? '';
+    if (!ownerMustRef) continue;
+    negativeOwnerMustRefByClosureRef.set(closure.traceId, ownerMustRef);
+    negativeOwnerMustRefByClosureRef.set(closure.acceptanceId, ownerMustRef);
+  }
   const targetPathRows = [
-    ...targetAuthorityRecords.map((record, index) => ({
-      id: `TARGET-MOD-${requirementOrdinal(index)}`,
-      path: record.path,
-      changeType: record.pathKind === 'test' ? 'validation_only' : 'modify',
-      coverageRole: record.pathKind === 'test' ? 'validation_only' : 'modify',
-      intent: `Modify source-authorized target path ${record.path}.`,
-      ownerModel: 'implementation_target',
-      requirementRefs: mustRefs,
-      traceRefs: allTraceIds,
-      evidenceRefs: allEvidenceIds,
-      artifactRefs: [],
-      perMustResponsibilities: Object.fromEntries(
-        perMustClosures.map((row) => [
-          row.mustId,
-          `Target path ${record.path} must be reviewed for ${row.mustId}.`,
-        ])
-      ),
-      perMustRows: perMustClosures.map((row) => ({
-        mustRef: row.mustId,
-        traceRows: [row.traceId],
-        evidenceRefs: [row.evidenceId],
-        responsibility: `Bind ${record.path} to ${row.mustId} without collapsing trace closure.`,
-      })),
-      authorityRef: record.id,
-      source: record.source,
-      sourceSpan: record.sourceSpan,
-      requiresReconfirmationOnChange: true,
-      ...backRef,
-    })),
+    ...projectedTargetAuthorityRecords.map((record, index) => {
+      const recordMustRefs = uniqueNonEmpty([
+        ...stringsFrom(record.sourceMustRefs),
+        ...uniqueNonEmpty([
+          ...stringsFrom(record.sourceTraceRefs),
+          ...stringsFrom(record.sourceAcceptanceRefs),
+        ]).map((ref) => negativeOwnerMustRefByClosureRef.get(ref) ?? ''),
+        ...commandContexts
+          .filter(({ record: commandRecord }) =>
+            uniqueNonEmpty([
+              ...stringsFrom(commandRecord.commandFileRefs),
+              ...stringsFrom(commandRecord.sourceTargetFiles),
+            ]).includes(record.path.replace(/\\/g, '/'))
+          )
+          .flatMap(({ effectiveMustRefs }) => effectiveMustRefs),
+        ...perMustClosures
+          .filter((row) =>
+            stringsFrom(row.sourceAuthority?.targetFiles).includes(record.path.replace(/\\/g, '/'))
+          )
+          .map((row) => row.mustId),
+      ]).filter((mustRef) => mustRefs.includes(mustRef));
+      const effectiveMustRefs =
+        recordMustRefs.length > 0 ? recordMustRefs : totalMusts === 1 ? mustRefs : [];
+      const coveredClosures = perMustClosures.filter((row) =>
+        effectiveMustRefs.includes(row.mustId)
+      );
+      return {
+        id: `TARGET-MOD-${requirementOrdinal(index)}`,
+        path: record.path,
+        changeType:
+          record.coverageRole === 'validation_only' || record.pathKind === 'test'
+            ? 'validation_only'
+            : 'modify',
+        coverageRole:
+          record.coverageRole === 'validation_only' || record.pathKind === 'test'
+            ? 'validation_only'
+            : 'modify',
+        intent:
+          record.sourceOracle ||
+          coveredClosures[0]?.sourceAuthority?.oracle ||
+          (record.coverageRole === 'validation_only' || record.pathKind === 'test'
+            ? `Validate source-authorized command path ${record.path} without treating it as an implementation target.`
+            : `Modify source-authorized target path ${record.path}.`),
+        ownerModel:
+          record.coverageRole === 'validation_only' || record.pathKind === 'test'
+            ? 'validation_authority'
+            : 'implementation_target',
+        requirementRefs: effectiveMustRefs,
+        traceRefs: uniqueNonEmpty([
+          ...stringsFrom(record.sourceTraceRefs),
+          ...coveredClosures.map((row) => row.traceId),
+        ]),
+        evidenceRefs: coveredClosures.map((row) => row.evidenceId),
+        artifactRefs: [],
+        perMustResponsibilities: Object.fromEntries(
+          coveredClosures.map((row) => [
+            row.mustId,
+            row.sourceAuthority?.responsibilityMapping ||
+              `Target path ${record.path} implements ${row.mustId}.`,
+          ])
+        ),
+        perMustRows: coveredClosures.map((row) => ({
+          mustRef: row.mustId,
+          traceRows: [row.traceId],
+          evidenceRefs: [row.evidenceId],
+          responsibility:
+            row.sourceAuthority?.responsibilityMapping ||
+            `Bind ${record.path} to ${row.mustId} product behavior and oracle.`,
+        })),
+        authorityRef: record.id,
+        sourcePathId: record.sourcePathId,
+        source: record.source,
+        sourceSpan: record.sourceSpan,
+        requiresReconfirmationOnChange:
+          record.coverageRole !== 'validation_only' && record.pathKind !== 'test',
+        ...projectionBackRef(
+          input.packetHash,
+          effectiveMustRefs.length === 1 ? effectiveMustRefs[0] : undefined
+        ),
+      };
+    }),
     {
-      id: `TARGET-MOD-${requirementOrdinal(targetAuthorityRecords.length)}`,
+      id: `TARGET-MOD-${requirementOrdinal(projectedTargetAuthorityRecords.length)}`,
       path: rel(input.paths.preRenderMustGate),
       changeType: 'generated_output',
       coverageRole: 'generated_output',
@@ -5885,7 +7467,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       ...backRef,
     },
     {
-      id: `TARGET-MOD-${requirementOrdinal(targetAuthorityRecords.length + 1)}`,
+      id: `TARGET-MOD-${requirementOrdinal(projectedTargetAuthorityRecords.length + 1)}`,
       path: rel(input.paths.confirmationHtml),
       changeType: 'generated_output',
       coverageRole: 'generated_output',
@@ -5906,31 +7488,87 @@ function buildPreConfirmationImplementationConfirmation(input: {
     },
   ];
   const targetPathIds = targetPathRows.map((row) => row.id);
-  const commandRows = validationAuthorityRecords.map((record, index) => ({
-    id: `CMD-${requirementOrdinal(index)}`,
-    command: record.command,
-    purpose: 'Validate source-authorized target behavior.',
-    targetFiles: targetAuthorityRecords.map((target) => target.path),
-    traceRows: allTraceIds,
-    evidenceRefs: allEvidenceIds,
-    perMustAssertions: Object.fromEntries(
-      perMustClosures.map((row) => [
-        row.mustId,
-        `Command must produce current-attempt evidence for ${row.mustId}.`,
-      ])
-    ),
-    perMustRows: perMustClosures.map((row) => ({
-      mustRef: row.mustId,
-      traceRows: [row.traceId],
-      evidenceRefs: [row.evidenceId],
-      assertion: `Do not close ${row.mustId} unless ${record.command} provides evidence for ${row.traceId}.`,
-    })),
-    authorityRef: record.id,
-    source: record.source,
-    sourceSpan: record.sourceSpan,
-    ...backRef,
-  }));
+  const commandRows = commandContexts.map(({ record, id, effectiveMustRefs, coveredClosures }) => {
+    const projectedTargetPaths = projectedTargetAuthorityRecords.map((target) =>
+      target.path.replace(/\\/g, '/').replace(/\/+$/u, '')
+    );
+    const resolvedSourceTargetFiles = stringsFrom(record.sourceTargetFiles).flatMap(
+      (sourceTargetFile) => {
+        const normalizedTarget = sourceTargetFile.replace(/\\/g, '/').replace(/\/+$/u, '');
+        const matches = projectedTargetPaths.filter(
+          (targetPath) =>
+            targetPath === normalizedTarget || targetPath.startsWith(`${normalizedTarget}/`)
+        );
+        return matches.length > 0 ? matches : [normalizedTarget];
+      }
+    );
+    const targetFiles = uniqueNonEmpty([
+      ...resolvedSourceTargetFiles,
+      ...record.commandFileRefs,
+      ...projectedTargetAuthorityRecords
+        .filter((target) =>
+          stringsFrom(target.sourceMustRefs).some((mustRef) => effectiveMustRefs.includes(mustRef))
+        )
+        .map((target) => target.path),
+    ]);
+    return {
+      id,
+      command: record.command,
+      purpose: record.sourceOracle || 'Validate source-authorized target behavior.',
+      targetFiles,
+      traceRows: uniqueNonEmpty([
+        ...stringsFrom(record.sourceTraceRefs),
+        ...coveredClosures.map((row) => row.traceId),
+      ]),
+      evidenceRefs: coveredClosures.map((row) => row.evidenceId),
+      perMustAssertions: Object.fromEntries(
+        coveredClosures.map((row) => [
+          row.mustId,
+          record.sourceOracle || `Command must produce current-attempt evidence for ${row.mustId}.`,
+        ])
+      ),
+      perMustRows: coveredClosures.map((row) => ({
+        mustRef: row.mustId,
+        traceRows: [row.traceId],
+        evidenceRefs: [row.evidenceId],
+        assertion:
+          record.sourceOracle ||
+          `Do not close ${row.mustId} unless ${record.command} provides evidence for ${row.traceId}.`,
+      })),
+      authorityRef: record.id,
+      sourceCommandId: record.sourceCommandId,
+      source: record.source,
+      sourceSpan: record.sourceSpan,
+      responsibilityMapping: record.responsibilityMapping,
+      ...projectionBackRef(
+        input.packetHash,
+        effectiveMustRefs.length === 1 ? effectiveMustRefs[0] : undefined
+      ),
+    };
+  });
   const commandIds = commandRows.map((row) => row.id);
+  const commandIdSet = new Set(commandIds);
+  const deliveryCommandIdsForMust = (mustId: string): string[] => {
+    const refs = sourceProjectionAuthority.get(mustId)?.deliveryCommandRefs ?? [];
+    const resolved = uniqueNonEmpty(refs).filter((ref) => commandIdSet.has(ref));
+    return resolved;
+  };
+  const contractCommandIdsForMust = (mustId: string): string[] => {
+    const refs = sourceProjectionAuthority.get(mustId)?.contractCommandRefs ?? [];
+    const resolved = uniqueNonEmpty(refs).filter((ref) => commandIdSet.has(ref));
+    return resolved;
+  };
+  const targetPathIdsForMust = (mustId: string): string[] => {
+    const resolved = targetPathRows
+      .filter(
+        (row) =>
+          row.coverageRole !== 'generated_output' &&
+          asStringArray(row.requirementRefs).includes(mustId)
+      )
+      .map((row) => normalizeText(row.id))
+      .filter(Boolean);
+    return resolved;
+  };
   const currentTargetMap = buildSourceSpecificCurrentTargetMap({
     root: input.root,
     sourcePath: input.sourcePath,
@@ -5940,10 +7578,11 @@ function buildPreConfirmationImplementationConfirmation(input: {
     mustRequirements: input.mustRequirements,
     businessRows,
     outOfScopeRows,
-    targetAuthorityRecords,
+    targetAuthorityRecords: projectedTargetAuthorityRecords,
     validationAuthorityRecords,
     targetPathRows,
     commandRows,
+    sourceProjectionAuthority,
     allTraceIds,
     allEvidenceIds,
     mustRefs,
@@ -5966,7 +7605,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
       : {}),
     evidenceRefs: [row.evidenceId],
     coveredByTraceRows: [row.traceId],
-    coveredByFailurePath: [row.failureId],
+    coveredByFailurePath: failurePathRefsForMust(row.mustId),
     coveredBySequenceViews: ['SEQ-BUSINESS-001', 'SEQ-001'],
     sideEffectSafety: {
       timeoutPolicy: `${row.mustId} file/path/state persistence or external service call must fail closed on timeout.`,
@@ -5990,43 +7629,61 @@ function buildPreConfirmationImplementationConfirmation(input: {
       closure,
     ]);
   }
-  const taskRows = perMustClosures.flatMap((row) => {
+  const initialTaskRows = perMustClosures.flatMap((row) => {
     const taskBackRef = projectionBackRef(input.packetHash, row.mustId);
-    const negativeTaskClosures =
-      negativeClosuresByTask.get(row.materializeTaskId) ?? [];
-    return [
-      {
-        id: row.authorTaskId,
-        text: `Author semantic kernel and packet decomposition for ${row.mustId}: ${row.requirement.text}`,
-        targetFiles: [rel(input.paths.semanticKernel), rel(input.paths.mustDecompositionPacket)],
-        acceptanceRefs: [row.acceptanceId],
-        traceRows: [row.traceId],
-        evidenceRefs: [row.evidenceId],
-        redProofPlan: `Gate fails if ${row.mustId} is missing from semantic kernel or must_decomposition_packet.`,
-        primaryObservableBehaviors: [`${row.mustId} appears in semantic kernel and packet`],
-        primaryAcceptanceOracles: [`${row.mustId} has a synchronized mustPackets row`],
-        ...taskBackRef,
-      },
-      {
-        id: row.materializeTaskId,
-        text: `Materialize packet-backed source projections for ${row.mustId}: ${row.requirement.text}`,
-        targetFiles: [rel(input.sourcePath), rel(input.paths.confirmationHtml)],
+    const negativeTaskClosures = negativeClosuresByTask.get(row.materializeTaskId) ?? [];
+    const sourceAuthority = row.sourceAuthority;
+    const implementationTargets = sourceAuthority?.targetFiles.length
+      ? sourceAuthority.targetFiles
+      : [];
+    const verificationTargets = uniqueNonEmpty([
+      ...(sourceAuthority?.testFiles ?? []),
+      acceptanceTestFilesByMust.get(row.mustId),
+    ]);
+    return row.atomicUnits.map((unit, unitIndex) => {
+      const isLastUnit = unitIndex === row.atomicUnits.length - 1;
+      return {
+        id: row.taskIds[unitIndex],
+        text: `Implement and prove ${row.mustId} atomic behavior ${unitIndex + 1}: ${unit}`,
+        targetFiles: targetFilesForAtomicUnit(
+          unit,
+          implementationTargets.length > 0 ? implementationTargets : verificationTargets
+        ),
         acceptanceRefs: uniqueNonEmpty([
+          row.acceptanceId,
           row.e2eId,
-          ...negativeTaskClosures.map((closure) => closure.acceptanceId),
+          ...(isLastUnit ? negativeTaskClosures.map((closure) => closure.acceptanceId) : []),
         ]),
         traceRows: uniqueNonEmpty([
           row.traceId,
-          ...negativeTaskClosures.map((closure) => closure.traceId),
+          ...(isLastUnit ? negativeTaskClosures.map((closure) => closure.traceId) : []),
         ]),
         evidenceRefs: [row.evidenceId],
-        redProofPlan: `Renderer blocks if ${row.mustId} lacks packet-backed trace, evidence, view, and acceptance coverage.`,
-        primaryObservableBehaviors: [`${row.mustId} source projection is rendered`],
-        primaryAcceptanceOracles: [`${row.mustId} passes renderer coverage checks`],
+        redProofPlan: `Current-attempt validation remains red until it independently proves: ${unit}`,
+        primaryObservableBehaviors: [unit],
+        primaryAcceptanceOracles: [unit],
+        atomicUnitIndex: unitIndex + 1,
+        atomicUnitCount: row.atomicUnits.length,
         ...taskBackRef,
-      },
-    ];
+      };
+    });
   });
+  const modificationTargetsByMust = new Map<string, string[]>();
+  for (const targetRow of targetPathRows.filter((row) => row.coverageRole === 'modify')) {
+    for (const mustRef of asStringArray(targetRow.requirementRefs)) {
+      modificationTargetsByMust.set(
+        mustRef,
+        uniqueNonEmpty([
+          ...(modificationTargetsByMust.get(mustRef) ?? []),
+          normalizeText(targetRow.path),
+        ])
+      );
+    }
+  }
+  const taskRows = ensureAtomicTaskModificationAuthorityCoverage(
+    initialTaskRows,
+    modificationTargetsByMust
+  ).taskRows;
   const mustToAtomicTaskMap = Object.fromEntries(
     perMustClosures.map((row) => [row.mustId, row.taskIds])
   );
@@ -6034,10 +7691,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
     perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, [row.traceId]]))
   );
   const atomicTaskToAcceptanceMap: Record<string, string[]> = Object.fromEntries(
-    perMustClosures.flatMap((row) => [
-      [row.authorTaskId, [row.acceptanceId]],
-      [row.materializeTaskId, [row.e2eId]],
-    ])
+    perMustClosures.flatMap((row) =>
+      row.taskIds.map((taskId) => [taskId, [row.acceptanceId, row.e2eId]])
+    )
   );
   for (const closure of negativeClosures) {
     atomicTaskToTraceMap[closure.taskId] = uniqueNonEmpty([
@@ -6053,10 +7709,14 @@ function buildPreConfirmationImplementationConfirmation(input: {
     perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, [row.evidenceId]]))
   );
   const atomicTaskToTargetPathMap = Object.fromEntries(
-    perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, targetPathIds]))
+    perMustClosures.flatMap((row) =>
+      row.taskIds.map((taskId) => [taskId, targetPathIdsForMust(row.mustId)])
+    )
   );
   const atomicTaskToCommandMap = Object.fromEntries(
-    perMustClosures.flatMap((row) => row.taskIds.map((taskId) => [taskId, commandIds]))
+    perMustClosures.flatMap((row) =>
+      row.taskIds.map((taskId) => [taskId, deliveryCommandIdsForMust(row.mustId)])
+    )
   );
   return {
     contractSchemaVersion: 1,
@@ -6161,91 +7821,63 @@ function buildPreConfirmationImplementationConfirmation(input: {
     atomicTaskToTargetPathMap,
     atomicTaskToCommandMap,
     evidence: perMustClosures.map((row) => ({
-        id: row.evidenceId,
-        covers: [row.mustId],
-        text: `Gate and renderer reports prove ${row.mustId} is independently user-confirmable but not delivery ready: ${row.requirement.text}`,
-        textZh: `门禁和渲染报告证明 ${row.mustId} 可独立确认，但不代表交付就绪。`,
-        gate: 'main-agent-orchestration --action pre-confirmation-drilldown',
-        oracle:
-          `${row.mustId} has semantic kernel, packet, trace, acceptance, failure, edge, target, command, and renderer coverage while deliveryReadiness.ready remains false before controlled ingest.`,
-        oracleZh:
-          `${row.mustId} 拥有 semantic kernel、packet、trace、acceptance、failure、edge、target、command 和 renderer 覆盖，同时 controlled ingest 前 deliveryReadiness.ready 保持 false。`,
-        sideEffectSafety:
-          `${row.mustId} file artifact path writes, persisted state changes, record status changes, and external service calls require timeout, failure, idempotency, rollback/recovery, current attempt assertion evidence, and missing_evidence blocking before completion.`,
-        requiredCommandRefs: commandIds,
-        artifactRefs: ['ART-001', 'ART-002'],
-        acceptanceType: 'acceptance_e2e',
-        perMustOracles: { [row.mustId]: `${row.mustId} closes only through ${row.traceId}.` },
-        ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+      id: row.evidenceId,
+      covers: [row.mustId],
+      text: `Gate and renderer reports prove ${row.mustId} is independently user-confirmable but not delivery ready: ${row.requirement.text}`,
+      gate: 'main-agent-orchestration --action pre-confirmation-drilldown',
+      oracle: `${row.mustId} has semantic kernel, packet, trace, acceptance, failure, edge, target, command, and renderer coverage while deliveryReadiness.ready remains false before controlled ingest.`,
+      sideEffectSafety: `${row.mustId} file artifact path writes, persisted state changes, record status changes, and external service calls require timeout, failure, idempotency, rollback/recovery, current attempt assertion evidence, and missing_evidence blocking before completion.`,
+      requiredCommandRefs: uniqueNonEmpty([
+        ...contractCommandIdsForMust(row.mustId),
+        ...deliveryCommandIdsForMust(row.mustId),
+      ]),
+      artifactRefs: ['ART-001', 'ART-002'],
+      acceptanceType: 'acceptance_e2e',
+      perMustOracles: { [row.mustId]: `${row.mustId} closes only through ${row.traceId}.` },
+      ...projectionBackRef(input.packetHash, row.mustId),
+    })),
     openQuestions: [],
-    failurePaths: perMustClosures.map((row) => ({
-        id: row.failureId,
-        title: `Missing drilldown surfaces block ${row.mustId}.`,
-        titleZh: `缺少 drilldown 确认面会阻断 ${row.mustId}。`,
-        trigger:
-          `${row.mustId} semantic kernel, packet, receipts, reconciliation, pre-render gate report, or renderer drilldown section is missing.`,
-        triggerZh:
-          `${row.mustId} 缺少 semantic kernel、packet、receipt、reconciliation、预渲染门禁报告或 renderer drilldown 区块。`,
-        expectedBehavior:
-          `Fail closed for ${row.mustId} and keep currentMentalModel=requirement_confirmation until packet-backed projection evidence exists; file artifact path writes, persisted state changes, record status changes, and external service calls require timeout, failure, idempotency, rollback/recovery, and assertion evidence.`,
-        expectedBehaviorZh:
-          `${row.mustId} 必须 fail closed，并保持 currentMentalModel=requirement_confirmation。`,
-        forbiddenBehavior:
-          `Advance ${row.mustId} to delivery readiness, write/delete/publish/send/call external state without recovery proof, or merge it into an all-cover-all trace without independent evidence.`,
-        forbiddenBehaviorZh: `${row.mustId} 不得进入交付就绪，也不得被合并进全覆盖 trace。`,
-        blocksCompletionWhenViolated: true,
-        linkedNegIds: negativeRequirementIds,
-        linkedEvidenceIds: [row.evidenceId],
-        traceRows: [row.traceId],
-        viewRefs: ['EDGEVIEW-001'],
-        requiredAssertions: [
-          `${row.mustId} confirmability is blocked when drilldown surfaces are missing`,
-          `${row.mustId} cannot be closed by another MUST row's evidence`,
-          `${row.mustId} file/path/state/external side effects have timeout, failure, idempotency, rollback/recovery, and current attempt assertion evidence`,
-        ],
-        ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+    failurePaths: failurePathRows,
     edgeCases: perMustClosures.map((row) => ({
-        id: row.edgeId,
-        category: 'missing_projection',
-        condition: `${row.mustId} source row is invented outside synchronized packet projections or covered only by a shared trace.`,
-        conditionZh: `${row.mustId} source row 在 synchronized packet projection 之外被独立发明，或只被共享 trace 覆盖。`,
-        expectedBehavior:
-          `Packet/source reconciliation fails bidirectionally for ${row.mustId}; per-MUST trace closure remains mandatory.`,
-        expectedBehaviorZh: `${row.mustId} 的 packet/source reconciliation 必须双向失败，且 per-MUST trace closure 必须保留。`,
-        forbiddenBehavior:
-          `Renderer allows ${row.mustId} confirmation from independently invented source rows or all-cover-all trace closure.`,
-        forbiddenBehaviorZh: `renderer 不得允许 ${row.mustId} 由独立发明的 source row 或全覆盖 trace 进入确认。`,
-        linkedFailurePathIds: [row.failureId],
-        linkedEvidenceIds: [row.evidenceId],
-        traceRows: [row.traceId],
-        viewRefs: ['EDGEVIEW-001'],
-        ...projectionBackRef(input.packetHash, row.mustId),
-      })),
-    traceRows: perMustClosures.map((row) => ({
+      id: row.edgeId,
+      category: 'missing_projection',
+      condition: `${row.mustId} source row is invented outside synchronized packet projections or covered only by a shared trace.`,
+      expectedBehavior: `Packet/source reconciliation fails bidirectionally for ${row.mustId}; per-MUST trace closure remains mandatory.`,
+      forbiddenBehavior: `Renderer allows ${row.mustId} confirmation from independently invented source rows or all-cover-all trace closure.`,
+      linkedFailurePathIds: failurePathRefsForMust(row.mustId),
+      linkedNegIds: negativeRequirementIds,
+      linkedEvidenceIds: [row.evidenceId],
+      traceRows: [row.traceId],
+      viewRefs: ['EDGEVIEW-001'],
+      ...projectionBackRef(input.packetHash, row.mustId),
+    })),
+    traceRows: perMustClosures
+      .map((row) => ({
         id: row.traceId,
-        covers: [row.mustId, ...unclosedNegativeRequirementIds],
+        covers: [row.mustId],
         sourceRequirementTexts: [row.requirement.text],
         taskRefs: row.taskIds,
         evidenceRefs: [row.evidenceId],
-        contractValidationCommandRefs: commandIds,
-        deliveryEvidenceCommandRefs: commandIds,
+        contractValidationCommandRefs: contractCommandIdsForMust(row.mustId),
+        deliveryEvidenceCommandRefs: deliveryCommandIdsForMust(row.mustId),
         acceptanceRefs: [row.acceptanceId, row.e2eId],
-        failurePathRefs: [row.failureId],
+        failurePathRefs: failurePathRefsForMust(row.mustId),
         edgeCaseRefs: [row.edgeId],
-        sequenceViewRefs: sequenceViewIds,
-        flowViewRefs: flowViewIds,
-        edgeCaseViewRefs: edgeCaseViewIds,
+        sequenceViewRefs: viewIdsForRequirement(businessSequenceViews, row.mustId, 'SEQ-001'),
+        flowViewRefs: viewIdsForRequirement(businessFlowViews, row.mustId, 'FLOW-001'),
+        edgeCaseViewRefs: viewIdsForRequirement(businessEdgeCaseViews, row.mustId, 'EDGEVIEW-001'),
         boundaryViewRefs: boundaryViewIds,
         artifactRefs: ['ART-001', 'ART-002'],
-        targetModificationPathRefs: targetPathIds,
-        closureAssertion: `${row.traceId} provides independent source-backed closure for ${row.mustId}.`,
+        targetModificationPathRefs: targetPathIdsForMust(row.mustId),
+        closureAssertion:
+          row.sourceAuthority?.closureAssertion ||
+          `${row.traceId} provides independent source-backed closure for ${row.mustId}.`,
         targetStateAssertion: `${row.mustId} remains in requirement_confirmation until controlled ingest records current validation evidence.`,
         acceptanceSummary: `${row.mustId} links acceptance, evidence, failure path, edge case, target path, command, and view refs before user confirmation.`,
         status: 'PENDING',
         ...projectionBackRef(input.packetHash, row.mustId),
-      })).concat(
+      }))
+      .concat(
         negativeClosures.map((row) => ({
           id: row.traceId,
           covers: [row.negId],
@@ -6257,9 +7889,9 @@ function buildPreConfirmationImplementationConfirmation(input: {
           acceptanceRefs: [row.acceptanceId, row.sourceE2eId],
           failurePathRefs: row.failurePathRefs,
           edgeCaseRefs: [row.edgeId],
-          sequenceViewRefs: sequenceViewIds,
-          flowViewRefs: flowViewIds,
-          edgeCaseViewRefs: edgeCaseViewIds,
+          sequenceViewRefs: viewIdsForRequirement(businessSequenceViews, row.negId, 'SEQ-001'),
+          flowViewRefs: viewIdsForRequirement(businessFlowViews, row.negId, 'FLOW-001'),
+          edgeCaseViewRefs: viewIdsForRequirement(businessEdgeCaseViews, row.negId, 'EDGEVIEW-001'),
           boundaryViewRefs: boundaryViewIds,
           artifactRefs: ['ART-001', 'ART-002'],
           targetModificationPathRefs: targetPathIds,
@@ -6270,29 +7902,29 @@ function buildPreConfirmationImplementationConfirmation(input: {
           ...projectionBackRef(input.packetHash, row.negId),
         }))
       ),
-    acceptanceTests: perMustClosures.map((row) => ({
+    acceptanceTests: perMustClosures
+      .map((row) => ({
         id: row.acceptanceId,
-        file: acceptanceTestFilesByMust.get(row.mustId) ?? validationAcceptanceTestFile,
+        file: acceptanceTestFilesByMust.get(row.mustId) ?? '',
         covers: [row.mustId],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
         evidenceRefs: [row.evidenceId],
-        commandRefs: commandIds,
-        failurePathRefs: [row.failureId],
+        commandRefs: deliveryCommandIdsForMust(row.mustId),
+        failurePathRefs: failurePathRefsForMust(row.mustId),
         edgeCaseRefs: [row.edgeId],
         expectedPreImplementationState: 'expected_red',
         redProofPlan: `Before implementation, ${row.mustId} acceptance must fail without source-backed product behavior and packet-backed proof surfaces.`,
-        oracle: `${row.mustId} cannot reach user_confirmable unless atomic decomposition loop, reconciliation, gates, and assertion evidence pass.`,
+        oracle: row.sourceAuthority?.oracle || row.requirement.text,
         positiveControl: true,
         negativeControls: negativeRequirementIds,
         mockOnly: false,
         ...projectionBackRef(input.packetHash, row.mustId),
-      })).concat(
+      }))
+      .concat(
         negativeClosures.map((row) => ({
           id: row.acceptanceId,
-          file:
-            acceptanceTestFilesByNegative.get(row.negId) ??
-            validationAcceptanceTestFile,
+          file: acceptanceTestFilesByNegative.get(row.negId) ?? validationAcceptanceTestFile,
           covers: [row.negId],
           sourceRequirementTexts: [row.text],
           traceRows: [row.traceId],
@@ -6309,19 +7941,21 @@ function buildPreConfirmationImplementationConfirmation(input: {
           ...projectionBackRef(input.packetHash, row.negId),
         }))
       ),
-    acceptanceCriteria: perMustClosures.map((row) => ({
+    acceptanceCriteria: perMustClosures
+      .map((row) => ({
         id: row.acceptanceId,
         covers: [row.mustId],
         sourceRequirementTexts: [row.requirement.text],
         traceRows: [row.traceId],
         evidenceRefs: [row.evidenceId],
-        commandRefs: commandIds,
-        failurePathRefs: [row.failureId],
+        commandRefs: deliveryCommandIdsForMust(row.mustId),
+        failurePathRefs: failurePathRefsForMust(row.mustId),
         edgeCaseRefs: [row.edgeId],
         redProofPlan: `Acceptance criteria for ${row.mustId} must be red before the corresponding behavior/proof is implemented.`,
-        oracle: `${row.mustId} acceptance criteria remain visible in the confirmation contract and linked to validation commands.`,
+        oracle: row.sourceAuthority?.oracle || row.requirement.text,
         ...projectionBackRef(input.packetHash, row.mustId),
-      })).concat(
+      }))
+      .concat(
         negativeClosures.map((row) => ({
           id: row.acceptanceId,
           covers: [row.negId],
@@ -6337,44 +7971,36 @@ function buildPreConfirmationImplementationConfirmation(input: {
         }))
       ),
     e2eSuites: perMustClosures.map((row) => ({
-        id: row.e2eId,
-        file: acceptanceTestFilesByMust.get(row.mustId) ?? validationAcceptanceTestFile,
-        covers: [
-          row.mustId,
-          ...unclosedNegativeRequirementIds,
-          ...(negativeRequirementIdsByE2e.get(row.e2eId) ?? []),
-        ],
-        sourceRequirementTexts: [row.requirement.text],
-        traceRows: [row.traceId],
-        evidenceRefs: [row.evidenceId],
-        commandRefs: commandIds,
-        failurePathRefs: [row.failureId],
-        edgeCaseRefs: [row.edgeId],
-        expectedPreImplementationState: 'expected_red',
-        redProofPlan: `Before implementation, ${row.mustId} E2E proof must be red and cannot be satisfied by renderer smoke output.`,
-        oracle: `Before controlled ingest, ${row.mustId} remains in requirement_confirmation and nextMentalModel is null.`,
-        positiveControl: true,
-        negativeControls: negativeRequirementIds,
-        mockOnly: false,
-        ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+      id: row.e2eId,
+      file: acceptanceTestFilesByMust.get(row.mustId) ?? '',
+      covers: [row.mustId, ...(negativeRequirementIdsByE2e.get(row.e2eId) ?? [])],
+      sourceRequirementTexts: [row.requirement.text],
+      traceRows: [row.traceId],
+      evidenceRefs: [row.evidenceId],
+      commandRefs: deliveryCommandIdsForMust(row.mustId),
+      failurePathRefs: failurePathRefsForMust(row.mustId),
+      edgeCaseRefs: [row.edgeId],
+      expectedPreImplementationState: 'expected_red',
+      redProofPlan: `Before implementation, ${row.mustId} E2E proof must be red and cannot be satisfied by renderer smoke output.`,
+      oracle: row.sourceAuthority?.oracle || row.requirement.text,
+      positiveControl: true,
+      negativeControls: negativeRequirementIds,
+      mockOnly: false,
+      ...projectionBackRef(input.packetHash, row.mustId),
+    })),
     e2eScenarios: perMustClosures.map((row) => ({
-        id: row.e2eId,
-        covers: [
-          row.mustId,
-          ...unclosedNegativeRequirementIds,
-          ...(negativeRequirementIdsByE2e.get(row.e2eId) ?? []),
-        ],
-        sourceRequirementTexts: [row.requirement.text],
-        traceRows: [row.traceId],
-        evidenceRefs: [row.evidenceId],
-        commandRefs: commandIds,
-        failurePathRefs: [row.failureId],
-        edgeCaseRefs: [row.edgeId],
-        redProofPlan: `Scenario for ${row.mustId} is expected_red until source-derived behavior and current evidence exist.`,
-        scenario: `Repository-local fixture authoring proves ${row.mustId}: ${row.requirement.text}`,
-        ...projectionBackRef(input.packetHash, row.mustId),
-      })),
+      id: row.e2eId,
+      covers: [row.mustId, ...(negativeRequirementIdsByE2e.get(row.e2eId) ?? [])],
+      sourceRequirementTexts: [row.requirement.text],
+      traceRows: [row.traceId],
+      evidenceRefs: [row.evidenceId],
+      commandRefs: deliveryCommandIdsForMust(row.mustId),
+      failurePathRefs: failurePathRefsForMust(row.mustId),
+      edgeCaseRefs: [row.edgeId],
+      redProofPlan: `Scenario for ${row.mustId} is expected_red until source-derived behavior and current evidence exist.`,
+      scenario: row.sourceAuthority?.oracle || row.requirement.text,
+      ...projectionBackRef(input.packetHash, row.mustId),
+    })),
     requirementBoundary: {
       business: {
         description:
@@ -6479,7 +8105,7 @@ function buildPreConfirmationImplementationConfirmation(input: {
         mustRef: row.mustId,
         evidenceRefs: [row.evidenceId],
         acceptanceRefs: [row.acceptanceId, row.e2eId],
-        failurePathRefs: [row.failureId],
+        failurePathRefs: failurePathRefsForMust(row.mustId),
         edgeCaseRefs: [row.edgeId],
         assertion: `${row.traceId} provides independent closure for ${row.mustId}.`,
       })),
@@ -6514,7 +8140,10 @@ function buildPreConfirmationImplementationConfirmation(input: {
         nativeGoalAllowed: true,
       },
       closeoutProof: {
-        allowedAuthorities: ['required_command_current_attempt_evidence', 'controlled_requirement_record'],
+        allowedAuthorities: [
+          'required_command_current_attempt_evidence',
+          'controlled_requirement_record',
+        ],
         forbiddenAuthorities: [
           'audit_receipt_json',
           'completion_packet_self_certification',
@@ -6609,9 +8238,12 @@ function buildPreConfirmationImplementationConfirmation(input: {
 
 function materializeImplementationConfirmationText(
   sourceText: string,
-  confirmation: Record<string, unknown>
+  confirmation: Record<string, unknown>,
+  ensureDefinitionOfDone = true
 ): string {
-  const sourceWithDefinitionOfDone = ensureDefinitionOfDoneSection(sourceText);
+  const sourceWithDefinitionOfDone = ensureDefinitionOfDone
+    ? ensureDefinitionOfDoneSection(sourceText)
+    : sourceText;
   const extraction = extractImplementationConfirmationBlock(sourceWithDefinitionOfDone);
   const dumped = dumpImplementationConfirmation(confirmation);
   let next: string;
@@ -6703,6 +8335,7 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
   paths: PreConfirmationPaths;
   autoRepair?: boolean;
   currentSourceReceiptRefresh?: boolean;
+  projectionMetadataResync?: boolean;
 }): {
   ok: boolean;
   receipt: Record<string, unknown> | null;
@@ -6717,7 +8350,11 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
     '--target',
     toRootRelativePath(input.root, input.sourcePath),
     '--promotion-stage',
-    input.currentSourceReceiptRefresh === true ? 'current-source-receipt-refresh' : 'authoring-draft',
+    input.projectionMetadataResync === true
+      ? 'projection-metadata-resync'
+      : input.currentSourceReceiptRefresh === true
+        ? 'current-source-receipt-refresh'
+        : 'authoring-draft',
     '--scale-assessment',
     input.paths.scaleAssessmentInitial,
     '--scale-routing-decision',
@@ -6743,21 +8380,27 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
   const issues: PreConfirmationDrilldownIssue[] = [];
   if (command.status !== 0 || !receipt || receipt.ok !== true) {
     const gate = recordObject(receipt?.authoringPromotionGate);
-    const errors = Array.isArray(gate.errors) ? gate.errors.map((error) => normalizeText(error)) : [];
-    const failureDetails = errors.length > 0
-      ? errors.join(', ')
-      : [
-          normalizeText(receipt?.failureClass),
-          normalizeText(command.stderr),
-          normalizeText(command.stdout),
-        ]
-          .filter(Boolean)
-          .join(', ') || 'unknown failure';
+    const errors = Array.isArray(gate.errors)
+      ? gate.errors.map((error) => normalizeText(error))
+      : [];
+    const failureDetails =
+      errors.length > 0
+        ? errors.join(', ')
+        : [
+            normalizeText(receipt?.failureClass),
+            normalizeText(command.stderr),
+            normalizeText(command.stdout),
+          ]
+            .filter(Boolean)
+            .join(', ') || 'unknown failure';
     issues.push(
       preConfirmationIssue(
         'requirements_contract_promotion_failed',
         `Requirements contract promotion helper blocked source materialization: ${failureDetails}.`,
-        [toRootRelativePath(input.root, script), toRootRelativePath(input.root, input.paths.promotionReceipt)],
+        [
+          toRootRelativePath(input.root, script),
+          toRootRelativePath(input.root, input.paths.promotionReceipt),
+        ],
         'source_mutation_gate'
       )
     );
@@ -6864,8 +8507,7 @@ function verifySourceMaterializationBeforeAudit(input: {
   const current = readMaterializedConfirmation(input.sourcePath);
   const currentTargetHash = sha256File(input.sourcePath);
   const sourceRelative = toRootRelativePath(input.root, input.sourcePath);
-  const manifest =
-    recordObject(recordObject(receipt.preflight).manifest);
+  const manifest = recordObject(recordObject(receipt.preflight).manifest);
   const promotionGate = recordObject(receipt.authoringPromotionGate);
   const sourceMutationDecision = recordObject(recordObject(promotionGate.decisions).sourceMutation);
   if (receipt.ok !== true) {
@@ -6878,11 +8520,17 @@ function verifySourceMaterializationBeforeAudit(input: {
     );
   }
   const promotionStage = normalizeText(receipt.promotionStage);
-  if (!['authoring-draft', 'current-source-receipt-refresh'].includes(promotionStage)) {
+  if (
+    ![
+      'authoring-draft',
+      'current-source-receipt-refresh',
+      'projection-metadata-resync',
+    ].includes(promotionStage)
+  ) {
     issues.push(
       sourceMaterializationGateIssue(
         'promotion_receipt_stage_invalid',
-        'Promotion receipt must be produced by --promotion-stage authoring-draft or current-source-receipt-refresh.',
+        'Promotion receipt must be produced by an allowed authoring or metadata-resync promotion stage.',
         [promotionStage]
       )
     );
@@ -6919,10 +8567,7 @@ function verifySourceMaterializationBeforeAudit(input: {
       sourceMaterializationGateIssue(
         'promotion_receipt_confirmation_hash_stale',
         'Inline implementationConfirmation hash differs from the current audit input hash.',
-        [
-          current.implementationConfirmationHash,
-          input.expectedImplementationConfirmationHash,
-        ]
+        [current.implementationConfirmationHash, input.expectedImplementationConfirmationHash]
       )
     );
   }
@@ -6990,8 +8635,9 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
     sourcePath: input.sourcePath,
     sourceText: input.sourceText,
     packetHash: normalizeText(
-      recordObject(recordObject(input.confirmation.preConfirmationDrilldown).mustDecompositionPacketRef)
-        .hash
+      recordObject(
+        recordObject(input.confirmation.preConfirmationDrilldown).mustDecompositionPacketRef
+      ).hash
     ),
   });
   if (!resync.changed) {
@@ -7154,7 +8800,9 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
     }
     routeDecision = postMaterializationScaleAssessment.routingDecision;
   }
-  const currentTargetHash = fs.existsSync(input.sourcePath) ? sha256File(input.sourcePath) : 'absent';
+  const currentTargetHash = fs.existsSync(input.sourcePath)
+    ? sha256File(input.sourcePath)
+    : 'absent';
   writeSourceMutationDecision({
     root: input.root,
     sourcePath: input.sourcePath,
@@ -7191,15 +8839,19 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
     return { ok: false, issues: promotion.issues, artifacts };
   }
   const materialized = readMaterializedConfirmation(input.sourcePath);
-  if (materialized.sourceDocumentHash === input.previousSourceDocumentHash) {
+  const materializedRawHash = sha256File(input.sourcePath);
+  if (
+    materialized.sourceDocumentHash === input.previousSourceDocumentHash &&
+    materializedRawHash === currentTargetHash
+  ) {
     return {
       ok: false,
       artifacts,
       issues: [
         sourceMaterializationGateIssue(
           'business_visual_proof_resync_hash_unchanged',
-          'Business visual proof resync must change the semantic source hash before audit continues.',
-          [input.previousSourceDocumentHash]
+          'Business visual proof resync must change either the semantic source hash or the raw source hash before audit continues.',
+          [input.previousSourceDocumentHash, currentTargetHash, ...resync.changedViewIds]
         ),
       ],
     };
@@ -7210,6 +8862,351 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
     materialized,
     artifacts,
     changedViewIds: resync.changedViewIds,
+  };
+}
+
+function resyncPreserveExistingPacketProjectionMetadata(
+  confirmation: Record<string, unknown>,
+  packetHash: string
+): {
+  confirmation: Record<string, unknown>;
+  changed: boolean;
+  changedRowCount: number;
+  previousPacketHashes: string[];
+} {
+  let changedRowCount = 0;
+  let requiredCurrentPacketRebindCount = 0;
+  const previousPacketHashes = new Set<string>();
+  const visit = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map((item) => visit(item));
+    }
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+    const row = value as Record<string, unknown>;
+    const next = Object.fromEntries(
+      Object.entries(row).map(([key, child]) => [key, visit(child)])
+    ) as Record<string, unknown>;
+    const previousPacketHash = normalizeText(row.derivedFromPacketHash);
+    if (
+      normalizeText(row.projectionStatus) === 'synchronized' &&
+      /^sha256:[a-f0-9]{64}$/u.test(previousPacketHash) &&
+      previousPacketHash !== packetHash
+    ) {
+      if (
+        !normalizeText(row.derivedFromMustRef) &&
+        !normalizeText(row.derivedFromRequirementRef) &&
+        !normalizeText(row.derivedFromProjectionRef) &&
+        !normalizeText(row.derivedFromProjectionId)
+      ) {
+        requiredCurrentPacketRebindCount += 1;
+      }
+      next.derivedFromPacketHash = packetHash;
+      previousPacketHashes.add(previousPacketHash);
+      changedRowCount += 1;
+    }
+    return next;
+  };
+  const nextConfirmation = visit(confirmation) as Record<string, unknown>;
+  const drilldown = recordObject(nextConfirmation.preConfirmationDrilldown);
+  const packetRef = recordObject(drilldown.mustDecompositionPacketRef);
+  if (
+    Object.keys(packetRef).length > 0 &&
+    normalizeText(packetRef.hash) !== packetHash
+  ) {
+    const previousPacketHash = normalizeText(packetRef.hash);
+    if (/^sha256:[a-f0-9]{64}$/u.test(previousPacketHash)) {
+      previousPacketHashes.add(previousPacketHash);
+    }
+    nextConfirmation.preConfirmationDrilldown = {
+      ...drilldown,
+      mustDecompositionPacketRef: {
+        ...packetRef,
+        hash: packetHash,
+        status: 'synchronized',
+      },
+    };
+  }
+  if (requiredCurrentPacketRebindCount === 0) {
+    return {
+      confirmation,
+      changed: false,
+      changedRowCount: 0,
+      previousPacketHashes: [],
+    };
+  }
+  return {
+    confirmation: nextConfirmation,
+    changed:
+      changedRowCount > 0 ||
+      normalizeText(packetRef.hash) !== packetHash,
+    changedRowCount,
+    previousPacketHashes: [...previousPacketHashes].sort(),
+  };
+}
+
+function materializePreserveExistingPacketProjectionMetadataResync(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  requirementSetId: string;
+  createdAt: string;
+  sourceText: string;
+  confirmation: Record<string, unknown>;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  packetHash: string;
+}):
+  | {
+      ok: true;
+      changed: boolean;
+      artifacts: string[];
+      changedRowCount: number;
+      previousPacketHashes: string[];
+    }
+  | {
+      ok: false;
+      issues: PreConfirmationDrilldownIssue[];
+      artifacts: string[];
+    } {
+  const resync = resyncPreserveExistingPacketProjectionMetadata(
+    input.confirmation,
+    input.packetHash
+  );
+  if (!resync.changed) {
+    return {
+      ok: true,
+      changed: false,
+      artifacts: [],
+      changedRowCount: 0,
+      previousPacketHashes: [],
+    };
+  }
+  const draftPath = path.join(
+    input.paths.authoringDir,
+    'authoring-repair-packet-projection-metadata-resync-source.md'
+  );
+  const nextSourceText = materializeImplementationConfirmationText(
+    input.sourceText,
+    resync.confirmation,
+    false
+  );
+  fs.writeFileSync(draftPath, nextSourceText, 'utf8');
+  const artifacts = [
+    draftPath,
+    input.paths.encodingReport,
+    input.paths.sourceMutationDecision,
+    input.paths.promotionReceipt,
+  ];
+  const encodingGate = runEncodingIntegrityGate({
+    root: input.root,
+    paths: input.paths,
+    targetPaths: [draftPath],
+  });
+  if (encodingGate.issues.length > 0) {
+    return { ok: false, issues: encodingGate.issues, artifacts };
+  }
+  const normalizedDraft = normalizeImplementationConfirmationDraftForPromotion({
+    root: input.root,
+    draftPath,
+    paths: input.paths,
+    blockingStage: 'packet_source_projection_resynchronization_required',
+  });
+  if (!normalizedDraft.ok) {
+    return { ok: false, issues: normalizedDraft.issues, artifacts };
+  }
+  const scaleAssessment = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: draftPath,
+    paths: input.paths,
+    phase: 'initial_assessment',
+  });
+  artifacts.push(input.paths.scaleAssessmentInitial, input.paths.scaleRoutingDecision);
+  if (scaleAssessment.issues.length > 0 || !scaleAssessment.routingDecision) {
+    return { ok: false, issues: scaleAssessment.issues, artifacts };
+  }
+  const draftText = fs.readFileSync(draftPath, 'utf8');
+  const draftExtraction = extractImplementationConfirmationBlock(draftText);
+  if (!draftExtraction) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        sourceMaterializationGateIssue(
+          'packet_projection_metadata_resync_draft_missing_implementation_confirmation',
+          'Packet projection metadata resync must produce a staging draft with inline implementationConfirmation.',
+          [toRootRelativePath(input.root, draftPath)]
+        ),
+      ],
+    };
+  }
+  const draftSourceDocumentHash = sourceDocumentHashForPreConfirmation(
+    draftText,
+    draftExtraction.blockText,
+    draftExtraction.confirmation
+  );
+  const draftImplementationConfirmationHash = implementationConfirmationHashForPreConfirmation(
+    draftExtraction.confirmation
+  );
+  if (
+    draftSourceDocumentHash !== input.sourceDocumentHash ||
+    draftImplementationConfirmationHash !== input.implementationConfirmationHash
+  ) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        sourceMaterializationGateIssue(
+          'packet_projection_metadata_resync_changed_semantic_hash',
+          'Projection metadata resync must not change semantic source or implementationConfirmation hashes.',
+          [
+            input.sourceDocumentHash,
+            draftSourceDocumentHash,
+            input.implementationConfirmationHash,
+            draftImplementationConfirmationHash,
+          ]
+        ),
+      ],
+    };
+  }
+  const rebuilt = buildPreserveExistingAuthoringArtifacts({
+    root: input.root,
+    sourcePath: draftPath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+    sourceText: draftText,
+    extraction: draftExtraction,
+    consecutiveNoNewGapRounds: 0,
+  });
+  artifacts.push(
+    input.paths.semanticKernel,
+    input.paths.mustDecompositionPacket,
+    input.paths.draftImplementationConfirmation,
+    input.paths.authoringMaterializationReceipt
+  );
+  if (rebuilt.packetHash !== input.packetHash) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        sourceMaterializationGateIssue(
+          'packet_projection_metadata_resync_packet_hash_unstable',
+          'Projection metadata resync must rebuild the same preserve-existing packet namespace.',
+          [input.packetHash, rebuilt.packetHash]
+        ),
+      ],
+    };
+  }
+  const mustGateScript = resolveSkillScript(input.root, 'pre_render_must_decomposition_gate.js');
+  runNodeJson(
+    mustGateScript,
+    [
+      '--source',
+      draftPath,
+      '--authoring-dir',
+      input.paths.authoringDir,
+      '--semantic-kernel',
+      input.paths.semanticKernel,
+      '--must-decomposition-packet',
+      input.paths.mustDecompositionPacket,
+      '--out',
+      input.paths.preRenderMustGate,
+      '--receipt',
+      input.paths.mustDecompositionReceipt,
+      '--reconciliation-report',
+      input.paths.reconciliationReport,
+      '--json',
+    ],
+    input.root
+  );
+  artifacts.push(
+    input.paths.preRenderMustGate,
+    input.paths.mustDecompositionReceipt,
+    input.paths.reconciliationReport
+  );
+  const checkpointPersistence = prepareAuthoringRepairCheckpointPersistenceEvidence({
+    root: input.root,
+    repairDraftPath: draftPath,
+    paths: input.paths,
+    recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    createdAt: input.createdAt,
+    routeDecision: scaleAssessment.routingDecision,
+    forceRefresh: true,
+  });
+  if (checkpointPersistence.ok === false) {
+    return { ok: false, issues: [checkpointPersistence.issue], artifacts };
+  }
+  artifacts.push(input.paths.checkpointPersistenceEvidence, ...input.paths.checkpointReceiptPaths);
+  const currentTargetHash = sha256File(input.sourcePath);
+  writeSourceMutationDecision({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt: input.createdAt,
+    sourceDocumentExistedBefore: true,
+    sourceHashBefore: currentTargetHash,
+    sourceHashAfter: normalizedDraft.draftHash,
+    targetRawHashBefore: currentTargetHash,
+    targetRawHashAfter: normalizedDraft.draftHash,
+    semanticSourceHashBefore: input.sourceDocumentHash,
+    semanticSourceHashAfter: draftSourceDocumentHash,
+    issues: [],
+    coverageDecision: 'pass',
+    targetAuthorityDecision: 'pass',
+    validationAuthorityDecision: 'pass',
+    projectionSanityDecision: 'pass',
+    auditEvidenceDecision: 'pass',
+    scaleRoutingDecision:
+      normalizeText(scaleAssessment.routingDecision.decision) ||
+      'packet_source_projection_metadata_resync',
+    reverseAuditDraftValidationDecision: 'pass',
+    sourceMutationPerformed: false,
+  });
+  const promotion = promoteImplementationConfirmationDraftWithReceipt({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    draftPath,
+    paths: input.paths,
+    autoRepair: true,
+    projectionMetadataResync: true,
+  });
+  if (!promotion.ok) {
+    return { ok: false, issues: promotion.issues, artifacts };
+  }
+  const materialized = readMaterializedConfirmation(input.sourcePath);
+  if (
+    materialized.sourceDocumentHash !== input.sourceDocumentHash ||
+    materialized.implementationConfirmationHash !== input.implementationConfirmationHash
+  ) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        sourceMaterializationGateIssue(
+          'packet_projection_metadata_resync_post_promotion_hash_mismatch',
+          'Promoted projection metadata resync changed semantic source authority.',
+          [
+            materialized.sourceDocumentHash,
+            materialized.implementationConfirmationHash,
+          ]
+        ),
+      ],
+    };
+  }
+  return {
+    ok: true,
+    changed: true,
+    artifacts,
+    changedRowCount: resync.changedRowCount,
+    previousPacketHashes: resync.previousPacketHashes,
   };
 }
 
@@ -7296,15 +9293,17 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
   paths: PreConfirmationPaths;
   recordId: string;
   requirementSetId: string;
-}): {
-  ok: true;
-  receipt: Record<string, unknown>;
-  artifacts: string[];
-} | {
-  ok: false;
-  issues: PreConfirmationDrilldownIssue[];
-  artifacts: string[];
-} {
+}):
+  | {
+      ok: true;
+      receipt: Record<string, unknown>;
+      artifacts: string[];
+    }
+  | {
+      ok: false;
+      issues: PreConfirmationDrilldownIssue[];
+      artifacts: string[];
+    } {
   const artifacts: string[] = [];
   const prepareScript = resolveSkillScript(input.root, 'prepare-current-source-promotion.js');
   const prepare = runNodeJson(
@@ -7387,7 +9386,9 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
   const routeDecisionText = normalizeText(routeDecision?.decision);
   if (['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecisionText)) {
     const sourceDocumentHash = normalizeText(prepare.json.semanticSourceHash);
-    const implementationConfirmationHash = normalizeText(prepare.json.implementationConfirmationHash);
+    const implementationConfirmationHash = normalizeText(
+      prepare.json.implementationConfirmationHash
+    );
     if (!sourceDocumentHash || !implementationConfirmationHash) {
       return {
         ok: false,
@@ -7496,7 +9497,10 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
     id: 'cp-03-packet-to-source-materialization',
     name: 'packet to source materialization',
     index: 3,
-    artifacts: ({ draftSourcePath, paths }) => [paths.authoringMaterializationReceipt, draftSourcePath],
+    artifacts: ({ draftSourcePath, paths }) => [
+      paths.authoringMaterializationReceipt,
+      draftSourcePath,
+    ],
   },
   {
     id: 'cp-04-id-freeze',
@@ -7508,7 +9512,10 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
     id: 'cp-05-implementation-confirmation-core',
     name: 'implementationConfirmation core',
     index: 5,
-    artifacts: ({ draftSourcePath, paths }) => [paths.draftImplementationConfirmation, draftSourcePath],
+    artifacts: ({ draftSourcePath, paths }) => [
+      paths.draftImplementationConfirmation,
+      draftSourcePath,
+    ],
   },
   {
     id: 'cp-06-projections',
@@ -7534,9 +9541,14 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
   },
 ];
 
-const AUTHORING_REPAIR_CHECKPOINT_IDS = AUTHORING_REPAIR_CHECKPOINTS.map((checkpoint) => checkpoint.id);
+const AUTHORING_REPAIR_CHECKPOINT_IDS = AUTHORING_REPAIR_CHECKPOINTS.map(
+  (checkpoint) => checkpoint.id
+);
 
-function checkpointReceiptPath(paths: PreConfirmationPaths, checkpoint: AuthoringCheckpointDefinition): string {
+function checkpointReceiptPath(
+  paths: PreConfirmationPaths,
+  checkpoint: AuthoringCheckpointDefinition
+): string {
   return paths.checkpointReceiptPaths[checkpoint.index];
 }
 
@@ -7566,7 +9578,9 @@ function emitAuthoringCheckpointTrace(input: {
   routeDecision: string;
   evidence: Record<string, unknown>;
 }): void {
-  const completedIds = asStringArray(recordObject(input.evidence.checkpointPersistenceRef).completedCheckpointIds);
+  const completedIds = asStringArray(
+    recordObject(input.evidence.checkpointPersistenceRef).completedCheckpointIds
+  );
   process.stderr.write(
     `[requirements-contract-authoring] checkpoint trace start record=${input.recordId} route=${input.routeDecision} source=${toRootRelativePath(input.root, input.draftSourcePath)}\n`
   );
@@ -7574,7 +9588,9 @@ function emitAuthoringCheckpointTrace(input: {
     const artifactPaths = uniqueNonEmpty(
       checkpoint.artifacts({ draftSourcePath: input.draftSourcePath, paths: input.paths })
     );
-    const artifactRefs = artifactPaths.map((artifactPath) => toRootRelativePath(input.root, artifactPath));
+    const artifactRefs = artifactPaths.map((artifactPath) =>
+      toRootRelativePath(input.root, artifactPath)
+    );
     const artifactHashes = artifactPaths.map(checkpointTraceHash);
     const nextCheckpoint =
       AUTHORING_REPAIR_CHECKPOINTS[index + 1]?.id ?? 'checkpoint-persistence-summary';
@@ -7635,7 +9651,10 @@ function isCurrentCheckpointReceipt(input: {
   if (!input.receipt || input.receipt.status !== 'passed') return false;
   if (normalizeText(input.receipt.checkpointId) !== input.checkpoint.id) return false;
   if (normalizeText(input.receipt.sourceDocumentHash) !== input.sourceDocumentHash) return false;
-  if (normalizeText(input.receipt.implementationConfirmationHash) !== input.implementationConfirmationHash) {
+  if (
+    normalizeText(input.receipt.implementationConfirmationHash) !==
+    input.implementationConfirmationHash
+  ) {
     return false;
   }
   if (normalizeText(input.receipt.documentHash) !== checkpointTraceHash(input.draftSourcePath)) {
@@ -7655,7 +9674,10 @@ function isCurrentCheckpointReceipt(input: {
     if (!fs.existsSync(absoluteArtifactPath) || sha256File(absoluteArtifactPath) !== artifactHash) {
       return false;
     }
-    actualRefs.push({ path: toRootRelativePath(input.root, absoluteArtifactPath), hash: artifactHash });
+    actualRefs.push({
+      path: toRootRelativePath(input.root, absoluteArtifactPath),
+      hash: artifactHash,
+    });
   }
   const expectedRefs = checkpointArtifactRefs({
     root: input.root,
@@ -7693,7 +9715,8 @@ function checkpointProgressFromReceipts(input: {
     })
   ).map((checkpoint) => checkpoint.id);
   const nextCheckpoint =
-    AUTHORING_REPAIR_CHECKPOINTS.find((checkpoint) => !completedIds.includes(checkpoint.id))?.id ?? null;
+    AUTHORING_REPAIR_CHECKPOINTS.find((checkpoint) => !completedIds.includes(checkpoint.id))?.id ??
+    null;
   const lastCompletedCheckpoint = completedIds[completedIds.length - 1] ?? null;
   const progress = {
     schemaVersion: 'semantic-checkpoint-progress/v1',
@@ -7772,8 +9795,7 @@ function resolveCheckpointResumeStartIndex(input: {
   if (normalizeText(progress.schemaVersion) !== 'semantic-checkpoint-progress/v1') return 0;
   if (normalizeText(progress.sourceDocumentHash) !== input.sourceDocumentHash) return 0;
   if (
-    normalizeText(progress.implementationConfirmationHash) !==
-    input.implementationConfirmationHash
+    normalizeText(progress.implementationConfirmationHash) !== input.implementationConfirmationHash
   ) {
     return 0;
   }
@@ -7821,10 +9843,14 @@ function runAuthoringCheckpoint(input: {
   implementationConfirmationHash: string;
   createdAt: string;
   forceRefresh?: boolean;
-}): { ok: true; receipt: Record<string, unknown> } | { ok: false; issue: PreConfirmationDrilldownIssue } {
+}):
+  | { ok: true; receipt: Record<string, unknown> }
+  | { ok: false; issue: PreConfirmationDrilldownIssue } {
   const previousCheckpoint = AUTHORING_REPAIR_CHECKPOINTS[input.checkpoint.index - 1] ?? null;
   if (previousCheckpoint) {
-    const previousReceipt = readJsonIfExists(checkpointReceiptPath(input.paths, previousCheckpoint));
+    const previousReceipt = readJsonIfExists(
+      checkpointReceiptPath(input.paths, previousCheckpoint)
+    );
     if (
       !isCurrentCheckpointReceipt({
         root: input.root,
@@ -7885,7 +9911,8 @@ function runAuthoringCheckpoint(input: {
     };
   }
   const nextCheckpoint =
-    AUTHORING_REPAIR_CHECKPOINTS[input.checkpoint.index + 1]?.id ?? 'checkpoint-persistence-summary';
+    AUTHORING_REPAIR_CHECKPOINTS[input.checkpoint.index + 1]?.id ??
+    'checkpoint-persistence-summary';
   const receipt = {
     schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
     checkpointId: input.checkpoint.id,
@@ -7914,19 +9941,27 @@ function runAuthoringCheckpoint(input: {
   return { ok: true, receipt: readJsonIfExists(existingReceiptPath) ?? receipt };
 }
 
-function runCp00SemanticKernel(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp00SemanticKernel(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[0] });
 }
 
-function runCp01MustDecompositionPacket(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp01MustDecompositionPacket(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[1] });
 }
 
-function runCp02AtomicDecompositionLoopConvergence(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp02AtomicDecompositionLoopConvergence(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[2] });
 }
 
-function runCp03PacketToSourceMaterialization(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp03PacketToSourceMaterialization(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[3] });
 }
 
@@ -7934,19 +9969,27 @@ function runCp04IdFreeze(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[4] });
 }
 
-function runCp05ImplementationConfirmationCore(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp05ImplementationConfirmationCore(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[5] });
 }
 
-function runCp06Projections(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp06Projections(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[6] });
 }
 
-function runCp07HumanReadableViews(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp07HumanReadableViews(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[7] });
 }
 
-function runCp08Reconciliation(input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>) {
+function runCp08Reconciliation(
+  input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
+) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[8] });
 }
 
@@ -8281,7 +10324,9 @@ function ensureCheckpointPersistenceForAuthoring(input: {
     evidencePath: input.paths.checkpointPersistenceEvidence,
     routeDecision: input.routeDecision,
   });
-  const completedIds = asStringArray(recordObject(evidence.checkpointPersistenceRef).completedCheckpointIds);
+  const completedIds = asStringArray(
+    recordObject(evidence.checkpointPersistenceRef).completedCheckpointIds
+  );
   emitAuthoringCheckpointTrace({
     root: input.root,
     draftSourcePath: input.draftSourcePath,
@@ -8290,7 +10335,9 @@ function ensureCheckpointPersistenceForAuthoring(input: {
     routeDecision: routeDecisionText,
     evidence,
   });
-  const missingCheckpoints = AUTHORING_REPAIR_CHECKPOINT_IDS.filter((id) => !completedIds.includes(id));
+  const missingCheckpoints = AUTHORING_REPAIR_CHECKPOINT_IDS.filter(
+    (id) => !completedIds.includes(id)
+  );
   if (missingCheckpoints.length > 0) {
     validationIssues.push(
       preConfirmationIssue(
@@ -8353,7 +10400,9 @@ function materializeCriticalAuditorGapFix(input: {
     materializedId: string
   ): Record<string, unknown> => ({
     derivedFromMustRef:
-      normalizeText(action.type === 'add_must' || action.type === 'split_must' ? materializedId : '') ||
+      normalizeText(
+        action.type === 'add_must' || action.type === 'split_must' ? materializedId : ''
+      ) ||
       asStringArray(action.mustRefs)[0] ||
       materializedId,
     projectionStatus: 'synchronized',
@@ -8459,7 +10508,9 @@ function materializeCriticalAuditorGapFix(input: {
     return createdIds;
   };
   for (const gap of asRecordArray(input.response.validatedGaps)) {
-    const repairActions = asRecordArray(gap.repairActions) as unknown as CriticalAuditorRepairAction[];
+    const repairActions = asRecordArray(
+      gap.repairActions
+    ) as unknown as CriticalAuditorRepairAction[];
     for (const action of repairActions) {
       const targetField = normalizeText(action.targetField);
       const allowedTargetFields = criticalAuditorRepairActionTargetFields(action.type);
@@ -8480,19 +10531,31 @@ function materializeCriticalAuditorGapFix(input: {
           materializedRef = appendRow(nextConfirmation, 'must', action, 'MUST');
           break;
         case 'add_neg':
-          materializedRef = appendRows(nextConfirmation, ['notDone', 'negativeRequirements'], action, 'NEG', {
-            negativeAssertionRequired: true,
-          });
+          materializedRef = appendRows(
+            nextConfirmation,
+            ['notDone', 'negativeRequirements'],
+            action,
+            'NEG',
+            {
+              negativeAssertionRequired: true,
+            }
+          );
           break;
         case 'add_out':
           {
-            const outRefs = appendRepairRows(nextConfirmation, ['mustNot', 'outOfScope'], action, 'OUT', {
-            userApprovalRequiredIfChanged: true,
-              boundaryType: 'non_goal_scope_boundary',
-              conflictResolution: 'out_of_scope_boundary_only',
-              covers: [],
-              linkedMustRefs: asStringArray(action.mustRefs),
-          });
+            const outRefs = appendRepairRows(
+              nextConfirmation,
+              ['mustNot', 'outOfScope'],
+              action,
+              'OUT',
+              {
+                userApprovalRequiredIfChanged: true,
+                boundaryType: 'non_goal_scope_boundary',
+                conflictResolution: 'out_of_scope_boundary_only',
+                covers: [],
+                linkedMustRefs: asStringArray(action.mustRefs),
+              }
+            );
             materializedRef = outRefs[0] ?? '';
           }
           break;
@@ -8501,6 +10564,15 @@ function materializeCriticalAuditorGapFix(input: {
           break;
         case 'add_trace':
           materializedRef = appendRow(nextConfirmation, 'traceRows', action, 'TRACE');
+          break;
+        case 'upsert_trace':
+          materializedRef = replaceRows(nextConfirmation, 'traceRows', action, ['id']);
+          break;
+        case 'upsert_failure_path':
+          materializedRef = replaceRows(nextConfirmation, 'failurePaths', action, ['id']);
+          break;
+        case 'upsert_edge_case':
+          materializedRef = replaceRows(nextConfirmation, 'edgeCases', action, ['id']);
           break;
         case 'add_acc':
           {
@@ -8515,7 +10587,12 @@ function materializeCriticalAuditorGapFix(input: {
           break;
         case 'add_e2e':
           {
-            const e2eRefs = appendRepairRows(nextConfirmation, ['e2eSuites', 'e2eScenarios'], action, 'E2E');
+            const e2eRefs = appendRepairRows(
+              nextConfirmation,
+              ['e2eSuites', 'e2eScenarios'],
+              action,
+              'E2E'
+            );
             materializedRef = e2eRefs[0] ?? '';
           }
           break;
@@ -8534,7 +10611,9 @@ function materializeCriticalAuditorGapFix(input: {
           break;
         }
         case 'replace_target_path':
-          materializedRef = replaceRows(nextConfirmation, 'targetModificationPaths', action, ['path']);
+          materializedRef = replaceRows(nextConfirmation, 'targetModificationPaths', action, [
+            'path',
+          ]);
           break;
         case 'replace_validation_command':
           materializedRef = replaceRows(nextConfirmation, 'requiredCommands', action, ['command']);
@@ -8564,10 +10643,13 @@ function materializeCriticalAuditorGapFix(input: {
         if (action.type === 'add_neg') repairRefs.negIds.add(materializedRef);
         if (action.type === 'add_out') repairRefs.outIds.add(materializedRef);
         if (action.type === 'add_evidence') repairRefs.evidenceIds.add(materializedRef);
-        if (action.type === 'add_trace') repairRefs.traceIds.add(materializedRef);
+        if (action.type === 'add_trace' || action.type === 'upsert_trace') {
+          repairRefs.traceIds.add(materializedRef);
+        }
         if (action.type === 'add_acc') repairRefs.acceptanceIds.add(materializedRef);
         if (action.type === 'add_e2e') repairRefs.e2eIds.add(materializedRef);
-        if (action.type === 'replace_validation_command') repairRefs.commandIds.add(materializedRef);
+        if (action.type === 'replace_validation_command')
+          repairRefs.commandIds.add(materializedRef);
       }
     }
   }
@@ -8602,7 +10684,9 @@ function materializeCriticalAuditorGapFix(input: {
     sourcePath: input.sourcePath,
     sourceText: fs.readFileSync(input.sourcePath, 'utf8'),
     packetHash: normalizeText(
-      recordObject(recordObject(nextConfirmation.preConfirmationDrilldown).mustDecompositionPacketRef).hash
+      recordObject(
+        recordObject(nextConfirmation.preConfirmationDrilldown).mustDecompositionPacketRef
+      ).hash
     ),
     forceCurrentTargetMapRebuild: true,
   });
@@ -8639,6 +10723,18 @@ function materializeCriticalAuditorGapFix(input: {
       },
     },
   });
+  if (normalizeText(input.confirmation.status) === 'user_confirmed') {
+    nextConfirmation.status = 'reconfirm_required';
+  }
+  const reconfirmationRequest = buildControlledAuthoringReconfirmationRequest({
+    previousConfirmation: input.confirmation,
+    nextConfirmation,
+    appliedActions,
+    changedTargetFields,
+  });
+  if (reconfirmationRequest) {
+    nextConfirmation.reconfirmationRequest = reconfirmationRequest;
+  }
   const repairDraftPath = path.join(input.paths.authoringDir, 'authoring-repair-draft-source.md');
   fs.writeFileSync(
     repairDraftPath,
@@ -8927,8 +11023,7 @@ function buildPreserveExistingAuthoringArtifacts(input: {
       const sourceLine = requirement.sourceLine ?? 1;
       return {
         candidateId: requirement.candidateId ?? `PRESERVE-${requirementOrdinal(index)}`,
-        sourcePath:
-          requirement.sourcePath ?? toRootRelativePath(input.root, input.sourcePath),
+        sourcePath: requirement.sourcePath ?? toRootRelativePath(input.root, input.sourcePath),
         sourceHash: sha256Text(input.sourceText),
         sourceDocumentHash: requirement.sourceDocumentHash ?? sourceDocumentHash,
         sourceSpan: requirement.sourceSpan ?? { startLine: sourceLine, endLine: sourceLine },
@@ -9089,7 +11184,9 @@ function buildMustDecompositionPacket(input: {
   packetHash: string;
   createdAt: string;
   mustRequirements: SourceMustRequirement[];
+  structuredBlocks?: StructuredSourceBlock[];
   targetAuthorityRecords?: TargetAuthorityRecord[];
+  validationAuthorityRecords?: ValidationAuthorityRecord[];
   consecutiveNoNewGapRounds?: number;
 }): Record<string, unknown> {
   const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
@@ -9097,17 +11194,92 @@ function buildMustDecompositionPacket(input: {
   const mustRefs = input.mustRequirements.map((requirement) => requirement.id);
   const mustTexts = input.mustRequirements.map((requirement) => requirement.text);
   const totalMusts = input.mustRequirements.length;
+  const sourceBusinessFailureRows = buildBusinessFailurePathRows({
+    blocks: input.structuredBlocks ?? [],
+    mustRequirements: input.mustRequirements,
+  });
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
-  const targetPathRowCount = targetAuthorityRecords.length + 2;
-  const targetSurfaces = [
-    ...targetAuthorityRecords.map((record) => record.path),
-    rel(input.paths.preRenderMustGate),
-    rel(input.paths.confirmationHtml),
-  ];
-  const targetPathIds = Array.from({ length: targetPathRowCount }, (_unused, rowIndex) =>
-    `TARGET-MOD-${requirementOrdinal(rowIndex)}`
+  const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
+  const sourceProjectionAuthority = buildSourceMustProjectionAuthority({
+    blocks: input.structuredBlocks ?? [],
+    mustRequirements: input.mustRequirements,
+    validationAuthorityRecords,
+  });
+  const sourceMappedTargetPaths = new Set(
+    [...sourceProjectionAuthority.values()]
+      .flatMap((authority) => authority.targetFiles)
+      .map((targetPath) => targetPath.replace(/\\/g, '/'))
   );
-  const commandIds = ['CMD-001'];
+  const commandIds = assignedValidationAuthorityCommandIds(validationAuthorityRecords);
+  const commandIdSet = new Set(commandIds);
+  const commandIdsForMust = (mustRef: string): string[] => {
+    const authority = sourceProjectionAuthority.get(mustRef);
+    const refs = uniqueNonEmpty([
+      ...(authority?.contractCommandRefs ?? []),
+      ...(authority?.deliveryCommandRefs ?? []),
+    ]).filter((ref) => commandIdSet.has(ref));
+    return refs;
+  };
+  const commandMustRefsForTargetPath = (targetPath: string): string[] =>
+    input.mustRequirements
+      .filter((requirement) =>
+        validationAuthorityRecords.some((record, recordIndex) => {
+          const commandTargetPaths = uniqueNonEmpty([
+            ...record.commandFileRefs,
+            ...(record.sourceTargetFiles ?? []),
+          ]).map((candidatePath) => candidatePath.replace(/\\/g, '/'));
+          return (
+            commandTargetPaths.includes(targetPath) &&
+            commandIdsForMust(requirement.id).includes(commandIds[recordIndex])
+          );
+        })
+      )
+      .map((requirement) => requirement.id);
+  const projectedTargetAuthorityRecords =
+    sourceMappedTargetPaths.size > 0
+      ? targetAuthorityRecords.filter(
+          (record) =>
+            record.explicit ||
+            record.coverageRole === 'validation_only' ||
+            sourceMappedTargetPaths.has(record.path.replace(/\\/g, '/'))
+        )
+      : targetAuthorityRecords;
+  const targetPathRows = projectedTargetAuthorityRecords.map((record, index) => {
+    const normalizedTargetPath = record.path.replace(/\\/g, '/');
+    const sourceMappedRequirementRefs = uniqueNonEmpty([
+      ...(record.sourceMustRefs ?? []),
+      ...commandMustRefsForTargetPath(normalizedTargetPath),
+      ...input.mustRequirements
+        .filter((requirement) =>
+          sourceProjectionAuthority.get(requirement.id)?.targetFiles.includes(normalizedTargetPath)
+        )
+        .map((requirement) => requirement.id),
+    ]);
+    return {
+      id: `TARGET-MOD-${requirementOrdinal(index)}`,
+      path: record.path,
+      changeType:
+        record.coverageRole === 'validation_only' || record.pathKind === 'test'
+          ? 'validation_only'
+          : 'modify',
+      coverageRole:
+        record.coverageRole === 'validation_only' || record.pathKind === 'test'
+          ? 'validation_only'
+          : 'modify',
+      requirementRefs:
+        sourceMappedRequirementRefs.length > 0
+          ? sourceMappedRequirementRefs
+          : totalMusts === 1
+            ? mustRefs
+            : [],
+    };
+  });
+  const targetPathIdsForMust = (mustRef: string): string[] => {
+    const refs = targetPathRows
+      .filter((row) => row.requirementRefs.includes(mustRef))
+      .map((row) => row.id);
+    return refs;
+  };
   const payload: Record<string, unknown> = {
     schemaVersion: 'must-decomposition-packet/v1',
     recordId: input.recordId,
@@ -9138,39 +11310,52 @@ function buildMustDecompositionPacket(input: {
       {
         id: 'CLAIM-001',
         claim: `Pre-confirmation packet is source-derived scope-quality evidence only, not implementation completion evidence, for ${mustRefs.join(', ')}.`,
-        criticDisposition: 'accepted_no_new_valid_gap',
+        criticDisposition:
+          (input.consecutiveNoNewGapRounds ?? 0) >= 3
+            ? 'accepted_no_new_valid_gap'
+            : 'pending_critical_auditor_response',
       },
     ],
     mustPackets: input.mustRequirements.map((requirement, index) => {
-      const [authorTaskId, materializeTaskId] = atomicTaskIdsForMust(index, totalMusts);
       const matrixId = mdmIdForMust(index, totalMusts);
       const ids = perMustProjectionIds(index, totalMusts);
-      const taskRows = [
-        {
-          id: authorTaskId,
-          targetFiles: [rel(input.paths.semanticKernel), rel(input.paths.mustDecompositionPacket)],
-          redProofPlan: `Gate fails without source-derived semantic kernel and synchronized packet row for ${requirement.id}.`,
-          primaryObservableBehaviors: [`${requirement.id} enters semantic kernel and packet`],
-          primaryAcceptanceOracles: [`${requirement.id} has synchronized mustPackets row`],
-          derivedFromMustRef: requirement.id,
-          materializedTo: materialized(
-            `implementationConfirmation.atomicImplementationTaskList[${authorTaskId}]`
-          ),
-        },
-        {
-          id: materializeTaskId,
-          targetFiles: [rel(input.sourcePath), rel(input.paths.confirmationHtml)],
-          redProofPlan: `Renderer blocks if packet/source reconciliation omits ${requirement.id}.`,
-          primaryObservableBehaviors: [
-            `${requirement.id} is materialized into confirmation source`,
-          ],
-          primaryAcceptanceOracles: [`${requirement.id} is visible in confirmation-render-report`],
-          derivedFromMustRef: requirement.id,
-          materializedTo: materialized(
-            `implementationConfirmation.atomicImplementationTaskList[${materializeTaskId}]`
-          ),
-        },
-      ];
+      const sourceAuthority = sourceProjectionAuthority.get(requirement.id);
+      const productTargetFiles = sourceAuthority?.targetFiles.length
+        ? sourceAuthority.targetFiles
+        : [];
+      const productTestFiles =
+        sourceAuthority?.testFiles.length > 0
+          ? sourceAuthority.testFiles
+          : productTargetFiles.filter(isExecutableTestPath);
+      const oracle = sourceAuthority?.oracle || requirement.text;
+      const atomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(requirement.text, oracle);
+      const taskIds = atomicTaskIdsForMust(index, totalMusts, atomicUnits.length);
+      const failureProjectionIds =
+        sourceBusinessFailureRows.length > 0
+          ? sourceBusinessFailureRows
+              .filter((failureRow) => failureRow.ownerMustRefs.includes(requirement.id))
+              .map((failureRow) => failureRow.id)
+          : [];
+      const taskRows = atomicUnits.map((unit, unitIndex) => ({
+        id: taskIds[unitIndex],
+        targetFiles: targetFilesForAtomicUnit(
+          unit,
+          productTargetFiles.length > 0
+            ? productTargetFiles
+            : productTestFiles.length > 0
+              ? productTestFiles
+              : []
+        ),
+        redProofPlan: `Current-attempt validation remains red until it independently proves: ${unit}`,
+        primaryObservableBehaviors: [unit],
+        primaryAcceptanceOracles: [unit],
+        atomicUnitIndex: unitIndex + 1,
+        atomicUnitCount: atomicUnits.length,
+        derivedFromMustRef: requirement.id,
+        materializedTo: materialized(
+          `implementationConfirmation.atomicImplementationTaskList[${taskIds[unitIndex]}]`
+        ),
+      }));
       return {
         mustRef: requirement.id,
         mustIntent: requirement.text,
@@ -9183,20 +11368,11 @@ function buildMustDecompositionPacket(input: {
         headingPath: requirement.headingPath,
         candidateId: requirement.candidateId,
         decompositionBasis: {
-          observableBehaviors: [
-            `${requirement.id} is preserved from source text`,
-            `${requirement.id} is split into authoring and materialization tasks`,
-            `${requirement.id} is materialized only through packet projections`,
-            `${requirement.id} is visible in the confirmation HTML`,
-          ],
-          targetSurfaces,
+          observableBehaviors: atomicUnits,
+          targetSurfaces: productTargetFiles,
         },
         atomicityDrivers: {
-          behaviorSurfaceOracleUnits: [
-            `${requirement.id} authoring artifact production`,
-            `${requirement.id} packet/source reconciliation`,
-            `${requirement.id} renderer confirmability`,
-          ],
+          behaviorSurfaceOracleUnits: atomicUnits,
           oneTaskPerIndependentBehaviorSurfaceOracle: true,
         },
         questionCoverage: {
@@ -9216,25 +11392,36 @@ function buildMustDecompositionPacket(input: {
           ],
           missingCategories: [],
           coverageVerdict: 'complete',
+          questions: [
+            `How many independently confirmable behavior-surface-oracle units does ${requirement.id} contain? ${atomicUnits.length}`,
+            `Which entry points, failure outcomes, or state transitions require separate tasks for ${requirement.id}? ${atomicUnits.join(' | ')}`,
+            `Does ${requirement.id} overlap another controlled MUST, and what distinct oracle prevents double counting? Review ${mustRefs.filter((mustRef) => mustRef !== requirement.id).join(', ')}`,
+            `Which source-authorized product targets implement ${requirement.id}? ${productTargetFiles.join(', ')}`,
+            `Which source oracle closes ${requirement.id}? ${oracle}`,
+            `Which validation commands prove ${requirement.id}? ${commandIdsForMust(requirement.id).join(', ')}`,
+          ],
         },
         atomicityCompleteness: {
           splitRule: 'one_task_per_independent_behavior_surface_oracle',
           completenessVerdict: 'complete',
-          expectedTaskCount: 2,
-          actualTaskCount: 2,
+          expectedTaskCount: atomicUnits.length,
+          actualTaskCount: taskRows.length,
         },
         authorClaims: [
           {
             id: `CLAIM-${requirement.id}`,
-            claim: `${requirement.id} is split across source-derived authoring and render-confirmability surfaces.`,
-            criticDisposition: 'accepted_no_new_valid_gap',
+            claim: `${requirement.id} is split into ${atomicUnits.length} source-oracle atomic behavior unit(s).`,
+            criticDisposition:
+              (input.consecutiveNoNewGapRounds ?? 0) >= 3
+                ? 'accepted_no_new_valid_gap'
+                : 'pending_critical_auditor_response',
           },
         ],
         mustExecutionDecompositionMatrix: [
           {
             id: matrixId,
             mustRef: requirement.id,
-            atomicTaskRefs: [authorTaskId, materializeTaskId],
+            atomicTaskRefs: taskIds,
             materializedTo: materialized(
               `implementationConfirmation.mustExecutionDecompositionMatrix[${matrixId}]`
             ),
@@ -9266,25 +11453,25 @@ function buildMustDecompositionPacket(input: {
           },
         ],
         mustFailureEdgeProjection: [
-          {
-            id: ids.failureId,
-            materializedTo: materialized(
-              `implementationConfirmation.failurePaths[${ids.failureId}]`
-            ),
-          },
+          ...failureProjectionIds.map((failureId) => ({
+            id: failureId,
+            materializedTo: materialized(`implementationConfirmation.failurePaths[${failureId}]`),
+          })),
           {
             id: ids.edgeId,
             materializedTo: materialized(`implementationConfirmation.edgeCases[${ids.edgeId}]`),
           },
         ],
-        mustTargetPathProjection: targetPathIds.map((id) => ({
+        mustTargetPathProjection: targetPathIdsForMust(requirement.id).map((id) => ({
           id,
           materializedTo: materialized(`implementationConfirmation.targetModificationPaths[${id}]`),
         })),
         mustCurrentTargetProjection: [
           {
-            id: 'CT-CANON-001',
-            materializedTo: materialized('implementationConfirmation.currentTargetMap'),
+            id: `CT-MUST-${requirementOrdinal(index)}`,
+            materializedTo: materialized(
+              `implementationConfirmation.currentTargetMap.diffRows[CT-MUST-${requirementOrdinal(index)}]`
+            ),
           },
         ],
         mustAiTddManifestProjection: [
@@ -9309,7 +11496,7 @@ function buildMustDecompositionPacket(input: {
             ),
           },
         ],
-        mustCommandProjection: commandIds.map((id) => ({
+        mustCommandProjection: commandIdsForMust(requirement.id).map((id) => ({
           id,
           materializedTo: materialized(`implementationConfirmation.requiredCommands[${id}]`),
         })),
@@ -9398,7 +11585,8 @@ function authoringCheckpointRouteDecisionForPersistence(
     return {
       ...(routeDecision ?? {}),
       decision: 'checkpoint_required_with_amendment',
-      decisionSource: normalizeText(routeDecision?.decisionSource) || 'existing_checkpoint_receipts',
+      decisionSource:
+        normalizeText(routeDecision?.decisionSource) || 'existing_checkpoint_receipts',
     };
   }
   return routeDecision;
@@ -9432,9 +11620,6 @@ function closeCriticalAuditorRepairProjectionRefs(
     return { confirmation, changed: false, changedFields: [] };
   }
   const next: Record<string, unknown> = { ...confirmation };
-  const packetHash = normalizeText(
-    recordObject(recordObject(next.preConfirmationDrilldown).mustDecompositionPacketRef).hash
-  );
   const changedFields = new Set<string>();
   const allMustIds = asRecordArray(next.must)
     .map((row) => normalizeText(row.id))
@@ -9451,6 +11636,16 @@ function closeCriticalAuditorRepairProjectionRefs(
     firstAvailableRef(refs.commandIds) ||
     normalizeText(asRecordArray(next.requiredCommands)[0]?.id) ||
     normalizeText(asRecordArray(next.requiredCommands)[0]?.commandId);
+  const failurePathIdsByNeg = new Map<string, string[]>();
+  for (const failurePath of asRecordArray(next.failurePaths)) {
+    const failurePathId = normalizeText(failurePath.id);
+    for (const negId of asStringArray(failurePath.linkedNegIds)) {
+      failurePathIdsByNeg.set(
+        negId,
+        appendUniqueStrings(failurePathIdsByNeg.get(negId), [failurePathId])
+      );
+    }
+  }
 
   const updateRows = (
     field: string,
@@ -9493,9 +11688,10 @@ function closeCriticalAuditorRepairProjectionRefs(
       ...row,
       evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
       coveredByTraceRows: appendUniqueStrings(row.coveredByTraceRows, traceIds),
-      coveredByFailurePath: appendUniqueStrings(row.coveredByFailurePath, [
-        `FAIL-${normalizeText(row.id)}`,
-      ]),
+      coveredByFailurePath: appendUniqueStrings(
+        row.coveredByFailurePath,
+        failurePathIdsByNeg.get(normalizeText(row.id)) ?? []
+      ),
       negativeAssertionRequired: row.negativeAssertionRequired ?? true,
     })
   );
@@ -9507,9 +11703,10 @@ function closeCriticalAuditorRepairProjectionRefs(
       ...row,
       evidenceRefs: appendUniqueStrings(row.evidenceRefs, evidenceIds),
       coveredByTraceRows: appendUniqueStrings(row.coveredByTraceRows, traceIds),
-      coveredByFailurePath: appendUniqueStrings(row.coveredByFailurePath, [
-        `FAIL-${normalizeText(row.id)}`,
-      ]),
+      coveredByFailurePath: appendUniqueStrings(
+        row.coveredByFailurePath,
+        failurePathIdsByNeg.get(normalizeText(row.id)) ?? []
+      ),
       negativeAssertionRequired: row.negativeAssertionRequired ?? true,
     })
   );
@@ -9596,36 +11793,6 @@ function closeCriticalAuditorRepairProjectionRefs(
   closeAcceptanceRows('e2eSuites', effectiveE2eIds);
   closeAcceptanceRows('e2eScenarios', effectiveE2eIds);
 
-  for (const negId of negIds) {
-    const failureId = `FAIL-${negId}`;
-    const existingFailure = asRecordArray(next.failurePaths).some(
-      (row) => normalizeText(row.id) === failureId
-    );
-    if (!existingFailure) {
-      next.failurePaths = [
-        ...asRecordArray(next.failurePaths),
-        {
-          id: failureId,
-          title: `Validated negative requirement ${negId} must fail closed.`,
-          trigger: `Critical Auditor repaired negative requirement ${negId} is violated.`,
-          expectedBehavior: `Fail closed and block confirmation when ${negId} is violated.`,
-          forbiddenBehavior: `Allow confirmation when ${negId} is violated.`,
-          blocksCompletionWhenViolated: true,
-          linkedNegIds: [negId],
-          linkedEvidenceIds: evidenceIds,
-          traceRows: traceIds,
-          requiredAssertions: [
-            `${negId} is covered by at least one trace row`,
-            `${negId} is covered by at least one evidence row`,
-            `${negId} is covered by an explicit failure path`,
-          ],
-          ...projectionBackRefForRepair(packetHash, negId),
-        },
-      ];
-      changedFields.add('failurePaths');
-    }
-  }
-
   if (commandId && allMustIds.length > 1) {
     updateRows(
       'requiredCommands',
@@ -9658,7 +11825,8 @@ function normalizeVisualKindForProofClosure(value: unknown): string {
     .replace(/[\s_-]+/gu, '');
   if (!normalized) return '';
   if (['happy', 'happypath', 'positive', 'success'].includes(normalized)) return 'happy';
-  if (['failure', 'failurepath', 'negative', 'negativepath', 'rollback'].includes(normalized)) return 'failure';
+  if (['failure', 'failurepath', 'negative', 'negativepath', 'rollback'].includes(normalized))
+    return 'failure';
   if (['state', 'stateview', 'statediagram', 'stateflow'].includes(normalized)) return 'state';
   if (['flow', 'flowview', 'flowchart', 'process'].includes(normalized)) return 'flow';
   if (['edge', 'edgecase', 'edgecaseview'].includes(normalized)) return 'edge';
@@ -9684,7 +11852,10 @@ function hasStaleProductCurrentTargetMap(value: unknown, sourceText: string): bo
   const sourceAuthorityText = sourceAuthorityTextWithoutInlineConfirmation(sourceText);
   const sourceHasStructuredDefaultRows =
     collectMarkdownDefaultVisibilityRowsForCurrentTargetMap(sourceAuthorityText).length > 0;
-  if (sourceHasStructuredDefaultRows && Object.keys(recordObject(currentTargetMap.sourceDefaultVisibility)).length === 0) {
+  if (
+    sourceHasStructuredDefaultRows &&
+    Object.keys(recordObject(currentTargetMap.sourceDefaultVisibility)).length === 0
+  ) {
     return true;
   }
   const sourceStateProjection = currentTargetMapSourceStateProjection(sourceAuthorityText);
@@ -9703,8 +11874,12 @@ function hasStaleProductCurrentTargetMap(value: unknown, sourceText: string): bo
     const existingTargetRows = asRecordArray(existingProjection.targetRows).map((row) =>
       normalizeText(row.text)
     );
-    const expectedCurrentRows = sourceStateProjection.currentRows.map((row) => normalizeText(row.text));
-    const expectedTargetRows = sourceStateProjection.targetRows.map((row) => normalizeText(row.text));
+    const expectedCurrentRows = sourceStateProjection.currentRows.map((row) =>
+      normalizeText(row.text)
+    );
+    const expectedTargetRows = sourceStateProjection.targetRows.map((row) =>
+      normalizeText(row.text)
+    );
     if (
       stableStringify(existingCurrentRows) !== stableStringify(expectedCurrentRows) ||
       stableStringify(existingTargetRows) !== stableStringify(expectedTargetRows)
@@ -9729,14 +11904,19 @@ function hasStaleProductCurrentTargetMap(value: unknown, sourceText: string): bo
 }
 
 function shouldRebuildExistingCurrentTargetMap(value: unknown, sourceText: string): boolean {
-  return hasLegacyGovernanceCurrentTargetMap(value) || hasStaleProductCurrentTargetMap(value, sourceText);
+  return (
+    hasLegacyGovernanceCurrentTargetMap(value) || hasStaleProductCurrentTargetMap(value, sourceText)
+  );
 }
 
 function inferredTargetModificationPathClassification(pathValue: unknown): string {
   const normalized = normalizeText(pathValue).replace(/\\/g, '/').toLowerCase();
   if (!normalized) return 'modify';
   if (isGeneratedRequirementArtifactPath(normalized)) return 'generated_output';
-  if (/(?:^|\/)(?:tests?|e2e)\//iu.test(normalized) || /\.(?:test|spec)\.[cm]?[jt]sx?$/iu.test(normalized)) {
+  if (
+    /(?:^|\/)(?:tests?|e2e)\//iu.test(normalized) ||
+    /\.(?:test|spec)\.[cm]?[jt]sx?$/iu.test(normalized)
+  ) {
     return 'validation_only';
   }
   return 'modify';
@@ -9754,7 +11934,8 @@ function normalizedTargetModificationPathClassification(row: Record<string, unkn
     .toLowerCase()
     .replace(/-/gu, '_');
   if (existing === 'validate' || existing === 'validation') return 'validation_only';
-  if (existing === 'generated' || existing === 'output' || existing === 'generated_output') return 'generated_output';
+  if (existing === 'generated' || existing === 'output' || existing === 'generated_output')
+    return 'generated_output';
   if (existing === 'runtime' || existing === 'runtime_output') return 'runtime_output';
   if (['modify', 'add', 'create', 'delete', 'remove', 'update', 'replace'].includes(existing)) {
     return 'modify';
@@ -9763,9 +11944,10 @@ function normalizedTargetModificationPathClassification(row: Record<string, unkn
   return inferredTargetModificationPathClassification(row.path);
 }
 
-function resyncTargetModificationPathClassifications(
-  confirmation: Record<string, unknown>
-): { rows: Record<string, unknown>[]; changed: boolean } {
+function resyncTargetModificationPathClassifications(confirmation: Record<string, unknown>): {
+  rows: Record<string, unknown>[];
+  changed: boolean;
+} {
   const rows = asRecordArray(confirmation.targetModificationPaths);
   let changed = false;
   const nextRows = rows.map((row) => {
@@ -9776,6 +11958,58 @@ function resyncTargetModificationPathClassifications(
     nextRow.coverageRole = classification;
     if (stableStringify(nextRow) !== before) changed = true;
     return nextRow;
+  });
+  return { rows: nextRows, changed };
+}
+
+function existingProductTargetPaths(confirmation: Record<string, unknown>): string[] {
+  return uniqueStrings(
+    asRecordArray(confirmation.targetModificationPaths)
+      .filter((row) => normalizedTargetModificationPathClassification(row) === 'modify')
+      .map((row) => normalizeText(row.path).replace(/\\/g, '/').replace(/\/+$/u, ''))
+      .filter(Boolean)
+  );
+}
+
+function resyncExistingRequiredCommandTargetFiles(confirmation: Record<string, unknown>): {
+  rows: Record<string, unknown>[];
+  changed: boolean;
+} {
+  const productTargetPaths = existingProductTargetPaths(confirmation);
+  const rows = asRecordArray(confirmation.requiredCommands);
+  let changed = false;
+  const nextRows = rows.map((row) => {
+    const existingTargetFiles = asStringArray(row.targetFiles).map((targetPath) =>
+      targetPath.replace(/\\/g, '/').replace(/\/+$/u, '')
+    );
+    const declaredTargets = uniqueStrings([
+      ...existingTargetFiles,
+      ...extractDeclaredTargetPaths(normalizeText(row.command)),
+    ]);
+    const resolvedTargetFiles = uniqueStrings(
+      declaredTargets.flatMap((declaredTarget) => {
+        const matchingProductTargets = productTargetPaths.filter(
+          (targetPath) =>
+            targetPath === declaredTarget || targetPath.startsWith(`${declaredTarget}/`)
+        );
+        if (matchingProductTargets.length > 0) return matchingProductTargets;
+        if (
+          existingTargetFiles.includes(declaredTarget) ||
+          /\.[A-Za-z0-9]+$/u.test(declaredTarget)
+        ) {
+          return [declaredTarget];
+        }
+        return [];
+      })
+    );
+    if (
+      resolvedTargetFiles.length === 0 ||
+      stableStringify(resolvedTargetFiles) === stableStringify(existingTargetFiles)
+    ) {
+      return row;
+    }
+    changed = true;
+    return { ...row, targetFiles: resolvedTargetFiles };
   });
   return { rows: nextRows, changed };
 }
@@ -9804,7 +12038,9 @@ function buildCurrentTargetMapFromExistingConfirmation(input: {
         recordObject(row.sourceSpan).startLine || recordObject(row.sourceSpan).endLine
           ? {
               startLine: Number(recordObject(row.sourceSpan).startLine ?? 1),
-              endLine: Number(recordObject(row.sourceSpan).endLine ?? recordObject(row.sourceSpan).startLine ?? 1),
+              endLine: Number(
+                recordObject(row.sourceSpan).endLine ?? recordObject(row.sourceSpan).startLine ?? 1
+              ),
             }
           : undefined,
       headingPath: asStringArray(row.headingPath),
@@ -9828,35 +12064,594 @@ function buildCurrentTargetMapFromExistingConfirmation(input: {
   });
 }
 
-function buildBusinessVisualPerMustProofRows(
-  mustIds: string[],
-  traceIds: string[],
-  evidenceIds: string[],
-  acceptanceIds: string[],
-  failurePathIds: string[],
-  edgeCaseIds: string[]
-): Record<string, unknown>[] {
-  return mustIds.map((mustId, index) => ({
-    mustRef: mustId,
-    traceRows: traceIds.length ? [traceIds[Math.min(index, traceIds.length - 1)]] : [],
-    evidenceRefs: evidenceIds.length ? [evidenceIds[Math.min(index, evidenceIds.length - 1)]] : [],
-    acceptanceRefs: acceptanceIds.length ? [...acceptanceIds] : [],
-    failurePathRefs: failurePathIds.length ? [failurePathIds[Math.min(index, failurePathIds.length - 1)]] : [],
-    edgeCaseRefs: edgeCaseIds.length ? [edgeCaseIds[Math.min(index, edgeCaseIds.length - 1)]] : [],
-    assertion: `${mustId} remains independently visible through the business visual proof chain.`,
-  }));
-}
-
 function defaultFailurePathRequiredAssertions(row: Record<string, unknown>): string[] {
   const failureId = normalizeText(row.id) || 'failure-path';
   const trigger = normalizeText(row.trigger) || 'failure trigger occurs';
-  const expected = normalizeText(row.expectedBehavior) || 'expected fail-closed behavior is enforced';
+  const expected =
+    normalizeText(row.expectedBehavior) || 'expected fail-closed behavior is enforced';
   const forbidden = normalizeText(row.forbiddenBehavior) || 'forbidden behavior is rejected';
-  return [
-    `${failureId}: ${trigger}`,
-    `${failureId}: ${expected}`,
-    `${failureId}: ${forbidden}`,
-  ];
+  return [`${failureId}: ${trigger}`, `${failureId}: ${expected}`, `${failureId}: ${forbidden}`];
+}
+
+function splitAtomicTaskIds(
+  originalId: string,
+  atomicUnits: string[],
+  usedIdOracleKeys: Map<string, string>
+): string[] {
+  const ids = [originalId];
+  for (const unit of atomicUnits.slice(1)) {
+    const oracleKey = normalizedAtomicTaskOracleText(unit);
+    const suffix = sha256Text(oracleKey)
+      .replace(/^sha256:/u, '')
+      .slice(0, 12)
+      .toUpperCase();
+    const baseCandidate = `${originalId}-A${suffix}`;
+    let candidate = baseCandidate;
+    let collisionOrdinal = 2;
+    while (usedIdOracleKeys.has(candidate) && usedIdOracleKeys.get(candidate) !== oracleKey) {
+      candidate = `${baseCandidate}-${collisionOrdinal}`;
+      collisionOrdinal += 1;
+    }
+    ids.push(candidate);
+    usedIdOracleKeys.set(candidate, oracleKey);
+  }
+  return ids;
+}
+
+function expandAtomicTaskRefs(values: unknown, replacements: Map<string, string[]>): string[] {
+  return uniqueStrings(
+    asStringArray(values).flatMap((value) => replacements.get(value) ?? [value])
+  );
+}
+
+function normalizeExpandedAtomicTaskRefs(
+  values: unknown,
+  replacements: Map<string, string[]>,
+  orderedTaskIds: string[]
+): string[] {
+  const originalRefs = asStringArray(values);
+  const referencedIds = new Set([
+    ...originalRefs,
+    ...expandAtomicTaskRefs(originalRefs, replacements),
+  ]);
+  return orderedTaskIds.filter((taskId) => referencedIds.has(taskId));
+}
+
+function expandAtomicTaskKeyedMap(
+  value: unknown,
+  replacements: Map<string, string[]>,
+  orderedTaskIds: string[] = []
+): Record<string, unknown> {
+  const source = recordObject(value);
+  const next: Record<string, unknown> = {};
+  const mergeEntry = (key: string, entry: unknown): void => {
+    const expandedEntry = Array.isArray(entry) ? expandAtomicTaskRefs(entry, replacements) : entry;
+    const existing = next[key];
+    next[key] =
+      Array.isArray(existing) && Array.isArray(expandedEntry)
+        ? uniqueStrings([...existing, ...expandedEntry])
+        : existing === undefined
+          ? expandedEntry
+          : existing;
+  };
+  for (const [key, entry] of Object.entries(source)) {
+    const replacementIds = replacements.get(key);
+    if (!replacementIds) {
+      mergeEntry(key, entry);
+      continue;
+    }
+    if (orderedTaskIds.includes(key)) {
+      mergeEntry(key, entry);
+    }
+    for (const replacementId of replacementIds) {
+      mergeEntry(replacementId, entry);
+    }
+  }
+  if (orderedTaskIds.length === 0) return next;
+  return Object.fromEntries([
+    ...orderedTaskIds
+      .filter((taskId) => next[taskId] !== undefined)
+      .map((taskId) => [taskId, next[taskId]]),
+    ...Object.entries(next).filter(([taskId]) => !orderedTaskIds.includes(taskId)),
+  ]);
+}
+
+function normalizedAtomicTaskOracleText(value: unknown): string {
+  return normalizeText(value)
+    .normalize('NFKC')
+    .toLocaleLowerCase('en-US')
+    .replace(/\s+/gu, ' ')
+    .replace(/[.!?。！？]+$/gu, '');
+}
+
+function normalizedAtomicTaskOracleKey(row: Record<string, unknown>): string {
+  return normalizedAtomicTaskOracleText(
+    asStringArray(row.primaryAcceptanceOracles)[0] ||
+      asStringArray(row.primaryObservableBehaviors)[0] ||
+      normalizeText(row.text)
+  );
+}
+
+function canonicalizeAtomicTaskRows(
+  taskRows: Record<string, unknown>[],
+  replacements: Map<string, string[]>,
+  generatedTaskIds: Set<string>
+): { taskRows: Record<string, unknown>[]; changed: boolean } {
+  const canonicalRows: Record<string, unknown>[] = [];
+  const canonicalIndexByKey = new Map<string, number>();
+  const duplicateToCanonical = new Map<string, string>();
+  let changed = false;
+  const mergeTaskRows = (
+    canonicalRow: Record<string, unknown>,
+    duplicateRow: Record<string, unknown>
+  ): Record<string, unknown> => ({
+    ...canonicalRow,
+    targetFiles: uniqueNonEmpty([
+      ...asStringArray(canonicalRow.targetFiles),
+      ...asStringArray(duplicateRow.targetFiles),
+    ]).slice(0, 6),
+    acceptanceRefs: uniqueNonEmpty([
+      ...asStringArray(canonicalRow.acceptanceRefs),
+      ...asStringArray(duplicateRow.acceptanceRefs),
+    ]),
+    traceRows: uniqueNonEmpty([
+      ...asStringArray(canonicalRow.traceRows),
+      ...asStringArray(duplicateRow.traceRows),
+    ]),
+    evidenceRefs: uniqueNonEmpty([
+      ...asStringArray(canonicalRow.evidenceRefs),
+      ...asStringArray(duplicateRow.evidenceRefs),
+    ]),
+  });
+
+  for (const row of taskRows) {
+    const taskId = normalizeText(row.id);
+    const mustRef = normalizeText(row.derivedFromMustRef || row.mustRef);
+    const oracleKey = normalizedAtomicTaskOracleKey(row);
+    if (!taskId || !mustRef || !oracleKey) {
+      canonicalRows.push(row);
+      continue;
+    }
+    const key = `${mustRef}\u0000${oracleKey}`;
+    const canonicalIndex = canonicalIndexByKey.get(key);
+    if (canonicalIndex === undefined) {
+      canonicalIndexByKey.set(key, canonicalRows.length);
+      canonicalRows.push(row);
+      continue;
+    }
+
+    const canonicalRow = canonicalRows[canonicalIndex];
+    const canonicalId = normalizeText(canonicalRow.id);
+    if (taskId === canonicalId) {
+      canonicalRows[canonicalIndex] = mergeTaskRows(canonicalRow, row);
+      changed = true;
+      continue;
+    }
+    if (generatedTaskIds.has(canonicalId) && !generatedTaskIds.has(taskId)) {
+      duplicateToCanonical.set(canonicalId, taskId);
+      canonicalRows[canonicalIndex] = mergeTaskRows(row, canonicalRow);
+    } else {
+      duplicateToCanonical.set(taskId, canonicalId);
+      canonicalRows[canonicalIndex] = mergeTaskRows(canonicalRow, row);
+    }
+    changed = true;
+  }
+
+  if (duplicateToCanonical.size > 0) {
+    const resolveCanonicalId = (taskId: string): string => {
+      const seen = new Set<string>();
+      let current = taskId;
+      while (duplicateToCanonical.has(current) && !seen.has(current)) {
+        seen.add(current);
+        current = duplicateToCanonical.get(current) ?? current;
+      }
+      return current;
+    };
+    for (const [sourceId, replacementIds] of replacements.entries()) {
+      replacements.set(
+        sourceId,
+        uniqueNonEmpty(replacementIds.map((replacementId) => resolveCanonicalId(replacementId)))
+      );
+    }
+    for (const duplicateId of duplicateToCanonical.keys()) {
+      replacements.set(duplicateId, [resolveCanonicalId(duplicateId)]);
+    }
+  }
+  if (duplicateToCanonical.size === 0 && replacements.size === 0) {
+    return { taskRows: canonicalRows, changed };
+  }
+
+  const taskCountByMust = new Map<string, number>();
+  for (const row of canonicalRows) {
+    const mustRef = normalizeText(row.derivedFromMustRef || row.mustRef);
+    if (mustRef) {
+      taskCountByMust.set(mustRef, (taskCountByMust.get(mustRef) ?? 0) + 1);
+    }
+  }
+  const nextIndexByMust = new Map<string, number>();
+  const reindexedRows = canonicalRows.map((row) => {
+    const mustRef = normalizeText(row.derivedFromMustRef || row.mustRef);
+    const oracle =
+      asStringArray(row.primaryAcceptanceOracles)[0] ||
+      asStringArray(row.primaryObservableBehaviors)[0];
+    if (!mustRef || !oracle) return row;
+    const atomicUnitIndex = (nextIndexByMust.get(mustRef) ?? 0) + 1;
+    const atomicUnitCount = taskCountByMust.get(mustRef) ?? 1;
+    nextIndexByMust.set(mustRef, atomicUnitIndex);
+    const nextRow = {
+      ...row,
+      text: `Implement and prove ${mustRef} atomic behavior ${atomicUnitIndex}: ${oracle}`,
+      redProofPlan: `Current-attempt validation remains red until it independently proves: ${oracle}`,
+      primaryObservableBehaviors: [oracle],
+      primaryAcceptanceOracles: [oracle],
+      atomicUnitIndex,
+      atomicUnitCount,
+    };
+    if (stableStringify(nextRow) !== stableStringify(row)) changed = true;
+    return nextRow;
+  });
+
+  return { taskRows: reindexedRows, changed };
+}
+
+function resyncExistingAtomicTaskDecomposition(confirmation: Record<string, unknown>): {
+  confirmation: Record<string, unknown>;
+  changed: boolean;
+} {
+  const taskRows = asRecordArray(confirmation.atomicImplementationTaskList);
+  if (taskRows.length === 0) return { confirmation, changed: false };
+  const authorityTargetsByMust = new Map<string, string[]>();
+  const modificationTargetsByMust = new Map<string, string[]>();
+  const addAuthorityTargets = (row: Record<string, unknown>, targets: string[]): void => {
+    const mustRefs = uniqueNonEmpty([
+      normalizeText(row.derivedFromMustRef || row.mustRef),
+      ...asStringArray(row.covers),
+      ...asStringArray(row.requirementRefs),
+      ...asRecordArray(row.perMustRows).map((entry) => normalizeText(entry.mustRef)),
+    ]).filter((ref) => ref.startsWith('MUST-'));
+    for (const mustRef of mustRefs) {
+      authorityTargetsByMust.set(
+        mustRef,
+        uniqueNonEmpty([...(authorityTargetsByMust.get(mustRef) ?? []), ...targets])
+      );
+    }
+  };
+  for (const row of asRecordArray(confirmation.targetModificationPaths)) {
+    addAuthorityTargets(row, [normalizeText(row.path)]);
+    if (
+      !['validation_only', 'generated_output'].includes(normalizeText(row.coverageRole)) &&
+      normalizeText(row.changeType) !== 'validation_only'
+    ) {
+      const mustRefs = uniqueNonEmpty([
+        normalizeText(row.derivedFromMustRef || row.mustRef),
+        ...asStringArray(row.requirementRefs),
+      ]).filter((ref) => ref.startsWith('MUST-'));
+      for (const mustRef of mustRefs) {
+        modificationTargetsByMust.set(
+          mustRef,
+          uniqueNonEmpty([
+            ...(modificationTargetsByMust.get(mustRef) ?? []),
+            normalizeText(row.path),
+          ])
+        );
+      }
+    }
+  }
+  for (const row of asRecordArray(confirmation.requiredCommands)) {
+    addAuthorityTargets(row, asStringArray(row.targetFiles));
+  }
+  for (const row of [
+    ...asRecordArray(confirmation.acceptanceTests),
+    ...asRecordArray(confirmation.e2eSuites),
+  ]) {
+    addAuthorityTargets(row, [normalizeText(row.file)]);
+  }
+  const mustTextByRef = new Map(
+    asRecordArray(confirmation.must)
+      .map((row) => [normalizeText(row.id), normalizeText(row.text)] as const)
+      .filter(([mustRef, text]) => mustRef && text)
+  );
+  const taskCountByMust = new Map<string, number>();
+  for (const row of taskRows) {
+    const mustRef = normalizeText(row.derivedFromMustRef || row.mustRef);
+    if (mustRef) {
+      taskCountByMust.set(mustRef, (taskCountByMust.get(mustRef) ?? 0) + 1);
+    }
+  }
+  const usedIdOracleKeys = new Map(
+    taskRows
+      .map((row) => [normalizeText(row.id), normalizedAtomicTaskOracleKey(row)] as const)
+      .filter(([taskId, oracleKey]) => taskId && oracleKey)
+  );
+  const replacements = new Map<string, string[]>();
+  const generatedTaskIds = new Set<string>();
+  let taskTargetsChanged = false;
+  const expandedTaskRows = taskRows.flatMap((row) => {
+    const originalId = normalizeText(row.id);
+    const mustRef = normalizeText(row.derivedFromMustRef || row.mustRef);
+    const primaryOracles = asStringArray(row.primaryAcceptanceOracles);
+    const primaryBehaviors = asStringArray(row.primaryObservableBehaviors);
+    const oracleSources =
+      primaryOracles.length > 0
+        ? primaryOracles
+        : primaryBehaviors.length > 0
+          ? primaryBehaviors
+          : [normalizeText(row.text)].filter(Boolean);
+    const oracleAtomicUnits = uniqueStrings(
+      oracleSources.flatMap((oracle) => fullyDecomposedAtomicBehaviorOracleUnits('', oracle))
+    );
+    const requirementAtomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(
+      '',
+      controlledMustBehaviorText(mustTextByRef.get(mustRef) ?? '')
+    );
+    let atomicUnits =
+      taskCountByMust.get(mustRef) === 1 && requirementAtomicUnits.length > oracleAtomicUnits.length
+        ? requirementAtomicUnits
+        : oracleAtomicUnits;
+    if (!originalId || !mustRef || atomicUnits.length === 0) return [row];
+    const originalOracleKey = normalizedAtomicTaskOracleText(
+      primaryOracles[0] || primaryBehaviors[0] || normalizeText(row.text)
+    );
+    const originalOracleUnitIndex = atomicUnits.findIndex(
+      (unit) => normalizedAtomicTaskOracleText(unit) === originalOracleKey
+    );
+    if (originalOracleUnitIndex > 0) {
+      atomicUnits = [
+        atomicUnits[originalOracleUnitIndex],
+        ...atomicUnits.filter((_, index) => index !== originalOracleUnitIndex),
+      ];
+    }
+    const sourceTargets = asStringArray(row.targetFiles);
+    const authorityTargets = authorityTargetsByMust.get(mustRef) ?? [];
+    const authorityTargetSet = new Set(
+      authorityTargets.map((target) => target.replace(/\\/g, '/'))
+    );
+    const authorityScopedSourceTargets = sourceTargets.filter((target) =>
+      authorityTargetSet.has(target.replace(/\\/g, '/'))
+    );
+    const fallbackTargets =
+      authorityScopedSourceTargets.length > 0
+        ? authorityScopedSourceTargets
+        : sourceTargets.length > 0
+          ? sourceTargets
+          : authorityTargets;
+    const targetCandidates = uniqueNonEmpty([...sourceTargets, ...authorityTargets]);
+    if (atomicUnits.length === 1) {
+      const targetFiles = targetFilesForAtomicUnit(
+        atomicUnits[0],
+        targetCandidates,
+        fallbackTargets
+      );
+      if (stableStringify(targetFiles) === stableStringify(sourceTargets)) return [row];
+      taskTargetsChanged = true;
+      return [{ ...row, targetFiles }];
+    }
+    const taskIds = splitAtomicTaskIds(originalId, atomicUnits, usedIdOracleKeys);
+    for (const generatedTaskId of taskIds.slice(1)) {
+      generatedTaskIds.add(generatedTaskId);
+    }
+    replacements.set(originalId, taskIds);
+    return atomicUnits.map((unit, index) => ({
+      ...row,
+      id: taskIds[index],
+      text: `Implement and prove ${mustRef} atomic behavior ${index + 1}: ${unit}`,
+      targetFiles: targetFilesForAtomicUnit(unit, targetCandidates, fallbackTargets),
+      redProofPlan: `Current-attempt validation remains red until it independently proves: ${unit}`,
+      primaryObservableBehaviors: [unit],
+      primaryAcceptanceOracles: [unit],
+      atomicUnitIndex: index + 1,
+      atomicUnitCount: atomicUnits.length,
+    }));
+  });
+  const canonicalized = canonicalizeAtomicTaskRows(
+    expandedTaskRows,
+    replacements,
+    generatedTaskIds
+  );
+  const authorityCoverage = ensureAtomicTaskModificationAuthorityCoverage(
+    canonicalized.taskRows,
+    modificationTargetsByMust
+  );
+  if (authorityCoverage.changed) {
+    taskTargetsChanged = true;
+  }
+  const nextTaskRows = authorityCoverage.taskRows;
+  const orderedTaskIds = nextTaskRows.map((row) => normalizeText(row.id)).filter(Boolean);
+  const taskRowsById = new Map(
+    nextTaskRows
+      .map((row) => [normalizeText(row.id), row] as const)
+      .filter(([taskId]) => Boolean(taskId))
+  );
+  const orderedTaskIdsByMust = new Map<string, string[]>();
+  for (const row of nextTaskRows) {
+    const taskId = normalizeText(row.id);
+    const mustRef = normalizeText(row.derivedFromMustRef || row.mustRef);
+    if (!taskId || !mustRef) continue;
+    orderedTaskIdsByMust.set(mustRef, [...(orderedTaskIdsByMust.get(mustRef) ?? []), taskId]);
+  }
+  if (replacements.size === 0 && !taskTargetsChanged && !canonicalized.changed) {
+    return { confirmation, changed: false };
+  }
+
+  const nextConfirmation: Record<string, unknown> = {
+    ...confirmation,
+    atomicImplementationTaskList: nextTaskRows,
+  };
+  if (replacements.size === 0) {
+    const changed = stableStringify(nextConfirmation) !== stableStringify(confirmation);
+    return { confirmation: changed ? nextConfirmation : confirmation, changed };
+  }
+  for (const field of [
+    'mustExecutionDecompositionMatrix',
+    'traceRows',
+    'acceptanceTests',
+    'e2eSuites',
+    'evidence',
+  ]) {
+    nextConfirmation[field] = asRecordArray(confirmation[field]).map((row) => {
+      const nextRow = { ...row };
+      const rowId = normalizeText(row.id);
+      const rowMustRef = normalizeText(row.mustRef || row.derivedFromMustRef);
+      const directlyLinkedTaskIds =
+        field === 'mustExecutionDecompositionMatrix'
+          ? (orderedTaskIdsByMust.get(rowMustRef) ?? [])
+          : orderedTaskIds.filter((taskId) => {
+              const taskRow = taskRowsById.get(taskId);
+              if (!taskRow || !rowId) return false;
+              if (field === 'traceRows') return asStringArray(taskRow.traceRows).includes(rowId);
+              if (field === 'evidence') return asStringArray(taskRow.evidenceRefs).includes(rowId);
+              return asStringArray(taskRow.acceptanceRefs).includes(rowId);
+            });
+      for (const refField of ['taskRefs', 'atomicTaskRefs']) {
+        if (Array.isArray(row[refField])) {
+          const normalizedRefs = normalizeExpandedAtomicTaskRefs(
+            row[refField],
+            replacements,
+            orderedTaskIds
+          );
+          const includedRefs = new Set([...normalizedRefs, ...directlyLinkedTaskIds]);
+          nextRow[refField] = orderedTaskIds.filter((taskId) => includedRefs.has(taskId));
+        }
+      }
+      return nextRow;
+    });
+  }
+  const mustToAtomicTaskMap = recordObject(confirmation.mustToAtomicTaskMap);
+  if (Object.keys(mustToAtomicTaskMap).length > 0) {
+    nextConfirmation.mustToAtomicTaskMap = Object.fromEntries(
+      Object.entries(mustToAtomicTaskMap).map(([mustRef, refs]) => [
+        mustRef,
+        orderedTaskIdsByMust.get(mustRef) ??
+          normalizeExpandedAtomicTaskRefs(refs, replacements, orderedTaskIds),
+      ])
+    );
+  }
+  const completeAtomicTaskKeyedMap = (
+    value: unknown,
+    directRefField?: 'traceRows' | 'acceptanceRefs' | 'evidenceRefs'
+  ): Record<string, unknown> => {
+    const expanded = expandAtomicTaskKeyedMap(value, replacements, orderedTaskIds);
+    const refsByMust = new Map<string, string[]>();
+    for (const [taskId, entry] of Object.entries(expanded)) {
+      const taskRow = taskRowsById.get(taskId);
+      const mustRef = normalizeText(taskRow?.derivedFromMustRef || taskRow?.mustRef);
+      if (!mustRef || !Array.isArray(entry)) continue;
+      refsByMust.set(mustRef, uniqueNonEmpty([...(refsByMust.get(mustRef) ?? []), ...entry]));
+    }
+    return Object.fromEntries(
+      orderedTaskIds.flatMap((taskId) => {
+        const taskRow = taskRowsById.get(taskId);
+        if (!taskRow) return [];
+        const mustRef = normalizeText(taskRow.derivedFromMustRef || taskRow.mustRef);
+        const directRefs = directRefField ? asStringArray(taskRow[directRefField]) : [];
+        const taskSpecificRefs = uniqueNonEmpty([
+          ...asStringArray(expanded[taskId]),
+          ...directRefs,
+        ]);
+        const refs =
+          taskSpecificRefs.length > 0 ? taskSpecificRefs : (refsByMust.get(mustRef) ?? []);
+        return refs.length > 0 ? [[taskId, refs] as const] : [];
+      })
+    );
+  };
+  const keyedMapDirectRefFields: Record<
+    string,
+    'traceRows' | 'acceptanceRefs' | 'evidenceRefs' | undefined
+  > = {
+    atomicTaskToTraceMap: 'traceRows',
+    atomicTaskToAcceptanceMap: 'acceptanceRefs',
+    atomicTaskToEvidenceMap: 'evidenceRefs',
+    atomicTaskToTargetPathMap: undefined,
+    atomicTaskToCommandMap: undefined,
+  };
+  for (const field of [
+    'atomicTaskToTraceMap',
+    'atomicTaskToAcceptanceMap',
+    'atomicTaskToEvidenceMap',
+    'atomicTaskToTargetPathMap',
+    'atomicTaskToCommandMap',
+  ]) {
+    if (Object.keys(recordObject(confirmation[field])).length > 0) {
+      nextConfirmation[field] = completeAtomicTaskKeyedMap(
+        confirmation[field],
+        keyedMapDirectRefFields[field]
+      );
+    }
+  }
+  const manifest = recordObject(confirmation.aiTddContractExecutionManifestProjection);
+  const lineage = recordObject(manifest.atomicImplementationTaskLineage);
+  if (Object.keys(lineage).length > 0) {
+    const nextLineage: Record<string, unknown> = { ...lineage };
+    const lineageMustMap = recordObject(lineage.mustToAtomicTaskMap);
+    if (Object.keys(lineageMustMap).length > 0) {
+      nextLineage.mustToAtomicTaskMap = Object.fromEntries(
+        Object.entries(lineageMustMap).map(([mustRef, refs]) => [
+          mustRef,
+          orderedTaskIdsByMust.get(mustRef) ??
+            normalizeExpandedAtomicTaskRefs(refs, replacements, orderedTaskIds),
+        ])
+      );
+    }
+    for (const field of [
+      'atomicTaskToTraceMap',
+      'atomicTaskToAcceptanceMap',
+      'atomicTaskToEvidenceMap',
+      'atomicTaskToTargetPathMap',
+      'atomicTaskToCommandMap',
+    ]) {
+      if (Object.keys(recordObject(lineage[field])).length > 0) {
+        nextLineage[field] = completeAtomicTaskKeyedMap(
+          lineage[field],
+          keyedMapDirectRefFields[field]
+        );
+      }
+    }
+    nextConfirmation.aiTddContractExecutionManifestProjection = {
+      ...manifest,
+      atomicImplementationTaskLineage: nextLineage,
+    };
+  }
+  const changed = stableStringify(nextConfirmation) !== stableStringify(confirmation);
+  return { confirmation: changed ? nextConfirmation : confirmation, changed };
+}
+
+function semanticOwnerMustRefsForFailure(
+  row: Record<string, unknown>,
+  mustRows: Record<string, unknown>[]
+): string[] {
+  const failureRow: BusinessFailurePathRow = {
+    id: normalizeText(row.id),
+    title: normalizeText(row.title),
+    trigger: normalizeText(row.trigger),
+    expectedBehavior: normalizeText(row.expectedBehavior),
+    linkedNegIds: asStringArray(row.linkedNegIds),
+    sourceAcceptanceRefs: asStringArray(row.acceptanceRefs),
+    sourceTraceRefs: asStringArray(row.traceRows),
+    sourceE2eRefs: [],
+    ownerMustRefs: [],
+    sourcePath: '',
+    sourceSpan: { startLine: 0, endLine: 0 },
+    sourceDocumentHash: '',
+    headingPath: [],
+  };
+  const ranked = mustRows
+    .map((mustRow) => {
+      const requirement: SourceMustRequirement = {
+        id: normalizeText(mustRow.id),
+        text: normalizeText(mustRow.text),
+        source: 'inline_implementation_confirmation',
+        sourceLine: null,
+      };
+      return {
+        mustRef: requirement.id,
+        score: businessFailureSemanticScore(requirement, failureRow),
+      };
+    })
+    .filter((entry) => entry.mustRef)
+    .sort((left, right) => right.score - left.score || left.mustRef.localeCompare(right.mustRef));
+  return ranked[0] && ranked[0].score > 0 && ranked[0].score > (ranked[1]?.score ?? -1)
+    ? [ranked[0].mustRef]
+    : [];
 }
 
 function resyncExistingBusinessVisualProofClosure(
@@ -9898,18 +12693,53 @@ function resyncExistingBusinessVisualProofClosure(
     return { confirmation, changed: false, changedViewIds: [] };
   }
 
-  const nextConfirmation: Record<string, unknown> = { ...confirmation };
+  let nextConfirmation: Record<string, unknown> = { ...confirmation };
   const changedViewIds = new Set<string>();
   let changed = false;
-  const targetPathClassificationResync = resyncTargetModificationPathClassifications(
-    nextConfirmation
-  );
+  const atomicTaskResync = resyncExistingAtomicTaskDecomposition(nextConfirmation);
+  if (atomicTaskResync.changed) {
+    nextConfirmation = atomicTaskResync.confirmation;
+    changed = true;
+    changedViewIds.add('atomicImplementationTaskList');
+    changedViewIds.add('mustExecutionDecompositionMatrix');
+    changedViewIds.add('traceRows');
+    changedViewIds.add('aiTddContractExecutionManifestProjection');
+  }
+  const preConfirmationDrilldown = recordObject(nextConfirmation.preConfirmationDrilldown);
+  const criticalAuditor = recordObject(preConfirmationDrilldown.criticalAuditor);
+  if (
+    Object.keys(criticalAuditor).length > 0 &&
+    (Number(criticalAuditor.consecutiveNoNewGapRounds ?? 0) !== 0 ||
+      criticalAuditor.latestReceiptHash !== null ||
+      normalizeText(criticalAuditor.convergenceVerdict) !== 'audit_not_run')
+  ) {
+    nextConfirmation.preConfirmationDrilldown = {
+      ...preConfirmationDrilldown,
+      criticalAuditor: {
+        ...criticalAuditor,
+        consecutiveNoNewGapRounds: 0,
+        latestReceiptHash: null,
+        convergenceVerdict: 'audit_not_run',
+      },
+    };
+    changed = true;
+    changedViewIds.add('preConfirmationDrilldown');
+  }
+  const targetPathClassificationResync =
+    resyncTargetModificationPathClassifications(nextConfirmation);
   let shouldForceCurrentTargetMapRebuild = context?.forceCurrentTargetMapRebuild === true;
   if (targetPathClassificationResync.changed) {
     nextConfirmation.targetModificationPaths = targetPathClassificationResync.rows;
     changed = true;
     shouldForceCurrentTargetMapRebuild = true;
     changedViewIds.add('targetModificationPaths');
+  }
+  const requiredCommandTargetResync = resyncExistingRequiredCommandTargetFiles(nextConfirmation);
+  if (requiredCommandTargetResync.changed) {
+    nextConfirmation.requiredCommands = requiredCommandTargetResync.rows;
+    changed = true;
+    shouldForceCurrentTargetMapRebuild = true;
+    changedViewIds.add('requiredCommands');
   }
   const nextFailurePaths = asRecordArray(confirmation.failurePaths).map((row) => {
     if (asStringArray(row.requiredAssertions).length > 0) return row;
@@ -9929,14 +12759,312 @@ function resyncExistingBusinessVisualProofClosure(
     flowViewRefs: new Set<string>(),
     edgeCaseViewRefs: new Set<string>(),
   };
-  const perMustRows = buildBusinessVisualPerMustProofRows(
-    mustIds,
-    traceIds,
-    evidenceIds,
-    acceptanceIds,
-    failurePathIds,
-    edgeCaseIds
+  const businessViewIdsByTraceField: Record<string, Set<string>> = {
+    sequenceViewRefs: new Set<string>(),
+    flowViewRefs: new Set<string>(),
+    edgeCaseViewRefs: new Set<string>(),
+  };
+  const mustRowsById = new Map(
+    asRecordArray(confirmation.must)
+      .map((row) => [normalizeText(row.id), row] as const)
+      .filter(([id]) => Boolean(id))
   );
+  const notDoneRowsById = new Map(
+    asRecordArray(confirmation.notDone)
+      .map((row) => [normalizeText(row.id), row] as const)
+      .filter(([id]) => Boolean(id))
+  );
+  const acceptanceRows = [
+    ...asRecordArray(nextConfirmation.acceptanceTests),
+    ...asRecordArray(nextConfirmation.e2eSuites),
+  ];
+  let failurePathRows = asRecordArray(nextConfirmation.failurePaths);
+  const edgeCaseRows = asRecordArray(nextConfirmation.edgeCases);
+  const knownMustIds = new Set(mustIds);
+  const knownNegIds = new Set(notDoneRowsById.keys());
+  const knownRequirementIds = new Set([...mustIds, ...notDoneRowsById.keys()]);
+
+  const currentTraceRows = asRecordArray(nextConfirmation.traceRows);
+  const currentAcceptanceRows = [
+    ...asRecordArray(nextConfirmation.acceptanceTests),
+    ...asRecordArray(nextConfirmation.e2eSuites),
+  ];
+  const currentMustRows = asRecordArray(nextConfirmation.must);
+  const narrowedFailureRows = failurePathRows.map((row) => {
+    const currentOwners = uniqueStrings([
+      ...asStringArray(row.ownerMustRefs),
+      normalizeText(row.derivedFromMustRef),
+    ]).filter((ref) => knownMustIds.has(ref));
+    if (currentOwners.length <= 1) return row;
+    const ownerMustRefs = semanticOwnerMustRefsForFailure(row, currentMustRows);
+    const acceptanceTraceRefs = currentAcceptanceRows
+      .filter((acceptanceRow) =>
+        asStringArray(row.acceptanceRefs).includes(normalizeText(acceptanceRow.id))
+      )
+      .flatMap((acceptanceRow) => asStringArray(acceptanceRow.traceRows));
+    const linkedRequirementRefs = uniqueStrings([
+      ...asStringArray(row.linkedNegIds),
+      ...ownerMustRefs,
+    ]);
+    const requirementTraceRows = currentTraceRows.filter((traceRow) =>
+      asStringArray(traceRow.covers).some((ref) => linkedRequirementRefs.includes(ref))
+    );
+    const traceRowsForFailure = uniqueStrings([
+      ...acceptanceTraceRefs,
+      ...requirementTraceRows.map((traceRow) => normalizeText(traceRow.id)),
+    ]);
+    const linkedEvidenceIds = uniqueStrings(
+      requirementTraceRows.flatMap((traceRow) => asStringArray(traceRow.evidenceRefs))
+    );
+    const nextRow: Record<string, unknown> = {
+      ...row,
+      ownerMustRefs,
+      traceRows: traceRowsForFailure,
+      linkedEvidenceIds,
+    };
+    if (ownerMustRefs.length === 1) {
+      nextRow.derivedFromMustRef = ownerMustRefs[0];
+    } else {
+      delete nextRow.derivedFromMustRef;
+    }
+    changed = true;
+    changedViewIds.add(normalizeText(row.id) || 'failurePaths');
+    return nextRow;
+  });
+  if (stableStringify(narrowedFailureRows) !== stableStringify(failurePathRows)) {
+    nextConfirmation.failurePaths = narrowedFailureRows;
+    failurePathRows = narrowedFailureRows;
+  }
+
+  const proofClosureForRequirements = (requirementRefs: string[]) => {
+    const requirementSet = new Set(
+      uniqueStrings(requirementRefs).filter((ref) => knownRequirementIds.has(ref))
+    );
+    const relevantTraceRows = traceRows.filter((traceRow) =>
+      asStringArray(traceRow.covers).some((ref) => requirementSet.has(ref))
+    );
+    const relevantTraceIds = relevantTraceRows
+      .map((traceRow) => normalizeText(traceRow.id))
+      .filter(Boolean);
+    const relevantTraceIdSet = new Set(relevantTraceIds);
+    const relevantEvidenceIds = uniqueStrings([
+      ...relevantTraceRows.flatMap((traceRow) => asStringArray(traceRow.evidenceRefs)),
+      ...[...requirementSet].flatMap((requirementRef) => [
+        ...asStringArray(mustRowsById.get(requirementRef)?.evidenceRefs),
+        ...asStringArray(notDoneRowsById.get(requirementRef)?.evidenceRefs),
+      ]),
+    ]).filter((ref) => evidenceIds.includes(ref));
+    const relevantAcceptanceIds = uniqueStrings([
+      ...relevantTraceRows.flatMap((traceRow) => asStringArray(traceRow.acceptanceRefs)),
+      ...acceptanceRows
+        .filter((acceptanceRow) =>
+          asStringArray(acceptanceRow.covers).some((ref) => requirementSet.has(ref))
+        )
+        .map((acceptanceRow) => normalizeText(acceptanceRow.id)),
+    ]).filter((ref) => acceptanceIds.includes(ref));
+    const relevantFailurePathIds = failurePathRows
+      .filter(
+        (failurePath) =>
+          requirementSet.has(normalizeText(failurePath.derivedFromMustRef)) ||
+          asStringArray(failurePath.ownerMustRefs).some((ref) => requirementSet.has(ref)) ||
+          asStringArray(failurePath.linkedNegIds).some((ref) => requirementSet.has(ref)) ||
+          asStringArray(failurePath.traceRows).some((ref) => relevantTraceIdSet.has(ref))
+      )
+      .map((failurePath) => normalizeText(failurePath.id))
+      .filter((ref) => failurePathIds.includes(ref));
+    const relevantFailurePathIdSet = new Set(relevantFailurePathIds);
+    const relevantEdgeCaseIds = edgeCaseRows
+      .filter(
+        (edgeCase) =>
+          requirementSet.has(normalizeText(edgeCase.derivedFromMustRef)) ||
+          asStringArray(edgeCase.ownerMustRefs).some((ref) => requirementSet.has(ref)) ||
+          asStringArray(edgeCase.linkedNegIds).some((ref) => requirementSet.has(ref)) ||
+          asStringArray(edgeCase.traceRows).some((ref) => relevantTraceIdSet.has(ref)) ||
+          asStringArray(edgeCase.linkedFailurePathIds).some((ref) =>
+            relevantFailurePathIdSet.has(ref)
+          )
+      )
+      .map((edgeCase) => normalizeText(edgeCase.id))
+      .filter((ref) => edgeCaseIds.includes(ref));
+    return {
+      requirementRefs: [...requirementSet],
+      traceRows: relevantTraceIds,
+      evidenceRefs: relevantEvidenceIds,
+      acceptanceRefs: relevantAcceptanceIds,
+      failurePathRefs: relevantFailurePathIds,
+      edgeCaseRefs: relevantEdgeCaseIds,
+    };
+  };
+
+  const mustRefsByNegId = new Map<string, string[]>();
+  for (const failurePath of failurePathRows) {
+    const ownerMustRefs = uniqueStrings([
+      ...asStringArray(failurePath.ownerMustRefs),
+      normalizeText(failurePath.derivedFromMustRef),
+    ]).filter((ref) => knownMustIds.has(ref));
+    if (ownerMustRefs.length === 0) continue;
+    for (const negId of asStringArray(failurePath.linkedNegIds)) {
+      if (!knownNegIds.has(negId)) continue;
+      mustRefsByNegId.set(
+        negId,
+        uniqueStrings([...(mustRefsByNegId.get(negId) ?? []), ...ownerMustRefs])
+      );
+    }
+  }
+  const mustRefsForRequirementRefs = (refs: string[]): string[] =>
+    uniqueStrings(
+      refs.flatMap((ref) => {
+        if (knownMustIds.has(ref)) return [ref];
+        return mustRefsByNegId.get(ref) ?? [];
+      })
+    );
+  const traceMustRefsById = new Map(
+    traceRows
+      .map(
+        (row) =>
+          [normalizeText(row.id), mustRefsForRequirementRefs(asStringArray(row.covers))] as const
+      )
+      .filter(([traceId]) => Boolean(traceId))
+  );
+  const projectionMustRefs = (row: Record<string, unknown>): string[] => {
+    const directRefs = mustRefsForRequirementRefs(
+      uniqueStrings([
+        ...asStringArray(row.ownerMustRefs),
+        ...asStringArray(row.requirementRefs),
+        ...asStringArray(row.mustRefs),
+        ...asStringArray(row.covers),
+        ...asStringArray(row.linkedRequirements),
+        ...asRecordArray(row.perMustRows).map((entry) => normalizeText(entry.mustRef)),
+      ])
+    );
+    const traceRefs = uniqueStrings([
+      ...asStringArray(row.traceRows),
+      ...asStringArray(row.traceRefs),
+    ]);
+    return uniqueStrings([
+      ...directRefs,
+      ...traceRefs.flatMap((traceRef) => traceMustRefsById.get(traceRef) ?? []),
+    ]);
+  };
+  for (const field of ['acceptanceTests', 'acceptanceCriteria', 'e2eSuites', 'e2eScenarios']) {
+    const rows = asRecordArray(nextConfirmation[field]);
+    if (rows.length === 0) continue;
+    let fieldChanged = false;
+    const nextRows = rows.map((row) => {
+      const closure = proofClosureForRequirements(projectionMustRefs(row));
+      const nextRow = {
+        ...row,
+        failurePathRefs: closure.failurePathRefs,
+        edgeCaseRefs: closure.edgeCaseRefs,
+      };
+      if (stableStringify(nextRow) !== stableStringify(row)) fieldChanged = true;
+      return nextRow;
+    });
+    if (fieldChanged) {
+      nextConfirmation[field] = nextRows;
+      changed = true;
+      changedViewIds.add(field);
+    }
+  }
+  const commandMustRefsByTargetPath = new Map<string, string[]>();
+  for (const command of asRecordArray(nextConfirmation.requiredCommands)) {
+    const commandMustRefs = projectionMustRefs(command);
+    if (commandMustRefs.length === 0) continue;
+    for (const targetFile of asStringArray(command.targetFiles)) {
+      const normalizedTargetFile = normalizeText(targetFile).replace(/\\/g, '/');
+      if (!normalizedTargetFile) continue;
+      commandMustRefsByTargetPath.set(
+        normalizedTargetFile,
+        uniqueStrings([
+          ...(commandMustRefsByTargetPath.get(normalizedTargetFile) ?? []),
+          ...commandMustRefs,
+        ])
+      );
+    }
+  }
+  const resolveExistingProjectionMustRef = (row: Record<string, unknown>): string => {
+    const directOrTraceRef = projectionMustRefs(row)[0];
+    if (directOrTraceRef) return directOrTraceRef;
+    const rowPath = normalizeText(row.path).replace(/\\/g, '/');
+    return rowPath ? (commandMustRefsByTargetPath.get(rowPath)?.[0] ?? '') : '';
+  };
+  for (const field of [
+    'atomicImplementationTaskList',
+    'mustExecutionDecompositionMatrix',
+    'evidence',
+    'traceRows',
+    'acceptanceTests',
+    'e2eSuites',
+    'failurePaths',
+    'edgeCases',
+    'targetModificationPaths',
+    'artifactAutomationPlan',
+    'requiredCommands',
+  ]) {
+    const rows = asRecordArray(nextConfirmation[field]);
+    if (rows.length === 0) continue;
+    let fieldChanged = false;
+    const nextRows = rows.map((row) => {
+      const declaredRequirementRefs = uniqueStrings([
+        ...repairProjectionDeclaredRequirementRefs(row),
+        ...(field === 'failurePaths' ? asStringArray(row.linkedNegIds) : []),
+      ]);
+      const declaredMustRefs = declaredRequirementRefs.filter((ref) => knownMustIds.has(ref));
+      const declaredNegRefs = declaredRequirementRefs.filter((ref) => knownNegIds.has(ref));
+      if (declaredMustRefs.length === 0 && declaredNegRefs.length > 0) {
+        const ownerMustRefs = uniqueStrings(
+          declaredNegRefs.flatMap((negRef) => mustRefsByNegId.get(negRef) ?? [])
+        );
+        const nextRow = { ...row };
+        let rowChanged = false;
+        if (
+          declaredNegRefs.length === 1 &&
+          normalizeText(row.derivedFromRequirementRef) !== declaredNegRefs[0]
+        ) {
+          nextRow.derivedFromRequirementRef = declaredNegRefs[0];
+          rowChanged = true;
+        }
+        if (ownerMustRefs.length === 1) {
+          if (normalizeText(row.derivedFromMustRef) !== ownerMustRefs[0]) {
+            nextRow.derivedFromMustRef = ownerMustRefs[0];
+            rowChanged = true;
+          }
+        } else {
+          if (row.derivedFromMustRef !== undefined) {
+            delete nextRow.derivedFromMustRef;
+            rowChanged = true;
+          }
+        }
+        if (!rowChanged) return row;
+        fieldChanged = true;
+        return nextRow;
+      }
+      if (declaredRequirementRefs.length > 0 && declaredMustRefs.length === 0) {
+        return row;
+      }
+      if (
+        field === 'failurePaths' &&
+        asStringArray(row.ownerMustRefs).length === 0 &&
+        !knownMustIds.has(normalizeText(row.derivedFromMustRef))
+      ) {
+        return row;
+      }
+      if (knownMustIds.has(normalizeText(row.derivedFromMustRef))) return row;
+      const derivedFromMustRef = resolveExistingProjectionMustRef(row);
+      if (!derivedFromMustRef) return row;
+      fieldChanged = true;
+      return {
+        ...row,
+        derivedFromMustRef,
+        projectionStatus: 'synchronized',
+      };
+    });
+    if (fieldChanged) {
+      nextConfirmation[field] = nextRows;
+      changed = true;
+      changedViewIds.add(field);
+    }
+  }
 
   const syncViewRows = (field: string, traceRefField: string): void => {
     const rows = asRecordArray(confirmation[field]);
@@ -9948,29 +13076,71 @@ function resyncExistingBusinessVisualProofClosure(
       if (!viewId || scope !== 'business' || !visualKind) return row;
       const nextRow: Record<string, unknown> = { ...row };
       const before = stableStringify(nextRow);
-      nextRow.traceRows = appendUniqueStrings(nextRow.traceRows ?? nextRow.traceRefs, traceIds);
-      nextRow.evidenceRefs = appendUniqueStrings(nextRow.evidenceRefs, evidenceIds);
-      nextRow.acceptanceRefs = appendUniqueStrings(nextRow.acceptanceRefs, acceptanceIds);
-      const existingPerMustRows = asRecordArray(nextRow.perMustRows);
-      const existingMustRefs = new Set(
-        existingPerMustRows.map((entry) => normalizeText(entry.mustRef)).filter(Boolean)
+      const requirementRefs = uniqueStrings([
+        ...asStringArray(nextRow.covers),
+        ...asRecordArray(nextRow.perMustRows).map((entry) => normalizeText(entry.mustRef)),
+      ]);
+      const closure = proofClosureForRequirements(requirementRefs);
+      nextRow.traceRows = closure.traceRows;
+      nextRow.evidenceRefs = closure.evidenceRefs;
+      nextRow.acceptanceRefs = closure.acceptanceRefs;
+      const businessEdgePattern =
+        /^\s*(?:[A-Za-z0-9_()[\]\s-]+(?:->>|-->>|->|-->|-\)|-\]|\)|\])|[A-Za-z0-9_()[\]\s-]+--[A-Za-z0-9_()[\]\s-]+:|[A-Za-z0-9_()[\]\s-]+-->|[A-Za-z0-9_()[\]\s-]+:)\s*(.+)$/u;
+      const requirementIdPattern = /\b(?:MUST|NEG|OUT)-[A-Za-z0-9_.:-]+\b/u;
+      const mermaidRequirementRefs = closure.requirementRefs.filter((ref) =>
+        knownRequirementIds.has(ref)
       );
-      const missingPerMustRows = perMustRows.filter((entry) => !existingMustRefs.has(entry.mustRef));
-      nextRow.perMustRows =
-        existingPerMustRows.length > 0
-          ? [...existingPerMustRows, ...missingPerMustRows]
-          : perMustRows;
+      if (normalizeText(nextRow.mermaid) && mermaidRequirementRefs.length > 0) {
+        const requirementSuffix = mermaidRequirementRefs.map((ref) => `[${ref}]`).join('');
+        nextRow.mermaid = String(nextRow.mermaid)
+          .split(/\r?\n/u)
+          .map((line) => {
+            const trimmed = line.trim();
+            if (!businessEdgePattern.test(trimmed) || requirementIdPattern.test(trimmed)) {
+              return line;
+            }
+            return `${line} ${requirementSuffix}`;
+          })
+          .join('\n');
+      }
+      const existingPerMustRows = asRecordArray(nextRow.perMustRows);
+      const existingPerMustRowsById = new Map(
+        existingPerMustRows
+          .map((entry) => [normalizeText(entry.mustRef), entry] as const)
+          .filter(([mustRef]) => Boolean(mustRef))
+      );
+      nextRow.perMustRows = closure.requirementRefs
+        .filter((requirementRef) => knownMustIds.has(requirementRef))
+        .map((mustRef) => {
+          const mustClosure = proofClosureForRequirements([mustRef]);
+          const existing = existingPerMustRowsById.get(mustRef) ?? {};
+          return {
+            ...existing,
+            mustRef,
+            traceRows: mustClosure.traceRows,
+            evidenceRefs: mustClosure.evidenceRefs,
+            acceptanceRefs: mustClosure.acceptanceRefs,
+            failurePathRefs: mustClosure.failurePathRefs,
+            edgeCaseRefs: mustClosure.edgeCaseRefs,
+            assertion:
+              normalizeText(existing.assertion) ||
+              `${mustRef} remains independently visible through the business visual proof chain.`,
+          };
+        });
       if (visualKind === 'failure') {
-        nextRow.failurePathRefs = appendUniqueStrings(nextRow.failurePathRefs, failurePathIds);
+        nextRow.failurePathRefs = closure.failurePathRefs;
       }
       if (visualKind === 'edge') {
-        nextRow.edgeCaseRefs = appendKnownIdRefs(nextRow.edgeCaseRefs, edgeCaseIds, edgeCaseIds);
+        nextRow.edgeCaseRefs = closure.edgeCaseRefs;
       }
       if (stableStringify(nextRow) !== before) {
         changed = true;
         changedViewIds.add(viewId);
       }
-      viewRefsByTraceField[traceRefField].add(viewId);
+      businessViewIdsByTraceField[traceRefField].add(viewId);
+      for (const traceId of closure.traceRows) {
+        viewRefsByTraceField[traceRefField].add(`${traceId}\u0000${viewId}`);
+      }
       return nextRow;
     });
     nextConfirmation[field] = nextRows;
@@ -9985,6 +13155,11 @@ function resyncExistingBusinessVisualProofClosure(
     (shouldForceCurrentTargetMapRebuild ||
       shouldRebuildExistingCurrentTargetMap(nextConfirmation.currentTargetMap, context.sourceText))
   ) {
+    const before = stableStringify({
+      currentTargetMap: nextConfirmation.currentTargetMap,
+      aiTddContractExecutionManifestProjection:
+        nextConfirmation.aiTddContractExecutionManifestProjection,
+    });
     const rebuiltCurrentTargetMap = buildCurrentTargetMapFromExistingConfirmation({
       root: context.root,
       sourcePath: context.sourcePath,
@@ -10017,25 +13192,144 @@ function resyncExistingBusinessVisualProofClosure(
         legacyDenial: rebuiltCurrentTargetMap.legacyArtifactIds,
       };
     }
-    changed = true;
-    changedViewIds.add('currentTargetMap');
+    const after = stableStringify({
+      currentTargetMap: nextConfirmation.currentTargetMap,
+      aiTddContractExecutionManifestProjection:
+        nextConfirmation.aiTddContractExecutionManifestProjection,
+    });
+    if (after !== before) {
+      changed = true;
+      changedViewIds.add('currentTargetMap');
+    }
   }
 
-  const nextTraceRows = traceRows.map((row) => {
+  const nextTraceRows = asRecordArray(nextConfirmation.traceRows).map((row) => {
     const traceId = normalizeText(row.id);
     if (!traceId || !traceIds.includes(traceId)) return row;
     const nextRow: Record<string, unknown> = { ...row };
     const before = stableStringify(nextRow);
     for (const [field, refs] of Object.entries(viewRefsByTraceField)) {
-      if (refs.size > 0) {
-        nextRow[field] = appendUniqueStrings(nextRow[field], [...refs]);
-      }
+      const businessViewIds = businessViewIdsByTraceField[field];
+      const preservedRefs = asStringArray(nextRow[field]).filter(
+        (ref) => !businessViewIds.has(ref)
+      );
+      const exactRefs = [...refs]
+        .filter((entry) => entry.startsWith(`${traceId}\u0000`))
+        .map((entry) => entry.slice(traceId.length + 1));
+      nextRow[field] = uniqueStrings([...preservedRefs, ...exactRefs]);
     }
-    return stableStringify(nextRow) !== before ? (changed = true, nextRow) : row;
+    return stableStringify(nextRow) !== before ? ((changed = true), nextRow) : row;
   });
   nextConfirmation.traceRows = nextTraceRows;
 
   return { confirmation: nextConfirmation, changed, changedViewIds: [...changedViewIds].sort() };
+}
+
+function buildControlledAuthoringReconfirmationRequest(input: {
+  previousConfirmation: Record<string, unknown>;
+  nextConfirmation: Record<string, unknown>;
+  appliedActions: Record<string, unknown>[];
+  changedTargetFields: Set<string>;
+}): Record<string, unknown> | null {
+  const previousStatus = normalizeText(input.previousConfirmation.status);
+  const previouslyConfirmed =
+    previousStatus === 'user_confirmed' ||
+    previousStatus === 'reconfirm_required' ||
+    Boolean(normalizeText(input.previousConfirmation.confirmedAt)) ||
+    Boolean(normalizeText(input.previousConfirmation.confirmedBy));
+  if (!previouslyConfirmed) return null;
+
+  const impactedIds = uniqueStrings(
+    input.appliedActions.flatMap((action) => [
+      ...asStringArray(action.requirementIds),
+      ...asStringArray(action.mustRefs),
+      normalizeText(action.materializedRef),
+    ])
+  ).filter((ref) => /^(?:MUST|NEG|OUT|EVD|TRACE|ACC|E2E|FAIL|EDGE)-/u.test(ref));
+  const impactedRequirementIds = impactedIds.filter((ref) =>
+    /^(?:MUST|NEG|OUT)-/u.test(ref)
+  );
+  const impactedTraceRows = uniqueStrings([
+    ...impactedIds.filter((ref) => ref.startsWith('TRACE-')),
+    ...asRecordArray(input.nextConfirmation.traceRows)
+      .filter((row) =>
+        asStringArray(row.covers).some((ref) => impactedRequirementIds.includes(ref))
+      )
+      .map((row) => normalizeText(row.id)),
+  ]);
+  const proofRefs = uniqueStrings([
+    ...impactedIds.filter((ref) => /^(?:EVD|TRACE|ACC|E2E)-/u.test(ref)),
+    ...asRecordArray(input.nextConfirmation.traceRows)
+      .filter((row) => impactedTraceRows.includes(normalizeText(row.id)))
+      .flatMap((row) => [
+        normalizeText(row.id),
+        ...asStringArray(row.evidenceRefs),
+        ...asStringArray(row.acceptanceRefs),
+        ...asStringArray(row.contractValidationCommandRefs),
+        ...asStringArray(row.deliveryEvidenceCommandRefs),
+      ]),
+  ]);
+  const sourceRefs =
+    impactedRequirementIds.length > 0
+      ? impactedRequirementIds
+      : impactedIds.filter(Boolean).slice(0, 8);
+  const evidenceSourceRefs = sourceRefs.length > 0 ? sourceRefs : ['MUST-001'];
+  const actionIds = input.appliedActions
+    .map((action) => normalizeText(action.actionId))
+    .filter(Boolean);
+  const changedFields = [...input.changedTargetFields].sort();
+
+  return {
+    required: true,
+    reasonCode: 'controlled_authoring_repair_changed_confirmed_scope',
+    reason: 'implementationConfirmationHash_changed',
+    userFacingTitle: '需要重新确认受控需求修复',
+    userFacingSummary:
+      'Critical Auditor 已将确认后的语义缺口修复到需求源文档；修复后的范围、失败路径和验证闭环必须由用户重新确认。',
+    persuasiveRationale: {
+      whyReconfirmNow:
+        '当前实现确认语义已不同于上次确认版本，历史确认不能授权修复后的需求范围。',
+      riskIfSkipped:
+        '若跳过重新确认，实施链可能把用户未确认的失败路径、验收绑定或范围修复误当作既有授权。',
+      whyEvidenceIsSufficient:
+        '受控修复动作、受影响需求 ID、TRACE/EVD/ACC/E2E 证明引用和重新执行的预渲染门禁共同界定了本次变化。',
+    },
+    evidenceBundle: {
+      sufficiencyVerdict: 'sufficient',
+      items: [
+        {
+          kind: 'controlled_authoring_repair',
+          title: 'Critical Auditor 受控语义修复',
+          summary: `已执行 ${actionIds.length} 个受控修复动作，并同步 ${changedFields.length} 个确认投影视图。`,
+          sourceRefs: evidenceSourceRefs,
+          proofRefs,
+        },
+      ],
+    },
+    previousSourceDocumentHash: normalizeText(input.previousConfirmation.sourceDocumentHash) || null,
+    previousImplementationConfirmationHash:
+      normalizeText(input.previousConfirmation.implementationConfirmationHash) || null,
+    diffSummary: [
+      {
+        summary: `Critical Auditor 修复动作：${actionIds.join(', ') || 'controlled semantic repair'}。`,
+      },
+      {
+        summary: `同步确认投影：${changedFields.join(', ') || 'implementationConfirmation'}。`,
+      },
+    ],
+    affectedRequirementIds: impactedRequirementIds,
+    affectedTraceRows: impactedTraceRows,
+    impactedIds,
+    impactedTraceRows,
+    impactedArtifacts: ['sourceGapFixes', 'must_decomposition_packet.json'],
+    impactedGatesOrCommands: ['pre_render_must_decomposition_gate'],
+    allowedUserActions: [
+      'confirm_current_version',
+      'reject_current_changes_restore_last_confirmed',
+      'accept_partial_changes_create_followup',
+      'regenerate_confirmation_view',
+    ],
+  };
 }
 
 function packetWithCriticalAuditorConvergence(
@@ -10088,14 +13382,10 @@ function sourceRowsForRepairProjection(
     ];
   }
   if (key === 'aiTddContractExecutionManifestProjection') {
-    return Object.entries(recordObject(confirmation.aiTddContractExecutionManifestProjection)).map(
-      ([id, value]) => ({
-        id,
-        ...(value && typeof value === 'object' && !Array.isArray(value)
-          ? (value as Record<string, unknown>)
-          : { value }),
-      })
-    );
+    const manifest = recordObject(confirmation.aiTddContractExecutionManifestProjection);
+    return Object.keys(manifest).length
+      ? [{ id: normalizeText(manifest.id) || 'AI-TDD-001', ...manifest }]
+      : [];
   }
   if (key === 'closeoutReadinessPreview') {
     const closeout = recordObject(confirmation.closeoutReadinessPreview);
@@ -10120,6 +13410,114 @@ function selectExistingRowIds(
     .map((row, index) => rowIdForRepair(row, String(index)))
     .filter(Boolean);
   return ids.length > 0 ? ids : fallbackIds;
+}
+
+function repairProjectionMustRefsFromValue(value: unknown, depth = 0): string[] {
+  if (depth > 4 || value === null || value === undefined) return [];
+  if (typeof value === 'string') {
+    const normalized = normalizeText(value);
+    return normalized.startsWith('MUST-') ? [normalized] : [];
+  }
+  if (Array.isArray(value)) {
+    return uniqueStrings(
+      value.flatMap((item) => repairProjectionMustRefsFromValue(item, depth + 1))
+    );
+  }
+  if (typeof value !== 'object') return [];
+  const row = value as Record<string, unknown>;
+  return uniqueStrings([
+    ...Object.keys(row).filter((key) => key.startsWith('MUST-')),
+    ...[
+      'derivedFromMustRef',
+      'mustRef',
+      'mustId',
+      'requirementRef',
+      'requirementId',
+      'covers',
+      'ownerMustRefs',
+      'requirementRefs',
+      'mustRefs',
+    ].flatMap((key) => repairProjectionMustRefsFromValue(row[key], depth + 1)),
+  ]);
+}
+
+function repairProjectionMustRefs(row: Record<string, unknown>): string[] {
+  return uniqueStrings([
+    ...repairProjectionMustRefsFromValue(row.derivedFromMustRef),
+    ...repairProjectionMustRefsFromValue(row.mustRef),
+    ...repairProjectionMustRefsFromValue(row.mustId),
+    ...repairProjectionMustRefsFromValue(row.requirementRef),
+    ...repairProjectionMustRefsFromValue(row.requirementId),
+    ...repairProjectionMustRefsFromValue(row.covers),
+    ...repairProjectionMustRefsFromValue(row.ownerMustRefs),
+    ...repairProjectionMustRefsFromValue(row.requirementRefs),
+    ...repairProjectionMustRefsFromValue(row.mustRefs),
+    ...[
+      'perMustRows',
+      'perMustAssertions',
+      'perMustOracles',
+      'perMustResponsibilities',
+      'responsibilityMapping',
+    ].flatMap((key) => repairProjectionMustRefsFromValue(row[key])),
+  ]).filter((ref) => ref.startsWith('MUST-'));
+}
+
+function repairProjectionSpecificMustRefs(row: Record<string, unknown>): string[] {
+  const singularArrayRefs = ['covers', 'requirementRefs', 'mustRefs'].flatMap((key) => {
+    const refs = repairProjectionMustRefsFromValue(row[key]);
+    return refs.length === 1 ? refs : [];
+  });
+  return uniqueStrings([
+    ...repairProjectionMustRefsFromValue(row.derivedFromMustRef),
+    ...repairProjectionMustRefsFromValue(row.mustRef),
+    ...repairProjectionMustRefsFromValue(row.mustId),
+    ...repairProjectionMustRefsFromValue(row.requirementRef),
+    ...repairProjectionMustRefsFromValue(row.requirementId),
+    ...singularArrayRefs,
+    ...[
+      'perMustRows',
+      'perMustAssertions',
+      'perMustOracles',
+      'perMustResponsibilities',
+      'responsibilityMapping',
+    ].flatMap((key) => repairProjectionMustRefsFromValue(row[key])),
+  ]).filter((ref) => ref.startsWith('MUST-'));
+}
+
+function repairProjectionDeclaredRequirementRefs(row: Record<string, unknown>): string[] {
+  return uniqueStrings([
+    normalizeText(row.derivedFromRequirementRef),
+    ...asStringArray(row.ownerMustRefs),
+    ...asStringArray(row.requirementRefs),
+    ...asStringArray(row.mustRefs),
+    ...asStringArray(row.covers),
+    ...asStringArray(row.linkedRequirements),
+  ]).filter((ref) => ref.startsWith('MUST-') || ref.startsWith('NEG-') || ref.startsWith('OUT-'));
+}
+
+function repairProjectionRowsForMust(
+  rows: Record<string, unknown>[],
+  mustRef: string,
+  linkedRefs: Set<string>[] = []
+): Record<string, unknown>[] {
+  return rows.filter((row) => {
+    const declaredRequirementRefs = repairProjectionDeclaredRequirementRefs(row);
+    const declaredMustRefs = declaredRequirementRefs.filter((ref) => ref.startsWith('MUST-'));
+    if (declaredRequirementRefs.length > 0 && declaredMustRefs.length === 0) return false;
+    const explicitMustRefs = repairProjectionMustRefs(row);
+    if (explicitMustRefs.includes(mustRef)) return true;
+    if (explicitMustRefs.length > 0) return false;
+    const rowLinks = [
+      ...asStringArray(row.traceRows),
+      ...asStringArray(row.traceRefs),
+      ...asStringArray(row.evidenceRefs),
+      ...asStringArray(row.linkedEvidenceIds),
+      ...asStringArray(row.acceptanceRefs),
+      ...asStringArray(row.failurePathRefs),
+      ...asStringArray(row.linkedFailurePathIds),
+    ];
+    return linkedRefs.some((refs) => rowLinks.some((ref) => refs.has(ref)));
+  });
 }
 
 function buildPreserveExistingMustDecompositionPacket(input: {
@@ -10148,43 +13546,23 @@ function buildPreserveExistingMustDecompositionPacket(input: {
     input.confirmation,
     'mustExecutionDecompositionMatrix'
   );
-  const existingTaskIds = existingTaskRows
-    .map((row, index) => rowIdForRepair(row, String(index)))
-    .filter(Boolean);
-  const existingMatrixIds = existingMatrixRows
-    .map((row, index) => rowIdForRepair(row, String(index)))
-    .filter(Boolean);
-  const evidenceIds = selectExistingRowIds(input.confirmation, ['evidence'], ['EVD-001']);
-  const traceIds = selectExistingRowIds(input.confirmation, ['traceRows'], ['TRACE-001']);
-  const acceptanceIds = selectExistingRowIds(input.confirmation, ['acceptanceTests'], ['ACC-001']);
-  const e2eIds = selectExistingRowIds(input.confirmation, ['e2eSuites'], ['E2E-001']);
-  const failureIds = selectExistingRowIds(input.confirmation, ['failurePaths'], ['FAIL-001']);
-  const edgeIds = selectExistingRowIds(input.confirmation, ['edgeCases'], ['EDGE-001']);
-  const targetIds = selectExistingRowIds(
+  const evidenceRows = sourceRowsForRepairProjection(input.confirmation, 'evidence');
+  const traceRows = sourceRowsForRepairProjection(input.confirmation, 'traceRows');
+  const acceptanceRows = sourceRowsForRepairProjection(input.confirmation, 'acceptanceTests');
+  const e2eRows = sourceRowsForRepairProjection(input.confirmation, 'e2eSuites');
+  const failureRows = sourceRowsForRepairProjection(input.confirmation, 'failurePaths');
+  const edgeRows = sourceRowsForRepairProjection(input.confirmation, 'edgeCases');
+  const targetRows = sourceRowsForRepairProjection(input.confirmation, 'targetModificationPaths');
+  const artifactRows = sourceRowsForRepairProjection(input.confirmation, 'artifactAutomationPlan');
+  const commandRows = sourceRowsForRepairProjection(input.confirmation, 'requiredCommands');
+  const currentTargetRows = sourceRowsForRepairProjection(input.confirmation, 'currentTargetMap');
+  const aiTddRows = sourceRowsForRepairProjection(
     input.confirmation,
-    ['targetModificationPaths'],
-    ['TARGET-MOD-001']
+    'aiTddContractExecutionManifestProjection'
   );
-  const artifactIds = selectExistingRowIds(
+  const closeoutRows = sourceRowsForRepairProjection(
     input.confirmation,
-    ['artifactAutomationPlan'],
-    ['ART-001']
-  );
-  const commandIds = selectExistingRowIds(input.confirmation, ['requiredCommands'], ['CMD-001']);
-  const currentTargetIds = selectExistingRowIds(
-    input.confirmation,
-    ['currentTargetMap'],
-    ['CT-CANON-001']
-  );
-  const aiTddIds = selectExistingRowIds(
-    input.confirmation,
-    ['aiTddContractExecutionManifestProjection'],
-    ['AI-TDD-001']
-  );
-  const closeoutIds = selectExistingRowIds(
-    input.confirmation,
-    ['closeoutReadinessPreview'],
-    ['closeoutReadinessPreview']
+    'closeoutReadinessPreview'
   );
   const projection = (id: string, target: string, mustRef = firstMustRef) => ({
     id,
@@ -10233,14 +13611,245 @@ function buildPreserveExistingMustDecompositionPacket(input: {
       },
     ],
     mustPackets: input.mustRequirements.map((requirement, index) => {
-      const existingTaskId =
-        existingTaskIds[index] ||
-        existingTaskIds[0] ||
-        atomicTaskIdsForMust(index, input.mustRequirements.length)[0];
-      const existingMatrixId =
-        existingMatrixIds[index] ||
-        existingMatrixIds[0] ||
-        mdmIdForMust(index, input.mustRequirements.length);
+      const sourceTaskRows = repairProjectionRowsForMust(existingTaskRows, requirement.id);
+      const fallbackTaskId = atomicTaskIdsForMust(index, input.mustRequirements.length)[0];
+      const taskRows =
+        sourceTaskRows.length > 0
+          ? sourceTaskRows.map((row) => ({ ...row }))
+          : input.mustRequirements.length === 1
+            ? [
+                {
+                  id: fallbackTaskId,
+                  targetFiles: [
+                    rel(input.paths.semanticKernel),
+                    rel(input.paths.mustDecompositionPacket),
+                    rel(input.paths.preRenderMustGate),
+                  ],
+                  redProofPlan: `Repair blocks if ${requirement.id} lacks synchronized authoring artifacts.`,
+                  primaryObservableBehaviors: [
+                    `${requirement.id} authoring repair artifact synchronization`,
+                  ],
+                  primaryAcceptanceOracles: [
+                    `${requirement.id} appears in semantic kernel and packet`,
+                  ],
+                },
+              ]
+            : [];
+      const taskIds = taskRows
+        .map((row, taskIndex) => rowIdForRepair(row, `${fallbackTaskId}-${taskIndex + 1}`))
+        .filter(Boolean);
+      const taskIdSet = new Set(taskIds);
+      const sourceMatrixRows = repairProjectionRowsForMust(existingMatrixRows, requirement.id);
+      const matrixRows =
+        sourceMatrixRows.length > 0
+          ? sourceMatrixRows
+          : input.mustRequirements.length === 1
+            ? [
+                {
+                  id: mdmIdForMust(index, input.mustRequirements.length),
+                  mustRef: requirement.id,
+                  atomicTaskRefs: taskIds,
+                },
+              ]
+            : [];
+      const mustEvidenceRows = repairProjectionRowsForMust(evidenceRows, requirement.id);
+      const evidenceIdSet = new Set(
+        mustEvidenceRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex)))
+      );
+      const mustTraceRows = repairProjectionRowsForMust(traceRows, requirement.id, [evidenceIdSet]);
+      const traceIdSet = new Set(
+        mustTraceRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex)))
+      );
+      const mustAcceptanceRows = repairProjectionRowsForMust(acceptanceRows, requirement.id, [
+        traceIdSet,
+        evidenceIdSet,
+      ]);
+      const acceptanceIdSet = new Set(
+        mustAcceptanceRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex)))
+      );
+      const mustE2eRows = repairProjectionRowsForMust(e2eRows, requirement.id, [
+        traceIdSet,
+        evidenceIdSet,
+      ]);
+      const e2eIdSet = new Set(
+        mustE2eRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex)))
+      );
+      const mustFailureRows = repairProjectionRowsForMust(failureRows, requirement.id, [
+        traceIdSet,
+        evidenceIdSet,
+      ]);
+      const failureIdSet = new Set(
+        mustFailureRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex)))
+      );
+      const mustEdgeRows = repairProjectionRowsForMust(edgeRows, requirement.id, [
+        traceIdSet,
+        evidenceIdSet,
+        failureIdSet,
+      ]);
+      const baseTargetRows = repairProjectionRowsForMust(targetRows, requirement.id, [
+        traceIdSet,
+        evidenceIdSet,
+      ]);
+      const baseTargetPaths = new Set(
+        baseTargetRows.map((row) => normalizeText(row.path).replace(/\\/g, '/')).filter(Boolean)
+      );
+      const commandBelongsToMust = (row: Record<string, unknown>): boolean => {
+        const declaredRequirementRefs = repairProjectionDeclaredRequirementRefs(row);
+        const declaredMustRefs = declaredRequirementRefs.filter((ref) => ref.startsWith('MUST-'));
+        if (declaredRequirementRefs.length > 0 && declaredMustRefs.length === 0) {
+          return false;
+        }
+        const explicitMustRefs = repairProjectionMustRefs(row);
+        if (explicitMustRefs.length > 0) {
+          return explicitMustRefs.includes(requirement.id);
+        }
+        return (
+          asStringArray(row.traceRows).some((ref) => traceIdSet.has(ref)) ||
+          asStringArray(row.traceRefs).some((ref) => traceIdSet.has(ref)) ||
+          asStringArray(row.evidenceRefs).some((ref) => evidenceIdSet.has(ref)) ||
+          asStringArray(row.targetFiles)
+            .map((targetPath) => targetPath.replace(/\\/g, '/'))
+            .some((targetPath) => baseTargetPaths.has(targetPath))
+        );
+      };
+      const mustCommandRows = commandRows.filter(commandBelongsToMust);
+      const commandTargetPaths = new Set(
+        mustCommandRows
+          .flatMap((row) => asStringArray(row.targetFiles))
+          .map((targetPath) => targetPath.replace(/\\/g, '/'))
+      );
+      const mustTargetRows = targetRows.filter((row) => {
+        if (baseTargetRows.includes(row)) return true;
+        if (repairProjectionMustRefs(row).length > 0) return false;
+        return commandTargetPaths.has(normalizeText(row.path).replace(/\\/g, '/'));
+      });
+      const mustArtifactRows = repairProjectionRowsForMust(artifactRows, requirement.id, [
+        traceIdSet,
+        evidenceIdSet,
+      ]);
+      const specificCurrentTargetRows = currentTargetRows.filter((row) =>
+        repairProjectionSpecificMustRefs(row).includes(requirement.id)
+      );
+      const mustCurrentTargetRows =
+        specificCurrentTargetRows.length > 0
+          ? specificCurrentTargetRows
+          : repairProjectionRowsForMust(currentTargetRows, requirement.id, [
+              traceIdSet,
+              evidenceIdSet,
+            ]);
+      const mustAiTddRows = aiTddRows;
+      const mustCloseoutRows = closeoutRows;
+      const observableBehaviors = uniqueStrings(
+        taskRows.flatMap((row) => [
+          ...asStringArray(row.primaryObservableBehaviors),
+          normalizeText(row.text),
+        ])
+      );
+      const acceptanceOracles = uniqueStrings(
+        taskRows.flatMap((row) => [
+          ...asStringArray(row.primaryAcceptanceOracles),
+          normalizeText(row.redProofPlan),
+        ])
+      );
+      const targetSurfaces = uniqueStrings(
+        taskRows.flatMap((row) => asStringArray(row.targetFiles))
+      );
+      const declaredTaskRefs = uniqueStrings(
+        matrixRows.flatMap((row) => asStringArray(row.atomicTaskRefs))
+      ).filter((taskRef) => taskIdSet.has(taskRef));
+      const expectedTaskCount = declaredTaskRefs.length || taskIds.length;
+      const questionEvidenceRefs = [...evidenceIdSet];
+      const requiredQuestionCategories = [
+        'scope_boundary',
+        'atomicity',
+        'projection',
+        'confirmation_surface',
+        'mental_model_progression',
+      ];
+      const questionAnswerAvailability: Record<string, boolean> = {
+        scope_boundary: Boolean(requirement.text),
+        atomicity: taskIds.length > 0 && matrixRows.length > 0,
+        projection:
+          mustEvidenceRows.length > 0 &&
+          mustTraceRows.length > 0 &&
+          mustAcceptanceRows.length + mustE2eRows.length > 0,
+        confirmation_surface: mustCurrentTargetRows.length > 0 && mustAiTddRows.length > 0,
+        mental_model_progression: mustCloseoutRows.length > 0,
+      };
+      const questionAnswers = [
+        {
+          id: `Q-${requirementOrdinal(index)}-SCOPE`,
+          category: 'scope_boundary',
+          question: `Which controlled source boundary prevents ${requirement.id} from expanding beyond its authored behavior?`,
+          answer: `${requirement.id} is limited to its source requirement text and explicitly linked failure or negative boundaries; unrelated rows are not proof.`,
+          evidenceRefs: questionEvidenceRefs,
+          sourceRefs: uniqueStrings([requirement.id, ...failureIdSet]),
+        },
+        {
+          id: `Q-${requirementOrdinal(index)}-ATOMICITY`,
+          category: 'atomicity',
+          question: `Which independently confirmable behavior-surface-oracle units decompose ${requirement.id}?`,
+          answer:
+            taskRows.length > 0
+              ? taskRows
+                  .map(
+                    (row, taskIndex) =>
+                      `${taskIds[taskIndex]}: ${asStringArray(row.primaryObservableBehaviors)[0] || normalizeText(row.text)}`
+                  )
+                  .join(' | ')
+              : 'No source-owned atomic task is bound.',
+          evidenceRefs: questionEvidenceRefs,
+          sourceRefs: taskIds,
+        },
+        {
+          id: `Q-${requirementOrdinal(index)}-PROJECTION`,
+          category: 'projection',
+          question: `Which source rows prove ${requirement.id} without relabeling unrelated rows?`,
+          answer: uniqueStrings([
+            ...evidenceIdSet,
+            ...traceIdSet,
+            ...acceptanceIdSet,
+            ...e2eIdSet,
+            ...failureIdSet,
+          ]).join(', '),
+          evidenceRefs: questionEvidenceRefs,
+          sourceRefs: uniqueStrings([
+            ...traceIdSet,
+            ...acceptanceIdSet,
+            ...e2eIdSet,
+            ...failureIdSet,
+          ]),
+        },
+        {
+          id: `Q-${requirementOrdinal(index)}-TARGETS`,
+          category: 'confirmation_surface',
+          question: `Which source-authorized targets and commands implement and verify ${requirement.id}?`,
+          answer: uniqueStrings([
+            ...mustTargetRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex))),
+            ...mustCommandRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex))),
+          ]).join(', '),
+          evidenceRefs: questionEvidenceRefs,
+          sourceRefs: targetSurfaces,
+        },
+        {
+          id: `Q-${requirementOrdinal(index)}-PROGRESSION`,
+          category: 'mental_model_progression',
+          question: `Which current-target and closeout rows keep ${requirement.id} in requirement confirmation until controlled implementation evidence exists?`,
+          answer: uniqueStrings([
+            ...mustCurrentTargetRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex))),
+            ...mustCloseoutRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex))),
+          ]).join(', '),
+          evidenceRefs: questionEvidenceRefs,
+          sourceRefs: uniqueStrings([
+            ...mustCurrentTargetRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex))),
+            ...mustCloseoutRows.map((row, rowIndex) => rowIdForRepair(row, String(rowIndex))),
+          ]),
+        },
+      ].filter((row) => questionAnswerAvailability[row.category]);
+      const answeredCategories = uniqueStrings(questionAnswers.map((row) => row.category));
+      const missingCategories = requiredQuestionCategories.filter(
+        (category) => !answeredCategories.includes(category)
+      );
       return {
         mustRef: requirement.id,
         mustIntent: requirement.text,
@@ -10248,141 +13857,180 @@ function buildPreserveExistingMustDecompositionPacket(input: {
         sourceRequirementLine: requirement.sourceLine,
         sourceRequirementAuthority: requirement.source,
         decompositionBasis: {
-          observableBehaviors: [
-            `${requirement.id} remains in the existing source`,
-            `${requirement.id} is represented in semantic-kernel.json`,
-            `${requirement.id} is represented in must_decomposition_packet.json`,
-            `${requirement.id} blocks rendering until Critical Auditor convergence`,
-          ],
-          targetSurfaces: [
-            rel(input.sourcePath),
-            rel(input.paths.semanticKernel),
-            rel(input.paths.mustDecompositionPacket),
-          ],
+          observableBehaviors:
+            observableBehaviors.length > 0 ? observableBehaviors : [requirement.text],
+          targetSurfaces,
         },
         atomicityDrivers: {
-          behaviorSurfaceOracleUnits: [
-            `${requirement.id} source preservation`,
-            `${requirement.id} authoring artifact synchronization`,
-            `${requirement.id} pre-render gate enforcement`,
-          ],
+          behaviorSurfaceOracleUnits:
+            acceptanceOracles.length > 0 ? acceptanceOracles : observableBehaviors,
           oneTaskPerIndependentBehaviorSurfaceOracle: true,
         },
         questionCoverage: {
-          requiredCategories: ['scope_boundary', 'atomicity', 'projection', 'confirmation_surface'],
-          answeredCategories: ['scope_boundary', 'atomicity', 'projection', 'confirmation_surface'],
-          missingCategories: [],
-          coverageVerdict: 'complete',
+          requiredCategories: requiredQuestionCategories,
+          answeredCategories,
+          missingCategories,
+          coverageVerdict: missingCategories.length === 0 ? 'complete' : 'incomplete',
+          questions: questionAnswers.map(
+            (row) => `${row.question} ${row.answer || 'No source-derived answer.'}`
+          ),
+          answers: questionAnswers,
         },
         atomicityCompleteness: {
           splitRule: 'one_task_per_independent_behavior_surface_oracle',
-          completenessVerdict: 'complete',
-          expectedTaskCount: 1,
-          actualTaskCount: 1,
+          completenessVerdict:
+            expectedTaskCount > 0 && expectedTaskCount === taskIds.length
+              ? 'complete'
+              : 'incomplete',
+          expectedTaskCount,
+          actualTaskCount: taskIds.length,
         },
         authorClaims: [
           {
             id: `CLAIM-${requirement.id}`,
-            claim: `${requirement.id} is repaired through artifact synchronization while preserving the source document.`,
+            claim: `${requirement.id} reuses ${taskIds.length} source-owned atomic task(s) and explicitly linked projections.`,
             criticDisposition:
               input.consecutiveNoNewGapRounds >= 3
                 ? 'accepted_no_new_valid_gap'
                 : 'pending_critical_auditor_response',
           },
         ],
-        mustExecutionDecompositionMatrix: [
-          projection(
-            existingMatrixId,
-            existingMatrixRows.length > 0
-              ? `implementationConfirmation.mustExecutionDecompositionMatrix[${existingMatrixId}]`
-              : `implementationConfirmation.traceRows[${traceIds[0]}]`,
-            requirement.id
-          ),
-        ],
-        mustAtomicTasks: [
-          {
-            id: existingTaskId,
-            targetFiles: [
-              rel(input.paths.semanticKernel),
-              rel(input.paths.mustDecompositionPacket),
-              rel(input.paths.preRenderMustGate),
-            ],
-            redProofPlan: `Repair blocks if ${requirement.id} lacks synchronized authoring artifacts.`,
-            primaryObservableBehaviors: [
-              `${requirement.id} authoring repair artifact synchronization`,
-            ],
-            primaryAcceptanceOracles: [`${requirement.id} appears in semantic kernel and packet`],
+        mustExecutionDecompositionMatrix: matrixRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return {
+            ...row,
+            id,
+            mustRef: requirement.id,
+            atomicTaskRefs: asStringArray(row.atomicTaskRefs).filter((ref) => taskIdSet.has(ref)),
+            materializedTo: existingMatrixRows.includes(row)
+              ? [`implementationConfirmation.mustExecutionDecompositionMatrix[${id}]`]
+              : [`implementationConfirmation.traceRows[${[...traceIdSet][0] || 'TRACE-001'}]`],
             derivedFromMustRef: requirement.id,
-            materializedTo: [
-              existingTaskRows.length > 0
-                ? `implementationConfirmation.atomicImplementationTaskList[${existingTaskId}]`
-                : `implementationConfirmation.traceRows[${traceIds[0]}]`,
-            ],
             ...projectionBackRefForRepair(input.packetHash, requirement.id),
-          },
-        ],
-        mustEvidenceProjection: evidenceIds.map((id) =>
-          projection(id, `implementationConfirmation.evidence[${id}]`, requirement.id)
-        ),
-        mustTraceProjection: traceIds.map((id) =>
-          projection(id, `implementationConfirmation.traceRows[${id}]`, requirement.id)
-        ),
+          };
+        }),
+        mustAtomicTasks: taskRows.map((row, taskIndex) => {
+          const id = taskIds[taskIndex];
+          return {
+            ...row,
+            id,
+            targetFiles: asStringArray(row.targetFiles),
+            redProofPlan:
+              normalizeText(row.redProofPlan) ||
+              `Current-attempt evidence must independently prove ${requirement.id}.`,
+            primaryObservableBehaviors:
+              asStringArray(row.primaryObservableBehaviors).length > 0
+                ? asStringArray(row.primaryObservableBehaviors)
+                : uniqueStrings([normalizeText(row.text), requirement.text]),
+            primaryAcceptanceOracles:
+              asStringArray(row.primaryAcceptanceOracles).length > 0
+                ? asStringArray(row.primaryAcceptanceOracles)
+                : uniqueStrings([normalizeText(row.redProofPlan), requirement.text]),
+            atomicUnitIndex: Number(row.atomicUnitIndex) || taskIndex + 1,
+            atomicUnitCount: Number(row.atomicUnitCount) || taskRows.length,
+            materializedTo: existingTaskRows.includes(row)
+              ? [`implementationConfirmation.atomicImplementationTaskList[${id}]`]
+              : [`implementationConfirmation.traceRows[${[...traceIdSet][0] || 'TRACE-001'}]`],
+            ...projectionBackRefForRepair(input.packetHash, requirement.id),
+          };
+        }),
+        mustEvidenceProjection: mustEvidenceRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return projection(id, `implementationConfirmation.evidence[${id}]`, requirement.id);
+        }),
+        mustTraceProjection: mustTraceRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return projection(id, `implementationConfirmation.traceRows[${id}]`, requirement.id);
+        }),
         mustAcceptanceProjection: [
-          ...acceptanceIds.map((id) =>
-            projection(id, `implementationConfirmation.acceptanceTests[${id}]`, requirement.id)
-          ),
-          ...e2eIds.map((id) =>
-            projection(id, `implementationConfirmation.e2eSuites[${id}]`, requirement.id)
-          ),
+          ...mustAcceptanceRows.map((row, rowIndex) => {
+            const id = rowIdForRepair(row, String(rowIndex));
+            return projection(
+              id,
+              `implementationConfirmation.acceptanceTests[${id}]`,
+              requirement.id
+            );
+          }),
+          ...mustE2eRows.map((row, rowIndex) => {
+            const id = rowIdForRepair(row, String(rowIndex));
+            return projection(id, `implementationConfirmation.e2eSuites[${id}]`, requirement.id);
+          }),
         ],
         mustFailureEdgeProjection: [
-          ...failureIds.map((id) =>
-            projection(id, `implementationConfirmation.failurePaths[${id}]`, requirement.id)
-          ),
-          ...edgeIds.map((id) =>
-            projection(id, `implementationConfirmation.edgeCases[${id}]`, requirement.id)
-          ),
+          ...mustFailureRows.map((row, rowIndex) => {
+            const id = rowIdForRepair(row, String(rowIndex));
+            return projection(id, `implementationConfirmation.failurePaths[${id}]`, requirement.id);
+          }),
+          ...mustEdgeRows.map((row, rowIndex) => {
+            const id = rowIdForRepair(row, String(rowIndex));
+            return projection(id, `implementationConfirmation.edgeCases[${id}]`, requirement.id);
+          }),
         ],
-        mustTargetPathProjection: targetIds.map((id) =>
-          projection(
+        mustTargetPathProjection: mustTargetRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return projection(
             id,
             `implementationConfirmation.targetModificationPaths[${id}]`,
             requirement.id
-          )
-        ),
-        mustCurrentTargetProjection: currentTargetIds.map((id) =>
-          projection(id, `implementationConfirmation.currentTargetMap[${id}]`, requirement.id)
-        ),
-        mustAiTddManifestProjection: aiTddIds.map((id) =>
-          projection(
+          );
+        }),
+        mustCurrentTargetProjection: mustCurrentTargetRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return projection(
             id,
-            `implementationConfirmation.aiTddContractExecutionManifestProjection[${id}]`,
+            `implementationConfirmation.currentTargetMap[${id}]`,
+            requirement.id
+          );
+        }),
+        mustAiTddManifestProjection: mustAiTddRows.map((row, rowIndex) =>
+          projection(
+            rowIdForRepair(row, String(rowIndex)),
+            'implementationConfirmation.aiTddContractExecutionManifestProjection',
             requirement.id
           )
         ),
-        mustArtifactProjection: artifactIds.map((id) =>
-          projection(id, `implementationConfirmation.artifactAutomationPlan[${id}]`, requirement.id)
-        ),
-        mustCommandProjection: commandIds.map((id) =>
-          projection(id, `implementationConfirmation.requiredCommands[${id}]`, requirement.id)
-        ),
-        mustCloseoutBoundaryProjection: [
-          projection(
-            closeoutIds[0] ?? 'closeoutReadinessPreview',
-            `implementationConfirmation.closeoutReadinessPreview[${closeoutIds[0] ?? 'closeoutReadinessPreview'}]`,
+        mustArtifactProjection: mustArtifactRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return projection(
+            id,
+            `implementationConfirmation.artifactAutomationPlan[${id}]`,
             requirement.id
-          ),
+          );
+        }),
+        mustCommandProjection: mustCommandRows.map((row, rowIndex) => {
+          const id = rowIdForRepair(row, String(rowIndex));
+          return projection(
+            id,
+            `implementationConfirmation.requiredCommands[${id}]`,
+            requirement.id
+          );
+        }),
+        mustCloseoutBoundaryProjection: mustCloseoutRows.map((row, rowIndex) =>
+          projection(
+            rowIdForRepair(row, String(rowIndex)),
+            'implementationConfirmation.closeoutReadinessPreview',
+            requirement.id
+          )
+        ),
+      };
+    }),
+    mustDerivedProjectionMap: mustRefs.map((mustRef) => {
+      const currentTargetIds = repairProjectionRowsForMust(currentTargetRows, mustRef).map(
+        (row, rowIndex) => rowIdForRepair(row, String(rowIndex))
+      );
+      return {
+        mustRef,
+        materializedTo: [
+          ...currentTargetIds.map((id) => `implementationConfirmation.currentTargetMap[${id}]`),
+          ...(aiTddRows.length > 0
+            ? ['implementationConfirmation.aiTddContractExecutionManifestProjection']
+            : []),
+          ...(closeoutRows.length > 0
+            ? ['implementationConfirmation.closeoutReadinessPreview']
+            : []),
         ],
       };
     }),
-    mustDerivedProjectionMap: mustRefs.map((mustRef) => ({
-      mustRef,
-      materializedTo: [
-        ...currentTargetIds.map((id) => `implementationConfirmation.currentTargetMap[${id}]`),
-        ...aiTddIds.map((id) => `implementationConfirmation.aiTddContractExecutionManifestProjection[${id}]`),
-        ...closeoutIds.map((id) => `implementationConfirmation.closeoutReadinessPreview[${id}]`),
-      ],
-    })),
   };
   payload.contentHash = input.packetHash;
   return payload;
@@ -10487,7 +14135,9 @@ function criticalAuditorReceiptMatchesCurrent(input: {
   if (normalizeText(receipt.recordId) !== input.recordId) return false;
   if (normalizeText(receipt.inputHash) !== input.auditInputHash) return false;
   if (normalizeText(receipt.sourceDocumentHash) !== input.sourceDocumentHash) return false;
-  if (normalizeText(receipt.implementationConfirmationHash) !== input.implementationConfirmationHash) {
+  if (
+    normalizeText(receipt.implementationConfirmationHash) !== input.implementationConfirmationHash
+  ) {
     return false;
   }
   if (normalizeText(receipt.packetHash) !== input.packetHash) return false;
@@ -10570,9 +14220,10 @@ const CRITICAL_AUDITOR_REPAIR_ACTION_REQUIRED_FIELDS = [
   'requirementIds',
 ];
 
-function validateCriticalAuditorRepairActions(
-  gaps: Record<string, unknown>[]
-): { gaps: Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>; issues: PreConfirmationDrilldownIssue[] } {
+function validateCriticalAuditorRepairActions(gaps: Record<string, unknown>[]): {
+  gaps: Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>;
+  issues: PreConfirmationDrilldownIssue[];
+} {
   const issues: PreConfirmationDrilldownIssue[] = [];
   const normalizedGaps = gaps.map((gap, gapIndex) => {
     const gapId = normalizeText(gap.id ?? gap.code ?? `validated-gap-${gapIndex + 1}`);
@@ -10588,7 +14239,8 @@ function validateCriticalAuditorRepairActions(
       );
     }
     const normalizedActions = actions.map((action, actionIndex) => {
-      const actionId = normalizeText(action.actionId ?? action.id) || `${gapId}-ACTION-${actionIndex + 1}`;
+      const actionId =
+        normalizeText(action.actionId ?? action.id) || `${gapId}-ACTION-${actionIndex + 1}`;
       const type = normalizeText(action.type ?? action.actionType);
       if (!CRITICAL_AUDITOR_REPAIR_ACTION_TYPE_SET.has(type)) {
         issues.push(
@@ -10925,16 +14577,48 @@ function runCriticalAuditorReceiptLoop(input: {
       createdAt: input.createdAt,
     });
     const requestPath = criticalAuditorRequestPath(input.transaction, roundIndex);
-    const request = writeOrReuseCriticalAuditorRoundRequest({
-      requestPath,
-      candidate: candidateRequest,
-    });
-    const frozenGateDryRun = criticalAuditorGateDryRunSummaryFromRequest(request, gateDryRun);
     const receiptPath = criticalAuditorReceiptPath(input.transaction, roundIndex);
-    const mirrorPath = path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`);
+    const mirrorPath = path.join(
+      input.paths.authoringDir,
+      `critical-auditor-receipt-round-${roundIndex}.json`
+    );
+    const existingRequest = readJsonIfExists(requestPath);
     const existingReceipt = unwrapCriticalAuditorReceipt(readJsonIfExists(receiptPath));
-    let receipt: Record<string, unknown>;
+    const existingFrozenGateDryRun = existingRequest
+      ? criticalAuditorGateDryRunSummaryFromRequest(existingRequest, gateDryRun)
+      : null;
+    const reusablePublishedReceipt =
+      existingRequest &&
+      existingFrozenGateDryRun &&
+      criticalAuditorRoundRequestHashMatchesContent(existingRequest) &&
+      criticalAuditorSubstantiveGateBindingHash(existingFrozenGateDryRun) ===
+        criticalAuditorSubstantiveGateBindingHash(gateDryRun) &&
+      criticalAuditorReceiptMatchesCurrent({
+        receipt: existingReceipt,
+        roundIndex,
+        transaction: input.transaction,
+        auditInputHash: input.auditInputHash,
+        recordId: input.recordId,
+        sourceDocumentHash: input.sourceDocumentHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        packetHash: input.packetHash,
+        requestHash: normalizeText(existingRequest.requestHash),
+        gateDryRunHash: existingFrozenGateDryRun.hash,
+      })
+        ? existingReceipt
+        : null;
+    const request = reusablePublishedReceipt
+      ? existingRequest
+      : writeOrReuseCriticalAuditorRoundRequest({
+          requestPath,
+          candidate: candidateRequest,
+        });
+    const frozenGateDryRun = reusablePublishedReceipt
+      ? existingFrozenGateDryRun
+      : criticalAuditorGateDryRunSummaryFromRequest(request, gateDryRun);
+    let receipt: Record<string, unknown> | null = reusablePublishedReceipt;
     if (
+      !receipt &&
       criticalAuditorReceiptMatchesCurrent({
         receipt: existingReceipt,
         roundIndex,
@@ -10949,7 +14633,8 @@ function runCriticalAuditorReceiptLoop(input: {
       })
     ) {
       receipt = existingReceipt;
-    } else {
+    }
+    if (!receipt) {
       let auditResult: CriticalAuditorRoundResult;
       try {
         auditResult = provider({
@@ -10976,7 +14661,9 @@ function runCriticalAuditorReceiptLoop(input: {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
-        issues.push(preConfirmationIssue(code, message, [`round-${roundIndex}`], 'critical_auditor'));
+        issues.push(
+          preConfirmationIssue(code, message, [`round-${roundIndex}`], 'critical_auditor')
+        );
         break;
       }
       const bindingIssues = validateCriticalAuditorRoundResultBinding({
@@ -11015,7 +14702,9 @@ function runCriticalAuditorReceiptLoop(input: {
       receipt,
     });
 
-    const verdict = normalizeCriticalAuditorVerdict(recordObject(receipt.convergenceDecision).verdict);
+    const verdict = normalizeCriticalAuditorVerdict(
+      recordObject(receipt.convergenceDecision).verdict
+    );
     if (verdict === 'blocked' || verdict === 'insufficient_audit') {
       issues.push(
         preConfirmationIssue(
@@ -11102,9 +14791,7 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
   for (const [index, receipt] of input.receipts.entries()) {
     const roundIndex = Number(receipt.roundIndex ?? index + 1);
     const auditResult: CriticalAuditorRoundResult = {
-      verdict: normalizeCriticalAuditorVerdict(
-        recordObject(receipt.convergenceDecision).verdict
-      ),
+      verdict: normalizeCriticalAuditorVerdict(recordObject(receipt.convergenceDecision).verdict),
       gapCandidates: asRecordArray(receipt.gapCandidates),
       validatedGaps: asRecordArray(receipt.validatedGaps),
       rejectedGapCandidates: asRecordArray(receipt.rejectedGapCandidates),
@@ -11120,7 +14807,9 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
       checkedProjectionQualityRuleCodes: asStringArray(receipt.checkedProjectionQualityRuleCodes),
       priorFindingsDisposition: asRecordArray(receipt.priorFindingsDisposition),
       falsePositiveProofs: asRecordArray(receipt.falsePositiveProofs),
-      rationale: normalizeText(receipt.noNewGapRationale) || 'No new valid gap detected in mirrored final draft receipt.',
+      rationale:
+        normalizeText(receipt.noNewGapRationale) ||
+        'No new valid gap detected in mirrored final draft receipt.',
       gateDryRunHash: normalizeText(receipt.gateDryRunHash) || undefined,
       reconciliationIssueCount:
         typeof receipt.reconciliationIssueCount === 'number'
@@ -11171,25 +14860,30 @@ function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
     })
       ? existingReceipt
       : null;
-    const mirroredReceipt = currentReceipt ?? buildCriticalAuditorReceipt({
-      roundIndex,
-      transactionId: input.transaction.transactionId,
-      namespaceVersion: input.transaction.namespaceVersion,
-      requestHash: normalizeText(request.requestHash),
-      gateDryRunHash: frozenGateDryRun.hash,
-      responseHash: normalizeText(receipt.responseHash) || undefined,
-      auditInputHash: input.auditInputHash,
-      recordId: input.recordId,
-      sourceDocumentHash: input.sourceDocumentHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      createdAt: input.createdAt,
-      auditResult,
-    });
+    const mirroredReceipt =
+      currentReceipt ??
+      buildCriticalAuditorReceipt({
+        roundIndex,
+        transactionId: input.transaction.transactionId,
+        namespaceVersion: input.transaction.namespaceVersion,
+        requestHash: normalizeText(request.requestHash),
+        gateDryRunHash: frozenGateDryRun.hash,
+        responseHash: normalizeText(receipt.responseHash) || undefined,
+        auditInputHash: input.auditInputHash,
+        recordId: input.recordId,
+        sourceDocumentHash: input.sourceDocumentHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        packetHash: input.packetHash,
+        createdAt: input.createdAt,
+        auditResult,
+      });
     latestReceiptHash = normalizeText(mirroredReceipt.receiptHash);
     writeCriticalAuditorReceiptMirror({
       rootReceiptPath: receiptPath,
-      mirrorPath: path.join(input.paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+      mirrorPath: path.join(
+        input.paths.authoringDir,
+        `critical-auditor-receipt-round-${roundIndex}.json`
+      ),
       transaction: input.transaction,
       authoringDir: input.paths.authoringDir,
       receipt: mirroredReceipt,
@@ -11243,12 +14937,7 @@ function deriveAuditConvergenceFromReceipts(
   return {
     consecutiveNoNewGapRounds,
     latestReceiptHash,
-    issues:
-      consecutiveNoNewGapRounds >= 3
-        ? []
-        : receipts.length > 0
-          ? []
-          : [],
+    issues: consecutiveNoNewGapRounds >= 3 ? [] : receipts.length > 0 ? [] : [],
   };
 }
 
@@ -11506,10 +15195,24 @@ function criticalAuditorRoundRequestMatchesCurrent(
       return false;
     }
   }
-  // A published round request is the hash authority for response-file recovery.
-  // Gate dry-run noise can change between retries without changing the source,
-  // packet, or implementationConfirmation hashes, so keep the original request
-  // frozen until the transaction identity changes.
+  const existingGateDryRun = recordObject(existing.gateDryRun);
+  const candidateGateDryRun = recordObject(candidate.gateDryRun);
+  const existingReconciliation = recordObject(existingGateDryRun.reconciliation);
+  const candidateReconciliation = recordObject(candidateGateDryRun.reconciliation);
+  if (
+    normalizeText(existingGateDryRun.gateDryRunHash) !==
+      normalizeText(candidateGateDryRun.gateDryRunHash) ||
+    Number(existingGateDryRun.actionableBlockingIssueCount ?? 0) !==
+      Number(candidateGateDryRun.actionableBlockingIssueCount ?? 0) ||
+    normalizeText(existingReconciliation.verdict) !==
+      normalizeText(candidateReconciliation.verdict) ||
+    Number(existingReconciliation.issueCount ?? 0) !==
+      Number(candidateReconciliation.issueCount ?? 0)
+  ) {
+    return false;
+  }
+  // A published request remains frozen only while its semantic and gate bindings
+  // are unchanged, preserving response-file recovery without accepting stale audits.
   const comparableArrayKeys = ['mustRefs', 'sourceRequirementTexts'];
   for (const key of comparableArrayKeys) {
     if (sha256Json(asStringArray(existing[key])) !== sha256Json(asStringArray(candidate[key]))) {
@@ -11531,6 +15234,30 @@ function criticalAuditorRoundRequestMatchesCurrent(
     return false;
   }
   return Boolean(normalizeText(existing.requestHash));
+}
+
+function criticalAuditorRoundRequestHashMatchesContent(
+  request: Record<string, unknown>
+): boolean {
+  const requestHash = normalizeText(request.requestHash);
+  return Boolean(requestHash) && requestHash === sha256Json({ ...request, requestHash: null });
+}
+
+function criticalAuditorSubstantiveGateBindingHash(
+  gateDryRun: CriticalAuditorGateDryRunSummary
+): string {
+  return sha256Json({
+    verdict: gateDryRun.verdict,
+    failedChecks: gateDryRun.failedChecks.filter(
+      (code) => !CRITICAL_AUDITOR_ACTIONABLE_DRY_RUN_EXCLUSIONS.has(code)
+    ),
+    actionableBlockingIssues: gateDryRun.actionableBlockingIssues.map((issue) => ({
+      code: issue.code,
+      message: issue.message,
+      refs: issue.refs,
+    })),
+    reconciliation: gateDryRun.reconciliation,
+  });
 }
 
 function writeOrReuseCriticalAuditorRoundRequest(input: {
@@ -11588,9 +15315,7 @@ function criticalAuditorGateDryRunSummaryFromRequest(
       checkedGroups: asStringArray(reconciliation.checkedGroups),
     },
     hash:
-      normalizeText(gateDryRun.gateDryRunHash) ||
-      normalizeText(gateDryRun.hash) ||
-      fallback.hash,
+      normalizeText(gateDryRun.gateDryRunHash) || normalizeText(gateDryRun.hash) || fallback.hash,
   };
 }
 
@@ -11871,7 +15596,10 @@ function validateCriticalAuditorResponse(input: {
       )
     );
   }
-  if (normalizeText(parsed.sourceHash) && normalizeText(parsed.sourceHash) !== input.sourceDocumentHash) {
+  if (
+    normalizeText(parsed.sourceHash) &&
+    normalizeText(parsed.sourceHash) !== input.sourceDocumentHash
+  ) {
     issues.push(
       preConfirmationIssue(
         'critical_auditor_response_source_hash_stale',
@@ -11942,7 +15670,12 @@ function validateCriticalAuditorResponse(input: {
       preConfirmationIssue(
         'critical_auditor_blocked_evidence_missing',
         'Critical Auditor response verdict blocked requires source materialization, missing projection, source/projection invalid proof, or gate dry-run blocker evidence',
-        ['sourceMaterializationFindings', 'missingProjectionFindings', 'invalidProofFindings', 'gateDryRunBlockers'],
+        [
+          'sourceMaterializationFindings',
+          'missingProjectionFindings',
+          'invalidProofFindings',
+          'gateDryRunBlockers',
+        ],
         'critical_auditor'
       )
     );
@@ -12158,7 +15891,9 @@ function validateCriticalAuditorResponse(input: {
     verdict === 'new_valid_gap'
       ? unresolvedGaps.length === 0
         ? {
-            gaps: [] as Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>,
+            gaps: [] as Array<
+              Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }
+            >,
             issues: [
               preConfirmationIssue(
                 'critical_auditor_new_valid_gap_missing_validated_gap',
@@ -12170,7 +15905,9 @@ function validateCriticalAuditorResponse(input: {
           }
         : validateCriticalAuditorRepairActions(unresolvedGaps)
       : {
-          gaps: parsedValidatedGaps as Array<Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }>,
+          gaps: parsedValidatedGaps as Array<
+            Record<string, unknown> & { repairActions: CriticalAuditorRepairAction[] }
+          >,
           issues: [],
         };
   if (repairActionValidation.issues.length > 0) {
@@ -12270,9 +16007,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
       );
     }
   }
-  const checkedProjectionQualityRuleCodes = new Set(
-    result.checkedProjectionQualityRuleCodes ?? []
-  );
+  const checkedProjectionQualityRuleCodes = new Set(result.checkedProjectionQualityRuleCodes ?? []);
   for (const ruleCode of PROJECTION_QUALITY_RULE_CODES) {
     if (!checkedProjectionQualityRuleCodes.has(ruleCode)) {
       issues.push(
@@ -12429,6 +16164,249 @@ function detectIgnoredRequirementSource(
   ];
 }
 
+function resumePendingCriticalAuditorGapPromotion(input: {
+  root: string;
+  sourcePath: string;
+  paths: PreConfirmationPaths;
+  recordId: string;
+  requirementSetId: string;
+  responsePath: string;
+  currentSourceDocumentHash: string;
+  currentImplementationConfirmationHash: string;
+}):
+  | { status: 'none' }
+  | {
+      status: 'blocked';
+      issue: PreConfirmationDrilldownIssue;
+      artifacts: string[];
+    }
+  | {
+      status: 'resumed';
+      materialized: ReturnType<typeof readMaterializedConfirmation>;
+      artifacts: string[];
+    } {
+  const repairDraftPath = path.join(input.paths.authoringDir, 'authoring-repair-draft-source.md');
+  const decision = readJsonIfExists(input.paths.sourceMutationDecision);
+  if (
+    !decision ||
+    !fs.existsSync(repairDraftPath) ||
+    normalizeText(decision.finalDecision) !== 'allow_source_materialization' ||
+    decision.sourceMutationPerformed === true
+  ) {
+    return { status: 'none' };
+  }
+
+  const currentRawHash = sha256File(input.sourcePath);
+  const rawHashBefore =
+    normalizeText(decision.targetRawHashBefore) ||
+    normalizeText(decision.sourceDocumentHashBefore);
+  const rawHashAfter =
+    normalizeText(decision.targetRawHashAfter) ||
+    normalizeText(decision.sourceDocumentHashAfter);
+  if (currentRawHash === rawHashAfter) {
+    return { status: 'none' };
+  }
+
+  const artifacts = [
+    input.paths.sourceMutationDecision,
+    repairDraftPath,
+    input.responsePath,
+  ].filter(Boolean);
+  const blocked = (
+    code: string,
+    message: string,
+    refs: string[]
+  ): {
+    status: 'blocked';
+    issue: PreConfirmationDrilldownIssue;
+    artifacts: string[];
+  } => ({
+    status: 'blocked',
+    issue: sourceMaterializationGateIssue(code, message, refs),
+    artifacts,
+  });
+
+  if (
+    normalizeText(decision.schemaVersion) !==
+      'requirements-authoring-source-mutation-decision/v1' ||
+    normalizeText(decision.sourcePath) !== toRootRelativePath(input.root, input.sourcePath) ||
+    normalizeText(decision.recordId) !== input.recordId ||
+    normalizeText(decision.requirementSetId) !== input.requirementSetId
+  ) {
+    return blocked(
+      'pending_source_gap_promotion_decision_binding_invalid',
+      'Pending validated-gap source promotion decision does not bind the current source and requirement identity.',
+      [
+        normalizeText(decision.sourcePath),
+        normalizeText(decision.recordId),
+        normalizeText(decision.requirementSetId),
+      ]
+    );
+  }
+  if (
+    currentRawHash !== rawHashBefore ||
+    sha256File(repairDraftPath) !== rawHashAfter ||
+    normalizeText(decision.semanticSourceHashBefore) !== input.currentSourceDocumentHash ||
+    normalizeText(decision.semanticSourceHashAfter) === input.currentSourceDocumentHash
+  ) {
+    return blocked(
+      'pending_source_gap_promotion_hash_binding_invalid',
+      'Pending validated-gap source promotion hashes do not match the current source and durable repair draft.',
+      [
+        currentRawHash,
+        rawHashBefore,
+        sha256File(repairDraftPath),
+        rawHashAfter,
+        input.currentSourceDocumentHash,
+        normalizeText(decision.semanticSourceHashBefore),
+        normalizeText(decision.semanticSourceHashAfter),
+      ]
+    );
+  }
+  const repairDraft = readMaterializedConfirmation(repairDraftPath);
+  if (
+    repairDraft.sourceDocumentHash !== normalizeText(decision.semanticSourceHashAfter) ||
+    repairDraft.implementationConfirmationHash === input.currentImplementationConfirmationHash
+  ) {
+    return blocked(
+      'pending_source_gap_promotion_semantic_binding_invalid',
+      'Pending validated-gap repair draft does not match the semantic hashes authorized by the source mutation decision.',
+      [
+        repairDraft.sourceDocumentHash,
+        repairDraft.implementationConfirmationHash,
+        normalizeText(decision.semanticSourceHashAfter),
+        input.currentImplementationConfirmationHash,
+      ]
+    );
+  }
+  if (!input.responsePath || !fs.existsSync(input.responsePath)) {
+    return blocked(
+      'pending_source_gap_promotion_response_missing',
+      'Pending validated-gap source promotion requires the already accepted Critical Auditor response.',
+      [input.responsePath || 'critical-auditor-round-response-<round>.json']
+    );
+  }
+
+  const response = readJsonIfExists(input.responsePath);
+  const roundIndex = Number(response?.roundIndex ?? 0);
+  const requestPath = findCriticalAuditorRequestPath(input.paths.authoringDir, roundIndex);
+  const receiptPath = path.join(
+    input.paths.authoringDir,
+    `critical-auditor-receipt-round-${roundIndex}.json`
+  );
+  const request = readJsonIfExists(requestPath);
+  const receiptEnvelope = readJsonIfExists(receiptPath);
+  const receipt = recordObject(receiptEnvelope?.criticalAuditorReceipt);
+  artifacts.push(requestPath, receiptPath);
+  if (!roundIndex || !response || !request || Object.keys(receipt).length === 0) {
+    return blocked(
+      'pending_source_gap_promotion_audit_evidence_missing',
+      'Pending validated-gap source promotion requires its original request, response, and accepted receipt.',
+      [requestPath, input.responsePath, receiptPath]
+    );
+  }
+  const receiptForHash = { ...receipt };
+  const receiptHash = normalizeText(receiptForHash.receiptHash);
+  delete receiptForHash.receiptHash;
+  const receiptHashCandidates = new Set([
+    sha256Json(receiptForHash),
+    sha256Json({
+      ...receiptForHash,
+      transactionId: receiptForHash.transactionId,
+      namespaceVersion: receiptForHash.namespaceVersion,
+    }),
+  ]);
+  const requestGateDryRun = recordObject(request.gateDryRun);
+  const requestGateDryRunHash =
+    normalizeText(requestGateDryRun.gateDryRunHash) ||
+    normalizeText(requestGateDryRun.hash);
+  const auditBindingsMatch =
+    receiptHashCandidates.has(receiptHash) &&
+    normalizeText(response.verdict) === 'new_valid_gap' &&
+    normalizeText(recordObject(receipt.convergenceDecision).verdict) === 'new_valid_gap' &&
+    normalizeText(response.requestHash) === normalizeText(request.requestHash) &&
+    normalizeText(receipt.requestHash) === normalizeText(request.requestHash) &&
+    normalizeText(response.gateDryRunHash) === requestGateDryRunHash &&
+    normalizeText(receipt.gateDryRunHash) === requestGateDryRunHash &&
+    normalizeText(response.sourceDocumentHash) === input.currentSourceDocumentHash &&
+    normalizeText(request.sourceDocumentHash) === input.currentSourceDocumentHash &&
+    normalizeText(receipt.sourceDocumentHash) === input.currentSourceDocumentHash &&
+    normalizeText(response.implementationConfirmationHash) ===
+      input.currentImplementationConfirmationHash &&
+    normalizeText(request.implementationConfirmationHash) ===
+      input.currentImplementationConfirmationHash &&
+    normalizeText(receipt.implementationConfirmationHash) ===
+      input.currentImplementationConfirmationHash &&
+    normalizeText(response.packetHash) === normalizeText(request.packetHash) &&
+    normalizeText(receipt.packetHash) === normalizeText(request.packetHash) &&
+    sha256Json(asRecordArray(receipt.validatedGaps)) ===
+      sha256Json(asRecordArray(response.validatedGaps));
+  if (!auditBindingsMatch) {
+    return blocked(
+      'pending_source_gap_promotion_audit_binding_invalid',
+      'Pending validated-gap source promotion audit evidence is stale or does not bind the original frozen gate dry-run.',
+      [
+        normalizeText(request.requestHash),
+        normalizeText(response.requestHash),
+        normalizeText(receipt.requestHash),
+        requestGateDryRunHash,
+        normalizeText(response.gateDryRunHash),
+        normalizeText(receipt.gateDryRunHash),
+      ]
+    );
+  }
+
+  const repairActionValidation = validateCriticalAuditorRepairActions(
+    asRecordArray(response.validatedGaps)
+  );
+  if (repairActionValidation.issues.length > 0) {
+    return {
+      status: 'blocked',
+      issue: repairActionValidation.issues[0],
+      artifacts,
+    };
+  }
+  const current = readMaterializedConfirmation(input.sourcePath);
+  const gapFix = materializeCriticalAuditorGapFix({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    confirmation: current.extraction.confirmation,
+    previousSourceDocumentHash: input.currentSourceDocumentHash,
+    response: {
+      verdict: 'new_valid_gap',
+      validatedGaps: repairActionValidation.gaps,
+    },
+    createdAt: new Date().toISOString(),
+  });
+  if (gapFix.ok === false) {
+    return {
+      status: 'blocked',
+      issue: gapFix.issue,
+      artifacts,
+    };
+  }
+  artifacts.push(gapFix.receiptPath, input.paths.checkpointPersistenceEvidence);
+  const materialized = gapFix.materialized;
+  if (materialized.sourceDocumentHash === input.currentSourceDocumentHash) {
+    return blocked(
+      'pending_source_gap_promotion_result_hash_mismatch',
+      'Recovered validated-gap source promotion did not change the current semantic source hash.',
+      [
+        materialized.sourceDocumentHash,
+        input.currentSourceDocumentHash,
+      ]
+    );
+  }
+  return {
+    status: 'resumed',
+    materialized,
+    artifacts: uniqueStrings(artifacts),
+  };
+}
+
 export function runMainAgentAuthoringRepair(
   root: string,
   options: MainAgentAuthoringRepairOptions
@@ -12478,6 +16456,57 @@ export function runMainAgentAuthoringRepair(
     extraction.confirmation
   );
   const initialWarnings = detectIgnoredRequirementSource(root, sourcePath);
+  const responsePath = normalizeText(options.criticalAuditorResponse)
+    ? resolveRootRelativePath(root, normalizeText(options.criticalAuditorResponse))
+    : '';
+  const pendingGapPromotion = resumePendingCriticalAuditorGapPromotion({
+    root,
+    sourcePath,
+    paths,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    responsePath,
+    currentSourceDocumentHash: initialSourceDocumentHash,
+    currentImplementationConfirmationHash: initialImplementationConfirmationHash,
+  });
+  if (pendingGapPromotion.status === 'blocked') {
+    return buildAuthoringRepairResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      status: 'blocked',
+      blockingStage: 'pending_source_gap_promotion_recovery_failed',
+      nextRequiredAction: 'repair_pending_source_gap_promotion_evidence',
+      sourceDocumentHash: initialSourceDocumentHash,
+      implementationConfirmationHash: initialImplementationConfirmationHash,
+      warnings: initialWarnings,
+      issues: [pendingGapPromotion.issue],
+      artifacts: pendingGapPromotion.artifacts,
+    });
+  }
+  if (pendingGapPromotion.status === 'resumed') {
+    const resumed = runMainAgentAuthoringRepair(root, {
+      ...options,
+      source: sourceArg,
+      mode: 'preserve-existing',
+      criticalAuditorResponse: undefined,
+    });
+    return {
+      ...resumed,
+      artifacts: uniqueStrings([...pendingGapPromotion.artifacts, ...resumed.artifacts]),
+      warnings: [
+        ...resumed.warnings,
+        {
+          warning: 'pending_source_gap_promotion_recovered',
+          sourceDocumentHash: pendingGapPromotion.materialized.sourceDocumentHash,
+          implementationConfirmationHash:
+            pendingGapPromotion.materialized.implementationConfirmationHash,
+        },
+      ],
+    };
+  }
   const initialMaterializationGate = verifySourceMaterializationBeforeAudit({
     root,
     sourcePath,
@@ -12581,110 +16610,25 @@ export function runMainAgentAuthoringRepair(
     });
   }
   if (visualProofResync.changed) {
-    const materialized = visualProofResync.materialized ?? readMaterializedConfirmation(sourcePath);
-    const rebuilt = buildPreserveExistingAuthoringArtifacts({
-      root,
-      sourcePath,
-      paths,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      createdAt,
-      sourceText: materialized.sourceText,
-      extraction: materialized.extraction,
-      consecutiveNoNewGapRounds: 0,
+    const resumed = runMainAgentAuthoringRepair(root, {
+      ...options,
+      source: sourceArg,
+      mode: 'preserve-existing',
+      criticalAuditorResponse: undefined,
     });
-    const checkpointPersistence = prepareAuthoringRepairCheckpointPersistenceEvidence({
-      root,
-      repairDraftPath: sourcePath,
-      paths,
-      recordId: identity.recordId,
-      sourceDocumentHash: rebuilt.sourceDocumentHash,
-      implementationConfirmationHash: rebuilt.implementationConfirmationHash,
-      createdAt,
-      routeDecision: authoringCheckpointRouteDecisionForPersistence(
-        readJsonIfExists(paths.scaleRoutingDecision),
-        paths
-      ),
-    });
-    if (checkpointPersistence.ok === false) {
-      return buildAuthoringRepairResult({
-        root,
-        sourcePath,
-        recordId: identity.recordId,
-        requirementSetId: identity.requirementSetId,
-        paths,
-        status: 'blocked',
-        blockingStage: 'checkpoint_persistence_required_before_audit',
-        nextRequiredAction: 'rerun_semantic_checkpoints_before_critical_auditor_round',
-        sourceDocumentHash: rebuilt.sourceDocumentHash,
-        implementationConfirmationHash: rebuilt.implementationConfirmationHash,
-        packetHash: rebuilt.packetHash,
-        artifacts: visualProofResync.artifacts,
-        warnings: initialWarnings,
-        issues: [checkpointPersistence.issue],
-      });
-    }
-    const archiveDir = archiveCriticalAuditorArtifacts({
-      authoringDir: paths.authoringDir,
-      reason: 'business_visual_proof_resync_restart',
-      auditInputHash: rebuilt.auditInputHash,
-      createdAt,
-    });
-    const request = buildCriticalAuditorRoundRequest({
-      root,
-      sourcePath,
-      recordId: identity.recordId,
-      roundIndex: 1,
-      sourceDocumentHash: rebuilt.sourceDocumentHash,
-      implementationConfirmationHash: rebuilt.implementationConfirmationHash,
-      packetHash: rebuilt.packetHash,
-      auditInputHash: rebuilt.auditInputHash,
-      mustRequirements: rebuilt.mustRequirements,
-      packet: rebuilt.effectivePacket,
-      previousReceipts: [],
-      gateDryRun: buildCriticalAuditorGateDryRunSummary({
-        root,
-        sourcePath,
-        paths,
-        roundIndex: 1,
-      }),
-      createdAt,
-    });
-    const requestPath = findCriticalAuditorRequestPath(paths.authoringDir, 1);
-    writeJsonUtf8(requestPath, request);
-    return buildAuthoringRepairResult({
-      root,
-      sourcePath,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      paths,
-      status: 'blocked',
-      blockingStage: 'critical_auditor_round_required',
-      nextRequiredAction: 'write_critical_auditor_round_response',
-      repairCommand: authoringRepairCommand(
-        toRootRelativePath(root, sourcePath),
-        toRootRelativePath(
-          root,
-          path.join(paths.authoringDir, 'critical-auditor-round-response-1.json')
-        )
-      ),
-      sourceDocumentHash: rebuilt.sourceDocumentHash,
-      implementationConfirmationHash: rebuilt.implementationConfirmationHash,
-      packetHash: rebuilt.packetHash,
-      artifacts: [requestPath, archiveDir, ...visualProofResync.artifacts].filter(
-        (artifact): artifact is string => Boolean(artifact)
-      ),
-      warnings: initialWarnings,
-      issues: [
+    return {
+      ...resumed,
+      artifacts: uniqueStrings([...visualProofResync.artifacts, ...resumed.artifacts]),
+      blockingIssues: [
         preConfirmationIssue(
           'business_visual_proof_resync_materialized',
           'Existing business visual views were resynchronized with explicit trace, evidence, acceptance, failure, and edge proof refs; Critical Auditor must restart on the new source hashes.',
           visualProofResync.changedViewIds,
           'authoring_repair'
         ),
+        ...resumed.blockingIssues,
       ],
-      consecutiveNoNewGapRounds: 0,
-    });
+    };
   }
   const mustRequirements = extractInlineMustRequirements(extraction.confirmation);
   if (mustRequirements.length === 0) {
@@ -12769,6 +16713,62 @@ export function runMainAgentAuthoringRepair(
     consecutiveNoNewGapRounds: previousConvergence.consecutive,
   });
   writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: packet });
+  const packetProjectionMetadataResync =
+    materializePreserveExistingPacketProjectionMetadataResync({
+      root,
+      sourcePath,
+      paths,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      createdAt,
+      sourceText,
+      confirmation: extraction.confirmation,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      packetHash,
+    });
+  if (!packetProjectionMetadataResync.ok) {
+    return buildAuthoringRepairResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      status: 'blocked',
+      blockingStage: 'packet_source_projection_resynchronization_required',
+      nextRequiredAction: 'repair_packet_source_projection_resynchronization',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      packetHash,
+      artifacts: packetProjectionMetadataResync.artifacts,
+      warnings: initialWarnings,
+      issues: packetProjectionMetadataResync.issues,
+    });
+  }
+  if (packetProjectionMetadataResync.changed) {
+    const resumed = runMainAgentAuthoringRepair(root, {
+      ...options,
+      source: sourceArg,
+      mode: 'preserve-existing',
+      criticalAuditorResponse: undefined,
+    });
+    return {
+      ...resumed,
+      artifacts: uniqueStrings([
+        ...packetProjectionMetadataResync.artifacts,
+        ...resumed.artifacts,
+      ]),
+      warnings: [
+        ...resumed.warnings,
+        {
+          warning: 'packet_source_projection_metadata_resynchronized',
+          changedRowCount: String(packetProjectionMetadataResync.changedRowCount),
+          previousPacketHashes: packetProjectionMetadataResync.previousPacketHashes.join(','),
+          packetHash,
+        },
+      ],
+    };
+  }
   const auditInputHash = sha256Json({
     sourceDocumentHash,
     implementationConfirmationHash,
@@ -12928,9 +16928,6 @@ export function runMainAgentAuthoringRepair(
       })
     : null;
 
-  const responsePath = normalizeText(options.criticalAuditorResponse)
-    ? resolveRootRelativePath(root, normalizeText(options.criticalAuditorResponse))
-    : '';
   if (responsePath && !staleArtifactIssues.length) {
     const response = readJsonIfExists(responsePath);
     const roundIndex = Number(response?.roundIndex ?? 0);
@@ -12977,6 +16974,34 @@ export function runMainAgentAuthoringRepair(
       gateDryRun: responseGateDryRun,
     });
     if (!validation.response) {
+      const validationCodes = new Set(validation.issues.map((issue) => issue.code));
+      const gateBindingChanged =
+        validationCodes.has('critical_auditor_response_gate_dry_run_hash_mismatch') ||
+        validationCodes.has('critical_auditor_response_reconciliation_issue_count_mismatch');
+      const refreshedRequestPath = gateBindingChanged ? requestPath : null;
+      if (refreshedRequestPath) {
+        const refreshedRequest = buildCriticalAuditorRoundRequest({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          roundIndex,
+          transactionId: normalizeText(request.transactionId) || undefined,
+          namespaceVersion: normalizeText(request.namespaceVersion) || undefined,
+          sourceDocumentHash,
+          implementationConfirmationHash,
+          packetHash,
+          auditInputHash,
+          mustRequirements,
+          packet: effectivePacket,
+          previousReceipts: asRecordArray(request.previousReceipts),
+          gateDryRun: responseGateDryRun,
+          createdAt,
+        });
+        writeOrReuseCriticalAuditorRoundRequest({
+          requestPath: refreshedRequestPath,
+          candidate: refreshedRequest,
+        });
+      }
       return buildAuthoringRepairResult({
         root,
         sourcePath,
@@ -12989,6 +17014,7 @@ export function runMainAgentAuthoringRepair(
         sourceDocumentHash,
         implementationConfirmationHash,
         packetHash,
+        artifacts: refreshedRequestPath ? [refreshedRequestPath] : [],
         warnings,
         issues: validation.issues,
       });
@@ -13157,7 +17183,10 @@ export function runMainAgentAuthoringRepair(
         createdAt,
       });
       const freshRequestPath = findCriticalAuditorRequestPath(paths.authoringDir, 1);
-      writeJsonUtf8(freshRequestPath, freshRequest);
+      writeOrReuseCriticalAuditorRoundRequest({
+        requestPath: freshRequestPath,
+        candidate: freshRequest,
+      });
       return buildAuthoringRepairResult({
         root,
         sourcePath,
@@ -13169,16 +17198,15 @@ export function runMainAgentAuthoringRepair(
         nextRequiredAction: 'write_critical_auditor_round_response',
         repairCommand: authoringRepairCommand(
           toRootRelativePath(root, sourcePath),
-          toRootRelativePath(root, path.join(paths.authoringDir, 'critical-auditor-round-response-1.json'))
+          toRootRelativePath(
+            root,
+            path.join(paths.authoringDir, 'critical-auditor-round-response-1.json')
+          )
         ),
         sourceDocumentHash: rebuilt.sourceDocumentHash,
         implementationConfirmationHash: rebuilt.implementationConfirmationHash,
         packetHash: rebuilt.packetHash,
-        artifacts: [
-          freshRequestPath,
-          archiveDir,
-          gapFix.receiptPath,
-        ],
+        artifacts: [freshRequestPath, archiveDir, gapFix.receiptPath],
         warnings,
         issues: [
           preConfirmationIssue(
@@ -13241,7 +17269,7 @@ export function runMainAgentAuthoringRepair(
       createdAt,
     });
     const requestPath = findCriticalAuditorRequestPath(paths.authoringDir, 1);
-    writeJsonUtf8(requestPath, request);
+    writeOrReuseCriticalAuditorRoundRequest({ requestPath, candidate: request });
     return buildAuthoringRepairResult({
       root,
       sourcePath,
@@ -13291,7 +17319,7 @@ export function runMainAgentAuthoringRepair(
       createdAt,
     });
     const requestPath = findCriticalAuditorRequestPath(paths.authoringDir, roundIndex);
-    writeJsonUtf8(requestPath, request);
+    writeOrReuseCriticalAuditorRoundRequest({ requestPath, candidate: request });
     return buildAuthoringRepairResult({
       root,
       sourcePath,
@@ -13870,10 +17898,7 @@ function validateCheckpointPersistenceEvidence(input: {
     input.allowDeferredCriticalAuditorBlockers === true &&
     normalizeText(preRenderGatePolicy.mode) === 'source_gap_fix_materialization' &&
     preRenderGatePolicy.auditorConvergenceDeferredToNextRound === true;
-  if (
-    evidence.checkpointPersistenceSatisfiedCandidate !== true &&
-    !deferredCriticalAuditorOnly
-  ) {
+  if (evidence.checkpointPersistenceSatisfiedCandidate !== true && !deferredCriticalAuditorOnly) {
     addIssue('checkpointPersistenceSatisfiedCandidate is not true');
   }
   if (!ref) {
@@ -13981,14 +18006,18 @@ function artifactMap(root: string, paths: PreConfirmationPaths): Record<string, 
     sourceMutationDecision: toRootRelativePath(root, paths.sourceMutationDecision),
     sourcePrdInstanceLintReport: toRootRelativePath(root, paths.sourcePrdInstanceLintReport),
     draftSourcePreview: toRootRelativePath(root, paths.draftSourcePreview),
-    draftImplementationConfirmation: toRootRelativePath(root, paths.draftImplementationConfirmation),
+    draftImplementationConfirmation: toRootRelativePath(
+      root,
+      paths.draftImplementationConfirmation
+    ),
     authoringMaterializationReceipt: toRootRelativePath(
       root,
       paths.authoringMaterializationReceipt
     ),
+    localizationRequest: toRootRelativePath(root, paths.localizationRequest),
     localizationMaterializationReceipt: toRootRelativePath(
       root,
-      path.join(paths.authoringDir, 'localization-materialization-receipt.json')
+      paths.localizationMaterializationReceipt
     ),
     criticalAuditorReceiptRound1: toRootRelativePath(root, paths.receiptPaths[0]),
     criticalAuditorReceiptRound2: toRootRelativePath(root, paths.receiptPaths[1]),
@@ -14047,15 +18076,23 @@ function buildPreConfirmationResult(input: {
 }): MainAgentPreConfirmationDrilldownResult {
   const issues = input.issues ?? [];
   const transaction = readJsonIfExists(input.paths.authoringTransaction);
-  const persistedLintReport = readJsonIfExists(input.paths.sourcePrdInstanceLintReport) as
-    | SourcePrdInstanceLintResult
-    | null;
+  const persistedLintReport = readJsonIfExists(
+    input.paths.sourcePrdInstanceLintReport
+  ) as SourcePrdInstanceLintResult | null;
   const sourcePrdInstanceLint = input.sourcePrdInstanceLint ?? persistedLintReport ?? null;
-  const entrySource = input.entrySource ?? (sourcePrdInstanceLint
-    ? normalizeSourcePrdAuthoringEntrySource(sourcePrdInstanceLint.entrySource, 'source_prd_draft')
-    : transaction?.sourcePrdEntrySource
-      ? normalizeSourcePrdAuthoringEntrySource(transaction.sourcePrdEntrySource, 'source_prd_draft')
-      : undefined);
+  const entrySource =
+    input.entrySource ??
+    (sourcePrdInstanceLint
+      ? normalizeSourcePrdAuthoringEntrySource(
+          sourcePrdInstanceLint.entrySource,
+          'source_prd_draft'
+        )
+      : transaction?.sourcePrdEntrySource
+        ? normalizeSourcePrdAuthoringEntrySource(
+            transaction.sourcePrdEntrySource,
+            'source_prd_draft'
+          )
+        : undefined);
   const confirmable = input.substate === 'user_confirmable' && issues.length === 0;
   const deliveryReadiness =
     input.renderReport?.deliveryReadiness &&
@@ -14110,9 +18147,11 @@ function buildPreConfirmationResult(input: {
     sourceDocumentHash: input.sourceDocumentHash ?? null,
     implementationConfirmationHash: input.implementationConfirmationHash ?? null,
     criticalAuditorProviderMode: input.criticalAuditorProviderMode,
-    blockingStage: input.blockingStage ?? (issues[0]?.code === 'critical_auditor_provider_mode_required'
-      ? 'critical_auditor_provider_mode_required'
-      : null),
+    blockingStage:
+      input.blockingStage ??
+      (issues[0]?.code === 'critical_auditor_provider_mode_required'
+        ? 'critical_auditor_provider_mode_required'
+        : null),
     sourceMutationPerformed: input.sourceMutationPerformed ?? false,
     allowedArtifacts: input.allowedArtifacts,
     forbiddenArtifacts: input.forbiddenArtifacts,
@@ -14349,11 +18388,14 @@ export function runMainAgentPreConfirmationDrilldown(
       'pre-confirmation-drilldown requires --source <source-document.md> or --intake-source <intake.md> --target-source <target.md>'
     );
   }
-  const entryMode: RequirementsAuthoringEntryMode = intakeArg ? 'intake_to_new_source' : 'existing_source';
+  const entryMode: RequirementsAuthoringEntryMode = intakeArg
+    ? 'intake_to_new_source'
+    : 'existing_source';
   const intakePath = intakeArg ? resolveRootRelativePath(root, intakeArg) : null;
-  const sourcePath = entryMode === 'intake_to_new_source'
-    ? resolveRootRelativePath(root, targetSourceArg)
-    : resolveRootRelativePath(root, sourceArg);
+  const sourcePath =
+    entryMode === 'intake_to_new_source'
+      ? resolveRootRelativePath(root, targetSourceArg)
+      : resolveRootRelativePath(root, sourceArg);
   const semanticInputPath = intakePath ?? sourcePath;
   if (!fs.existsSync(semanticInputPath)) {
     throw new Error(`source document not found: ${semanticInputPath}`);
@@ -14370,6 +18412,9 @@ export function runMainAgentPreConfirmationDrilldown(
   const paths = preConfirmationPaths(root, identity.recordId, identity.requirementSetId);
   const createdAt = new Date().toISOString();
   const language = normalizeText(options.confirmationLanguage) || null;
+  const localizationResponsePath = normalizeText(options.localizationResponseFile)
+    ? resolveRootRelativePath(root, normalizeText(options.localizationResponseFile))
+    : null;
   const autoRepairEnabled = options.noAutoRepair !== true;
   writeRequirementsAuthoringRepairRegistryReceipt({
     authoringDir: paths.authoringDir,
@@ -14563,7 +18608,14 @@ export function runMainAgentPreConfirmationDrilldown(
   const forbiddenLineBasedMustRequirements = inlineMustRequirements.filter((row) =>
     isForbiddenLineBasedMustId(row.id)
   );
-  let mustRequirements = inlineMustRequirements.filter((row) => !isForbiddenLineBasedMustId(row.id));
+  const inlineConfirmation = extractImplementationConfirmationBlock(sourceText)?.confirmation;
+  const inlineHasCurrentAuthoringProjection =
+    Object.keys(recordObject(inlineConfirmation?.preConfirmationDrilldown)).length > 0;
+  const sourceDeclaresStableRequirementIds =
+    sourceTextDeclaresPositiveRequirementIds(sourceText) && !inlineHasCurrentAuthoringProjection;
+  let mustRequirements = sourceDeclaresStableRequirementIds
+    ? []
+    : inlineMustRequirements.filter((row) => !isForbiddenLineBasedMustId(row.id));
   const requireSourceRequirementIdsForControlledCandidates =
     sourcePrdInstanceLintRequired && detectedEntrySource !== 'session_requirements';
   const controlledCandidates =
@@ -14583,7 +18635,11 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const explicitTargetPaths = normalizeStringList(options.targetPath);
   const explicitRequiredCommands = normalizeStringList(options.requiredCommand);
-  const sourceTargetRecords = extractTargetAuthorityFromSource({ root, sourceText, blocks: structuredBlocks });
+  const sourceTargetRecords = extractTargetAuthorityFromSource({
+    root,
+    sourceText,
+    blocks: structuredBlocks,
+  });
   const targetAuthority = resolveTargetAuthority({
     root,
     sourceText,
@@ -14614,6 +18670,20 @@ export function runMainAgentPreConfirmationDrilldown(
     validationRecords: validationAuthority.accepted,
   });
   writeJsonUtf8(paths.projectionDomainSanityReport, projectionSanity.report);
+  const sourceFailureMatrixBlocks = structuredBlocks.filter(
+    (block) =>
+      block.blockKind === 'table_row' &&
+      headingPathContainsExactSection(block.headingPath, 'Failure Matrix')
+  );
+  const sourceBusinessFailureAuthorityRows = buildBusinessFailurePathRows({
+    blocks: structuredBlocks,
+    mustRequirements,
+  });
+  const unownedBusinessJourneyIds = unownedSourceBusinessJourneyIds(
+    structuredBlocks,
+    mustRequirements
+  );
+  const businessFailureAuthorityIssues: PreConfirmationDrilldownIssue[] = [];
 
   const initialIssues: PreConfirmationDrilldownIssue[] = [];
   initialIssues.push(...userConfirmationPromotionIssues(sourceText, semanticInputPath, root));
@@ -14655,7 +18725,64 @@ export function runMainAgentPreConfirmationDrilldown(
       )
     );
   }
-  initialIssues.push(...targetAuthority.issues, ...validationAuthority.issues, ...projectionSanity.issues);
+  initialIssues.push(
+    ...targetAuthority.issues,
+    ...validationAuthority.issues,
+    ...projectionSanity.issues
+  );
+  if (unownedBusinessJourneyIds.length > 0) {
+    initialIssues.push(
+      preConfirmationIssue(
+        'business_user_journey_owner_requirement_missing',
+        'Every source User Journey row must map to at least one consuming-project MUST through Trace Matrix View refs.',
+        unownedBusinessJourneyIds.slice(0, 20),
+        'business_user_journeys'
+      )
+    );
+  }
+  if (sourceFailureMatrixBlocks.length === 0) {
+    businessFailureAuthorityIssues.push(
+      preConfirmationIssue(
+        'business_failure_paths_source_authority_required',
+        'Business failurePaths[] must come from the consuming project source Failure Matrix; authoring must not synthesize document-generation failure paths.',
+        [toRootRelativePath(root, semanticInputPath), 'Failure Matrix'],
+        'business_failure_paths'
+      )
+    );
+  } else {
+    const invalidFailureBlocks = sourceFailureMatrixBlocks.filter((block) => {
+      const sourceId = normalizeText(
+        tableContextRowValue(block.tableContext, ['ID'])
+      ).toUpperCase();
+      return !/^FAIL-\d{1,3}$/u.test(sourceId);
+    });
+    if (invalidFailureBlocks.length > 0) {
+      businessFailureAuthorityIssues.push(
+        preConfirmationIssue(
+          'business_failure_path_source_id_invalid',
+          'Every source Failure Matrix row must declare a stable FAIL-nnn ID; authoring must not invent or renumber failure path IDs.',
+          invalidFailureBlocks.slice(0, 20).map((block) => {
+            const span = block.sourceSpan;
+            return `${toRootRelativePath(root, block.sourcePath)}:${span.startLine}`;
+          }),
+          'business_failure_paths'
+        )
+      );
+    }
+    const unownedFailureRows = sourceBusinessFailureAuthorityRows.filter(
+      (row) => row.ownerMustRefs.length === 0
+    );
+    if (unownedFailureRows.length > 0) {
+      businessFailureAuthorityIssues.push(
+        preConfirmationIssue(
+          'business_failure_path_owner_requirement_missing',
+          'Every source Failure Matrix row must map to at least one consuming-project MUST through explicit refs, trace, acceptance, or a unique positive semantic match.',
+          unownedFailureRows.map((row) => row.id).slice(0, 20),
+          'business_failure_paths'
+        )
+      );
+    }
+  }
 
   let draftConfirmation =
     mustRequirements.length > 0 && !hasForbiddenLineBasedMustRequirements
@@ -14683,13 +18810,64 @@ export function runMainAgentPreConfirmationDrilldown(
       confirmation: draftConfirmation,
       language,
       createdAt,
+      sourceDocumentHash: sourceHashBefore,
+      transaction: stagingTransaction,
+      responsePath: localizationResponsePath,
     });
+    if (localization.request) {
+      writeJsonUtf8(paths.localizationRequest, localization.request);
+    }
+    if (localization.issues.length > 0) {
+      writeJsonUtf8(paths.draftImplementationConfirmation, {
+        implementationConfirmation: draftConfirmation,
+      });
+      writeSourcePromotionBlockDecision({
+        transaction: stagingTransaction,
+        blockingStage: 'authoring_localization_provider_required',
+        currentSourceHash: sourceHashBefore,
+        createdAt,
+      });
+      writeRequirementsAuthoringTransaction({
+        root,
+        paths,
+        entryMode,
+        substate: 'localization_translation_required',
+        sourcePath,
+        intakePath,
+        targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+        sourceStartHash: sourceHashBefore,
+        sourcePrdEntrySource: entrySource,
+        sourcePrdInstanceLint: preStagingSourcePrdLint,
+        sourcePrdInstanceLintReportPath: fs.existsSync(paths.sourcePrdInstanceLintReport)
+          ? toRootRelativePath(root, paths.sourcePrdInstanceLintReport)
+          : null,
+        nextRequiredAction: 'write_semantic_localization_response',
+      });
+      return buildPreConfirmationResult({
+        root,
+        sourcePath: semanticInputPath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'localization_translation_required',
+        issues: localization.issues,
+        sourceDocumentHash: sourceHashBefore,
+        implementationConfirmationHash:
+          implementationConfirmationHashForPreConfirmation(draftConfirmation),
+        blockingStage: 'authoring_localization_provider_required',
+        sourceMutationPerformed: false,
+        allowedArtifacts: ['advisory', 'staging', 'localization-request'],
+        forbiddenArtifacts: ['promotion-receipt', 'source mutation', 'confirmation render'],
+        stagingTransaction,
+        nextRequiredAction: 'write_semantic_localization_response',
+        confirmationLanguage: language,
+        entrySource,
+        sourcePrdInstanceLint: preStagingSourcePrdLint,
+      });
+    }
     draftConfirmation = localization.confirmation;
     if (localization.receipt) {
-      writeJsonUtf8(
-        path.join(paths.authoringDir, 'localization-materialization-receipt.json'),
-        localization.receipt
-      );
+      writeJsonUtf8(paths.localizationMaterializationReceipt, localization.receipt);
     }
   }
   if (draftConfirmation) {
@@ -14771,7 +18949,8 @@ export function runMainAgentPreConfirmationDrilldown(
       validationAuthorityDecision: validationAuthority.issues.length > 0 ? 'block' : 'pass',
       projectionSanityDecision: projectionSanity.issues.length > 0 ? 'block' : 'pass',
       auditEvidenceDecision: 'not_started',
-      scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || 'not_started',
+      scaleRoutingDecision:
+        normalizeText(initialScaleAssessment.routingDecision?.decision) || 'not_started',
     });
     return buildPreConfirmationResult({
       root,
@@ -14791,7 +18970,10 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const materializedDraftText = materializeImplementationConfirmationText(sourceText, draftConfirmation);
+  const materializedDraftText = materializeImplementationConfirmationText(
+    sourceText,
+    draftConfirmation
+  );
   const stagedDraftText = fs.existsSync(stagingTransaction.draftSource)
     ? fs.readFileSync(stagingTransaction.draftSource, 'utf8')
     : null;
@@ -14862,7 +19044,8 @@ export function runMainAgentPreConfirmationDrilldown(
       validationAuthorityDecision: 'pass',
       projectionSanityDecision: 'pass',
       auditEvidenceDecision: 'not_started',
-      scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || 'not_started',
+      scaleRoutingDecision:
+        normalizeText(initialScaleAssessment.routingDecision?.decision) || 'not_started',
     });
     return buildPreConfirmationResult({
       root,
@@ -14928,7 +19111,9 @@ export function runMainAgentPreConfirmationDrilldown(
       packetHash,
       createdAt,
       mustRequirements,
+      structuredBlocks,
       targetAuthorityRecords: projectionTargetAuthorityRecords,
+      validationAuthorityRecords: validationAuthority.accepted,
       consecutiveNoNewGapRounds: 0,
     });
     writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: previewPacket });
@@ -15002,6 +19187,31 @@ export function runMainAgentPreConfirmationDrilldown(
     semanticKernelHash,
     packetHash,
   });
+  const staleAuditIssues = [
+    ...collectStaleCriticalAuditorArtifactIssues({
+      authoringDir: paths.authoringDir,
+      auditInputHash,
+      sourceDocumentHash: previewSourceDocumentHash,
+      implementationConfirmationHash: previewImplementationConfirmationHash,
+      packetHash,
+    }),
+    ...collectStaleCriticalAuditorArtifactIssues({
+      authoringDir: stagingTransaction.stagingDir,
+      auditInputHash,
+      sourceDocumentHash: previewSourceDocumentHash,
+      implementationConfirmationHash: previewImplementationConfirmationHash,
+      packetHash,
+    }),
+  ];
+  if (staleAuditIssues.length > 0) {
+    archiveCriticalAuditorArtifacts({
+      authoringDir: paths.authoringDir,
+      stagingDir: stagingTransaction.stagingDir,
+      reason: 'current_draft_hash_changed_restart_from_round_1',
+      auditInputHash,
+      createdAt,
+    });
+  }
   const responseFilePath = normalizeText(options.criticalAuditorResponseFile)
     ? resolveRootRelativePath(root, normalizeText(options.criticalAuditorResponseFile))
     : '';
@@ -15016,57 +19226,64 @@ export function runMainAgentPreConfirmationDrilldown(
       ? (() => {
           let responseFileConsumed = false;
           return (round: CriticalAuditorRoundInput): CriticalAuditorRoundResult => {
-          const requestPath = criticalAuditorRequestPath(stagingTransaction, round.roundIndex);
-          const request = readJsonIfExists(requestPath);
-          if (!request) {
-            throw new Error(`critical_auditor_request_missing_for_response: ${requestPath}`);
-          }
-          const gateDryRun = round.gateDryRun;
-          const responseTargetPath = criticalAuditorResponsePath(stagingTransaction, round.roundIndex);
-          const responseDirRoundPath = responseDirPath
-            ? path.join(responseDirPath, `critical-auditor-round-response-${round.roundIndex}.json`)
-            : '';
-          const stagedResponseExists = fs.existsSync(responseTargetPath);
-          const responseDirRoundExists = Boolean(
-            responseDirRoundPath && fs.existsSync(responseDirRoundPath)
-          );
-          const selectedResponsePath = stagedResponseExists
-            ? responseTargetPath
-            : responseDirRoundExists
-              ? responseDirRoundPath
-              : responseFilePath && !responseFileConsumed
-                ? responseFilePath
-                : '';
-          if (!selectedResponsePath || !fs.existsSync(selectedResponsePath)) {
-            throw new Error(
-              `critical_auditor_response_file_missing: ${responseTargetPath}`
+            const requestPath = criticalAuditorRequestPath(stagingTransaction, round.roundIndex);
+            const request = readJsonIfExists(requestPath);
+            if (!request) {
+              throw new Error(`critical_auditor_request_missing_for_response: ${requestPath}`);
+            }
+            const gateDryRun = round.gateDryRun;
+            const responseTargetPath = criticalAuditorResponsePath(
+              stagingTransaction,
+              round.roundIndex
             );
-          }
-          const validation = validateCriticalAuditorResponse({
-            responsePath: selectedResponsePath,
-            request,
-            transaction: stagingTransaction,
-            roundIndex: round.roundIndex,
-            sourceDocumentHash: previewSourceDocumentHash,
-            implementationConfirmationHash: previewImplementationConfirmationHash,
-            packetHash,
-            mustRefs: mustRequirements.map((requirement) => requirement.id),
-            packet: previewPacket,
-            gateDryRun,
-          });
-          if (!validation.response) {
-            const code = validation.issues[0]?.code ?? 'critical_auditor_response_invalid';
-            throw new Error(`${code}: ${selectedResponsePath}`);
-          }
-          if (path.resolve(selectedResponsePath) !== path.resolve(responseTargetPath)) {
-            fs.copyFileSync(selectedResponsePath, responseTargetPath);
-          }
-          if (responseFilePath && path.resolve(selectedResponsePath) === path.resolve(responseFilePath)) {
-            responseFileConsumed = true;
-          }
-          return validation.response;
-        };
-      })()
+            const responseDirRoundPath = responseDirPath
+              ? path.join(
+                  responseDirPath,
+                  `critical-auditor-round-response-${round.roundIndex}.json`
+                )
+              : '';
+            const stagedResponseExists = fs.existsSync(responseTargetPath);
+            const responseDirRoundExists = Boolean(
+              responseDirRoundPath && fs.existsSync(responseDirRoundPath)
+            );
+            const selectedResponsePath = stagedResponseExists
+              ? responseTargetPath
+              : responseDirRoundExists
+                ? responseDirRoundPath
+                : responseFilePath && !responseFileConsumed
+                  ? responseFilePath
+                  : '';
+            if (!selectedResponsePath || !fs.existsSync(selectedResponsePath)) {
+              throw new Error(`critical_auditor_response_file_missing: ${responseTargetPath}`);
+            }
+            const validation = validateCriticalAuditorResponse({
+              responsePath: selectedResponsePath,
+              request,
+              transaction: stagingTransaction,
+              roundIndex: round.roundIndex,
+              sourceDocumentHash: previewSourceDocumentHash,
+              implementationConfirmationHash: previewImplementationConfirmationHash,
+              packetHash,
+              mustRefs: mustRequirements.map((requirement) => requirement.id),
+              packet: previewPacket,
+              gateDryRun,
+            });
+            if (!validation.response) {
+              const code = validation.issues[0]?.code ?? 'critical_auditor_response_invalid';
+              throw new Error(`${code}: ${selectedResponsePath}`);
+            }
+            if (path.resolve(selectedResponsePath) !== path.resolve(responseTargetPath)) {
+              fs.copyFileSync(selectedResponsePath, responseTargetPath);
+            }
+            if (
+              responseFilePath &&
+              path.resolve(selectedResponsePath) === path.resolve(responseFilePath)
+            ) {
+              responseFileConsumed = true;
+            }
+            return validation.response;
+          };
+        })()
       : undefined;
   const criticalAuditorLoop = runCriticalAuditorReceiptLoop({
     root,
@@ -15086,6 +19303,7 @@ export function runMainAgentPreConfirmationDrilldown(
     roundProvider: options.criticalAuditorRound ?? fileBackedProvider,
     maxRounds: options.maxCriticalAuditorRounds,
   });
+  const criticalAuditorIssues = [...businessFailureAuthorityIssues, ...criticalAuditorLoop.issues];
   const sourceHashAfterCriticalAuditor =
     entryMode === 'intake_to_new_source'
       ? targetSourceSemanticHashAtStart
@@ -15145,11 +19363,11 @@ export function runMainAgentPreConfirmationDrilldown(
       stagingTransaction,
     });
   }
-  if (criticalAuditorLoop.issues.length > 0) {
-    const providerMissing = criticalAuditorLoop.issues.some(
+  if (criticalAuditorIssues.length > 0) {
+    const providerMissing = criticalAuditorIssues.some(
       (issue) => issue.code === 'critical_auditor_provider_mode_required'
     );
-    const namespaceMismatch = criticalAuditorLoop.issues.some(
+    const namespaceMismatch = criticalAuditorIssues.some(
       (issue) => issue.code === 'id_namespace_mismatch'
     );
     const namespaceArchiveDir = namespaceMismatch
@@ -15206,7 +19424,7 @@ export function runMainAgentPreConfirmationDrilldown(
       requirementSetId: identity.requirementSetId,
       createdAt,
       sourceHashBefore,
-      issues: criticalAuditorLoop.issues,
+      issues: criticalAuditorIssues,
       coverageDecision: 'pass',
       targetAuthorityDecision: 'pass',
       validationAuthorityDecision: 'pass',
@@ -15224,7 +19442,9 @@ export function runMainAgentPreConfirmationDrilldown(
       intakePath,
       targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
       sourceStartHash: sourceHashBefore,
-      draftHash: fs.existsSync(paths.draftSourcePreview) ? sha256File(paths.draftSourcePreview) : null,
+      draftHash: fs.existsSync(paths.draftSourcePreview)
+        ? sha256File(paths.draftSourcePreview)
+        : null,
       scaleRoutingDecision:
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
       nextRequiredAction: providerMissing
@@ -15238,7 +19458,7 @@ export function runMainAgentPreConfirmationDrilldown(
       requirementSetId: identity.requirementSetId,
       paths,
       substate: providerMissing ? 'critical_auditor_round_required' : 'blocked_by_render_gate',
-      issues: criticalAuditorLoop.issues,
+      issues: criticalAuditorIssues,
       sourceDocumentHash: sourceHashBefore,
       implementationConfirmationHash: previewImplementationConfirmationHash,
       criticalAuditorProviderMode,
@@ -15250,9 +19470,7 @@ export function runMainAgentPreConfirmationDrilldown(
         : undefined,
       criticalAuditorContinuation: criticalAuditorLoop.continuation ?? null,
       stagingTransaction,
-      nextRequiredAction: providerMissing
-        ? 'run_main_session_critical_auditor_round'
-        : undefined,
+      nextRequiredAction: providerMissing ? 'run_main_session_critical_auditor_round' : undefined,
       finalStandards: {
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
         singlePassCannotSkipAtomicDecompositionLoop: true,
@@ -15294,21 +19512,76 @@ export function runMainAgentPreConfirmationDrilldown(
       confirmation: auditedConfirmation,
       language,
       createdAt,
+      sourceDocumentHash: sourceHashBefore,
+      transaction: stagingTransaction,
+      responsePath: localizationResponsePath,
     });
+    if (auditedLocalization.request) {
+      writeJsonUtf8(paths.localizationRequest, auditedLocalization.request);
+    }
+    if (auditedLocalization.issues.length > 0) {
+      writeSourcePromotionBlockDecision({
+        transaction: stagingTransaction,
+        blockingStage: 'authoring_localization_provider_required',
+        currentSourceHash: sourceHashBefore,
+        createdAt,
+      });
+      writeRequirementsAuthoringTransaction({
+        root,
+        paths,
+        entryMode,
+        substate: 'localization_translation_required',
+        sourcePath,
+        intakePath,
+        targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
+        sourceStartHash: sourceHashBefore,
+        sourcePrdEntrySource: entrySource,
+        sourcePrdInstanceLint: preStagingSourcePrdLint,
+        sourcePrdInstanceLintReportPath: fs.existsSync(paths.sourcePrdInstanceLintReport)
+          ? toRootRelativePath(root, paths.sourcePrdInstanceLintReport)
+          : null,
+        nextRequiredAction: 'write_semantic_localization_response',
+      });
+      return buildPreConfirmationResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'localization_translation_required',
+        issues: auditedLocalization.issues,
+        sourceDocumentHash: sourceHashBefore,
+        implementationConfirmationHash:
+          implementationConfirmationHashForPreConfirmation(auditedConfirmation),
+        blockingStage: 'authoring_localization_provider_required',
+        sourceMutationPerformed: false,
+        allowedArtifacts: ['advisory', 'staging', 'localization-request'],
+        forbiddenArtifacts: ['promotion-receipt', 'source mutation', 'confirmation render'],
+        stagingTransaction,
+        nextRequiredAction: 'write_semantic_localization_response',
+        confirmationLanguage: language,
+        entrySource,
+        sourcePrdInstanceLint: preStagingSourcePrdLint,
+      });
+    }
     auditedConfirmation = auditedLocalization.confirmation;
     if (auditedLocalization.receipt) {
-      writeJsonUtf8(
-        path.join(paths.authoringDir, 'localization-materialization-receipt.json'),
-        {
-          ...auditedLocalization.receipt,
-          stage: 'post_critical_auditor_rebuild',
-          criticalAuditorConsecutiveNoNewGapRounds:
-            criticalAuditorLoop.consecutiveNoNewGapRounds,
-        }
-      );
+      writeJsonUtf8(paths.localizationMaterializationReceipt, {
+        ...auditedLocalization.receipt,
+        stage: 'post_critical_auditor_rebuild',
+        criticalAuditorConsecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
+      });
     }
-    fs.writeFileSync(paths.draftSourcePreview, materializeImplementationConfirmationText(sourceText, auditedConfirmation), 'utf8');
-    fs.writeFileSync(stagingTransaction.draftSource, fs.readFileSync(paths.draftSourcePreview, 'utf8'), 'utf8');
+    fs.writeFileSync(
+      paths.draftSourcePreview,
+      materializeImplementationConfirmationText(sourceText, auditedConfirmation),
+      'utf8'
+    );
+    fs.writeFileSync(
+      stagingTransaction.draftSource,
+      fs.readFileSync(paths.draftSourcePreview, 'utf8'),
+      'utf8'
+    );
   }
   const finalDraftSource = path.join(stagingTransaction.stagingDir, 'final-draft-source.md');
   fs.copyFileSync(paths.draftSourcePreview, finalDraftSource);
@@ -15349,16 +19622,18 @@ export function runMainAgentPreConfirmationDrilldown(
     auditedPreviewExtraction.blockText,
     auditedPreviewExtraction.confirmation
   );
-  const auditedPreviewImplementationConfirmationHash = implementationConfirmationHashForPreConfirmation(
-    auditedPreviewExtraction.confirmation
-  );
+  const auditedPreviewImplementationConfirmationHash =
+    implementationConfirmationHashForPreConfirmation(auditedPreviewExtraction.confirmation);
   // The post-audit preview intentionally replaces seed metadata with the current
   // Critical Auditor convergence summary. Continue with the audited hashes so
   // source-race and checkpoint gates remain the authoritative promotion blockers.
-  const stagedFinalKernel = recordObject(readJsonIfExists(stagingTransaction.semanticKernel)?.semanticKernel);
+  const stagedFinalKernel = recordObject(
+    readJsonIfExists(stagingTransaction.semanticKernel)?.semanticKernel
+  );
   const finalKernel =
     normalizeText(stagedFinalKernel.sourceDocumentHash) === auditedPreviewSourceDocumentHash &&
-    normalizeText(stagedFinalKernel.implementationConfirmationHash) === auditedPreviewImplementationConfirmationHash
+    normalizeText(stagedFinalKernel.implementationConfirmationHash) ===
+      auditedPreviewImplementationConfirmationHash
       ? stagedFinalKernel
       : buildSemanticKernel({
           root,
@@ -15384,7 +19659,8 @@ export function runMainAgentPreConfirmationDrilldown(
   );
   const baseFinalPacket =
     normalizeText(stagedFinalPacket.sourceDocumentHash) === auditedPreviewSourceDocumentHash &&
-    normalizeText(stagedFinalPacket.implementationConfirmationHash) === auditedPreviewImplementationConfirmationHash &&
+    normalizeText(stagedFinalPacket.implementationConfirmationHash) ===
+      auditedPreviewImplementationConfirmationHash &&
     normalizeText(stagedFinalPacket.semanticKernelHash) === finalSemanticKernelHash
       ? stagedFinalPacket
       : buildMustDecompositionPacket({
@@ -15398,7 +19674,9 @@ export function runMainAgentPreConfirmationDrilldown(
           packetHash,
           createdAt,
           mustRequirements,
+          structuredBlocks,
           targetAuthorityRecords: projectionTargetAuthorityRecords,
+          validationAuthorityRecords: validationAuthority.accepted,
           consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
         });
   const finalPacket = packetWithCriticalAuditorConvergence(
@@ -15529,7 +19807,15 @@ export function runMainAgentPreConfirmationDrilldown(
   const checkpointScript = resolveSkillScript(root, 'run_semantic_checkpoints.js');
   const combinedGate = runNodeJson(
     checkpointScript,
-    ['--source', paths.draftSourcePreview, '--progress', paths.progress, '--mode', 'pre-render-gate', '--json'],
+    [
+      '--source',
+      paths.draftSourcePreview,
+      '--progress',
+      paths.progress,
+      '--mode',
+      'pre-render-gate',
+      '--json',
+    ],
     root
   );
   const combinedReport = combinedGate.json;
@@ -15656,15 +19942,15 @@ export function runMainAgentPreConfirmationDrilldown(
 
   const promotionPreSemanticHash =
     entryMode === 'intake_to_new_source'
-      ? (targetSourceExistedBeforeAuthoring
-          ? safeCurrentSourceDocumentHash(sourcePath)
-          : 'absent')
+      ? targetSourceExistedBeforeAuthoring
+        ? safeCurrentSourceDocumentHash(sourcePath)
+        : 'absent'
       : safeCurrentSourceDocumentHash(sourcePath);
   const promotionPreRawHash =
     entryMode === 'intake_to_new_source'
-      ? (targetSourceExistedBeforeAuthoring
-          ? sha256Text(fs.readFileSync(sourcePath, 'utf8'))
-          : 'absent')
+      ? targetSourceExistedBeforeAuthoring
+        ? sha256Text(fs.readFileSync(sourcePath, 'utf8'))
+        : 'absent'
       : sha256Text(fs.readFileSync(sourcePath, 'utf8'));
   if (
     entryMode === 'existing_source' &&
@@ -15769,8 +20055,11 @@ export function runMainAgentPreConfirmationDrilldown(
       intakePath,
       targetSourcePath: sourcePath,
       sourceStartHash: sourceHashBefore,
-      draftHash: fs.existsSync(paths.draftSourcePreview) ? sha256File(paths.draftSourcePreview) : null,
-      scaleRoutingDecision: normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || null,
+      draftHash: fs.existsSync(paths.draftSourcePreview)
+        ? sha256File(paths.draftSourcePreview)
+        : null,
+      scaleRoutingDecision:
+        normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || null,
       nextRequiredAction: 'stop_target_created_before_promotion',
     });
     return buildPreConfirmationResult({
@@ -15841,7 +20130,9 @@ export function runMainAgentPreConfirmationDrilldown(
       intakePath,
       targetSourcePath: entryMode === 'intake_to_new_source' ? sourcePath : null,
       sourceStartHash: sourceHashBefore,
-      draftHash: fs.existsSync(paths.draftSourcePreview) ? sha256File(paths.draftSourcePreview) : null,
+      draftHash: fs.existsSync(paths.draftSourcePreview)
+        ? sha256File(paths.draftSourcePreview)
+        : null,
       scaleRoutingDecision: routingDecisionText,
       nextRequiredAction: 'run_checkpoint_persistence',
     });
@@ -15889,7 +20180,8 @@ export function runMainAgentPreConfirmationDrilldown(
   } else if (routingDecisionText !== 'single_pass_final_allowed') {
     routingIssues.push(
       preConfirmationIssue(
-        normalizeText(routingDecision?.blockingState) || 'scale_routing_decision_blocks_source_materialization',
+        normalizeText(routingDecision?.blockingState) ||
+          'scale_routing_decision_blocks_source_materialization',
         `Scale routing decision blocks source materialization: ${routingDecisionText}`,
         [toRootRelativePath(root, paths.scaleRoutingDecision)],
         'requirements_contract_authoring_scale_routing'
@@ -15976,7 +20268,8 @@ export function runMainAgentPreConfirmationDrilldown(
     recordId: identity.recordId,
     requirementSetId: identity.requirementSetId,
     createdAt,
-    sourceDocumentExistedBefore: entryMode === 'existing_source' || targetSourceExistedBeforeAuthoring,
+    sourceDocumentExistedBefore:
+      entryMode === 'existing_source' || targetSourceExistedBeforeAuthoring,
     sourceHashBefore:
       entryMode === 'intake_to_new_source' ? targetSourceRawHashAtStart : promotionPreRawHash,
     sourceHashAfter: normalizedFinalDraft.draftHash,
@@ -16145,7 +20438,8 @@ export function runMainAgentPreConfirmationDrilldown(
     recordId: identity.recordId,
     requirementSetId: identity.requirementSetId,
     createdAt,
-    sourceDocumentExistedBefore: entryMode === 'existing_source' || targetSourceExistedBeforeAuthoring,
+    sourceDocumentExistedBefore:
+      entryMode === 'existing_source' || targetSourceExistedBeforeAuthoring,
     sourceHashBefore:
       entryMode === 'intake_to_new_source' ? targetSourceRawHashAtStart : promotionPreRawHash,
     sourceHashAfter: finalSourceRawHash,
@@ -16985,6 +21279,7 @@ function deriveNextActionFromRequirementRecord(input: {
   const nativeGoalImportStatus = normalizeText(nativeGoalHandoff?.importStatus);
   const nativeGoalAwaitingTaskReport =
     nativeGoalHandoff &&
+    nativeGoalHandoff.invoked === true &&
     nativeGoalHandoff.imported !== true &&
     !['task_report_partial', 'task_report_blocked'].includes(nativeGoalImportStatus);
   const architectureState =
@@ -17067,7 +21362,10 @@ function deriveNextActionFromRequirementRecord(input: {
   } else if (currentMentalModel === 'execution_closure') {
     const executionClosureStatus = normalizeText(currentModelResult?.status);
     if (nativeGoalAwaitingTaskReport) {
-      blockingReasonRefs.push({ sourceType: 'native_goal_handoff', id: 'task_report_import_required' });
+      blockingReasonRefs.push({
+        sourceType: 'native_goal_handoff',
+        id: 'task_report_import_required',
+      });
       return { nextAction: 'await_native_goal_task_report', ready: false, blockingReasonRefs };
     }
     if (executionClosureStatus === 'pass') {
@@ -17121,7 +21419,10 @@ function deriveNextActionFromRequirementRecord(input: {
   const executionClosurePass = modelStatusFor(input.record, 'execution_closure') === 'pass';
   const auditReviewPass = modelStatusFor(input.record, 'audit_review') === 'pass';
   if (nativeGoalAwaitingTaskReport && executionClosurePass) {
-    blockingReasonRefs.push({ sourceType: 'native_goal_handoff', id: 'task_report_import_required' });
+    blockingReasonRefs.push({
+      sourceType: 'native_goal_handoff',
+      id: 'task_report_import_required',
+    });
     return { nextAction: 'await_native_goal_task_report', ready: false, blockingReasonRefs };
   }
   const hasCurrentCompiledPromptRef = packetHasCurrentHashCompiledPromptRef(
@@ -17917,7 +22218,7 @@ export function ensureMainAgentDispatchPacket(
                 ? compiledRun.blockingReasons
                 : nativeCompiledRefMissing
                   ? ['native_goal_compiled_ref_missing']
-                : null,
+                  : null,
         });
   const compilerBlocked =
     'compilerBlock' in packet &&
@@ -17926,20 +22227,6 @@ export function ensureMainAgentDispatchPacket(
 
   const packetKind: PacketKind = 'originalExecutionPacketId' in packet ? 'resume' : 'execution';
   const packetPath = writePacketFile(input.projectRoot, sessionId, packetId, packet);
-  if (
-    isNativeImplementHost(host, taskType) &&
-    !compilerBlocked &&
-    'taskType' in packet &&
-    packet.compiledPromptRef
-  ) {
-    writeNativeGoalHandoffToRecord({
-      recordPath,
-      host,
-      packet,
-      packetPath,
-      modelPacket: readModelPacketForCompiledRef(input.projectRoot, packet.compiledPromptRef),
-    });
-  }
 
   let writtenState: OrchestrationState;
   const canUpdateCurrentState =
@@ -18116,6 +22403,8 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'confirmation-drift-route',
   'repair-confirmation-bookkeeping',
   'confirmation-bookkeeping-repair',
+  'register-pre-confirmation-render',
+  'register_pre_confirmation_render',
   'pre-confirmation-drilldown',
   'pre_confirmation_drilldown',
   'author-confirmation-ready-source',
@@ -18227,7 +22516,10 @@ function requiredCommandsFromModelPacket(modelPacket: Record<string, unknown> | 
   return [...new Set([...direct, ...fromHandoff])];
 }
 
-function validationsCoverRequiredCommands(validationsRun: string[], requiredCommands: string[]): boolean {
+function validationsCoverRequiredCommands(
+  validationsRun: string[],
+  requiredCommands: string[]
+): boolean {
   if (requiredCommands.length === 0) return true;
   const haystack = validationsRun.join('\n');
   return requiredCommands.every((command) => haystack.includes(command));
@@ -18247,6 +22539,7 @@ function writeNativeGoalHandoffToRecord(input: {
   packet: RecommendationPacket | ExecutionPacket | ResumePacket;
   packetPath: string;
   modelPacket?: Record<string, unknown> | null;
+  invoked?: boolean;
   imported?: boolean;
   importStatus?: string;
 }): void {
@@ -18260,12 +22553,16 @@ function writeNativeGoalHandoffToRecord(input: {
   if (!record) return;
   const receipt = readJsonObjectFile(compiledPromptRef.auditReceiptPath);
   const goalCommand =
-    receipt?.goalCommand && typeof receipt.goalCommand === 'object' && !Array.isArray(receipt.goalCommand)
+    receipt?.goalCommand &&
+    typeof receipt.goalCommand === 'object' &&
+    !Array.isArray(receipt.goalCommand)
       ? (receipt.goalCommand as Record<string, unknown>)
       : {};
   const commandText =
     normalizeText(goalCommand.commandText) ||
-    normalizeText((receipt?.continuationDirective as Record<string, unknown> | undefined)?.directive);
+    normalizeText(
+      (receipt?.continuationDirective as Record<string, unknown> | undefined)?.directive
+    );
   record.nativeGoalHandoff = {
     schemaVersion: 'native-goal-handoff/v1',
     recordId: normalizeText(record.recordId) || input.packet.parentSessionId,
@@ -18284,6 +22581,7 @@ function writeNativeGoalHandoffToRecord(input: {
     sourceDocumentHash: compiledPromptRef.sourceDocumentHash,
     implementationConfirmationHash: compiledPromptRef.implementationConfirmationHash,
     requiredCommands: requiredCommandsFromModelPacket(input.modelPacket ?? null),
+    invoked: input.invoked === true || input.imported === true,
     imported: input.imported === true,
     importStatus: input.importStatus ?? (input.imported ? 'imported' : 'awaiting_task_report'),
   };
@@ -18314,12 +22612,12 @@ function isNativeGoalExecutionPacket(
   const packet = instruction.packet;
   return Boolean(
     packet &&
-      'taskType' in packet &&
-      packet.taskType === 'implement' &&
-      packet.authorityMode === 'compiled_implementation_confirmation' &&
-      packet.compiledPromptRef?.goalExecutionHash &&
-      packet.compiledPromptRef.goalExecutionPath &&
-      dispatchPacketGoalCommandMode(packet) === 'native_goal_document_ref'
+    'taskType' in packet &&
+    packet.taskType === 'implement' &&
+    packet.authorityMode === 'compiled_implementation_confirmation' &&
+    packet.compiledPromptRef?.goalExecutionHash &&
+    packet.compiledPromptRef.goalExecutionPath &&
+    dispatchPacketGoalCommandMode(packet) === 'native_goal_document_ref'
   );
 }
 
@@ -18366,10 +22664,7 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.targetSource = argv[++index];
     } else if ((token === '--entry-source' || token === '--entrySource') && argv[index + 1]) {
       out.entrySource = argv[++index];
-    } else if (
-      (token === '--target-path' || token === '--targetPath') &&
-      argv[index + 1]
-    ) {
+    } else if ((token === '--target-path' || token === '--targetPath') && argv[index + 1]) {
       appendArg('targetPath', argv[++index]);
     } else if (
       (token === '--required-command' || token === '--requiredCommand') &&
@@ -18393,6 +22688,11 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       argv[index + 1]
     ) {
       out.confirmationLanguage = argv[++index];
+    } else if (
+      (token === '--localization-response' || token === '--localizationResponseFile') &&
+      argv[index + 1]
+    ) {
+      out.localizationResponseFile = argv[++index];
     } else if (token === '--mode' && argv[index + 1]) {
       out.mode = argv[++index];
     } else if (
@@ -18536,6 +22836,20 @@ export interface MainAgentConfirmScopeResult {
   classification?: Record<string, unknown>;
   delegatedResult?: MainAgentConfirmScopeResult;
   mainAgentStageSummary?: MainAgentStageSummary | null;
+}
+
+export interface MainAgentPreConfirmationRenderRegistrationResult {
+  ok: boolean;
+  action: 'register-pre-confirmation-render';
+  exitCode: number;
+  substate: 'user_confirmable';
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  confirmationPageHash: string;
+  requirementRecordPath: string;
+  renderReportPath: string;
+  receiptPath: string;
+  controlledIngestRequiredBeforeProgression: true;
 }
 
 function stageSummaryForCommandResult(
@@ -18850,6 +23164,210 @@ function currentConfirmationHashes(sourcePath: string): {
     implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
       extraction.confirmation
     ),
+  };
+}
+
+export function runMainAgentRegisterPreConfirmationRender(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentPreConfirmationRenderRegistrationResult {
+  const source = normalizeText(args.source);
+  const renderReportArg = normalizeText(args.renderReport);
+  const requirementRecordArg = normalizeText(args.requirementRecord);
+  if (!source || !renderReportArg || !requirementRecordArg) {
+    throw new Error(
+      'register-pre-confirmation-render requires --source, --render-report, and --requirement-record'
+    );
+  }
+
+  const sourcePath = path.resolve(root, stripWrappingQuotes(source));
+  const renderReportPath = path.resolve(root, stripWrappingQuotes(renderReportArg));
+  const requirementRecordPath = path.resolve(root, stripWrappingQuotes(requirementRecordArg));
+  const report = readJsonIfExists(renderReportPath);
+  const existingRecord = readJsonIfExists(requirementRecordPath);
+  if (!fs.existsSync(sourcePath) || !report || !existingRecord) {
+    throw new Error('pre_confirmation_render_registration_input_missing');
+  }
+  if (normalizeText(existingRecord.status) === 'user_confirmed') {
+    throw new Error('pre_confirmation_render_registration_confirmed_record_forbidden');
+  }
+
+  const hashes = currentConfirmationHashes(sourcePath);
+  const reportSourceHash = normalizeText(report.sourceDocumentHash);
+  const reportConfirmationHash = normalizeText(report.implementationConfirmationHash);
+  const confirmationPageHash = normalizeText(report.confirmationPageHash);
+  if (
+    reportSourceHash !== hashes.sourceDocumentHash ||
+    reportConfirmationHash !== hashes.implementationConfirmationHash
+  ) {
+    throw new Error('pre_confirmation_render_registration_semantic_hash_mismatch');
+  }
+  if (
+    !confirmationPageHash ||
+    normalizeText(report.confirmability) !== 'confirmable' ||
+    asRecordArray(report.blockingIssues).length > 0
+  ) {
+    throw new Error('pre_confirmation_render_registration_render_not_confirmable');
+  }
+
+  const semanticDrilldown = recordObject(report.preConfirmationSemanticDrilldown);
+  const semanticDrilldownReport = recordObject(semanticDrilldown.report);
+  if (
+    normalizeText(semanticDrilldown.status) !== 'pass' ||
+    normalizeText(semanticDrilldownReport.verdict) !== 'PASS' ||
+    normalizeText(semanticDrilldownReport.sourceDocumentHash) !== hashes.sourceDocumentHash ||
+    normalizeText(semanticDrilldownReport.implementationConfirmationHash) !==
+      hashes.implementationConfirmationHash
+  ) {
+    throw new Error('pre_confirmation_render_registration_drilldown_not_current');
+  }
+
+  const artifactRef = recordObject(report.artifactRef);
+  const projectionIdentity = recordObject(report.closeoutProjectionIdentity);
+  const htmlPathText =
+    normalizeText(artifactRef.path) || normalizeText(projectionIdentity.renderedPath);
+  if (!htmlPathText) {
+    throw new Error('pre_confirmation_render_registration_html_path_missing');
+  }
+  const htmlPath = path.isAbsolute(htmlPathText) ? htmlPathText : path.resolve(root, htmlPathText);
+  const actualHtmlFileHash = normalizeText(report.actualHtmlFileHash);
+  if (
+    !fs.existsSync(htmlPath) ||
+    !actualHtmlFileHash ||
+    sha256File(htmlPath) !== actualHtmlFileHash
+  ) {
+    throw new Error('pre_confirmation_render_registration_html_hash_mismatch');
+  }
+
+  const recordId =
+    normalizeText(args.recordId) ||
+    normalizeText(report.recordId) ||
+    normalizeText(existingRecord.recordId);
+  const requirementSetId =
+    normalizeText(args.requirementSetId) ||
+    normalizeText(report.requirementSetId) ||
+    normalizeText(existingRecord.requirementSetId);
+  if (!recordId || !requirementSetId) {
+    throw new Error('pre_confirmation_render_registration_identity_missing');
+  }
+  if (
+    normalizeText(report.recordId) !== recordId ||
+    normalizeText(report.requirementSetId) !== requirementSetId
+  ) {
+    throw new Error('pre_confirmation_render_registration_identity_mismatch');
+  }
+  const paths = preConfirmationPaths(root, recordId, requirementSetId);
+  if (path.resolve(paths.recordPath) !== requirementRecordPath) {
+    throw new Error('pre_confirmation_render_registration_record_path_mismatch');
+  }
+
+  const createdAt = new Date().toISOString();
+  const recoveryDir = path.join(paths.recordRoot, 'recovery');
+  const updatedRecord = {
+    ...existingRecord,
+    recordId,
+    requirementSetId,
+    status: 'draft',
+    sourcePath: toRootRelativePath(root, sourcePath),
+    sourceDocumentHash: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    confirmationPageHash,
+    lastEventType: 'pre_confirmation_drilldown_user_confirmable',
+    updatedAt: createdAt,
+    preConfirmationDrilldownLane: {
+      currentMentalModel: 'requirement_confirmation',
+      lane: 'pre_confirmation_drilldown',
+      substate: 'user_confirmable',
+      nextMentalModel: null,
+      controlledIngestRequiredBeforeProgression: true,
+      confirmationRenderReportPath: toRootRelativePath(root, renderReportPath),
+    },
+    architectureConfirmationState: {
+      status: 'missing',
+      reasonCode: 'blocked_until_controlled_requirement_confirmation_ingest',
+      updatedAt: createdAt,
+    },
+    runtimePolicySnapshotRef: {
+      path: toRootRelativePath(root, path.join(recoveryDir, 'runtime-policy-snapshot.json')),
+    },
+    recoveryContextRef: {
+      path: toRootRelativePath(root, path.join(recoveryDir, 'recovery-context.json')),
+    },
+  };
+  const beforeRecordHash = sha256File(requirementRecordPath);
+  writeJsonUtf8(path.join(recoveryDir, 'runtime-policy-snapshot.json'), {
+    kind: 'runtime-policy-snapshot',
+    flow: normalizeText(updatedRecord.flow) || 'standalone_tasks',
+    stage: normalizeText(updatedRecord.stage) || 'implement',
+    policy: {
+      flow: normalizeText(updatedRecord.flow) || 'standalone_tasks',
+      stage: normalizeText(updatedRecord.stage) || 'implement',
+    },
+  });
+  writeJsonUtf8(path.join(recoveryDir, 'recovery-context.json'), {
+    kind: 'recovery-context',
+    currentMentalModel: 'requirement_confirmation',
+    lane: 'pre_confirmation_drilldown',
+  });
+  writeJsonUtf8(requirementRecordPath, updatedRecord);
+
+  const index = readJsonIfExists(paths.indexPath) ?? {};
+  const recordRef = {
+    recordId,
+    requirementSetId,
+    recordPath: toRootRelativePath(root, requirementRecordPath),
+  };
+  const remainingRecords = asRecordArray(index.records).filter(
+    (entry) => normalizeText(entry.recordId) !== recordId
+  );
+  writeJsonUtf8(paths.indexPath, {
+    ...index,
+    version: Number(index.version) || 1,
+    active: recordRef,
+    records: [recordRef, ...remainingRecords],
+  });
+
+  const receiptPath = path.join(
+    path.dirname(paths.confirmationRenderReport),
+    'confirmation-render-registration-receipt.json'
+  );
+  const receiptBase = {
+    schemaVersion: 'pre-confirmation-render-registration-receipt/v1',
+    recordId,
+    requirementSetId,
+    sourcePath: toRootRelativePath(root, sourcePath),
+    sourceDocumentHash: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    confirmationPageHash,
+    renderReportPath: toRootRelativePath(root, renderReportPath),
+    renderReportHash: sha256File(renderReportPath),
+    htmlPath: toRootRelativePath(root, htmlPath),
+    actualHtmlFileHash,
+    requirementRecordPath: toRootRelativePath(root, requirementRecordPath),
+    requirementRecordHashBefore: beforeRecordHash,
+    requirementRecordHashAfter: sha256File(requirementRecordPath),
+    controlledIngestRequiredBeforeProgression: true,
+    userConfirmationRecorded: false,
+    createdBy: 'main-agent-orchestration.register-pre-confirmation-render',
+    createdAt,
+  };
+  writeJsonUtf8(receiptPath, {
+    ...receiptBase,
+    receiptHash: sha256Json(receiptBase),
+  });
+
+  return {
+    ok: true,
+    action: 'register-pre-confirmation-render',
+    exitCode: 0,
+    substate: 'user_confirmable',
+    sourceDocumentHash: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    confirmationPageHash,
+    requirementRecordPath: toRootRelativePath(root, requirementRecordPath),
+    renderReportPath: toRootRelativePath(root, renderReportPath),
+    receiptPath: toRootRelativePath(root, receiptPath),
+    controlledIngestRequiredBeforeProgression: true,
   };
 }
 
@@ -19360,14 +23878,18 @@ function recordNativeGoalControlledIngestEvidence(input: {
   if (!input.recordPath) return [];
   const record = readJsonIfExists(input.recordPath) ?? {};
   const recordId = normalizeText(record.recordId) || input.pendingPacket.parentSessionId;
-  const requirementSetId = normalizeText(record.requirementSetId) || input.pendingPacket.parentSessionId;
+  const requirementSetId =
+    normalizeText(record.requirementSetId) || input.pendingPacket.parentSessionId;
   const sourceDocumentHash =
     normalizeText(input.pendingPacket.compiledPromptRef?.sourceDocumentHash) ||
     normalizeText(record.sourceDocumentHash);
   const implementationConfirmationHash =
     normalizeText(input.pendingPacket.compiledPromptRef?.implementationConfirmationHash) ||
     normalizeText(record.implementationConfirmationHash);
-  const relativeTaskReportPath = path.relative(path.dirname(input.recordPath), input.taskReportPath);
+  const relativeTaskReportPath = path.relative(
+    path.dirname(input.recordPath),
+    input.taskReportPath
+  );
   const eventIds: string[] = [];
   const executionEvent = {
     eventType: 'execution_iteration_recorded',
@@ -19879,6 +24401,22 @@ function sourceAmendmentReadinessAction(
   };
 }
 
+function testAuthoringReadinessAction(blocker: string, target?: string): ReadinessRemediationAction {
+  return {
+    blocker,
+    schemaVersion: 'readiness-blocker-classification/v1',
+    classification: 'requires_test_authoring',
+    sourceAuthorityImpact: 'none',
+    autoRemediationAllowed: false,
+    requiredNextAction: 'dispatch_test_authoring',
+    action: 'dispatch_bounded_test_authoring',
+    ...(target ? { target } : {}),
+    reason:
+      'missing expected-red tests require semantic test authoring and real oracle execution; placeholder tests are forbidden',
+    reasonCode: 'semantic_expected_red_test_authoring_required',
+  };
+}
+
 function userDecisionReadinessAction(
   blocker: string,
   reasonCode = 'multiple_equal_candidates_require_user_decision',
@@ -19923,13 +24461,14 @@ function classifyReadinessBlocker(blocker: string): ReadinessRemediationAction {
   const hasMultipleEqualCandidates = blockerHasMultipleEqualCandidates(blockerId);
 
   if (baseBlocker.startsWith('required_command_file_missing:')) {
-    return deriveReadinessAction({
-      blocker: blockerId,
-      action: 'create_expected_red_adapter_test',
-      target: baseBlocker.slice('required_command_file_missing:'.length),
-      reason: 'missing command target file can be created without changing requirement semantics',
-      reasonCode: 'missing_command_file_derivable_from_manifest',
-    });
+    const target = baseBlocker.slice('required_command_file_missing:'.length);
+    return isExecutableTestPath(target)
+      ? testAuthoringReadinessAction(blockerId, target)
+      : sourceAmendmentReadinessAction(
+          blockerId,
+          'missing_command_dependency_requires_authoritative_repair',
+          'required command references a missing non-test dependency that cannot be synthesized safely'
+        );
   }
   if (baseBlocker === 'ai_tdd_pre_implementation_readiness_not_ready') {
     return deriveReadinessAction({
@@ -20114,13 +24653,7 @@ function classifyReadinessBlockers(blockers: string[]): ReadinessRemediationActi
         'requirement_pre_implementation_missing_test',
       ].includes(blocker)
     ) {
-      return deriveReadinessAction({
-        blocker,
-        action: 'create_missing_acceptance_files_from_manifest',
-        reason:
-          'missing expected-red test files are uniquely declared by the confirmed AI-TDD manifest',
-        reasonCode: 'missing_expected_red_files_derivable_from_manifest',
-      });
+      return testAuthoringReadinessAction(blocker);
     }
     if (
       hasMissingTestRoot &&
@@ -20128,9 +24661,16 @@ function classifyReadinessBlockers(blockers: string[]): ReadinessRemediationActi
         'missing_test_plan_blocked',
         'requirement_pre_implementation_missing_plan',
         'trace_acceptance_binding_missing',
+        'pre_implementation_red_proof_missing',
+        'pre_implementation_valid_expected_red_missing',
       ].includes(blocker)
     ) {
-      return classifyReadinessBlocker(blocker);
+      return deriveReadinessAction({
+        blocker,
+        action: 'rerun_after_bounded_test_authoring',
+        reason: 'dependent readiness blocker must be reevaluated after semantic test authoring',
+        reasonCode: 'dependent_blocker_waits_for_semantic_test_authoring',
+      });
     }
     if (blocker === 'implementation_readiness_stage_audit_failed' && stageAuditOnlyMissingTest) {
       return deriveReadinessAction({
@@ -20719,47 +25259,12 @@ export function runMainAgentPostCloseDefectIntake(
   };
 }
 
-function createExpectedRedAdapterTest(filePath: string, blocker: string): void {
-  if (fs.existsSync(filePath)) return;
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    [
-      "import { describe, expect, it } from 'vitest';",
-      '',
-      "describe('AI-TDD expected red adapter', () => {",
-      "  it('fails red before implementation satisfies the confirmed requirement', () => {",
-      `    // Generated by main-agent readiness_auto_remediation for ${JSON.stringify(blocker)}.`,
-      "    expect('implementation_not_started').toBe('confirmed_requirement_satisfied');",
-      '  });',
-      '});',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
-}
-
-function acceptanceRowsFromReport(
-  report: Record<string, unknown> | null
-): Record<string, unknown>[] {
-  for (const check of objectsFrom(report?.checks)) {
-    const manifest = check.contractExecutionManifest as Record<string, unknown> | undefined;
-    if (manifest && typeof manifest === 'object' && !Array.isArray(manifest)) {
-      return [
-        ...objectsFrom(manifest.acceptanceTests),
-        ...objectsFrom(manifest.e2eSuites),
-        ...objectsFrom(manifest.acceptanceSuites),
-      ];
-    }
-  }
-  return [];
-}
-
 function aiTddPreImplementationReport(input: {
   record: Record<string, unknown>;
   recordPath: string;
   sourcePath: string;
   implementationRunKind: string;
+  executeRedProof?: boolean;
 }): Record<string, unknown> | null {
   if (input.implementationRunKind !== 'first-implementation') return null;
   try {
@@ -20771,43 +25276,111 @@ function aiTddPreImplementationReport(input: {
       attemptId: `readiness-auto-remediation:${Date.now()}`,
       evaluatedAt: new Date().toISOString(),
       evaluatedBy: 'main-agent-readiness-auto-remediation',
+      executeRedProof: input.executeRedProof ?? true,
     }) as Record<string, unknown>;
   } catch {
     return null;
   }
 }
 
-function acceptanceRowsFromAiTddReport(
-  report: Record<string, unknown> | null
-): Record<string, unknown>[] {
-  const manifest = report?.contractExecutionManifest as Record<string, unknown> | undefined;
-  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) return [];
-  return [
-    ...objectsFrom(manifest.acceptanceTests),
-    ...objectsFrom(manifest.e2eSuites),
-    ...objectsFrom(manifest.acceptanceSuites),
-  ];
+function objectFrom(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
-function filePathsFromAcceptanceRows(rows: Record<string, unknown>[]): string[] {
-  const paths = rows.flatMap((row) => [
-    normalizeText(row.file),
-    normalizeText(row.path),
-    normalizeText(row.testFile),
-    normalizeText(row.testPath),
-    ...stringsFrom(row.files),
-    ...stringsFrom(row.testFiles),
-  ]);
-  return Array.from(new Set(paths.filter(Boolean)));
+function normalizedCommandPath(value: unknown): string {
+  return normalizeText(value).replace(/\\/gu, '/').toLowerCase();
 }
 
-function missingAcceptanceFilePaths(
-  root: string,
-  report: Record<string, unknown> | null
-): string[] {
-  return filePathsFromAcceptanceRows(acceptanceRowsFromAiTddReport(report)).filter(
-    (candidate) => !fs.existsSync(resolveProjectPath(root, candidate))
+function deriveValidationOnlyTargetPathOverlay(
+  aiTddReport: Record<string, unknown> | null
+): Record<string, unknown> | null {
+  const manifest = objectFrom(aiTddReport?.contractExecutionManifest);
+  const targetRows = objectsFrom(manifest?.targetModificationPaths);
+  const commandRows = objectsFrom(manifest?.requiredCommands);
+  const traceRows = objectsFrom(manifest?.traceRows);
+  const traceById = new Map(
+    traceRows
+      .map((row) => [normalizeText(row.id), row] as const)
+      .filter(([id]) => Boolean(id))
   );
+  const targetPathBindings: Record<string, unknown>[] = [];
+
+  for (const target of targetRows) {
+    const validationOnly =
+      normalizeText(target.coverageRole) === 'validation_only' ||
+      normalizeText(target.changeType) === 'validation_only';
+    const id = normalizeText(target.id);
+    const targetPath = normalizedCommandPath(target.path);
+    if (!validationOnly || !id || !targetPath) continue;
+    if (stringsFrom(target.traceRefs).length > 0 && stringsFrom(target.evidenceRefs).length > 0) {
+      continue;
+    }
+
+    const matchingCommands = commandRows.filter((command) =>
+      normalizedCommandPath(command.command).includes(targetPath)
+    );
+    if (matchingCommands.length !== 1) continue;
+
+    const command = matchingCommands[0]!;
+    const traceRefs = uniqueNonEmpty([
+      ...stringsFrom(command.traceRefs),
+      ...stringsFrom(command.traceRows),
+    ]);
+    const evidenceRefs = uniqueNonEmpty([
+      ...stringsFrom(command.evidenceRefs),
+      ...traceRefs.flatMap((traceRef) => stringsFrom(traceById.get(traceRef)?.evidenceRefs)),
+    ]);
+    if (traceRefs.length === 0 || evidenceRefs.length === 0) continue;
+
+    targetPathBindings.push({
+      id,
+      traceRefs,
+      evidenceRefs,
+    });
+  }
+
+  return targetPathBindings.length > 0
+    ? {
+        schemaVersion: 'readiness-auto-remediation-overlay/v1',
+        sourceMutationPolicy: 'non_semantic_projection_only',
+        targetPathBindings,
+      }
+    : null;
+}
+
+const VALIDATION_TARGET_OVERLAY_BLOCKERS = new Set([
+  'contract_completeness_report_blocked',
+  'target_modification_trace_refs_missing',
+  'target_modification_evidence_refs_missing',
+]);
+
+function applyResolvedValidationTargetOverlayActions(input: {
+  actions: ReadinessRemediationAction[];
+  overlay: Record<string, unknown> | null;
+  projectedAiTddReport: Record<string, unknown> | null;
+}): ReadinessRemediationAction[] {
+  if (!input.overlay) return input.actions;
+  const projectedBlockers = new Set(
+    stringsFrom(input.projectedAiTddReport?.blockingReasons).map(readinessBlockerBaseId)
+  );
+  return input.actions.map((action) => {
+    const baseBlocker = readinessBlockerBaseId(action.blocker);
+    if (
+      !VALIDATION_TARGET_OVERLAY_BLOCKERS.has(baseBlocker) ||
+      projectedBlockers.has(baseBlocker)
+    ) {
+      return action;
+    }
+    return deriveReadinessAction({
+      blocker: action.blocker,
+      action: 'persist_validation_target_trace_evidence_overlay',
+      reason:
+        'validation-only target path has one source-authorized command to trace to evidence chain',
+      reasonCode: 'unique_validation_target_projection_allowed',
+    });
+  });
 }
 
 const EXPECTED_RED_PROOF_MATERIALIZATION_BLOCKERS = new Set([
@@ -20822,19 +25395,13 @@ function canMaterializeExpectedRedProofsFromManifest(input: {
   aiTddReport: Record<string, unknown> | null;
 }): boolean {
   if (input.blockingActions.length === 0) return true;
-  if (
-    input.blockingActions.some(
-      (action) => action.classification === 'requires_user_decision'
-    )
-  ) {
+  if (input.blockingActions.some((action) => action.classification === 'requires_user_decision')) {
     return false;
   }
   if (
     input.blockingActions.some(
       (action) =>
-        !EXPECTED_RED_PROOF_MATERIALIZATION_BLOCKERS.has(
-          readinessBlockerBaseId(action.blocker)
-        )
+        !EXPECTED_RED_PROOF_MATERIALIZATION_BLOCKERS.has(readinessBlockerBaseId(action.blocker))
     )
   ) {
     return false;
@@ -20870,18 +25437,23 @@ function expectedRedProofMaterializationAction(
 ): ReadinessRemediationAction {
   return deriveReadinessAction({
     blocker: action.blocker,
-    action: 'materialize_expected_red_proof_from_confirmed_manifest',
+    action: 'persist_executed_expected_red_proof',
     reason:
-      'confirmed AI-TDD manifest already declares acceptance/e2e rows, trace refs, evidence refs, command refs, and oracles; readiness may persist controlled expected-red proof without source mutation',
-    reasonCode: 'expected_red_proof_materialization_allowed_from_manifest',
+      'declared acceptance and e2e commands produced valid expected-red oracle failures and may be persisted without source mutation',
+    reasonCode: 'executed_expected_red_proof_persistence_allowed',
   });
 }
 
 function defaultProofRows(
-  report: Record<string, unknown> | null,
+  _report: Record<string, unknown> | null,
   aiTddReport: Record<string, unknown> | null
 ): Record<string, unknown>[] {
-  const rows = [...acceptanceRowsFromReport(report), ...acceptanceRowsFromAiTddReport(aiTddReport)];
+  const rows = objectsFrom(aiTddReport?.redGreenMatrix).filter(
+    (row) =>
+      ['ACC', 'E2E'].includes(normalizeText(row.category)) &&
+      normalizeText(row.currentState) === 'expected_red' &&
+      stringsFrom(row.refs).includes('proof:execute_red_proof')
+  );
   const uniqueRows = new Map<string, Record<string, unknown>>();
   for (const row of rows) {
     const acceptanceId = normalizeText(row.id);
@@ -20890,9 +25462,9 @@ function defaultProofRows(
       acceptanceId,
       commandId: stringsFrom(row.commandRefs)[0],
       state: 'expected_red',
-      oracle: normalizeText(row.oracle) || 'expected-red adapter test fails before implementation',
+      oracle: normalizeText(row.oracle),
       failureClass: 'oracle_failure',
-      proofSource: 'main_agent_readiness_auto_remediation',
+      proofSource: 'execute_red_proof',
     });
   }
   return [...uniqueRows.values()];
@@ -21045,18 +25617,42 @@ export function runMainAgentReadinessAutoRemediation(input: {
     };
   }
   const report = readReadinessReport(input.recordPath, args);
-  const blockerActions = classifyReadinessBlockers(latestReadinessBlockers(record, report));
-  const concreteActions = blockerActions.filter(
-    (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
+  const initialBlockerActions = classifyReadinessBlockers(
+    latestReadinessBlockers(record, report)
   );
   const implementationRunKind = normalizeText(args.implementationRunKind) || 'first-implementation';
   const sourcePath = normalizeText(record.sourcePath);
-  const aiTddReport = aiTddPreImplementationReport({
+  const initialAiTddReport = aiTddPreImplementationReport({
     record,
     recordPath: input.recordPath,
     sourcePath,
     implementationRunKind,
   });
+  const overlay = deriveValidationOnlyTargetPathOverlay(initialAiTddReport);
+  const projectedAiTddReport = overlay
+    ? aiTddPreImplementationReport({
+        record: {
+          ...record,
+          aiTddContractGate: {
+            ...(objectFrom(record.aiTddContractGate) ?? {}),
+            readinessAutoRemediationOverlay: overlay,
+          },
+        },
+        recordPath: input.recordPath,
+        sourcePath,
+        implementationRunKind,
+        executeRedProof: false,
+      })
+    : null;
+  const aiTddReport = initialAiTddReport;
+  const blockerActions = applyResolvedValidationTargetOverlayActions({
+    actions: initialBlockerActions,
+    overlay,
+    projectedAiTddReport,
+  });
+  const concreteActions = blockerActions.filter(
+    (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
+  );
   const initialBlockingActions = concreteActions.filter((action) => !action.autoRemediationAllowed);
   const canMaterializeExpectedRedProofs = canMaterializeExpectedRedProofsFromManifest({
     blockingActions: initialBlockingActions,
@@ -21072,10 +25668,15 @@ export function runMainAgentReadinessAutoRemediation(input: {
   const effectiveConcreteActions = effectiveActions.filter(
     (action) => action.blocker !== 'ai_tdd_pre_implementation_readiness_not_ready'
   );
-  const blockingActions = effectiveConcreteActions.filter((action) => !action.autoRemediationAllowed);
+  const blockingActions = effectiveConcreteActions.filter(
+    (action) => !action.autoRemediationAllowed
+  );
   if (blockingActions.length > 0) {
     const hasUserDecision = blockingActions.some(
       (action) => action.classification === 'requires_user_decision'
+    );
+    const hasTestAuthoring = blockingActions.some(
+      (action) => action.classification === 'requires_test_authoring'
     );
     return {
       ok: false,
@@ -21083,41 +25684,26 @@ export function runMainAgentReadinessAutoRemediation(input: {
       blockerActions: effectiveActions,
       requiredNextAction: hasUserDecision
         ? 'blocked_by_unresolved_user_decision'
-        : 'source_amendment_required',
+        : hasTestAuthoring
+          ? 'dispatch_test_authoring'
+          : 'source_amendment_required',
       filesChanged: [],
       validationsRun: ['readiness-blocker-classifier'],
       evidence: blockingActions.map(
         (action) => `${action.classification}:${action.requiredNextAction}:${action.blocker}`
       ),
       blockingReasons: [
-        hasUserDecision ? 'blocked_by_unresolved_user_decision' : 'source_amendment_required',
+        hasUserDecision
+          ? 'blocked_by_unresolved_user_decision'
+          : hasTestAuthoring
+            ? 'dispatch_test_authoring'
+            : 'source_amendment_required',
         ...blockingActions.map((action) => action.blocker),
       ],
     };
   }
 
   const filesChanged: string[] = [];
-  for (const action of effectiveConcreteActions.filter(
-    (item) => item.action === 'create_expected_red_adapter_test'
-  )) {
-    const absolute = resolveProjectPath(input.projectRoot, action.target ?? '');
-    const existed = fs.existsSync(absolute);
-    createExpectedRedAdapterTest(absolute, action.blocker);
-    if (!existed) filesChanged.push(path.relative(input.projectRoot, absolute).replace(/\\/g, '/'));
-  }
-  const shouldCreateManifestFiles = effectiveConcreteActions.some(
-    (item) => item.action === 'create_missing_acceptance_files_from_manifest'
-  );
-  if (shouldCreateManifestFiles) {
-    for (const candidate of missingAcceptanceFilePaths(input.projectRoot, aiTddReport)) {
-      const absolute = resolveProjectPath(input.projectRoot, candidate);
-      const existed = fs.existsSync(absolute);
-      createExpectedRedAdapterTest(absolute, 'acceptance_test_file_missing');
-      if (!existed)
-        filesChanged.push(path.relative(input.projectRoot, absolute).replace(/\\/g, '/'));
-    }
-  }
-  const overlay = null;
 
   const now = new Date().toISOString();
   const proofRows: Record<string, unknown>[] = defaultProofRows(report, aiTddReport).map(
@@ -21293,7 +25879,9 @@ export function runMainAgentAutomaticLoop(input: {
           ? 'source_amendment_required'
           : remediation.requiredNextAction === 'blocked_by_unresolved_user_decision'
             ? 'blocked_by_unresolved_user_decision'
-            : 'await_user';
+            : remediation.requiredNextAction === 'dispatch_test_authoring'
+              ? 'dispatch_test_authoring'
+              : 'await_user';
       return {
         runId: `main-agent-run-loop-${Date.now()}`,
         status: 'blocked',
@@ -21372,7 +25960,9 @@ export function runMainAgentAutomaticLoop(input: {
       step: 'delivery-closeout',
       status: closeout.ok ? 'pass' : 'fail',
       summary: `decision=${closeout.decision}, report=${
-        closeout.reportPath ? relativePathFromRoot(input.projectRoot, closeout.reportPath) : 'missing'
+        closeout.reportPath
+          ? relativePathFromRoot(input.projectRoot, closeout.reportPath)
+          : 'missing'
       }`,
     });
     const finalSurface = resolveMainAgentOrchestrationSurface({
@@ -21498,7 +26088,11 @@ export function runMainAgentAutomaticLoop(input: {
       const activeRecordId = normalizeText(activeRecord?.recordId);
       const nativeTaskReportPath =
         taskReportPath ||
-        defaultRunLoopTaskReportPath(input.projectRoot, instruction.sessionId, instruction.packetId);
+        defaultRunLoopTaskReportPath(
+          input.projectRoot,
+          instruction.sessionId,
+          instruction.packetId
+        );
       const nativeResult = runNativeGoalInvocation({
         projectRoot: input.projectRoot,
         host: instruction.host,
@@ -21949,6 +26543,24 @@ export function mainMainAgentOrchestration(argv: string[]): number {
   }
 
   if (
+    action === 'register-pre-confirmation-render' ||
+    action === 'register_pre_confirmation_render'
+  ) {
+    try {
+      const result = runMainAgentRegisterPreConfirmationRender(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration register-pre-confirmation-render: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
+  if (
     action === 'pre-confirmation-drilldown' ||
     action === 'pre_confirmation_drilldown' ||
     action === 'author-confirmation-ready-source' ||
@@ -21963,6 +26575,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
         recordId: args.recordId,
         requirementSetId: args.requirementSetId,
         confirmationLanguage: args.confirmationLanguage,
+        localizationResponseFile: args.localizationResponseFile,
         mode: args.mode,
         skipDrilldownArtifacts: args.skipDrilldownArtifacts === 'true',
         targetPath: args.targetPath,

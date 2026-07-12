@@ -155,6 +155,8 @@ function buildResponse({ request, requestPath, roundIndex, reviewedProjectionRef
     requestHash: request.requestHash,
     recordId: request.recordId,
     roundIndex: request.roundIndex ?? roundIndex,
+    transactionId: request.transactionId,
+    namespaceVersion: request.namespaceVersion,
     sourceHash: request.sourceDocumentHash,
     sourceDocumentHash: request.sourceDocumentHash,
     implementationConfirmationHash: request.implementationConfirmationHash,

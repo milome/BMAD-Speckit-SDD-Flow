@@ -21,9 +21,17 @@ function makeRuntimeRoot() {
       {
         recordId,
         title: 'Runtime entry fidelity fixture',
+        status: 'user_confirmed',
         currentMentalModel: 'architecture_confirmation',
         sourceDocumentHash: 'sha256:fidelity-source',
         implementationConfirmationHash: 'sha256:fidelity-confirmation',
+        confirmationHistory: [
+          {
+            eventType: 'confirmation_recorded',
+            sourceDocumentHash: 'sha256:fidelity-source',
+            implementationConfirmationHash: 'sha256:fidelity-confirmation',
+          },
+        ],
         updatedAt: '2026-06-01T00:00:00.000Z',
       },
       null,

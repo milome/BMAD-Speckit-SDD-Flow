@@ -1195,9 +1195,10 @@ describe('render-requirements-confirmation-html', () => {
     const original = fs.readFileSync(source, 'utf8');
     fs.writeFileSync(
       source,
-      original.replace(
-        '  sequenceViews: []',
-        `  sequenceViews:
+      original
+        .replace(
+          '  sequenceViews: []',
+          `  sequenceViews:
     - id: SEQ-HAPPY-VISUAL-001
       title: "Business happy display settings"
       visualKind: happy
@@ -1225,9 +1226,10 @@ describe('render-requirements-confirmation-html', () => {
           actor User
           participant Settings
           User->>Settings: Select invalid opacity rollback [NEG-001][EVD-002]`
-      ).replace(
-        '  flowViews: []',
-        `  flowViews:
+        )
+        .replace(
+          '  flowViews: []',
+          `  flowViews:
     - id: FLOW-STATE-VISUAL-001
       title: "Business selected period state"
       visualKind: state
@@ -1252,9 +1254,10 @@ describe('render-requirements-confirmation-html', () => {
         flowchart TD
           A[Open display settings MUST-001] --> B[Adjust opacity MUST-001]
           B --> C[Chart updates MUST-001]`
-      ).replace(
-        '  edgeCaseViews: []',
-        `  edgeCaseViews:
+        )
+        .replace(
+          '  edgeCaseViews: []',
+          `  edgeCaseViews:
     - id: EDGE-VISUAL-001
       title: "Business rapid toggle edge cases"
       visualKind: edge
@@ -1268,9 +1271,10 @@ describe('render-requirements-confirmation-html', () => {
       mermaid: |-
         flowchart TD
           A[Rapid toggle EDGE-001] --> B[No stale selected state NEG-001]`
-      ).replace(
-        '  boundaryViews: []',
-        `  boundaryViews:
+        )
+        .replace(
+          '  boundaryViews: []',
+          `  boundaryViews:
     - id: BOUNDARY-GOVERNANCE-001
       title: "Governance confirmation boundary"
       visualKind: boundary
@@ -1279,12 +1283,15 @@ describe('render-requirements-confirmation-html', () => {
       mermaid: |-
         flowchart TD
           A[Scope change OUT-001] --> B[Require reconfirmation OUT-001]`
-      )
+        )
         .replace(
           '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
           '      sequenceViewRefs: ["SEQ-HAPPY-VISUAL-001", "SEQ-FAILURE-VISUAL-001"]\n      flowViewRefs: ["FLOW-STATE-VISUAL-001", "FLOW-FLOW-VISUAL-001"]\n      edgeCaseViewRefs: ["EDGE-VISUAL-001"]'
         )
-        .replace('      boundaryViewRefs: ["BOUNDARY-001"]', '      boundaryViewRefs: ["BOUNDARY-GOVERNANCE-001"]'),
+        .replace(
+          '      boundaryViewRefs: ["BOUNDARY-001"]',
+          '      boundaryViewRefs: ["BOUNDARY-GOVERNANCE-001"]'
+        ),
       'utf8'
     );
     const mermaidBundle = writeMockMermaidBundle();
@@ -1311,10 +1318,22 @@ describe('render-requirements-confirmation-html', () => {
       html.indexOf('id="governance-visuals"')
     );
     const governanceVisuals = sliceSection(html, 'governance-visuals');
-    const happySection = sliceBetween(businessVisuals, '<h3>Happy Path Sequence</h3>', '<h3>Failure / Negative Path Sequence</h3>');
-    const failureSection = sliceBetween(businessVisuals, '<h3>Failure / Negative Path Sequence</h3>', '<h3>State View</h3>');
+    const happySection = sliceBetween(
+      businessVisuals,
+      '<h3>Happy Path Sequence</h3>',
+      '<h3>Failure / Negative Path Sequence</h3>'
+    );
+    const failureSection = sliceBetween(
+      businessVisuals,
+      '<h3>Failure / Negative Path Sequence</h3>',
+      '<h3>State View</h3>'
+    );
     const stateSection = sliceBetween(businessVisuals, '<h3>State View</h3>', '<h3>Flow View</h3>');
-    const flowSection = sliceBetween(businessVisuals, '<h3>Flow View</h3>', '<h3>Edge Case View</h3>');
+    const flowSection = sliceBetween(
+      businessVisuals,
+      '<h3>Flow View</h3>',
+      '<h3>Edge Case View</h3>'
+    );
     const edgeSection = businessVisuals.slice(businessVisuals.indexOf('<h3>Edge Case View</h3>'));
 
     expect(happySection).toContain('data-diagram-id="SEQ-HAPPY-VISUAL-001"');
@@ -1339,9 +1358,10 @@ describe('render-requirements-confirmation-html', () => {
     const original = fs.readFileSync(source, 'utf8');
     fs.writeFileSync(
       source,
-      original.replace(
-        '  sequenceViews: []',
-        `  sequenceViews:
+      original
+        .replace(
+          '  sequenceViews: []',
+          `  sequenceViews:
     - id: SEQ-HAPPY-VISUAL-001
       title: "Business happy display settings"
       visualKind: happy
@@ -1352,9 +1372,10 @@ describe('render-requirements-confirmation-html', () => {
           actor User
           participant Settings
           User->>Settings: Enable compact period summary [MUST-001][EVD-001]`
-      ).replace(
-        '  flowViews: []',
-        `  flowViews:
+        )
+        .replace(
+          '  flowViews: []',
+          `  flowViews:
     - id: FLOW-STATE-VISUAL-001
       title: "Business selected period state"
       visualKind: state
@@ -1364,9 +1385,10 @@ describe('render-requirements-confirmation-html', () => {
         stateDiagram-v2
           [*] --> Visible
           Visible --> Deselected: toggle period off [MUST-001]`
-      ).replace(
-        '  edgeCaseViews: []',
-        `  edgeCaseViews:
+        )
+        .replace(
+          '  edgeCaseViews: []',
+          `  edgeCaseViews:
     - id: EDGE-VISUAL-001
       title: "Business rapid toggle edge cases"
       visualKind: edge
@@ -1375,9 +1397,10 @@ describe('render-requirements-confirmation-html', () => {
       mermaid: |-
         flowchart TD
           A[Rapid toggle EDGE-001] --> B[No stale selected state NEG-001]`
-      ).replace(
-        '  boundaryViews: []',
-        `  boundaryViews:
+        )
+        .replace(
+          '  boundaryViews: []',
+          `  boundaryViews:
     - id: BOUNDARY-GOVERNANCE-001
       title: "Governance confirmation boundary"
       visualKind: boundary
@@ -1386,12 +1409,15 @@ describe('render-requirements-confirmation-html', () => {
       mermaid: |-
         flowchart TD
           A[Scope change OUT-001] --> B[Require reconfirmation OUT-001]`
-      )
+        )
         .replace(
           '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
           '      sequenceViewRefs: ["SEQ-HAPPY-VISUAL-001"]\n      flowViewRefs: ["FLOW-STATE-VISUAL-001"]\n      edgeCaseViewRefs: ["EDGE-VISUAL-001"]'
         )
-        .replace('      boundaryViewRefs: ["BOUNDARY-001"]', '      boundaryViewRefs: ["BOUNDARY-GOVERNANCE-001"]'),
+        .replace(
+          '      boundaryViewRefs: ["BOUNDARY-001"]',
+          '      boundaryViewRefs: ["BOUNDARY-GOVERNANCE-001"]'
+        ),
       'utf8'
     );
 
@@ -1430,9 +1456,10 @@ describe('render-requirements-confirmation-html', () => {
     const original = fs.readFileSync(source, 'utf8');
     fs.writeFileSync(
       source,
-      original.replace(
-        '  sequenceViews: []',
-        `  sequenceViews:
+      original
+        .replace(
+          '  sequenceViews: []',
+          `  sequenceViews:
     - id: SEQ-BUSINESS-WITHOUT-KIND-001
       title: "Business view missing visual kind"
       scope: business
@@ -1445,10 +1472,11 @@ describe('render-requirements-confirmation-html', () => {
           actor User
           participant Settings
           User->>Settings: Business behavior lacks explicit visual kind [MUST-001][EVD-001]`
-      ).replace(
-        '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
-        '      sequenceViewRefs: ["SEQ-BUSINESS-WITHOUT-KIND-001"]'
-      ),
+        )
+        .replace(
+          '      sequenceViewRefs: ["SEQ-001", "SEQ-002"]',
+          '      sequenceViewRefs: ["SEQ-BUSINESS-WITHOUT-KIND-001"]'
+        ),
       'utf8'
     );
 
@@ -1487,11 +1515,20 @@ describe('render-requirements-confirmation-html', () => {
           'command: "npx vitest run ',
           'command: "pytest tests/test_multi_timeframe_settings.py && npx vitest run '
         )
-        .replaceAll('targetPathOrField: "src/upload.ts"', 'targetPathOrField: "vnpy/chart/multi_timeframe_widget.py"')
+        .replaceAll(
+          'targetPathOrField: "src/upload.ts"',
+          'targetPathOrField: "vnpy/chart/multi_timeframe_widget.py"'
+        )
         .replaceAll('path: "src/upload.ts"', 'path: "vnpy/chart/multi_timeframe_widget.py"')
-        .replaceAll('targetFiles: ["src/upload.ts"]', 'targetFiles: ["vnpy/chart/multi_timeframe_widget.py"]')
+        .replaceAll(
+          'targetFiles: ["src/upload.ts"]',
+          'targetFiles: ["vnpy/chart/multi_timeframe_widget.py"]'
+        )
         .replace('id: SEQ-001', 'id: SEQ-BUSINESS-SOURCE-001')
-        .replace('title: "Valid upload persisted"', 'title: "Business source-defined timeframe settings"')
+        .replace(
+          'title: "Valid upload persisted"',
+          'title: "Business source-defined timeframe settings"'
+        )
         .replace(
           'User->>UI: Select valid file [MUST-001]',
           'User->>Settings: Toggle 15m visibility [MUST-001][EVD-001]'
@@ -1506,7 +1543,10 @@ describe('render-requirements-confirmation-html', () => {
           User->>Settings: Toggle 15m visibility [MUST-001][EVD-001]`
         )
         .replace('id: FLOW-001', 'id: FLOW-BUSINESS-SOURCE-001')
-        .replace('title: "Upload state and closeout flow"', 'title: "Business source-defined visibility flow"')
+        .replace(
+          'title: "Upload state and closeout flow"',
+          'title: "Business source-defined visibility flow"'
+        )
         .replace(
           `      title: "Business source-defined visibility flow"
       covers: ["MUST-001", "NEG-001"]`,
@@ -1556,9 +1596,9 @@ describe('render-requirements-confirmation-html', () => {
     );
 
     expect(html).toContain('vnpy/chart/multi_timeframe_widget.py');
-    expect(JSON.stringify(report.aiTddContractManifestCoverage.sections.commandTargetCollection)).toContain(
-      'tests/test_multi_timeframe_settings.py'
-    );
+    expect(
+      JSON.stringify(report.aiTddContractManifestCoverage.sections.commandTargetCollection)
+    ).toContain('tests/test_multi_timeframe_settings.py');
     expect(JSON.stringify(report.targetModificationPathCoverage)).toContain(
       'vnpy/chart/multi_timeframe_widget.py'
     );
@@ -3333,6 +3373,43 @@ flowchart TD
     );
   });
 
+  it('keeps expected-red future test files out of scope confirmability blockers', () => {
+    const source = writeSource();
+    const sourceText = fs.readFileSync(source, 'utf8');
+    const acceptanceFile = sourceText.match(/file: "([^"]+upload\.acceptance\.test\.ts)"/u)?.[1];
+    const e2eFile = sourceText.match(/file: "([^"]+upload-invalid\.e2e\.test\.ts)"/u)?.[1];
+    expect(acceptanceFile).toBeTruthy();
+    expect(e2eFile).toBeTruthy();
+    fs.rmSync(acceptanceFile!, { force: true });
+    fs.rmSync(e2eFile!, { force: true });
+
+    const out = path.join(tempDir, 'confirmation-expected-red-files-missing.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+      '--json',
+    ]);
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    const blockingCodes = report.blockingIssues.map((issue: { code: string }) => issue.code);
+    const warningCodes = report.warnings.map((issue: { code: string }) => issue.code);
+
+    expect(result.status).toBe(0);
+    expect(report.scopeConfirmability).toBe('confirmable');
+    expect(report.deliveryReadiness.ready).toBe(false);
+    expect(blockingCodes).not.toContain('acceptance_test_file_missing');
+    expect(warningCodes).toContain('acceptance_test_file_missing');
+  });
+
   it('fails closed when resume failure cases rely on renderer-inferred grouping', () => {
     const source = writeSource();
     const original = fs.readFileSync(source, 'utf8');
@@ -4406,6 +4483,69 @@ sequenceDiagram
         row.sources.includes('currentTargetMap.scriptConvergence')
       )
     ).toBe(true);
+  });
+
+  it('uses declared command targetFiles and excludes validation-only targets from canonical surfaces', () => {
+    const source = writeSource();
+    const original = fs.readFileSync(source, 'utf8');
+    const validationTargetStart = original.indexOf('    - id: TARGET-MOD-002\n');
+    const validationTargetEnd = original.indexOf(
+      '    - id: TARGET-MOD-003\n',
+      validationTargetStart
+    );
+    const validationTargetBlock = original.slice(validationTargetStart, validationTargetEnd);
+    const validationTargetWithoutProofRefs = validationTargetBlock
+      .replace('      requirementRefs: ["MUST-001"]', '      requirementRefs: []')
+      .replace('      traceRefs: ["TRACE-001"]', '      traceRefs: []')
+      .replace('      evidenceRefs: ["EVD-001"]', '      evidenceRefs: []');
+    fs.writeFileSync(
+      source,
+      original
+        .replace(
+          / {6}command: "npx vitest run [^"]*upload\.acceptance\.test\.ts"/u,
+          [
+            '      command: "rg -n -e \'upload\' -- src"',
+            '      targetFiles: ["src/upload.ts"]',
+          ].join('\n')
+        )
+        .replace(validationTargetBlock, validationTargetWithoutProofRefs),
+      'utf8'
+    );
+    const mermaidBundle = writeMockMermaidBundle();
+    const out = path.join(tempDir, 'confirmation-command-target-and-canonical-surface-filter.html');
+    const result = runRenderer([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--mermaid-bundle',
+      mermaidBundle,
+      '--language',
+      'zh-CN',
+      '--record-id',
+      'REQ-UPLOAD-001',
+      '--entry-flow',
+      'story',
+    ]);
+
+    const report = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(out), 'confirmation-render-report.json'), 'utf8')
+    );
+    const codes = report.blockingIssues.map((issue: any) => issue.code);
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(codes).not.toContain('ai_tdd_manifest_command_target_files_missing');
+    expect(codes).not.toContain('ai_tdd_manifest_canonical_surface_trace_refs_missing');
+    expect(codes).not.toContain('ai_tdd_manifest_canonical_surface_evidence_refs_missing');
+    expect(
+      report.aiTddContractManifestCoverage.sections.commandTargetCollection.rows.find(
+        (row: any) => row.id === 'CMD-001'
+      )?.files
+    ).toContain('src/upload.ts');
+    expect(
+      report.aiTddContractManifestCoverage.sections.canonicalSurfaceReconciliation.rows.some(
+        (row: any) => row.id === 'TARGET-MOD-002'
+      )
+    ).toBe(false);
   });
 
   it('keeps skill-dir placeholder command paths aligned with target modification paths', () => {

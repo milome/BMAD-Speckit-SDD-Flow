@@ -296,10 +296,31 @@ export function implementationConfirmationHash(confirmation: JsonObject): string
   return sha256Bytes(stableStringify(semanticConfirmationForHash(confirmation)));
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as JsonObject)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation: JsonObject): JsonObject {
   const semantic: JsonObject = {};
   for (const [key, value] of Object.entries(confirmation)) {
-    if (!CONFIRMATION_BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+    if (!CONFIRMATION_BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
   }
   if (
     semantic.preConfirmationDrilldown &&

@@ -121,7 +121,16 @@ function defaultArchitectureDiagrams(scope = 'business_architecture'): Array<Rec
       evidenceRefs: ['EVD-036', 'EVD-037'],
       targetPathRefs: ['src/product/display_settings_widget.py'],
     },
-  ];
+  ].map((diagram) => ({
+    ...diagram,
+    titleZh: `${isBusiness ? '业务' : '治理'}${diagram.type}架构图`,
+    descriptionZh: isBusiness
+      ? '由 authoring agent 提供的消费项目业务架构中文说明。'
+      : '由 authoring agent 提供的需求治理架构中文说明。',
+    mermaidZh: isBusiness
+      ? 'flowchart LR\n  用户["用户"] --> 业务界面["业务界面"]\n  业务界面 --> 目标状态["目标状态"]'
+      : 'flowchart LR\n  源文档["源文档"] --> 架构工件["架构确认工件"]\n  架构工件 --> 受控写入["受控写入"]',
+  }));
 }
 
 function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}): string {
@@ -149,18 +158,37 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
     consumerImpactScan: [
       {
         category: 'data_model',
+        categoryZh: '数据模型',
         status: 'triggered',
+        statusZh: '已触发',
         summary: 'schema changes require architecture confirmation',
+        summaryZh: '模式变更需要架构确认。',
+        descriptionZh: '共享数据契约将受到影响。',
+        requiredDecisionZh: '确认数据模型所有权和兼容边界。',
       },
-      { category: 'frontend_ux', status: 'not_triggered', summary: 'no UI change' },
+      {
+        category: 'frontend_ux',
+        categoryZh: '前端体验',
+        status: 'not_triggered',
+        statusZh: '未触发',
+        summary: 'no UI change',
+        summaryZh: '没有用户界面变更。',
+        descriptionZh: '现有界面行为保持不变。',
+        requiredDecisionZh: '无需扩大架构范围。',
+      },
     ],
     consumerImpactScanHash:
       'sha256:4444444444444444444444444444444444444444444444444444444444444444',
     governanceImpactScan: [
       {
         category: 'orchestration_hook_gate_ingest_rerun_closeout',
+        categoryZh: '编排、门禁与受控写入',
         status: 'triggered',
+        statusZh: '已触发',
         summary: 'readiness gate and controlled ingest are affected',
+        summaryZh: '实施准备门禁和受控写入路径受到影响。',
+        descriptionZh: '架构确认必须保持需求范围和 hash 绑定。',
+        requiredDecisionZh: '确认治理推进仍由受控事件驱动。',
       },
     ],
     governanceImpactScanHash:
@@ -168,17 +196,29 @@ function writeArchitectureConfirmation(overrides: Record<string, unknown> = {}):
     fullArchitectureTriggerMatrix: [
       {
         trigger: 'shared_schema_or_contract_changed',
+        triggerZh: '共享模式或契约发生变更',
         decision: 'triggered',
+        decisionZh: '已触发',
         reason: 'record schema is affected',
+        reasonZh: '需求记录模式受到影响。',
+        requiredDecisionZh: '确认共享契约的兼容和回滚边界。',
       },
       {
         trigger: 'frontend_ux_changed',
+        triggerZh: '前端体验发生变更',
         decision: 'not_triggered',
+        decisionZh: '未触发',
         reason: 'no user-facing UI change',
+        reasonZh: '没有面向用户的界面变更。',
+        requiredDecisionZh: '无需扩大架构范围。',
       },
     ],
     riskStatement: 'Fixture architecture risk statement.',
+    riskStatementZh: '错误的架构边界可能导致共享契约冲突和不安全的状态推进。',
     rollbackPlan: 'Fixture rollback plan.',
+    rollbackPlanZh: '拒绝本次架构确认并基于已确认需求重新生成架构工件。',
+    decisionZh: '完整架构待确认',
+    outcomeZh: '确认后进入实施准备',
     evidenceRefs: ['EVD-036', 'EVD-037'],
     businessArchitectureDiagrams: defaultArchitectureDiagrams('business_architecture'),
     governanceArchitectureDiagrams: defaultArchitectureDiagrams('governance_architecture'),
@@ -247,6 +287,10 @@ describe('render-architecture-confirmation-html', () => {
     expect(fs.existsSync(out)).toBe(true);
     const html = fs.readFileSync(out, 'utf8');
     expect(html).toContain('REQ-ARCH-HTML 架构确认草案');
+    expect(html).toContain('命中 1 个完整架构触发项');
+    expect(html).toContain('>可确认</span>');
+    expect(html).toContain('>草案</span>');
+    expect(html).toContain('<strong>阻断项：</strong>无');
     expect(html).toContain('id="architecture-delta"');
     expect(html).toContain('class="review-flow"');
     expect(html).toContain('class="review-step"');
@@ -260,7 +304,15 @@ describe('render-architecture-confirmation-html', () => {
     expect(html).toContain('id="governance-architecture-diagrams"');
     expect(html).toContain('业务架构图谱');
     expect(html).toContain('治理架构图谱');
-    expect(html).toContain('Display Settings System Architecture Diagram');
+    expect(html).toContain('业务system_architecture架构图');
+    expect(html).toContain('数据模型');
+    expect(html).toContain('模式变更需要架构确认。');
+    expect(html).toContain('共享模式或契约发生变更');
+    expect(html).toContain('错误的架构边界可能导致共享契约冲突和不安全的状态推进。');
+    expect(html).toContain('拒绝本次架构确认并基于已确认需求重新生成架构工件。');
+    expect(html).toContain('用户');
+    expect(html).not.toContain('Display Settings System Architecture Diagram');
+    expect(html).not.toContain('Fixture architecture risk statement.');
     expect(html).toContain('系统架构图');
     expect(html).toContain('部署图');
     expect(html).toContain('类图');
@@ -399,6 +451,40 @@ describe('render-architecture-confirmation-html', () => {
     );
     expect(report.confirmability).toBe('blocked');
     expect(report.blockingIssues).toContain('architecture_confirmation_artifact_hash_mismatch');
+  });
+
+  it('fails closed for zh-CN when authoring-agent Chinese projections are missing', () => {
+    const source = writeArchitectureConfirmation({
+      consumerImpactScan: [
+        {
+          category: 'data_model',
+          status: 'triggered',
+          summary: 'schema changes require architecture confirmation',
+        },
+      ],
+    });
+    const out = path.join(tempDir, 'architecture-confirmation-missing-zh.html');
+    const result = runRenderer([
+      '--architecture-confirmation',
+      source,
+      '--out',
+      out,
+      '--language',
+      'zh-CN',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(1);
+    const report = JSON.parse(
+      fs.readFileSync(
+        path.join(tempDir, 'architecture-confirmation-missing-zh.render-report.json'),
+        'utf8'
+      )
+    );
+    expect(report.confirmability).toBe('blocked');
+    expect(report.blockingIssues).toContain(
+      'missing_zh_projection_consumerImpactScan_0_summaryZh'
+    );
   });
 
   it('uses the selected language for architecture confirmation labels', () => {

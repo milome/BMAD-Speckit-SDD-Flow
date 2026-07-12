@@ -612,6 +612,86 @@ function writeCloseoutRenderReport(input: {
 }
 
 describe('controlled confirmation ingest', () => {
+  it('ingests implementationConfirmation blocks larger than the V8 argument limit', () => {
+    const source = writeSource();
+    const sourceText = fs.readFileSync(source, 'utf8');
+    const firstViewMarker = '\n```mermaid';
+    const firstViewIndex = sourceText.indexOf(firstViewMarker);
+    expect(firstViewIndex).toBeGreaterThan(0);
+    const largePadding = Array.from(
+      { length: 130_000 },
+      (_, index) => `    - "padding-${index}"`
+    ).join('\n');
+    fs.writeFileSync(
+      source,
+      `${sourceText.slice(0, firstViewIndex)}
+  largeSourcePadding:
+${largePadding}${sourceText.slice(firstViewIndex)}`,
+      'utf8'
+    );
+
+    const currentSourceText = fs.readFileSync(source, 'utf8');
+    const extracted = extractImplementationConfirmation(currentSourceText);
+    const sourceDocumentHash = sourceDocumentHashFor(
+      currentSourceText,
+      extracted.blockText,
+      extracted.confirmation
+    );
+    const implementationConfirmationHash = implementationConfirmationHashFor(
+      extracted.confirmation
+    );
+    const confirmationPageHash = fixedHash('f');
+    const reportPath = path.join(tempDir, 'confirmation-render-report.json');
+    const report = {
+      confirmability: 'confirmable',
+      recordId: 'REQ-CONFIRM-INGEST',
+      requirementSetId: 'REQSET-CONFIRM-INGEST',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      confirmationPageHash,
+      artifactRef: { path: path.join(tempDir, 'confirmation.html') },
+      confirmInstruction: [
+        '确认以上范围进入下一阶段',
+        `sourceDocumentHash=${sourceDocumentHash}`,
+        `implementationConfirmationHash=${implementationConfirmationHash}`,
+        `confirmationPageHash=${confirmationPageHash}`,
+      ].join('\n'),
+    };
+    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
+    fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
+    const recordPath = path.join(tempDir, 'requirement-record.json');
+
+    const result = runNode(INGEST, [
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text-file',
+      confirmationTextFile,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      report.recordId,
+      '--requirement-set-id',
+      report.requirementSetId,
+      '--requirement-record',
+      recordPath,
+      '--event-log',
+      path.join(tempDir, 'events.jsonl'),
+      '--artifact-index',
+      path.join(tempDir, 'artifact-index.jsonl'),
+      '--confirmed-at',
+      '2026-07-11T12:00:00.000Z',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const updated = extractImplementationConfirmation(fs.readFileSync(source, 'utf8'));
+    expect(updated.confirmation.status).toBe('user_confirmed');
+    expect(updated.confirmation.largeSourcePadding).toHaveLength(130_000);
+  });
+
   it('uses the high-level orchestration entry to create requirement-record without manual ingest assembly', () => {
     const source = writeSource();
     const { reportPath, report } = render(source);
