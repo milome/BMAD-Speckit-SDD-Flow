@@ -36,6 +36,8 @@ import {
   type GovernedReadbackRef,
 } from './requirements-contract-governed-write';
 
+// Runtime schemas validate these records before publication uses dynamic fields.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 type WriteResult = ReturnType<typeof writeGovernedJson>;
 type RuntimeBindings = ReturnType<typeof resolvePromptPublicationRuntimeBindings>;

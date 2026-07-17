@@ -5,8 +5,8 @@ import { expect, it } from 'vitest';
 const SCRIPT_ROOT = path.resolve(
   'packages/bmad-speckit/src/main-agent/source-authority/scripts'
 );
-const CONTRACT_PATH = path.resolve(
-  'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md'
+const COMMAND_AUTHORITY_PATH = path.resolve(
+  'tests/fixtures/requirements-contract-command-selector-authority.json'
 );
 const SCHEMA_PATH = path.resolve(
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-recovery-lineage-receipt.schema.json'
@@ -54,23 +54,13 @@ function recoveryHelperPaths(): string[] {
     .sort();
 }
 
-function expandAcceptanceRefs(expression: string): string[] {
-  const refs: string[] = [];
-  for (const match of expression.matchAll(
-    /AC-(\d+)(?:\s+through\s+AC-(\d+))?/gu
-  )) {
-    const start = Number(match[1]);
-    const end = match[2] === undefined ? start : Number(match[2]);
-    for (let value = start; value <= end; value += 1) {
-      refs.push(`AC-${String(value).padStart(2, '0')}`);
-    }
-  }
-  return refs;
-}
-
 it('derives recovery command identities only from schema authority and hash-bound receipts', () => {
   const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')) as Record<string, unknown>;
-  const contract = readFileSync(CONTRACT_PATH, 'utf8');
+  const commandAuthority = JSON.parse(
+    readFileSync(COMMAND_AUTHORITY_PATH, 'utf8')
+  ) as {
+    commands: Array<{ commandId: string; acceptanceRefs: string[] }>;
+  };
   const consumerBaseline = JSON.parse(
     readFileSync(CONSUMER_BASELINE_PATH, 'utf8')
   ) as Record<string, any>;
@@ -142,16 +132,9 @@ it('derives recovery command identities only from schema authority and hash-boun
   }
 
   const commandRows = new Map(
-    contract
-      .split(/\r?\n/u)
-      .filter((line) => /^\| CMD-\d+ \|/u.test(line))
-      .map((line) => {
-        const columns = line
-          .split('|')
-          .slice(1, -1)
-          .map((column) => column.trim());
-        return [columns[0], expandAcceptanceRefs(columns[4])] as const;
-      })
+    commandAuthority.commands.map(
+      (command) => [command.commandId, command.acceptanceRefs] as const
+    )
   );
   const bindings = schema['x-commandReceiptBindings'] as Record<
     string,

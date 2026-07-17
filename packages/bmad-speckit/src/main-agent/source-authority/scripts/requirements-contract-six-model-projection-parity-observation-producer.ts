@@ -45,6 +45,8 @@ export const SIX_MODEL_PARITY_MODEL_ORDER = [
   'delivery_confirmation',
 ] as const;
 
+// Parity artifacts are schema-validated before dynamic projection traversal.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 type Surface = (typeof SIX_MODEL_PARITY_SURFACES)[number];
 

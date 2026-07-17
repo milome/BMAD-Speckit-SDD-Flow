@@ -13,6 +13,9 @@ import {
 type PublicationFixture = ReturnType<
   typeof import('./prompt-transaction-publication-fixture').materializePromptPublicationFixture
 >;
+// Test fixtures mirror schema-driven production packets with dynamic JSON fields.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonRecord = Record<string, any>;
 const require = createRequire(import.meta.url);
 const { controlledRequiredCommandDescriptor } = require(
   path.resolve(
@@ -24,10 +27,10 @@ const { controlledRequiredCommandDescriptor } = require(
   )
 ) as {
   controlledRequiredCommandDescriptor: (
-    confirmation: Record<string, any>,
-    command: Record<string, any>,
-    args: Record<string, any>
-  ) => Record<string, any>;
+    confirmation: JsonRecord,
+    command: JsonRecord,
+    args: JsonRecord
+  ) => JsonRecord;
 };
 
 export function compiledPromptRunnerFor(
@@ -40,7 +43,7 @@ export function compiledPromptRunnerFor(
     runnerPath?: string;
   } = {}
 ) {
-  return vi.fn((input: Record<string, any>) => {
+  return vi.fn((input: JsonRecord) => {
     const outDir = String(input.outDir);
     const goalMode = options.goalMode ?? 'native_goal_document_ref';
     const runnerControlledExecutionContext = {
@@ -59,12 +62,9 @@ export function compiledPromptRunnerFor(
       commandCwd: runnerControlledExecutionContext.commandCwd.replace(/\\/gu, '/'),
       commandReceiptRoot: runnerControlledExecutionContext.commandReceiptRoot.replace(/\\/gu, '/'),
     };
-    const source = yaml.load(fs.readFileSync(value.paths.sourcePath, 'utf8')) as Record<
-      string,
-      any
-    >;
-    const confirmation = source.implementationConfirmation as Record<string, any>;
-    const requiredCommands = confirmation.requiredCommands.map((command: Record<string, any>) =>
+    const source = yaml.load(fs.readFileSync(value.paths.sourcePath, 'utf8')) as JsonRecord;
+    const confirmation = source.implementationConfirmation as JsonRecord;
+    const requiredCommands = (confirmation.requiredCommands as JsonRecord[]).map((command) =>
       controlledRequiredCommandDescriptor(confirmation, command, controlledExecutionContext)
     );
     const packetPath = writeJson(path.join(outDir, 'model_packet.json'), {

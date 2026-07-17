@@ -54,6 +54,8 @@ type Surface = (typeof SURFACES)[number];
 type CaseId = (typeof CASES)[number];
 type CountKey = (typeof COUNT_KEYS)[number];
 type Counts = Record<CountKey, number>;
+// Parity artifacts are schema-validated before dynamic verification traversal.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 const ZERO_COUNTS = Object.fromEntries(COUNT_KEYS.map((key) => [key, 0])) as Counts;
 

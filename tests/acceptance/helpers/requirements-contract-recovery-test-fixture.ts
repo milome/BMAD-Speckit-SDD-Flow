@@ -12,6 +12,8 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
+// Test fixtures mirror schema-driven recovery artifacts with dynamic JSON fields.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 
 const SCHEMA_PATH = path.resolve(
@@ -34,15 +36,16 @@ export function fileHash(filePath: string): string {
   return sha256(readFileSync(filePath));
 }
 
-function canonical(value: any): string {
+function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') {
-    return `{${Object.keys(value)
+    const record = value as JsonRecord;
+    return `{${Object.keys(record)
       .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`)
+      .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
       .join(',')}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) as string;
 }
 
 function writeJson(filePath: string, value: unknown): void {
@@ -161,10 +164,14 @@ function commandReceipt(
     | undefined;
   if (!binding) throw new Error(`missing fixture command binding: ${commandId}`);
   const executionPlan = Object.values(fixture.context.commandPlan).find(
-    (candidate: any) =>
-      candidate.commandId === commandId &&
-      candidate.commandRunId === commandRunId &&
-      candidate.invocationSequence === invocationSequence
+    (candidate) => {
+      const record = candidate as JsonRecord;
+      return (
+        record.commandId === commandId &&
+        record.commandRunId === commandRunId &&
+        record.invocationSequence === invocationSequence
+      );
+    }
   ) as JsonRecord | undefined;
   if (!executionPlan) throw new Error(`missing fixture execution plan: ${commandRunId}`);
   mkdirSync(path.dirname(receiptPath), { recursive: true });
@@ -595,7 +602,7 @@ export function createRecoveryFixture(
     roles,
     createCommandReceipt(role: string): string {
       const entry = Object.values(plan).find(
-        (candidate: any) => candidate.commandId === role
+        (candidate) => candidate.commandId === role
       ) as JsonRecord | undefined;
       if (!entry) throw new Error(`unknown fixture command role: ${role}`);
       return commandReceipt(

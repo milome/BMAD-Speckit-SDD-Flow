@@ -5773,7 +5773,7 @@ function assignedValidationAuthorityCommandIds(records: ValidationAuthorityRecor
   const assignedCommandIds = new Set<string>();
   let fallbackCommandOrdinal = 0;
   const nextFallbackCommandId = (): string => {
-    while (true) {
+    for (;;) {
       const candidate = `CMD-${requirementOrdinal(fallbackCommandOrdinal)}`;
       fallbackCommandOrdinal += 1;
       if (!reservedSourceCommandIds.has(candidate) && !assignedCommandIds.has(candidate)) {
@@ -7357,7 +7357,7 @@ function sourceInteractionListValue(value: string): string[] {
   if (!normalized || /^(?:none|null|n\/a)$/iu.test(normalized)) return [];
   return uniqueNonEmpty(
     normalized
-      .replace(/[\[\]`]/gu, ' ')
+      .replace(/[[\]`]/gu, ' ')
       .split(/[\s,;]+/u)
       .map((item) => normalizeText(item))
   );
@@ -14622,7 +14622,7 @@ function resyncExistingBusinessVisualProofClosure(
     ...asRecordArray(nextConfirmation.acceptanceTests),
     ...asRecordArray(nextConfirmation.e2eSuites),
   ];
-  let failurePathRows = asRecordArray(nextConfirmation.failurePaths);
+  const failurePathRows = asRecordArray(nextConfirmation.failurePaths);
   const edgeCaseRows = asRecordArray(nextConfirmation.edgeCases);
   const knownMustIds = new Set(mustIds);
   const knownNegIds = new Set(notDoneRowsById.keys());
