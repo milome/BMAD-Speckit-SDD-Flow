@@ -5,43 +5,66 @@
   "additionalProperties": false,
   "required": [
     "schemaVersion",
-    "phase",
-    "phaseAuditAttemptId",
+    "transactionId",
+    "auditAttemptId",
+    "providerRegistryHash",
+    "publicProviderConfigHash",
+    "capabilityReceiptHash",
     "providerRef",
+    "configuredBaseUrlHash",
+    "transport",
+    "apiStyle",
     "model",
-    "publicConfigRef",
-    "privateCredentialPathHash",
+    "credentialRevision",
     "independenceClass",
+    "blindReview",
+    "allowPassAuthority",
     "runtimeFallbackAllowed",
-    "capabilityReceiptRef",
+    "rubricHash",
+    "systemPromptHash",
+    "sourceHash",
+    "traceHash",
+    "redHash",
+    "baseEvidenceHash",
+    "auditUniverseHash",
+    "baseJudgeInputBundleHash",
+    "authorizedChallengeDerivationProtocolHash",
     "decision"
   ],
   "properties": {
-    "schemaVersion": { "const": "requirements-contract-judge-selection-receipt/v1" },
-    "phase": { "enum": ["pre-candidate", "final"] },
-    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
-    "providerRef": { "type": "string", "minLength": 1 },
-    "model": { "type": "string", "minLength": 1 },
-    "publicConfigRef": { "$ref": "#/$defs/fileRef" },
-    "privateCredentialPathHash": { "$ref": "#/$defs/hash" },
-    "independenceClass": { "type": "string", "minLength": 1 },
+    "schemaVersion": {
+      "const": "requirements-contract-judge-selection-receipt/v1"
+    },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "providerRegistryHash": { "$ref": "#/$defs/hash" },
+    "publicProviderConfigHash": { "$ref": "#/$defs/hash" },
+    "capabilityReceiptHash": { "$ref": "#/$defs/hash" },
+    "providerRef": { "const": "local-sonnet-judge" },
+    "configuredBaseUrlHash": { "$ref": "#/$defs/hash" },
+    "transport": { "const": "openai-compatible" },
+    "apiStyle": { "const": "chat_completions" },
+    "model": { "const": "claude-sonnet-5" },
+    "credentialRevision": { "type": "integer", "minimum": 1 },
+    "independenceClass": { "const": "different_provider_different_model" },
+    "blindReview": { "const": true },
+    "allowPassAuthority": { "const": false },
     "runtimeFallbackAllowed": { "const": false },
-    "capabilityReceiptRef": { "$ref": "#/$defs/fileRef" },
-    "decision": { "const": "pass" }
+    "rubricHash": { "$ref": "#/$defs/hash" },
+    "systemPromptHash": { "$ref": "#/$defs/hash" },
+    "sourceHash": { "$ref": "#/$defs/hash" },
+    "traceHash": { "$ref": "#/$defs/hash" },
+    "redHash": { "$ref": "#/$defs/hash" },
+    "baseEvidenceHash": { "$ref": "#/$defs/hash" },
+    "auditUniverseHash": { "$ref": "#/$defs/hash" },
+    "baseJudgeInputBundleHash": { "$ref": "#/$defs/hash" },
+    "authorizedChallengeDerivationProtocolHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "frozen" }
   },
   "$defs": {
     "hash": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
-    },
-    "fileRef": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["path", "hash"],
-      "properties": {
-        "path": { "type": "string", "minLength": 1 },
-        "hash": { "$ref": "#/$defs/hash" }
-      }
     }
   }
 }

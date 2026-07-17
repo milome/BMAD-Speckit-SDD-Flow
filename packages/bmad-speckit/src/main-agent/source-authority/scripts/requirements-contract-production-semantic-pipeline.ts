@@ -44,6 +44,7 @@ import {
   type RequirementContractModelV2,
   type RequirementContractSemanticNodeType,
 } from './requirements-contract-model';
+import { requirementsContractTraceEdgeTypeRegistryHash } from '../rules/requirements-contract-trace-edge-type-registry';
 import {
   createRequirementsContractLifecycleValidationReport,
   validateRequirementsContractLifecycleValidationReport,
@@ -963,7 +964,7 @@ function buildCanonicalSemanticIr(input: {
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
     sourceAuthorityHash: input.sourceAuthorityHash,
-    edgeTypeRegistryHash: sha256Stable(['bounded_by', 'implemented_in', 'verified_by']),
+    edgeTypeRegistryHash: requirementsContractTraceEdgeTypeRegistryHash(),
     authority: 'none' as const,
     semanticBodies,
     nodes,

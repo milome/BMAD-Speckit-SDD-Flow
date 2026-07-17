@@ -128,6 +128,24 @@
   "oneOf": [
     {
       "properties": { "result": { "const": "PASS" } },
+      "allOf": [
+        {
+          "properties": {
+            "target": {
+              "required": ["promotedHash", "readbackHash"]
+            },
+            "draft": {
+              "required": ["hash", "bytes"],
+              "not": {
+                "anyOf": [
+                  { "required": ["archivedPath"] },
+                  { "required": ["archivedHash"] }
+                ]
+              }
+            }
+          }
+        }
+      ],
       "not": {
         "anyOf": [
           { "required": ["failure"] },
@@ -137,7 +155,24 @@
     },
     {
       "properties": { "result": { "const": "BLOCK" } },
-      "required": ["failure", "retryRole"]
+      "required": ["failure", "retryRole"],
+      "allOf": [
+        {
+          "properties": {
+            "target": {
+              "not": {
+                "anyOf": [
+                  { "required": ["promotedHash"] },
+                  { "required": ["readbackHash"] }
+                ]
+              }
+            },
+            "draft": {
+              "required": ["archivedPath", "archivedHash"]
+            }
+          }
+        }
+      ]
     }
   ],
   "$defs": {

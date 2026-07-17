@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-runtime.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "enabled",
+    "activeProviderRef",
+    "selectionPolicy",
+    "credentialConfig",
+    "providers"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-runtime/v1" },
+    "enabled": { "const": true },
+    "activeProviderRef": { "const": "local-sonnet-judge" },
+    "selectionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "runtimeFallbackAllowed",
+        "runtimeAutoDiscoveryAllowed",
+        "environmentOverrideAllowed",
+        "cliTransportAllowed",
+        "selectionReceiptRequired"
+      ],
+      "properties": {
+        "mode": { "const": "contract_locked" },
+        "runtimeFallbackAllowed": { "const": false },
+        "runtimeAutoDiscoveryAllowed": { "const": false },
+        "environmentOverrideAllowed": { "const": false },
+        "cliTransportAllowed": { "const": false },
+        "selectionReceiptRequired": { "const": true }
+      }
+    },
+    "credentialConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "path",
+        "schemaVersion",
+        "allowedRoot",
+        "environmentFallbackAllowed"
+      ],
+      "properties": {
+        "source": { "const": "config_file" },
+        "path": {
+          "const": "_bmad-output/config/private/judge-provider.credentials.yaml"
+        },
+        "schemaVersion": { "const": "requirements-contract-judge-credentials/v1" },
+        "allowedRoot": { "const": "_bmad-output/config/private" },
+        "environmentFallbackAllowed": { "const": false }
+      }
+    },
+    "providers": {
+      "type": "object",
+      "minProperties": 1,
+      "required": ["local-sonnet-judge"],
+      "additionalProperties": { "$ref": "#/$defs/provider" }
+    }
+  },
+  "$defs": {
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "transport",
+        "apiStyle",
+        "model",
+        "credentialRef",
+        "endpoint",
+        "authentication",
+        "auditPolicy",
+        "requestPolicy"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "transport": {
+          "enum": ["openai-compatible", "anthropic-compatible"]
+        },
+        "apiStyle": {
+          "enum": ["chat_completions", "messages"]
+        },
+        "model": { "type": "string", "minLength": 1 },
+        "credentialRef": { "type": "string", "minLength": 1 },
+        "endpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseUrl",
+            "resolutionMode",
+            "routingOwnership",
+            "upstreamVersioning",
+            "explicitOperationPath"
+          ],
+          "properties": {
+            "baseUrl": { "type": "string", "format": "uri" },
+            "resolutionMode": { "const": "transport_managed" },
+            "routingOwnership": { "const": "transport_adapter" },
+            "upstreamVersioning": { "const": "gateway_managed" },
+            "explicitOperationPath": { "type": "null" }
+          }
+        },
+        "authentication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "sensitivity",
+            "arbitraryNonEmptyValueAllowed"
+          ],
+          "properties": {
+            "type": { "enum": ["bearer", "api_key"] },
+            "sensitivity": { "enum": ["placeholder", "secret"] },
+            "arbitraryNonEmptyValueAllowed": { "type": "boolean" }
+          }
+        },
+        "auditPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "independenceClass",
+            "blindReview",
+            "allowPassAuthority",
+            "toolsAllowed",
+            "implementationWritesAllowed"
+          ],
+          "properties": {
+            "independenceClass": { "type": "string", "minLength": 1 },
+            "blindReview": { "const": true },
+            "allowPassAuthority": { "const": false },
+            "toolsAllowed": { "const": false },
+            "implementationWritesAllowed": { "const": false }
+          }
+        },
+        "requestPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "timeoutMs",
+            "maximumAttempts",
+            "structuredResponseRequired"
+          ],
+          "properties": {
+            "timeoutMs": { "type": "integer", "minimum": 1 },
+            "maximumAttempts": { "const": 1 },
+            "structuredResponseRequired": { "const": true }
+          }
+        }
+      }
+    }
+  }
+}

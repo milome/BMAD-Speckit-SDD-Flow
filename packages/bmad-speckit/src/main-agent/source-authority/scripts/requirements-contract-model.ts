@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import Ajv2020, { type AnySchemaObject } from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import { requirementsContractTraceEdgeTypeRegistryHash } from '../rules/requirements-contract-trace-edge-type-registry';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 export type RequirementSourceInputKind =
@@ -1318,7 +1319,7 @@ export function migrateRequirementContractV1ToV2(
         authority: requirement.authority,
       })),
     }),
-    edgeTypeRegistryHash: sha256Stable([]),
+    edgeTypeRegistryHash: requirementsContractTraceEdgeTypeRegistryHash(),
     authority: 'none',
     semanticBodies,
     nodes,

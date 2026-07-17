@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-normalized-judge-response.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "providerRef",
+    "transport",
+    "configuredModel",
+    "returnedModel",
+    "decision",
+    "findings",
+    "challengeRequests",
+    "evidenceRefs",
+    "providerRequestId",
+    "requestHash",
+    "responseHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-normalized-judge-response/v1"
+    },
+    "providerRef": { "const": "local-sonnet-judge" },
+    "transport": { "const": "openai-compatible" },
+    "configuredModel": { "const": "claude-sonnet-5" },
+    "returnedModel": { "const": "claude-sonnet-5" },
+    "decision": { "enum": ["pass", "block", "inconclusive"] },
+    "findings": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "challengeRequests": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "providerRequestId": { "type": "string", "minLength": 1 },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "responseHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
