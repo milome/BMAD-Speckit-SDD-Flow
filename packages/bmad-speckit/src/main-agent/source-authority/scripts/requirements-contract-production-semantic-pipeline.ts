@@ -221,6 +221,25 @@ function removeBundlePath(targetPath: string): void {
   rmSync(targetPath, { force: true });
 }
 
+function renameBundlePathWithRetry(sourcePath: string, targetPath: string): void {
+  const waitBuffer = new Int32Array(new SharedArrayBuffer(4));
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      renameSync(sourcePath, targetPath);
+      return;
+    } catch (error) {
+      const code =
+        error && typeof error === 'object' && 'code' in error
+          ? String((error as { code?: unknown }).code)
+          : '';
+      if (!['EPERM', 'EBUSY'].includes(code) || attempt === 19) {
+        throw error;
+      }
+      Atomics.wait(waitBuffer, 0, 0, Math.min(50 * 1.5 ** attempt, 1000));
+    }
+  }
+}
+
 function promoteSemanticBundle(input: {
   stagingRoot: string;
   entries: SemanticBundleEntry[];
@@ -249,10 +268,10 @@ function promoteSemanticBundle(input: {
       mkdirSync(path.dirname(state.targetPath), { recursive: true });
       if (existsSync(state.targetPath)) {
         mkdirSync(path.dirname(state.backupPath), { recursive: true });
-        renameSync(state.targetPath, state.backupPath);
+        renameBundlePathWithRetry(state.targetPath, state.backupPath);
         state.backedUp = true;
       }
-      renameSync(state.stagedPath, state.targetPath);
+      renameBundlePathWithRetry(state.stagedPath, state.targetPath);
       state.promoted = true;
     }
     input.validatePublished();
@@ -266,7 +285,7 @@ function promoteSemanticBundle(input: {
         if (state.promoted) removeBundlePath(state.targetPath);
         if (state.backedUp && existsSync(state.backupPath)) {
           mkdirSync(path.dirname(state.targetPath), { recursive: true });
-          renameSync(state.backupPath, state.targetPath);
+          renameBundlePathWithRetry(state.backupPath, state.targetPath);
         }
       } catch (rollbackError) {
         rollbackErrors.push(

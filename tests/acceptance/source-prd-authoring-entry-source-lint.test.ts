@@ -232,4 +232,35 @@ describe('source PRD authoring entry-source lint gate', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('does not treat an existing source as session intake from an explicit entry-source claim', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'source-prd-entry-existing-source-'));
+    try {
+      const source = writeSessionRequirements(root);
+      const recordId = 'REQ-SOURCE-PRD-EXISTING-SOURCE';
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        entrySource: 'session_requirements',
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        sessionId: 'session-existing-source',
+        sessionTurnId: 'turn-existing-source',
+        sessionMessageId: 'message-existing-source',
+        sessionActorIdentityClass: 'requesting_user',
+        sessionBranch: 'test-existing-source',
+        sessionCapturedAt: '2026-07-17T00:00:00.000Z',
+        targetPath: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+        requiredCommand: 'npx vitest run tests/acceptance/source-prd-authoring-entry-source-lint.test.ts',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const dir = authoringDir(root, recordId);
+      expect(result.entrySource).toBeUndefined();
+      expect(existsSync(path.join(dir, 'source-prd-instance-lint-report.json'))).toBe(false);
+      expect(existsSync(path.join(dir, 'intake-receipt.json'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

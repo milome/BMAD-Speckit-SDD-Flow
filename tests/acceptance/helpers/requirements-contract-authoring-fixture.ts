@@ -14,6 +14,10 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 import { runMainAgentPreConfirmationDrilldown } from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
+  criticalAuditorIndependentProviderRunHash,
+  type CriticalAuditorIndependentProviderExpectation,
+} from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
+import {
   renderStaleImplementationConfirmation,
   type StaleImplementationConfirmationDescriptor,
 } from './requirements-contract-source-fixture';
@@ -32,6 +36,7 @@ type JsonObject = Record<string, unknown>;
 
 interface CriticalAuditorFixtureInput {
   roundIndex: number;
+  independentProviderExpectation: CriticalAuditorIndependentProviderExpectation;
   gateDryRun: {
     hash: string;
     reconciliation: { issueCount: number };
@@ -115,6 +120,18 @@ export interface MinimalConsumerRequirementWriteOptions {
 
 export function createTempRoot(prefix: string): string {
   return mkdtempSync(path.join(os.tmpdir(), prefix));
+}
+
+export function installJudgeRuntimeConfig(root: string): string {
+  const source = path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml');
+  if (!existsSync(source)) {
+    throw new Error(`canonical Judge runtime config is missing: ${source}`);
+  }
+  return writeText(
+    root,
+    path.join('_bmad', '_config', 'governance-remediation.yaml'),
+    readFileSync(source, 'utf8')
+  );
 }
 
 export function removeTempRoot(root: string): void {
@@ -454,7 +471,7 @@ export function buildValidResponseFromRequest(
   const checkedProjectionQualityRuleCodes = Array.isArray(projectionQualityGate?.requiredRuleCodes)
     ? (projectionQualityGate.requiredRuleCodes as string[])
     : [];
-  return {
+  const response = {
     schemaVersion: 'critical-auditor-round-response/v1',
     verdict: 'no_new_valid_gap',
     roundIndex: request.roundIndex,
@@ -494,6 +511,47 @@ export function buildValidResponseFromRequest(
     })),
     rationale: 'No new valid gap detected in the current staging transaction.',
   };
+  const binding = request.independentProviderBinding as Record<string, unknown> | undefined;
+  if (!binding) {
+    throw new Error('critical auditor request does not contain independentProviderBinding');
+  }
+  const evidenceWithoutRunHash = {
+    ...binding,
+    transactionId: request.transactionId,
+    auditAttemptId: request.auditAttemptId,
+    providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
+    requestHash: request.requestHash,
+    responseHash: sha256Text(JSON.stringify(response)),
+    sourceDocumentHash: request.sourceDocumentHash,
+    semanticModelHash: request.semanticModelHash,
+    projectionSetHash: request.projectionSetHash,
+  };
+  return {
+    ...response,
+    independentProviderEvidence: {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
+  };
+}
+
+export function withIndependentProviderEvidence<T extends Record<string, unknown>>(
+  input: Pick<CriticalAuditorFixtureInput, 'roundIndex' | 'independentProviderExpectation'>,
+  result: T
+): T & { independentProviderEvidence: Record<string, unknown> } {
+  const expectation = input.independentProviderExpectation;
+  const evidenceWithoutRunHash = {
+    ...expectation,
+    providerRunId: `critical-auditor-run/${input.roundIndex}/${expectation.requestHash.slice(-16)}`,
+    responseHash: sha256Text(JSON.stringify(result)),
+  };
+  return {
+    ...result,
+    independentProviderEvidence: {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
+  };
 }
 
 export function readImplementationConfirmation(filePath: string): JsonObject {
@@ -511,7 +569,7 @@ export function readImplementationConfirmation(filePath: string): JsonObject {
 
 export function cleanCriticalAuditorRound(input: CriticalAuditorFixtureInput) {
   const { roundIndex, gateDryRun, packetProjectionSummary } = input;
-  return {
+  return withIndependentProviderEvidence(input, {
     verdict: 'no_new_valid_gap' as const,
     gateDryRunHash: gateDryRun.hash,
     reconciliationIssueCount: gateDryRun.reconciliation.issueCount,
@@ -539,7 +597,7 @@ export function cleanCriticalAuditorRound(input: CriticalAuditorFixtureInput) {
       evidenceRefs: [gateDryRun.reportPath],
     })),
     rationale: `Round ${roundIndex} found no new valid gap.`,
-  };
+  });
 }
 
 export function runAuthoring(

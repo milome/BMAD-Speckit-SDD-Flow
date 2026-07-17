@@ -18,6 +18,10 @@ import {
   resolveMainAgentOrchestrationSurface,
   runMainAgentPreConfirmationDrilldown,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import {
+  installJudgeRuntimeConfig,
+  withIndependentProviderEvidence,
+} from './helpers/requirements-contract-authoring-fixture';
 
 const PROJECTION_QUALITY_RULE_CODES = [
   'projection_per_must_acceptance_not_independent',
@@ -1084,7 +1088,7 @@ function runWithAuthoringLocalization(
 
 function cleanCriticalAuditorRound(input: any) {
   const { roundIndex, gateDryRun, packetProjectionSummary } = input;
-  return {
+  return withIndependentProviderEvidence(input, {
     verdict: 'no_new_valid_gap' as const,
     gateDryRunHash: gateDryRun.hash,
     reconciliationIssueCount: gateDryRun.reconciliation.issueCount,
@@ -1105,7 +1109,7 @@ function cleanCriticalAuditorRound(input: any) {
       evidenceRefs: [gateDryRun.reportPath],
     })),
     rationale: `Round ${roundIndex} found no new valid gap.`,
-  };
+  });
 }
 
 function captureMainAgentCli(args: string[]): {
@@ -1170,6 +1174,7 @@ function installFailingPostPacketScaleAssessment(root: string): void {
 describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', () => {
   it('auto-persists checkpoints and promotes through the authoring-draft source writer', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-'));
+    installJudgeRuntimeConfig(root);
     try {
       const source = writeDraftSource(root);
       const beforeSourceText = readFileSync(source, 'utf8');
@@ -1296,6 +1301,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     const root = mkdtempSync(
       path.join(os.tmpdir(), 'main-agent-pre-confirmation-render-registration-')
     );
+    installJudgeRuntimeConfig(root);
     try {
       const recordId = 'REQ-PRE-CONFIRMATION-RENDER-REGISTRATION';
       const requirementSetId = `${recordId}-SET`;
@@ -2158,6 +2164,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     const root = mkdtempSync(
       path.join(os.tmpdir(), 'main-agent-pre-confirmation-real-audit-loop-')
     );
+    installJudgeRuntimeConfig(root);
     try {
       const source = writeDraftSource(root);
       const seenRounds: number[] = [];
@@ -2191,7 +2198,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
               rationale: `Round ${roundIndex} found a valid gap and reset convergence.`,
             };
           }
-          return {
+          return withIndependentProviderEvidence(input, {
             verdict: 'no_new_valid_gap',
             gateDryRunHash: input.gateDryRun.hash,
             reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
@@ -2209,7 +2216,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
               { id: `REJ-${roundIndex}`, reason: 'no new valid gap after repairs' },
             ],
             rationale: `Round ${roundIndex} found no new valid gap.`,
-          };
+          });
         },
       });
 
@@ -2251,6 +2258,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
 
   it('authors source-derived MUST rows into packet projections and audits until three clean rounds', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-source-driven-'));
+    installJudgeRuntimeConfig(root);
     try {
       const source = writeSourceDrivenRequirement(root);
       const expectedMustTexts = [
@@ -2290,7 +2298,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
               rationale: 'First audit round found a resolved source-driven decomposition gap.',
             };
           }
-          return {
+          return withIndependentProviderEvidence(input, {
             verdict: 'no_new_valid_gap',
             gateDryRunHash: input.gateDryRun.hash,
             reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
@@ -2308,7 +2316,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
               { id: `REJ-SOURCE-${input.roundIndex}`, reason: 'all source-derived MUSTs visible' },
             ],
             rationale: `Round ${input.roundIndex} found no new source-derived gap.`,
-          };
+          });
         },
       });
 
@@ -2447,6 +2455,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
 
   it('materializes source Failure Matrix rows as consumer business failure paths', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-business-failure-matrix-'));
+    installJudgeRuntimeConfig(root);
     try {
       const source = writeSourceWithBusinessFailureMatrix(root);
 
@@ -2457,29 +2466,30 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         implementationAttemptId: 'implementation-attempt-REQSET-BUSINESS-FAILURE-MATRIX',
         confirmationLanguage: 'en-US',
         ...writeConsumerMarketDataAuthorityTarget(root),
-        criticalAuditorRound: (input) => ({
-          verdict: 'no_new_valid_gap',
-          gateDryRunHash: input.gateDryRun.hash,
-          reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
-          checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
-          checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
-          reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
-          priorFindingsDisposition: [
-            {
-              findingRef: `ROUND-${input.roundIndex}-BUSINESS-FAILURE-MATRIX`,
-              disposition: 'unchanged',
-              evidenceRefs: [input.gateDryRun.reportPath],
-            },
-          ],
-          rejectedGapCandidates: [
-            {
-              id: `REJ-BUSINESS-FAILURE-MATRIX-${input.roundIndex}`,
-              reason: 'source business failure matrix is projected into the packet and source',
-            },
-          ],
-          rationale:
-            'The source-defined consumer failure paths remain visible and independently traceable.',
-        }),
+        criticalAuditorRound: (input) =>
+          withIndependentProviderEvidence(input, {
+            verdict: 'no_new_valid_gap',
+            gateDryRunHash: input.gateDryRun.hash,
+            reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
+            checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
+            checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
+            reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
+            priorFindingsDisposition: [
+              {
+                findingRef: `ROUND-${input.roundIndex}-BUSINESS-FAILURE-MATRIX`,
+                disposition: 'unchanged',
+                evidenceRefs: [input.gateDryRun.reportPath],
+              },
+            ],
+            rejectedGapCandidates: [
+              {
+                id: `REJ-BUSINESS-FAILURE-MATRIX-${input.roundIndex}`,
+                reason: 'source business failure matrix is projected into the packet and source',
+              },
+            ],
+            rationale:
+              'The source-defined consumer failure paths remain visible and independently traceable.',
+          }),
       });
 
       const paths = artifacts(root, 'REQ-BUSINESS-FAILURE-MATRIX');
@@ -2711,6 +2721,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
 
   it('promotes source before render and then blocks rendering when confirmation language is missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-authoring-language-boundary-'));
+    installJudgeRuntimeConfig(root);
     try {
       const source = writeDraftSource(root);
       const beforeSourceText = readFileSync(source, 'utf8');
@@ -2759,6 +2770,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const root = mkdtempSync(
         path.join(os.tmpdir(), `main-agent-pre-confirmation-${surface.slice(1)}-skill-`)
       );
+      installJudgeRuntimeConfig(root);
       try {
         const sourceSkill = path.join(
           process.cwd(),

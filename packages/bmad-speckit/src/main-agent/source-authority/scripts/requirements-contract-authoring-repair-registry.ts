@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -538,4 +539,83 @@ export function writeRepairRegistryUnclassifiedIssueReceipt(input: {
     'utf8'
   );
   return receiptPath;
+}
+
+export type RequirementAuditorSemanticRepairAction =
+  | 'add_must'
+  | 'add_neg'
+  | 'add_out'
+  | 'replace_target_path'
+  | 'replace_validation_command';
+
+export interface RequirementAuditorSemanticRepairInput {
+  sourceDocument: string;
+  sourceHash: string;
+  action: RequirementAuditorSemanticRepairAction;
+  sourceSpan: { startLine: number; endLine: number };
+  sourceText: string;
+  proposedValue: string;
+  decisionReceiptRef?: {
+    path: string;
+    hash: string;
+    verified: boolean;
+  };
+}
+
+function semanticAuthorityHash(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+export function validateRequirementAuditorSemanticRepair(
+  input: RequirementAuditorSemanticRepairInput
+): {
+  ok: boolean;
+  issues: string[];
+  authorityClass: 'source_grounded' | 'decision_grounded' | 'none';
+} {
+  const issues: string[] = [];
+  const normalizedSource = input.sourceDocument.replace(/\r\n?/gu, '\n');
+  if (semanticAuthorityHash(normalizedSource) !== input.sourceHash) {
+    issues.push('auditor_source_hash_mismatch');
+  }
+  const lines = normalizedSource.split('\n');
+  const { startLine, endLine } = input.sourceSpan;
+  if (
+    !Number.isInteger(startLine) ||
+    !Number.isInteger(endLine) ||
+    startLine < 1 ||
+    endLine < startLine ||
+    endLine > lines.length
+  ) {
+    issues.push('auditor_source_span_invalid');
+  }
+  const sourceSlice =
+    issues.includes('auditor_source_span_invalid')
+      ? ''
+      : lines.slice(startLine - 1, endLine).join('\n');
+  if (sourceSlice !== input.sourceText.replace(/\r\n?/gu, '\n')) {
+    issues.push('auditor_source_text_mismatch');
+  }
+
+  const decisionReceiptValid =
+    input.decisionReceiptRef?.verified === true &&
+    input.decisionReceiptRef.path.trim().length > 0 &&
+    /^sha256:[a-f0-9]{64}$/u.test(input.decisionReceiptRef.hash);
+  const sourceEntailsValue =
+    input.proposedValue.trim().length > 0 &&
+    sourceSlice.includes(input.proposedValue.trim());
+  if (!sourceEntailsValue && !decisionReceiptValid) {
+    issues.push('auditor_semantic_entailment_missing');
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues,
+    authorityClass:
+      issues.length > 0
+        ? 'none'
+        : decisionReceiptValid
+          ? 'decision_grounded'
+          : 'source_grounded',
+  };
 }

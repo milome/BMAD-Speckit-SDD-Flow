@@ -21,18 +21,19 @@ import {
 } from './helpers/requirements-contract-authoring-fixture';
 
 function createAuthoringConsumerFixture(root: string, recordId: string) {
+  const configTarget = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  mkdirSync(path.dirname(configTarget), { recursive: true });
+  writeFileSync(
+    configTarget,
+    readFileSync(path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'), 'utf8'),
+    'utf8'
+  );
   const materialization = writeMinimalConsumerRequirement(
     root,
     `docs/requirements/${recordId.toLowerCase()}.md`,
     createMinimalConsumerRequirementDescriptor(recordId)
   );
-  return {
-    ...materialization,
-    authoringOptions: {
-      ...materialization.authoringOptions,
-      entrySource: 'session_requirements',
-    },
-  };
+  return materialization;
 }
 
 function createRequestForResponseFile(root: string, recordId: string) {
@@ -61,7 +62,7 @@ function createRequestForResponseFile(root: string, recordId: string) {
 }
 
 describe('requirements contract Critical Auditor provider modes', () => {
-  it('no-new-gap response writer echoes required projection quality rule codes', () => {
+  it('no-new-gap response writer rejects deterministic synthesis without writing a response', () => {
     const root = createTempRoot('requirements-contract-critical-auditor-writer-quality-');
     try {
       const recordId = 'REQ-CRITICAL-AUDITOR-WRITER-QUALITY';
@@ -110,16 +111,16 @@ describe('requirements contract Critical Auditor provider modes', () => {
         { cwd: process.cwd(), encoding: 'utf8' }
       );
 
-      expect(result.status, result.stderr || result.stdout).toBe(0);
-      const response = JSON.parse(readFileSync(responsePath, 'utf8'));
-      expect(response.checkedProjectionQualityRuleCodes).toEqual(
-        (fixture.request as any).requiredResponseSchema.checkedProjectionQualityRuleCodes
-      );
-      expect(response.checkedProjectionQualityRuleCodes).toEqual(
-        (fixture.request as any).projectionQualityGate.requiredRuleCodes
-      );
-      expect(response.transactionId).toBe((fixture.request as any).transactionId);
-      expect(response.namespaceVersion).toBe((fixture.request as any).namespaceVersion);
+      expect(result.status, result.stderr || result.stdout).toBe(1);
+      const response = JSON.parse(result.stdout || result.stderr);
+      expect(response).toMatchObject({
+        ok: false,
+        failureClass: 'critical_auditor_independent_provider_evidence_required',
+        issues: ['deterministic_no_new_gap_response_writer_forbidden'],
+        receiptWritten: false,
+      });
+      expect(existsSync(responsePath)).toBe(false);
+      expect(response.requestHash).toBe((fixture.request as any).requestHash);
     } finally {
       removeTempRoot(root);
     }
@@ -373,7 +374,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
         criticalAuditorResponseFile: responsePath,
       });
 
-      expect(issueCodes(result)).toContain(
+      expect(issueCodes(result), JSON.stringify(issueCodes(result))).toContain(
         'critical_auditor_independent_provider_evidence_required'
       );
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(false);
@@ -651,6 +652,22 @@ describe('requirements contract Critical Auditor provider modes', () => {
           recordId,
           '--requirement-set-id',
           `${recordId}-SET`,
+          '--implementation-attempt-id',
+          fixture.authoringOptions.implementationAttemptId,
+          '--session-id',
+          fixture.authoringOptions.sessionId,
+          '--session-turn-id',
+          fixture.authoringOptions.sessionTurnId,
+          '--session-message-id',
+          fixture.authoringOptions.sessionMessageId,
+          '--session-actor-identity-class',
+          fixture.authoringOptions.sessionActorIdentityClass,
+          '--session-branch',
+          fixture.authoringOptions.sessionBranch,
+          '--session-captured-at',
+          fixture.authoringOptions.sessionCapturedAt,
+          '--confirmation-language',
+          fixture.authoringOptions.confirmationLanguage,
           '--target-path',
           fixture.authoringOptions.targetPath,
           '--required-command',
@@ -664,9 +681,10 @@ describe('requirements contract Critical Auditor provider modes', () => {
         expect(exitCode).toBe(1);
         const result = JSON.parse(stdout);
         expect(result.sourceMutationPerformed).toBe(false);
-        const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
-          roundArtifact(root, recordId, 'receipt', 1)
-        ).criticalAuditorReceipt;
+        const receiptPath = roundArtifact(root, recordId, 'receipt', 1);
+        expect(existsSync(receiptPath), JSON.stringify(result)).toBe(true);
+        const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(receiptPath)
+          .criticalAuditorReceipt;
         expect(receipt.requestHash).toBe(fixture.request.requestHash);
       } finally {
         process.stdout.write = originalWrite;

@@ -7,6 +7,7 @@ import {
   createSourceAuthorityProjectionDescriptor,
   createTempRoot,
   createTestAuthoringExecutionOptions,
+  installJudgeRuntimeConfig,
   issueCodes,
   readJson,
   removeTempRoot,
@@ -15,6 +16,12 @@ import {
   writeSourceAuthorityProjection,
   writeText,
 } from './helpers/requirements-contract-authoring-fixture';
+
+function createJudgeReadyTempRoot(prefix: string): string {
+  const root = createTempRoot(prefix);
+  installJudgeRuntimeConfig(root);
+  return root;
+}
 
 function sourceLineOf(sourcePath: string, needle: string): number {
   const lineIndex = readFileSync(sourcePath, 'utf8')
@@ -168,7 +175,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('persists source authority spans, hashes, and source requirement IDs through authoring artifacts', () => {
-    const root = createTempRoot('requirements-contract-authority-grounding-');
+    const root = createJudgeReadyTempRoot('requirements-contract-authority-grounding-');
     try {
       const source = writeText(
         root,
@@ -242,7 +249,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('keeps source NEG rows independent from source OUT rows', () => {
-    const root = createTempRoot('requirements-contract-neg-out-authority-');
+    const root = createJudgeReadyTempRoot('requirements-contract-neg-out-authority-');
     try {
       const descriptor = createSourceAuthorityProjectionDescriptor('neg-out-authority', {
         negativeCount: 15,
@@ -283,7 +290,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('resolves ACC and E2E files from source ACC CMD and PATH authority tables', () => {
-    const root = createTempRoot('requirements-contract-acceptance-file-authority-');
+    const root = createJudgeReadyTempRoot('requirements-contract-acceptance-file-authority-');
     try {
       const descriptor = createSourceAuthorityProjectionDescriptor('acceptance-file-authority', {
         negativeCount: 1,
@@ -335,7 +342,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('materializes source NEG rows as independent closures without inventing tasks', () => {
-    const root = createTempRoot('requirements-contract-negative-closure-authority-');
+    const root = createJudgeReadyTempRoot('requirements-contract-negative-closure-authority-');
     try {
       const descriptor = createSourceAuthorityProjectionDescriptor('negative-closure-authority', {
         negativeCount: 15,
@@ -345,10 +352,11 @@ describe('requirements contract authoring authority grounding', () => {
         descriptor
       );
 
-      runAuthoring(root, source, 'REQ-NEGATIVE-CLOSURE-AUTHORITY', {
+      const result = runAuthoring(root, source, 'REQ-NEGATIVE-CLOSURE-AUTHORITY', {
         ...authoringOptions,
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
+      expect(issueCodes(result)).toEqual([]);
       const confirmation = readJson<{ implementationConfirmation: Record<string, unknown> }>(
         artifacts(root, 'REQ-NEGATIVE-CLOSURE-AUTHORITY', 'REQ-NEGATIVE-CLOSURE-AUTHORITY-SET')
           .draftImplementationConfirmation
@@ -430,7 +438,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('preserves source-authored target paths owned only by negative requirements', () => {
-    const root = createTempRoot('requirements-contract-negative-target-authority-');
+    const root = createJudgeReadyTempRoot('requirements-contract-negative-target-authority-');
     try {
       const negativeTargetPath = 'src/authority-fixtures/negative-only-target.ts';
       const descriptor = createSourceAuthorityProjectionDescriptor('negative-target-authority', {
@@ -470,7 +478,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('projects product-specific tasks, commands, paths, oracles, journeys, and current-target rows per MUST', () => {
-    const root = createTempRoot('requirements-contract-per-must-product-projection-');
+    const root = createJudgeReadyTempRoot('requirements-contract-per-must-product-projection-');
     try {
       const source = writeText(
         root,
@@ -645,7 +653,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('resolves source-declared directory command targets to authorized projected files', () => {
-    const root = createTempRoot('requirements-contract-directory-command-targets-');
+    const root = createJudgeReadyTempRoot('requirements-contract-directory-command-targets-');
     try {
       const fixture = perMustProductProjectionFixture().replace(
         '| CMD-999 | contract-validation | source structure only; no MUST coverage | node scripts/lint-source.js --source docs/requirements/widget.md | Source structure passes. | This command validates source structure only. | TRACE-001 TRACE-002 | Requirements owner owns remediation. | docs/requirements/widget.md |',
@@ -679,7 +687,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('fails closed when one source MUST has no owner-specific Failure closure', () => {
-    const root = createTempRoot('requirements-contract-per-must-failure-authority-');
+    const root = createJudgeReadyTempRoot('requirements-contract-per-must-failure-authority-');
     try {
       const source = writeText(
         root,
@@ -712,7 +720,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('fails closed instead of synthesizing business failure paths when the source has no Failure Matrix', () => {
-    const root = createTempRoot('requirements-contract-missing-business-failure-paths-');
+    const root = createJudgeReadyTempRoot('requirements-contract-missing-business-failure-paths-');
     try {
       const descriptor = createSourceAuthorityProjectionDescriptor(
         'missing-business-failure-paths',
@@ -744,7 +752,7 @@ describe('requirements contract authoring authority grounding', () => {
   });
 
   it('fails closed when a source User Journey has no MUST-owning trace mapping', () => {
-    const root = createTempRoot('requirements-contract-unbound-user-journey-');
+    const root = createJudgeReadyTempRoot('requirements-contract-unbound-user-journey-');
     try {
       const fixture = perMustProductProjectionFixture();
       const source = writeText(
