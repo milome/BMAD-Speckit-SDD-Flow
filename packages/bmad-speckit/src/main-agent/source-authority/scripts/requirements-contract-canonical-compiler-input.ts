@@ -220,7 +220,9 @@ export function buildCanonicalPreCheckpointCompilerInput(input: {
           ? (body.source as Record<string, unknown>)
           : {};
       const sourceRequirementId =
-        optionalString(body.sourceRequirementId) ?? root.root.sourceRootId;
+        optionalString(source.sourceRequirementId) ??
+        optionalString(body.sourceRequirementId) ??
+        root.root.sourceRootId;
       return {
         id: root.root.sourceRootId,
         text: nonEmptyString(body.text, `${root.root.sourceRootId}.text`),
