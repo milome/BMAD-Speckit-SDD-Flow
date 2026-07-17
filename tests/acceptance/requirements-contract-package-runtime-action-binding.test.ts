@@ -198,7 +198,9 @@ describe('requirements contract package runtime action binding', () => {
         action.outputSchemaRefs.every((ref) => existsSync(path.resolve(ROOT, ref.path))) &&
         action.behaviorTestRefs.every((ref) => existsSync(path.resolve(ROOT, ref.path))) &&
         existsSync(path.resolve(ROOT, 'packages', 'bmad-speckit', action.packageDistRef.path)) &&
-        action.installedSurfaceRefs.every((ref) => existsSync(path.resolve(ref.path)))
+        action.installedSurfaceRefs.every((ref) =>
+          existsSync(path.resolve(ROOT, 'packages', 'bmad-speckit', ref.path))
+        )
     ).length;
     const independentlyRecomputedCoverage =
       independentlyCompleteActionCount / FROZEN_ACTION_IDS.length;
@@ -206,9 +208,12 @@ describe('requirements contract package runtime action binding', () => {
       (action) => action.routingOnly
     ).length;
     const independentlyRecomputedInstalledMismatchCount = manifest.actions.filter((action) =>
-      action.installedSurfaceRefs.some(
-        (ref) => !existsSync(path.resolve(ref.path)) || fileHash(path.resolve(ref.path)) !== ref.hash
-      )
+      action.installedSurfaceRefs.some((ref) => {
+        const installedSurfacePath = path.resolve(ROOT, 'packages', 'bmad-speckit', ref.path);
+        return (
+          !existsSync(installedSurfacePath) || fileHash(installedSurfacePath) !== ref.hash
+        );
+      })
     ).length;
 
     expect(manifest.packageRuntimeRoutingOnlyActionCount).toBe(

@@ -4,7 +4,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import type { PromptPublicationAuthority } from './requirements-contract-prompt-transaction-authority';
 import { fileHash, slash } from './requirements-contract-governed-write';
 
-type JsonRecord = Record<string, any>;
+type JsonRecord = Record<string, unknown>;
 type FileRef = { path: string; hash: string };
 
 type RuntimeRefSpec = {
@@ -67,6 +67,37 @@ const ACTION_UNIVERSE_HASH =
 
 const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
   {
+    actionId: 'requirements-contract-finalization-safe-write',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-finalization-safe-writer.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-finalization-safe-writer.js`,
+    gateSymbol: 'requirementsContractFinalizationSafeWriteCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-finalization-safe-write-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-finalization-safe-write-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-finalization-safe-writer.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-bundle-publish',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-bundle-publish.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-bundle-publish.js`,
+    gateSymbol: 'requirementsContractBundlePublishCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-bundle-publish-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-runtime-bundle-manifest.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-bundle-publication-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-bundle-publish-command.test.ts',
+    ],
+  },
+  {
     actionId: 'requirements-contract-six-model-projection-parity-verify',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-six-model-projection-parity-verifier.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-six-model-projection-parity-verifier.js`,
@@ -82,6 +113,34 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
   },
   {
+    actionId: 'requirements-contract-terminal-command-supervisor',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-terminal-command-supervisor.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-terminal-command-supervisor.js`,
+    gateSymbol: 'requirementsContractTerminalCommandSupervisorCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-terminal-command-supervisor-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-terminal-command-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-terminal-closeout-packet.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-artifact-readback-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-terminal-command-supervisor.test.ts',
+      'tests/acceptance/requirements-contract-terminal-command-receipt-schema.test.ts',
+      'tests/acceptance/requirements-contract-terminal-closeout-packet.test.ts',
+      'tests/acceptance/requirements-contract-terminal-closeout-projection.test.ts',
+    ],
+    runtimeRefs: [
+      {
+        role: 'terminal-closeout-producer',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-terminal-closeout.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-terminal-closeout.js',
+      },
+    ],
+  },
+  {
     actionId: 'requirements-contract-consumer-cli-capability-observe',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-consumer-cli-capability.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-consumer-cli-capability.js`,
@@ -94,6 +153,115 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
     behaviorTests: [
       'tests/acceptance/requirements-contract-prompt-transaction-production-publication.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-changed-path-manifest',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-changed-path-manifest.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-changed-path-manifest.js`,
+    gateSymbol: 'requirementsContractChangedPathManifestCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-changed-path-manifest-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-changed-path-manifest.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-changed-path-manifest.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-candidate-package',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-candidate-package.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-candidate-package.js`,
+    gateSymbol: 'requirementsContractCandidatePackageCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-candidate-package-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-candidate-package-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-candidate-package-provenance.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-detached-test-rerun',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-detached-test-runner.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-detached-test-runner.js`,
+    gateSymbol: 'requirementsContractDetachedTestRerunCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-detached-test-rerun-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-changed-path-manifest.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-detached-test-rerun.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-detached-test-rerun.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-eval',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-evaluation.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-evaluation.js`,
+    gateSymbol: 'requirementsContractEvalCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-evaluation-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-evaluation-report.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-eval-command.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-evidence-verify',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-evidence-verify.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-evidence-verify.js`,
+    gateSymbol: 'requirementsContractEvidenceVerifyCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-evidence-verify-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-completion-evidence.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-evidence-verification-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-evidence-verify-command.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-judge-credentials-init',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-judge-credential-initializer.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-initializer.js`,
+    gateSymbol: 'requirementsContractJudgeCredentialsInitCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-judge-credential-initialization-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-judge-credential-initialization-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-judge-credential-initializer.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-judge-provider-smoke',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-judge-provider-smoke.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-provider-smoke.js`,
+    gateSymbol: 'requirementsContractJudgeProviderSmokeCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-judge-provider-smoke-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-judge-capability-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-selection-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-runtime-security-parity.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-judge-provider-smoke.test.ts',
     ],
   },
   {
@@ -160,6 +328,24 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
   },
   {
+    actionId: 'requirements-contract-production-activate',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-activate.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-activate.js`,
+    gateSymbol: 'requirementsContractProductionActivateCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-production-activate-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-production-activation-plan.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-production-activation-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-production-activate-command.test.ts',
+      'tests/acceptance/requirements-contract-production-activation-plan-receipt-schema.test.ts',
+      'tests/acceptance/requirements-contract-production-activation-receipt-schema.test.ts',
+    ],
+  },
+  {
     actionId: 'requirements-contract-recovery-bootstrap',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-recovery-bootstrap.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-recovery-bootstrap.js`,
@@ -171,6 +357,48 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-recovery-lineage-receipt.schema.json`,
     ],
     behaviorTests: ['tests/acceptance/requirements-contract-recovery-bootstrap.test.ts'],
+  },
+  {
+    actionId: 'requirements-contract-reverse-audit',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-reverse-audit.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-reverse-audit.js`,
+    gateSymbol: 'requirementsContractReverseAuditCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-reverse-audit-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-capability-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-selection-receipt.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-judge-response.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-challenge-tests.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-test-source-audit.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-reverse-audit.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-stage-five-star-audit',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-stage-five-star-auditor.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-stage-five-star-auditor.js`,
+    gateSymbol: 'requirementsContractStageFiveStarAuditCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-stage-five-star-audit-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-audit-context.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-recovery-lineage-receipt.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-stage-five-star-audit-matrix.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-gap-ledger.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-final-gate-report.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-five-star-candidate-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-five-star-candidate-revocation-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-downstream-invalidation-set.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-five-star-audit-command-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-stage-five-star-audit-architecture-wave-gate.test.ts',
+    ],
   },
   {
     actionId: 'requirements-contract-recovery-finalize',
@@ -186,6 +414,38 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-recovery-finalization-state-decision-receipt.schema.json`,
     ],
     behaviorTests: ['tests/acceptance/requirements-contract-recovery-finalization.test.ts'],
+  },
+  {
+    actionId: 'requirements-contract-real-consumer-journey',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-real-consumer-journey.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-real-consumer-journey.js`,
+    gateSymbol: 'requirementsContractRealConsumerJourneyCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-real-consumer-journey-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-candidate-package-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-real-consumer-pre-confirmation-snapshot.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-real-consumer-confirmation-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-real-consumer-boundary-observer-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-real-consumer-journey-evidence.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-real-consumer-journey-command-receipt.schema.json`,
+    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-real-consumer-journey.test.ts'],
+    runtimeRefs: [
+      {
+        role: 'installed-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-real-consumer-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-adapter.js',
+      },
+      {
+        role: 'installed-boundary-observer',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-real-consumer-boundary-observer.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-boundary-observer.js',
+      },
+    ],
   },
 ].sort((left, right) => left.actionId.localeCompare(right.actionId));
 

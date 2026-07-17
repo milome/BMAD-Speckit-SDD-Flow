@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-stage-audit-context/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "phase",
+    "phaseAuditAttemptId",
+    "requirementSetId",
+    "transactionId",
+    "implementationAttemptId",
+    "frozenUniverseHash",
+    "sourceHashes",
+    "semanticModelHashes",
+    "consumerIdentityHash",
+    "stageEvidence"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-stage-audit-context/v1" },
+    "phase": { "enum": ["architecture", "pre-candidate", "final"] },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "requirementSetId": { "type": "string", "minLength": 1 },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "frozenUniverseHash": { "$ref": "#/$defs/hash" },
+    "sourceHashes": { "$ref": "#/$defs/hashMap" },
+    "semanticModelHashes": { "$ref": "#/$defs/hashMap" },
+    "consumerIdentityHash": { "$ref": "#/$defs/hash" },
+    "stageEvidence": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": { "$ref": "#/$defs/stageEvidence" }
+    }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hashMap": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/hash" }
+    },
+    "refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "stageEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stageId",
+        "auditAttemptId",
+        "contractRefs",
+        "sourceObligationRefs",
+        "acceptanceRefs",
+        "traceRefs",
+        "commandReceiptRefs",
+        "artifactRefs",
+        "independentEvidenceRefs",
+        "consumerJourneyEvidenceRefs"
+      ],
+      "properties": {
+        "stageId": { "pattern": "^STAGE-(?:0[1-9]|1[01])$" },
+        "auditAttemptId": { "type": "string", "minLength": 1 },
+        "contractRefs": { "$ref": "#/$defs/refs" },
+        "sourceObligationRefs": { "$ref": "#/$defs/refs" },
+        "acceptanceRefs": { "$ref": "#/$defs/refs" },
+        "traceRefs": { "$ref": "#/$defs/refs" },
+        "commandReceiptRefs": { "$ref": "#/$defs/refs" },
+        "artifactRefs": { "$ref": "#/$defs/refs" },
+        "independentEvidenceRefs": { "$ref": "#/$defs/refs" },
+        "consumerJourneyEvidenceRefs": { "$ref": "#/$defs/refs" }
+      }
+    }
+  }
+}

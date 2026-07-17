@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-changed-path-manifest-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "baseline", "snapshotBeforeWrite", "out"],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "contract": { "type": "string", "minLength": 1 },
+    "baseline": { "type": "string", "minLength": 1 },
+    "snapshotBeforeWrite": { "const": true },
+    "out": { "type": "string", "minLength": 1 },
+    "json": { "type": "boolean" }
+  }
+}

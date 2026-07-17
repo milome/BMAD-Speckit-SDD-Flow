@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-detached-test-rerun.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptId",
+    "executorId",
+    "executorClass",
+    "candidateSnapshotHash",
+    "materializedFileSetHash",
+    "workspacePath",
+    "environmentFingerprint",
+    "implementationEnvironmentFingerprint",
+    "environmentDelta",
+    "environmentCompatibilityDecision",
+    "dependencyLockHashes",
+    "authorizedUntrackedPathCount",
+    "materializationMismatchCount",
+    "commandSetHash",
+    "priorEvidenceConsumed",
+    "commandRuns",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-detached-test-rerun/v1"
+    },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "executorId": { "type": "string", "minLength": 1 },
+    "executorClass": { "const": "controlled_detached_executor" },
+    "candidateSnapshotHash": { "$ref": "#/$defs/hash" },
+    "materializedFileSetHash": { "$ref": "#/$defs/hash" },
+    "workspacePath": { "type": "string", "minLength": 1 },
+    "environmentFingerprint": { "$ref": "#/$defs/hash" },
+    "implementationEnvironmentFingerprint": { "$ref": "#/$defs/hash" },
+    "environmentDelta": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "environmentCompatibilityDecision": { "const": "pass" },
+    "dependencyLockHashes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fileRef" }
+    },
+    "authorizedUntrackedPathCount": { "type": "integer", "minimum": 0 },
+    "materializationMismatchCount": { "const": 0 },
+    "commandSetHash": { "$ref": "#/$defs/hash" },
+    "priorEvidenceConsumed": { "const": false },
+    "commandRuns": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/commandRun" }
+    },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "commandRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "commandText",
+        "cwd",
+        "startedAt",
+        "exitCode",
+        "stdoutHash",
+        "stderrHash"
+      ],
+      "properties": {
+        "commandId": {
+          "type": "string",
+          "pattern": "^CMD-[0-9]{2}$"
+        },
+        "commandText": { "type": "string", "minLength": 1 },
+        "cwd": { "type": "string", "minLength": 1 },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "exitCode": { "const": 0 },
+        "stdoutHash": { "$ref": "#/$defs/hash" },
+        "stderrHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

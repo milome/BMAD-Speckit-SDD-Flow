@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-capability-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "phase",
+    "phaseAuditAttemptId",
+    "providerRef",
+    "model",
+    "transport",
+    "apiStyle",
+    "baseUrlOrigin",
+    "reachable",
+    "responseModel",
+    "responseStructureDecision",
+    "allowPassAuthority",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-capability-receipt/v1" },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "providerRef": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "transport": { "type": "string", "minLength": 1 },
+    "apiStyle": { "const": "chat_completions" },
+    "baseUrlOrigin": { "type": "string", "minLength": 1 },
+    "reachable": { "const": true },
+    "responseModel": { "type": "string", "minLength": 1 },
+    "responseStructureDecision": { "const": "pass" },
+    "allowPassAuthority": { "const": false },
+    "decision": { "const": "pass" }
+  }
+}

@@ -14,7 +14,6 @@
  * Exit codes are defined in constants/exit-codes.ts and consumed through dist.
  */
 const { program } = require('commander');
-const path = require('node:path');
 const pkg = require('../package.json');
 const ttyUtils = require('../dist/utils/tty');
 
@@ -965,6 +964,461 @@ program
       )({
         cwd: process.cwd(),
         evidenceRoot: opts.evidenceRoot,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-changed-path-manifest')
+  .description('Capture the authorized candidate snapshot and changed-path manifest')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--baseline <path>', 'Frozen G00 baseline fixture')
+  .requiredOption('--snapshot-before-write <boolean>', 'Require capture before CMD-21 output write')
+  .requiredOption('--out <path>', 'Changed-path manifest output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-changed-path-manifest',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-changed-path-manifest.js',
+        'requirementsContractChangedPathManifestCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        baseline: opts.baseline,
+        snapshotBeforeWrite: opts.snapshotBeforeWrite === 'true',
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-detached-test-rerun')
+  .description('Materialize the frozen candidate and rerun the declared command range')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--changed-path-manifest <path>', 'Current changed-path manifest')
+  .requiredOption('--baseline <path>', 'Frozen G00 baseline fixture')
+  .requiredOption('--command-range <range>', 'Inclusive command range such as CMD-02:CMD-20')
+  .requiredOption('--workspace-mode <mode>', 'Must be isolated-snapshot')
+  .requiredOption('--artifact-root <path>', 'Detached audit artifact root')
+  .requiredOption('--out <path>', 'Detached rerun report output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-detached-test-rerun',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-detached-test-runner.js',
+        'requirementsContractDetachedTestRerunCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        changedPathManifest: opts.changedPathManifest,
+        baseline: opts.baseline,
+        commandRange: opts.commandRange,
+        workspaceMode: opts.workspaceMode,
+        artifactRoot: opts.artifactRoot,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-eval')
+  .description('Evaluate requirements-contract correctness against the frozen labeled corpus')
+  .requiredOption('--corpus <path>', 'Versioned evaluation corpus')
+  .requiredOption('--out <path>', 'Evaluation report output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-eval',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-evaluation.js',
+        'requirementsContractEvalCommand'
+      )({
+        cwd: process.cwd(),
+        corpus: opts.corpus,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-candidate-package')
+  .description('Pack the sole bmad-speckit package owner with immutable provenance')
+  .requiredOption('--package-root <path>', 'Sole package owner root')
+  .requiredOption('--package-manifest <path>', 'Package manifest')
+  .requiredOption('--dist-root <path>', 'Generated package dist root')
+  .requiredOption('--phase <phase>', 'architecture, pre-candidate, or final')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt identity')
+  .requiredOption('--tarball <path>', 'Canonical phase tarball output')
+  .requiredOption('--receipt <path>', 'Candidate-package receipt output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-candidate-package',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-candidate-package.js',
+        'requirementsContractCandidatePackageCommand'
+      )({
+        cwd: process.cwd(),
+        packageRoot: opts.packageRoot,
+        packageManifest: opts.packageManifest,
+        distRoot: opts.distRoot,
+        phase: opts.phase,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        tarball: opts.tarball,
+        receipt: opts.receipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-judge-credentials-init')
+  .description('Initialize the configured placeholder Judge credential')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-judge-credentials-init',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-judge-credential-initializer.js',
+        'requirementsContractJudgeCredentialsInitCommand'
+      )({
+        cwd: process.cwd(),
+        config: opts.config,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-judge-provider-smoke')
+  .description('Probe the configured Judge Provider and publish phase receipts')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--phase <phase>', 'pre-candidate or final')
+  .requiredOption('--phase-root <path>', 'Current immutable phase root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt identity')
+  .requiredOption('--audit-context <path>', 'Current phase audit context')
+  .requiredOption('--capability-receipt <path>', 'Capability receipt output')
+  .requiredOption('--selection-receipt <path>', 'Selection receipt output')
+  .requiredOption('--security-parity <path>', 'Security parity output')
+  .requiredOption('--projection-mode <mode>', 'Must be final-only')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-judge-provider-smoke',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke.js',
+        'requirementsContractJudgeProviderSmokeCommand'
+      )({
+        cwd: process.cwd(),
+        config: opts.config,
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        auditContext: opts.auditContext,
+        capabilityReceipt: opts.capabilityReceipt,
+        selectionReceipt: opts.selectionReceipt,
+        securityParity: opts.securityParity,
+        projectionMode: opts.projectionMode,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-reverse-audit')
+  .description('Run the fixed two-round blind Judge reverse audit')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--judge-config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--phase <phase>', 'pre-candidate or final')
+  .requiredOption('--phase-root <path>', 'Current immutable phase root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt identity')
+  .requiredOption('--audit-context <path>', 'Current phase audit context')
+  .requiredOption('--capability-receipt <path>', 'Current Capability receipt')
+  .requiredOption('--selection-receipt <path>', 'Current Selection receipt')
+  .requiredOption('--out-test-source-audit <path>', 'Final test-source audit output')
+  .requiredOption('--out-challenge-tests <path>', 'Challenge-test receipt output')
+  .requiredOption('--out-initial-judge <path>', 'Initial blind Judge output')
+  .requiredOption('--out-final-judge <path>', 'Final blind Judge output')
+  .requiredOption('--projection-mode <mode>', 'Must be final-only')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-reverse-audit',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-reverse-audit.js',
+        'requirementsContractReverseAuditCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        judgeConfig: opts.judgeConfig,
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        auditContext: opts.auditContext,
+        capabilityReceipt: opts.capabilityReceipt,
+        selectionReceipt: opts.selectionReceipt,
+        outTestSourceAudit: opts.outTestSourceAudit,
+        outChallengeTests: opts.outChallengeTests,
+        outInitialJudge: opts.outInitialJudge,
+        outFinalJudge: opts.outFinalJudge,
+        projectionMode: opts.projectionMode,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-bundle-publish')
+  .description('Publish one immutable Canonical Requirement Record Bundle revision')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--source-document <path>', 'Resolved Source PRD')
+  .requiredOption('--receipt <path>', 'Bundle publication receipt output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-bundle-publish',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-bundle-publish.js',
+        'requirementsContractBundlePublishCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        sourceDocument: opts.sourceDocument,
+        receipt: opts.receipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-evidence-verify')
+  .description('Verify the complete frozen completion-evidence universe')
+  .requiredOption('--bundle <path>', 'Final implementation evidence bundle')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-evidence-verify',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-evidence-verify.js',
+        'requirementsContractEvidenceVerifyCommand'
+      )({
+        cwd: process.cwd(),
+        bundle: opts.bundle,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-finalization-safe-write')
+  .description('Promote one fixed finalization role through the governed safe writer')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--implementation-attempt-id <id>', 'Unique active implementation attempt')
+  .requiredOption('--draft <path>', 'Canonical role draft')
+  .requiredOption('--target <path>', 'Fixed successful target')
+  .requiredOption('--receipt <path>', 'Fixed successful promotion receipt')
+  .requiredOption('--blocked-receipt-root <path>', 'Fixed blocked receipt root')
+  .requiredOption('--artifact-role <role>', 'Finalization artifact role')
+  .requiredOption('--validation-profile <profile>', 'Allowlisted validation profile')
+  .requiredOption('--min-bytes <count>', 'Required minimum byte count')
+  .requiredOption('--finalization-declaration-hash <hash>', 'Frozen finalization declaration hash')
+  .requiredOption('--expected-predecessor-receipt <path>', 'Expected predecessor PASS receipt')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-finalization-safe-write',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-finalization-safe-writer.js',
+        'requirementsContractFinalizationSafeWriteCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        implementationAttemptId: opts.implementationAttemptId,
+        draft: opts.draft,
+        target: opts.target,
+        receipt: opts.receipt,
+        blockedReceiptRoot: opts.blockedReceiptRoot,
+        artifactRole: opts.artifactRole,
+        validationProfile: opts.validationProfile,
+        minBytes: Number(opts.minBytes),
+        finalizationDeclarationHash: opts.finalizationDeclarationHash,
+        expectedPredecessorReceipt: opts.expectedPredecessorReceipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-terminal-command-supervisor')
+  .description('Run the frozen terminal command pair against the finalized evidence set')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--bundle <path>', 'Frozen implementation evidence bundle')
+  .requiredOption(
+    '--safe-write-manifest-receipt <path>',
+    'AMEND-05 safe-write manifest PASS receipt'
+  )
+  .requiredOption('--evd15-receipt <path>', 'EVD-15 PASS receipt')
+  .requiredOption('--artifact01-receipt <path>', 'ARTIFACT-01 PASS receipt')
+  .requiredOption('--receipt <path>', 'External terminal command receipt')
+  .requiredOption('--first-command <id>', 'Must be CMD-24')
+  .requiredOption('--second-command <id>', 'Must be CMD-25')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-terminal-command-supervisor',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-terminal-command-supervisor.js',
+        'requirementsContractTerminalCommandSupervisorCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        bundle: opts.bundle,
+        safeWriteManifestReceipt: opts.safeWriteManifestReceipt,
+        evd15Receipt: opts.evd15Receipt,
+        artifact01Receipt: opts.artifact01Receipt,
+        receipt: opts.receipt,
+        firstCommand: opts.firstCommand,
+        secondCommand: opts.secondCommand,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-stage-five-star-audit')
+  .description('Audit all eleven production stages against current phase evidence')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--recovery <path>', 'Current recovery lineage receipt')
+  .requiredOption('--consumer-root <path>', 'Authorized Consumer project root')
+  .requiredOption('--phase <phase>', 'architecture, pre-candidate, or final')
+  .requiredOption('--phase-root <path>', 'Current phase evidence root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt')
+  .requiredOption('--audit-context <path>', 'Current phase audit context')
+  .requiredOption('--matrix <path>', 'Stage five-star matrix output')
+  .requiredOption('--gap-ledger <path>', 'Predicate Gap ledger output')
+  .requiredOption('--final-gate <path>', 'Anti-fabrication final gate output')
+  .requiredOption('--candidate-receipt <path>', 'Pre-candidate receipt output')
+  .requiredOption(
+    '--candidate-revocation-receipt <path>',
+    'Mandatory pre-candidate revocation output'
+  )
+  .requiredOption('--downstream-invalidation-set <path>', 'Revocation invalidation output')
+  .requiredOption('--projection-mode <mode>', 'Must be final-only')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-stage-five-star-audit',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-stage-five-star-auditor.js',
+        'requirementsContractStageFiveStarAuditCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        recovery: opts.recovery,
+        consumerRoot: opts.consumerRoot,
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        auditContext: opts.auditContext,
+        matrix: opts.matrix,
+        gapLedger: opts.gapLedger,
+        finalGate: opts.finalGate,
+        candidateReceipt: opts.candidateReceipt,
+        candidateRevocationReceipt: opts.candidateRevocationReceipt,
+        downstreamInvalidationSet: opts.downstreamInvalidationSet,
+        projectionMode: opts.projectionMode,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-real-consumer-journey')
+  .description('Run the fixed real Consumer journey from an attempt-scoped candidate package')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--consumer-root <path>', 'Fixed authorized Consumer project root')
+  .requiredOption('--restore-clean-baseline', 'Restore the authorized clean Consumer baseline')
+  .requiredOption('--phase <phase>', 'pre-candidate or final')
+  .requiredOption('--phase-root <path>', 'Current immutable phase evidence root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt')
+  .requiredOption('--package-root <path>', 'Package source root')
+  .requiredOption('--package-manifest <path>', 'Package source manifest')
+  .requiredOption('--dist-root <path>', 'Built package dist root')
+  .requiredOption('--candidate-tarball <path>', 'Attempt-scoped candidate tarball output')
+  .requiredOption(
+    '--candidate-package-receipt <path>',
+    'Attempt-scoped candidate package receipt output'
+  )
+  .requiredOption('--journey-evidence <path>', 'Real Consumer journey evidence output')
+  .requiredOption(
+    '--pre-confirmation-snapshot <path>',
+    'Immutable pre-confirmation evidence snapshot output'
+  )
+  .requiredOption('--confirmation-receipt <path>', 'Final delivery confirmation receipt output')
+  .requiredOption('--run-all-stages', 'Run STAGE-01 through STAGE-11')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-real-consumer-journey',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-journey.js',
+        'requirementsContractRealConsumerJourneyCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        consumerRoot: opts.consumerRoot,
+        restoreCleanBaseline: Boolean(opts.restoreCleanBaseline),
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        packageRoot: opts.packageRoot,
+        packageManifest: opts.packageManifest,
+        distRoot: opts.distRoot,
+        candidateTarball: opts.candidateTarball,
+        candidatePackageReceipt: opts.candidatePackageReceipt,
+        journeyEvidence: opts.journeyEvidence,
+        preConfirmationSnapshot: opts.preConfirmationSnapshot,
+        confirmationReceipt: opts.confirmationReceipt,
+        runAllStages: Boolean(opts.runAllStages),
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-production-activate')
+  .description('Plan, test, and atomically activate the production consumer registry')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--registry <path>', 'Exact production consumer registry')
+  .requiredOption('--activation-plan-dir <path>', 'Immutable activation plan directory')
+  .requiredOption(
+    '--activation-plan-write-receipt-dir <path>',
+    'Activation plan promotion receipt directory'
+  )
+  .requiredOption('--success-receipt <path>', 'Unique successful activation receipt')
+  .requiredOption('--blocked-attempt-dir <path>', 'Attempt-specific blocked receipt directory')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-production-activate',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-production-activate.js',
+        'requirementsContractProductionActivateCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        registry: opts.registry,
+        activationPlanDir: opts.activationPlanDir,
+        activationPlanWriteReceiptDir: opts.activationPlanWriteReceiptDir,
+        successReceipt: opts.successReceipt,
+        blockedAttemptDir: opts.blockedAttemptDir,
         json: Boolean(opts.json),
       })
     )

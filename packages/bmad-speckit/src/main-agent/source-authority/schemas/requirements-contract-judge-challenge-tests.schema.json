@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-challenge-tests.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "phaseAuditAttemptId",
+    "initialJudgeResponseHash",
+    "challengeRequired",
+    "registryVersion",
+    "registryHash",
+    "requests",
+    "executions",
+    "allowedWriteRoot",
+    "candidateImplementationMutationCount",
+    "writeSequence",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-challenge-tests/v1" },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "initialJudgeResponseHash": { "$ref": "#/$defs/hash" },
+    "challengeRequired": { "type": "boolean" },
+    "registryVersion": { "const": "requirements-contract-challenge-test-registry/v1" },
+    "registryHash": { "$ref": "#/$defs/hash" },
+    "requests": { "type": "array", "items": { "type": "object" } },
+    "executions": { "type": "array", "items": { "type": "object" } },
+    "allowedWriteRoot": { "type": "string", "minLength": 1 },
+    "candidateImplementationMutationCount": { "const": 0 },
+    "writeSequence": { "const": 2 },
+    "decision": { "enum": ["pass", "block", "not_requested"] }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

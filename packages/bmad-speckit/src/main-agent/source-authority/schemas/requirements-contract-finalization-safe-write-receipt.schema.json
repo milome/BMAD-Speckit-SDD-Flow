@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-finalization-safe-write-receipt.schema.json",
+  "title": "Requirements Contract Finalization Safe Write Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "finalizationRunId",
+    "requirementRecord",
+    "implementationAttemptId",
+    "exactArgv",
+    "argvHash",
+    "artifactRole",
+    "validationProfile",
+    "finalizationDeclarationHash",
+    "predecessor",
+    "target",
+    "draft",
+    "writerIdentity",
+    "result",
+    "selectedReceiptPath"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-finalization-safe-write-receipt/v1"
+    },
+    "commandId": { "const": "requirements-contract-finalization-safe-write" },
+    "finalizationRunId": {
+      "type": "string",
+      "pattern": "^FINALIZATION-RUN-[A-Z0-9-]+$"
+    },
+    "requirementRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "exactArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "argvHash": { "$ref": "#/$defs/sha256" },
+    "artifactRole": {
+      "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+    },
+    "validationProfile": {
+      "enum": [
+        "amend05-safe-write-manifest",
+        "goal-task-evidence",
+        "implementation-evidence-bundle"
+      ]
+    },
+    "finalizationDeclarationHash": { "$ref": "#/$defs/sha256" },
+    "predecessor": {
+      "type": "object",
+      "required": ["applicable", "expectedReceiptPath"],
+      "properties": {
+        "applicable": { "type": "boolean" },
+        "expectedReceiptPath": { "type": "string", "minLength": 1 },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "hash", "artifactRole"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "hash": { "$ref": "#/$defs/sha256" },
+            "artifactRole": {
+              "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15"]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["path", "requiredSchemaVersion", "requiredSchemaHash", "minBytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "requiredSchemaVersion": { "type": "string", "minLength": 1 },
+        "requiredSchemaHash": { "$ref": "#/$defs/sha256" },
+        "minBytes": { "const": 2 },
+        "targetExistedBefore": { "type": "boolean" },
+        "previousHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "promotedHash": { "$ref": "#/$defs/sha256" },
+        "readbackHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "draft": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 2 },
+        "archivedPath": { "type": "string", "minLength": 1 },
+        "archivedHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "writerIdentity": {
+      "const": "requirements-contract-finalization-safe-writer/v1"
+    },
+    "result": { "enum": ["PASS", "BLOCK"] },
+    "selectedReceiptPath": { "type": "string", "minLength": 1 },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+      }
+    },
+    "retryRole": {
+      "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "result": { "const": "PASS" } },
+      "not": {
+        "anyOf": [
+          { "required": ["failure"] },
+          { "required": ["retryRole"] }
+        ]
+      }
+    },
+    {
+      "properties": { "result": { "const": "BLOCK" } },
+      "required": ["failure", "retryRole"]
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

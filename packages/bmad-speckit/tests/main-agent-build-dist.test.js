@@ -365,11 +365,26 @@ describe('main-agent dist build', () => {
     assert.deepEqual(
       actionBindingManifest.actions.map((action) => action.actionId),
       [
+        'requirements-contract-bundle-publish',
+        'requirements-contract-candidate-package',
+        'requirements-contract-changed-path-manifest',
         'requirements-contract-consumer-cli-capability-observe',
+        'requirements-contract-detached-test-rerun',
+        'requirements-contract-eval',
+        'requirements-contract-evidence-verify',
+        'requirements-contract-finalization-safe-write',
+        'requirements-contract-judge-credentials-init',
+        'requirements-contract-judge-provider-smoke',
+        'requirements-contract-production-activate',
+        'requirements-contract-production-bypass-verify',
         'requirements-contract-prompt-transaction-publish',
+        'requirements-contract-real-consumer-journey',
         'requirements-contract-recovery-bootstrap',
         'requirements-contract-recovery-finalize',
+        'requirements-contract-reverse-audit',
         'requirements-contract-six-model-projection-parity-verify',
+        'requirements-contract-stage-five-star-audit',
+        'requirements-contract-terminal-command-supervisor',
       ],
       'build must project every registered package runtime action exactly once'
     );

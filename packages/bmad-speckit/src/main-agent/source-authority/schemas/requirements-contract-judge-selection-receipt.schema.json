@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-selection-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "phase",
+    "phaseAuditAttemptId",
+    "providerRef",
+    "model",
+    "publicConfigRef",
+    "privateCredentialPathHash",
+    "independenceClass",
+    "runtimeFallbackAllowed",
+    "capabilityReceiptRef",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-selection-receipt/v1" },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "providerRef": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "publicConfigRef": { "$ref": "#/$defs/fileRef" },
+    "privateCredentialPathHash": { "$ref": "#/$defs/hash" },
+    "independenceClass": { "type": "string", "minLength": 1 },
+    "runtimeFallbackAllowed": { "const": false },
+    "capabilityReceiptRef": { "$ref": "#/$defs/fileRef" },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

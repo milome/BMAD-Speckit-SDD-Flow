@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-test-source-audit.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "phase",
+    "phaseAuditAttemptId",
+    "inputBundleHash",
+    "initialJudgeRequestHash",
+    "initialJudgeResponseHash",
+    "judgeChallengeTestsHash",
+    "finalJudgeRequestHash",
+    "finalJudgeResponseHash",
+    "judgeDecision",
+    "allowPassAuthority",
+    "blockerCount",
+    "inconclusiveCount",
+    "auditRows",
+    "writeSequence",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-test-source-audit/v1" },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "inputBundleHash": { "$ref": "#/$defs/hash" },
+    "initialJudgeRequestHash": { "$ref": "#/$defs/hash" },
+    "initialJudgeResponseHash": { "$ref": "#/$defs/hash" },
+    "judgeChallengeTestsHash": { "$ref": "#/$defs/hash" },
+    "finalJudgeRequestHash": { "$ref": "#/$defs/hash" },
+    "finalJudgeResponseHash": { "$ref": "#/$defs/hash" },
+    "judgeDecision": { "enum": ["pass", "block", "inconclusive"] },
+    "allowPassAuthority": { "const": false },
+    "blockerCount": { "type": "integer", "minimum": 0 },
+    "inconclusiveCount": { "type": "integer", "minimum": 0 },
+    "auditRows": { "type": "array", "items": { "type": "object" } },
+    "writeSequence": { "const": 4 },
+    "decision": { "enum": ["pass", "block"] }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

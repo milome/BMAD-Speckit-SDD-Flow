@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-evaluation-report.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "corpusRef",
+    "corpusHash",
+    "evaluatorVersion",
+    "sourceRevision",
+    "caseCount",
+    "semanticCaseCount",
+    "judgeCaseCount",
+    "semanticMismatchCount",
+    "criticalCorrectnessIssueCount",
+    "criticalSemanticMutationDetectionRate",
+    "judgeFalseAcceptRate",
+    "judgeFalseBlockRate",
+    "judgeInconclusiveRate",
+    "judgeChallengeYield",
+    "correctnessGateDecision",
+    "efficiencyMetricsReported",
+    "efficiencyMetrics",
+    "resultSetHash",
+    "semanticResults",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-evaluation-report/v1" },
+    "corpusRef": { "$ref": "#/$defs/fileRef" },
+    "corpusHash": { "$ref": "#/$defs/hash" },
+    "evaluatorVersion": { "const": "requirements-contract-evaluator/v1" },
+    "sourceRevision": { "type": "string", "minLength": 1 },
+    "caseCount": { "type": "integer", "minimum": 1 },
+    "semanticCaseCount": { "type": "integer", "minimum": 1 },
+    "judgeCaseCount": { "type": "integer", "minimum": 1 },
+    "semanticMismatchCount": { "type": "integer", "minimum": 0 },
+    "criticalCorrectnessIssueCount": { "type": "integer", "minimum": 0 },
+    "criticalSemanticMutationDetectionRate": { "$ref": "#/$defs/rate" },
+    "judgeFalseAcceptRate": { "$ref": "#/$defs/rate" },
+    "judgeFalseBlockRate": { "$ref": "#/$defs/rate" },
+    "judgeInconclusiveRate": { "$ref": "#/$defs/rate" },
+    "judgeChallengeYield": { "$ref": "#/$defs/rate" },
+    "correctnessGateDecision": { "enum": ["pass", "block"] },
+    "efficiencyMetricsReported": { "type": "boolean" },
+    "efficiencyMetrics": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evaluationCaseCount", "deterministicWorkUnits"],
+          "properties": {
+            "evaluationCaseCount": { "type": "integer", "minimum": 1 },
+            "deterministicWorkUnits": { "type": "integer", "minimum": 1 }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "resultSetHash": { "$ref": "#/$defs/hash" },
+    "semanticResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "expectedEquivalent", "actualEquivalent", "decision"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "expectedEquivalent": { "type": "boolean" },
+          "actualEquivalent": { "type": "boolean" },
+          "decision": { "enum": ["pass", "block"] }
+        }
+      }
+    },
+    "decision": { "enum": ["pass", "block"] }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "correctnessGateDecision": { "const": "pass" }
+        }
+      },
+      "then": {
+        "properties": {
+          "criticalCorrectnessIssueCount": { "const": 0 },
+          "criticalSemanticMutationDetectionRate": { "const": 1 },
+          "efficiencyMetricsReported": { "const": true },
+          "decision": { "const": "pass" }
+        }
+      },
+      "else": {
+        "properties": {
+          "efficiencyMetricsReported": { "const": false },
+          "efficiencyMetrics": { "type": "null" },
+          "decision": { "const": "block" }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-finalization-safe-write-input.schema.json",
+  "title": "Requirements Contract Finalization Safe Write Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requirementRecord",
+    "implementationAttemptId",
+    "draft",
+    "target",
+    "receipt",
+    "blockedReceiptRoot",
+    "artifactRole",
+    "validationProfile",
+    "minBytes",
+    "finalizationDeclarationHash",
+    "expectedPredecessorReceipt"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "requirementRecord": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "draft": { "type": "string", "minLength": 1 },
+    "target": { "type": "string", "minLength": 1 },
+    "receipt": { "type": "string", "minLength": 1 },
+    "blockedReceiptRoot": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/blocked"
+    },
+    "artifactRole": {
+      "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+    },
+    "validationProfile": {
+      "enum": [
+        "amend05-safe-write-manifest",
+        "goal-task-evidence",
+        "implementation-evidence-bundle"
+      ]
+    },
+    "minBytes": { "const": 2 },
+    "finalizationDeclarationHash": { "$ref": "#/$defs/sha256" },
+    "expectedPredecessorReceipt": { "type": "string", "minLength": 1 },
+    "json": { "type": "boolean" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

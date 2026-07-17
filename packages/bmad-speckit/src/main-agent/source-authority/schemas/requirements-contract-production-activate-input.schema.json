@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-production-activate-input.schema.json",
+  "title": "Requirements Contract Production Activate Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requirementRecord",
+    "registry",
+    "activationPlanDir",
+    "activationPlanWriteReceiptDir",
+    "successReceipt",
+    "blockedAttemptDir"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "requirementRecord": {
+      "type": "string",
+      "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/requirement-record\\.json$"
+    },
+    "registry": {
+      "const": "_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json"
+    },
+    "activationPlanDir": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-plans"
+    },
+    "activationPlanWriteReceiptDir": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-plan-write-receipts"
+    },
+    "successReceipt": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-receipt.json"
+    },
+    "blockedAttemptDir": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-attempts"
+    },
+    "controlledCommands": {
+      "const": [
+        { "commandId": "CMD-09", "fixtureOnly": false },
+        { "commandId": "CMD-11", "fixtureOnly": false },
+        { "commandId": "CMD-13", "fixtureOnly": false },
+        { "commandId": "CMD-18", "fixtureOnly": true }
+      ]
+    },
+    "json": { "type": "boolean" }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-stage-downstream-invalidation-set/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "auditAttemptId",
+    "triggerReceipt",
+    "invalidatedStageIds",
+    "invalidatedArtifactRoles",
+    "passAuthority",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-stage-downstream-invalidation-set/v1" },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "triggerReceipt": { "$ref": "#/$defs/ref" },
+    "invalidatedStageIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "invalidatedArtifactRoles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "passAuthority": { "const": false },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

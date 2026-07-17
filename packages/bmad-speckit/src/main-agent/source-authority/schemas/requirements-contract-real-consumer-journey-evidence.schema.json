@@ -63,11 +63,11 @@
       "additionalProperties": false,
       "required": ["facade", "registry", "adapter", "resolver", "canonicalBoundary"],
       "properties": {
-        "facade": { "$ref": "#/$defs/nonEmptyRefs" },
-        "registry": { "$ref": "#/$defs/nonEmptyRefs" },
-        "adapter": { "$ref": "#/$defs/nonEmptyRefs" },
-        "resolver": { "$ref": "#/$defs/nonEmptyRefs" },
-        "canonicalBoundary": { "$ref": "#/$defs/nonEmptyRefs" }
+        "facade": { "$ref": "#/$defs/boundaryRecords" },
+        "registry": { "$ref": "#/$defs/boundaryRecords" },
+        "adapter": { "$ref": "#/$defs/boundaryRecords" },
+        "resolver": { "$ref": "#/$defs/boundaryRecords" },
+        "canonicalBoundary": { "$ref": "#/$defs/boundaryRecords" }
       }
     },
     "stageObservations": {
@@ -153,6 +153,43 @@
       "minItems": 1,
       "items": { "type": "string", "minLength": 1 },
       "uniqueItems": true
+    },
+    "boundaryRecords": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/boundaryRecord" }
+    },
+    "boundaryRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalOwnerId",
+        "exactPath",
+        "sha256",
+        "registryId",
+        "registryVersion",
+        "registryHash",
+        "consumerActionId",
+        "invocationReceiptPath",
+        "invocationReceiptHash",
+        "transactionId",
+        "implementationAttemptId",
+        "phaseAuditAttemptId"
+      ],
+      "properties": {
+        "canonicalOwnerId": { "type": "string", "minLength": 1 },
+        "exactPath": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/hash" },
+        "registryId": { "type": "string", "minLength": 1 },
+        "registryVersion": { "type": "string", "minLength": 1 },
+        "registryHash": { "$ref": "#/$defs/hash" },
+        "consumerActionId": { "const": "requirements-contract-real-consumer-journey" },
+        "invocationReceiptPath": { "type": "string", "minLength": 1 },
+        "invocationReceiptHash": { "$ref": "#/$defs/hash" },
+        "transactionId": { "type": "string", "minLength": 1 },
+        "implementationAttemptId": { "type": "string", "minLength": 1 },
+        "phaseAuditAttemptId": { "type": "string", "minLength": 1 }
+      }
     }
   }
 }

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-stage-five-star-candidate-receipt/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptId",
+    "matrix",
+    "gapLedger",
+    "finalGate",
+    "passAuthority",
+    "completionEligible",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-stage-five-star-candidate-receipt/v1" },
+    "requirementSetId": { "type": "string", "minLength": 1 },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "matrix": { "$ref": "#/$defs/ref" },
+    "gapLedger": { "$ref": "#/$defs/ref" },
+    "finalGate": { "$ref": "#/$defs/ref" },
+    "passAuthority": { "const": false },
+    "completionEligible": { "const": false },
+    "decision": { "const": "provisional_pass_candidate" }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

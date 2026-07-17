@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-stage-five-star-audit-command-receipt/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "phase",
+    "requirementSetId",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptId",
+    "matrix",
+    "gapLedger",
+    "finalGate",
+    "stageFiveStarCount",
+    "openGapCount",
+    "passAuthority",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-stage-five-star-audit-command-receipt/v1"
+    },
+    "commandId": { "const": "CMD-34" },
+    "phase": { "enum": ["architecture", "pre-candidate", "final"] },
+    "requirementSetId": { "type": "string", "minLength": 1 },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "matrix": { "$ref": "#/$defs/ref" },
+    "gapLedger": { "$ref": "#/$defs/ref" },
+    "finalGate": { "$ref": "#/$defs/ref" },
+    "candidateReceipt": { "$ref": "#/$defs/ref" },
+    "candidateRevocationReceipt": { "$ref": "#/$defs/ref" },
+    "downstreamInvalidationSet": { "$ref": "#/$defs/ref" },
+    "stageFiveStarCount": { "type": "integer", "minimum": 0, "maximum": 11 },
+    "openGapCount": { "type": "integer", "minimum": 0 },
+    "passAuthority": { "type": "boolean" },
+    "decision": {
+      "enum": ["block", "revoked_candidate", "preterminal_pass_candidate"]
+    }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

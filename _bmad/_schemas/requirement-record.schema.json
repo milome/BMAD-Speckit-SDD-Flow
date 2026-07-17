@@ -282,6 +282,16 @@
     "lastAppliedEventHash": { "$ref": "#/$defs/sha256" },
     "eventChainHead": { "$ref": "#/$defs/sha256" },
     "eventCount": { "type": "integer", "minimum": 0 },
+    "recordRevision": { "type": "integer", "minimum": 0 },
+    "activeBundleRevision": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^BUNDLE-REV-[A-Z0-9][A-Z0-9._-]*$"
+        },
+        { "type": "null" }
+      ]
+    },
     "controlStore": { "$ref": "#/$defs/controlStore" },
     "updatedAt": { "type": "string", "format": "date-time" }
   },

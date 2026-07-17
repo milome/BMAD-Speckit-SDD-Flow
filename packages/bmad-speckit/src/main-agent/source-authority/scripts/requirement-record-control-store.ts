@@ -34,10 +34,11 @@ export interface ControlCommitResult {
   afterRecordHash: string;
 }
 
-interface AppendInput {
+export interface AppendInput {
   recordPath: string;
   writerId: string;
   eventType: string;
+  eventId?: string;
   payload: JsonObject;
   reduce: RequirementRecordReducer;
   recordedAt?: string;
@@ -1022,6 +1023,8 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'lastAppliedEventHash',
     'eventChainHead',
     'eventCount',
+    'recordRevision',
+    'activeBundleRevision',
     'controlStore',
   ]);
   const out: JsonObject = {};
@@ -1040,6 +1043,13 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   const currentAttemptId = text(out.currentAttemptId) || text(out.runId);
   if (currentAttemptId) out.currentAttemptId = currentAttemptId;
   else delete out.currentAttemptId;
+  const recordRevision = Number(out.recordRevision);
+  out.recordRevision =
+    Number.isInteger(recordRevision) && recordRevision >= 0
+      ? recordRevision
+      : Number(out.eventCount ?? 0);
+  const activeBundleRevision = text(out.activeBundleRevision);
+  out.activeBundleRevision = activeBundleRevision || null;
   const currentMentalModel = normalizeMentalModel(out.currentMentalModel);
   if (currentMentalModel) out.currentMentalModel = currentMentalModel;
   else delete out.currentMentalModel;
@@ -1182,6 +1192,7 @@ function latestEventHash(events: ControlEventEnvelope[]): string {
 }
 
 function createEvent(input: {
+  eventId?: string;
   eventType: string;
   writerId: string;
   record: JsonObject;
@@ -1193,7 +1204,9 @@ function createEvent(input: {
   payloadSchemaVersion: string;
 }): ControlEventEnvelope {
   const payloadHash = sha256Json(input.payload);
-  const eventId = `${input.eventType}:${input.recordedAt}:${payloadHash.slice('sha256:'.length, 'sha256:'.length + 12)}`;
+  const eventId =
+    text(input.eventId) ||
+    `${input.eventType}:${input.recordedAt}:${payloadHash.slice('sha256:'.length, 'sha256:'.length + 12)}`;
   const unsigned = {
     eventId,
     eventType: input.eventType,
@@ -1225,6 +1238,7 @@ export function appendControlEventAndReplay(input: AppendInput): ControlCommitRe
   const eventLogPath = eventLogPathForRecord(recordPath);
   const existingEvents = readEventLog(eventLogPath);
   const event = createEvent({
+    eventId: input.eventId,
     eventType: input.eventType,
     writerId: input.writerId,
     record: beforeRecord,

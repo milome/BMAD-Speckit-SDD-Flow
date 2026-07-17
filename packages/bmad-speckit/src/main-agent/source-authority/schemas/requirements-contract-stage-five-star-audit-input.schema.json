@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-stage-five-star-audit-input/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "recovery",
+    "consumerRoot",
+    "phase",
+    "phaseRoot",
+    "phaseAuditAttemptId",
+    "auditContext",
+    "matrix",
+    "gapLedger",
+    "finalGate",
+    "candidateReceipt",
+    "candidateRevocationReceipt",
+    "downstreamInvalidationSet",
+    "projectionMode"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "contract": { "type": "string", "minLength": 1 },
+    "recovery": { "type": "string", "minLength": 1 },
+    "consumerRoot": { "type": "string", "minLength": 1 },
+    "phase": { "enum": ["architecture", "pre-candidate", "final"] },
+    "phaseRoot": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "auditContext": { "type": "string", "minLength": 1 },
+    "matrix": { "type": "string", "minLength": 1 },
+    "gapLedger": { "type": "string", "minLength": 1 },
+    "finalGate": { "type": "string", "minLength": 1 },
+    "candidateReceipt": { "type": "string", "minLength": 1 },
+    "candidateRevocationReceipt": { "type": "string", "minLength": 1 },
+    "downstreamInvalidationSet": { "type": "string", "minLength": 1 },
+    "projectionMode": { "const": "final-only" },
+    "json": { "type": "boolean" }
+  }
+}

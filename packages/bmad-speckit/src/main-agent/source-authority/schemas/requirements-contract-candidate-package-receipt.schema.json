@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-candidate-package-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packageManifestRef",
+    "packageVersion",
+    "sourceManifestHash",
+    "generatedDistManifestHash",
+    "nodeVersion",
+    "nodeExecutableRef",
+    "npmVersion",
+    "npmExecutableRef",
+    "packArgv",
+    "packCwd",
+    "originalTarballRef",
+    "canonicalTarballRef",
+    "packedEntries",
+    "packedEntrySetHash",
+    "phaseIdentity",
+    "publicationHash",
+    "readbackHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-candidate-package-receipt/v1" },
+    "packageManifestRef": { "$ref": "#/$defs/fileRef" },
+    "packageVersion": { "type": "string", "minLength": 1 },
+    "sourceManifestHash": { "$ref": "#/$defs/hash" },
+    "generatedDistManifestHash": { "$ref": "#/$defs/hash" },
+    "nodeVersion": { "const": "v22.22.1" },
+    "nodeExecutableRef": { "$ref": "#/$defs/fileRef" },
+    "npmVersion": { "const": "10.9.4" },
+    "npmExecutableRef": { "$ref": "#/$defs/fileRef" },
+    "packArgv": {
+      "const": ["npm.cmd", "pack", "--json", "--ignore-scripts"]
+    },
+    "packCwd": { "type": "string", "minLength": 1 },
+    "originalTarballRef": { "$ref": "#/$defs/fileRef" },
+    "canonicalTarballRef": { "$ref": "#/$defs/fileRef" },
+    "packedEntries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "packedEntrySetHash": { "$ref": "#/$defs/hash" },
+    "phaseIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transactionId",
+        "implementationAttemptId",
+        "phase",
+        "phaseAuditAttemptId"
+      ],
+      "properties": {
+        "transactionId": { "type": "string", "minLength": 1 },
+        "implementationAttemptId": { "type": "string", "minLength": 1 },
+        "phase": { "enum": ["architecture", "pre-candidate", "final"] },
+        "phaseAuditAttemptId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "publicationHash": { "$ref": "#/$defs/hash" },
+    "readbackHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

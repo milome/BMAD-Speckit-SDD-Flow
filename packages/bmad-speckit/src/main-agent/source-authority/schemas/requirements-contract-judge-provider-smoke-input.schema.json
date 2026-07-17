@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-provider-smoke-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "config",
+    "phase",
+    "phaseRoot",
+    "phaseAuditAttemptId",
+    "auditContext",
+    "capabilityReceipt",
+    "selectionReceipt",
+    "securityParity",
+    "projectionMode"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "config": { "type": "string", "minLength": 1 },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "phaseRoot": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "auditContext": { "type": "string", "minLength": 1 },
+    "capabilityReceipt": { "type": "string", "minLength": 1 },
+    "selectionReceipt": { "type": "string", "minLength": 1 },
+    "securityParity": { "type": "string", "minLength": 1 },
+    "projectionMode": { "const": "final-only" },
+    "json": { "type": "boolean" }
+  }
+}

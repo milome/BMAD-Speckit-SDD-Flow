@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-real-consumer-boundary-observer-receipt/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "implementationAttemptId",
+    "phaseAuditAttemptId",
+    "installedPackageRoot",
+    "formalBoundaryRefs",
+    "installedDependencyTreeHash",
+    "substitutionCounts",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-real-consumer-boundary-observer-receipt/v1"
+    },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "installedPackageRoot": { "type": "string", "minLength": 1 },
+    "formalBoundaryRefs": { "$ref": "#/$defs/boundaries" },
+    "installedDependencyTreeHash": { "$ref": "#/$defs/hash" },
+    "substitutionCounts": { "$ref": "#/$defs/substitutions" },
+    "decision": { "const": "PASS" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalOwnerId",
+        "exactPath",
+        "sha256",
+        "registryId",
+        "registryVersion",
+        "registryHash",
+        "consumerActionId",
+        "invocationReceiptPath",
+        "invocationReceiptHash",
+        "transactionId",
+        "implementationAttemptId",
+        "phaseAuditAttemptId"
+      ],
+      "properties": {
+        "canonicalOwnerId": { "type": "string", "minLength": 1 },
+        "exactPath": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/hash" },
+        "registryId": { "type": "string", "minLength": 1 },
+        "registryVersion": { "type": "string", "minLength": 1 },
+        "registryHash": { "$ref": "#/$defs/hash" },
+        "consumerActionId": { "const": "requirements-contract-real-consumer-journey" },
+        "invocationReceiptPath": { "type": "string", "minLength": 1 },
+        "invocationReceiptHash": { "$ref": "#/$defs/hash" },
+        "transactionId": { "type": "string", "minLength": 1 },
+        "implementationAttemptId": { "type": "string", "minLength": 1 },
+        "phaseAuditAttemptId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["facade", "registry", "adapter", "resolver", "canonicalBoundary"],
+      "properties": {
+        "facade": { "$ref": "#/$defs/boundaryList" },
+        "registry": { "$ref": "#/$defs/boundaryList" },
+        "adapter": { "$ref": "#/$defs/boundaryList" },
+        "resolver": { "$ref": "#/$defs/boundaryList" },
+        "canonicalBoundary": { "$ref": "#/$defs/boundaryList" }
+      }
+    },
+    "boundaryList": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/boundary" }
+    },
+    "substitutions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture", "mock", "alternateRoot", "workspaceLink", "synthetic"],
+      "properties": {
+        "fixture": { "const": 0 },
+        "mock": { "const": 0 },
+        "alternateRoot": { "const": 0 },
+        "workspaceLink": { "const": 0 },
+        "synthetic": { "const": 0 }
+      }
+    }
+  }
+}
