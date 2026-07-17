@@ -1143,15 +1143,15 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         );
       sourceText = sourceText
         .replace(
-          /(    - id: FAIL-001\n[\s\S]*?      linkedEvidenceIds: \["EVD-001"\]\n)(      derivedFromMustRef: MUST-001\n)/u,
+          /( {4}- id: FAIL-001\n[\s\S]*? {6}linkedEvidenceIds: \["EVD-001"\]\n)( {6}derivedFromMustRef: MUST-001\n)/u,
           '$1      ownerMustRefs: ["MUST-001"]\n'
         )
         .replace(
-          /(    - id: TARGET-MOD-001\n[\s\S]*?)(      derivedFromMustRef: MUST-001\n)/u,
+          /( {4}- id: TARGET-MOD-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u,
           '$1'
         )
-        .replace(/(    - id: ART-001\n[\s\S]*?)(      derivedFromMustRef: MUST-001\n)/u, '$1')
-        .replace(/(    - id: CMD-001\n[\s\S]*?)(      derivedFromMustRef: MUST-001\n)/u, '$1');
+        .replace(/( {4}- id: ART-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u, '$1')
+        .replace(/( {4}- id: CMD-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u, '$1');
       const projectedProductTarget = path.join(
         root,
         'packages',
@@ -3955,7 +3955,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
-      let sourceText = readFileSync(source, 'utf8')
+      const sourceText = readFileSync(source, 'utf8')
         .replace(
           '      linkedNegIds: ["NEG-001"]\n      linkedEvidenceIds: ["EVD-001"]',
           [
@@ -3969,11 +3969,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           '      covers: ["NEG-001"]\n      taskRefs: ["TASK-001"]'
         )
         .replace(
-          /(    - id: TRACE-001\n[\s\S]*?      status: PENDING\n)      derivedFromMustRef: MUST-001\n/u,
+          /( {4}- id: TRACE-001\n[\s\S]*? {6}status: PENDING\n) {6}derivedFromMustRef: MUST-001\n/u,
           '$1'
         )
         .replace(
-          /(    - id: TARGET-MOD-002\n[\s\S]*?      ownerModel: acceptance_tests\n)[\s\S]*?(      derivedFromMustRef: MUST-001\n)/u,
+          /( {4}- id: TARGET-MOD-002\n[\s\S]*? {6}ownerModel: acceptance_tests\n)[\s\S]*?( {6}derivedFromMustRef: MUST-001\n)/u,
           [
             '$1',
             '      requirementRefs: []',
@@ -3987,7 +3987,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           '      targetFiles: ["tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts"]'
         )
         .replace(
-          /(    - id: CMD-001\n[\s\S]*?      evidenceRefs: \["EVD-001"\]\n)      derivedFromMustRef: MUST-001\n/u,
+          /( {4}- id: CMD-001\n[\s\S]*? {6}evidenceRefs: \["EVD-001"\]\n) {6}derivedFromMustRef: MUST-001\n/u,
           '$1'
         );
       writeFileSync(source, sourceText, 'utf8');

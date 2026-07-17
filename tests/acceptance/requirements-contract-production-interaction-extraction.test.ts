@@ -397,7 +397,6 @@ describe('production interaction candidate extraction', () => {
   it('feeds extracted candidates and trusted source snapshots into the production resolver', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-interactions-'));
     try {
-      const { refs } = PRIMARY_INTERACTION_FIXTURE;
       const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
       const result = runSemanticPipelineForSourceRoots(
         root,

@@ -9,6 +9,8 @@ import {
   type GovernedReadbackRef,
 } from './requirements-contract-governed-write';
 
+// AJV validates these schema-driven records before governed publication and replay.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 
 export interface CurrentDispatchPointerPublication {

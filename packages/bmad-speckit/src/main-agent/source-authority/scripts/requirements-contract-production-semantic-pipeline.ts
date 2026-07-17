@@ -98,7 +98,7 @@ function schemaPath(fileName: string): string {
 
 function canonicalModulePath(moduleName: string): string {
   let current = path.resolve(__dirname);
-  while (true) {
+  for (;;) {
     const candidate = path.join(
       current,
       'src',

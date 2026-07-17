@@ -1,7 +1,6 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   loadRequirementsPolicyCatalog,
@@ -32,7 +31,6 @@ function trustedAuthority() {
 }
 
 function loadCatalogFixture() {
-  const parsed = yaml.load(readFileSync(catalogPath, 'utf8')) as RequirementsPolicyCatalog;
   const authority = trustedAuthority();
   return {
     catalog: loadRequirementsPolicyCatalog(catalogPath, authority),
@@ -77,7 +75,6 @@ function policyFixture(
 ) {
   const policy = catalog.policies[0];
   const before = { requirements: { sample: { compatibilityRule: null } } };
-  const after = { requirements: { sample: { compatibilityRule: policy.value } } };
   const resolverId = 'policy-resolver-test';
   const resolutionRunId = 'run-policy-fixture';
   return {

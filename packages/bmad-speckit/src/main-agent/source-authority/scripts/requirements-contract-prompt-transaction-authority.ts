@@ -6,6 +6,8 @@ import type { OrchestrationFlow } from './orchestration-dispatch-contract';
 import { REQUIREMENTS_CONTRACT_DISPATCH_HOST_REGISTRY } from './requirements-contract-stage-registry';
 import { fileHash, slash } from './requirements-contract-governed-write';
 
+// Runtime schemas validate these records before authority resolution consumes them.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 
 export interface PromptTransactionPublishOptions {

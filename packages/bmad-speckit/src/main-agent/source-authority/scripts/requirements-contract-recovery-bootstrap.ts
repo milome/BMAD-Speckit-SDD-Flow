@@ -61,6 +61,8 @@ export interface RecoveryFinalizationOptions {
   json: boolean;
 }
 
+// Recovery inputs are schema-validated before their dynamic fields are consumed.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
 type PathHash = { path: string; hash: string };
 
@@ -112,15 +114,16 @@ function commandIdFromHashBoundReceipt(
   return commandId;
 }
 
-function canonical(value: any): string {
+function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') {
-    return `{${Object.keys(value)
+    const record = value as JsonRecord;
+    return `{${Object.keys(record)
       .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`)
+      .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
       .join(',')}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) as string;
 }
 
 function runGit(cwd: string, args: string[], env: NodeJS.ProcessEnv = process.env): string {

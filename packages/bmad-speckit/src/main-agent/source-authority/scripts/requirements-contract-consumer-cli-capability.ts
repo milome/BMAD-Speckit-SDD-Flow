@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 
-type JsonRecord = Record<string, any>;
+type JsonRecord = Record<string, unknown>;
 
 export async function requirementsContractConsumerCliCapabilityObserveCommand(options: {
   cwd?: string;
