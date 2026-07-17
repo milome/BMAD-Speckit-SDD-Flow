@@ -21360,15 +21360,17 @@ export function runMainAgentPreConfirmationDrilldown(
           : 'post_staging_draft',
     });
   }
-  const sourcePrdLintTransition = validateSourcePrdLintTransition({
-    transition: 'confirmation-ready',
-    lintReport: readJsonIfExists(paths.sourcePrdInstanceLintReport),
-    currentSourceRef: {
-      path: toRootRelativePath(root, paths.draftSourcePreview),
-      hash: sha256File(paths.draftSourcePreview),
-    },
-  });
-  if (sourcePrdLintTransition.decision === 'block') {
+  const sourcePrdLintTransition = sourcePrdInstanceLintRequired
+    ? validateSourcePrdLintTransition({
+        transition: 'confirmation-ready',
+        lintReport: readJsonIfExists(paths.sourcePrdInstanceLintReport),
+        currentSourceRef: {
+          path: toRootRelativePath(root, paths.draftSourcePreview),
+          hash: sha256File(paths.draftSourcePreview),
+        },
+      })
+    : null;
+  if (sourcePrdLintTransition?.decision === 'block') {
     const issue = preConfirmationIssue(
       sourcePrdLintTransition.issueCodes[0] ?? 'source_prd_lint_non_pass',
       'Source PRD lint authority blocks confirmation-ready progression.',
