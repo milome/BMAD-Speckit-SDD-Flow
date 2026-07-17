@@ -952,6 +952,25 @@ program
   );
 
 program
+  .command('requirements-contract-production-bypass-verify')
+  .description('Verify production bypass closure from current authoritative evidence')
+  .requiredOption('--evidence-root <path>', 'Directory containing current closure evidence')
+  .option('--json', 'Print machine-readable JSON summary')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-production-bypass-verify',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-verifier.js',
+        'requirementsContractProductionBypassVerifyCommand'
+      )({
+        cwd: process.cwd(),
+        evidenceRoot: opts.evidenceRoot,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
   .command('requirements-contract-recovery-bootstrap')
   .description('Bootstrap current recovery lineage and Consumer identity')
   .requiredOption('--contract <path>', 'Frozen goal execution contract')

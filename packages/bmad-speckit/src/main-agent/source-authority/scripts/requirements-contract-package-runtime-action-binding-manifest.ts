@@ -144,6 +144,22 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
   },
   {
+    actionId: 'requirements-contract-production-bypass-verify',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-bypass-verifier.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-bypass-verifier.js`,
+    gateSymbol: 'requirementsContractProductionBypassVerifyCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-production-bypass-verification-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-production-bypass-closure-report.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-production-bypass-attack-corpus.test.ts',
+      'tests/acceptance/requirements-contract-production-bypass-closure-eval.test.ts',
+    ],
+  },
+  {
     actionId: 'requirements-contract-recovery-bootstrap',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-recovery-bootstrap.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-recovery-bootstrap.js`,
