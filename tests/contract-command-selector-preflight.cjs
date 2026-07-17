@@ -1,8 +1,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const DEFAULT_CONTRACT_PATH =
-  'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
+const DEFAULT_AUTHORITY_PATH =
+  'tests/fixtures/requirements-contract-command-selector-authority.json';
+const SELECTOR_AUTHORITY_SCHEMA_VERSION =
+  'requirements-contract-command-selector-authority/v1';
+const SELECTOR_PATH_PATTERN =
+  /^(?:tests|packages)\/[A-Za-z0-9_./-]+\.test\.(?:ts|js)$/u;
 const ARCHITECTURE_WAVE_COMMAND_IDS = [
   ...Array.from({ length: 20 }, (_, index) => `CMD-${String(index + 1).padStart(2, '0')}`),
   ...Array.from({ length: 6 }, (_, index) => `CMD-${index + 26}`),
@@ -20,21 +24,24 @@ function extractSelectors(value) {
   ].map((match) => match[0]);
 }
 
-function commandSelectorInventory(root, commandId, expectedCount = null, options = {}) {
-  const contractPath = options.contractPath ?? DEFAULT_CONTRACT_PATH;
-  const contract = fs.readFileSync(path.join(root, contractPath), 'utf8');
-  const row = contract.split(/\r?\n/u).find((line) => line.startsWith(`| ${commandId} |`));
+function validatedSelectorInventory(commandId, allSelectors, commandSelectors, expectedCount) {
   const label = commandId.toLowerCase().replace('-', '');
-  if (!row) throw new Error(`${label}_contract_row_missing`);
-  const commandText = row.match(/^\| [^|]+ \| (.*?) \| Repository root \|/u)?.[1];
-  if (!commandText) throw new Error(`${label}_command_cell_missing`);
-  const allSelectors = extractSelectors(row);
-  const commandSelectors = extractSelectors(commandText);
+  const allSelectorCount = Array.isArray(allSelectors) ? allSelectors.length : 'invalid';
   if (
+    !Array.isArray(allSelectors) ||
+    !allSelectors.every(
+      (selector) => typeof selector === 'string' && SELECTOR_PATH_PATTERN.test(selector)
+    ) ||
+    !Array.isArray(commandSelectors) ||
+    !commandSelectors.every(
+      (selector) => typeof selector === 'string' && SELECTOR_PATH_PATTERN.test(selector)
+    ) ||
     (expectedCount !== null && allSelectors.length !== expectedCount) ||
-    new Set(allSelectors).size !== allSelectors.length
+    new Set(allSelectors).size !== allSelectors.length ||
+    new Set(commandSelectors).size !== commandSelectors.length ||
+    commandSelectors.some((selector) => !allSelectors.includes(selector))
   ) {
-    throw new Error(`${label}_selector_inventory_invalid:${allSelectors.length}`);
+    throw new Error(`${label}_selector_inventory_invalid:${allSelectorCount}`);
   }
   return {
     commandId,
@@ -44,6 +51,98 @@ function commandSelectorInventory(root, commandId, expectedCount = null, options
     nodeSelectors: commandSelectors.filter((selector) => selector.endsWith('.test.js')),
     indirectSelectors: allSelectors.filter((selector) => !commandSelectors.includes(selector)),
   };
+}
+
+function validatedJsonAuthority(authority) {
+  if (
+    !authority ||
+    typeof authority !== 'object' ||
+    Array.isArray(authority) ||
+    authority.schemaVersion !== SELECTOR_AUTHORITY_SCHEMA_VERSION ||
+    !Array.isArray(authority.commands) ||
+    !authority.commands.every(
+      (entry) => entry && typeof entry === 'object' && typeof entry.commandId === 'string'
+    )
+  ) {
+    throw new Error('command_selector_authority_invalid');
+  }
+  if (authority.commandCount !== authority.commands.length) {
+    throw new Error(
+      `command_selector_authority_command_count_mismatch:${authority.commandCount}:${authority.commands.length}`
+    );
+  }
+
+  const commandIds = authority.commands.map((entry) => entry.commandId);
+  const duplicateCommandId = commandIds.find(
+    (commandId, index) => commandIds.indexOf(commandId) !== index
+  );
+  if (duplicateCommandId) {
+    throw new Error(`command_selector_authority_duplicate_command_id:${duplicateCommandId}`);
+  }
+  const expectedCommandIds = new Set(ARCHITECTURE_WAVE_COMMAND_IDS);
+  const missingCommandIds = ARCHITECTURE_WAVE_COMMAND_IDS.filter(
+    (commandId) => !commandIds.includes(commandId)
+  );
+  const extraCommandIds = commandIds.filter((commandId) => !expectedCommandIds.has(commandId));
+  if (missingCommandIds.length > 0 || extraCommandIds.length > 0) {
+    throw new Error(
+      `command_selector_authority_command_ids_mismatch:missing=${
+        missingCommandIds.join(',') || 'none'
+      }:extra=${extraCommandIds.join(',') || 'none'}`
+    );
+  }
+
+  const inventories = authority.commands.map((entry) =>
+    validatedSelectorInventory(
+      entry.commandId,
+      entry.allSelectors,
+      entry.commandSelectors,
+      null
+    )
+  );
+  const selectorCount = inventories.reduce(
+    (count, inventory) => count + inventory.allSelectors.length,
+    0
+  );
+  if (authority.selectorCount !== selectorCount) {
+    throw new Error(
+      `command_selector_authority_selector_count_mismatch:${authority.selectorCount}:${selectorCount}`
+    );
+  }
+  return inventories;
+}
+
+function commandSelectorInventory(root, commandId, expectedCount = null, options = {}) {
+  const authorityPath = options.contractPath ?? DEFAULT_AUTHORITY_PATH;
+  const authorityText = fs.readFileSync(path.join(root, authorityPath), 'utf8');
+  if (authorityPath.endsWith('.json')) {
+    const authority = JSON.parse(authorityText);
+    const inventories = validatedJsonAuthority(authority);
+    const command = inventories.find((entry) => entry.commandId === commandId);
+    if (!command) {
+      throw new Error(`${commandId.toLowerCase().replace('-', '')}_contract_row_missing`);
+    }
+    return validatedSelectorInventory(
+      commandId,
+      command.allSelectors,
+      command.commandSelectors,
+      expectedCount
+    );
+  }
+
+  const row = authorityText
+    .split(/\r?\n/u)
+    .find((line) => line.startsWith(`| ${commandId} |`));
+  const label = commandId.toLowerCase().replace('-', '');
+  if (!row) throw new Error(`${label}_contract_row_missing`);
+  const commandText = row.match(/^\| [^|]+ \| (.*?) \| Repository root \|/u)?.[1];
+  if (!commandText) throw new Error(`${label}_command_cell_missing`);
+  return validatedSelectorInventory(
+    commandId,
+    extractSelectors(row),
+    extractSelectors(commandText),
+    expectedCount
+  );
 }
 
 function cmd08SelectorInventory(root, options = {}) {

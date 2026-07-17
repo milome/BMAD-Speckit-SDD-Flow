@@ -1,3 +1,5 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -9,8 +11,158 @@ const {
 } = require('../contract-command-selector-preflight.cjs');
 
 const ROOT = process.cwd();
+const COMMAND_AUTHORITY_PATH = path.resolve(
+  'tests/fixtures/requirements-contract-command-selector-authority.json'
+);
+
+type CommandSelectorAuthority = {
+  commandCount: number;
+  selectorCount: number;
+  commands: Array<{
+    commandId: string;
+    allSelectors: string[];
+    commandSelectors: string[];
+  }>;
+};
+
+function withMutatedCommandAuthority(
+  mutate: (authority: CommandSelectorAuthority) => void,
+  verify: (root: string, contractPath: string) => void
+): void {
+  const authority = JSON.parse(
+    readFileSync(COMMAND_AUTHORITY_PATH, 'utf8')
+  ) as CommandSelectorAuthority;
+  mutate(authority);
+  withCommandAuthorityValue(authority, verify);
+}
+
+function withCommandAuthorityValue(
+  authority: unknown,
+  verify: (root: string, contractPath: string) => void
+): void {
+  const tempRoot = mkdtempSync(path.join(tmpdir(), 'command-selector-authority-'));
+  const contractPath = 'authority.json';
+  try {
+    writeFileSync(path.join(tempRoot, contractPath), JSON.stringify(authority), 'utf8');
+    verify(tempRoot, contractPath);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+}
 
 describe('requirements contract command selector preflight', () => {
+  it('rejects a non-array selector inventory without dereferencing its length', () => {
+    withMutatedCommandAuthority(
+      (authority) => {
+        Object.assign(authority.commands[0], { allSelectors: null });
+      },
+      (root, contractPath) => {
+        expect(() =>
+          architectureWaveSelectorInventory(root, { contractPath })
+        ).toThrow(/cmd01_selector_inventory_invalid/u);
+      }
+    );
+  });
+
+  it('rejects duplicate command identities in selector authority', () => {
+    withMutatedCommandAuthority(
+      (authority) => {
+        authority.commands[1].commandId = authority.commands[0].commandId;
+      },
+      (root, contractPath) => {
+        expect(() =>
+          architectureWaveSelectorInventory(root, { contractPath })
+        ).toThrow(/command_selector_authority_duplicate_command_id:CMD-01/u);
+      }
+    );
+  });
+
+  it('rejects duplicate command selectors in a command inventory', () => {
+    withMutatedCommandAuthority(
+      (authority) => {
+        const command = authority.commands.find((entry) => entry.commandSelectors.length > 0);
+        if (!command) throw new Error('test_fixture_command_selector_missing');
+        command.commandSelectors.push(command.commandSelectors[0]);
+      },
+      (root, contractPath) => {
+        expect(() =>
+          architectureWaveSelectorInventory(root, { contractPath })
+        ).toThrow(/cmd02_selector_inventory_invalid/u);
+      }
+    );
+  });
+
+  it.each(['', 'not-a-test-selector'])(
+    'rejects an invalid selector path %j',
+    (invalidSelector) => {
+      withMutatedCommandAuthority(
+        (authority) => {
+          const command = authority.commands.find((entry) => entry.commandSelectors.length > 0);
+          if (!command) throw new Error('test_fixture_command_selector_missing');
+          command.allSelectors[0] = invalidSelector;
+          command.commandSelectors[0] = invalidSelector;
+        },
+        (root, contractPath) => {
+          expect(() =>
+            architectureWaveSelectorInventory(root, { contractPath })
+          ).toThrow(/cmd02_selector_inventory_invalid/u);
+        }
+      );
+    }
+  );
+
+  it('rejects command identities outside the frozen architecture wave', () => {
+    withMutatedCommandAuthority(
+      (authority) => {
+        authority.commands.push({
+          commandId: 'CMD-99',
+          allSelectors: [],
+          commandSelectors: [],
+        });
+        authority.commandCount += 1;
+      },
+      (root, contractPath) => {
+        expect(() =>
+          architectureWaveSelectorInventory(root, { contractPath })
+        ).toThrow(/command_selector_authority_command_ids_mismatch:.*extra=CMD-99/u);
+      }
+    );
+  });
+
+  it.each([null, []])('rejects an invalid top-level authority value %j', (authority) => {
+    withCommandAuthorityValue(authority, (root, contractPath) => {
+      expect(() =>
+        architectureWaveSelectorInventory(root, { contractPath })
+      ).toThrow('command_selector_authority_invalid');
+    });
+  });
+
+  it('rejects a command count that does not match selector authority rows', () => {
+    withMutatedCommandAuthority(
+      (authority) => {
+        authority.commandCount += 1;
+      },
+      (root, contractPath) => {
+        expect(() =>
+          architectureWaveSelectorInventory(root, { contractPath })
+        ).toThrow(/command_selector_authority_command_count_mismatch:29:28/u);
+      }
+    );
+  });
+
+  it('rejects a selector count that does not match declared selector inventories', () => {
+    withMutatedCommandAuthority(
+      (authority) => {
+        authority.selectorCount += 1;
+      },
+      (root, contractPath) => {
+        expect(() =>
+          architectureWaveSelectorInventory(root, { contractPath })
+        ).toThrow(/command_selector_authority_selector_count_mismatch:275:274/u);
+      }
+    );
+  });
+
   it('resolves every frozen architecture-wave command selector inventory', () => {
     const inventory = architectureWaveSelectorInventory(ROOT);
 
