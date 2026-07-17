@@ -124,6 +124,10 @@ function collectRuntimeFiles(dir = sourceRoot, base = sourceRoot) {
       isSourceAuthorityFile &&
       relativePath.startsWith('source-authority/templates/') &&
       /\.json$/u.test(entry.name);
+    const allowedSourceAuthoritySchemaJsonAsset =
+      isSourceAuthorityFile &&
+      relativePath.startsWith('source-authority/schemas/') &&
+      /\.json$/u.test(entry.name);
     const allowedRuntimeExtension = isSourceAuthorityFile
       ? /\.(?:cjs|mjs|py|ps1|sh|md)$/u
       : /\.cjs$/u;
@@ -131,7 +135,8 @@ function collectRuntimeFiles(dir = sourceRoot, base = sourceRoot) {
       !entry.isFile() ||
       (!allowedRuntimeExtension.test(entry.name) &&
         !isSourceAuthorityDeclarationFile &&
-        !allowedSourceAuthorityTemplateJsonAsset)
+        !allowedSourceAuthorityTemplateJsonAsset &&
+        !allowedSourceAuthoritySchemaJsonAsset)
     ) {
       continue;
     }
@@ -540,6 +545,13 @@ for (const file of packageRuntimeTypeScriptFiles) {
   );
 }
 for (const file of sourceAuthorityTypeScriptFiles) compileSourceAuthorityTypeScriptFile(file);
+const actionBindingManifestModule = require(path.join(
+  distRoot,
+  'source-authority',
+  'scripts',
+  'requirements-contract-package-runtime-action-binding-manifest.js'
+));
+actionBindingManifestModule.publishPackageRuntimeActionBindingManifest(repoRoot);
 process.stdout.write(
   `built dist/main-agent files=${files.length} packageTsRuntime=${packageRuntimeTypeScriptFiles.length} sourceAuthorityTsRuntime=${sourceAuthorityTypeScriptFiles.length} sourceAuthorityTsDeclarations=${sourceAuthorityTypeScriptDeclarationFiles.length} package files=${packageFiles.length} runtime asset dirs=${runtimeAssetDirectories.length} sourceAuthority asset dirs=${sourceAuthorityAssetDirectories.length} sourceAuthority asset files=${sourceAuthorityAssetFiles.length}\n`
 );

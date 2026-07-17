@@ -136,7 +136,6 @@ describe('main-agent run-loop native goal invocation routing', () => {
       expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
       expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
       expect(result.steps.some((step) => step.step === 'native-goal-invocation')).toBe(true);
-      expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
       const receipt = JSON.parse(
         fs.readFileSync(receiptPath(fixture.root, fixture.recordId, packetId), 'utf8')
       );

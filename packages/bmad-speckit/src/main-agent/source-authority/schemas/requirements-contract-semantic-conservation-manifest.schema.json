@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-semantic-conservation-manifest.schema.json",
+  "title": "Requirements Contract Semantic Conservation Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "intakeReceiptPath",
+    "intakeReceiptHash",
+    "intentLineageLedgerPath",
+    "intentLineageLedgerHash",
+    "sourceRootClassRegistryHash",
+    "sourceRoots",
+    "semanticNodes",
+    "rootToNodeMappings",
+    "nodeToAuthorityMappings",
+    "decisionReceiptSetHash",
+    "unresolvedRootIds",
+    "sourceToIrMissingRootCount",
+    "sourceToIrExtraRootCount",
+    "sourceToIrPayloadMismatchCount",
+    "sourceToIrAuthorityMismatchCount",
+    "sourceToIrDuplicateRootCount",
+    "semanticModelHash",
+    "canonicalRenderer",
+    "parser",
+    "ruleRegistry",
+    "lintProfileRegistry",
+    "validationFacade",
+    "schemaHashes",
+    "hashChain",
+    "manifestHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-semantic-conservation-manifest/v1"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "intakeReceiptPath": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "intakeReceiptHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "intentLineageLedgerPath": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "intentLineageLedgerHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceRootClassRegistryHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceRoots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/sourceRoot"
+      }
+    },
+    "semanticNodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/semanticNode"
+      }
+    },
+    "rootToNodeMappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rootToNodeMapping"
+      }
+    },
+    "nodeToAuthorityMappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nodeToAuthorityMapping"
+      }
+    },
+    "decisionReceiptSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "unresolvedRootIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "sourceToIrMissingRootCount": {
+      "const": 0
+    },
+    "sourceToIrExtraRootCount": {
+      "const": 0
+    },
+    "sourceToIrPayloadMismatchCount": {
+      "const": 0
+    },
+    "sourceToIrAuthorityMismatchCount": {
+      "const": 0
+    },
+    "sourceToIrDuplicateRootCount": {
+      "const": 0
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "canonicalRenderer": {
+      "$ref": "#/$defs/identityHash"
+    },
+    "parser": {
+      "$ref": "#/$defs/identityHash"
+    },
+    "ruleRegistry": {
+      "$ref": "#/$defs/identityHash"
+    },
+    "lintProfileRegistry": {
+      "$ref": "#/$defs/identityHash"
+    },
+    "validationFacade": {
+      "$ref": "#/$defs/identityHash"
+    },
+    "schemaHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/identityHash"
+      }
+    },
+    "hashChain": {
+      "$ref": "#/$defs/hashChain"
+    },
+    "manifestHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "identityHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "hash"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "sourceRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order",
+        "sourceRootId",
+        "rootClass",
+        "sourceSpanRefs",
+        "payloadHash",
+        "authorityClass"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sourceRootId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "rootClass": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceSpanRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "payloadHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authorityClass": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "semanticNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "nodeId", "nodeHash", "authorityClass", "authorityBearing"],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nodeId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "nodeHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authorityClass": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "authorityBearing": {
+          "const": true
+        }
+      }
+    },
+    "rootToNodeMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRootId", "nodeId", "mappingHash"],
+      "properties": {
+        "sourceRootId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "nodeId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "mappingHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "nodeToAuthorityMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "authoritySource", "mappingHash"],
+      "properties": {
+        "nodeId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "authoritySource": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sourceRootAuthority"
+            },
+            {
+              "$ref": "#/$defs/decisionReceiptAuthority"
+            }
+          ]
+        },
+        "mappingHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "sourceRootAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sourceRootId"],
+      "properties": {
+        "kind": {
+          "const": "source_root"
+        },
+        "sourceRootId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "decisionReceiptAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "decisionReceiptRef"],
+      "properties": {
+        "kind": {
+          "const": "decision_receipt"
+        },
+        "decisionReceiptRef": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "hashChain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceAuthorityHash",
+        "decisionReceiptSetHash",
+        "semanticConservationManifestHash",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "sourceAuthorityHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "decisionReceiptSetHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "semanticConservationManifestHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

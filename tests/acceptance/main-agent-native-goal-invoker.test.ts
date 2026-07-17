@@ -189,47 +189,35 @@ describe('main-agent host-native goal invoker', () => {
     expect(receipt.goalCommandTextHash).toBe(sha256Text(fixture.commandText));
   });
 
-  it('ignores Codex binary override because native /goal execution must stay in the main session', () => {
+  it('keeps Codex native /goal execution in the main session without spawning a CLI', () => {
     const fixture = createNativeGoalInvocationFixture('codex');
-    const previousOverride = process.env.CODEX_WORKER_ADAPTER_BIN;
-    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-    const fakeCodexPath = path.join(fixture.projectRoot, 'fake-codex');
-    process.env.CODEX_WORKER_ADAPTER_BIN = fakeCodexPath;
-    process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
     const spawnSyncFn: NativeGoalSpawnSyncFn = () => {
-      throw new Error('Codex binary override must not be used for native /goal');
+      throw new Error('native /goal must not spawn a Codex CLI subprocess');
     };
 
-    try {
-      const result = runNativeGoalInvocation({
-        projectRoot: fixture.projectRoot,
-        host: 'codex',
-        packet: fixture.packet,
-        compiledPromptRef: fixture.compiledPromptRef,
-        taskReportPath: fixture.taskReportPath,
-        recordId: fixture.recordId,
-        attemptId: fixture.attemptId,
-        spawnSyncFn,
-      });
+    const result = runNativeGoalInvocation({
+      projectRoot: fixture.projectRoot,
+      host: 'codex',
+      packet: fixture.packet,
+      compiledPromptRef: fixture.compiledPromptRef,
+      taskReportPath: fixture.taskReportPath,
+      recordId: fixture.recordId,
+      attemptId: fixture.attemptId,
+      spawnSyncFn,
+    });
 
-      expect(result.taskReport.status).toBe('blocked');
-      expect(result.command).toBe('main-session-native-goal');
-      expect(result.args).toEqual([fixture.commandText]);
-      const receipt = JSON.parse(
-        fs.readFileSync(
-          receiptPath(fixture.projectRoot, fixture.recordId, fixture.attemptId),
-          'utf8'
-        )
-      );
-      expect(receipt.invokedCommandKind).toBe('main_session_native_goal_required');
-      expect(receipt.command).not.toBe(fakeCodexPath);
-      expect(receipt.nativeGoalCommandUsed).toBe(false);
-    } finally {
-      if (previousOverride === undefined) delete process.env.CODEX_WORKER_ADAPTER_BIN;
-      else process.env.CODEX_WORKER_ADAPTER_BIN = previousOverride;
-      if (previousAllow === undefined) delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-      else process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-    }
+    expect(result.taskReport.status).toBe('blocked');
+    expect(result.command).toBe('main-session-native-goal');
+    expect(result.args).toEqual([fixture.commandText]);
+    const receipt = JSON.parse(
+      fs.readFileSync(
+        receiptPath(fixture.projectRoot, fixture.recordId, fixture.attemptId),
+        'utf8'
+      )
+    );
+    expect(receipt.invokedCommandKind).toBe('main_session_native_goal_required');
+    expect(receipt.command).toBe('main-session-native-goal');
+    expect(receipt.nativeGoalCommandUsed).toBe(false);
   });
 
   it('prepares the exact /goal command for Claude main-session execution without spawning a CLI', () => {

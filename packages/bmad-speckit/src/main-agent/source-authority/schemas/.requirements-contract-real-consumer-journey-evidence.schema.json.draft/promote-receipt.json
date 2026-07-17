@@ -1,0 +1,14 @@
+{
+  "backupHash": "sha256:89521775ad98db3d630d39d5328f31f398c95351b8b5d0bb6fa914ad8d97608e",
+  "backupPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-real-consumer-journey-evidence.schema.json.backup-198256-1783908683201",
+  "finalHash": "sha256:89521775ad98db3d630d39d5328f31f398c95351b8b5d0bb6fa914ad8d97608e",
+  "mode": "replace",
+  "originalHash": "sha256:89521775ad98db3d630d39d5328f31f398c95351b8b5d0bb6fa914ad8d97608e",
+  "promotedAt": "2026-07-13T02:11:23.205Z",
+  "schemaVersion": "large-document-writer-promote-receipt/v1",
+  "sessionDir": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-real-consumer-journey-evidence.schema.json.draft",
+  "targetPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-real-consumer-journey-evidence.schema.json",
+  "tempHash": "sha256:89521775ad98db3d630d39d5328f31f398c95351b8b5d0bb6fa914ad8d97608e",
+  "tempPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-real-consumer-journey-evidence.schema.json.198256.1783908683203.tmp",
+  "writtenAt": "2026-07-13T02:11:23.204Z"
+}

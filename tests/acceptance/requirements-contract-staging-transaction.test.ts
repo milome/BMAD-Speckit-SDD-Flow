@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   artifacts,
   cleanCriticalAuditorRound,
+  createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
   issueCodes,
@@ -155,11 +156,16 @@ describe('requirements contract staging transaction', () => {
   it('promotes source and writes promotion receipt only after three validated no-gap rounds', () => {
     const root = createTempRoot('requirements-contract-staging-promote-');
     try {
-      const source = writeMinimalConsumerRequirement(root);
+      const { sourcePath: source, authoringOptions } = writeMinimalConsumerRequirement(
+        root,
+        'docs/requirements/minimal-consumer.md',
+        createMinimalConsumerRequirementDescriptor('REQ-STAGING-PROMOTE')
+      );
+      const { confirmationLanguage: _confirmationLanguage, ...promotionAuthoringOptions } =
+        authoringOptions;
 
       const result = runAuthoring(root, source, 'REQ-STAGING-PROMOTE', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...promotionAuthoringOptions,
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const paths = artifacts(root, 'REQ-STAGING-PROMOTE', 'REQ-STAGING-PROMOTE-SET');

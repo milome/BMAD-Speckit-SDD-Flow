@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const ARCH_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
 
@@ -59,6 +60,10 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   mkdirSync(base, { recursive: true });
   const recordPath = path.join(base, 'requirement-record.json');
   writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath: String(record.sourcePath),
+  });
   return recordPath;
 }
 
@@ -483,6 +488,8 @@ function baseRecord(
     sourcePath: fixture.sourcePath,
     sourceDocumentHash: fixture.sourceDocumentHash,
     implementationConfirmationHash: fixture.implementationConfirmationHash,
+    semanticModelHash: fixture.sourceDocumentHash,
+    currentAttemptId: 'readiness-attempt-001',
     confirmationPageHash: fixture.confirmationPageHash,
     confirmationHistory: [
       {
@@ -665,6 +672,18 @@ describe('requirement-scoped implementation readiness gate', () => {
         resultRecordedAt: '2026-05-19T00:00:01.000Z',
         resultRecordedBy: 'agent',
         blockingReasons: [],
+        semanticModelHash: record.semanticModelHash,
+        currentAttemptId: 'readiness-attempt-001',
+        decisionReceiptRef: expect.any(String),
+        decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(record.runtimeStatusDecisionReceipts.at(-1)).toMatchObject({
+        path: record.sixModelResults.implementation_readiness.decisionReceiptRef,
+        receipt: {
+          modelId: 'implementation_readiness',
+          implementationAttemptId: 'readiness-attempt-001',
+          receiptHash: record.sixModelResults.implementation_readiness.decisionReceiptHash,
+        },
       });
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',

@@ -17,6 +17,8 @@ const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf72
 const IMPLEMENTATION_HASH =
   'sha256:837f69a7551c36022df0c4f76647b8f66d49c5f914a37074657d21a821bb6d9a';
 const ARCHITECTURE_HASH = 'sha256:a3de7e8c4d97e8befc507e5edbb640ae706ccd418df9b2b6e047d7967cb8f9da';
+const TRANSACTION_ID = 'TX-subagent-envelope-test';
+const IMPLEMENTATION_ATTEMPT_ID = 'IMP-subagent-envelope-test';
 
 function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
@@ -84,12 +86,20 @@ function traceStatusPolicy() {
   };
 }
 
-function artifactRef(artifactPath: string, contentHash: string, relatedRequirementIds: string[]) {
+function artifactRef(
+  artifactPath: string,
+  contentHash: string,
+  relatedRequirementIds: string[],
+  schemaPath: string,
+  readbackReceiptPath: string
+) {
   return {
     artifactType: 'subagent_evidence',
     sourceOfTruthRole: 'evidence',
     path: artifactPath,
     contentHash,
+    schemaPath,
+    readbackReceiptPath,
     producer: 'subagent-evidence-envelope.test',
     purpose: 'prove subagent evidence envelope acceptance',
     relatedRequirementIds,
@@ -99,7 +109,7 @@ function artifactRef(artifactPath: string, contentHash: string, relatedRequireme
   };
 }
 
-function writeFixture(root: string) {
+function writeFixture(root: string, options: { executionVerified?: boolean } = {}) {
   const base = path.join(
     root,
     '_bmad-output',
@@ -112,6 +122,61 @@ function writeFixture(root: string) {
   const evidenceArtifactPath = path.join(evidenceDir, 'subagent-proof.json');
   const evidenceArtifactContent = `${JSON.stringify({ assertion: 'subagent evidence envelope accepted' }, null, 2)}\n`;
   writeFileSync(evidenceArtifactPath, evidenceArtifactContent, 'utf8');
+  const evidenceArtifactSchemaPath = path.join(evidenceDir, 'subagent-proof.schema.json');
+  const evidenceArtifactSchemaContent = `${JSON.stringify(
+    {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['assertion'],
+      properties: {
+        assertion: { const: 'subagent evidence envelope accepted' },
+      },
+    },
+    null,
+    2
+  )}\n`;
+  writeFileSync(evidenceArtifactSchemaPath, evidenceArtifactSchemaContent, 'utf8');
+  const evidenceArtifactReadbackReceiptPath = `${evidenceArtifactPath}.readback-receipt.json`;
+  const evidenceArtifactHash = sha256(evidenceArtifactContent);
+  const evidenceArtifactReceiptPayload = {
+    schemaVersion: 'requirements-contract-evidence-artifact-readback-receipt/v1',
+    artifactId: path.basename(evidenceArtifactPath),
+    artifactType: 'subagent_evidence',
+    artifactPath: evidenceArtifactPath,
+    artifactHash: evidenceArtifactHash,
+    artifactSchemaPath: evidenceArtifactSchemaPath,
+    artifactSchemaHash: sha256(evidenceArtifactSchemaContent),
+    producerIdentity: {
+      class: 'controlled_artifact_producer',
+      id: 'subagent-evidence-envelope.test',
+    },
+    requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
+    requirementRefs: ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027', 'EVD-045'],
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    publishedAt: '2026-05-21T00:00:04.000Z',
+    readbackAt: '2026-05-21T00:00:05.000Z',
+    publication: {
+      targetPath: evidenceArtifactPath,
+      publishedHash: evidenceArtifactHash,
+      readbackHash: evidenceArtifactHash,
+      readbackVerified: true,
+    },
+    decision: 'pass',
+  };
+  writeFileSync(
+    evidenceArtifactReadbackReceiptPath,
+    `${JSON.stringify(
+      {
+        ...evidenceArtifactReceiptPayload,
+        receiptHash: sha256Object(evidenceArtifactReceiptPayload),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
   const recordPath = path.join(base, 'requirement-record.json');
   writeFileSync(
     recordPath,
@@ -176,14 +241,13 @@ function writeFixture(root: string) {
     evidence: [evidenceArtifactPath],
     downstreamContext: ['TRACE-035'],
   };
-  const evidenceRef = artifactRef(evidenceArtifactPath, sha256(evidenceArtifactContent), [
-    'MUST-044',
-    'MUST-046',
-    'NEG-034',
-    'NEG-035',
-    'OUT-027',
-    'EVD-045',
-  ]);
+  const evidenceRef = artifactRef(
+    evidenceArtifactPath,
+    evidenceArtifactHash,
+    ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027', 'EVD-045'],
+    evidenceArtifactSchemaPath,
+    evidenceArtifactReadbackReceiptPath
+  );
   const commandRun = {
     commandId: 'CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE',
     command: 'npx vitest run tests/acceptance/subagent-evidence-envelope.test.ts',
@@ -202,7 +266,7 @@ function writeFixture(root: string) {
     requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
     parentRunId: 'run-trace-035',
     parentCloseoutAttemptId: 'closeout-trace-035',
-    executorKind: 'codex_worker_adapter',
+    executorKind: 'codex_spawn_agent',
     executorRole: 'implementation-worker',
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
@@ -220,6 +284,7 @@ function writeFixture(root: string) {
     },
     commandRuns: [commandRun],
     artifactRefs: [evidenceRef],
+    executionVerified: options.executionVerified ?? true,
   });
   const packetPath = path.join(evidenceDir, 'implementation-evidence-packet.json');
   const implementationPacket = {
@@ -229,6 +294,8 @@ function writeFixture(root: string) {
     executionIterationId: 'exec-trace-035',
     runId: 'run-trace-035',
     closeoutAttemptId: 'closeout-trace-035',
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
     status: 'done',
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
@@ -288,6 +355,37 @@ function writeFixture(root: string) {
 }
 
 describe('subagent evidence envelope acceptance', () => {
+  it('rejects an unsupported executor kind', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-envelope-unsupported-executor-'));
+    try {
+      const fixture = writeFixture(root);
+      const unsupportedEnvelope = {
+        ...fixture.envelope,
+        executorKind: 'unsupported_executor',
+      };
+
+      expect(validateSubagentEvidenceEnvelope(unsupportedEnvelope).mismatches).toContain(
+        'subagent_envelope_executor_kind_invalid:unsupported_executor'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks TaskReport done when execution is not independently verified', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-envelope-unverified-'));
+    try {
+      const fixture = writeFixture(root, { executionVerified: false });
+
+      expect(fixture.envelope).toMatchObject({
+        decisionAuthority: 'none',
+        status: 'blocked',
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('records accepted subagentEvidenceEnvelope through controlled ingest without granting decision authority', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'subagent-envelope-ingest-'));
     try {

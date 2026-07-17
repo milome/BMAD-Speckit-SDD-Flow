@@ -330,6 +330,86 @@ describe('requirement-record.schema.json', () => {
     expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
   });
 
+  it('accepts receipt-backed six-model runtime status authority', () => {
+    const validate = loadValidator();
+    const record = validRecord() as ReturnType<typeof validRecord> & Record<string, unknown>;
+    const semanticModelHash =
+      'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+    const receiptHash =
+      'sha256:6666666666666666666666666666666666666666666666666666666666666666';
+    const receiptPath = 'runtime/status-decisions/attempt-001/requirement_confirmation.json';
+    record.semanticModelHash = semanticModelHash;
+    record.currentAttemptId = 'attempt-001';
+    record.runtimeStatusDecisionReceipts = [
+      {
+        path: receiptPath,
+        receipt: {
+          schemaVersion: 'requirements-contract-runtime-status-decision-receipt/v1',
+          recordId: record.recordId,
+          requirementSetId: record.requirementSetId,
+          modelId: 'requirement_confirmation',
+          implementationAttemptId: 'attempt-001',
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          semanticModelHash,
+          stageInputs: [
+            {
+              role: 'requirement_confirmation',
+              path: 'runtime/stage-inputs/requirement_confirmation.json',
+              hash: semanticModelHash,
+            },
+          ],
+          deterministicGateOutputs: [
+            {
+              role: 'requirement_confirmation_decision',
+              path: 'runtime/gate-outputs/requirement_confirmation.json',
+              hash: semanticModelHash,
+            },
+          ],
+          blockerRefs: [],
+          evidenceRefs: ['runtime/gate-outputs/requirement_confirmation.json'],
+          authorityClass: 'controlled_confirmation',
+          decision: 'pass',
+          effectiveStatus: 'pass',
+          createdAt: '2026-05-19T00:00:00.000Z',
+          receiptHash,
+        },
+      },
+    ];
+    record.sixModelResults = {
+      requirement_confirmation: {
+        payloadKind: 'model_result',
+        model: 'requirement_confirmation',
+        recordId: record.recordId,
+        requirementSetId: record.requirementSetId,
+        sourceDocumentHash: record.sourceDocumentHash,
+        implementationConfirmationHash: record.implementationConfirmationHash,
+        semanticModelHash,
+        currentAttemptId: 'attempt-001',
+        decisionReceiptRef: receiptPath,
+        decisionReceiptHash: receiptHash,
+        status: 'pass',
+        resultRecordedAt: '2026-05-19T00:00:00.000Z',
+        resultRecordedBy: 'controlled-confirmation',
+        blockingReasons: [],
+        sourceRefs: [{ sourceType: 'confirmation_history', id: 'confirmation_recorded' }],
+        currentHashes: {
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          semanticModelHash,
+        },
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    (
+      record.sixModelResults as {
+        requirement_confirmation: { decisionReceiptHash: string };
+      }
+    ).requirement_confirmation.decisionReceiptHash = 'not-a-sha256';
+    expect(validate(record)).toBe(false);
+  });
+
   it('accepts all declared runtime reconfirmation request status values', () => {
     const validate = loadValidator();
     for (const status of [

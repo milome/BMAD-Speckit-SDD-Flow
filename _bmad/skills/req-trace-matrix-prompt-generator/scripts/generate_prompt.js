@@ -33,6 +33,18 @@ const GOAL_DOCUMENT_FILENAME = 'goal_execution.md';
 const GOAL_CONTRACT_TEMPLATE_PATH = '_bmad/shared/goal-contract/goal-execution-contract-template.md';
 const GOAL_CONTRACT_PROFILE_PATH = '_bmad/shared/goal-contract/goal-contract-profile.json';
 const GOAL_CONTRACT_RENDERER_PATH = '_bmad/shared/goal-contract/scripts/render-goal-contract.js';
+const CONTROLLED_EXECUTION_ARG_KEYS = [
+  'requirementSetId',
+  'transactionId',
+  'implementationAttemptId',
+  'architectureAuditAttemptId',
+  'activePhaseAuditAttemptId',
+  'contractHash',
+  'inputSnapshotHash',
+  'commandCwd',
+  'commandReceiptRoot',
+];
+const SHA256_REF_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const CONTRACT_MANIFEST_BUILDER_RELATIVE_PATH = path.join(
   'contract-execution-manifest',
   'build-contract-execution-manifest.js'
@@ -137,6 +149,36 @@ function normalizeArgs(args) {
   }
   if (args.taskReportPath) {
     args.taskReportPath = normalizePathSafe(path.resolve(args.taskReportPath));
+  }
+  const presentControlledExecutionArgs = CONTROLLED_EXECUTION_ARG_KEYS.filter((key) =>
+    String(args[key] ?? '').trim()
+  );
+  if (
+    presentControlledExecutionArgs.length > 0 &&
+    presentControlledExecutionArgs.length !== CONTROLLED_EXECUTION_ARG_KEYS.length
+  ) {
+    const missing = CONTROLLED_EXECUTION_ARG_KEYS.filter(
+      (key) => !presentControlledExecutionArgs.includes(key)
+    );
+    throw new BlockedInput(
+      'BLOCK: CONTROLLED_EXECUTION_CONTEXT_INCOMPLETE',
+      `Controlled command execution context requires all nine parameters. Missing: ${missing.join(', ')}`
+    );
+  }
+  if (presentControlledExecutionArgs.length === CONTROLLED_EXECUTION_ARG_KEYS.length) {
+    for (const key of CONTROLLED_EXECUTION_ARG_KEYS) {
+      args[key] = String(args[key]).trim();
+    }
+    for (const key of ['contractHash', 'inputSnapshotHash']) {
+      if (!SHA256_REF_PATTERN.test(args[key])) {
+        throw new BlockedInput(
+          'BLOCK: CONTROLLED_EXECUTION_CONTEXT_INVALID',
+          `Controlled command execution context ${key} must be a sha256 reference.`
+        );
+      }
+    }
+    args.commandCwd = normalizePathSafe(path.resolve(args.commandCwd));
+    args.commandReceiptRoot = normalizePathSafe(path.resolve(args.commandReceiptRoot));
   }
 }
 
@@ -575,6 +617,123 @@ function commandId(command) {
 
 function commandText(command) {
   return String(command?.command ?? command?.gate ?? '').trim();
+}
+
+function controlledExecutionContextFromArgs(args) {
+  if (!CONTROLLED_EXECUTION_ARG_KEYS.every((key) => String(args[key] ?? '').trim())) {
+    return null;
+  }
+  return {
+    requirementSetId: args.requirementSetId,
+    transactionId: args.transactionId,
+    implementationAttemptId: args.implementationAttemptId,
+    architectureAuditAttemptId: args.architectureAuditAttemptId,
+    activePhaseAuditAttemptId: args.activePhaseAuditAttemptId,
+    contractHash: args.contractHash,
+    inputSnapshotHash: args.inputSnapshotHash,
+  };
+}
+
+function commandArgv(command) {
+  const explicit = strings(command?.argv);
+  if (explicit.length > 0) return explicit;
+  const text = commandText(command);
+  const argv = [];
+  let token = '';
+  let quote = null;
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+        continue;
+      }
+      if (
+        character === '\\' &&
+        index + 1 < text.length &&
+        (text[index + 1] === quote || text[index + 1] === '\\')
+      ) {
+        token += text[index + 1];
+        index += 1;
+        continue;
+      }
+      token += character;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (/\s/u.test(character)) {
+      if (token) {
+        argv.push(token);
+        token = '';
+      }
+      continue;
+    }
+    token += character;
+  }
+  if (quote) {
+    throw new BlockedInput(
+      'BLOCK: COMMAND_ARGV_INVALID',
+      `Required command ${commandId(command) || '<missing>'} contains an unterminated quote.`
+    );
+  }
+  if (token) argv.push(token);
+  return argv;
+}
+
+function traceRowsForCommand(confirmation, command) {
+  const directTraceRefs = strings(command?.traceRows);
+  const rows = objects(confirmation.traceRows);
+  const referencedTraceRefs = rows
+    .filter((row) => {
+      const refs = [
+        ...strings(row.contractValidationCommandRefs),
+        ...strings(row.deliveryEvidenceCommandRefs),
+      ];
+      return refs.includes(commandId(command));
+    })
+    .map((row) => String(row.id ?? '').trim())
+    .filter(Boolean);
+  const traceRefs =
+    directTraceRefs.length > 0 ? directTraceRefs : unique(referencedTraceRefs);
+  const traceRefSet = new Set(traceRefs);
+  return {
+    traceRefs,
+    rows: rows.filter((row) => traceRefSet.has(String(row.id ?? '').trim())),
+  };
+}
+
+function controlledRequiredCommandDescriptor(confirmation, command, args) {
+  const id = commandId(command);
+  const text = commandText(command);
+  const { traceRefs, rows } = traceRowsForCommand(confirmation, command);
+  const requirementRefs = unique(
+    rows
+      .flatMap((row) => strings(row.covers))
+      .filter((ref) => ref.startsWith('MUST-'))
+  );
+  const acceptanceRefs = unique(
+    rows.flatMap((row) => [
+      ...strings(row.acceptanceRefs),
+      ...strings(row.e2eRefs),
+    ])
+  );
+  return {
+    id,
+    command: text,
+    normalizedCommand: text.replace(/\s+/gu, ' '),
+    argv: commandArgv(command),
+    cwd: args.commandCwd,
+    receiptPath: normalizePathSafe(path.join(args.commandReceiptRoot, `${id}.json`)),
+    requirementRefs,
+    acceptanceRefs,
+    traceRefs,
+    traceRows: traceRefs,
+    evidenceRefs: strings(command.evidenceRefs),
+    oracle: command.oracle ?? command.purpose ?? '',
+  };
 }
 
 function validateRequiredCommandDefinitions(confirmation) {
@@ -1496,6 +1655,18 @@ function buildModelPacket(context, args) {
   const taskReportPath = args.taskReportPath ? normalizePathSafe(path.resolve(args.taskReportPath)) : '';
   const allowedWriteScope = deriveAllowedWriteScope(confirmation);
   const hostExecutionHints = normalizeHostExecutionHints(manifest.hostExecutionHints, recordId);
+  const controlledExecutionContext = controlledExecutionContextFromArgs(args);
+  const requiredCommands = objects(confirmation.requiredCommands).map((command) =>
+    controlledExecutionContext
+      ? controlledRequiredCommandDescriptor(confirmation, command, args)
+      : {
+          id: commandId(command),
+          command: commandText(command),
+          traceRows: strings(command.traceRows),
+          evidenceRefs: strings(command.evidenceRefs),
+          oracle: command.oracle ?? command.purpose ?? '',
+        }
+  );
   const contractExecutionManifest = buildDerivedContractExecutionManifest({
     confirmation,
     manifest: {
@@ -1572,10 +1743,14 @@ function buildModelPacket(context, args) {
       allowedWriteScope,
       taskReportSchema:
         'TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }',
-      requiredValidationCommands: objects(confirmation.requiredCommands).map((command) => ({
-        id: commandId(command),
-        command: commandText(command),
-      })),
+      ...(controlledExecutionContext
+        ? { requiredValidationCommandRefs: requiredCommands.map((command) => command.id) }
+        : {
+            requiredValidationCommands: objects(confirmation.requiredCommands).map((command) => ({
+              id: commandId(command),
+              command: commandText(command),
+            })),
+          }),
       completionEvidenceFields: [
         'packetId',
         'status',
@@ -1598,13 +1773,8 @@ function buildModelPacket(context, args) {
       context.criticalAuditorReceiptRefs
     ),
     contractExecutionManifest,
-    requiredCommands: objects(confirmation.requiredCommands).map((command) => ({
-      id: commandId(command),
-      command: commandText(command),
-      traceRows: strings(command.traceRows),
-      evidenceRefs: strings(command.evidenceRefs),
-      oracle: command.oracle ?? command.purpose ?? '',
-    })),
+    ...(controlledExecutionContext ? { controlledExecutionContext } : {}),
+    requiredCommands,
     finalGateMatrix: manifest.finalGateMatrix,
     executionLoopProtocol: manifest.executionLoopProtocol,
     semanticGapPolicy: manifest.semanticGapPolicy,
@@ -1902,9 +2072,18 @@ function renderGoalNativeTaskReportHandoff(packet) {
   const allowedWriteScope = Array.isArray(handoff.allowedWriteScope)
     ? handoff.allowedWriteScope
     : [];
-  const requiredValidationCommands = Array.isArray(handoff.requiredValidationCommands)
-    ? handoff.requiredValidationCommands
-    : [];
+  const requiredValidationCommandRefs = strings(handoff.requiredValidationCommandRefs);
+  const requiredCommandById = new Map(
+    objects(packet.requiredCommands).map((command) => [commandId(command), command])
+  );
+  const requiredValidationCommands =
+    requiredValidationCommandRefs.length > 0
+      ? requiredValidationCommandRefs
+          .map((ref) => requiredCommandById.get(ref))
+          .filter(Boolean)
+      : Array.isArray(handoff.requiredValidationCommands)
+        ? handoff.requiredValidationCommands
+        : [];
   const completionEvidenceFields = Array.isArray(handoff.completionEvidenceFields)
     ? handoff.completionEvidenceFields
     : [];
@@ -2781,6 +2960,10 @@ function main() {
     return 2;
   }
 }
+
+module.exports = {
+  controlledRequiredCommandDescriptor,
+};
 
 if (require.main === module) {
   process.exitCode = main();

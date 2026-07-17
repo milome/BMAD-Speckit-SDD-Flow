@@ -5,6 +5,14 @@ import {
   buildOpenReconfirmationBlockingReasonRefs,
   hasOpenReconfirmationRequest,
 } from './reconfirmation-runtime';
+import {
+  REQUIREMENTS_CONTRACT_SIX_MODEL_IDS,
+  type RequirementsContractSixModelId,
+} from './requirements-contract-runtime-status-decision-receipt';
+import {
+  resolveVerifiedSixModelStatus,
+  type RuntimeStatusDecisionReceiptRef,
+} from './verified-six-model-status-facade';
 
 export type SixModelRuntimeNextAction =
   | 'enter_architecture_confirmation'
@@ -87,22 +95,6 @@ export function decisionMatrixDir(
   );
 }
 
-function modelResult(
-  record: Record<string, unknown>,
-  model: string | null
-): Record<string, unknown> | null {
-  const results = object(record.sixModelResults);
-  return model ? object(results?.[model]) : null;
-}
-
-function statusFor(record: Record<string, unknown>, model: string): string {
-  return text(modelResult(record, model)?.status);
-}
-
-function hasCurrentPass(record: Record<string, unknown>, model: string): boolean {
-  return statusFor(record, model) === 'pass';
-}
-
 function isTerminalCloseout(record: Record<string, unknown>): boolean {
   const closeout = object(record.closeout);
   return (
@@ -168,10 +160,11 @@ function taskTypeFor(
   }
 }
 
-function blockingReasons(result: Record<string, unknown> | null): string[] {
-  return Array.isArray(result?.blockingReasons)
-    ? result.blockingReasons.map((item) => text(item)).filter(Boolean)
-    : [];
+function isSixModelId(value: string | null): value is RequirementsContractSixModelId {
+  return Boolean(
+    value &&
+      REQUIREMENTS_CONTRACT_SIX_MODEL_IDS.includes(value as RequirementsContractSixModelId)
+  );
 }
 
 function hasAwaitingNativeGoalTaskReport(record: Record<string, unknown>): boolean {
@@ -194,17 +187,29 @@ export function resolveSixModelRuntimeDecision(input: {
   pendingPacketKind?: string | null;
   lastTaskReportPacketId?: string | null;
   lastTaskReportStatus?: string | null;
+  statusDecisionReceipts?: RuntimeStatusDecisionReceiptRef[];
 }): SixModelRuntimeDecision {
   const record = input.record ?? {};
   const recordId = text(record.recordId) || 'requirement-record';
   const requirementSetId = text(record.requirementSetId) || recordId;
   const currentMentalModel = text(record.currentMentalModel) || null;
-  const currentResult = modelResult(record, currentMentalModel);
-  const currentModelStatus = text(currentResult?.status) || null;
-  const reasonRefs = blockingReasons(currentResult).map((id) => ({
-    sourceType: 'model_result',
+  const statusForModel = (modelId: RequirementsContractSixModelId) =>
+    resolveVerifiedSixModelStatus({
+      record,
+      modelId,
+      currentImplementationAttemptId: input.attemptId,
+      decisionReceipts: input.statusDecisionReceipts,
+    });
+  const currentStatus = isSixModelId(currentMentalModel)
+    ? statusForModel(currentMentalModel)
+    : null;
+  const currentModelStatus = currentStatus?.effectiveStatus ?? null;
+  const reasonRefs = (currentStatus?.blockerRefs ?? []).map((id) => ({
+    sourceType: 'verified_six_model_status',
     id,
   }));
+  const hasCurrentPass = (modelId: RequirementsContractSixModelId): boolean =>
+    statusForModel(modelId).effectiveStatus === 'pass';
 
   let nextAction: SixModelRuntimeNextAction = 'await_user';
   let ready = false;
@@ -226,7 +231,7 @@ export function resolveSixModelRuntimeDecision(input: {
   } else if (text(record.status) !== 'user_confirmed') {
     nextAction = 'run_pre_confirmation_drilldown';
     reasonRefs.push({ sourceType: 'requirement_record', id: recordId });
-  } else if (hasCurrentPass(record, 'execution_closure') && hasAwaitingNativeGoalTaskReport(record)) {
+  } else if (hasCurrentPass('execution_closure') && hasAwaitingNativeGoalTaskReport(record)) {
     nextAction = 'await_native_goal_task_report';
     ready = false;
     transitionMode = 'blocked';
@@ -238,6 +243,7 @@ export function resolveSixModelRuntimeDecision(input: {
       transitionMode = 'auto_after_controlled_ingest';
     } else {
       nextAction = 'run_pre_confirmation_drilldown';
+      transitionMode = 'blocked';
     }
   } else if (currentMentalModel === 'architecture_confirmation') {
     if (currentModelStatus === 'pass') {
@@ -246,12 +252,13 @@ export function resolveSixModelRuntimeDecision(input: {
       transitionMode = 'auto_after_controlled_ingest';
     } else {
       nextAction = 'prepare_architecture_confirmation';
+      transitionMode = 'blocked';
     }
   } else if (currentMentalModel === 'implementation_readiness') {
     if (currentModelStatus === 'pass') {
       if (
         isCurrentImplementationCompletion(input) &&
-        !hasCurrentPass(record, 'execution_closure')
+        !hasCurrentPass('execution_closure')
       ) {
         nextAction = 'run_execution_closure_gate';
         ready = true;
@@ -261,7 +268,7 @@ export function resolveSixModelRuntimeDecision(input: {
         ready = true;
         transitionMode = 'auto_after_controlled_ingest';
       }
-    } else if (currentModelStatus === 'blocked' || currentModelStatus === 'fail') {
+    } else if (currentModelStatus === 'blocked') {
       nextAction = 'dispatch_remediation';
       ready = true;
       transitionMode = 'blocked';
@@ -275,7 +282,7 @@ export function resolveSixModelRuntimeDecision(input: {
       nextAction = 'dispatch_review';
       ready = true;
       transitionMode = 'auto_after_controlled_ingest';
-    } else if (currentModelStatus === 'blocked' || currentModelStatus === 'fail') {
+    } else if (currentModelStatus === 'blocked') {
       nextAction = 'dispatch_remediation';
       ready = true;
       transitionMode = 'blocked';
@@ -286,11 +293,11 @@ export function resolveSixModelRuntimeDecision(input: {
       ready = true;
     }
   } else if (currentMentalModel === 'audit_review') {
-    if (currentModelStatus === 'pass' && hasCurrentPass(record, 'execution_closure')) {
+    if (currentModelStatus === 'pass' && hasCurrentPass('execution_closure')) {
       nextAction = 'run_closeout';
       ready = true;
       transitionMode = 'auto_after_controlled_ingest';
-    } else if (currentModelStatus === 'blocked' || currentModelStatus === 'fail') {
+    } else if (currentModelStatus === 'blocked') {
       nextAction = 'dispatch_remediation';
       ready = true;
       transitionMode = 'blocked';
@@ -305,7 +312,7 @@ export function resolveSixModelRuntimeDecision(input: {
       nextAction = 'await_user_acceptance';
       ready = false;
       transitionMode = 'requires_user_or_gate';
-    } else if (currentModelStatus === 'pass' && hasCurrentPass(record, 'audit_review')) {
+    } else if (currentModelStatus === 'pass' && hasCurrentPass('audit_review')) {
       nextAction = 'record_closed';
       ready = true;
       transitionMode = 'auto_after_controlled_ingest';

@@ -10,6 +10,7 @@ import {
   appendControlEventAndReplay,
   eventLogPathForRecord,
 } from './requirement-record-control-store';
+import { validateEvidenceArtifactReadbackReceipts } from './requirements-contract-evidence-artifact-readback';
 
 type JsonObject = Record<string, unknown>;
 
@@ -324,7 +325,11 @@ function validateCommands(packet: JsonObject): string[] {
   return mismatches;
 }
 
-function validateArtifacts(packet: JsonObject): string[] {
+function validateArtifacts(
+  packet: JsonObject,
+  record: JsonObject,
+  projectRoot: string
+): string[] {
   const mismatches: string[] = [];
   const validateArtifact = (artifact: JsonObject, prefix: string, passGradeOnly: boolean): void => {
     const artifactPath = text(artifact.path);
@@ -371,6 +376,25 @@ function validateArtifacts(packet: JsonObject): string[] {
       validateArtifact(artifact, 'required_command', true);
     }
   }
+  const artifacts = [
+    ...arrayOfObjects(packet.artifactRefs),
+    ...arrayOfObjects(packet.extensionRefs),
+    ...arrayOfObjects(delta?.negativeAssertionArtifactRefs),
+    ...arrayOfObjects(deliveryEvidence?.requiredCommands).flatMap((command) =>
+      arrayOfObjects(command.artifactRefs)
+    ),
+  ];
+  const readbackValidation = validateEvidenceArtifactReadbackReceipts({
+    projectRoot,
+    artifacts,
+    context: {
+      requirementSetId:
+        text(packet.requirementSetId) || text(record.requirementSetId),
+      transactionId: text(packet.transactionId),
+      implementationAttemptId: text(packet.implementationAttemptId),
+    },
+  });
+  mismatches.push(...readbackValidation.issueCodes);
   return mismatches;
 }
 
@@ -724,12 +748,16 @@ function validateRerunLoops(packet: JsonObject): string[] {
   return mismatches;
 }
 
-function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: JsonObject): string[] {
+function validateSubagentEvidenceEnvelopePacket(
+  packet: JsonObject,
+  record: JsonObject,
+  projectRoot: string
+): string[] {
   const envelope = packet.subagentEvidenceEnvelope;
   if (envelope === undefined || envelope === null) return [];
   const validation = validateSubagentEvidenceEnvelope(envelope, {
     record,
-    projectRoot: process.cwd(),
+    projectRoot,
     indexedArtifactRefs: [
       ...arrayOfObjects(packet.artifactRefs),
       ...arrayOfObjects(packet.extensionRefs),
@@ -739,7 +767,11 @@ function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: Json
   return validation.ok ? [] : validation.mismatches;
 }
 
-function validatePacket(packet: JsonObject, record: JsonObject): string[] {
+function validatePacket(
+  packet: JsonObject,
+  record: JsonObject,
+  projectRoot: string
+): string[] {
   const entryFlowState =
     packet.entryFlowState &&
     typeof packet.entryFlowState === 'object' &&
@@ -761,7 +793,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   const mismatches = [
     ...requireHashMatch(packet, record),
     ...validateCommands(packet),
-    ...validateArtifacts(packet),
+    ...validateArtifacts(packet, record, projectRoot),
     ...validateImplementationDelta(packet),
     ...validateEntryFlowState(packet),
     ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
@@ -771,7 +803,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateFailureRecords(packet),
     ...validateRcaRecords(packet),
     ...validateRerunLoops(packet),
-    ...validateSubagentEvidenceEnvelopePacket(packet, record),
+    ...validateSubagentEvidenceEnvelopePacket(packet, record, projectRoot),
   ];
   const packetWithoutLegacyGateResults = {
     ...packet,
@@ -811,6 +843,13 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
       mismatches.push('required_command_artifact_refs_missing');
   }
   return [...new Set(mismatches)];
+}
+
+function projectRootForRecordPath(recordPath: string): string {
+  const resolved = path.resolve(recordPath);
+  const marker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = resolved.lastIndexOf(marker);
+  return markerIndex > 0 ? resolved.slice(0, markerIndex) : process.cwd();
 }
 
 function commandRunRefs(packet: JsonObject): JsonObject[] {
@@ -1221,7 +1260,11 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   const recordPath = path.resolve(args.requirementRecord!);
   const packet = readJson(evidencePath);
   const record = readJson(recordPath);
-  const mismatches = validatePacket(packet, record);
+  const mismatches = validatePacket(
+    packet,
+    record,
+    projectRootForRecordPath(recordPath)
+  );
   if (mismatches.length > 0) {
     console.error(JSON.stringify({ ok: false, mismatches }, null, 2));
     return 3;

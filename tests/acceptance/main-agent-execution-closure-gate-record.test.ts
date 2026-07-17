@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainExecutionClosureGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate';
 import { validateRequirementRecordSchemaObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-live-schema-gate';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 
@@ -34,6 +35,8 @@ function modelPacket(): Record<string, unknown> {
     schemaVersion: 'model-packet-fixture/v1',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    semanticModelHash: HASH,
+    currentAttemptId: 'attempt-001',
     requirements: {
       must: [
         {
@@ -73,6 +76,8 @@ function baseRecord(recordId = 'REQ-EXECUTION-CLOSURE'): Record<string, unknown>
     status: 'user_confirmed',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    semanticModelHash: HASH,
+    currentAttemptId: 'attempt-001',
     currentMentalModel: 'implementation_readiness',
     confirmationHistory: [
       {
@@ -197,8 +202,18 @@ function writeRuntime(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId);
   const traceDir = path.join(base, 'trace-execution', 'attempt-001');
   const recordPath = path.join(base, 'requirement-record.json');
+  const sourcePath = path.isAbsolute(String(record.sourcePath))
+    ? String(record.sourcePath)
+    : path.join(root, String(record.sourcePath));
+  const recordWithSource = { ...record, sourcePath };
   mkdirSync(traceDir, { recursive: true });
-  writeJson(recordPath, record);
+  mkdirSync(path.dirname(sourcePath), { recursive: true });
+  writeFileSync(sourcePath, '# Execution closure fixture\n', 'utf8');
+  writeJson(recordPath, recordWithSource);
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
+  });
   writeJson(path.join(traceDir, 'model_packet.json'), modelPacket());
   writeJson(path.join(traceDir, 'command-results', 'summary.json'), [
     {
@@ -263,6 +278,18 @@ describe('main agent execution closure gate', () => {
         model: 'execution_closure',
         status: 'pass',
         blockingReasons: [],
+        semanticModelHash: HASH,
+        currentAttemptId: 'attempt-001',
+        decisionReceiptRef: expect.any(String),
+        decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(record.runtimeStatusDecisionReceipts.at(-1)).toMatchObject({
+        path: record.sixModelResults.execution_closure.decisionReceiptRef,
+        receipt: {
+          modelId: 'execution_closure',
+          implementationAttemptId: 'attempt-001',
+          receiptHash: record.sixModelResults.execution_closure.decisionReceiptHash,
+        },
       });
       expect(record.mentalModelTransitions.at(-1)).toMatchObject({
         fromModel: 'implementation_readiness',

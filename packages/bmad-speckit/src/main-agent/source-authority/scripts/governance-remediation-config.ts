@@ -21,6 +21,7 @@ export interface GovernanceRemediationConfig {
   primaryHost: GovernanceHostKind;
   packetHosts: GovernanceHostKind[];
   execution?: GovernanceRemediationExecutionConfig;
+  judgeRuntime?: JudgeRuntimeConfig;
   provider: {
     mode: 'stub' | 'http-json' | 'openai-compatible' | 'anthropic-compatible';
     id: string;
@@ -38,6 +39,64 @@ export interface GovernanceRemediationConfig {
     anthropicVersion?: string;
     stubCandidate?: ModelGovernanceHintCandidate | null;
   };
+}
+
+export interface JudgeRuntimeConfig {
+  schemaVersion: 'requirements-contract-judge-runtime/v1';
+  enabled: boolean;
+  activeProviderRef: string;
+  selectionPolicy: {
+    mode: 'contract_locked';
+    runtimeFallbackAllowed: false;
+    runtimeAutoDiscoveryAllowed: false;
+    environmentOverrideAllowed: false;
+    cliTransportAllowed: false;
+    selectionReceiptRequired: true;
+  };
+  credentialConfig: {
+    source: 'config_file';
+    path: string;
+    schemaVersion: 'requirements-contract-judge-credentials/v1';
+    allowedRoot: string;
+    environmentFallbackAllowed: false;
+  };
+  providers: Record<
+    string,
+    {
+      enabled: boolean;
+      transport: 'openai-compatible' | 'anthropic-compatible';
+      apiStyle: 'chat_completions' | 'messages';
+      model: string;
+      credentialRef: string;
+      endpoint: {
+        baseUrl: string;
+        resolutionMode: 'transport_managed' | 'explicit';
+        routingOwnership: 'transport_adapter';
+        upstreamVersioning: 'gateway_managed' | 'provider_managed';
+        explicitOperationPath: string | null;
+      };
+      authentication: {
+        type: 'bearer';
+        sensitivity: 'placeholder';
+        arbitraryNonEmptyValueAllowed: boolean;
+      };
+      auditPolicy: {
+        independenceClass:
+          | 'different_provider_different_model'
+          | 'same_provider_different_model'
+          | 'logical_same_model_blind';
+        blindReview: boolean;
+        allowPassAuthority: false;
+        toolsAllowed: false;
+        implementationWritesAllowed: false;
+      };
+      requestPolicy: {
+        timeoutMs: number;
+        maximumAttempts: number;
+        structuredResponseRequired: boolean;
+      };
+    }
+  >;
 }
 
 export interface GovernanceRemediationExecutionConfig {
@@ -187,6 +246,7 @@ export function readGovernanceRemediationConfig(
     version: parsed?.version === 2 ? 2 : 1,
     primaryHost,
     packetHosts: packetHosts.length > 0 ? packetHosts : [primaryHost],
+    judgeRuntime: parsed?.judgeRuntime,
     execution: {
       enabled:
         typeof execution?.enabled === 'boolean'

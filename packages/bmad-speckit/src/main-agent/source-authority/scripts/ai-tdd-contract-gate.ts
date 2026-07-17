@@ -341,6 +341,7 @@ function findProjectRoot(start: string): string {
     if (parent === current) return path.resolve(start);
     current = parent;
   }
+  return path.resolve(start);
 }
 
 function withActiveSourceRoot<T>(sourcePath: string, fn: () => T): T {
@@ -2027,7 +2028,9 @@ function invalidRedOutput(output: string): boolean {
 function redProofCommandFor(row: AcceptanceRow, manifest: JsonObject): JsonObject | undefined {
   const commands = objects(manifest.requiredCommands);
   const commandsById = new Map(commands.map((command) => [commandId(command), command]));
-  const directCommands = row.commandRefs.map((ref) => commandsById.get(ref)).filter(Boolean);
+  const directCommands = row.commandRefs
+    .map((ref) => commandsById.get(ref))
+    .filter((command): command is JsonObject => Boolean(command));
   const testFiles = row.files.filter(isTestFileRef).map(normalizePath);
   const coversTestFiles = (command: JsonObject): boolean => {
     const commandFiles = new Set(commandFileRefs(command).filter(isTestFileRef).map(normalizePath));

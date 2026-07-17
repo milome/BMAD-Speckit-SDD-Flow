@@ -1,7 +1,7 @@
 ---
 name: bmad-standalone-tasks
 description: |
-  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces **TASKS/BUGFIX 文档前置审计先于实施执行**、Codex worker adapter subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Standalone implementation-entry gating must prefer **auto-remediation loop** over user-facing pause: if readiness facts are incomplete but auto-repairable, the host/main Agent should repair facts and immediately continue the same execution. Main Agent must NOT edit production code.
+  Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only. Use when the user says "/bmad 按 {文档} 中的未完成任务实施" or "按 BUGFIX_xxx.md / TASKS_xxx.md 实施". Enforces **TASKS/BUGFIX 文档前置审计先于实施执行**、current Codex main session subagent for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-impl, acceptance commands), and code-reviewer audit with 批判审计员 >50% and 3 rounds no-gap convergence. Standalone implementation-entry gating must prefer **auto-remediation loop** over user-facing pause: if readiness facts are incomplete but auto-repairable, the host/main Agent should repair facts and immediately continue the same execution. Main Agent must NOT edit production code.
 ---
 
 # BMAD Standalone Tasks
@@ -62,22 +62,22 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 ## Hard constraints (non-negotiable)
 
-1. **Implementation only via subagent**  
-   All production and test code changes must be done through **Codex worker adapter** (subagent). Main Agent **must not** use `search_replace` or `write` on production code.
+1. **Implementation only via subagent**
+   All production and test code changes must be done through **current Codex main session** (subagent). Main Agent **must not** use `search_replace` or `write` on production code.
 
-2. **ralph-method**  
-   - Create and maintain **prd** and **progress** in the same directory as the reference document (naming: `prd.{stem}.json`, `progress.{stem}.txt` when document is e.g. `BUGFIX_foo.md`).  
-   - After **each** completed User Story (US): update prd (`passes=true` for that US), append to progress (timestamped story log).  
+2. **ralph-method**
+   - Create and maintain **prd** and **progress** in the same directory as the reference document (naming: `prd.{stem}.json`, `progress.{stem}.txt` when document is e.g. `BUGFIX_foo.md`).
+   - After **each** completed User Story (US): update prd (`passes=true` for that US), append to progress (timestamped story log).
    - Execute US in order.
 
-3. **TDD red–green–refactor**  
+3. **TDD red–green–refactor**
    For each US: write or extend tests first (red) → implement until tests pass (green) → refactor. No marking done without passing tests.
 
-4. **speckit-workflow**  
+4. **speckit-workflow**
    No placeholders or pseudo-implementation; run acceptance commands from the document; architecture must stay faithful to the BUGFIX/TASKS document.
 
-5. **Forbidden**  
-   - Do not add "将在后续迭代" (or similar) in task descriptions.  
+5. **Forbidden**
+   - Do not add "将在后续迭代" (or similar) in task descriptions.
    - Do not mark a task complete if the behavior is not actually invoked or verified.
 6. **TASKS/BUGFIX 文档前置审计是实施前硬门槛**
    `auditor-tasks-doc` 的职责是 **TASKS/BUGFIX 文档前置审计**。只要该审计尚未通过、尚未执行或结论不明，**禁止**进入任何实施执行、代码修改、测试实现或“先做再补审计”的路径。
@@ -86,8 +86,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 - **Do**: Before any implementation sub-task, ensure `auditor-tasks-doc` has audited the TASKS/BUGFIX document and passed.
 
-- **Do**: Resolve document path, read task list, **launch Codex worker adapter** (implementation and audit), pass full context, **collect and summarize** subagent output.  
-- **Do**: If subagent returns incomplete, launch a **resume** Codex worker adapter with the same agent ID; do **not** replace the subagent by editing code yourself.  
+- **Do**: Resolve document path, read task list, **launch current Codex main session** (implementation and audit), pass full context, **collect and summarize** subagent output.
+- **Do**: If subagent returns incomplete, launch a **resume** current Codex main session with the same agent ID; do **not** replace the subagent by editing code yourself.
 - **Do not**: Edit production or test code (including any path listed in the TASKS/BUGFIX document as implementation target).
 
 ---
@@ -104,7 +104,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 - Only escalate to the user when the gate returns a **real blocker** that cannot be repaired from current project facts, or when the gate returns `reroute`.
 - The desired behavior is analogous to a **rerun gate loop**: repair facts -> re-evaluate gate -> continue Ralph / implementation / audit loop without adding user burden.
 
-**Tool**: 优先 Codex worker dispatch 调度 `code-reviewer`；若不可用，则 `Codex worker adapter` + `general-purpose`
+**Tool**: 优先 Codex worker dispatch 调度 `code-reviewer`；若不可用，则 `current Codex main session` + `general-purpose`
 
 **Audit target**:
 - TASKS 文档是否可执行、任务边界是否明确
@@ -119,7 +119,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 ## Step 1: Implementation sub-task
 
-**Tool**: `Codex worker adapter`  
+**Tool**: `current Codex main session`
 **subagent_type**: `general-purpose`
 
 **Implementation precondition**: `auditor-tasks-doc` must have passed the TASKS/BUGFIX document pre-audit before this step starts, **and** the unified `implementation-readiness` gate assertion must currently return `decision=pass` after any required auto-remediation loop has been completed.
@@ -152,17 +152,17 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 - **DOC_PATH**：TASKS/BUGFIX 文档的绝对路径或相对项目根的路径（主 Agent 解析用户输入后填写；建议传绝对路径）。
 - **TASK_LIST**：主 Agent 从文档提取的未完成项，格式示例：§7 T7a-1～T7a-9、§3 第 2～5 条。Resume 或断点续跑时，必须使用 `references/prompt-templates.md` 中的「Resume 实施子任务」模板，并填写「上一批已完成」与「本批待执行」范围。
 
-- Main Agent only: invoke Codex worker adapter, pass this prompt, then collect and summarize the subagent’s output (and resume if needed).
+- Main Agent only: invoke current Codex main session, pass this prompt, then collect and summarize the subagent’s output (and resume if needed).
 
 ---
 
 ## Step 2: Audit sub-task (after implementation)
 
-**Tool**: **优先**使用 Codex worker dispatch 调度 code-reviewer（若存在 `.codex/agents/code-reviewer.md` 或 `.codex/agents/code-reviewer.md`）；**若仅能使用 Codex worker adapter**，因当前 Codex worker adapter 可能不支持 code-reviewer 子类型，则使用 `general-purpose` 并传入完整审计 prompt（含 §5、批判审计员占比 >50%、3 轮无 gap），在报告开头注明「未使用 code-reviewer 子类型，使用 general-purpose + 审计 prompt」。
+**Tool**: **优先**使用 Codex worker dispatch 调度 code-reviewer（若存在 `.codex/agents/code-reviewer.md` 或 `.codex/agents/code-reviewer.md`）；**若仅能使用 current Codex main session**，因当前 current Codex main session 可能不支持 code-reviewer 子类型，则使用 `general-purpose` 并传入完整审计 prompt（含 §5、批判审计员占比 >50%、3 轮无 gap），在报告开头注明「未使用 code-reviewer 子类型，使用 general-purpose + 审计 prompt」。
 
 **Requirements**:
-- Use **audit-prompts.md §5** (执行阶段审计): 逐项验证、无占位、无模糊表述、可落地实施、完全覆盖、验证通过.  
-- **批判审计员必须出场，发言占比 >70%**；从对抗视角检查遗漏、行号漂移、验收一致性、误伤/漏网.  
+- Use **audit-prompts.md §5** (执行阶段审计): 逐项验证、无占位、无模糊表述、可落地实施、完全覆盖、验证通过.
+- **批判审计员必须出场，发言占比 >70%**；从对抗视角检查遗漏、行号漂移、验收一致性、误伤/漏网.
 - **收敛条件**：**一轮** = 一次完整审计子任务调用；**连续 3 轮无 gap** = 连续 3 次结论均为「完全覆盖、验证通过」且该 3 次报告中批判审计员结论段均注明「本轮无新 gap」；若任一轮为「未通过」或「存在 gap」，则从下一轮重新计数。否则根据报告修改后再次发起审计.
 
 **Prompt template**:
@@ -193,7 +193,7 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 - 若未通过：注明「本轮存在 gap，不计数」，修复后再次发起本审计，直至连续 3 轮无 gap 收敛。
 ```
 
-- Main Agent: launch this Codex worker adapter after Step 1 (and after any resume). 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。If the report is "未通过"，主 Agent 通过再次发起实施子任务（或 resume）由子代理修复代码与 prd/progress；主 Agent 仅可做说明性/文档类编辑，不得编辑 prd.*.json、progress.*.txt 或生产代码。然后重新发起审计直至连续 3 轮无 gap 收敛。
+- Main Agent: launch this current Codex main session after Step 1 (and after any resume). 主 Agent 在发起第 2、3 轮审计前，可输出「第 N 轮审计通过，继续验证…」以提示用户。If the report is "未通过"，主 Agent 通过再次发起实施子任务（或 resume）由子代理修复代码与 prd/progress；主 Agent 仅可做说明性/文档类编辑，不得编辑 prd.*.json、progress.*.txt 或生产代码。然后重新发起审计直至连续 3 轮无 gap 收敛。
 
 - **不中断执行 contract**：实施子代理必须从当前批次的第一项开始，连续完成当前作用域内的全部剩余 US/任务，不得在单项完成、批中 milestone 或“先等你确认”节点暂停。控制权仅可在以下三种情况下返回主 Agent：① 当前作用域任务全部完成且进入 post-audit / closeout；② 出现真实 blocker，需要 reroute / remediation；③ 本技能显式定义的审计边界或 resume checkpoint 到达。
 
@@ -201,8 +201,8 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 ## Step 3: Main Agent prohibitions (reminder)
 
-- **禁止** 对生产代码执行 `search_replace`、`write`、`edit`（生产代码含 TASKS/BUGFIX 文档中列为实现目标的路径）；**禁止**直接编辑 `prd.{stem}.json` 与 `progress.{stem}.txt`（由子代理按 ralph-method 维护）.  
-- **禁止** 用主 Agent 直接实现任务以替代 subagent；若 subagent 返回不完整，只能通过 **Codex worker adapter resume** 或再次发起新的 Codex worker adapter 继续，并在 prompt 中显式传入「上一批已完成」与「本批待执行」范围，不得自行改代码.  
+- **禁止** 对生产代码执行 `search_replace`、`write`、`edit`（生产代码含 TASKS/BUGFIX 文档中列为实现目标的路径）；**禁止**直接编辑 `prd.{stem}.json` 与 `progress.{stem}.txt`（由子代理按 ralph-method 维护）.
+- **禁止** 用主 Agent 直接实现任务以替代 subagent；若 subagent 返回不完整，只能通过 **current Codex main session resume** 或再次发起新的 current Codex main session 继续，并在 prompt 中显式传入「上一批已完成」与「本批待执行」范围，不得自行改代码.
 - **允许** 主 Agent 仅编辑说明性/文档类文件（如 README、本 SKILL.md、artifact 目录下 .md），以配合审计结论或记录进度.
 
 ---
@@ -215,15 +215,15 @@ Execute unfinished work from a **single TASKS or BUGFIX document** in a single s
 
 ## References
 
-- **ralph-method**: Create/maintain prd + progress; naming and schema see ralph-method skill.  
-- **speckit-workflow**: TDD 红绿灯、15 条铁律、验收命令、架构忠实；审计须调用 code-review 技能.  
-- **audit-prompts §5**: 执行阶段审计；本技能内置的 6 项即为 §5 审计项。若项目存在 `_bmad/references/audit-prompts.md`，可对照其 §5 执行。逐项验证、完全覆盖、验证通过；批判审计员、3 轮无 gap 收敛.  
+- **ralph-method**: Create/maintain prd + progress; naming and schema see ralph-method skill.
+- **speckit-workflow**: TDD 红绿灯、15 条铁律、验收命令、架构忠实；审计须调用 code-review 技能.
+- **audit-prompts §5**: 执行阶段审计；本技能内置的 6 项即为 §5 审计项。若项目存在 `_bmad/references/audit-prompts.md`，可对照其 §5 执行。逐项验证、完全覆盖、验证通过；批判审计员、3 轮无 gap 收敛.
 - **audit-post-impl-rules**: 与 speckit-workflow、bmad-story-assistant 的实施后审计规则对齐。本技能 Step 2 已符合 audit-post-impl-rules（3 轮无 gap、批判审计员 >50%）。规则文件路径：`.codex/skills/speckit-workflow/references/audit-post-impl-rules.md`。
-- **audit-document-iteration-rules**: 当对 TASKS/BUGFIX **文档**进行审计（非实施后审计）时，须遵循 `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md`：审计子代理在发现 gap 时须直接修改被审文档。**本技能 Step 2 为实施后审计（审计代码）**，修改由实施子代理完成，不适用文档迭代规则。  
+- **audit-document-iteration-rules**: 当对 TASKS/BUGFIX **文档**进行审计（非实施后审计）时，须遵循 `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md`：审计子代理在发现 gap 时须直接修改被审文档。**本技能 Step 2 为实施后审计（审计代码）**，修改由实施子代理完成，不适用文档迭代规则。
 - **Prompt templates**: See `references/prompt-templates.md` for copy-paste prompts with placeholders.
 
 ## 错误与边界处理
 
 - **文档路径不存在**：主 Agent 解析用户输入得到路径后，若该路径不存在，应向用户报错并列出已解析路径，不发起实施子任务。
-- **子 agent 错误或超时**：若有返回的 agent ID，主 Agent 可发起 **resume**（最多重试 1 次）；若仍失败或无 agent ID，则重新发起新的 Codex worker adapter，并在 prompt 中注明「上次未完成，请从同目录 progress 文件或下列断点继续」，不替代子 agent 直接改生产代码。
+- **子 agent 错误或超时**：若有返回的 agent ID，主 Agent 可发起 **resume**（最多重试 1 次）；若仍失败或无 agent ID，则重新发起新的 current Codex main session，并在 prompt 中注明「上次未完成，请从同目录 progress 文件或下列断点继续」，不替代子 agent 直接改生产代码。
 - **主 Agent 禁止编辑**：prd.*.json、progress.*.txt 仅由子代理维护；主 Agent 不得为「补写 progress」等理由直接编辑上述文件。

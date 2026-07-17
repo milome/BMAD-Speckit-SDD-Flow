@@ -1,0 +1,26 @@
+{
+  "allowPlaceholders": true,
+  "backupPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-real-consumer-journey-evidence.schema.json.backup-198256-1783908683201",
+  "chunkPlan": [
+    {
+      "chunkId": "001",
+      "sectionId": "schema"
+    }
+  ],
+  "createdAt": "2026-07-13T02:11:22.297Z",
+  "finalHash": "sha256:89521775ad98db3d630d39d5328f31f398c95351b8b5d0bb6fa914ad8d97608e",
+  "forbiddenFragments": [],
+  "minBytes": 5531,
+  "minLines": 1,
+  "mode": "replace",
+  "profile": "json",
+  "promoted": true,
+  "requiredFragments": [
+    "\"$id\": \"requirements-contract-real-consumer-journey-evidence/v1\""
+  ],
+  "requiredHeadings": [],
+  "schemaVersion": "large-document-writer-session/v1",
+  "sessionDir": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-real-consumer-journey-evidence.schema.json.draft",
+  "targetPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-real-consumer-journey-evidence.schema.json",
+  "updatedAt": "2026-07-13T02:11:23.205Z"
+}

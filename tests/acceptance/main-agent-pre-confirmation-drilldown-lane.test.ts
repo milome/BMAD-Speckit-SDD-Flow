@@ -90,6 +90,12 @@ function writeDraftSource(root: string, name = 'source.md'): string {
       '| --- | --- | --- | --- | --- | --- | --- | --- |',
       `| PATH-001 | \`${sourcePath}\` | Requirements authoring owner | Preserve the fail-closed authoring lane contract. | MUST-FR-001 NEG-001 | ACC-001 passes. | ACC-001 CMD-001 TRACE-001 TRACE-002 | Requirements authoring owner owns remediation. |`,
       '',
+      '## Out Of Scope',
+      '',
+      '| ID | Out of scope | Boundary assertion |',
+      '| --- | --- | --- |',
+      '| OUT-001 | Rewriting unrelated authoring workflows is outside this requirement. | Keep unrelated authoring workflows unchanged. |',
+      '',
     ].join('\n'),
     'utf8'
   );
@@ -98,14 +104,63 @@ function writeDraftSource(root: string, name = 'source.md'): string {
 
 function writePlansDraftSource(root: string, name = 'source-plan.md'): string {
   const source = path.join(root, 'docs', 'plans', name);
+  const targetPath = 'src/requirements-contract-authoring.ts';
+  const command = `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${targetPath}`;
   mkdirSync(path.dirname(source), { recursive: true });
   writeFileSync(
     source,
     [
       '# Draft Plan Requirement',
       '',
-      '- MUST: 正式 docs/plans 需求契约文档必须先通过 staging、scale、checkpoint、encoding、promotion 收据门禁再写回源文件。',
-      'The CLI must not mutate this source before Critical Auditor convergence and promotion receipt generation.',
+      '## Functional Requirements',
+      '',
+      '| ID | Requirement | Acceptance link |',
+      '| --- | --- | --- |',
+      '| FR-001 | Formal docs/plans requirement contracts must pass staging, scale, checkpoint, encoding, and promotion Receipt gates before source writeback. | ACC-001 |',
+      '',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | Missing Critical Auditor convergence or promotion evidence must not mutate the source. | The original source remains byte-identical. | Source mutation occurs before controlled evidence exists. | FAIL-001 | ACC-001 CMD-001 |',
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | Critical Auditor or promotion evidence is missing. | Block source mutation and preserve the original source. | NEG-001 | ACC-001 | MUST-FR-001 |',
+      '',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      `| ACC-001 | Source mutation gate | MUST-FR-001 NEG-001 | ${command} | Source remains byte-identical without controlled evidence. | CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. |`,
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| CMD-001 | contract-validation | MUST-FR-001 NEG-001 | ${command} | Exit code 0. | Source mutation remains blocked without controlled evidence. | ACC-001 E2E-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | ${targetPath} |`,
+      `| E2E-001 | e2e | MUST-FR-001 NEG-001 | ${command} | Exit code 0. | Source writeback remains byte-identical until Critical Auditor convergence and promotion evidence exist. | ACC-001 CMD-001 TRACE-001 TRACE-002 | PATH-001 owns end-to-end proof. | ${targetPath} |`,
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | All writeback gates pass before mutation. | MUST-FR-001 closes through ACC-001 and E2E-001. | PATH-001 owns remediation. |',
+      '| TRACE-002 | NEG-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Missing evidence preserves the source. | NEG-001 closes through ACC-001 and E2E-001 negative control. | PATH-001 owns remediation. |',
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| PATH-001 | \`${targetPath}\` | Requirements authoring owner | Preserve the source mutation gate in the production authoring target. | MUST-FR-001 NEG-001 | ACC-001 and E2E-001 pass. | ACC-001 E2E-001 CMD-001 TRACE-001 TRACE-002 | Requirements authoring owner owns remediation. |`,
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Out of scope | Boundary assertion |',
+      '| --- | --- | --- |',
+      '| OUT-001 | Rewriting unrelated source documents is outside this requirement. | Keep unrelated source documents unchanged. |',
       '',
     ].join('\n'),
     'utf8'
@@ -208,8 +263,58 @@ function writeSourceWithLineBasedInlineMust(
 function writeSourceWithLegacyInlineMustAndFrNfrTables(
   root: string,
   name = 'legacy-inline-must-with-fr-nfr-tables.md'
-): string {
+): {
+  source: string;
+  sourceRequirementIds: string[];
+  mustRequirementIds: string[];
+  staleMustId: string;
+} {
   const source = path.join(root, 'docs', 'requirements', name);
+  const fixtureId = (prefix: string, index: number): string =>
+    `${prefix}-${String(index + 1).padStart(3, '0')}`;
+  const functionalRequirements = [
+    {
+      text: 'The authoring lane must rebuild source-bound functional MUST rows from FR ID tables.',
+      rationale: 'Prevent stale inline projection from controlling source authoring.',
+    },
+    {
+      text: 'The authoring lane must preserve every subsequent source-bound functional row in the same table.',
+      rationale: 'Prevent table header loss after the first data row.',
+    },
+  ].map((row, index) => ({
+    ...row,
+    sourceId: fixtureId('FR', index),
+    mustId: `MUST-${fixtureId('FR', index)}`,
+    acceptanceId: fixtureId('ACC', index),
+    e2eId: fixtureId('E2E', index),
+    traceId: fixtureId('TRACE', index),
+  }));
+  const nonFunctionalRequirements = [
+    {
+      text: 'The authoring lane must rebuild source-bound quality MUST rows from NFR ID tables.',
+      rationale: 'Preserve controlled NFR coverage when replacing old projections.',
+    },
+    {
+      text: 'The authoring lane must preserve every subsequent source-bound quality row in the same table.',
+      rationale: 'Prevent table header loss after the first NFR data row.',
+    },
+  ].map((row, index) => ({
+    ...row,
+    sourceId: fixtureId('NFR', index),
+    mustId: `MUST-${fixtureId('NFR', index)}`,
+    acceptanceId: fixtureId('ACC', functionalRequirements.length + index),
+    e2eId: fixtureId('E2E', functionalRequirements.length + index),
+    traceId: fixtureId('TRACE', functionalRequirements.length + index),
+  }));
+  const requirements = [...functionalRequirements, ...nonFunctionalRequirements];
+  const negativeId = fixtureId('NEG', 0);
+  const failureId = fixtureId('FAIL', 0);
+  const targetPath = 'src/requirements-contract-authoring.ts';
+  const command = `npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts ${targetPath}`;
+  const staleMustId = `MUST-${path
+    .basename(name, path.extname(name))
+    .replace(/[^A-Z0-9]+/giu, '-')
+    .toUpperCase()}-L001-001`;
   mkdirSync(path.dirname(source), { recursive: true });
   writeFileSync(
     source,
@@ -219,27 +324,102 @@ function writeSourceWithLegacyInlineMustAndFrNfrTables(
       'implementationConfirmation:',
       '  status: draft',
       '  must:',
-      '    - id: MUST-REQ-DATASERVICE-GDS-TRIG-L104-002',
+      `    - id: ${staleMustId}`,
       '      text: This stale line-based projection must be ignored as an extraction source.',
       '',
       '## Functional Requirements',
       '',
       '| FR ID | Requirement | Source rationale | Acceptance link |',
       '| --- | --- | --- | --- |',
-      '| FR-001 | The authoring lane must rebuild source-bound functional MUST rows from FR ID tables. | Prevent stale inline projection from controlling source authoring. | ACC-001 |',
-      '| FR-002 | The authoring lane must preserve every subsequent source-bound functional row in the same table. | Prevent table header loss after the first data row. | ACC-002 |',
+      ...functionalRequirements.map(
+        (row) => `| ${row.sourceId} | ${row.text} | ${row.rationale} | ${row.acceptanceId} |`
+      ),
       '',
       '## Non Functional Requirements',
       '',
       '| NFR ID | Requirement | Source rationale | Acceptance link |',
       '| --- | --- | --- | --- |',
-      '| NFR-001 | The authoring lane must rebuild source-bound quality MUST rows from NFR ID tables. | Preserve controlled NFR coverage when replacing old projections. | ACC-003 |',
-      '| NFR-002 | The authoring lane must preserve every subsequent source-bound quality row in the same table. | Prevent table header loss after the first NFR data row. | ACC-004 |',
+      ...nonFunctionalRequirements.map(
+        (row) => `| ${row.sourceId} | ${row.text} | ${row.rationale} | ${row.acceptanceId} |`
+      ),
+      '',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when |',
+      '| --- | --- | --- | --- |',
+      `| ${negativeId} | Reusing the stale inline MUST projection does not count as completion. | The FR/NFR tables must remain the only positive requirement authority. | Any stale line-based MUST enters the rebuilt projection. |`,
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      `| ${failureId} | A stale inline MUST projection is reused as source authority. | Block the stale projection and rebuild every controlled row from the FR/NFR source tables. | ${negativeId} | none | ${requirements
+        .map((row) => row.mustId)
+        .join(' ')} |`,
+      '',
+      '## Acceptance Evidence',
+      '',
+      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      ...requirements.map(
+        (row) =>
+          `| ${row.acceptanceId} | ${row.sourceId} source-row reconstruction | ${row.mustId} | ${command} | ${row.text} | CMD-001 ${row.traceId} | PATH-001 owns ${row.mustId} reconstruction. |`
+      ),
+      '',
+      '## Test And Verification Paths',
+      '',
+      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| CMD-001 | contract-validation | ${requirements
+        .map((row) => row.mustId)
+        .join(
+          ' '
+        )} ${negativeId} | ${command} | Exit code 0. | Each controlled MUST closes through its own ACC, E2E, and TRACE authority. | ${requirements
+        .flatMap((row) => [row.acceptanceId, row.e2eId, row.traceId])
+        .join(
+          ' '
+        )} PATH-001 | PATH-001 owns validation and remediation. | ${targetPath} |`,
+      ...requirements.map(
+        (row) =>
+          `| ${row.e2eId} | e2e | ${row.mustId} | ${command} | Exit code 0. | ${row.text} | ${row.acceptanceId} CMD-001 ${row.traceId} PATH-001 | PATH-001 owns ${row.mustId} end-to-end proof. | ${targetPath} |`
+      ),
+      '',
+      '## Trace Matrix Source',
+      '',
+      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      ...requirements.map(
+        (row) =>
+          `| ${row.traceId} | ${row.mustId} | ${row.acceptanceId} | ${row.acceptanceId} ${row.e2eId} | CMD-001 | CMD-001 | none | PATH-001 | ${negativeId} | ${row.text} | ${row.mustId} closes through ${row.acceptanceId}, ${row.e2eId}, and ${row.traceId}. | PATH-001 owns ${row.mustId} reconstruction. |`
+      ),
+      '',
+      '## Implementation Path Map',
+      '',
+      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      `| PATH-001 | \`${targetPath}\` | Requirements contract authoring owner | Rebuild controlled MUST rows from FR/NFR tables without trusting stale inline projections. | ${requirements
+        .map((row) => row.mustId)
+        .join(' ')} ${negativeId} | ${requirements
+        .map((row) => `${row.mustId} closes independently`)
+        .join('; ')}. | CMD-001 ${requirements
+        .flatMap((row) => [row.acceptanceId, row.e2eId, row.traceId])
+        .join(' ')} | Requirements contract authoring owner owns rollback and remediation. |`,
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Out of scope | Boundary assertion |',
+      '| --- | --- | --- |',
+      '| OUT-001 | Rewriting unrelated authoring workflows is outside this migration. | Keep unrelated authoring workflows unchanged. |',
       '',
     ].join('\n'),
     'utf8'
   );
-  return source;
+  return {
+    source,
+    sourceRequirementIds: requirements.map((row) => row.sourceId),
+    mustRequirementIds: requirements.map((row) => row.mustId),
+    staleMustId,
+  };
 }
 
 function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): string {
@@ -304,6 +484,12 @@ function writeSourceDrivenRequirement(root: string, name = 'source-driven.md'): 
       '| --- | --- | --- | --- | --- | --- | --- | --- |',
       `| PATH-001 | \`${sourcePath}\` | Source authoring owner | Preserve source MUST, packet, trace, acceptance, and auditor visibility. | MUST-FR-001 MUST-FR-002 MUST-FR-003 NEG-001 | ACC-001, ACC-002, and ACC-003 pass independently. | ACC-001 ACC-002 ACC-003 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 | Source authoring owner owns rollback and remediation. |`,
       '',
+      '## Out Of Scope',
+      '',
+      '| ID | Out of scope | Boundary assertion |',
+      '| --- | --- | --- |',
+      '| OUT-001 | Rewriting unrelated authoring workflows is outside this requirement. | Keep unrelated authoring workflows unchanged. |',
+      '',
     ].join('\n'),
     'utf8'
   );
@@ -337,10 +523,10 @@ function writeSourceWithBusinessFailureMatrix(
       '',
       '## Failure Matrix',
       '',
-      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence |',
-      '| --- | --- | --- | --- | --- |',
-      '| FAIL-001 | DataBus schema mismatch; impact: consumer attach is unsafe. | Consumer rejects live attach with schema_mismatch and remains in incompatible non-live state. | NEG-001 | ACC-003 |',
-      '| FAIL-002 | Ordered tick sequence gap; impact: trigger correctness is unsafe. | TriggerService pauses automatic evaluation before any new OrderIntent and records tick_gap. | NEG-002 | ACC-004 |',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | DataBus schema mismatch; impact: consumer attach is unsafe. | Consumer rejects live attach with schema_mismatch and remains in incompatible non-live state. | NEG-001 | ACC-003 | MUST-FR-001 |',
+      '| FAIL-002 | Ordered tick sequence gap; impact: trigger correctness is unsafe. | TriggerService pauses automatic evaluation before any new OrderIntent and records tick_gap. | NEG-002 | ACC-004 | MUST-FR-002 |',
       '',
       '## Acceptance Evidence',
       '',
@@ -350,6 +536,12 @@ function writeSourceWithBusinessFailureMatrix(
       '| ACC-002 | Gap-safe trigger evaluation | MUST-FR-002 | npx vitest run tests/market-data-consumer.test.ts | Timeout or gap pauses evaluation before any order intent and resumes only after recovery proof. | CMD-001 TRACE-002 | PATH-001 owns remediation. |',
       '| ACC-003 | Incompatible schema rejection | NEG-001 | npx vitest run tests/market-data-consumer.test.ts | Schema mismatch remains non-live and emits no order intent. | CMD-001 TRACE-003 | PATH-001 owns remediation. |',
       '| ACC-004 | Tick gap rejection | NEG-002 | npx vitest run tests/market-data-consumer.test.ts | Tick gap pauses automatic evaluation before a new order intent. | CMD-001 TRACE-004 | PATH-001 owns remediation. |',
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Out of scope | Boundary assertion |',
+      '| --- | --- | --- |',
+      '| OUT-001 | Rewriting unrelated market-data workflows is outside this requirement. | Keep unrelated market-data workflows unchanged. |',
       '',
       '## Trace Matrix Source',
       '',
@@ -733,9 +925,20 @@ function expectArtifactContract(file: string, recordId: string): void {
 }
 
 function expectCheckpointAutoPromoted(result: any, paths: ReturnType<typeof artifacts>): void {
-  expect(result.blockingIssues.map((issue: any) => issue.code)).not.toContain(
-    'checkpoint_required_before_source_materialization'
-  );
+  expect(
+    result.blockingIssues.map((issue: any) => issue.code),
+    JSON.stringify(
+      {
+        blockingStage: result.blockingStage,
+        blockingIssues: result.blockingIssues,
+        checkpointPersistenceEvidenceExists: existsSync(paths.checkpointPersistenceEvidence),
+        progressExists: existsSync(paths.progress),
+        scaleRoutingDecisionExists: existsSync(paths.scaleRoutingDecision),
+      },
+      null,
+      2
+    )
+  ).not.toContain('checkpoint_required_before_source_materialization');
   expect(existsSync(paths.checkpointPersistenceEvidence)).toBe(true);
   expect(existsSync(paths.encodingReport)).toBe(true);
   expect(existsSync(paths.sourceMutationDecision)).toBe(true);
@@ -782,12 +985,15 @@ function artifacts(root: string, recordId: string, requirementSetId = recordId) 
     authoring,
     confirmation,
     semanticKernel: path.join(authoring, 'semantic-kernel.json'),
+    semanticIr: path.join(authoring, 'semantic-ir.json'),
     packet: path.join(authoring, 'must_decomposition_packet.json'),
     controlledMustCandidates: path.join(authoring, 'controlled-must-candidates.json'),
     requirementCoverageLedger: path.join(authoring, 'requirement-coverage-ledger.json'),
     targetAuthorityReport: path.join(authoring, 'target-authority-report.json'),
     validationAuthorityReport: path.join(authoring, 'validation-authority-report.json'),
     projectionDomainSanityReport: path.join(authoring, 'projection-domain-sanity-report.json'),
+    intakeReceipt: path.join(authoring, 'intake', 'intake-receipt.json'),
+    intentLineageLedger: path.join(authoring, 'intake', 'intent-lineage-ledger.json'),
     sourceMutationDecision: path.join(authoring, 'source-mutation-decision.json'),
     draftSourcePreview: path.join(authoring, 'draft-source-preview.md'),
     promotionReceipt: path.join(authoring, 'promotion-receipt.json'),
@@ -828,7 +1034,13 @@ function runWithAuthoringLocalization(
   root: string,
   options: Parameters<typeof runMainAgentPreConfirmationDrilldown>[1]
 ) {
-  const first = runMainAgentPreConfirmationDrilldown(root, options);
+  const boundOptions = {
+    ...options,
+    implementationAttemptId:
+      options.implementationAttemptId ??
+      `implementation-attempt-${options.requirementSetId ?? options.recordId ?? 'test'}`,
+  };
+  const first = runMainAgentPreConfirmationDrilldown(root, boundOptions);
   if (first.substate !== 'localization_translation_required') {
     return first;
   }
@@ -865,7 +1077,7 @@ function runWithAuthoringLocalization(
     'utf8'
   );
   return runMainAgentPreConfirmationDrilldown(root, {
-    ...options,
+    ...boundOptions,
     localizationResponseFile: responsePath,
   });
 }
@@ -920,6 +1132,39 @@ function captureMainAgentCli(args: string[]): {
     process.stdout.write = originalStdoutWrite as any;
     process.stderr.write = originalStderrWrite as any;
   }
+}
+
+function installFailingPostPacketScaleAssessment(root: string): void {
+  const skillDir = path.join(root, '_bmad', 'skills', 'requirements-contract-authoring');
+  const scriptDir = path.join(skillDir, 'scripts');
+  const sourceSkillDir = path.join(
+    process.cwd(),
+    '_bmad',
+    'skills',
+    'requirements-contract-authoring'
+  );
+  mkdirSync(scriptDir, { recursive: true });
+  cpSync(path.join(sourceSkillDir, 'SKILL.md'), path.join(skillDir, 'SKILL.md'));
+
+  const realScript = path.join(sourceSkillDir, 'scripts', 'assess_contract_authoring_scale.js');
+  writeFileSync(
+    path.join(scriptDir, 'assess_contract_authoring_scale.js'),
+    [
+      "const { spawnSync } = require('node:child_process');",
+      "const phaseIndex = process.argv.indexOf('--phase');",
+      "const phase = phaseIndex >= 0 ? process.argv[phaseIndex + 1] : '';",
+      "if (phase === 'post_packet_assessment') {",
+      "  process.stderr.write('forced post-packet assessment failure\\n');",
+      '  process.exit(1);',
+      '}',
+      `const result = spawnSync(process.execPath, [${JSON.stringify(
+        realScript
+      )}, ...process.argv.slice(2)], { stdio: 'inherit' });`,
+      'process.exit(result.status ?? 1);',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
 }
 
 describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', () => {
@@ -1235,8 +1480,6 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const candidates = readJson(paths.controlledMustCandidates);
       const draftProjection = readJson(paths.draftImplementationConfirmation);
       const receipt = readJson(paths.authoringMaterializationReceipt);
-      const confirmation = readDraftPreviewImplementationConfirmation(paths);
-      const mustRow = confirmation.must[0];
 
       expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
         'controlled_must_candidates_missing'
@@ -1249,8 +1492,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         candidateCount: 1,
         acceptedCandidateCount: 1,
         mustCount: 1,
-        failClosed: false,
-        decision: 'draft_materialization_allowed',
+        failClosed: true,
+        decision: 'pre_confirmation_gate_blocked',
       });
       expect(candidates.candidates[0]).toMatchObject({
         candidateId: 'MUST-CAND-001',
@@ -1269,30 +1512,20 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         candidateCount: 1,
         acceptedCandidateCount: 1,
         mustCount: 1,
-        failClosed: false,
-        decision: 'draft_materialization_allowed',
+        failClosed: true,
+        implementationConfirmation: null,
+        decision: 'pre_confirmation_gate_blocked',
       });
       expect(receipt).toMatchObject({
         schemaVersion: 'requirements-authoring-materialization-receipt/v1',
         candidateCount: 1,
         acceptedCandidateCount: 1,
         mustCount: 1,
-        failClosed: false,
-        decision: 'draft_materialization_allowed',
+        failClosed: true,
+        decision: 'pre_confirmation_gate_blocked',
         requiresUserConfirmationBeforeExecution: true,
       });
-      expect(mustRow).toMatchObject({
-        text: 'The authoring lane must persist a draft implementationConfirmation block without marking it user_confirmed.',
-        source: 'controlled_plain_source_candidate',
-        sourceLine: 7,
-        sourcePath: 'docs/requirements/plain-controlled-candidate.md',
-        sourceSpan: { startLine: 7, endLine: 7 },
-        candidateId: 'MUST-CAND-001',
-      });
-      expect(mustRow.id).toBe('MUST-FR-001');
-      expect(mustRow.sourceDocumentHash).toBe(candidates.sourceDocumentHash);
-      expect(confirmation.status).toBe('draft');
-      expect(confirmation.status).not.toBe('user_confirmed');
+      expect(existsSync(paths.draftSourcePreview)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1423,13 +1656,14 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       path.join(os.tmpdir(), 'main-agent-pre-confirmation-fr-nfr-legacy-inline-')
     );
     try {
-      const source = writeSourceWithLegacyInlineMustAndFrNfrTables(root);
+      const fixture = writeSourceWithLegacyInlineMustAndFrNfrTables(root);
+      const { source } = fixture;
 
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId: 'REQ-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
-        ...authorityForSource(root, source),
+        ...writeValidationAuthorityTarget(root),
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
@@ -1439,13 +1673,39 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         'REQSET-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE'
       );
       const issueCodes = result.blockingIssues.map((issue) => issue.code);
+      expect(
+        existsSync(paths.controlledMustCandidates),
+        JSON.stringify(
+          {
+            blockingStage: result.blockingStage,
+            blockingIssues: result.blockingIssues,
+          },
+          null,
+          2
+        )
+      ).toBe(true);
       const candidates = readJson(paths.controlledMustCandidates);
       const draftProjection = readJson(paths.draftImplementationConfirmation);
       const confirmation = draftProjection.implementationConfirmation;
+      const intakeReceipt = readJson(paths.intakeReceipt);
+      const intentLineageLedger = readJson(paths.intentLineageLedger);
+      const classificationBySpanId = new Map(
+        intentLineageLedger.classifications.map((classification: any) => [
+          classification.spanId,
+          classification,
+        ])
+      );
 
       expect(issueCodes).not.toContain('line_based_must_id_forbidden');
       expect(issueCodes).not.toContain('controlled_must_candidates_missing');
-      expect(existsSync(paths.draftSourcePreview)).toBe(true);
+      expect(
+        existsSync(paths.draftSourcePreview),
+        JSON.stringify({
+          issueCodes,
+          controlledMustCandidatesExists: existsSync(paths.controlledMustCandidates),
+          draftImplementationConfirmationExists: existsSync(paths.draftImplementationConfirmation),
+        })
+      ).toBe(true);
       expect(candidates).toMatchObject({
         candidateCount: 4,
         acceptedCandidateCount: 4,
@@ -1453,27 +1713,43 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         failClosed: false,
         decision: 'draft_materialization_allowed',
       });
-      expect(candidates.candidates.map((candidate: any) => candidate.sourceRequirementId)).toEqual([
-        'FR-001',
-        'FR-002',
-        'NFR-001',
-        'NFR-002',
-      ]);
-      expect(confirmation.must.map((row: any) => row.id)).toEqual([
-        'MUST-FR-001',
-        'MUST-FR-002',
-        'MUST-NFR-001',
-        'MUST-NFR-002',
-      ]);
-      expect(JSON.stringify(draftProjection)).not.toContain(
-        'MUST-REQ-DATASERVICE-GDS-TRIG-L104-002'
+      expect(candidates.candidates.map((candidate: any) => candidate.sourceRequirementId)).toEqual(
+        fixture.sourceRequirementIds
       );
+      expect(confirmation.must.map((row: any) => row.id)).toEqual(fixture.mustRequirementIds);
+      expect(JSON.stringify(draftProjection)).not.toContain(fixture.staleMustId);
+      for (const [index, sourceRequirementId] of fixture.sourceRequirementIds.entries()) {
+        const excerpt = intakeReceipt.excerpts.find((row: any) =>
+          row.content.includes(sourceRequirementId)
+        );
+        expect(excerpt, `intake excerpt for ${sourceRequirementId}`).toBeTruthy();
+        expect(classificationBySpanId.get(excerpt.excerptId)).toMatchObject({
+          disposition: 'source_root',
+          sourceRootRefs: [fixture.mustRequirementIds[index]],
+        });
+      }
+      const staleProjectionExcerpt = intakeReceipt.excerpts.find((row: any) =>
+        row.content.includes(fixture.staleMustId)
+      );
+      expect(staleProjectionExcerpt, 'stale projection intake excerpt').toBeTruthy();
+      expect(classificationBySpanId.get(staleProjectionExcerpt.excerptId)).toMatchObject({
+        disposition: 'excluded',
+        exclusionRuleRef: 'non-semantic-source-line/v1',
+      });
+      const titleExcerpt = intakeReceipt.excerpts.find((row: any) =>
+        row.content.includes('# Legacy Inline MUST With Source Tables')
+      );
+      expect(titleExcerpt, 'source title intake excerpt').toBeTruthy();
+      expect(classificationBySpanId.get(titleExcerpt.excerptId)).toMatchObject({
+        disposition: 'excluded',
+        exclusionRuleRef: 'non-semantic-source-line/v1',
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it('emits initial scale assessment before returning controlled_must_candidates_missing', () => {
+  it('blocks missing controlled MUST candidates before initial scale assessment', () => {
     const root = mkdtempSync(
       path.join(os.tmpdir(), 'main-agent-pre-confirmation-missing-must-scale-')
     );
@@ -1499,15 +1775,16 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ]);
 
       expect(captured.exitCode).toBe(1);
-      expect(captured.stderr).toContain(
+      expect(captured.stderr).not.toContain(
         '[requirements-contract-authoring] scale assessment started'
       );
-      expect(captured.stderr).toContain(
+      expect(captured.stderr).not.toContain(
         '[requirements-contract-authoring] scale assessment result'
       );
       expect(captured.stdout).toContain('controlled_must_candidates_missing');
 
       const parsed = JSON.parse(captured.stdout);
+      const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE');
       expect(parsed.selectedAuthoringLane).toBe('author-confirmation-ready-source');
       expect(parsed.advisoryScan).toMatchObject({
         purpose: 'pre_materialization_advisory_scan',
@@ -1524,9 +1801,54 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(parsed.blockingIssues.map((issue: any) => issue.code)).toContain(
         'controlled_must_candidates_missing'
       );
-      expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE').html)).toBe(
-        false
+      expect(parsed.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'renderer_blocker_release_failure'
       );
+      expect(existsSync(paths.semanticIr)).toBe(true);
+      expect(existsSync(path.join(paths.authoring, 'requirement-contract-model.json'))).toBe(true);
+      expect(existsSync(paths.scaleAssessmentInitial)).toBe(false);
+      expect(existsSync(paths.html)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('routes post-packet scale assessment failure back to assessment instead of Critical Auditor repair', () => {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'main-agent-pre-confirmation-post-packet-scale-failure-')
+    );
+    try {
+      installFailingPostPacketScaleAssessment(root);
+      const source = writeDraftSource(root);
+      const beforeSourceText = readFileSync(source, 'utf8');
+      const recordId = 'REQ-PRE-CONFIRMATION-POST-PACKET-SCALE-FAILURE';
+      const requirementSetId = 'REQSET-PRE-CONFIRMATION-POST-PACKET-SCALE-FAILURE';
+
+      const result = runWithAuthoringLocalization(root, {
+        source,
+        recordId,
+        requirementSetId,
+        confirmationLanguage: 'zh-CN',
+        ...authorityForSource(root, source),
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+      const paths = artifacts(root, recordId, requirementSetId);
+      const transaction = readJson(path.join(paths.authoring, 'authoring-transaction.json'));
+
+      expect(
+        result.substate,
+        JSON.stringify({
+          blockingIssues: result.blockingIssues,
+          nextRequiredAction: result.nextRequiredAction,
+        })
+      ).toBe('blocked_by_render_gate');
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'scale_assessment_report_missing'
+      );
+      expect(result.nextRequiredAction).toBe('rerun_post_packet_scale_assessment');
+      expect(transaction.nextRequiredAction).toBe('rerun_post_packet_scale_assessment');
+      expect(existsSync(paths.receipt1)).toBe(false);
+      expect(readFileSync(source, 'utf8')).toBe(beforeSourceText);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1627,6 +1949,8 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     );
     try {
       const source = writeRichPreserveExistingRequirement(root);
+      const implementationAttemptId =
+        'implementation-attempt-REQSET-PRE-CONFIRMATION-PRESERVE-EXISTING';
       writePromotionReceipt(
         root,
         source,
@@ -1639,12 +1963,87 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-PRESERVE-EXISTING',
+        implementationAttemptId,
         mode: 'preserve-existing',
       });
+      const paths = artifacts(
+        root,
+        'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
+        'REQSET-PRE-CONFIRMATION-PRESERVE-EXISTING'
+      );
 
       expect(result.status).toBe('blocked');
-      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      expect(
+        result.blockingStage,
+        JSON.stringify(
+          {
+            blockingIssues: result.blockingIssues,
+            artifacts: result.artifacts,
+          },
+          null,
+          2
+        )
+      ).toBe('critical_auditor_round_required');
       expect(result.nextRequiredAction).toBe('write_critical_auditor_round_response');
+      expect(existsSync(paths.checkpointPersistenceEvidence)).toBe(true);
+      const checkpointEvidence = readJson(paths.checkpointPersistenceEvidence);
+      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(false);
+      expect(checkpointEvidence.checkpointPersistenceRef.completedCheckpointIds).toEqual([
+        'cp-00-semantic-kernel',
+        'cp-01-must-decomposition-packet',
+      ]);
+      const deferredCheckpointPolicy =
+        checkpointEvidence.checkpointPersistenceRef.preRenderGatePolicy;
+      expect(deferredCheckpointPolicy).toMatchObject({
+        mode: 'source_gap_fix_materialization',
+        auditorConvergenceDeferredToNextRound: true,
+      });
+      const deferredCheckpointBlockerCodes =
+        deferredCheckpointPolicy.deferredCriticalAuditorBlockers.map(
+          (blocker: { code: string }) => blocker.code
+        );
+      expect(deferredCheckpointBlockerCodes).toContain(
+        'critical_auditor_receipts_required_before_checkpoint'
+      );
+      expect(
+        deferredCheckpointBlockerCodes.every((code: string) =>
+          [
+            'critical_auditor_receipt_missing',
+            'critical_auditor_receipt_input_hash_stale',
+            'critical_auditor_less_than_three_no_new_gap_rounds',
+            'critical_auditor_validated_gap_unresolved',
+            'critical_auditor_receipts_required_before_checkpoint',
+            'author_claim_lacks_critic_disposition',
+          ].includes(code)
+        )
+      ).toBe(true);
+      const checkpointReceipt = (index: number) =>
+        path.join(
+          paths.authoring,
+          `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`
+        );
+      expect(readJson(checkpointReceipt(0))).toMatchObject({
+        checkpointId: 'cp-00-semantic-kernel',
+        decision: 'pass',
+      });
+      expect(readJson(checkpointReceipt(1))).toMatchObject({
+        checkpointId: 'cp-01-must-decomposition-packet',
+        decision: 'pass',
+      });
+      expect(readJson(checkpointReceipt(2))).toMatchObject({
+        checkpointId: 'cp-02-atomic-decomposition-loop-convergence',
+        persistenceStatus: 'committed',
+        semanticValidationStatus: 'block',
+        decision: 'block',
+        blockers: [
+          {
+            code: 'critical_auditor_receipts_required_before_checkpoint',
+          },
+        ],
+      });
+      for (let checkpointIndex = 3; checkpointIndex <= 8; checkpointIndex += 1) {
+        expect(existsSync(checkpointReceipt(checkpointIndex))).toBe(false);
+      }
       expect(result.repairCommand).toContain(
         'main-agent-orchestration --action authoring-repair --mode preserve-existing'
       );
@@ -1665,6 +2064,82 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       ).toBe(true);
       const repairedText = readFileSync(source, 'utf8');
       const repairedConfirmation = readImplementationConfirmation(source);
+      const repairedLines = repairedText.replace(/\r\n/gu, '\n').split('\n');
+      const inlineRowSourceSpan = (id: string) => {
+        const startLine =
+          repairedLines.findIndex(
+            (line) => new RegExp(`^\\s*-\\s+id:\\s*${id}\\s*$`, 'u').test(line)
+          ) + 1;
+        const nextConfirmationFieldIndex = repairedLines.findIndex(
+          (line, index) =>
+            index >= startLine && line.trim().length > 0 && /^\s{2}\S/u.test(line)
+        );
+        return {
+          startLine,
+          endLine:
+            nextConfirmationFieldIndex >= 0
+              ? nextConfirmationFieldIndex
+              : repairedLines.length,
+        };
+      };
+      const mustSourceSpan = inlineRowSourceSpan('MUST-900');
+      const expectedMustSource = {
+        sourceLine: mustSourceSpan.startLine,
+        sourcePath: 'docs/requirements/rich-preserve-existing.md',
+        sourceDocumentHash: sha256Text(repairedText),
+        sourceSpan: mustSourceSpan,
+        headingPath: ['implementationConfirmation', 'must', 'MUST-900'],
+      };
+      const semanticKernel = readJson(paths.semanticKernel).semanticKernel;
+      const semanticIr = readJson(paths.semanticIr);
+      const packet = readJson(paths.packet).must_decomposition_packet;
+      const canonicalMustNode = semanticIr.nodes['MUST-FR-900'];
+      const canonicalMustBody = semanticIr.semanticBodies[canonicalMustNode?.bodyHash];
+      const canonicalNegativeNode = semanticIr.nodes['NEG-900'];
+      const canonicalNegativeBody = semanticIr.semanticBodies[canonicalNegativeNode?.bodyHash];
+      const canonicalBoundaryNode = semanticIr.nodes['OUT-900'];
+      const canonicalBoundaryBody = semanticIr.semanticBodies[canonicalBoundaryNode?.bodyHash];
+      expect(mustSourceSpan.startLine).toBeGreaterThan(0);
+      expect(
+        semanticKernel.sourceRequirementMap.find((row: any) => row.id === 'MUST-900')
+      ).toMatchObject(expectedMustSource);
+      expect(packet.mustPackets.find((row: any) => row.mustRef === 'MUST-900')).toMatchObject(
+        expectedMustSource
+      );
+      expect(canonicalMustNode).toMatchObject({
+        nodeType: 'requirement',
+      });
+      expect(canonicalMustBody).toMatchObject({
+        id: 'MUST-FR-900',
+        kind: 'functional',
+        source: {
+          sourceRequirementId: 'MUST-900',
+          sourceSpan: expectedMustSource.sourceSpan,
+          headingPath: expectedMustSource.headingPath,
+        },
+      });
+      expect(canonicalNegativeBody).toMatchObject({
+        id: 'NEG-900',
+        kind: 'negative',
+        source: {
+          sourceRequirementId: 'NEG-900',
+          sourceSpan: inlineRowSourceSpan('NEG-900'),
+          headingPath: [
+            'implementationConfirmation',
+            'Negative Requirements And Not Done Conditions',
+            'NEG-900',
+          ],
+        },
+      });
+      expect(canonicalBoundaryBody).toMatchObject({
+        id: 'OUT-900',
+        kind: 'out_of_scope',
+        source: {
+          sourceRequirementId: 'OUT-900',
+          sourceSpan: inlineRowSourceSpan('OUT-900'),
+          headingPath: ['implementationConfirmation', 'Out Of Scope', 'OUT-900'],
+        },
+      });
       expect(repairedText).toContain('CUSTOM-PRESERVE-ANCHOR');
       expect(repairedText).toContain('customAuditRows:');
       expect(repairedConfirmation.must.map((row: any) => row.id)).toContain('MUST-900');
@@ -1789,8 +2264,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-PRE-CONFIRMATION-SOURCE-DRIVEN',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
+        implementationAttemptId:
+          'implementation-attempt-REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
         confirmationLanguage: 'en-US',
-        ...authorityForSource(root, source),
+        ...writeValidationAuthorityTarget(root),
         criticalAuditorRound: (input) => {
           seenAuditorInputs.push(input);
           if (input.roundIndex === 1) {
@@ -1836,6 +2313,22 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       });
 
       const paths = artifacts(root, 'REQ-PRE-CONFIRMATION-SOURCE-DRIVEN');
+      expect(
+        existsSync(paths.mustGate),
+        JSON.stringify(
+          {
+            blockingStage: result.blockingStage,
+            blockingIssues: result.blockingIssues,
+            renderRoundTripReport: existsSync(
+              path.join(paths.authoring, 'proofs', 'render-roundtrip-report.json')
+            )
+              ? readJson(path.join(paths.authoring, 'proofs', 'render-roundtrip-report.json'))
+              : null,
+          },
+          null,
+          2
+        )
+      ).toBe(true);
       const confirmation = readDraftPreviewImplementationConfirmation(paths);
       const kernel = readJson(paths.semanticKernel).semanticKernel;
       const packet = readJson(paths.packet).must_decomposition_packet;
@@ -1961,6 +2454,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-BUSINESS-FAILURE-MATRIX',
         requirementSetId: 'REQSET-BUSINESS-FAILURE-MATRIX',
+        implementationAttemptId: 'implementation-attempt-REQSET-BUSINESS-FAILURE-MATRIX',
         confirmationLanguage: 'en-US',
         ...writeConsumerMarketDataAuthorityTarget(root),
         criticalAuditorRound: (input) => ({
@@ -1989,7 +2483,21 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       });
 
       const paths = artifacts(root, 'REQ-BUSINESS-FAILURE-MATRIX');
-      expect(result.blockingIssues, JSON.stringify(result.blockingIssues, null, 2)).toEqual([]);
+      expect(
+        result.blockingIssues,
+        JSON.stringify(
+          {
+            blockingIssues: result.blockingIssues,
+            renderRoundTripReport: existsSync(
+              path.join(paths.authoring, 'proofs', 'render-roundtrip-report.json')
+            )
+              ? readJson(path.join(paths.authoring, 'proofs', 'render-roundtrip-report.json'))
+              : null,
+          },
+          null,
+          2
+        )
+      ).toEqual([]);
       const confirmation = readDraftPreviewImplementationConfirmation(paths);
       const packet = readJson(paths.packet).must_decomposition_packet;
       const failurePaths = confirmation.failurePaths as Array<Record<string, unknown>>;
@@ -2211,6 +2719,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-AUTHORING-LANGUAGE-BOUNDARY',
         requirementSetId: 'REQSET-AUTHORING-LANGUAGE-BOUNDARY',
+        implementationAttemptId: 'implementation-attempt-REQSET-AUTHORING-LANGUAGE-BOUNDARY',
         ...authorityForSource(root, source),
         criticalAuditorRound: cleanCriticalAuditorRound,
       });

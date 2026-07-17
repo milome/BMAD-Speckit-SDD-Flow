@@ -1,6 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync } = require('node:child_process');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -12,6 +13,12 @@ const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.y
 const SRC_JS_ALLOWLIST = path.join(PACKAGE_ROOT, 'scripts', 'src-js-allowlist.json');
 const PACKAGE_DIST_ROOT = path.join(PACKAGE_ROOT, 'dist');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
+const CHECKPOINT_SEMANTIC_VALIDATION_SCRIPT =
+  'source-authority/scripts/requirements-contract-checkpoint-semantic-validation.js';
+const CHECKPOINT_SEMANTIC_VALIDATION_SCHEMA =
+  'source-authority/schemas/requirements-contract-checkpoint-semantic-validation-receipt.schema.json';
+const RENDER_ROUNDTRIP_GATE_SCRIPT =
+  'source-authority/scripts/requirements-contract-render-roundtrip-gate.js';
 const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
 const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
 const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
@@ -45,7 +52,6 @@ const EXPECTED_DIST_FILES = [
   'runtime/parallel-mission-control.js',
   'actions/inspect.js',
   'actions/chaos-scenarios.js',
-  'actions/codex-worker-adapter.js',
   'actions/compiled-prompt-runner.js',
   'actions/confirm-scope.js',
   'actions/delivery-closeout-gate.js',
@@ -322,6 +328,64 @@ describe('main-agent dist build', () => {
       stdio: 'pipe',
     });
 
+    const actionBindingManifestRelativePath = path.join(
+      'shared',
+      'requirements-contract',
+      'requirements-contract-package-runtime-action-binding-manifest.json'
+    );
+    const actionBindingManifestPaths = [
+      path.join(REPO_ROOT, '_bmad', actionBindingManifestRelativePath),
+      path.join(REPO_ROOT, '.codex', actionBindingManifestRelativePath),
+      path.join(REPO_ROOT, '.cursor', actionBindingManifestRelativePath),
+      path.join(REPO_ROOT, '.claude', actionBindingManifestRelativePath),
+      path.join(PACKAGE_ROOT, '_bmad', actionBindingManifestRelativePath),
+      path.join(PACKAGE_DIST_ROOT, '_bmad', actionBindingManifestRelativePath),
+      path.join(
+        DIST_ROOT,
+        'source-authority',
+        '_bmad',
+        actionBindingManifestRelativePath
+      ),
+    ];
+    for (const manifestPath of actionBindingManifestPaths) {
+      assert.equal(fs.existsSync(manifestPath), true, `missing ${manifestPath}`);
+    }
+    const actionBindingManifestBytes = fs.readFileSync(actionBindingManifestPaths[0]);
+    const actionBindingManifestHash = createHash('sha256')
+      .update(actionBindingManifestBytes)
+      .digest('hex');
+    for (const manifestPath of actionBindingManifestPaths.slice(1)) {
+      assert.equal(
+        createHash('sha256').update(fs.readFileSync(manifestPath)).digest('hex'),
+        actionBindingManifestHash,
+        `package runtime action-binding manifest drifted: ${manifestPath}`
+      );
+    }
+    const actionBindingManifest = JSON.parse(actionBindingManifestBytes.toString('utf8'));
+    assert.deepEqual(
+      actionBindingManifest.actions.map((action) => action.actionId),
+      [
+        'requirements-contract-consumer-cli-capability-observe',
+        'requirements-contract-prompt-transaction-publish',
+        'requirements-contract-recovery-bootstrap',
+        'requirements-contract-recovery-finalize',
+        'requirements-contract-six-model-projection-parity-verify',
+      ],
+      'build must project every registered package runtime action exactly once'
+    );
+    const finalizerBindings = actionBindingManifest.actions.filter(
+      (action) => action.actionId === 'requirements-contract-recovery-finalize'
+    );
+    assert.equal(finalizerBindings.length, 1, 'recovery finalizer binding must be unique');
+    assert.equal(
+      finalizerBindings[0].semanticGate.sourceSymbol,
+      'requirementsContractRecoveryFinalizeCommand'
+    );
+    assert.equal(actionBindingManifest.packageRuntimeRoutingOnlyActionCount, 0);
+    assert.equal(actionBindingManifest.installedPackageActionBehaviorMismatchCount, 0);
+    assert.equal(actionBindingManifest.packageActionSemanticBindingCoverage, 1);
+    assert.equal(actionBindingManifest.decision, 'pass');
+
     for (const relativePath of EXPECTED_DIST_FILES) {
       const distFile = path.join(DIST_ROOT, relativePath);
       assert.equal(fs.existsSync(distFile), true, `missing ${relativePath}`);
@@ -383,6 +447,96 @@ describe('main-agent dist build', () => {
         `source-authority TypeScript file was not compiled to dist JS: ${relativePath}`
       );
     }
+
+    const checkpointSemanticValidationScript = path.join(
+      DIST_ROOT,
+      CHECKPOINT_SEMANTIC_VALIDATION_SCRIPT
+    );
+    const checkpointSemanticValidationSchema = path.join(
+      DIST_ROOT,
+      CHECKPOINT_SEMANTIC_VALIDATION_SCHEMA
+    );
+    const checkpointSemanticValidationSourceSchema = path.join(
+      PACKAGE_ROOT,
+      'src',
+      'main-agent',
+      CHECKPOINT_SEMANTIC_VALIDATION_SCHEMA
+    );
+    assert.equal(
+      fs.existsSync(checkpointSemanticValidationScript),
+      true,
+      'dist missing checkpoint semantic-validation runtime'
+    );
+    assert.equal(
+      fs.existsSync(checkpointSemanticValidationSchema),
+      true,
+      'dist missing checkpoint semantic-validation schema'
+    );
+    assert.equal(
+      fs.readFileSync(checkpointSemanticValidationSchema, 'utf8'),
+      fs.readFileSync(checkpointSemanticValidationSourceSchema, 'utf8'),
+      'checkpoint semantic-validation schema drifted from source'
+    );
+
+    const checkpointSemanticValidationRuntime = require(checkpointSemanticValidationScript);
+    const hash = `sha256:${'a'.repeat(64)}`;
+    const receipt = checkpointSemanticValidationRuntime.createCheckpointSemanticValidationReceipt({
+      checkpointId: 'cp-00-semantic-kernel',
+      validatorIdentity: 'dist-checkpoint-semantic-validator',
+      validatorVersion: '1.0.0',
+      validatorHash: hash,
+      recordId: 'REQ-DIST-CHECKPOINT',
+      requirementSetId: 'dist-checkpoint-set',
+      implementationAttemptId: 'IMPL-ATTEMPT-DIST-CHECKPOINT',
+      sourceDocumentHash: hash,
+      implementationConfirmationHash: hash,
+      semanticModelHash: hash,
+      semanticConservationManifestHash: hash,
+      persistenceStatus: 'committed',
+      semanticValidationStatus: 'pass',
+      validatedInputs: [
+        {
+          role: 'source',
+          path: 'docs/requirements/dist-checkpoint.md',
+          hash,
+        },
+      ],
+      blockers: [],
+      decision: 'pass',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    assert.equal(
+      checkpointSemanticValidationRuntime.validateCheckpointSemanticValidationReceipt(receipt),
+      true,
+      'dist checkpoint semantic-validation runtime must load and validate against its schema'
+    );
+
+    const renderRoundTripGateScript = path.join(DIST_ROOT, RENDER_ROUNDTRIP_GATE_SCRIPT);
+    assert.equal(
+      fs.existsSync(renderRoundTripGateScript),
+      true,
+      'dist missing requirements-contract render round-trip gate'
+    );
+    const renderRoundTripGateRuntime = require(renderRoundTripGateScript);
+    assert.equal(
+      typeof renderRoundTripGateRuntime.evaluateRequirementsContractRenderRoundTrip,
+      'function',
+      'dist render round-trip gate must expose its evaluator'
+    );
+    assert.equal(
+      typeof renderRoundTripGateRuntime.validateRequirementsContractRenderRoundTripReport,
+      'function',
+      'dist render round-trip gate must expose its strict report validator'
+    );
+
+    const distOrchestration = require(
+      path.join(DIST_ROOT, 'source-authority', 'scripts', 'main-agent-orchestration.js')
+    );
+    assert.equal(
+      typeof distOrchestration.refreshCurrentSourceCheckpointPersistence,
+      'function',
+      'dist orchestration must export the current-source checkpoint refresh Facade'
+    );
 
     for (const expectedImport of EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS) {
       const distFile = path.join(DIST_ROOT, expectedImport.file);

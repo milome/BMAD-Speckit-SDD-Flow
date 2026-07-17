@@ -23,7 +23,7 @@ const AUTHORING_MODES = {
 
 function usage(exitCode = 0) {
   console.log(`Usage:
-  node assess_contract_authoring_scale.js --source <source-document.md> [--phase initial_assessment|post_packet_assessment|post_materialization_assessment] [--progress <progress.json>] [--semantic-kernel <semantic-kernel.json>] [--packet <must_decomposition_packet.json>] [--initial-assessment <scale-assessment-initial.json>] [--post-packet-assessment <scale-assessment-post-packet.json>] [--routing-decision-out <scale-routing-decision.json>] [--packet-source-reconciliation <must_packet_source_reconciliation_report.json>] [--checkpoint-persistence-evidence <checkpoint-persistence-evidence.json>] [--out <assessment.json>] [--json] [--quiet]
+  node assess_contract_authoring_scale.js --source <source-document.md> [--phase initial_assessment|post_packet_assessment|post_materialization_assessment] [--progress <progress.json>] [--semantic-model-hash <sha256:...>] [--semantic-conservation-manifest-hash <sha256:...>] [--semantic-kernel <semantic-kernel.json>] [--packet <must_decomposition_packet.json>] [--initial-assessment <scale-assessment-initial.json>] [--post-packet-assessment <scale-assessment-post-packet.json>] [--routing-decision-out <scale-routing-decision.json>] [--packet-source-reconciliation <must_packet_source_reconciliation_report.json>] [--checkpoint-persistence-evidence <checkpoint-persistence-evidence.json>] [--out <assessment.json>] [--json] [--quiet]
 
 Classifies requirements contract authoring as single_pass_allowed, checkpoint_required, or checkpoint_required_with_amendment.`);
   process.exit(exitCode);
@@ -34,6 +34,8 @@ function parseArgs(argv) {
     source: '',
     phase: 'initial_assessment',
     progress: '',
+    semanticModelHash: '',
+    semanticConservationManifestHash: '',
     semanticKernel: '',
     packet: '',
     initialAssessment: '',
@@ -60,6 +62,8 @@ function parseArgs(argv) {
       arg === '--source' ||
       arg === '--phase' ||
       arg === '--progress' ||
+      arg === '--semantic-model-hash' ||
+      arg === '--semantic-conservation-manifest-hash' ||
       arg === '--semantic-kernel' ||
       arg === '--packet' ||
       arg === '--initial-assessment' ||
@@ -82,6 +86,17 @@ function parseArgs(argv) {
   if (!args.source) return { error: 'missing source document path' };
   if (!['initial_assessment', 'post_packet_assessment', 'post_materialization_assessment'].includes(args.phase)) {
     return { error: `unsupported phase ${args.phase}` };
+  }
+  const semanticHashes = [args.semanticModelHash, args.semanticConservationManifestHash];
+  if (semanticHashes.some(Boolean) && semanticHashes.some((value) => !value)) {
+    return { error: 'semantic model and conservation manifest hashes must be provided together' };
+  }
+  if (
+    semanticHashes.some(
+      (value) => value && !/^sha256:[a-f0-9]{64}$/u.test(value)
+    )
+  ) {
+    return { error: 'semantic model and conservation manifest hashes must be canonical SHA-256 values' };
   }
   return args;
 }
@@ -625,6 +640,12 @@ function buildAssessment(sourcePath, progressPath = '', options = {}) {
     phase,
     recordId: binding.recordId || null,
     target: normalizePathForReport(absolute),
+    ...(options.semanticModelHash
+      ? {
+          semanticModelHash: options.semanticModelHash,
+          semanticConservationManifestHash: options.semanticConservationManifestHash,
+        }
+      : {}),
     decision,
     provisionalDecision: phase === 'initial_assessment' && decision === 'single_pass_allowed'
       ? 'provisional_single_pass_allowed'

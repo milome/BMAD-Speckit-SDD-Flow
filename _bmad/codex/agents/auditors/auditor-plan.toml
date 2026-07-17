@@ -2,7 +2,7 @@ name = "auditors__auditor-plan"
 description = "BMAD Codex custom agent for Auditor: Plan (完整版)."
 sandbox_mode = "read-only"
 
-developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+developer_instructions = """You are running as a BMAD Codex custom agent in the current Codex host session.
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks

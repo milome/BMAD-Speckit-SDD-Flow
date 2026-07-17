@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-project-profile.schema.json",
+  "title": "Requirements Contract Project Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectKind",
+    "owningSystem",
+    "governanceFramework",
+    "classificationAuthority",
+    "diagramPolicyRegistryHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-project-profile/v1"
+    },
+    "projectKind": {
+      "enum": ["consumer_product", "governance_framework", "hybrid"]
+    },
+    "owningSystem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "governanceFramework": {
+      "type": "string",
+      "minLength": 1
+    },
+    "classificationAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref", "hash"],
+      "properties": {
+        "kind": {
+          "enum": ["install_manifest", "registered_architecture_record", "decision_receipt"]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "diagramPolicyRegistryHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

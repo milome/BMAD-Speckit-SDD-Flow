@@ -4,7 +4,11 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
-const { buildBmadsOutput, renderBmads } = require('../src/runtime/bmads-renderer');
+const { buildBmadsOutput, renderBmads } = require('../dist/runtime/bmads-renderer');
+const {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+} = require('../dist/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 
@@ -90,8 +94,79 @@ function makeConsumerLikeRoot(records, activeRecordId) {
   return root;
 }
 
+function sha256Value(value) {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function withVerifiedModelStatuses(record, statuses) {
+  let next = {
+    ...record,
+    requirementSetId: record.requirementSetId || `${record.recordId}-SET`,
+    currentAttemptId:
+      record.currentAttemptId || record.closeout?.currentAttemptId || `IMP-${record.recordId}`,
+    sourceDocumentHash: sha256Value(`${record.recordId}:source`),
+    implementationConfirmationHash: sha256Value(`${record.recordId}:confirmation`),
+    semanticModelHash: sha256Value(`${record.recordId}:semantic-model`),
+  };
+  for (const [modelId, value] of Object.entries(statuses)) {
+    const descriptor = typeof value === 'string' ? { status: value } : value;
+    const status = descriptor.status;
+    const blockerRefs = descriptor.blockerRefs || [];
+    const update = createRuntimeStatusProjectionUpdate({
+      recordId: next.recordId,
+      requirementSetId: next.requirementSetId,
+      modelId,
+      implementationAttemptId: next.currentAttemptId,
+      sourceDocumentHash: next.sourceDocumentHash,
+      implementationConfirmationHash: next.implementationConfirmationHash,
+      semanticModelHash: next.semanticModelHash,
+      stageInputs: [
+        {
+          role: `${modelId}_input`,
+          path: `runtime/${next.recordId}/${modelId}/input.json`,
+          hash: sha256Value(`${next.recordId}:${modelId}:input`),
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: `${modelId}_decision`,
+          path: `runtime/${next.recordId}/${modelId}/decision.json`,
+          hash: sha256Value(`${next.recordId}:${modelId}:decision`),
+        },
+      ],
+      blockerRefs,
+      evidenceRefs: [`runtime/${next.recordId}/${modelId}/decision.json`],
+      authorityClass:
+        modelId === 'delivery_confirmation'
+          ? 'controlled_closeout'
+          : ['requirement_confirmation', 'architecture_confirmation'].includes(modelId)
+            ? 'controlled_confirmation'
+            : 'deterministic_gate',
+      decision:
+        descriptor.decision ||
+        (status === 'stale' ? 'stale' : status === 'blocked' ? 'block' : 'pass'),
+      effectiveStatus: status,
+      createdAt: '2026-07-15T00:00:00.000Z',
+      receiptPath: `runtime/status/${next.recordId}/${modelId}.json`,
+      projection: {
+        status,
+        blockingReasons: blockerRefs,
+      },
+    });
+    next = {
+      ...next,
+      ...runtimeStatusProjectionRecordPatch({
+        record: next,
+        modelId,
+        update,
+      }),
+    };
+  }
+  return next;
+}
+
 function awaitingCloseoutRecord(id = 'REQ-AWAIT-CLOSEOUT') {
-  return {
+  return withVerifiedModelStatuses({
     recordId: id,
     title: 'Awaiting closeout acceptance',
     currentMentalModel: 'delivery_confirmation',
@@ -114,11 +189,13 @@ function awaitingCloseoutRecord(id = 'REQ-AWAIT-CLOSEOUT') {
       },
     },
     updatedAt: '2026-06-01T00:00:00.000Z',
-  };
+  }, {
+    delivery_confirmation: 'awaiting_user_acceptance',
+  });
 }
 
 function implementationReadyRecord(id = 'REQ-READY') {
-  return {
+  return withVerifiedModelStatuses({
     recordId: id,
     requirementSetId: `${id}-SET`,
     title: 'Ready requirement',
@@ -137,7 +214,11 @@ function implementationReadyRecord(id = 'REQ-READY') {
       implementation_readiness: { status: 'pass' },
     },
     updatedAt: '2026-06-01T00:01:00.000Z',
-  };
+  }, {
+    requirement_confirmation: 'pass',
+    architecture_confirmation: 'pass',
+    implementation_readiness: 'pass',
+  });
 }
 
 function sha256File(filePath) {
@@ -244,7 +325,7 @@ function writeUsableCompiledImplementPacket(root, record) {
 }
 
 function executionClosurePassedRecord(id = 'REQ-EXECUTION-CLOSED') {
-  return {
+  return withVerifiedModelStatuses({
     recordId: id,
     title: 'Execution closure passed requirement',
     currentMentalModel: 'execution_closure',
@@ -257,7 +338,12 @@ function executionClosurePassedRecord(id = 'REQ-EXECUTION-CLOSED') {
       execution_closure: { status: 'pass' },
     },
     updatedAt: '2026-06-01T00:02:00.000Z',
-  };
+  }, {
+    requirement_confirmation: 'pass',
+    architecture_confirmation: 'pass',
+    implementation_readiness: 'pass',
+    execution_closure: 'pass',
+  });
 }
 
 function sectionBetween(text, startHeading, endHeading) {
@@ -294,9 +380,9 @@ describe('bmads Six Mental Models panorama', () => {
       assert.match(text, /schema model status: not_established/);
       assert.match(
         text,
-        /Evidence source: hashes present but controlled user confirmation is missing/
+        /Evidence source: six_model_projection_missing/
       );
-      assert.doesNotMatch(text, /Requirement Confirmation \(requirement_confirmation\)[\s\S]*?Status: pass/);
+      assert.doesNotMatch(text, /Requirement Confirmation \(requirement_confirmation\)[\s\S]*?Effective status: pass/);
       assert.doesNotMatch(text, /current mental model: architecture_confirmation/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -678,7 +764,10 @@ describe('bmads Six Mental Models panorama', () => {
     );
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
     record.currentMentalModel = 'architecture_confirmation';
-    delete record.sixModelResults;
+    delete record.sixModelResults.architecture_confirmation;
+    record.runtimeStatusDecisionReceipts = record.runtimeStatusDecisionReceipts.filter(
+      (entry) => entry.receipt.modelId !== 'architecture_confirmation'
+    );
     fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
     try {
@@ -813,30 +902,35 @@ describe('bmads Six Mental Models panorama', () => {
   });
 
   it('renders six-model panorama statuses from controlled confirmation evidence', () => {
-    const record = implementationReadyRecord('REQ-INFERRED-MODEL-STATUS');
-    delete record.currentMentalModel;
-    delete record.sixModelResults;
-    record.architectureConfirmationHash = 'sha256:architecture-ready';
+    const record = withVerifiedModelStatuses({
+      recordId: 'REQ-INFERRED-MODEL-STATUS',
+      requirementSetId: 'REQ-INFERRED-MODEL-STATUS-SET',
+      status: 'user_confirmed',
+      updatedAt: '2026-06-01T00:01:00.000Z',
+    }, {
+      requirement_confirmation: 'pass',
+      architecture_confirmation: 'pass',
+    });
     const root = makeRoot([record], 'REQ-INFERRED-MODEL-STATUS');
     try {
       const text = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'expanded' }));
 
       assert.match(text, /1\/6\. Requirement Confirmation \(requirement_confirmation\)/);
-      assert.match(text, /Status: pass/);
+      assert.match(text, /Effective status: pass/);
       assert.match(
         text,
-        /Evidence source: controlled confirmation_recorded event with matching hashes/
+        /Evidence source: verified runtime status receipt \(controlled_confirmation\)/
       );
       assert.match(text, /2\/6\. Architecture Confirmation \(architecture_confirmation\)/);
-      assert.match(text, /Evidence source: inferred from architectureConfirmationHash/);
+      assert.match(text, /Projection integrity: valid/);
       assert.match(text, /3\/6\. Implementation Readiness \(implementation_readiness\)/);
-      assert.match(text, /Status: current \(not_established; missing readiness gate evidence\)/);
+      assert.match(text, /Effective status: not_established/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it('renders architecture confirmation pass from canonical active state when six-model result is absent', () => {
+  it('does not grant architecture confirmation pass from canonical active state alone', () => {
     const record = implementationReadyRecord('REQ-CANONICAL-ARCHITECTURE-STATE');
     delete record.sixModelResults.architecture_confirmation;
     record.architectureConfirmationState = {
@@ -861,16 +955,21 @@ describe('bmads Six Mental Models panorama', () => {
         '## Six Mental Model Panorama',
         '## Runtime Workflow Guidance'
       );
+      const architectureRow = sectionBetween(
+        panorama,
+        '- 2/6. Architecture Confirmation (architecture_confirmation)',
+        '- 3/6. Implementation Readiness (implementation_readiness)'
+      );
 
       assert.match(
-        panorama,
-        /2\/6\. Architecture Confirmation \(architecture_confirmation\)[\s\S]*?Status: pass/
+        architectureRow,
+        /Effective status: not_established/
       );
       assert.match(
-        panorama,
-        /Evidence source: canonical active architectureConfirmationState with matching controlled confirmation/
+        architectureRow,
+        /Blocker refs: six_model_projection_missing/
       );
-      assert.doesNotMatch(panorama, /missing architecture confirmation evidence/);
+      assert.doesNotMatch(architectureRow, /Effective status: pass/);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

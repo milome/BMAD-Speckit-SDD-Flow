@@ -2,7 +2,7 @@ name = "feature-architect"
 description = "BMAD Codex custom agent feature-architect."
 sandbox_mode = "read-only"
 
-developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+developer_instructions = """You are running as a BMAD Codex custom agent in the current Codex host session.
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks

@@ -7,8 +7,6 @@ import {
   writeRuntimeContextRegistry,
 } from './runtime-context-registry';
 import { defaultRuntimeContextFile, writeRuntimeContext } from './runtime-context';
-import { buildMainAgentDispatchInstruction } from './main-agent-orchestration';
-import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
 import { buildEvidenceProvenance, type EvidenceProvenance } from './evidence-provenance';
 import {
   selectExecutionRuntimeMode,
@@ -58,10 +56,9 @@ interface HostJourneyResult {
     stderr: string;
     parsed: boolean;
   };
-  workerSmoke?: {
-    attempted: boolean;
+  mainSessionExecution?: {
+    required: boolean;
     passed: boolean;
-    taskReportPath: string | null;
     detail: string;
   };
   nativeGoalReceipt?: {
@@ -312,9 +309,9 @@ function runHostTransportCheck(mode: JourneyMode, host: HostId, projectRoot: str
 
   if (host === 'codex') {
     return {
-      command: ['codex-worker-adapter', '--smoke'],
+      command: ['main-session-execution-boundary-check'],
       exitCode: 0,
-      stdout: 'codex transport is validated by the worker adapter smoke',
+      stdout: 'Codex prompt and Goal execution are reserved for the current main session.',
       stderr: '',
     };
   }
@@ -460,7 +457,17 @@ function runHostJourney(
     runId: options.recordId || options.requirementSetId ? options.runId : undefined,
     allowLegacyContextFallback: !options.recordId && !options.requirementSetId,
   });
-  let workerSmoke: HostJourneyResult['workerSmoke'];
+  const mainSessionExecution: HostJourneyResult['mainSessionExecution'] =
+    host === 'codex'
+      ? {
+          required: true,
+          passed: transportCheck.exitCode === 0,
+          detail:
+            transportCheck.exitCode === 0
+              ? 'current main session is the only Codex execution surface'
+              : transportCheck.stderr,
+        }
+      : undefined;
   const nativeGoalReceipt =
     mode === 'mock' &&
     selectedRuntime.executionRuntimeMode === 'native_goal' &&
@@ -469,123 +476,6 @@ function runHostJourney(
     inspectCheck.parsed
       ? writeMockNativeGoalEvidence(projectRoot, host, options)
       : undefined;
-  if (mode === 'real' && host === 'codex' && transportCheck.exitCode === 0 && inspectCheck.parsed) {
-    const smokeOutputRoot = path.join(
-      projectRoot,
-      '_bmad-output',
-      'runtime',
-      'host-matrix-codex-smoke',
-      `${Date.now()}-${process.pid}`
-    );
-    const smokeRoot = options.recordId || options.requirementSetId ? projectRoot : smokeOutputRoot;
-    fs.mkdirSync(smokeOutputRoot, { recursive: true });
-    if (smokeRoot === smokeOutputRoot) {
-      materializeCodexAgents(smokeRoot);
-      writeRuntimeContextRegistry(smokeRoot, defaultRuntimeContextRegistry(smokeRoot));
-      writeRuntimeContext(
-        smokeRoot,
-        defaultRuntimeContextFile({
-          flow: 'story',
-          stage: 'implement',
-          sourceMode: 'full_bmad',
-          contextScope: 'story',
-          storyId: 'host-matrix-codex-smoke',
-          runId: 'host-matrix-codex-smoke',
-        })
-      );
-    }
-    let instruction = buildMainAgentDispatchInstruction({
-      projectRoot: smokeRoot,
-      flow: 'story',
-      stage: 'implement',
-      host: 'codex',
-      hydratePacket: true,
-    });
-    if (!instruction && (options.recordId || options.requirementSetId)) {
-      const packetPath = path.join(smokeOutputRoot, 'host-matrix-smoke.packet.json');
-      const packetId = `host-matrix-smoke-${Date.now()}`;
-      const requirementArtifactId =
-        options.requirementSetId ?? options.recordId ?? 'host-matrix-codex-smoke';
-      const packet = {
-        packetId,
-        parentSessionId: requirementArtifactId,
-        sourceRecommendationPacketId: null,
-        flow: 'standalone_tasks',
-        phase: 'implement',
-        taskType: 'implement',
-        role: 'implementation-worker',
-        inputArtifacts: [
-          `_bmad-output/runtime/requirement-records/${requirementArtifactId}/requirement-record.json`,
-        ],
-        allowedWriteScope: ['_bmad-output/runtime/host-matrix-codex-smoke/**'],
-        expectedDelta: 'write bounded Codex host smoke proof only',
-        successCriteria: ['task report status is done', 'smoke proof file is written in scope'],
-        stopConditions: ['do not modify source files'],
-        downstreamConsumer: 'main-agent-host-matrix-pr-orchestrator',
-      };
-      fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
-      instruction = {
-        flow: 'story',
-        stage: 'implement',
-        host: 'codex',
-        nextAction: 'dispatch_implement',
-        taskType: 'implement',
-        route: {
-          tool: 'codex',
-          subtype: 'worker:implement',
-          fallback: 'disabled',
-        },
-        sessionId: packet.parentSessionId,
-        packetId,
-        packetKind: 'execution',
-        packetPath,
-        role: 'implementation-worker',
-        expectedDelta: packet.expectedDelta,
-      };
-    }
-    if (instruction) {
-      const taskReportPath = path.join(
-        smokeOutputRoot,
-        'host-matrix-smoke',
-        `${instruction.packetId}.json`
-      );
-      const smoke = runCodexWorkerAdapter({
-        projectRoot: smokeRoot,
-        recordId: options.recordId,
-        requirementSetId: options.requirementSetId,
-        runId: options.recordId || options.requirementSetId ? options.runId : undefined,
-        packetPath: instruction.packetPath,
-        taskReportPath,
-        smoke: true,
-        allowPolicyFailureForSmoke: !options.recordId && !options.requirementSetId,
-        smokeTargetPath:
-          smokeRoot === smokeOutputRoot
-            ? [
-                '_bmad-output/runtime/requirement-records',
-                instruction.sessionId,
-                'artifacts/codex',
-                `${instruction.packetId}.md`,
-              ].join('/')
-            : normalizePathForScope(
-                path.relative(smokeRoot, path.join(smokeOutputRoot, `${instruction.packetId}.md`))
-              ),
-      });
-      workerSmoke = {
-        attempted: true,
-        passed: smoke.exitCode === 0 && smoke.scopePassed && smoke.taskReport.status === 'done',
-        taskReportPath,
-        detail: `codex worker adapter smoke ${smoke.taskReport.status}`,
-      };
-    } else {
-      workerSmoke = {
-        attempted: true,
-        passed: false,
-        taskReportPath: null,
-        detail: 'no dispatch instruction available for codex worker smoke',
-      };
-    }
-  }
-  const smokePassed = workerSmoke ? workerSmoke.passed : true;
   const nativeGoalPassed =
     selectedRuntime.executionRuntimeMode !== 'native_goal' ||
     mode !== 'mock' ||
@@ -596,7 +486,7 @@ function runHostJourney(
       transportCheck.exitCode === 0 &&
       inspectCheck.exitCode === 0 &&
       inspectCheck.parsed &&
-      smokePassed &&
+      (mainSessionExecution?.passed ?? true) &&
       nativeGoalPassed,
     runtimeMode: {
       canonicalHost: selectedRuntime.canonicalHost,
@@ -605,7 +495,7 @@ function runHostJourney(
     },
     transportCheck,
     inspectCheck,
-    ...(workerSmoke ? { workerSmoke } : {}),
+    ...(mainSessionExecution ? { mainSessionExecution } : {}),
     ...(nativeGoalReceipt ? { nativeGoalReceipt } : {}),
   };
 }

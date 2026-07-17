@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { mainIngestImplementationEvidence } from './ingest-implementation-evidence';
 import { readImplementationConfirmation } from './target-artifact-realization-gate';
+import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
@@ -358,11 +359,22 @@ function filePathPrefix(value: string): string {
 }
 
 function latestAuditAttemptId(record: JsonObject): string {
-  const auditResult = nested(nested(record.sixModelResults).audit_review);
-  const fromResult = objects(auditResult.sourceRefs)
-    .map((ref) => text(ref.id))
-    .find((id) => /^audit-/u.test(id));
-  if (fromResult) return fromResult;
+  const currentAttemptId =
+    text(record.currentAttemptId) ||
+    text(record.implementationAttemptId) ||
+    text(record.runId) ||
+    text(nested(record.closeout).currentAttemptId);
+  const auditStatus = resolveVerifiedSixModelStatus({
+    record,
+    modelId: 'audit_review',
+    currentImplementationAttemptId: currentAttemptId,
+  });
+  if (
+    auditStatus.projectionIntegrity === 'valid' &&
+    /^audit-/u.test(auditStatus.currentAttemptId)
+  ) {
+    return auditStatus.currentAttemptId;
+  }
   const fromIterations = objects(record.executionIterations)
     .map((iteration) => text(iteration.closeoutAttemptId) || text(iteration.executionIterationId))
     .filter((id) => /^audit-/u.test(id));

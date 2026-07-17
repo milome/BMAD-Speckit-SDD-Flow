@@ -2,7 +2,7 @@ name = "party-mode-facilitator.en"
 description = "BMAD Codex custom agent party-mode-facilitator.en."
 sandbox_mode = "workspace-write"
 
-developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+developer_instructions = """You are running as a BMAD Codex custom agent in the current Codex host session.
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks
@@ -74,7 +74,7 @@ You are the Party Mode facilitator. When source agent invokes the explicit agent
 
 ## Prohibited
 
-- Do **not** delegate execution to `Codex worker adapter`, a general-purpose wrapper, or any other subagent
+- Do **not** delegate execution to `Codex main-session execution`, a general-purpose wrapper, or any other subagent
 - Do **not** omit the icon or display name
 - Do **not** collapse the session into a summary-only answer
 - Do **not** push canonical BUGFIX / Story / plan document writing back to the main Agent

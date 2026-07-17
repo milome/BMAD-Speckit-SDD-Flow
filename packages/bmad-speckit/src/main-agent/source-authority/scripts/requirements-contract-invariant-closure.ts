@@ -1,9 +1,8 @@
 import type {
   RequirementContractClosureMeasure,
   RequirementContractClosurePass,
+  RequirementContractClosurePassReceipt,
   RequirementContractModel,
-  RequirementContractTraceRow,
-  RequirementContractView,
 } from './requirements-contract-model';
 
 export const REQUIREMENT_CONTRACT_CLOSURE_PASSES: RequirementContractClosurePass[] = [
@@ -129,282 +128,476 @@ export const REQUIREMENT_CONTRACT_CLOSURE_PASSES: RequirementContractClosurePass
   },
 ];
 
-const LEGACY_PASS_ALIASES = [
-  'closeMustCoverage',
-  'closeNegCoverage',
-  'closeOutBoundaryViews',
-  'closeTraceViewRefs',
-  'closeAcceptanceCoverage',
-  'closeArtifactPlan',
-  'closeTargetModificationPaths',
-  'closeApplicabilityDomains',
-] as const;
+type ClosureIssue = RequirementContractModel['invariantClosure']['issues'][number];
+type MeasureDimension = keyof RequirementContractClosureMeasure;
 
-function ordinal(index: number): string {
-  return String(index + 1).padStart(3, '0');
+interface MeasuredClosure {
+  measure: RequirementContractClosureMeasure;
+  issues: ClosureIssue[];
 }
 
-function businessIdForRequirement(id: string, index: number): string {
-  const match = id.match(/^MUST-((?:FR|NFR)-\d{3})$/u);
-  return match ? `BUS-${match[1]}` : `BUS-REQ-${ordinal(index)}`;
+export type RequirementContractClosureProfile = 'full' | 'pre_checkpoint';
+
+export interface RequirementContractClosureOptions {
+  profile?: RequirementContractClosureProfile;
 }
 
-function unique(values: string[]): string[] {
-  return [...new Set(values.filter(Boolean))];
+const PRE_CHECKPOINT_PASS_IDS = new Set<RequirementContractClosurePass['name']>([
+  'canonicalizeStableIds',
+  'classifyRequirementSemantics',
+  'resolveSourceProvenance',
+  'resolveTargetAuthority',
+  'resolveValidationAuthority',
+  'validateCompleteModel',
+]);
+
+const PASS_APPLICABILITY: Record<
+  RequirementContractClosurePass['name'],
+  (model: RequirementContractModel) => boolean
+> = {
+  normalizeSourceStructure: () => false,
+  canonicalizeStableIds: () => true,
+  classifyRequirementSemantics: () => true,
+  splitAtomicRequirements: () => false,
+  resolveSourceProvenance: () => true,
+  resolveTargetAuthority: () => true,
+  resolveValidationAuthority: () => true,
+  groundCurrentStateFromRepository: (model) => Boolean(model.applicability.currentState),
+  deriveTargetState: () => true,
+  closeNegativeAndFailureCoverage: () => true,
+  closeAcceptanceAndEvidenceCoverage: () => true,
+  closeTraceCoverage: () => true,
+  closeVisualReciprocity: () => true,
+  closeBoundaryCoverage: (model) => model.notDone.length > 0 || model.outOfScope.length > 0,
+  closeCurrentTargetMap: () => true,
+  closeArtifactPlan: (model) => Boolean(model.applicability.artifactPlan),
+  closeApplicabilityDomains: (model) => Object.keys(model.applicability).length > 0,
+  materializeLocalization: localizationApplies,
+  validateSemanticParity: localizationApplies,
+  validateCompleteModel: () => true,
+};
+
+function localizationApplies(model: RequirementContractModel): boolean {
+  const localization = model.applicability.localization;
+  return Boolean(
+    localization &&
+      typeof localization === 'object' &&
+      'applies' in localization &&
+      localization.applies === true
+  );
 }
 
-function view(id: string, title: string, scope: 'business' | 'governance', covers: string[]): RequirementContractView {
-  return { id, title, scope, covers: unique(covers) };
+function rowHasAuthority(row: {
+  authorityState?: string;
+  provenance?: Record<string, unknown>;
+}): boolean {
+  return Boolean(
+    row.authorityState &&
+      row.provenance &&
+      Object.keys(row.provenance).length > 0
+  );
 }
 
-export function closeMustCoverage(model: RequirementContractModel): RequirementContractModel {
-  const evidence = model.must.map((row, index) => ({
-    id: `EVD-${ordinal(index)}`,
-    covers: [row.id],
-    text: `Evidence closure for ${row.id}: ${row.text}`,
-  }));
-  const acceptanceCriteria = model.must.map((row, index) => ({
-    id: `ACC-${ordinal(index)}`,
-    covers: [row.id],
-    text: `Acceptance closure for ${row.id}: ${row.text}`,
-  }));
-  return { ...model, evidence, acceptanceCriteria };
-}
-
-function rowHasAuthority(row: { authorityState?: string; provenance?: Record<string, unknown> }): boolean {
-  return Boolean(row.authorityState && row.provenance && Object.keys(row.provenance).length > 0);
-}
-
-function computeClosureMeasure(model: RequirementContractModel): RequirementContractClosureMeasure {
-  const missingEvidence = model.must.filter(
-    (row) => !model.evidence.some((evidence) => evidence.covers.includes(row.id))
-  ).length;
-  const missingAcceptance = model.must.filter(
-    (row) => !model.acceptanceCriteria.some((acceptance) => acceptance.covers.includes(row.id))
-  ).length;
-  const missingTrace = model.must.filter(
-    (row) => !model.traceRows.some((trace) => trace.covers.includes(row.id))
-  ).length;
-  const orphanTraceRefs = model.traceRows.reduce((count, trace) => {
-    const knownRefs = new Set([
-      ...model.must.map((row) => row.id),
-      ...model.notDone.map((row) => row.id),
-      ...model.outOfScope.map((row) => row.id),
-    ]);
-    return count + trace.covers.filter((ref) => !knownRefs.has(ref)).length;
-  }, 0);
-  const missingAuthority = [
-    ...model.must,
-    ...model.notDone,
-    ...model.outOfScope,
-  ].filter((row) => !rowHasAuthority(row)).length;
-  const missingProjection =
-    (model.businessViews.length === 0 ? 1 : 0) +
-    (model.sequenceViews.length === 0 ? 1 : 0) +
-    (model.flowViews.length === 0 ? 1 : 0) +
-    (model.edgeCaseViews.length === 0 ? 1 : 0) +
-    (model.boundaryViews.length === 0 && model.outOfScope.length > 0 ? 1 : 0) +
-    (model.targetModificationPaths.length === 0 ? 1 : 0);
-  const missingLocalization = model.must.filter(
-    (row) => row.textZh === undefined && /[\u4e00-\u9fff]/u.test(row.text) === false
-  ).length;
-
-  return {
-    unresolvedInvariantCount: missingEvidence + missingAcceptance + missingTrace + missingAuthority,
-    orphanReferenceCount: orphanTraceRefs,
-    missingProjectionCount: missingProjection,
-    localizationParityCount: missingLocalization,
-    schemaValidationCount: model.must.length === 0 ? 1 : 0,
-  };
-}
-
-function zeroClosureMeasure(): RequirementContractClosureMeasure {
-  return {
+function measureModel(
+  model: RequirementContractModel,
+  profile: RequirementContractClosureProfile
+): MeasuredClosure {
+  const issues: ClosureIssue[] = [];
+  const issueKeys = new Set<string>();
+  const measure: RequirementContractClosureMeasure = {
     unresolvedInvariantCount: 0,
     orphanReferenceCount: 0,
     missingProjectionCount: 0,
     localizationParityCount: 0,
     schemaValidationCount: 0,
   };
+  const add = (dimension: MeasureDimension, code: string, message: string): void => {
+    const key = `${code}\u0000${message}`;
+    if (issueKeys.has(key)) return;
+    issueKeys.add(key);
+    measure[dimension] += 1;
+    issues.push({ code, message });
+  };
+
+  measureRequiredSemantics(model, add, profile);
+  measureAuthority(model, add);
+  if (profile === 'full') {
+    measureCoverage(model, add);
+    measureProjection(model, add);
+  }
+  measureReferenceIntegrity(model, add);
+  if (profile === 'full') {
+    measureLocalization(model, add);
+  }
+  measureSchemaIntegrity(model, add);
+
+  return { measure, issues };
 }
 
-function withAuthority<T extends { id: string; text?: string; authorityState?: string; provenance?: Record<string, unknown> }>(
-  row: T,
-  fallbackSource = 'compiler_closure'
-): T {
-  return {
-    ...row,
-    authorityState: row.authorityState ?? 'source_authorized',
-    provenance: row.provenance ?? {
-      source: fallbackSource,
-      sourceRef: row.id,
-      derivation: 'requirement_contract_invariant_closure',
+function measureRequiredSemantics(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void,
+  profile: RequirementContractClosureProfile
+): void {
+  if (model.must.length === 0) {
+    add('schemaValidationCount', 'missing_requirement_authority', 'No MUST requirement exists.');
+  }
+  if (model.notDone.length === 0) {
+    add(
+      'unresolvedInvariantCount',
+      'missing_negative_requirement_authority',
+      'No source-authorized negative requirement exists.'
+    );
+  }
+  if (model.outOfScope.length === 0) {
+    add(
+      'unresolvedInvariantCount',
+      'missing_out_of_scope_authority',
+      'No source-authorized out-of-scope boundary exists.'
+    );
+  }
+  if (profile === 'full' && model.requiredCommands.length === 0) {
+    add(
+      'unresolvedInvariantCount',
+      'missing_validation_authority',
+      'No source-authorized validation command binding exists.'
+    );
+  }
+}
+
+function measureAuthority(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  model.must.forEach((row) => {
+    if (!rowHasAuthority(row)) {
+      add(
+        'unresolvedInvariantCount',
+        'missing_requirement_source_authority',
+        `Requirement ${row.id || '<missing-id>'} has no source or decision authority.`
+      );
+    }
+  });
+  model.notDone.forEach((row) => {
+    if (!rowHasAuthority(row)) {
+      add(
+        'unresolvedInvariantCount',
+        'missing_negative_source_authority',
+        `Negative requirement ${row.id || '<missing-id>'} has no source or decision authority.`
+      );
+    }
+  });
+  model.outOfScope.forEach((row) => {
+    if (!rowHasAuthority(row)) {
+      add(
+        'unresolvedInvariantCount',
+        'missing_boundary_source_authority',
+        `Boundary ${row.id || '<missing-id>'} has no source or decision authority.`
+      );
+    }
+  });
+}
+
+function measureCoverage(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  const requirements = [...model.must, ...model.notDone];
+  requirements.forEach((row) => {
+    if (!model.evidence.some((evidence) => evidence.covers.includes(row.id))) {
+      add(
+        'unresolvedInvariantCount',
+        'missing_evidence_coverage',
+        `Requirement ${row.id} has no source-authorized evidence binding.`
+      );
+    }
+    if (!model.acceptanceCriteria.some((acceptance) => acceptance.covers.includes(row.id))) {
+      add(
+        'unresolvedInvariantCount',
+        'missing_acceptance_coverage',
+        `Requirement ${row.id} has no source-authorized acceptance binding.`
+      );
+    }
+    if (!model.traceRows.some((trace) => trace.covers.includes(row.id))) {
+      add(
+        'unresolvedInvariantCount',
+        'missing_trace_coverage',
+        `Requirement ${row.id} has no source-authorized trace binding.`
+      );
+    }
+  });
+}
+
+function measureProjection(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  const requiredViews: Array<{
+    rows: unknown[];
+    code: string;
+    label: string;
+    applies: boolean;
+  }> = [
+    {
+      rows: model.businessViews,
+      code: 'missing_business_view_projection',
+      label: 'business view',
+      applies: model.must.length > 0,
     },
+    {
+      rows: model.sequenceViews,
+      code: 'missing_sequence_view_projection',
+      label: 'sequence view',
+      applies: model.must.length > 0,
+    },
+    {
+      rows: model.flowViews,
+      code: 'missing_flow_view_projection',
+      label: 'flow view',
+      applies: model.must.length > 0,
+    },
+    {
+      rows: model.edgeCaseViews,
+      code: 'missing_edge_case_view_projection',
+      label: 'edge-case view',
+      applies: model.notDone.length > 0,
+    },
+    {
+      rows: model.boundaryViews,
+      code: 'missing_boundary_view_projection',
+      label: 'boundary view',
+      applies: model.outOfScope.length > 0,
+    },
+  ];
+  requiredViews.forEach(({ rows, code, label, applies }) => {
+    if (applies && rows.length === 0) {
+      add(
+        'missingProjectionCount',
+        code,
+        `No source-authorized ${label} projection exists.`
+      );
+    }
+  });
+  if (model.must.length > 0 && model.targetModificationPaths.length === 0) {
+    add(
+      'missingProjectionCount',
+      'missing_target_authority',
+      'No source-authorized target binding exists.'
+    );
+  }
+}
+
+function measureReferenceIntegrity(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  const requirementIds = new Set([...model.must, ...model.notDone].map((row) => row.id));
+  const semanticIds = new Set([...requirementIds, ...model.outOfScope.map((row) => row.id)]);
+  const evidenceIds = new Set(model.evidence.map((row) => row.id));
+  const acceptanceIds = new Set(model.acceptanceCriteria.map((row) => row.id));
+  const commandIds = new Set(model.requiredCommands.map((row) => row.id));
+  const viewSets = {
+    businessViewRefs: new Set(model.businessViews.map((row) => row.id)),
+    sequenceViewRefs: new Set(model.sequenceViews.map((row) => row.id)),
+    flowViewRefs: new Set(model.flowViews.map((row) => row.id)),
+    edgeCaseViewRefs: new Set(model.edgeCaseViews.map((row) => row.id)),
+    boundaryViewRefs: new Set(model.boundaryViews.map((row) => row.id)),
   };
+
+  model.evidence.forEach((row) =>
+    addUnknownRefs(row.covers, requirementIds, 'orphan_evidence_reference', row.id, add)
+  );
+  model.acceptanceCriteria.forEach((row) =>
+    addUnknownRefs(row.covers, requirementIds, 'orphan_acceptance_reference', row.id, add)
+  );
+  model.requiredCommands.forEach((row) =>
+    addUnknownRefs(row.covers, requirementIds, 'orphan_validation_reference', row.id, add)
+  );
+  model.targetModificationPaths.forEach((row) =>
+    addUnknownRefs(row.requirementRefs, requirementIds, 'orphan_target_reference', row.id, add)
+  );
+  [
+    ...model.businessViews,
+    ...model.sequenceViews,
+    ...model.flowViews,
+    ...model.edgeCaseViews,
+    ...model.boundaryViews,
+  ].forEach((row) =>
+    addUnknownRefs(row.covers, semanticIds, 'orphan_view_reference', row.id, add)
+  );
+  model.traceRows.forEach((row) => {
+    addUnknownRefs(row.covers, requirementIds, 'orphan_trace_requirement_reference', row.id, add);
+    addUnknownRefs(row.evidenceRefs, evidenceIds, 'orphan_trace_evidence_reference', row.id, add);
+    addUnknownRefs(
+      row.acceptanceRefs,
+      acceptanceIds,
+      'orphan_trace_acceptance_reference',
+      row.id,
+      add
+    );
+    Object.entries(viewSets).forEach(([field, known]) => {
+      addUnknownRefs(
+        row[field as keyof typeof viewSets],
+        known,
+        `orphan_trace_${field.replace(/Refs$/u, '')}_reference`,
+        row.id,
+        add
+      );
+    });
+    addUnknownRefs(
+      [
+        ...(row.contractValidationCommandRefs ?? []),
+        ...(row.deliveryEvidenceCommandRefs ?? []),
+      ],
+      commandIds,
+      'orphan_trace_command_reference',
+      row.id,
+      add
+    );
+  });
 }
 
-export function closeNegCoverage(model: RequirementContractModel): RequirementContractModel {
-  return {
-    ...model,
-    notDone: (model.notDone.length
-      ? model.notDone.map((row) => withAuthority(row))
-      : [
-          withAuthority({
-            id: 'NEG-001',
-            text: 'Requirement contract confirmability must not be treated as implementation completion.',
-          }),
-        ]),
+function addUnknownRefs(
+  refs: string[],
+  known: Set<string>,
+  code: string,
+  ownerId: string,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  refs.forEach((ref) => {
+    if (!known.has(ref)) {
+      add(
+        'orphanReferenceCount',
+        code,
+        `${ownerId || '<missing-id>'} references unknown identity ${ref || '<empty-ref>'}.`
+      );
+    }
+  });
+}
+
+function measureLocalization(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  if (!localizationApplies(model)) return;
+  [...model.must, ...model.notDone].forEach((row) => {
+    if (!row.textZh?.trim()) {
+      add(
+        'localizationParityCount',
+        'missing_localization_projection',
+        `Requirement ${row.id} has no required localized text.`
+      );
+    }
+  });
+}
+
+function measureSchemaIntegrity(
+  model: RequirementContractModel,
+  add: (dimension: MeasureDimension, code: string, message: string) => void
+): void {
+  const rows = [
+    ...model.must,
+    ...model.notDone,
+    ...model.outOfScope,
+    ...model.evidence,
+    ...model.acceptanceCriteria,
+    ...model.requiredCommands,
+    ...model.traceRows,
+    ...model.businessViews,
+    ...model.sequenceViews,
+    ...model.flowViews,
+    ...model.edgeCaseViews,
+    ...model.boundaryViews,
+    ...model.targetModificationPaths,
+  ];
+  const seen = new Set<string>();
+  rows.forEach((row) => {
+    if (!row.id?.trim()) {
+      add('schemaValidationCount', 'empty_model_identity', 'A model row has an empty identity.');
+      return;
+    }
+    if (seen.has(row.id)) {
+      add(
+        'schemaValidationCount',
+        'duplicate_model_identity',
+        `Model identity ${row.id} is duplicated.`
+      );
+    }
+    seen.add(row.id);
+  });
+}
+
+function findingsForPass(passId: string, issues: ClosureIssue[]): ClosureIssue[] {
+  if (passId === 'validateCompleteModel') return issues;
+  const predicates: Record<string, (code: string) => boolean> = {
+    canonicalizeStableIds: (code) => code.includes('identity'),
+    classifyRequirementSemantics: (code) => code === 'missing_requirement_authority',
+    resolveSourceProvenance: (code) => code.includes('source_authority'),
+    resolveTargetAuthority: (code) => code.includes('target'),
+    resolveValidationAuthority: (code) => code.includes('validation'),
+    deriveTargetState: (code) => code.includes('target'),
+    closeNegativeAndFailureCoverage: (code) =>
+      code.includes('negative') || code.includes('out_of_scope'),
+    closeAcceptanceAndEvidenceCoverage: (code) =>
+      code.includes('acceptance') || code.includes('evidence'),
+    closeTraceCoverage: (code) => code.includes('trace'),
+    closeVisualReciprocity: (code) => code.includes('view'),
+    closeBoundaryCoverage: (code) => code.includes('boundary'),
+    closeCurrentTargetMap: (code) => code.includes('target'),
+    materializeLocalization: (code) => code.includes('localization'),
+    validateSemanticParity: (code) => code.includes('localization'),
   };
+  const predicate = predicates[passId];
+  return predicate ? issues.filter((issue) => predicate(issue.code)) : [];
 }
 
-export function closeOutBoundaryViews(model: RequirementContractModel): RequirementContractModel {
-  const boundaryViews = model.outOfScope.map((row, index) =>
-    view(`BOUND-${ordinal(index)}`, `Boundary for ${row.id}`, 'business', [row.id])
-  );
-  return { ...model, boundaryViews };
-}
-
-export function closeTraceViewRefs(model: RequirementContractModel): RequirementContractModel {
-  const mustIds = model.must.map((row) => row.id);
-  const businessRequirementViews = model.must.map((row, index) =>
-    view(businessIdForRequirement(row.id, index), `Business requirement ${row.id}`, 'business', [row.id])
-  );
-  const businessViews = [
-    view('SEQ-BUSINESS-001', 'Business happy path', 'business', mustIds),
-    ...businessRequirementViews,
-  ];
-  const sequenceViews = [
-    view('SEQ-BUSINESS-001', 'Business happy path', 'business', mustIds),
-    view('SEQ-001', 'Governance sequence', 'governance', [...mustIds, 'NEG-001']),
-  ];
-  const flowViews = [
-    view('FLOW-BUSINESS-001', 'Business flow', 'business', mustIds),
-    view('FLOW-001', 'Governance flow', 'governance', [...mustIds, 'NEG-001']),
-  ];
-  const edgeCaseViews = [
-    view('EDGEVIEW-BUSINESS-001', 'Business edge cases', 'business', [...mustIds, 'NEG-001']),
-    view('EDGEVIEW-001', 'Governance edge cases', 'governance', ['NEG-001']),
-  ];
-  const sequenceViewRefs = sequenceViews.map((row) => row.id);
-  const flowViewRefs = flowViews.map((row) => row.id);
-  const edgeCaseViewRefs = edgeCaseViews.map((row) => row.id);
-  const boundaryViewRefs = model.boundaryViews.map((row) => row.id);
-  const traceRows: RequirementContractTraceRow[] = model.must.map((row, index) => ({
-    id: `TRACE-${ordinal(index)}`,
-    covers: [row.id, 'NEG-001'],
-    evidenceRefs: [`EVD-${ordinal(index)}`],
-    acceptanceRefs: [`ACC-${ordinal(index)}`],
-    businessViewRefs: ['SEQ-BUSINESS-001', ...businessViews.map((viewRow) => viewRow.id)],
-    sequenceViewRefs,
-    flowViewRefs,
-    edgeCaseViewRefs,
-    boundaryViewRefs,
-    taskRefs: [`TASK-${ordinal(index)}`],
-    contractValidationCommandRefs: model.requiredCommands.map((command) => command.id),
-    deliveryEvidenceCommandRefs: model.requiredCommands.map((command) => command.id),
+function executePasses(
+  model: RequirementContractModel,
+  measured: MeasuredClosure,
+  profile: RequirementContractClosureProfile
+): RequirementContractClosurePassReceipt[] {
+  return REQUIREMENT_CONTRACT_CLOSURE_PASSES.filter(
+    (pass) =>
+      (profile === 'full' || PRE_CHECKPOINT_PASS_IDS.has(pass.name)) &&
+      PASS_APPLICABILITY[pass.name](model)
+  ).map((pass) => ({
+    passId: pass.name,
+    executed: true,
+    inputs: {
+      recordId: model.recordId,
+      requirementSetId: model.requirementSetId,
+    },
+    outputs: {
+      changedFields: [],
+    },
+    findings: findingsForPass(pass.name, measured.issues),
+    measureBefore: { ...measured.measure },
+    measureAfter: { ...measured.measure },
   }));
-  return {
-    ...model,
-    businessViews,
-    sequenceViews,
-    flowViews,
-    edgeCaseViews,
-    traceRows,
-  };
-}
-
-export function closeAcceptanceCoverage(model: RequirementContractModel): RequirementContractModel {
-  const commandIds = model.requiredCommands.map((row) => row.id);
-  return {
-    ...model,
-    acceptanceCriteria: model.acceptanceCriteria.map((row) => ({
-      ...row,
-      commandRefs: commandIds,
-    })) as RequirementContractModel['acceptanceCriteria'],
-  };
-}
-
-export function closeArtifactPlan(model: RequirementContractModel): RequirementContractModel {
-  return {
-    ...model,
-    applicability: {
-      ...model.applicability,
-      artifactPlan: {
-        modelPath: 'requirement-contract-model.json',
-        closureReportPath: 'compiler-closure-report.json',
-      },
-    },
-  };
-}
-
-export function closeTargetModificationPaths(model: RequirementContractModel): RequirementContractModel {
-  return {
-    ...model,
-    targetModificationPaths: model.targetModificationPaths.length
-      ? model.targetModificationPaths
-      : [
-          {
-            id: 'TARGET-MOD-001',
-            path: String(model.requiredCommands[0]?.covers[0] ?? model.must[0]?.id ?? 'source-authorized-target'),
-            requirementRefs: model.must.map((row) => row.id),
-          },
-        ],
-  };
-}
-
-export function closeApplicabilityDomains(model: RequirementContractModel): RequirementContractModel {
-  return {
-    ...model,
-    applicability: {
-      ...model.applicability,
-      currentTargetMap: { applies: true },
-      aiTddContractGate: { applies: true },
-    },
-  };
 }
 
 export function closeRequirementContractInvariants(
-  input: RequirementContractModel
+  input: RequirementContractModel,
+  options: RequirementContractClosureOptions = {}
 ): RequirementContractModel {
-  const measureBefore = computeClosureMeasure(input);
-  const normalizedInput: RequirementContractModel = {
-    ...input,
-    must: input.must.map((row) => withAuthority(row, 'source_requirement')),
-    outOfScope: input.outOfScope.map((row) => withAuthority(row, 'source_boundary')),
-  };
-  const closed = [
-    closeMustCoverage,
-    closeNegCoverage,
-    closeOutBoundaryViews,
-    closeTraceViewRefs,
-    closeAcceptanceCoverage,
-    closeArtifactPlan,
-    closeTargetModificationPaths,
-    closeApplicabilityDomains,
-  ].reduce((model, pass) => pass(model), normalizedInput);
+  const profile = options.profile ?? 'full';
+  const measureBefore = measureModel(input, profile);
+  const receipts = executePasses(input, measureBefore, profile);
+  const measureAfter = measureModel(input, profile);
+  const terminalState = measureAfter.issues.length === 0 ? 'confirmable' : 'blocked';
+
   return {
-    ...closed,
+    ...input,
     invariantClosure: {
-      appliedPasses: [
-        ...REQUIREMENT_CONTRACT_CLOSURE_PASSES.map((pass) => pass.name),
-        ...LEGACY_PASS_ALIASES,
-      ],
-      remainingIssueCount: 0,
+      appliedPasses: receipts.map((receipt) => receipt.passId),
+      remainingIssueCount: measureAfter.issues.length,
       rendererBlockerPolicy: 'renderer_blocker_release_failure',
-      issues: [],
-      measureBefore,
-      measureAfter: zeroClosureMeasure(),
+      issues: measureAfter.issues,
+      terminalState,
+      measureBefore: measureBefore.measure,
+      measureAfter: measureAfter.measure,
       passRegistry: REQUIREMENT_CONTRACT_CLOSURE_PASSES,
-      roundReceipts: [
-        {
-          roundIndex: 1,
-          predecessorHash: null,
-          measureBefore,
-          measureAfter: zeroClosureMeasure(),
-          appliedPasses: REQUIREMENT_CONTRACT_CLOSURE_PASSES.map((pass) => pass.name),
-          terminalClass: 'confirmable',
-        },
-      ],
+      roundReceipts: receipts,
     },
   };
 }

@@ -35,22 +35,22 @@ describe('orchestration dispatch contract', () => {
     });
     expect(resolveDispatchRoute('codex', 'implement')).toEqual({
       tool: 'codex',
-      subtype: 'worker:implement',
+      subtype: 'main-session:implement',
       fallback: 'disabled',
     });
     expect(resolveDispatchRoute('codex', 'audit')).toEqual({
       tool: 'codex',
-      subtype: 'worker:audit',
+      subtype: 'main-session:audit',
       fallback: 'disabled',
     });
     expect(resolveDispatchRoute('codex', 'remediate')).toEqual({
       tool: 'codex',
-      subtype: 'worker:remediate',
+      subtype: 'main-session:remediate',
       fallback: 'disabled',
     });
     expect(resolveDispatchRoute('codex', 'document')).toEqual({
       tool: 'codex',
-      subtype: 'worker:document',
+      subtype: 'main-session:document',
       fallback: 'disabled',
     });
   });

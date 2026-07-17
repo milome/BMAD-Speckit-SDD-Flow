@@ -1,7 +1,7 @@
 ---
 name: bmad-standalone-tasks-doc-review
 description: |
-  Strict audit for TASKS/TASKS-like documents (TASKS_*.md, tasks-E*.md) with 批判审计员 >70%, 3-round no-gap convergence, and audit subagent directly modifying the document when gaps are found. Use when: (1) User requests audit of a TASKS document with strict convergence, (2) "对 {文档路径} 发起审计子任务" or "TASKS 文档审计", (3) Pre-implementation document quality gate. Supports code-reviewer (Codex worker dispatch) or Codex worker adapter general-purpose fallback. Follows audit-document-iteration-rules.
+  Strict audit for TASKS/TASKS-like documents (TASKS_*.md, tasks-E*.md) with 批判审计员 >70%, 3-round no-gap convergence, and audit subagent directly modifying the document when gaps are found. Use when: (1) User requests audit of a TASKS document with strict convergence, (2) "对 {文档路径} 发起审计子任务" or "TASKS 文档审计", (3) Pre-implementation document quality gate. Supports code-reviewer (Codex worker dispatch) or current Codex main session general-purpose fallback. Follows audit-document-iteration-rules.
 ---
 
 # BMAD Standalone Tasks 文档审计
@@ -42,14 +42,14 @@ main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 | 批判审计员 | 必须出场，发言占比 **>70%** |
 | 收敛条件 | **连续 3 轮无 gap**（针对被审文档） |
 | 发现 gap 时 | **审计子代理须在本轮内直接修改被审文档**，禁止仅输出建议 |
-| 子代理类型 | 优先 code-reviewer；若无效则 Codex worker adapter general-purpose |
+| 子代理类型 | 优先 code-reviewer；若无效则 current Codex main session general-purpose |
 
 ## 工作流
 
 1. **解析文档路径**：从用户输入获取 `{文档路径}`（如 `_bmad-output/implementation-artifacts/_orphan/TASKS_xxx.md`）
 2. **确定需求依据**：若 TASKS 文档头部有「参考」字段，读取该文档作为需求依据；否则以 TASKS 自身为自洽依据（此时 `{需求依据路径}` 填被审文档路径）
 3. **发起审计**：将 [references/audit-prompt-tasks-doc.md](references/audit-prompt-tasks-doc.md) 完整 prompt 复制，替换 `{文档路径}`、`{需求依据路径}`、`{项目根}`、`{报告路径}`、`{轮次}`；**报告保存部分须为「每轮报告（无论通过与否）均须保存至 {报告路径}」**，与步骤 7 一致（若模板为「审计通过时」则须覆盖）
-4. **子代理选择**：优先 Codex worker dispatch 调度 code-reviewer；若 code-reviewer 不可用（如 Codex worker dispatch 不存在、调用失败或超时），使用 `Codex worker adapter` + `subagent_type: general-purpose`
+4. **子代理选择**：优先 Codex worker dispatch 调度 code-reviewer；若 code-reviewer 不可用（如 Codex worker dispatch 不存在、调用失败或超时），使用 `current Codex main session` + `subagent_type: general-purpose`
 5. **收敛检查**：收到报告后，若结论「通过」且批判审计员注明「本轮无新 gap」→ `consecutive_pass_count + 1`；若「未通过」或存在 gap → 置 0。**通过判定**：报告结论含「完全覆盖、验证通过」或「通过」；批判审计员段落含「本轮无新 gap」「无新 gap」或「无 gap」。
 6. **迭代**：未达 3 轮无 gap 时，发起下一轮审计（审计上一轮修改后的文档）。**禁止死循环**：`consecutive_pass_count >= 3` 时**立即结束**，不再发起审计；**最大轮次上限 10 轮**，超过则强制结束并输出「已达最大轮次，请人工检查」。
 7. **报告落盘**：每轮报告（无论通过与否）均须保存至 `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_{slug}_§4_round{N}.md`；主 Agent 发起审计时须在 prompt 中明确此要求。**注意**：报告保存是子代理职责，主 Agent 收到报告后**仅做收敛检查**，通过则结束，未通过则发起下一轮；**不得**因「保存报告」而重复发起审计。

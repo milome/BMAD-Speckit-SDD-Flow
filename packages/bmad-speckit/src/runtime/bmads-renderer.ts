@@ -101,8 +101,15 @@ const BMADS_TEXT = {
     boolYes: 'yes',
     boolNo: 'no',
     modelQuestionLabel: 'Question',
-    modelStatusLabel: 'Status',
+    modelStatusLabel: 'Effective status',
     modelStatusSourceLabel: 'Evidence source',
+    modelProjectionStatusLabel: 'Projection status',
+    modelProjectionIntegrityLabel: 'Projection integrity',
+    modelAuthorityClassLabel: 'Authority class',
+    modelDecisionReceiptLabel: 'Decision receipt',
+    modelDecisionReceiptHashLabel: 'Decision receipt hash',
+    modelBlockerRefsLabel: 'Blocker refs',
+    modelEvidenceRefsLabel: 'Evidence refs',
     routeBasisLabel: 'Route basis',
     routeBasisCurrent: 'current effective runtime route',
     routeBasisPending: 'waiting for prior model evidence',
@@ -293,8 +300,15 @@ const BMADS_TEXT = {
     boolYes: '是',
     boolNo: '否',
     modelQuestionLabel: '用户问题',
-    modelStatusLabel: '状态',
+    modelStatusLabel: '有效状态',
     modelStatusSourceLabel: '证据来源',
+    modelProjectionStatusLabel: '投影状态',
+    modelProjectionIntegrityLabel: '投影完整性',
+    modelAuthorityClassLabel: '权威类别',
+    modelDecisionReceiptLabel: '决策回执',
+    modelDecisionReceiptHashLabel: '决策回执哈希',
+    modelBlockerRefsLabel: '阻断引用',
+    modelEvidenceRefsLabel: '证据引用',
     routeBasisLabel: '路由依据',
     routeBasisCurrent: '当前有效 runtime route',
     routeBasisPending: '等待前序模型证据',
@@ -1518,18 +1532,9 @@ function renderAvailableNextActions(runtime, labels, language) {
 }
 
 function modelStatusForRow(row, primary) {
-  if (!primary) return 'pending';
+  if (!primary) return 'not_established';
   const evidence = primary.modelStatuses?.[row.modelId];
-  if (evidence?.isCurrent) return `current (${evidence.status}; ${evidence.source})`;
-  if (evidence?.status) return evidence.status;
-  const status = primary.rawRecord?.sixModelResults?.[row.modelId]?.status ||
-    primary.rawRecord?.sixModelResults?.[row.modelId];
-  if (typeof status === 'string') return status;
-  if (status && typeof status.status === 'string') return status.status;
-  if (row.modelId === 'delivery_confirmation' && primary.delivery.awaiting) {
-    return 'awaiting_user_acceptance';
-  }
-  return 'pending';
+  return evidence?.status || 'not_established';
 }
 
 function modelStatusSourceForRow(row, primary) {
@@ -1539,6 +1544,35 @@ function modelStatusSourceForRow(row, primary) {
   if (primary.currentMentalModel === row.modelId) return 'raw RequirementRecord current model';
   if (row.terminalEvent) return 'manifest terminal event';
   return 'no model evidence found';
+}
+
+function modelEvidenceForRow(row, primary) {
+  return primary?.modelStatuses?.[row.modelId] || null;
+}
+
+function projectionStatusForRow(row, primary) {
+  return modelEvidenceForRow(row, primary)?.projectionStatus || 'none';
+}
+
+function projectionIntegrityForRow(row, primary) {
+  return modelEvidenceForRow(row, primary)?.projectionIntegrity || 'missing';
+}
+
+function authorityClassForRow(row, primary) {
+  return modelEvidenceForRow(row, primary)?.authorityClass || 'none';
+}
+
+function decisionReceiptForRow(row, primary) {
+  return modelEvidenceForRow(row, primary)?.decisionReceiptRef || 'none';
+}
+
+function decisionReceiptHashForRow(row, primary) {
+  return modelEvidenceForRow(row, primary)?.decisionReceiptHash || 'none';
+}
+
+function joinedModelRefs(row, primary, key) {
+  const refs = modelEvidenceForRow(row, primary)?.[key];
+  return Array.isArray(refs) && refs.length > 0 ? refs.join(', ') : 'none';
 }
 
 function routeBasisForModel(row, primary, labels) {
@@ -1616,6 +1650,13 @@ function renderAiTddStatus(output) {
       `  ${labels.modelQuestionLabel}: ${modelQuestionForRow(row, labels)}`,
       `  ${labels.modelStatusLabel}: ${modelStatusForRow(row, primary)}`,
       `  ${labels.modelStatusSourceLabel}: ${modelStatusSourceForRow(row, primary)}`,
+      `  ${labels.modelProjectionStatusLabel}: ${projectionStatusForRow(row, primary)}`,
+      `  ${labels.modelProjectionIntegrityLabel}: ${projectionIntegrityForRow(row, primary)}`,
+      `  ${labels.modelAuthorityClassLabel}: ${authorityClassForRow(row, primary)}`,
+      `  ${labels.modelDecisionReceiptLabel}: ${decisionReceiptForRow(row, primary)}`,
+      `  ${labels.modelDecisionReceiptHashLabel}: ${decisionReceiptHashForRow(row, primary)}`,
+      `  ${labels.modelBlockerRefsLabel}: ${joinedModelRefs(row, primary, 'blockerRefs')}`,
+      `  ${labels.modelEvidenceRefsLabel}: ${joinedModelRefs(row, primary, 'evidenceRefs')}`,
       `  ${labels.routeBasisLabel}: ${routeBasisForModel(row, primary, labels)}`,
       `  terminalEvent: ${row.terminalEvent || 'none'}`
     );

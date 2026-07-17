@@ -227,10 +227,10 @@ function modelResult(input: {
     requirementSetId: input.requirementSetId,
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
-    status: 'pass',
+    status: 'not_established',
     resultRecordedAt: input.now,
     resultRecordedBy: 'runtime-registry-bridge',
-    blockingReasons: [],
+    blockingReasons: ['runtime_registry_bridge_non_authoritative'],
     sourceRefs: [{ sourceType: 'runtime_registry_bridge', id: input.model }],
     currentHashes: {
       sourceDocumentHash: input.sourceDocumentHash,
@@ -255,43 +255,18 @@ function deriveBridgeSixModelProjection(input: {
     implementationConfirmationHash: input.implementationConfirmationHash,
     now: input.now,
   };
-  const gateDecision =
-    input.gate && typeof input.gate === 'object' && !Array.isArray(input.gate)
-      ? String((input.gate as Record<string, unknown>).decision ?? '')
-      : '';
-  const closeoutApproved = input.context.latestReviewerCloseout?.closeoutApproved === true;
-  const implementationReady =
-    gateDecision === 'pass' ||
-    input.context.stage === 'implement' ||
-    input.context.stage === 'post_audit';
-  const sixModelResults: Record<string, unknown> = {
-    requirement_confirmation: modelResult({ ...base, model: 'requirement_confirmation' }),
-    architecture_confirmation: modelResult({ ...base, model: 'architecture_confirmation' }),
-  };
-  if (implementationReady) {
-    sixModelResults.implementation_readiness = modelResult({
-      ...base,
-      model: 'implementation_readiness',
-    });
-  }
-  if (input.context.stage === 'post_audit' || closeoutApproved) {
-    sixModelResults.implementation_readiness ??= modelResult({
-      ...base,
-      model: 'implementation_readiness',
-    });
-    sixModelResults.execution_closure = modelResult({ ...base, model: 'execution_closure' });
-    if (closeoutApproved) {
-      sixModelResults.audit_review = modelResult({ ...base, model: 'audit_review' });
-    }
-    return {
-      currentMentalModel: closeoutApproved ? 'audit_review' : 'execution_closure',
-      sixModelResults,
-    };
-  }
+  const sixModelResults = Object.fromEntries(
+    [
+      'requirement_confirmation',
+      'architecture_confirmation',
+      'implementation_readiness',
+      'execution_closure',
+      'audit_review',
+      'delivery_confirmation',
+    ].map((model) => [model, modelResult({ ...base, model })])
+  );
   return {
-    currentMentalModel: implementationReady
-      ? 'implementation_readiness'
-      : 'architecture_confirmation',
+    currentMentalModel: 'requirement_confirmation',
     sixModelResults,
   };
 }
@@ -432,7 +407,7 @@ function ensureRegistryBackedRequirementRecordBridge(
     schemaVersion: 'requirement-record/v1',
     recordId,
     requirementSetId,
-    status: 'user_confirmed',
+    status: 'draft',
     flow: context.flow,
     stage: context.stage,
     entryFlow: context.flow,
@@ -459,27 +434,10 @@ function ensureRegistryBackedRequirementRecordBridge(
     currentStage: sixModelProjection.currentMentalModel,
     sixModelResults: sixModelProjection.sixModelResults,
     updatedAt: context.updatedAt || now,
-    confirmationHistory: [
-      {
-        eventType: 'confirmation_recorded',
-        recordId,
-        requirementSetId,
-        confirmedAt: now,
-        confirmedBy: 'runtime-registry-bridge',
-        sourcePath: bridgeSourcePath,
-        sourceDocumentHash,
-        implementationConfirmationHash,
-        confirmationPageHash,
-        confirmationText:
-          'Runtime registry bridge materialized a legacy runtime context as a controlled requirement baseline.',
-        renderReportPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/confirmation/runtime-registry-bridge-render-report.json`,
-        htmlPath: `_bmad-output/runtime/requirement-records/${requirementSetId}/confirmation/runtime-registry-bridge-confirmation.html`,
-      },
-    ],
+    confirmationHistory: [],
     architectureConfirmationState: {
-      status: 'active',
-      currentArchitectureConfirmationRunId: `registry-bridge-${segment}`,
-      currentArchitectureConfirmationHash: architectureConfirmationHash,
+      status: 'missing',
+      reasonCode: 'runtime_registry_bridge_non_authoritative',
       lastEventType: 'requirement_record_materialized_from_runtime_registry',
       updatedAt: now,
     },

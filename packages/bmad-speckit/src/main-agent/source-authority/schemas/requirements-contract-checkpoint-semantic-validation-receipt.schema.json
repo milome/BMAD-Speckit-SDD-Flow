@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-checkpoint-semantic-validation-receipt.schema.json",
+  "title": "Requirements Contract Checkpoint Semantic Validation Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "checkpointId",
+    "validatorIdentity",
+    "validatorVersion",
+    "validatorHash",
+    "recordId",
+    "requirementSetId",
+    "implementationAttemptId",
+    "sourceDocumentHash",
+    "implementationConfirmationHash",
+    "semanticModelHash",
+    "semanticConservationManifestHash",
+    "persistenceStatus",
+    "semanticValidationStatus",
+    "validatedInputs",
+    "blockers",
+    "decision",
+    "createdAt",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-checkpoint-semantic-validation-receipt/v1"
+    },
+    "checkpointId": {
+      "enum": [
+        "cp-00-semantic-kernel",
+        "cp-01-must-decomposition-packet",
+        "cp-02-atomic-decomposition-loop-convergence",
+        "cp-03-packet-to-source-materialization",
+        "cp-04-id-freeze",
+        "cp-05-implementation-confirmation-core",
+        "cp-06-projections",
+        "cp-07-human-readable-views",
+        "cp-08-pre-render-global-reconciliation"
+      ]
+    },
+    "validatorIdentity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validatorVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "validatorHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceDocumentHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "implementationConfirmationHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticConservationManifestHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "persistenceStatus": {
+      "enum": [
+        "committed",
+        "failed"
+      ]
+    },
+    "semanticValidationStatus": {
+      "enum": [
+        "pass",
+        "block",
+        "stale"
+      ]
+    },
+    "validatedInputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "path",
+          "hash"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hash": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "refs"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "decision": {
+      "enum": [
+        "pass",
+        "block",
+        "stale"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "pass"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "persistenceStatus": {
+            "const": "committed"
+          },
+          "semanticValidationStatus": {
+            "const": "pass"
+          },
+          "blockers": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "block"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "semanticValidationStatus": {
+            "const": "block"
+          },
+          "blockers": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "stale"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "properties": {
+          "semanticValidationStatus": {
+            "const": "stale"
+          },
+          "blockers": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

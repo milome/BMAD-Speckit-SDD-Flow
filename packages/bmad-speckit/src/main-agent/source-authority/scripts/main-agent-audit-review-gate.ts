@@ -9,6 +9,9 @@ import {
 } from './audit-triad-orchestrator';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
+import { createRuntimeStatusProjectionUpdate } from './requirements-contract-runtime-status-decision-receipt';
+import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
+import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 
 type JsonObject = Record<string, unknown>;
 type AuditReviewDecision = 'pass' | 'blocked';
@@ -120,23 +123,19 @@ function resolveAttemptId(args: ParsedArgs, record: JsonObject): string {
   throw new Error('missing required args: attemptId');
 }
 
-function modelResult(record: JsonObject, model: string): JsonObject {
-  return nested(nested(record.sixModelResults)[model]);
-}
-
-function currentModelPassIssues(record: JsonObject, model: string): string[] {
-  const result = modelResult(record, model);
-  const status = text(result.status);
-  const issues: string[] = [];
-  if (!status) issues.push(`${model}_result_missing`);
-  else if (status !== 'pass') issues.push(`${model}_not_passed:${status}`);
-  if (text(result.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
-    issues.push(`${model}_source_hash_mismatch`);
-  }
-  if (text(result.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
-    issues.push(`${model}_confirmation_hash_mismatch`);
-  }
-  return issues;
+function currentModelPassIssues(
+  record: JsonObject,
+  model: 'execution_closure',
+  attemptId: string
+): string[] {
+  const verified = resolveVerifiedSixModelStatus({
+    record,
+    modelId: model,
+    currentImplementationAttemptId: attemptId,
+  });
+  return verified.effectiveStatus === 'pass'
+    ? []
+    : [`${model}_not_passed:${verified.effectiveStatus}`, ...verified.blockerRefs];
 }
 
 function currentHashes(
@@ -198,7 +197,11 @@ function evaluate(input: {
   if (openReconfirmations.length > 0) {
     blockingReasons.push('open_reconfirmation_request_exists');
   }
-  const executionIssues = currentModelPassIssues(input.record, 'execution_closure');
+  const executionIssues = currentModelPassIssues(
+    input.record,
+    'execution_closure',
+    input.attemptId
+  );
   checks.push({
     id: 'execution-closure-current-pass',
     passed: executionIssues.length === 0,
@@ -312,6 +315,44 @@ function updateRecord(
     ],
     currentHashes: currentHashes(record, input.reportHash, input.plan),
   };
+  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    modelId: 'audit_review',
+    implementationAttemptId: input.attemptId,
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    semanticModelHash: text(record.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'audit_triad_execution_plan',
+        path: normalizePathForRecord(input.reportPath),
+        hash: input.plan.currentEvidenceHash,
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'audit_review_report',
+        path: normalizePathForRecord(input.reportPath),
+        hash: input.reportHash,
+      },
+    ],
+    blockerRefs: input.blockingReasons,
+    evidenceRefs: [normalizePathForRecord(input.reportPath)],
+    authorityClass: 'deterministic_gate',
+    decision: input.decision === 'pass' ? 'pass' : 'block',
+    effectiveStatus: input.decision === 'pass' ? 'pass' : 'blocked',
+    createdAt: input.evaluatedAt,
+    receiptPath: `runtime/status-decisions/${input.attemptId}/audit_review.json`,
+    projection: resultPayload,
+  });
+  const previousRuntimeStatusDecisionReceipts = objects(
+    record.runtimeStatusDecisionReceipts
+  ).filter(
+    (entry) =>
+      runtimeStatus.receiptRef === null ||
+      text(entry.path) !== runtimeStatus.receiptRef.path
+  );
   const transition =
     input.decision === 'pass'
       ? {
@@ -328,8 +369,12 @@ function updateRecord(
     gateChecks: [...objects(record.gateChecks), gateCheck],
     sixModelResults: {
       ...previousSixModelResults,
-      audit_review: resultPayload,
+      audit_review: runtimeStatus.projection,
     },
+    runtimeStatusDecisionReceipts: runtimeStatus.receiptRef
+      ? [...previousRuntimeStatusDecisionReceipts, runtimeStatus.receiptRef]
+      : previousRuntimeStatusDecisionReceipts,
+    currentAttemptId: input.attemptId,
     currentMentalModel: 'audit_review',
     currentStage: 'audit_review',
     stage: text(record.stage) || 'audit_review',
@@ -360,7 +405,12 @@ export function mainAuditReviewGate(argv: string[]): number {
   const plan = readJson(planPath) as unknown as AuditTriadExecutionPlan;
   const rounds = readRounds(args, recordPath, attemptId);
   const reportPath = path.resolve(args.reportPath ?? defaultReportPath(recordPath, attemptId));
-  const evaluation = evaluate({
+  const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
+    transition: 'audit-review',
+    requirementRecordPath: recordPath,
+    currentSourcePath: text(record.sourcePath),
+  });
+  const baseEvaluation = evaluate({
     record,
     attemptId,
     plan,
@@ -368,6 +418,19 @@ export function mainAuditReviewGate(argv: string[]): number {
     repairReceiptRefs: args.repairReceipt ?? [],
     repairFeedbackDispatchRefs: args.repairFeedbackDispatch ?? [],
   });
+  const evaluation =
+    sourcePrdLintTransition.decision === 'pass'
+      ? baseEvaluation
+      : {
+          ...baseEvaluation,
+          decision: 'blocked' as const,
+          blockingReasons: [
+            ...new Set([
+              ...baseEvaluation.blockingReasons,
+              ...sourcePrdLintTransition.issueCodes,
+            ]),
+          ],
+        };
   const report = {
     reportType: 'audit_review_report',
     generatedAt: evaluatedAt,

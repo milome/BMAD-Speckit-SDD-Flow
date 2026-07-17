@@ -1,0 +1,10 @@
+{
+  "acceptedAt": "2026-07-13T02:11:20.895Z",
+  "bytes": 6491,
+  "chunkHash": "sha256:e0fdff5648d6210831f7ec4f521f1f9b51e600dd23f09f994a4319be9ee84d7b",
+  "chunkId": "001",
+  "chunkPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-stage-gap-ledger.schema.json.draft\\chunks\\001.md",
+  "schemaVersion": "large-document-writer-chunk-receipt/v1",
+  "sectionId": "schema",
+  "wrapped": true
+}

@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "requirements-contract-large-document-writer-safe-write-receipt.schema.json",
+  "title": "Requirements Contract Large Document Writer Safe-Write Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "targetPath",
+    "mode",
+    "tempPath",
+    "tempHash",
+    "backupPath",
+    "originalHash",
+    "backupHash",
+    "finalHash",
+    "writtenAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "large-document-writer-safe-write/v1"
+    },
+    "targetPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": ["create", "replace", "upsert"]
+    },
+    "tempPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tempHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "backupPath": {
+      "type": ["string", "null"]
+    },
+    "originalHash": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "backupHash": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finalHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "writtenAt": {
+      "type": "string",
+      "minLength": 20
+    }
+  },
+  "definitions": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

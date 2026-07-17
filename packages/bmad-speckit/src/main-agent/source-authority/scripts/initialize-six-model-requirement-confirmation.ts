@@ -2,6 +2,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+} from './requirements-contract-runtime-status-decision-receipt';
 
 const MODELS = [
   'requirement_confirmation',
@@ -188,8 +192,56 @@ export function main(argv: string[]): number {
           recordedAt
         );
       }
-      return {
+      const confirmationHistory = Array.isArray(record.confirmationHistory)
+        ? record.confirmationHistory
+        : [];
+      const latestConfirmation = object(confirmationHistory.at(-1));
+      const attemptId = text(record.currentAttemptId) || text(record.runId);
+      const baseline = {
         ...record,
+        sixModelResults,
+      };
+      const runtimeStatus = createRuntimeStatusProjectionUpdate({
+        recordId: text(record.recordId),
+        requirementSetId: text(record.requirementSetId) || text(record.recordId),
+        modelId: 'requirement_confirmation',
+        implementationAttemptId: attemptId,
+        sourceDocumentHash: text(record.sourceDocumentHash),
+        implementationConfirmationHash: text(record.implementationConfirmationHash),
+        semanticModelHash: text(record.semanticModelHash),
+        stageInputs: [
+          {
+            role: 'requirement_source',
+            path: text(record.sourcePath),
+            hash: text(record.sourceDocumentHash),
+          },
+        ],
+        deterministicGateOutputs: [
+          {
+            role: 'requirement_confirmation_page',
+            path: text(latestConfirmation.htmlPath),
+            hash: text(record.confirmationPageHash),
+          },
+        ],
+        blockerRefs: [],
+        evidenceRefs: [
+          text(latestConfirmation.renderReportPath),
+          text(latestConfirmation.htmlPath),
+        ].filter(Boolean),
+        authorityClass: 'controlled_confirmation',
+        decision: 'pass',
+        effectiveStatus: 'pass',
+        createdAt: recordedAt,
+        receiptPath: `runtime/status-decisions/${attemptId}/requirement_confirmation.json`,
+        projection: object(sixModelResults.requirement_confirmation),
+      });
+      return {
+        ...baseline,
+        ...runtimeStatusProjectionRecordPatch({
+          record: baseline,
+          modelId: 'requirement_confirmation',
+          update: runtimeStatus,
+        }),
         flow: text(record.flow) || text(record.entryFlow) || 'standalone_tasks',
         stage: 'requirement_confirmation',
         currentStage: 'requirement_confirmation',
@@ -197,7 +249,6 @@ export function main(argv: string[]): number {
         mentalModelTransitions: Array.isArray(record.mentalModelTransitions)
           ? record.mentalModelTransitions
           : [],
-        sixModelResults,
         pendingBlockerIntake: Array.isArray(record.pendingBlockerIntake)
           ? record.pendingBlockerIntake
           : [],

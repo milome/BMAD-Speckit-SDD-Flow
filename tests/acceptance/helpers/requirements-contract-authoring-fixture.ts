@@ -13,6 +13,20 @@ import os from 'node:os';
 import path from 'node:path';
 import yaml from 'js-yaml';
 import { runMainAgentPreConfirmationDrilldown } from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import {
+  renderStaleImplementationConfirmation,
+  type StaleImplementationConfirmationDescriptor,
+} from './requirements-contract-source-fixture';
+
+export {
+  createSourceAuthorityProjectionDescriptor,
+  createStaleImplementationConfirmationDescriptor,
+  renderSourceAuthorityProjection,
+  writeSourceAuthorityProjection,
+  type SourceAuthorityProjectionDescriptor,
+  type SourceAuthorityProjectionOptions,
+  type StaleImplementationConfirmationDescriptor,
+} from './requirements-contract-source-fixture';
 
 type JsonObject = Record<string, unknown>;
 
@@ -28,6 +42,75 @@ interface CriticalAuditorFixtureInput {
     projectionGroups: string[];
     projectionRefs: string[];
   };
+}
+
+export interface MinimalConsumerRequirementDescriptor {
+  seedHash: string;
+  refs: {
+    functionalRequirementId: string;
+    mustRequirementId: string;
+    negativeRequirementId: string;
+    failureId: string;
+    acceptanceId: string;
+    negativeAcceptanceId: string;
+    commandId: string;
+    negativeCommandId: string;
+    endToEndId: string;
+    mustTraceId: string;
+    negativeTraceId: string;
+    pathId: string;
+    outOfScopeId: string;
+  };
+  target: {
+    path: string;
+    owner: string;
+  };
+  verification: {
+    testPath: string;
+    requiredCommand: string;
+  };
+  session: {
+    sessionId: string;
+    turnId: string;
+    messageId: string;
+    actorIdentityClass: string;
+    branch: string;
+    capturedAt: string;
+  };
+  attempt: {
+    implementationAttemptId: string;
+  };
+  semantics: {
+    language: string;
+    title: string;
+    requirement: string;
+    negativeAssertion: string;
+    failureCondition: string;
+    safeFailureBehavior: string;
+    oracle: string;
+    outOfScope: string;
+  };
+}
+
+export interface MinimalConsumerRequirementMaterialization {
+  sourcePath: string;
+  descriptor: MinimalConsumerRequirementDescriptor;
+  authoringOptions: {
+    targetPath: string;
+    requiredCommand: string;
+    sessionId: string;
+    sessionTurnId: string;
+    sessionMessageId: string;
+    sessionActorIdentityClass: string;
+    sessionBranch: string;
+    sessionCapturedAt: string;
+    confirmationLanguage: string;
+    implementationAttemptId: string;
+  };
+}
+
+export interface MinimalConsumerRequirementWriteOptions {
+  staleImplementationConfirmation?: StaleImplementationConfirmationDescriptor;
 }
 
 export function createTempRoot(prefix: string): string {
@@ -51,6 +134,97 @@ export function sha256Text(value: string): string {
 
 export function sha256File(filePath: string): string {
   return sha256Text(readFileSync(filePath, 'utf8'));
+}
+
+export function createTestAuthoringExecutionOptions(seed: string): {
+  sessionId: string;
+  sessionTurnId: string;
+  sessionMessageId: string;
+  sessionActorIdentityClass: string;
+  sessionBranch: string;
+  sessionCapturedAt: string;
+  implementationAttemptId: string;
+} {
+  const normalizedSeed = seed.trim();
+  if (!normalizedSeed) throw new Error('test authoring execution seed must be non-empty');
+  const digest = createHash('sha256').update(normalizedSeed, 'utf8').digest('hex');
+  const token = digest.slice(0, 12);
+  const capturedSecond = String(Number.parseInt(digest.slice(12, 14), 16) % 60).padStart(2, '0');
+  return {
+    sessionId: `session-${token}`,
+    sessionTurnId: `turn-${token}`,
+    sessionMessageId: `message-${token}`,
+    sessionActorIdentityClass: 'test_fixture',
+    sessionBranch: `fixture-${token}`,
+    sessionCapturedAt: `2026-01-01T00:00:${capturedSecond}.000Z`,
+    implementationAttemptId: `IMPL-ATTEMPT-${token.toUpperCase()}`,
+  };
+}
+
+export function createMinimalConsumerRequirementDescriptor(
+  seed: string
+): MinimalConsumerRequirementDescriptor {
+  const normalizedSeed = seed.trim();
+  if (!normalizedSeed) {
+    throw new Error('minimal Consumer Requirement fixture seed must be non-empty');
+  }
+  const digest = createHash('sha256').update(normalizedSeed, 'utf8').digest('hex');
+  const token = digest.slice(0, 12);
+  const ordinal = String((Number.parseInt(digest.slice(0, 8), 16) % 900) + 100);
+  const secondaryOrdinal = String(((Number(ordinal) - 99) % 900) + 100).padStart(3, '0');
+  const testPath = `tests/consumer-fixtures/consumer-${token}.test.ts`;
+  const capturedSecond = String(Number.parseInt(digest.slice(8, 10), 16) % 60).padStart(2, '0');
+
+  return {
+    seedHash: `sha256:${digest}`,
+    refs: {
+      functionalRequirementId: `FR-${ordinal}`,
+      mustRequirementId: `MUST-FR-${ordinal}`,
+      negativeRequirementId: `NEG-${secondaryOrdinal}`,
+      failureId: `FAIL-${secondaryOrdinal}`,
+      acceptanceId: `ACC-${ordinal}`,
+      negativeAcceptanceId: `ACC-${secondaryOrdinal}`,
+      commandId: `CMD-${ordinal}`,
+      negativeCommandId: `CMD-${secondaryOrdinal}`,
+      endToEndId: `E2E-${ordinal}`,
+      mustTraceId: `TRACE-${ordinal}`,
+      negativeTraceId: `TRACE-${secondaryOrdinal}`,
+      pathId: `PATH-${ordinal}`,
+      outOfScopeId: `OUT-${secondaryOrdinal}`,
+    },
+    target: {
+      path: `src/consumer-fixtures/consumer-${token}.ts`,
+      owner: `consumer-${token}-owner`,
+    },
+    verification: {
+      testPath,
+      requiredCommand: `npx vitest run ${testPath}`,
+    },
+    session: {
+      sessionId: `session-${token}`,
+      turnId: `turn-${token}`,
+      messageId: `message-${token}`,
+      actorIdentityClass: 'requesting_user',
+      branch: `fixture-${token}`,
+      capturedAt: `2026-01-01T00:00:${capturedSecond}.000Z`,
+    },
+    attempt: {
+      implementationAttemptId: `IMPL-ATTEMPT-${token}`,
+    },
+    semantics: {
+      language: 'en-US',
+      title: `Seed Derived Consumer Requirement ${token}`,
+      requirement: 'The Consumer must publish the complete source-authorized result.',
+      negativeAssertion:
+        'The Consumer must not publish a partial result when source validation fails.',
+      failureCondition: 'The source-authorized operation cannot complete safely.',
+      safeFailureBehavior:
+        'Keep the prior valid result and expose a recoverable failure without partial publication.',
+      oracle:
+        'The complete result is published exactly once, or the prior valid result remains unchanged.',
+      outOfScope: 'The fixture does not change unrelated Consumer execution behavior.',
+    },
+  };
 }
 
 export function artifacts(root: string, recordId: string, requirementSetId = recordId) {
@@ -80,6 +254,29 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
     projectionDomainSanityReport: path.join(authoring, 'projection-domain-sanity-report.json'),
     sourceMutationDecision: path.join(authoring, 'source-mutation-decision.json'),
     authoringTransaction: path.join(authoring, 'authoring-transaction.json'),
+    semanticIr: path.join(authoring, 'semantic-ir.json'),
+    semanticResolutionDir: path.join(authoring, 'resolution', 'semantic'),
+    interactionResolution: path.join(authoring, 'interaction-resolution.json'),
+    intakeReceipt: path.join(authoring, 'intake', 'intake-receipt.json'),
+    invocationAuthorityReceipt: path.join(authoring, 'intake', 'invocation-authority-receipt.json'),
+    intentLineageLedger: path.join(authoring, 'intake', 'intent-lineage-ledger.json'),
+    semanticConservationManifest: path.join(
+      authoring,
+      'proofs',
+      'semantic-conservation-manifest.json'
+    ),
+    renderRoundTripReport: path.join(
+      authoring,
+      'proofs',
+      'render-roundtrip-report.json'
+    ),
+    promotionReadbackRoundTripReport: path.join(
+      authoring,
+      'proofs',
+      'promotion-readback-roundtrip-report.json'
+    ),
+    compiledModel: path.join(authoring, 'requirement-contract-model.json'),
+    compilerClosureReport: path.join(authoring, 'compiler-closure-report.json'),
     draftSourcePreview: path.join(authoring, 'draft-source-preview.md'),
     promotionReceipt: path.join(authoring, 'promotion-receipt.json'),
     draftImplementationConfirmation: path.join(authoring, 'draft-implementation-confirmation.json'),
@@ -87,6 +284,7 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
     receipt1: path.join(authoring, 'critical-auditor-receipt-round-1.json'),
     receipt2: path.join(authoring, 'critical-auditor-receipt-round-2.json'),
     receipt3: path.join(authoring, 'critical-auditor-receipt-round-3.json'),
+    scaleAssessmentInitial: path.join(authoring, 'scale-assessment-initial.json'),
     scaleRoutingDecision: path.join(authoring, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoring, 'checkpoint-persistence-evidence.json'),
     checkpointReceiptPaths: Array.from({ length: 9 }, (_item, index) =>
@@ -106,6 +304,8 @@ export function artifacts(root: string, recordId: string, requirementSetId = rec
       'source-materialization-receipt.json'
     ),
     html: path.join(confirmation, 'confirmation.html'),
+    confirmationSummary: path.join(confirmation, 'confirmation-summary.json'),
+    confirmationRenderReport: path.join(confirmation, 'confirmation-render-report.json'),
   };
 }
 
@@ -444,143 +644,125 @@ export function writeConsumerRequirement(
   root: string,
   relativePath = 'docs/requirements/multi-timeframe.md'
 ) {
-  return writeText(
-    root,
-    relativePath,
-    [
-      '# Multi Timeframe Display Settings',
-      '',
-      '目标文件：`vnpy/chart/multi_timeframe_widget.py`, `vnpy/chart/multi_timeframe_settings_dialog.py`, `vnpy/trader/ui/widget.py`',
-      '',
-      '## Functional Requirements',
-      '',
-      '| ID | Requirement | Acceptance link |',
-      '| --- | --- | --- |',
-      '| FR-001 | 主图摘要必须展示所有启用周期和指标。 | ACC-001 |',
-      '| FR-002 | 设置面板必须显示可编辑周期列表并实时预览修改。 | ACC-002 |',
-      '| FR-003 | 取消操作必须回滚全部预览变更。 | ACC-003 |',
-      '| FR-004 | OK 操作必须持久化设置并刷新图表。 | ACC-004 |',
-      '',
-      '## Negative Requirements And Not Done Conditions',
-      '',
-      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
-      '| --- | --- | --- | --- | --- | --- |',
-      '| NEG-001 | 仅更新确认页或内存预览不能算完成。 | 持久化失败时必须保留先前设置且不得宣称保存成功。 | 失败后状态被部分写入或错误显示成功。 | FAIL-001 | ACC-003 ACC-004 CMD-001 |',
-      '',
-      '## Failure Matrix',
-      '',
-      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
-      '| --- | --- | --- | --- | --- | --- |',
-      '| FAIL-001 | 设置校验、持久化或刷新失败。 | 阻止提交，保留最近一次有效设置，并向用户显示可恢复错误。 | NEG-001 | ACC-001 ACC-002 ACC-003 ACC-004 E2E-001 | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 |',
-      '',
-      '## Acceptance Evidence',
-      '',
-      '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
-      '| --- | --- | --- | --- | --- | --- | --- |',
-      '| ACC-001 | 摘要显示 | MUST-FR-001 | pytest tests/test_multi_timeframe_settings.py | 所有启用周期和指标都出现在摘要中。 | CMD-001 TRACE-001 | PATH-001 owns implementation and remediation. |',
-      '| ACC-002 | 设置预览 | MUST-FR-002 | pytest tests/test_multi_timeframe_settings.py | 编辑周期后预览立即反映新配置。 | CMD-001 TRACE-002 | PATH-002 owns implementation and remediation. |',
-      '| ACC-003 | 取消回滚 | MUST-FR-003 NEG-001 | pytest tests/test_multi_timeframe_settings.py | 取消后恢复修改前设置且无持久化副作用。 | CMD-001 TRACE-003 TRACE-005 | PATH-002 owns implementation and remediation. |',
-      '| ACC-004 | 保存刷新 | MUST-FR-004 NEG-001 | pytest tests/test_multi_timeframe_settings.py | 保存成功后设置持久化且图表刷新一次。 | CMD-001 TRACE-004 TRACE-005 | PATH-003 owns implementation and remediation. |',
-      '',
-      '## Test And Verification Paths',
-      '',
-      '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
-      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| CMD-001 | delivery-evidence | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 每个 MUST 使用对应 ACC/TRACE oracle 独立闭环。 | ACC-001 ACC-002 ACC-003 ACC-004 E2E-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 TRACE-005 | PATH-001 PATH-002 PATH-003 own remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py vnpy/chart/multi_timeframe_settings_dialog.py vnpy/trader/ui/widget.py |',
-      '| E2E-001 | e2e | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 用户完成预览、取消、保存和刷新闭环。 | ACC-001 ACC-002 ACC-003 ACC-004 CMD-001 TRACE-001 TRACE-002 TRACE-003 TRACE-004 TRACE-005 | PATH-001 PATH-002 PATH-003 own remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py vnpy/chart/multi_timeframe_settings_dialog.py vnpy/trader/ui/widget.py |',
-      '',
-      '## Trace Matrix Source',
-      '',
-      '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
-      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | OUT-001 | 所有启用周期和指标都出现在摘要中。 | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
-      '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-001 | CMD-001 | CMD-001 | none | PATH-002 | none | 编辑周期后预览立即反映新配置。 | MUST-FR-002 closes through ACC-002 and TRACE-002. | PATH-002 owns remediation. |',
-      '| TRACE-003 | MUST-FR-003 | ACC-003 | ACC-003 E2E-001 | CMD-001 | CMD-001 | none | PATH-002 | none | 取消后恢复修改前设置且无持久化副作用。 | MUST-FR-003 closes through ACC-003 and TRACE-003. | PATH-002 owns remediation. |',
-      '| TRACE-004 | MUST-FR-004 | ACC-004 | ACC-004 E2E-001 | CMD-001 | CMD-001 | none | PATH-003 | none | 保存成功后设置持久化且图表刷新一次。 | MUST-FR-004 closes through ACC-004 and TRACE-004. | PATH-003 owns remediation. |',
-      '| TRACE-005 | NEG-001 | ACC-003 ACC-004 | ACC-003 ACC-004 E2E-001 | CMD-001 | CMD-001 | none | PATH-002 PATH-003 | none | 失败时保留先前设置且不显示保存成功。 | NEG-001 closes through negative controls in ACC-003 and ACC-004. | PATH-002 PATH-003 own remediation. |',
-      '',
-      '## Implementation Path Map',
-      '',
-      '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
-      '| --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| PATH-001 | `vnpy/chart/multi_timeframe_widget.py` | Widget owner | Render enabled periods and refresh the chart. | MUST-FR-001 MUST-FR-004 | ACC-001 and ACC-004 pass. | ACC-001 ACC-004 CMD-001 TRACE-001 TRACE-004 | Widget owner owns implementation and rollback. |',
-      '| PATH-002 | `vnpy/chart/multi_timeframe_settings_dialog.py` | Dialog owner | Implement preview, cancel, validation, and rollback. | MUST-FR-002 MUST-FR-003 NEG-001 | ACC-002 and ACC-003 pass. | ACC-002 ACC-003 CMD-001 TRACE-002 TRACE-003 TRACE-005 | Dialog owner owns implementation and rollback. |',
-      '| PATH-003 | `vnpy/trader/ui/widget.py` | UI owner | Persist accepted settings and trigger one refresh. | MUST-FR-004 NEG-001 | ACC-004 passes without partial writes. | ACC-004 CMD-001 TRACE-004 TRACE-005 | UI owner owns implementation and rollback. |',
-      '',
-      '## Out Of Scope',
-      '',
-      '| ID | Forbidden scope | Boundary assertion | Evidence |',
-      '| --- | --- | --- | --- |',
-      '| OUT-001 | 本需求不重写交易引擎。 | 保持交易引擎不变。 | ACC-001 |',
-      '',
-    ].join('\n')
+  const fixturePath = path.resolve(
+    'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.authority.md'
   );
+  return writeText(root, relativePath, readFileSync(fixturePath, 'utf8'));
 }
 
 export function writeMinimalConsumerRequirement(
   root: string,
-  relativePath = 'docs/requirements/minimal-consumer.md'
-) {
-  return writeText(
+  relativePath: string,
+  descriptor: MinimalConsumerRequirementDescriptor,
+  options: MinimalConsumerRequirementWriteOptions = {}
+): MinimalConsumerRequirementMaterialization {
+  const { refs, semantics, target, verification } = descriptor;
+  const fixtureExportName = `consumerFixture${descriptor.seedHash.slice('sha256:'.length, 19)}`;
+  const testAbsolutePath = path.join(root, verification.testPath);
+  const targetModulePath = path
+    .relative(path.dirname(testAbsolutePath), path.join(root, target.path))
+    .replace(/\\/gu, '/')
+    .replace(/\.[cm]?[jt]sx?$/u, '');
+  const targetImportPath = targetModulePath.startsWith('.')
+    ? targetModulePath
+    : `./${targetModulePath}`;
+  writeText(root, target.path, `export const ${fixtureExportName} = true;\n`);
+  writeText(
+    root,
+    verification.testPath,
+    [
+      `import { describe, expect, it } from 'vitest';`,
+      `import { ${fixtureExportName} } from '${targetImportPath}';`,
+      '',
+      `describe('${fixtureExportName}', () => {`,
+      `  it('exposes the source-authorized Consumer fixture', () => {`,
+      `    expect(${fixtureExportName}).toBe(true);`,
+      '  });',
+      '});',
+      '',
+    ].join('\n')
+  );
+  const sourcePath = writeText(
     root,
     relativePath,
     [
-      '# Minimal Consumer Requirement',
+      `# ${semantics.title}`,
       '',
-      '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
+      `Target file: \`${target.path}\``,
       '',
       '## Functional Requirements',
       '',
       '| ID | Requirement | Acceptance link |',
       '| --- | --- | --- |',
-      '| FR-001 | 主图摘要必须展示所有启用周期。 | ACC-001 |',
+      `| ${refs.functionalRequirementId} | ${semantics.requirement} | ${refs.acceptanceId} |`,
       '',
       '## Negative Requirements And Not Done Conditions',
       '',
       '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
       '| --- | --- | --- | --- | --- | --- |',
-      '| NEG-001 | 仅生成确认页不能算完成功能。 | 摘要缺少任一启用周期时不得宣称完成。 | 摘要显示不完整。 | FAIL-001 | ACC-001 CMD-001 |',
+      `| ${refs.negativeRequirementId} | A partial or unverified result is not complete. | ${semantics.negativeAssertion} | The Consumer publishes a partial result or reports success after validation failure. | ${refs.failureId} | ${refs.negativeAcceptanceId} ${refs.negativeCommandId} |`,
       '',
       '## Failure Matrix',
       '',
       '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
       '| --- | --- | --- | --- | --- | --- |',
-      '| FAIL-001 | 启用周期配置缺失或无效。 | 保留最近一次有效摘要并显示配置错误，不输出不完整摘要。 | NEG-001 | ACC-001 E2E-001 | MUST-FR-001 |',
+      `| ${refs.failureId} | ${semantics.failureCondition} | ${semantics.safeFailureBehavior} | ${refs.negativeRequirementId} | ${refs.acceptanceId} ${refs.negativeAcceptanceId} ${refs.endToEndId} | ${refs.mustRequirementId} |`,
       '',
       '## Acceptance Evidence',
       '',
       '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
       '| --- | --- | --- | --- | --- | --- | --- |',
-      '| ACC-001 | 主图摘要显示 | MUST-FR-001 NEG-001 | pytest tests/test_multi_timeframe_settings.py | 主图摘要展示全部启用周期，配置无效时保持先前有效摘要。 | CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. |',
+      `| ${refs.acceptanceId} | Source-authorized Consumer result | ${refs.mustRequirementId} | ${verification.requiredCommand} | ${semantics.oracle} | ${refs.commandId} ${refs.mustTraceId} | ${refs.pathId} owns remediation. |`,
+      `| ${refs.negativeAcceptanceId} | Source-authorized Consumer negative control | ${refs.negativeRequirementId} | ${verification.requiredCommand} | ${semantics.negativeAssertion} | ${refs.negativeCommandId} ${refs.negativeTraceId} | ${refs.pathId} owns remediation. |`,
       '',
       '## Test And Verification Paths',
       '',
       '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
       '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| CMD-001 | delivery-evidence | MUST-FR-001 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 主图摘要展示全部启用周期，失败时保持安全状态。 | ACC-001 E2E-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |',
-      '| E2E-001 | e2e | MUST-FR-001 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 用户看到完整摘要或明确配置错误。 | ACC-001 CMD-001 TRACE-001 TRACE-002 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |',
+      `| ${refs.commandId} | delivery-evidence | ${refs.mustRequirementId} | ${verification.requiredCommand} | Exit code 0. | ${semantics.oracle} | ${refs.acceptanceId} ${refs.endToEndId} ${refs.mustTraceId} | ${refs.pathId} owns remediation. | ${verification.testPath} ${target.path} |`,
+      `| ${refs.negativeCommandId} | delivery-evidence | ${refs.negativeRequirementId} | ${verification.requiredCommand} | Exit code 0. | ${semantics.negativeAssertion} | ${refs.negativeAcceptanceId} ${refs.endToEndId} ${refs.negativeTraceId} | ${refs.pathId} owns remediation. | ${verification.testPath} ${target.path} |`,
+      `| ${refs.endToEndId} | e2e | ${refs.mustRequirementId} ${refs.negativeRequirementId} | ${verification.requiredCommand} | Exit code 0. | ${semantics.oracle} | ${refs.acceptanceId} ${refs.negativeAcceptanceId} ${refs.commandId} ${refs.negativeCommandId} ${refs.mustTraceId} ${refs.negativeTraceId} | ${refs.pathId} owns remediation. | ${verification.testPath} ${target.path} |`,
       '',
       '## Trace Matrix Source',
       '',
       '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
       '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 主图摘要展示全部启用周期。 | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
-      '| TRACE-002 | NEG-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 配置无效时保持先前有效摘要且不宣称成功。 | NEG-001 closes through ACC-001 negative control. | PATH-001 owns remediation. |',
+      `| ${refs.mustTraceId} | ${refs.mustRequirementId} | ${refs.acceptanceId} | ${refs.acceptanceId} ${refs.endToEndId} | ${refs.commandId} | ${refs.commandId} | none | ${refs.pathId} | ${refs.outOfScopeId} | ${semantics.oracle} | ${refs.mustRequirementId} closes through ${refs.acceptanceId} and ${refs.mustTraceId}. | ${refs.pathId} owns remediation. |`,
+      `| ${refs.negativeTraceId} | ${refs.negativeRequirementId} | ${refs.negativeAcceptanceId} | ${refs.negativeAcceptanceId} ${refs.endToEndId} | ${refs.commandId} | ${refs.negativeCommandId} | none | ${refs.pathId} | none | ${semantics.negativeAssertion} | ${refs.negativeRequirementId} closes through ${refs.negativeAcceptanceId} and ${refs.negativeTraceId}. | ${refs.pathId} owns remediation. |`,
       '',
       '## Implementation Path Map',
       '',
       '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
       '| --- | --- | --- | --- | --- | --- | --- | --- |',
-      '| PATH-001 | `vnpy/chart/multi_timeframe_widget.py` | Widget owner | Render enabled periods and preserve the last valid summary on invalid input. | MUST-FR-001 NEG-001 | ACC-001 passes. | ACC-001 CMD-001 TRACE-001 TRACE-002 | Widget owner owns implementation and rollback. |',
+      `| ${refs.pathId} | \`${target.path}\` | ${target.owner} | Implement the source-authorized result and safe failure behavior. | ${refs.mustRequirementId} ${refs.negativeRequirementId} | ${refs.acceptanceId} and ${refs.negativeAcceptanceId} pass. | ${refs.acceptanceId} ${refs.negativeAcceptanceId} ${refs.commandId} ${refs.negativeCommandId} ${refs.mustTraceId} ${refs.negativeTraceId} | ${target.owner} owns implementation and rollback. |`,
       '',
       '## Out Of Scope',
       '',
       '| ID | Forbidden scope | Boundary assertion | Evidence |',
       '| --- | --- | --- | --- |',
-      '| OUT-001 | 不修改交易执行逻辑。 | 保持交易执行逻辑不变。 | ACC-001 |',
+      `| ${refs.outOfScopeId} | ${semantics.outOfScope} | Preserve unrelated behavior. | ${refs.acceptanceId} |`,
       '',
+      ...(options.staleImplementationConfirmation
+        ? [renderStaleImplementationConfirmation(options.staleImplementationConfirmation), '']
+        : []),
     ].join('\n')
   );
+  return {
+    sourcePath,
+    descriptor,
+    authoringOptions: {
+      targetPath: target.path,
+      requiredCommand: verification.requiredCommand,
+      sessionId: descriptor.session.sessionId,
+      sessionTurnId: descriptor.session.turnId,
+      sessionMessageId: descriptor.session.messageId,
+      sessionActorIdentityClass: descriptor.session.actorIdentityClass,
+      sessionBranch: descriptor.session.branch,
+      sessionCapturedAt: descriptor.session.capturedAt,
+      confirmationLanguage: descriptor.semantics.language,
+      implementationAttemptId: descriptor.attempt.implementationAttemptId,
+    },
+  };
 }
 
 export function expectSourceHashUnchanged(source: string, beforeHash: string): void {

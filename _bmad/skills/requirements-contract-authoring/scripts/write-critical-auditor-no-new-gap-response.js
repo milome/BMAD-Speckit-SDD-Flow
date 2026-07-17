@@ -289,15 +289,14 @@ function writeCriticalAuditorNoNewGapResponse(args) {
     };
   }
 
-  const response = buildResponse({ request, requestPath, roundIndex, reviewedProjectionRefs });
-  writeJson(responsePath, response);
   return {
-    ok: true,
-    responsePath: toRootRelative(responsePath),
+    ok: false,
+    failureClass: "critical_auditor_independent_provider_evidence_required",
+    issues: ["deterministic_no_new_gap_response_writer_forbidden"],
+    request: toRootRelative(requestPath),
+    responseOut: toRootRelative(responsePath),
     roundIndex,
     requestHash: request.requestHash,
-    gateDryRunHash: response.gateDryRunHash,
-    reviewedProjectionRefs,
     receiptWritten: false,
   };
 }

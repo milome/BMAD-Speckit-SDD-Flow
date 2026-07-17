@@ -5,8 +5,77 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+  type RequirementsContractSixModelId,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
+function numberedFixtureId(prefix: string, ordinal: number): string {
+  return `${prefix}-${String(ordinal).padStart(3, '0')}`;
+}
+
+function namedFixtureId(prefix: string, name: string): string {
+  return `${prefix}-${name.toUpperCase().replace(/[^A-Z0-9]+/gu, '-')}`;
+}
+
+function closeoutAttemptId(scenario: string): string {
+  return `closeout-${scenario}`;
+}
+
+const CLOSEOUT_FIXTURE_IDS = Object.freeze({
+  recordId: namedFixtureId('REQ', 'closeout'),
+  requirementId: numberedFixtureId('MUST', 1),
+  negativeRequirementId: numberedFixtureId('NEG', 1),
+  outOfScopeId: numberedFixtureId('OUT', 1),
+  traceId: numberedFixtureId('TRACE', 1),
+  evidenceId: numberedFixtureId('EVD', 1),
+  deliveryCommandId: namedFixtureId('CMD', 'delivery'),
+  aiTddCommandId: namedFixtureId('CMD', 'ai-tdd'),
+  acceptanceId: namedFixtureId('ACC', 'ai-tdd'),
+  artifactId: namedFixtureId('ART', 'ai-tdd'),
+  passAttemptId: closeoutAttemptId('pass'),
+  defaultAttemptId: closeoutAttemptId('001'),
+  aiTddAttemptId: closeoutAttemptId('ai-tdd'),
+  archMissingAttemptId: closeoutAttemptId('arch-missing'),
+  attemptSelectionAttemptId: closeoutAttemptId('attempt-selection'),
+  auditPrereqAttemptId: closeoutAttemptId('audit-prereq'),
+  badArtifactAttemptId: closeoutAttemptId('bad-artifact'),
+  currentCloseoutAttemptId: closeoutAttemptId('current'),
+  currentOtherFailureAttemptId: closeoutAttemptId('current-other-failure'),
+  currentRepairedAttemptId: closeoutAttemptId('current-repaired'),
+  failureCaseIncompleteAttemptId: closeoutAttemptId('failure-case-incomplete'),
+  failureCaseMissingAttemptId: closeoutAttemptId('failure-case-missing'),
+  functionalParityAttemptId: closeoutAttemptId('functional-parity'),
+  hookFallbackAttemptId: closeoutAttemptId('hook-fallback'),
+  hookGapAttemptId: closeoutAttemptId('hook-gap'),
+  invalidRerunSourceAttemptId: closeoutAttemptId('invalid-rerun-source'),
+  lastRunRefAttemptId: closeoutAttemptId('last-run-ref'),
+  latestClosureAttemptId: closeoutAttemptId('latest-closure'),
+  latestFailureRcaAttemptId: closeoutAttemptId('latest-failure-rca'),
+  missingModelPacketAttemptId: closeoutAttemptId('missing-model-packet'),
+  noReadinessAttemptId: closeoutAttemptId('no-readiness'),
+  oldAttemptId: closeoutAttemptId('old'),
+  openRcaAttemptId: closeoutAttemptId('open-rca'),
+  otherAttemptId: closeoutAttemptId('other-attempt'),
+  pendingRerunAttemptId: closeoutAttemptId('pending-rerun'),
+  perMustBlockedAttemptId: closeoutAttemptId('per-must-blocked'),
+  perMustPassAttemptId: closeoutAttemptId('per-must-pass'),
+  resolvedRerunAttemptId: closeoutAttemptId('resolved-rerun'),
+  scopedAttemptId: closeoutAttemptId('scoped'),
+  staleDatasetAttemptId: closeoutAttemptId('stale-dataset'),
+  staleExtensionAttemptId: closeoutAttemptId('stale-extension'),
+  strictMissingAttemptId: closeoutAttemptId('strict-missing'),
+  subsystemCountOnlyAttemptId: closeoutAttemptId('subsystem-count-only'),
+  subsystemParityAttemptId: closeoutAttemptId('subsystem-parity'),
+  truthGateBlockedAttemptId: closeoutAttemptId('truth-gate-blocked'),
+});
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
+const CURRENT_IMPLEMENTATION_ATTEMPT_ID = namedFixtureId(
+  'IMP',
+  CLOSEOUT_FIXTURE_IDS.currentCloseoutAttemptId
+);
 const SUBSYSTEM_IDS = [
   'requirement_confirmation',
   'architecture_confirmation',
@@ -64,31 +133,32 @@ function writeModelPacket(filePath: string, input: Record<string, unknown> = {})
     schemaVersion: 'model-packet-fixture/v1',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    semanticModelHash: HASH,
     requirements: {
       must: [
         {
-          id: 'MUST-001',
-          text: 'MUST-001 requires current attempt command, artifact, test result, and closure.',
+          id: CLOSEOUT_FIXTURE_IDS.requirementId,
+          text: `${CLOSEOUT_FIXTURE_IDS.requirementId} requires current attempt command, artifact, test result, and closure.`,
           riskLevel: 'critical',
-          evidenceRefs: ['EVD-001'],
-          coveredByTraceRows: ['TRACE-001'],
+          evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+          coveredByTraceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
         },
       ],
     },
     traceSlices: [
       {
-        traceId: 'TRACE-001',
-        requirementRefs: ['MUST-001'],
-        evidenceRefs: ['EVD-001'],
-        commandRefs: ['CMD-DELIVERY'],
+        traceId: CLOSEOUT_FIXTURE_IDS.traceId,
+        requirementRefs: [CLOSEOUT_FIXTURE_IDS.requirementId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+        commandRefs: [CLOSEOUT_FIXTURE_IDS.deliveryCommandId],
       },
     ],
     requiredCommands: [
       {
-        id: 'CMD-DELIVERY',
+        id: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
         command: 'node verify-delivery.js',
-        traceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
+        traceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
       },
     ],
     ...input,
@@ -127,7 +197,12 @@ function writeDeliveryTruthReport(root: string, overrides: Record<string, unknow
 }
 
 function cleanupTempRoot(root: string): void {
-  rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  rmSync(root, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 100,
+  });
 }
 
 function recordText(record: Record<string, unknown>, key: string): string {
@@ -154,8 +229,8 @@ function modelResultWithHashes(
   return {
     payloadKind: 'model_result',
     model,
-    recordId: 'REQ-CLOSEOUT',
-    requirementSetId: 'REQ-CLOSEOUT',
+    recordId: CLOSEOUT_FIXTURE_IDS.recordId,
+    requirementSetId: CLOSEOUT_FIXTURE_IDS.recordId,
     sourceDocumentHash,
     implementationConfirmationHash,
     status,
@@ -319,7 +394,11 @@ function writeProductionArtifacts(
     implementationConfirmationHash,
     architectureConfirmationHash,
     canaryPlan: [
-      { stage: 'internal', rolloutPercent: 10, rollbackOn: 'production_loop_ready_blocked' },
+      {
+        stage: 'internal',
+        rolloutPercent: 10,
+        rollbackOn: 'production_loop_ready_blocked',
+      },
     ],
     sloTargets: [{ name: 'delivery_closeout_gate_latency', target: '<= 5000ms' }],
     errorRateMetrics: [{ name: 'gate_failure_rate', threshold: '<= 1%' }],
@@ -523,13 +602,19 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
   writeDeliveryTruthReport(root);
+  const sourcePath =
+    typeof record.sourcePath === 'string' && record.sourcePath
+      ? path.resolve(root, record.sourcePath)
+      : path.join(root, 'docs', 'requirements', 'delivery-closeout-fixture.md');
+  const recordWithSource = {
+    ...record,
+    sourcePath,
+  };
   if (
-    typeof record.sourcePath === 'string' &&
-    record.sourcePath &&
-    !readMaybeExists(record.sourcePath)
+    !readMaybeExists(sourcePath)
   ) {
     writeText(
-      record.sourcePath,
+      sourcePath,
       [
         'implementationConfirmation:',
         '  status: user_confirmed',
@@ -572,9 +657,9 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
     )}\n`,
     'utf8'
   );
-  const production = writeProductionArtifacts(root, base, record);
+  const production = writeProductionArtifacts(root, base, recordWithSource);
   const recordWithCoverage = {
-    ...record,
+    ...recordWithSource,
     extensionRefs: [
       ...(((record.extensionRefs as unknown[]) ?? []) as Record<string, unknown>[]),
       production.extensionRef,
@@ -598,6 +683,10 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   };
   const recordPath = path.join(base, 'requirement-record.json');
   writeFileSync(recordPath, `${JSON.stringify(recordWithCoverage, null, 2)}\n`, 'utf8');
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
+  });
   return recordPath;
 }
 
@@ -610,7 +699,7 @@ function readMaybeExists(filePath: string): string | null {
 }
 
 function evidenceArtifactRef(
-  pathValue = '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json'
+  pathValue = `_bmad-output/runtime/requirement-records/${CLOSEOUT_FIXTURE_IDS.recordId}/execution/evidence.json`
 ) {
   return {
     artifactType: 'implementation_evidence',
@@ -634,52 +723,52 @@ function writeAiTddSource(root: string, testPath: string): string {
       'implementationConfirmation:',
       '  status: user_confirmed',
       '  must:',
-      '    - id: MUST-001',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.requirementId}`,
       '      text: Must pass closeout acceptance.',
-      '      evidenceRefs: [EVD-001]',
-      '      coveredByTraceRows: [TRACE-001]',
+      `      evidenceRefs: [${CLOSEOUT_FIXTURE_IDS.evidenceId}]`,
+      `      coveredByTraceRows: [${CLOSEOUT_FIXTURE_IDS.traceId}]`,
       '  notDone:',
-      '    - id: NEG-001',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.negativeRequirementId}`,
       '      text: Missing AI-TDD acceptance cannot close.',
-      '      evidenceRefs: [EVD-001]',
+      `      evidenceRefs: [${CLOSEOUT_FIXTURE_IDS.evidenceId}]`,
       '      oracle: negative control oracle',
-      '      coveredByTraceRows: [TRACE-001]',
+      `      coveredByTraceRows: [${CLOSEOUT_FIXTURE_IDS.traceId}]`,
       '  mustNot:',
-      '    - id: OUT-001',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.outOfScopeId}`,
       '      text: Do not self-certify closeout.',
       '  evidence:',
-      '    - id: EVD-001',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.evidenceId}`,
       '      text: Current attempt acceptance evidence.',
       '      oracle: current-attempt command with artifact evidence',
-      '      requiredCommandRefs: [CMD-AI-TDD]',
-      '      artifactRefs: [ART-AI-TDD]',
+      `      requiredCommandRefs: [${CLOSEOUT_FIXTURE_IDS.aiTddCommandId}]`,
+      `      artifactRefs: [${CLOSEOUT_FIXTURE_IDS.artifactId}]`,
       '  traceRows:',
-      '    - id: TRACE-001',
-      '      covers: [MUST-001, NEG-001]',
-      '      evidenceRefs: [EVD-001]',
-      '      deliveryEvidenceCommandRefs: [CMD-AI-TDD]',
-      '      acceptanceRefs: [ACC-AI-TDD]',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.traceId}`,
+      `      covers: [${CLOSEOUT_FIXTURE_IDS.requirementId}, ${CLOSEOUT_FIXTURE_IDS.negativeRequirementId}]`,
+      `      evidenceRefs: [${CLOSEOUT_FIXTURE_IDS.evidenceId}]`,
+      `      deliveryEvidenceCommandRefs: [${CLOSEOUT_FIXTURE_IDS.aiTddCommandId}]`,
+      `      acceptanceRefs: [${CLOSEOUT_FIXTURE_IDS.acceptanceId}]`,
       '  requiredCommands:',
-      '    - id: CMD-AI-TDD',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.aiTddCommandId}`,
       `      command: npx vitest run ${testPath.replace(/\\/gu, '/')}`,
       '      oracle: current-attempt command with artifact evidence',
       '  acceptanceTests:',
-      '    - id: ACC-AI-TDD',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.acceptanceId}`,
       `      file: ${testPath.replace(/\\/gu, '/')}`,
-      '      covers: [MUST-001, NEG-001]',
-      '      traceRows: [TRACE-001]',
-      '      evidenceRefs: [EVD-001]',
-      '      commandRefs: [CMD-AI-TDD]',
+      `      covers: [${CLOSEOUT_FIXTURE_IDS.requirementId}, ${CLOSEOUT_FIXTURE_IDS.negativeRequirementId}]`,
+      `      traceRows: [${CLOSEOUT_FIXTURE_IDS.traceId}]`,
+      `      evidenceRefs: [${CLOSEOUT_FIXTURE_IDS.evidenceId}]`,
+      `      commandRefs: [${CLOSEOUT_FIXTURE_IDS.aiTddCommandId}]`,
       '      expectedPreImplementationState: expected_red',
       '      oracle: current-attempt command with artifact evidence',
       '  artifactAutomationPlan:',
-      '    - id: ART-AI-TDD',
+      `    - id: ${CLOSEOUT_FIXTURE_IDS.artifactId}`,
       '      artifactType: report',
-      '      path: _bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/ai-tdd.json',
+      `      path: _bmad-output/runtime/requirement-records/${CLOSEOUT_FIXTURE_IDS.recordId}/evidence/ai-tdd.json`,
       '      producer: ai-tdd-fixture',
       '      sourceOfTruthRole: evidence',
-      '      traceRows: [TRACE-001]',
-      '      evidenceRefs: [EVD-001]',
+      `      traceRows: [${CLOSEOUT_FIXTURE_IDS.traceId}]`,
+      `      evidenceRefs: [${CLOSEOUT_FIXTURE_IDS.evidenceId}]`,
       '  currentTargetMap:',
       '    canonicalArtifacts: []',
       '    pathRegistry: []',
@@ -706,25 +795,25 @@ function confirmationHashesForSource(sourcePath: string): {
   const semanticConfirmation = {
     acceptanceTests: [
       {
-        commandRefs: ['CMD-AI-TDD'],
-        covers: ['MUST-001', 'NEG-001'],
-        evidenceRefs: ['EVD-001'],
+        commandRefs: [CLOSEOUT_FIXTURE_IDS.aiTddCommandId],
+        covers: [CLOSEOUT_FIXTURE_IDS.requirementId, CLOSEOUT_FIXTURE_IDS.negativeRequirementId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
         expectedPreImplementationState: 'expected_red',
         file: sourceText.match(/file: (.+)/u)?.[1] ?? '',
-        id: 'ACC-AI-TDD',
+        id: CLOSEOUT_FIXTURE_IDS.acceptanceId,
         oracle: 'current-attempt command with artifact evidence',
-        traceRows: ['TRACE-001'],
+        traceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
       },
     ],
     artifactAutomationPlan: [
       {
         artifactType: 'report',
-        evidenceRefs: ['EVD-001'],
-        id: 'ART-AI-TDD',
-        path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/evidence/ai-tdd.json',
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+        id: CLOSEOUT_FIXTURE_IDS.artifactId,
+        path: `_bmad-output/runtime/requirement-records/${CLOSEOUT_FIXTURE_IDS.recordId}/evidence/ai-tdd.json`,
         producer: 'ai-tdd-fixture',
         sourceOfTruthRole: 'evidence',
-        traceRows: ['TRACE-001'],
+        traceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
       },
     ],
     applicability: {
@@ -742,32 +831,32 @@ function confirmationHashesForSource(sourcePath: string): {
     },
     evidence: [
       {
-        artifactRefs: ['ART-AI-TDD'],
-        id: 'EVD-001',
+        artifactRefs: [CLOSEOUT_FIXTURE_IDS.artifactId],
+        id: CLOSEOUT_FIXTURE_IDS.evidenceId,
         oracle: 'current-attempt command with artifact evidence',
-        requiredCommandRefs: ['CMD-AI-TDD'],
+        requiredCommandRefs: [CLOSEOUT_FIXTURE_IDS.aiTddCommandId],
         text: 'Current attempt acceptance evidence.',
       },
     ],
     must: [
       {
-        coveredByTraceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
-        id: 'MUST-001',
+        coveredByTraceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+        id: CLOSEOUT_FIXTURE_IDS.requirementId,
         text: 'Must pass closeout acceptance.',
       },
     ],
     mustNot: [
       {
-        id: 'OUT-001',
+        id: CLOSEOUT_FIXTURE_IDS.outOfScopeId,
         text: 'Do not self-certify closeout.',
       },
     ],
     notDone: [
       {
-        coveredByTraceRows: ['TRACE-001'],
-        evidenceRefs: ['EVD-001'],
-        id: 'NEG-001',
+        coveredByTraceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+        id: CLOSEOUT_FIXTURE_IDS.negativeRequirementId,
         oracle: 'negative control oracle',
         text: 'Missing AI-TDD acceptance cannot close.',
       },
@@ -775,17 +864,17 @@ function confirmationHashesForSource(sourcePath: string): {
     requiredCommands: [
       {
         command: sourceText.match(/command: (.+)/u)?.[1] ?? '',
-        id: 'CMD-AI-TDD',
+        id: CLOSEOUT_FIXTURE_IDS.aiTddCommandId,
         oracle: 'current-attempt command with artifact evidence',
       },
     ],
     traceRows: [
       {
-        acceptanceRefs: ['ACC-AI-TDD'],
-        covers: ['MUST-001', 'NEG-001'],
-        deliveryEvidenceCommandRefs: ['CMD-AI-TDD'],
-        evidenceRefs: ['EVD-001'],
-        id: 'TRACE-001',
+        acceptanceRefs: [CLOSEOUT_FIXTURE_IDS.acceptanceId],
+        covers: [CLOSEOUT_FIXTURE_IDS.requirementId, CLOSEOUT_FIXTURE_IDS.negativeRequirementId],
+        deliveryEvidenceCommandRefs: [CLOSEOUT_FIXTURE_IDS.aiTddCommandId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+        id: CLOSEOUT_FIXTURE_IDS.traceId,
       },
     ],
   };
@@ -797,14 +886,65 @@ function confirmationHashesForSource(sourcePath: string): {
   };
 }
 
+function passingCloseoutEvidence(input: {
+  attemptId: string;
+  artifactRefs?: Record<string, unknown>[];
+  sourceDocumentHash?: string;
+  implementationConfirmationHash?: string;
+}): Record<string, unknown> {
+  const sourceDocumentHash = input.sourceDocumentHash ?? HASH;
+  const implementationConfirmationHash = input.implementationConfirmationHash ?? HASH;
+  return {
+    deliveryEvidence: {
+      requiredCommands: [
+        {
+          commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+          blockingIfMissing: true,
+          negativeOrRegression: true,
+          closeoutAttemptId: input.attemptId,
+          artifactRefs: input.artifactRefs ?? [evidenceArtifactRef()],
+        },
+      ],
+    },
+    executionIterations: [
+      {
+        executionIterationId: namedFixtureId('exec', input.attemptId),
+        commandRunRefs: [
+          {
+            commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+            closeoutAttemptId: input.attemptId,
+            exitCode: 0,
+            sourceDocumentHash,
+            implementationConfirmationHash,
+            architectureConfirmationHash: HASH,
+          },
+        ],
+      },
+    ],
+    requirementClosures: [
+      {
+        requirementId: CLOSEOUT_FIXTURE_IDS.requirementId,
+        status: 'pass',
+        traceRows: [CLOSEOUT_FIXTURE_IDS.traceId],
+        evidenceRefs: [CLOSEOUT_FIXTURE_IDS.evidenceId],
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        architectureConfirmationHash: HASH,
+        closeoutAttemptId: input.attemptId,
+      },
+    ],
+  };
+}
+
 function baseRecord(): Record<string, unknown> {
   const recipe = resolveArchitectureConfirmationHashRecipe();
-  return {
-    recordId: 'REQ-CLOSEOUT',
-    requirementSetId: 'REQ-CLOSEOUT',
+  return withVerifiedCloseoutPrerequisites({
+    recordId: CLOSEOUT_FIXTURE_IDS.recordId,
+    requirementSetId: CLOSEOUT_FIXTURE_IDS.recordId,
     status: 'user_confirmed',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    semanticModelHash: HASH,
     currentMentalModel: 'audit_review',
     sixModelResults: {
       requirement_confirmation: modelResult('requirement_confirmation'),
@@ -864,7 +1004,61 @@ function baseRecord(): Record<string, unknown> {
         decision: 'pass',
       },
     ],
+  });
+}
+
+function withVerifiedCloseoutPrerequisites(
+  input: Record<string, unknown>
+): Record<string, unknown> {
+  let record: Record<string, unknown> = {
+    ...input,
+    currentAttemptId: CURRENT_IMPLEMENTATION_ATTEMPT_ID,
   };
+  for (const modelId of [
+    'execution_closure',
+    'audit_review',
+  ] as const satisfies readonly RequirementsContractSixModelId[]) {
+    const update = createRuntimeStatusProjectionUpdate({
+      recordId: recordText(record, 'recordId'),
+      requirementSetId: recordText(record, 'requirementSetId'),
+      modelId,
+      implementationAttemptId: CURRENT_IMPLEMENTATION_ATTEMPT_ID,
+      sourceDocumentHash: recordText(record, 'sourceDocumentHash'),
+      implementationConfirmationHash: recordText(record, 'implementationConfirmationHash'),
+      semanticModelHash: recordText(record, 'semanticModelHash'),
+      stageInputs: [
+        {
+          role: 'delivery_closeout_fixture_input',
+          path: `fixtures/${modelId}-input.json`,
+          hash: HASH,
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: `${modelId}_gate_output`,
+          path: `fixtures/${modelId}-gate.json`,
+          hash: HASH,
+        },
+      ],
+      blockerRefs: [],
+      evidenceRefs: [`fixtures/${modelId}-gate.json`],
+      authorityClass: 'deterministic_gate',
+      decision: 'pass',
+      effectiveStatus: 'pass',
+      createdAt: '2026-05-19T00:00:00.000Z',
+      receiptPath: `runtime/status-decisions/${CURRENT_IMPLEMENTATION_ATTEMPT_ID}/${modelId}.json`,
+      projection: modelResult(modelId),
+    });
+    record = {
+      ...record,
+      ...runtimeStatusProjectionRecordPatch({
+        record,
+        modelId,
+        update,
+      }),
+    };
+  }
+  return record;
 }
 
 describe('requirement-scoped delivery closeout gate', () => {
@@ -876,19 +1070,22 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-001',
+        CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
         '--json',
       ]);
       expect(code).toBe(1);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.closeout.currentAttemptId).toBe('closeout-001');
+      expect(record.closeout.currentAttemptId).toBe(CLOSEOUT_FIXTURE_IDS.defaultAttemptId);
       expect(record.closeout.decision).toBe('blocked');
       expect(record.closeout.attempts).toHaveLength(1);
       expect(record.closeout.attempts[0].blockingReasons).toContain(
         'deliveryEvidence.requiredCommands_missing'
       );
+      expect(record.closeout.attempts[0].blockingReasons).toEqual([
+        ...new Set(record.closeout.attempts[0].blockingReasons),
+      ]);
       expect(record.gateChecks.at(-1)).toMatchObject({
         gate: 'Delivery Closeout Gate',
         decision: 'blocked',
@@ -897,11 +1094,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         eventType: 'failure_recorded',
         type: 'delivery_closeout_blocked',
         status: 'open',
-        closeoutAttemptId: 'closeout-001',
+        closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
       });
       expect(record.failureRecords.at(-1).sourceRefs).toEqual(
         expect.arrayContaining([
-          { sourceType: 'closeout_attempt', id: 'closeout-001' },
+          { sourceType: 'closeout_attempt', id: CLOSEOUT_FIXTURE_IDS.defaultAttemptId },
           { sourceType: 'gate_check', id: 'delivery-closeout:closeout-001' },
         ])
       );
@@ -914,7 +1111,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.rcaRecords.at(-1).sourceRefs).toEqual(
         expect.arrayContaining([
           { sourceType: 'failure_record', id: 'failure:closeout-001' },
-          { sourceType: 'closeout_attempt', id: 'closeout-001' },
+          { sourceType: 'closeout_attempt', id: CLOSEOUT_FIXTURE_IDS.defaultAttemptId },
         ])
       );
       expect(record.lastEventType).toBe('delivery_confirmation_result_recorded');
@@ -929,53 +1126,56 @@ describe('requirement-scoped delivery closeout gate', () => {
           'deliveryEvidence.requiredCommands_missing',
           'negative_or_regression_command_missing',
         ]),
+        semanticModelHash: HASH,
+        currentAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
+        decisionReceiptRef: expect.any(String),
+        decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
       });
+      expect(record.sixModelResults.delivery_confirmation.blockingReasons).toEqual([
+        ...new Set(record.sixModelResults.delivery_confirmation.blockingReasons),
+      ]);
+      expect(record.runtimeStatusDecisionReceipts.at(-1)).toMatchObject({
+        path: record.sixModelResults.delivery_confirmation.decisionReceiptRef,
+        receipt: {
+          modelId: 'delivery_confirmation',
+          implementationAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
+          receiptHash: record.sixModelResults.delivery_confirmation.decisionReceiptHash,
+        },
+      });
+      expect(record.runtimeStatusDecisionReceipts.at(-1).receipt.blockerRefs).toEqual([
+        ...new Set(record.runtimeStatusDecisionReceipts.at(-1).receipt.blockerRefs),
+      ]);
     } finally {
       cleanupTempRoot(root);
     }
   });
 
   it('passes only when current attempt required commands, artifacts, and closures are satisfied', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-pass-'));
+    const root = mkdtempSync(path.join(os.tmpdir(), 'delivery-closeout-success-'));
     try {
+      const artifactPath = [
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        CLOSEOUT_FIXTURE_IDS.recordId,
+        'execution',
+        'evidence.json',
+      ].join('\\');
       const recordPath = writeRecord(root, {
         ...baseRecord(),
-        deliveryEvidence: {
-          requiredCommands: [
-            {
-              commandId: 'CMD-DELIVERY',
-              blockingIfMissing: true,
-              negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-pass',
-              artifactRefs: [
-                evidenceArtifactRef(
-                  '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
-                ),
-              ],
-            },
-          ],
-        },
-        executionIterations: [
-          {
-            executionIterationId: 'exec-001',
-            commandRunRefs: [
-              {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-pass',
-                exitCode: 0,
-              },
-            ],
-          },
-        ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        ...passingCloseoutEvidence({
+          attemptId: CLOSEOUT_FIXTURE_IDS.passAttemptId,
+          artifactRefs: [evidenceArtifactRef(artifactPath)],
+        }),
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-pass',
+        CLOSEOUT_FIXTURE_IDS.passAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
+        '--json',
       ]);
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
@@ -983,7 +1183,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.currentMentalModel).toBe('delivery_confirmation');
       expect(record.currentStage).toBe('delivery_confirmation');
       expect(record.sixModelResults.delivery_confirmation.status).toBe('awaiting_user_acceptance');
-      expect(record.closeout.currentAttemptId).toBe('closeout-pass');
+      expect(record.closeout.currentAttemptId).toBe(CLOSEOUT_FIXTURE_IDS.passAttemptId);
       expect(record.closeout).not.toHaveProperty('eventType');
       expect(record.closeout.decision).toBe('pass');
       expect(record.lastEventType).toBe('delivery_confirmation_user_acceptance_requested');
@@ -993,7 +1193,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       );
       expect(record.closeout.acceptanceRequest).toMatchObject({
         status: 'awaiting_user_acceptance',
-        closeoutAttemptId: 'closeout-pass',
+        closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.passAttemptId,
       });
       expect(record.closeout.acceptanceRequest.closeoutConfirmInstruction).toContain(
         '确认最终验收并关闭需求'
@@ -1009,7 +1209,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         )
       ).toContain('closeoutDeliveryVerdict');
       expect(record.closeout.attempts[0]).toMatchObject({
-        closeoutAttemptId: 'closeout-pass',
+        closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.passAttemptId,
         decision: 'pass',
       });
     } finally {
@@ -1030,7 +1230,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '_bmad-output',
         'runtime',
         'requirement-records',
-        'REQ-CLOSEOUT',
+        CLOSEOUT_FIXTURE_IDS.recordId,
         'confirmation',
         'closeout-confirmation-source.md'
       );
@@ -1047,75 +1247,45 @@ describe('requirement-scoped delivery closeout gate', () => {
           '',
         ].join('\n')
       );
-      const recordPath = writeRecord(root, {
-        ...baseRecord(),
-        aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
-        sourcePath,
-        sourceDocumentHash: sourceHashes.sourceDocumentHash,
-        implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
-        sixModelResults: {
-          ...((baseRecord().sixModelResults as Record<string, unknown>) ?? {}),
-          execution_closure: modelResultWithHashes(
-            'execution_closure',
-            sourceHashes.sourceDocumentHash,
-            sourceHashes.implementationConfirmationHash
-          ),
-          audit_review: modelResultWithHashes(
-            'audit_review',
-            sourceHashes.sourceDocumentHash,
-            sourceHashes.implementationConfirmationHash
-          ),
-        },
-        architectureConfirmationState: {
-          ...(baseRecord().architectureConfirmationState as Record<string, unknown>),
-          currentArchitectureConfirmationHash: HASH,
-        },
-        deliveryEvidence: {
-          requiredCommands: [
-            {
-              commandId: 'CMD-DELIVERY',
-              blockingIfMissing: true,
-              negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-pass',
-              artifactRefs: [evidenceArtifactRef()],
-            },
-          ],
-        },
-        executionIterations: [
-          {
-            executionIterationId: 'exec-001',
-            commandRunRefs: [
-              {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-pass',
-                exitCode: 0,
-                sourceDocumentHash: sourceHashes.sourceDocumentHash,
-                implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
-                architectureConfirmationHash: HASH,
-              },
-            ],
+      const recordPath = writeRecord(
+        root,
+        withVerifiedCloseoutPrerequisites({
+          ...baseRecord(),
+          aiTddContractGate: { enforcementMode: 'skipped_by_policy' },
+          sourcePath,
+          sourceDocumentHash: sourceHashes.sourceDocumentHash,
+          implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
+          sixModelResults: {
+            ...((baseRecord().sixModelResults as Record<string, unknown>) ?? {}),
+            execution_closure: modelResultWithHashes(
+              'execution_closure',
+              sourceHashes.sourceDocumentHash,
+              sourceHashes.implementationConfirmationHash
+            ),
+            audit_review: modelResultWithHashes(
+              'audit_review',
+              sourceHashes.sourceDocumentHash,
+              sourceHashes.implementationConfirmationHash
+            ),
           },
-        ],
-        requirementClosures: [
-          {
-            requirementId: 'MUST-001',
-            status: 'pass',
-            traceRows: ['TRACE-001'],
-            evidenceRefs: ['EVD-001'],
+          architectureConfirmationState: {
+            ...(baseRecord().architectureConfirmationState as Record<string, unknown>),
+            currentArchitectureConfirmationHash: HASH,
+          },
+          ...passingCloseoutEvidence({
+            attemptId: CLOSEOUT_FIXTURE_IDS.passAttemptId,
             sourceDocumentHash: sourceHashes.sourceDocumentHash,
             implementationConfirmationHash: sourceHashes.implementationConfirmationHash,
-            architectureConfirmationHash: HASH,
-            closeoutAttemptId: 'closeout-pass',
-          },
-        ],
-      });
+          }),
+        })
+      );
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--source',
         syntheticSourcePath,
         '--attempt-id',
-        'closeout-pass',
+        CLOSEOUT_FIXTURE_IDS.passAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1153,10 +1323,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-audit-prereq',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.auditPrereqAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1166,20 +1336,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-audit-prereq',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.auditPrereqAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-audit-prereq',
+        CLOSEOUT_FIXTURE_IDS.auditPrereqAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
         '--json',
@@ -1208,11 +1380,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify-delivery.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-per-must-blocked',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.perMustBlockedAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1222,8 +1394,8 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-per-must-blocked',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.perMustBlockedAttemptId,
                 exitCode: 0,
               },
             ],
@@ -1239,7 +1411,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--model-packet',
         modelPacketPath,
         '--attempt-id',
-        'closeout-per-must-blocked',
+        CLOSEOUT_FIXTURE_IDS.perMustBlockedAttemptId,
         '--report-path',
         reportPath,
         '--evaluated-at',
@@ -1251,7 +1423,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(report.blockingReasons).toEqual(
         expect.arrayContaining([
           'per_must_closure_evidence_index_not_passed',
-          'closure_missing:MUST-001',
+          `closure_missing:${CLOSEOUT_FIXTURE_IDS.requirementId}`,
         ])
       );
       expect(report.checks).toEqual(
@@ -1265,7 +1437,7 @@ describe('requirement-scoped delivery closeout gate', () => {
       const indexPath = path.join(root, 'closeout', 'per-must-closure-evidence-index.json');
       const index = JSON.parse(readFileSync(indexPath, 'utf8'));
       expect(index.rows[0]).toMatchObject({
-        mustId: 'MUST-001',
+        mustId: CLOSEOUT_FIXTURE_IDS.requirementId,
         status: 'blocked',
         closureStatus: 'missing',
       });
@@ -1298,11 +1470,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify-delivery.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-missing-model-packet',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.missingModelPacketAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1312,8 +1484,8 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-missing-model-packet',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.missingModelPacketAttemptId,
                 exitCode: 0,
               },
             ],
@@ -1321,7 +1493,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ],
         requirementClosures: [
           {
-            requirementId: 'MUST-001',
+            requirementId: CLOSEOUT_FIXTURE_IDS.requirementId,
             status: 'pass',
           },
         ],
@@ -1331,7 +1503,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-missing-model-packet',
+        CLOSEOUT_FIXTURE_IDS.missingModelPacketAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1361,11 +1533,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify-delivery.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-per-must-pass',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.perMustPassAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1375,10 +1547,10 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
                 command: 'node verify-delivery.js',
                 runId: 'run-delivery',
-                closeoutAttemptId: 'closeout-per-must-pass',
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.perMustPassAttemptId,
                 exitCode: 0,
                 startedAt: '2026-05-19T00:00:00.000Z',
                 completedAt: '2026-05-19T00:00:01.000Z',
@@ -1390,7 +1562,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         ],
         requirementClosures: [
           {
-            requirementId: 'MUST-001',
+            requirementId: CLOSEOUT_FIXTURE_IDS.requirementId,
             status: 'pass',
             recordedAt: '2026-05-19T00:00:01.000Z',
           },
@@ -1403,7 +1575,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--model-packet',
         modelPacketPath,
         '--attempt-id',
-        'closeout-per-must-pass',
+        CLOSEOUT_FIXTURE_IDS.perMustPassAttemptId,
         '--report-path',
         reportPath,
         '--evaluated-at',
@@ -1457,10 +1629,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-scoped',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.scopedAttemptId,
               artifactRefs: [
                 evidenceArtifactRef(
                   '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
@@ -1474,14 +1646,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-scoped',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.scopedAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       record.extensionRefs = [];
@@ -1504,7 +1678,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--source',
         sourcePath,
         '--attempt-id',
-        'closeout-scoped',
+        CLOSEOUT_FIXTURE_IDS.scopedAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
         '--json',
@@ -1520,9 +1694,18 @@ describe('requirement-scoped delivery closeout gate', () => {
             id: 'production-subsystem-extension-current',
             required: false,
           }),
-          expect.objectContaining({ id: 'production-loop-ready-report-current', required: false }),
-          expect.objectContaining({ id: 'dataset-release-artifacts-current', required: false }),
-          expect.objectContaining({ id: 'failure-case-coverage-complete', required: true }),
+          expect.objectContaining({
+            id: 'production-loop-ready-report-current',
+            required: false,
+          }),
+          expect.objectContaining({
+            id: 'dataset-release-artifacts-current',
+            required: false,
+          }),
+          expect.objectContaining({
+            id: 'failure-case-coverage-complete',
+            required: true,
+          }),
         ])
       );
     } finally {
@@ -1541,10 +1724,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-ai-tdd',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.aiTddAttemptId,
               artifactRefs: [
                 evidenceArtifactRef(
                   '_bmad-output\\runtime\\requirement-records\\REQ-CLOSEOUT\\execution\\evidence.json'
@@ -1558,14 +1741,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-ai-tdd',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.aiTddAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
@@ -1573,7 +1758,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--source',
         sourcePath,
         '--attempt-id',
-        'closeout-ai-tdd',
+        CLOSEOUT_FIXTURE_IDS.aiTddAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1599,10 +1784,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-strict-missing',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.strictMissingAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1614,23 +1799,31 @@ describe('requirement-scoped delivery closeout gate', () => {
             evidenceRefs: ['EVD-052'],
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-strict-missing',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.strictMissingAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
         requirementClosures: [
-          { requirementId: 'MUST-054', status: 'pass', evidenceRefs: ['EVD-052'] },
-          { requirementId: 'NEG-042', status: 'pass', evidenceRefs: ['EVD-054'] },
+          {
+            requirementId: 'MUST-054',
+            status: 'pass',
+            evidenceRefs: ['EVD-052'],
+          },
+          {
+            requirementId: 'NEG-042',
+            status: 'pass',
+            evidenceRefs: ['EVD-054'],
+          },
         ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-strict-missing',
+        CLOSEOUT_FIXTURE_IDS.strictMissingAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1664,10 +1857,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-latest-closure',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.latestClosureAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1677,25 +1870,25 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-latest-closure',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.latestClosureAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
         requirementClosures: [
-          { requirementId: 'MUST-001', status: 'open' },
-          { requirementId: 'MUST-001', status: 'pass' },
-          { requirementId: 'TRACE-001', status: 'open' },
-          { requirementId: 'TRACE-001', status: 'pass' },
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'open' },
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+          { requirementId: CLOSEOUT_FIXTURE_IDS.traceId, status: 'open' },
+          { requirementId: CLOSEOUT_FIXTURE_IDS.traceId, status: 'pass' },
         ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-latest-closure',
+        CLOSEOUT_FIXTURE_IDS.latestClosureAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1723,10 +1916,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-other-attempt',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.otherAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1736,20 +1929,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-attempt-selection',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.attemptSelectionAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-attempt-selection',
+        CLOSEOUT_FIXTURE_IDS.attemptSelectionAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1771,13 +1966,13 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
               lastRunRef: {
-                commandId: 'CMD-DELIVERY',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
                 runId: 'run-001',
-                closeoutAttemptId: 'closeout-last-run-ref',
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.lastRunRefAttemptId,
               },
               artifactRefs: [evidenceArtifactRef()],
             },
@@ -1788,20 +1983,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-last-run-ref',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.lastRunRefAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-last-run-ref',
+        CLOSEOUT_FIXTURE_IDS.lastRunRefAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1820,7 +2017,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
               artifactRefs: [evidenceArtifactRef()],
@@ -1832,20 +2029,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-arch-missing',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.archMissingAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-arch-missing',
+        CLOSEOUT_FIXTURE_IDS.archMissingAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1879,10 +2078,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-no-readiness',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.noReadinessAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1892,20 +2091,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-no-readiness',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.noReadinessAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-no-readiness',
+        CLOSEOUT_FIXTURE_IDS.noReadinessAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -1931,11 +2132,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-failure-case-missing',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.failureCaseMissingAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -1945,14 +2146,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-failure-case-missing',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.failureCaseMissingAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       writeText(
         path.join(root, 'failure-case-required-source.md'),
@@ -1977,7 +2180,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--source',
         path.join(root, 'failure-case-required-source.md'),
         '--attempt-id',
-        'closeout-failure-case-missing',
+        CLOSEOUT_FIXTURE_IDS.failureCaseMissingAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2001,11 +2204,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-failure-case-incomplete',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.failureCaseIncompleteAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2015,14 +2218,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-failure-case-incomplete',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.failureCaseIncompleteAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const coverage = record.artifactIndex.find(
@@ -2053,7 +2258,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-failure-case-incomplete',
+        CLOSEOUT_FIXTURE_IDS.failureCaseIncompleteAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2080,10 +2285,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-subsystem-count-only',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.subsystemCountOnlyAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2093,14 +2298,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-subsystem-count-only',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.subsystemCountOnlyAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const extensionRef = record.extensionRefs.at(-1);
@@ -2117,7 +2324,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-subsystem-count-only',
+        CLOSEOUT_FIXTURE_IDS.subsystemCountOnlyAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2142,10 +2349,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-stale-extension',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.staleExtensionAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2155,14 +2362,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-stale-extension',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.staleExtensionAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const extensionRef = record.extensionRefs.at(-1);
@@ -2175,7 +2384,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-stale-extension',
+        CLOSEOUT_FIXTURE_IDS.staleExtensionAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2197,10 +2406,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-stale-dataset',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.staleDatasetAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2210,14 +2419,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-stale-dataset',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.staleDatasetAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       writeText(
         path.join(root, 'dataset-required-source.md'),
@@ -2250,7 +2461,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--source',
         path.join(root, 'dataset-required-source.md'),
         '--attempt-id',
-        'closeout-stale-dataset',
+        CLOSEOUT_FIXTURE_IDS.staleDatasetAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2275,10 +2486,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-functional-parity',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.functionalParityAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2288,14 +2499,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-functional-parity',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.functionalParityAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const extensionRef = record.extensionRefs.at(-1);
@@ -2309,7 +2522,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-functional-parity',
+        CLOSEOUT_FIXTURE_IDS.functionalParityAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2331,10 +2544,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-subsystem-parity',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.subsystemParityAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2344,14 +2557,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-subsystem-parity',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.subsystemParityAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const extensionRef = record.extensionRefs.at(-1);
@@ -2365,7 +2580,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-subsystem-parity',
+        CLOSEOUT_FIXTURE_IDS.subsystemParityAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2385,15 +2600,17 @@ describe('requirement-scoped delivery closeout gate', () => {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
         closeout: {
-          currentAttemptId: 'closeout-001',
-          attempts: [{ closeoutAttemptId: 'closeout-001', decision: 'blocked' }],
+          currentAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
+          attempts: [
+            { closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId, decision: 'blocked' },
+          ],
         },
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-001',
+        CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
       ]);
       expect(code).toBe(2);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
@@ -2410,16 +2627,18 @@ describe('requirement-scoped delivery closeout gate', () => {
       const recordPath = writeRecord(root, {
         ...baseRecord(),
         closeout: {
-          currentAttemptId: 'closeout-001',
-          attempts: [{ closeoutAttemptId: 'closeout-001', decision: 'blocked' }],
+          currentAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
+          attempts: [
+            { closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId, decision: 'blocked' },
+          ],
         },
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-001',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2429,25 +2648,27 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-001',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-001',
+        CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
         '--allow-existing-attempt',
       ]);
       expect(code).toBe(0);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.closeout.currentAttemptId).toBe('closeout-001');
+      expect(record.closeout.currentAttemptId).toBe(CLOSEOUT_FIXTURE_IDS.defaultAttemptId);
       expect(record.closeout.decision).toBe('pass');
       expect(record.closeout.attempts).toHaveLength(1);
     } finally {
@@ -2463,10 +2684,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-truth-gate-blocked',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.truthGateBlockedAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2476,14 +2697,16 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-truth-gate-blocked',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.truthGateBlockedAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       writeDeliveryTruthReport(root, {
         completionAllowed: false,
@@ -2496,7 +2719,7 @@ describe('requirement-scoped delivery closeout gate', () => {
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-truth-gate-blocked',
+        CLOSEOUT_FIXTURE_IDS.truthGateBlockedAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2542,10 +2765,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-bad-artifact',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.badArtifactAttemptId,
               artifactRefs: [
                 {
                   path: '_bmad-output/runtime/requirement-records/REQ-CLOSEOUT/execution/evidence.json',
@@ -2560,20 +2783,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-bad-artifact',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.badArtifactAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-bad-artifact',
+        CLOSEOUT_FIXTURE_IDS.badArtifactAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2583,7 +2808,9 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.attempts[0].blockingReasons).toEqual(
         expect.arrayContaining([
           expect.stringContaining('required_command_artifact_incomplete'),
-          expect.stringContaining('required_command_not_satisfied:CMD-DELIVERY'),
+          expect.stringContaining(
+            `required_command_not_satisfied:${CLOSEOUT_FIXTURE_IDS.deliveryCommandId}`
+          ),
         ])
       );
     } finally {
@@ -2608,10 +2835,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-open-rca',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.openRcaAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2621,20 +2848,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-open-rca',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.openRcaAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-open-rca',
+        CLOSEOUT_FIXTURE_IDS.openRcaAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2664,7 +2893,7 @@ describe('requirement-scoped delivery closeout gate', () => {
             failureId: 'failure-closeout-001',
             type: 'delivery_closeout_blocked',
             status: 'open',
-            sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-old' }],
+            sourceRefs: [{ sourceType: 'closeout_attempt', id: CLOSEOUT_FIXTURE_IDS.oldAttemptId }],
             recordedAt: '2026-05-19T00:00:00.000Z',
             recordedBy: 'test-agent',
           },
@@ -2673,7 +2902,7 @@ describe('requirement-scoped delivery closeout gate', () => {
             failureId: 'failure-closeout-001',
             type: 'delivery_closeout_blocked',
             status: 'resolved',
-            sourceRefs: [{ sourceType: 'closeout_attempt', id: 'closeout-old' }],
+            sourceRefs: [{ sourceType: 'closeout_attempt', id: CLOSEOUT_FIXTURE_IDS.oldAttemptId }],
             recordedAt: '2026-05-19T00:01:00.000Z',
             recordedBy: 'test-agent',
           },
@@ -2697,10 +2926,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-latest-failure-rca',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.latestFailureRcaAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2710,20 +2939,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-latest-failure-rca',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.latestFailureRcaAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-latest-failure-rca',
+        CLOSEOUT_FIXTURE_IDS.latestFailureRcaAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2746,17 +2977,17 @@ describe('requirement-scoped delivery closeout gate', () => {
             status: 'open',
             sourceRefs: [
               { sourceType: 'failure_record', id: 'failure:closeout-old' },
-              { sourceType: 'closeout_attempt', id: 'closeout-old' },
+              { sourceType: 'closeout_attempt', id: CLOSEOUT_FIXTURE_IDS.oldAttemptId },
             ],
           },
         ],
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-current',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentCloseoutAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2766,20 +2997,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-current',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentCloseoutAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-current',
+        CLOSEOUT_FIXTURE_IDS.currentCloseoutAttemptId,
         '--evaluated-at',
         '2026-05-19T00:01:00.000Z',
       ]);
@@ -2804,11 +3037,17 @@ describe('requirement-scoped delivery closeout gate', () => {
             failureId: 'failure:closeout-current-repaired',
             type: 'delivery_closeout_blocked',
             status: 'open',
-            closeoutAttemptId: 'closeout-current-repaired',
+            closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentRepairedAttemptId,
             blockingReasons: ['strict_closeout_proof_gate_not_passed'],
             sourceRefs: [
-              { sourceType: 'closeout_attempt', id: 'closeout-current-repaired' },
-              { sourceType: 'gate_check', id: 'delivery-closeout:closeout-current-repaired' },
+              {
+                sourceType: 'closeout_attempt',
+                id: CLOSEOUT_FIXTURE_IDS.currentRepairedAttemptId,
+              },
+              {
+                sourceType: 'gate_check',
+                id: 'delivery-closeout:closeout-current-repaired',
+              },
             ],
             recordedAt: '2026-05-19T00:00:00.000Z',
             recordedBy: 'test-agent',
@@ -2817,10 +3056,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-current-repaired',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentRepairedAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2830,20 +3069,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-current-repaired',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentRepairedAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-current-repaired',
+        CLOSEOUT_FIXTURE_IDS.currentRepairedAttemptId,
         '--evaluated-at',
         '2026-05-19T00:01:00.000Z',
       ]);
@@ -2866,7 +3107,7 @@ describe('requirement-scoped delivery closeout gate', () => {
             failureId: 'failure-other-current',
             type: 'release_gate_failed',
             status: 'open',
-            closeoutAttemptId: 'closeout-current-other-failure',
+            closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentOtherFailureAttemptId,
             blockingReasons: ['release_gate_failed'],
             sourceRefs: [{ sourceType: 'gate_check', id: 'release-gate' }],
             recordedAt: '2026-05-19T00:00:00.000Z',
@@ -2876,10 +3117,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-current-other-failure',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentOtherFailureAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2889,20 +3130,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-current-other-failure',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.currentOtherFailureAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-current-other-failure',
+        CLOSEOUT_FIXTURE_IDS.currentOtherFailureAttemptId,
         '--evaluated-at',
         '2026-05-19T00:01:00.000Z',
       ]);
@@ -2930,10 +3173,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-pending-rerun',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.pendingRerunAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -2943,20 +3186,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-pending-rerun',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.pendingRerunAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-pending-rerun',
+        CLOSEOUT_FIXTURE_IDS.pendingRerunAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -2995,10 +3240,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-resolved-rerun',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.resolvedRerunAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -3008,20 +3253,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-resolved-rerun',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.resolvedRerunAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-resolved-rerun',
+        CLOSEOUT_FIXTURE_IDS.resolvedRerunAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -3050,10 +3297,10 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-invalid-rerun-source',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.invalidRerunSourceAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -3063,20 +3310,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-invalid-rerun-source',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.invalidRerunSourceAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-invalid-rerun-source',
+        CLOSEOUT_FIXTURE_IDS.invalidRerunSourceAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -3126,11 +3375,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-hook-gap',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.hookGapAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -3140,20 +3389,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-hook-gap',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.hookGapAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-hook-gap',
+        CLOSEOUT_FIXTURE_IDS.hookGapAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -3199,11 +3450,11 @@ describe('requirement-scoped delivery closeout gate', () => {
         deliveryEvidence: {
           requiredCommands: [
             {
-              commandId: 'CMD-DELIVERY',
+              commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
               command: 'node verify.js',
               blockingIfMissing: true,
               negativeOrRegression: true,
-              closeoutAttemptId: 'closeout-hook-fallback',
+              closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.hookFallbackAttemptId,
               artifactRefs: [evidenceArtifactRef()],
             },
           ],
@@ -3213,20 +3464,22 @@ describe('requirement-scoped delivery closeout gate', () => {
             executionIterationId: 'exec-001',
             commandRunRefs: [
               {
-                commandId: 'CMD-DELIVERY',
-                closeoutAttemptId: 'closeout-hook-fallback',
+                commandId: CLOSEOUT_FIXTURE_IDS.deliveryCommandId,
+                closeoutAttemptId: CLOSEOUT_FIXTURE_IDS.hookFallbackAttemptId,
                 exitCode: 0,
               },
             ],
           },
         ],
-        requirementClosures: [{ requirementId: 'MUST-001', status: 'pass' }],
+        requirementClosures: [
+          { requirementId: CLOSEOUT_FIXTURE_IDS.requirementId, status: 'pass' },
+        ],
       });
       const code = mainDeliveryCloseoutGate([
         '--requirement-record',
         recordPath,
         '--attempt-id',
-        'closeout-hook-fallback',
+        CLOSEOUT_FIXTURE_IDS.hookFallbackAttemptId,
         '--evaluated-at',
         '2026-05-19T00:00:00.000Z',
       ]);
@@ -3235,7 +3488,10 @@ describe('requirement-scoped delivery closeout gate', () => {
       expect(record.closeout.decision).toBe('pass');
       expect(record.closeout.attempts[0].checks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'hook-reconciliation-valid', passed: true }),
+          expect.objectContaining({
+            id: 'hook-reconciliation-valid',
+            passed: true,
+          }),
         ])
       );
     } finally {

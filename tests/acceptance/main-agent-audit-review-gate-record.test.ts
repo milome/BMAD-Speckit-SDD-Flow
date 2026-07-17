@@ -8,6 +8,10 @@ import {
   writeAuditTriadExecutionPlan,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import { mainAuditReviewGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,
@@ -18,6 +22,64 @@ import {
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function establishExecutionClosureAuthority(
+  fixture: ReturnType<typeof materializeRequirementFixture>,
+  compiled: ReturnType<typeof writeCompiledImplementPacket>
+): void {
+  const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8')) as Record<string, unknown>;
+  const update = createRuntimeStatusProjectionUpdate({
+    recordId: fixture.recordId,
+    requirementSetId: fixture.requirementSetId,
+    modelId: 'execution_closure',
+    implementationAttemptId: fixture.runId,
+    sourceDocumentHash: fixture.sourceDocumentHash,
+    implementationConfirmationHash: fixture.implementationConfirmationHash,
+    semanticModelHash: String(record.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'model_packet',
+        path: compiled.compiledPromptRef.modelPacketPath,
+        hash: compiled.compiledPromptRef.modelPacketHash,
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'audit_receipt',
+        path: compiled.compiledPromptRef.auditReceiptPath,
+        hash: compiled.compiledPromptRef.auditReceiptHash,
+      },
+    ],
+    blockerRefs: [],
+    evidenceRefs: [compiled.compiledPromptRef.auditReceiptPath],
+    authorityClass: 'controlled_closeout',
+    decision: 'pass',
+    effectiveStatus: 'pass',
+    createdAt: '2026-05-30T11:59:59.000Z',
+    receiptPath: path.join(
+      fixture.root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      fixture.recordId,
+      'runtime-status',
+      fixture.runId,
+      'execution-closure.json'
+    ),
+    projection: {
+      ...(record.sixModelResults as Record<string, unknown>).execution_closure,
+      status: 'pass',
+    },
+  });
+  writeJson(fixture.recordPath, {
+    ...record,
+    ...runtimeStatusProjectionRecordPatch({
+      record,
+      modelId: 'execution_closure',
+      update,
+    }),
+  });
 }
 
 function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadRoundReceipt {
@@ -64,12 +126,13 @@ describe('main agent audit review gate', () => {
     });
     try {
       const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
       const plan = createAuditTriadExecutionPlan({
         projectRoot: fixture.root,
         recordId: fixture.recordId,
         stage: 'implement',
         callPoint: 'audit_review',
-        attemptId: 'audit-current',
+        attemptId: fixture.runId,
         sourceDocumentHash: fixture.sourceDocumentHash,
         implementationConfirmationHash: fixture.implementationConfirmationHash,
         modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
@@ -84,7 +147,7 @@ describe('main agent audit review gate', () => {
         'requirement-records',
         fixture.recordId,
         'audit-triad',
-        'audit-current',
+        fixture.runId,
         'rounds.json'
       );
       writeJson(roundsPath, [
@@ -97,7 +160,7 @@ describe('main agent audit review gate', () => {
         '--requirement-record',
         fixture.recordPath,
         '--attempt-id',
-        'audit-current',
+        fixture.runId,
         '--plan',
         planPath,
         '--rounds',
@@ -124,12 +187,16 @@ describe('main agent audit review gate', () => {
         fromModel: 'execution_closure',
         toModel: 'audit_review',
       });
+      const runtimeDecision = resolveSixModelRuntimeDecision({
+        record,
+        attemptId: fixture.runId,
+      });
       expect(
-        resolveSixModelRuntimeDecision({
-          record,
-          attemptId: 'audit-current',
-        }).nextAction
-      ).toBe('run_closeout');
+        runtimeDecision.blockingReasons,
+        JSON.stringify(runtimeDecision, null, 2)
+      ).toEqual([]);
+      expect(runtimeDecision.currentModelStatus).toBe('pass');
+      expect(runtimeDecision.nextAction).toBe('run_closeout');
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }

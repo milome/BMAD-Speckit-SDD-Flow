@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-verified-six-model-status.schema.json",
+  "title": "Requirements Contract Verified Six Model Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recordId",
+    "requirementSetId",
+    "modelId",
+    "effectiveStatus",
+    "projectionStatus",
+    "projectionIntegrity",
+    "authorityClass",
+    "decisionReceiptRef",
+    "decisionReceiptHash",
+    "currentAttemptId",
+    "blockerRefs",
+    "evidenceRefs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-verified-six-model-status/v1"
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modelId": {
+      "enum": [
+        "requirement_confirmation",
+        "architecture_confirmation",
+        "implementation_readiness",
+        "execution_closure",
+        "audit_review",
+        "delivery_confirmation"
+      ]
+    },
+    "effectiveStatus": {
+      "enum": [
+        "pass",
+        "blocked",
+        "stale",
+        "not_established",
+        "awaiting_user_acceptance"
+      ]
+    },
+    "projectionStatus": {
+      "type": ["string", "null"]
+    },
+    "projectionIntegrity": {
+      "enum": ["valid", "missing", "invalid", "mismatch", "stale"]
+    },
+    "authorityClass": {
+      "type": ["string", "null"]
+    },
+    "decisionReceiptRef": {
+      "type": ["string", "null"]
+    },
+    "decisionReceiptHash": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/sha256"
+        }
+      ]
+    },
+    "currentAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blockerRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

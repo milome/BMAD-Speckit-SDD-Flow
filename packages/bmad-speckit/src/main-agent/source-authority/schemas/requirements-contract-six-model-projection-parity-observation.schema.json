@@ -1,0 +1,234 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "requirements-contract-six-model-projection-parity-observation.schema.json",
+  "title": "Requirements Contract Six-Model Projection Parity Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "surface",
+    "producer",
+    "action",
+    "contractHash",
+    "requirementSetId",
+    "implementationAttemptId",
+    "observedAt",
+    "applicability",
+    "authorityRef",
+    "commandReceiptRef",
+    "artifactRef",
+    "inventory",
+    "caseProofs",
+    "caseProofSetHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-six-model-projection-parity-observation/v1"
+    },
+    "surface": {
+      "$ref": "#/definitions/surface"
+    },
+    "producer": {
+      "const": "requirements-contract-six-model-projection-parity-observation-producer"
+    },
+    "action": {
+      "const": "requirements-contract-six-model-projection-parity-observe"
+    },
+    "contractHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observedAt": {
+      "type": "string",
+      "minLength": 20
+    },
+    "applicability": {
+      "$ref": "#/definitions/applicability"
+    },
+    "authorityRef": {
+      "$ref": "#/definitions/fileRef"
+    },
+    "commandReceiptRef": {
+      "$ref": "#/definitions/fileRef"
+    },
+    "artifactRef": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/fileRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readers",
+        "writers",
+        "readerInventoryHash",
+        "writerInventoryHash"
+      ],
+      "properties": {
+        "readers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fileRef"
+          }
+        },
+        "writers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fileRef"
+          }
+        },
+        "readerInventoryHash": {
+          "$ref": "#/definitions/hash"
+        },
+        "writerInventoryHash": {
+          "$ref": "#/definitions/hash"
+        }
+      }
+    },
+    "caseProofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "caseId",
+          "path",
+          "hash",
+          "readbackHash",
+          "readbackVerified"
+        ],
+        "properties": {
+          "caseId": {
+            "$ref": "#/definitions/caseId"
+          },
+          "path": {
+            "$ref": "#/definitions/relativePath"
+          },
+          "hash": {
+            "$ref": "#/definitions/hash"
+          },
+          "readbackHash": {
+            "$ref": "#/definitions/hash"
+          },
+          "readbackVerified": {
+            "const": true
+          }
+        }
+      },
+      "maxItems": 8
+    },
+    "caseProofSetHash": {
+      "$ref": "#/definitions/hash"
+    }
+  },
+  "definitions": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+$"
+    },
+    "surface": {
+      "enum": [
+        "source",
+        "package-dist",
+        "codex",
+        "cursor",
+        "claude",
+        "installed",
+        "generated-dist",
+        "packed-package",
+        "root-host"
+      ]
+    },
+    "caseId": {
+      "enum": [
+        "valid_receipt",
+        "missing_receipt",
+        "missing_projection",
+        "projection_mismatch",
+        "stale_attempt",
+        "blocked_receipt",
+        "synthetic_bridge",
+        "complete_panorama"
+      ]
+    },
+    "applicability": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicable",
+            "reason"
+          ],
+          "properties": {
+            "applicable": {
+              "const": true
+            },
+            "reason": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicable",
+            "reason"
+          ],
+          "properties": {
+            "applicable": {
+              "const": false
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash",
+        "readbackHash",
+        "readbackVerified"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/definitions/relativePath"
+        },
+        "hash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackHash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    }
+  }
+}

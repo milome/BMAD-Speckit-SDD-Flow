@@ -14,11 +14,22 @@
  * Exit codes are defined in constants/exit-codes.ts and consumed through dist.
  */
 const { program } = require('commander');
+const path = require('node:path');
 const pkg = require('../package.json');
 const ttyUtils = require('../dist/utils/tty');
 
 function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
+}
+
+function loadRecoveryCommand(exportName) {
+  return require('../dist/main-agent/source-authority/scripts/requirements-contract-recovery-bootstrap.js')[
+    exportName
+  ];
+}
+
+function collectRepeatedOption(value, previous) {
+  return [...previous, value];
 }
 
 function runRuntimeModule(modulePath, exportName, args) {
@@ -855,6 +866,177 @@ registerWave312PublicCommand(
 );
 
 program
+  .command('requirements-contract-six-model-projection-parity-verify')
+  .description('Verify six-model projection parity across package installation surfaces')
+  .requiredOption('--evidence-root <path>', 'Directory containing parity observations')
+  .requiredOption('--out <path>', 'Parity report output path')
+  .option('--json', 'Print machine-readable JSON summary')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-six-model-projection-parity-verify',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier.js',
+        'requirementsContractSixModelProjectionParityVerifyCommand'
+      )({
+        evidenceRoot: opts.evidenceRoot,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-consumer-cli-capability-observe')
+  .description('Observe the installed Consumer CLI host capability')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-consumer-cli-capability-observe',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-consumer-cli-capability.js',
+        'requirementsContractConsumerCliCapabilityObserveCommand'
+      )({
+        cwd: process.cwd(),
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-prompt-transaction-publish')
+  .description('Publish the current governed prompt transaction and dispatch pointer')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--out-dir <path>', 'Current implementation-attempt output directory')
+  .requiredOption('--prompt-language <language>', 'Prompt language')
+  .requiredOption('--human-prompt-profile <profile>', 'Human prompt profile')
+  .requiredOption('--packet-id <id>', 'Current implementation-attempt packet id')
+  .requiredOption('--task-report-path <path>', 'Current TaskReport path')
+  .requiredOption('--attempt-context <path>', 'Current pre-edit attempt context receipt')
+  .requiredOption('--stage-registry <path>', 'Canonical Stage Registry owner')
+  .requiredOption(
+    '--requirements-confirmation-receipt <path>',
+    'Current requirements confirmation receipt'
+  )
+  .requiredOption(
+    '--architecture-confirmation-receipt <path>',
+    'Current architecture confirmation receipt'
+  )
+  .requiredOption('--consumer-root <path>', 'Authorized Consumer project root')
+  .requiredOption('--current-dispatch-pointer <path>', 'Current dispatch pointer target')
+  .requiredOption('--evidence-out <path>', 'EVD-09 target')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-prompt-transaction-publish',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js',
+        'requirementsContractPromptTransactionPublishCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        outDir: opts.outDir,
+        promptLanguage: opts.promptLanguage,
+        humanPromptProfile: opts.humanPromptProfile,
+        packetId: opts.packetId,
+        taskReportPath: opts.taskReportPath,
+        attemptContext: opts.attemptContext,
+        stageRegistry: opts.stageRegistry,
+        requirementsConfirmationReceipt: opts.requirementsConfirmationReceipt,
+        architectureConfirmationReceipt: opts.architectureConfirmationReceipt,
+        consumerRoot: opts.consumerRoot,
+        currentDispatchPointer: opts.currentDispatchPointer,
+        evidenceOut: opts.evidenceOut,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-recovery-bootstrap')
+  .description('Bootstrap current recovery lineage and Consumer identity')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--authority <path>', 'Primary recovery authority')
+  .requiredOption('--architecture-authority <path>', 'Architecture-wave recovery authority')
+  .requiredOption('--attempt-context <path>', 'Current pre-edit attempt context receipt')
+  .requiredOption('--qualified-red-receipt <path>', 'Current detached Qualified RED receipt')
+  .requiredOption('--consumer-root <path>', 'Authorized Consumer project root')
+  .option('--create-if-absent', 'Create the authorized Consumer when absent')
+  .requiredOption('--initial-publication-receipt <path>', 'Provisional publication receipt output')
+  .requiredOption('--out <path>', 'Recovery lineage receipt output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-recovery-bootstrap',
+      loadRecoveryCommand('requirementsContractRecoveryBootstrapCommand')({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        authority: opts.authority,
+        architectureAuthority: opts.architectureAuthority,
+        attemptContext: opts.attemptContext,
+        qualifiedRedReceipt: opts.qualifiedRedReceipt,
+        consumerRoot: opts.consumerRoot,
+        createIfAbsent: Boolean(opts.createIfAbsent),
+        initialPublicationReceipt: opts.initialPublicationReceipt,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-recovery-finalize')
+  .description('Finalize current recovery lineage through the governed recovery transaction')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--authority <path>', 'Primary recovery authority')
+  .requiredOption('--architecture-authority <path>', 'Architecture-wave recovery authority')
+  .requiredOption('--attempt-context <path>', 'Current pre-edit attempt context receipt')
+  .requiredOption('--recovery <path>', 'Attempt-scoped provisional recovery lineage receipt')
+  .requiredOption('--initial-publication-receipt <path>', 'Provisional publication receipt')
+  .requiredOption('--target <path>', 'Canonical recovery lineage target')
+  .requiredOption('--expected-target-preimage-hash <sha256>', 'Frozen target preimage hash')
+  .requiredOption('--qualified-red-receipt <path>', 'Current detached Qualified RED receipt')
+  .requiredOption(
+    '--command-receipt <path>',
+    'Current controlled command receipt; repeat for each required role',
+    collectRepeatedOption,
+    []
+  )
+  .requiredOption('--expected-provisional-hash <sha256>', 'Published provisional receipt hash')
+  .requiredOption('--command-run-id <id>', 'Current controlled finalization command run identity')
+  .requiredOption('--invocation-sequence <number>', 'Current finalization invocation sequence')
+  .requiredOption('--finalization-run-id <id>', 'Stable logical finalization run identity')
+  .requiredOption('--transaction-root <path>', 'Canonical recovery transaction root')
+  .requiredOption('--failure-root <path>', 'Canonical recovery failure archive root')
+  .requiredOption('--finalization-receipt <path>', 'Canonical recovery finalization receipt target')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-recovery-finalize',
+      loadRecoveryCommand('requirementsContractRecoveryFinalizeCommand')({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        authority: opts.authority,
+        architectureAuthority: opts.architectureAuthority,
+        attemptContext: opts.attemptContext,
+        recovery: opts.recovery,
+        initialPublicationReceipt: opts.initialPublicationReceipt,
+        target: opts.target,
+        expectedTargetPreimageHash: opts.expectedTargetPreimageHash,
+        qualifiedRedReceipt: opts.qualifiedRedReceipt,
+        commandReceipts: opts.commandReceipt,
+        expectedProvisionalHash: opts.expectedProvisionalHash,
+        commandRunId: opts.commandRunId,
+        invocationSequence: Number(opts.invocationSequence),
+        finalizationRunId: opts.finalizationRunId,
+        transactionRoot: opts.transactionRoot,
+        failureRoot: opts.failureRoot,
+        finalizationReceipt: opts.finalizationReceipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
   .command('eval-questions')
   .description('Deprecated compatibility alias for source-repository evaluation question tooling')
   .option('--json', 'Print machine-readable deprecation status')
@@ -880,4 +1062,17 @@ program
     )
   );
 
-program.parse();
+const requestedTopLevelAction = process.argv[2];
+const unknownTopLevelHelp =
+  requestedTopLevelAction &&
+  !requestedTopLevelAction.startsWith('-') &&
+  requestedTopLevelAction !== 'help' &&
+  process.argv.slice(3).includes('--help') &&
+  !program.commands.some((command) => command.name() === requestedTopLevelAction);
+
+if (unknownTopLevelHelp) {
+  process.stderr.write(`error: unknown command '${requestedTopLevelAction}'\n`);
+  process.exitCode = 1;
+} else {
+  program.parse();
+}

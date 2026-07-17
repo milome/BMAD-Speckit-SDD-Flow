@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-policy-catalog.schema.json",
+  "title": "Requirements Contract Policy Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogId", "catalogVersion", "catalogHash", "signature", "policies"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-policy-catalog/v1" },
+    "catalogId": { "$ref": "#/$defs/nonEmpty" },
+    "catalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "catalogHash": { "$ref": "#/$defs/sha256" },
+    "signature": { "$ref": "#/$defs/signature" },
+    "policies": { "type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": { "$ref": "#/$defs/policy" } }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "scalar": { "type": ["string", "number", "boolean"] },
+    "signature": { "type": "object", "additionalProperties": false, "required": ["algorithm", "signedCatalogHash", "signatureHash"], "properties": { "algorithm": { "const": "sha256" }, "signedCatalogHash": { "$ref": "#/$defs/sha256" }, "signatureHash": { "$ref": "#/$defs/sha256" } } },
+    "predicate": { "type": "object", "additionalProperties": false, "required": ["factPath", "operator", "expected"], "properties": { "factPath": { "$ref": "#/$defs/nonEmpty" }, "operator": { "const": "equals" }, "expected": { "$ref": "#/$defs/scalar" } } },
+    "applicability": { "type": "object", "additionalProperties": false, "required": ["all"], "properties": { "all": { "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/predicate" } } } },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyId", "policyVersion", "fieldKind", "value", "applicability"],
+      "properties": {
+        "policyId": { "$ref": "#/$defs/nonEmpty" },
+        "policyVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "fieldKind": { "enum": ["threshold", "security_level", "retention_rule", "retry_rule", "idempotency_rule", "compatibility_rule", "availability_rule", "recovery_objective"] },
+        "value": { "$ref": "#/$defs/scalar" },
+        "applicability": { "$ref": "#/$defs/applicability" }
+      }
+    }
+  }
+}

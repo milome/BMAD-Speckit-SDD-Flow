@@ -59,7 +59,7 @@ describe('main-agent story E2E orchestration', () => {
         taskType: 'implement',
         route: {
           tool: 'codex',
-          subtype: 'worker:implement',
+          subtype: 'main-session:implement',
         },
       });
 

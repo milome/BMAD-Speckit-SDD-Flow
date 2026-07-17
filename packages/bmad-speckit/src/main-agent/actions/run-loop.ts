@@ -1,4 +1,3 @@
-const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const {
@@ -130,32 +129,6 @@ function readTaskReport(reportPath) {
   return readJsonIfPresent(reportPath);
 }
 
-function runCodexOverride(context, instruction, reportPath) {
-  if (
-    process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE !== 'true' ||
-    !process.env.CODEX_WORKER_ADAPTER_BIN
-  ) {
-    return null;
-  }
-  const prompt = [
-    `Packet ID: ${instruction.packetId}`,
-    `write a JSON TaskReport to: ${reportPath}`,
-    `Allowed write scope: ${instruction.packetPath}`,
-    '',
-  ].join('\n');
-  const step = spawnSync(process.env.CODEX_WORKER_ADAPTER_BIN, [], {
-    cwd: context.cwd,
-    input: prompt,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
-  return {
-    exitCode: step.status ?? 1,
-    stdout: step.stdout || '',
-    stderr: step.stderr || '',
-  };
-}
-
 function blockedTaskReport(instruction, evidence) {
   return {
     packetId: instruction.packetId,
@@ -165,6 +138,20 @@ function blockedTaskReport(instruction, evidence) {
     evidence,
     downstreamContext: [instruction.expectedDelta],
     driftFlags: ['codex-task-report-missing'],
+  };
+}
+
+function mainSessionExecutionTaskReport(instruction) {
+  return {
+    packetId: instruction.packetId,
+    status: 'blocked',
+    filesChanged: [],
+    validationsRun: ['main-session-execution-preparation'],
+    evidence: [
+      `Current main session must execute the hash-bound dispatch packet: ${instruction.packetPath}`,
+    ],
+    downstreamContext: [instruction.expectedDelta],
+    driftFlags: ['main-session-execution-required'],
   };
 }
 
@@ -209,35 +196,30 @@ function legacyRunLoopAction(context) {
 
   let taskReport = null;
   if (instruction.host === 'codex') {
-    const adapter = runCodexOverride(context, instruction, reportPath);
-    if (adapter) {
-      steps.push({
-        step: 'codex-worker-adapter',
-        status: adapter.exitCode === 0 ? 'pass' : 'fail',
-        summary: `report=${toPosixRelative(context.cwd, reportPath)}`,
-      });
-      taskReport = readTaskReport(reportPath);
-    } else {
-      taskReport = blockedTaskReport(instruction, ['codex did not produce task report']);
-      writeJson(reportPath, taskReport);
-      const state = writeState(context, instruction, 'invalidated', taskReport);
-      return {
-        exitCode: 1,
-        suppressStdout: true,
-        payload: {
-          runId: `main-agent-run-loop-${Date.now()}`,
-          status: 'blocked',
-          steps,
-          dispatchInstruction: instruction,
-          taskReport,
-          finalSurface: {
-            ...legacyInspectSurface(context.cwd, context.args),
-            orchestrationState: state,
-          },
-          mainAgentStageSummary: legacyInspectSurface(context.cwd, context.args).mainAgentStageSummary,
+    taskReport = mainSessionExecutionTaskReport(instruction);
+    steps.push({
+      step: 'main-session-execution-handoff',
+      status: 'fail',
+      summary: `packet=${toPosixRelative(context.cwd, instruction.packetPath)}`,
+    });
+    writeJson(reportPath, taskReport);
+    const state = writeState(context, instruction, 'invalidated', taskReport);
+    return {
+      exitCode: 1,
+      suppressStdout: true,
+      payload: {
+        runId: `main-agent-run-loop-${Date.now()}`,
+        status: 'blocked',
+        steps,
+        dispatchInstruction: instruction,
+        taskReport,
+        finalSurface: {
+          ...legacyInspectSurface(context.cwd, context.args),
+          orchestrationState: state,
         },
-      };
-    }
+        mainAgentStageSummary: legacyInspectSurface(context.cwd, context.args).mainAgentStageSummary,
+      },
+    };
   }
 
   if (!taskReport || taskReport.status !== 'done') {

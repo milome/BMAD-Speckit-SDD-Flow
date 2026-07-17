@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-confirmation-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "confirmationKind",
+    "decision",
+    "transactionId",
+    "requirementSetId",
+    "implementationAttemptId",
+    "sourceDocumentHash",
+    "semanticModelHash",
+    "pageRef"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-confirmation-receipt/v1"
+    },
+    "confirmationKind": { "enum": ["requirements", "architecture"] },
+    "decision": { "const": "pass" },
+    "transactionId": { "$ref": "#/$defs/id" },
+    "requirementSetId": { "$ref": "#/$defs/id" },
+    "implementationAttemptId": { "$ref": "#/$defs/id" },
+    "sourceDocumentHash": { "$ref": "#/$defs/hash" },
+    "semanticModelHash": { "$ref": "#/$defs/hash" },
+    "pageRef": { "$ref": "#/$defs/fileRef" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

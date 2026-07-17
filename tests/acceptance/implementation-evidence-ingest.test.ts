@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
+import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
@@ -14,7 +15,7 @@ function artifactRef(
   contentHash: string,
   overrides: Record<string, unknown> = {}
 ) {
-  return {
+  const artifact = {
     artifactType: 'implementation_evidence',
     sourceOfTruthRole: 'evidence',
     path: artifactPath,
@@ -26,6 +27,56 @@ function artifactRef(
     inputVersion: 'source-v1',
     outputVersion: 'artifact-v1',
     ...overrides,
+  };
+  const schemaPath = `${artifactPath}.schema.json`;
+  const readbackReceiptPath = `${artifactPath}.readback-receipt.json`;
+  const artifactSchema = {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+  };
+  writeFileSync(schemaPath, `${JSON.stringify(artifactSchema, null, 2)}\n`, 'utf8');
+  const receiptPayload = {
+    schemaVersion: 'requirements-contract-evidence-artifact-readback-receipt/v1',
+    artifactId: path.basename(artifactPath),
+    artifactType: String(artifact.artifactType),
+    artifactPath,
+    artifactHash: contentHash,
+    artifactSchemaPath: schemaPath,
+    artifactSchemaHash: sha256(readFileSync(schemaPath)),
+    producerIdentity: {
+      class: 'controlled_artifact_producer',
+      id: String(artifact.producer),
+    },
+    requirementSetId: 'REQ-EVIDENCE-INGEST',
+    requirementRefs: artifact.relatedRequirementIds.map(String),
+    transactionId: 'TX-EVIDENCE-INGEST',
+    implementationAttemptId: 'IMP-EVIDENCE-INGEST',
+    publishedAt: '2026-05-19T00:00:00.000Z',
+    readbackAt: '2026-05-19T00:00:01.000Z',
+    publication: {
+      targetPath: artifactPath,
+      publishedHash: contentHash,
+      readbackHash: contentHash,
+      readbackVerified: true,
+    },
+    decision: 'pass',
+  };
+  writeFileSync(
+    readbackReceiptPath,
+    `${JSON.stringify(
+      {
+        ...receiptPayload,
+        receiptHash: sha256Stable(receiptPayload),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  return {
+    ...artifact,
+    schemaPath,
+    readbackReceiptPath,
   };
 }
 
@@ -137,6 +188,8 @@ function writeFixture(root: string): {
         eventType: 'execution_iteration_recorded',
         recordId: 'REQ-EVIDENCE-INGEST',
         requirementSetId: 'REQ-EVIDENCE-INGEST',
+        transactionId: 'TX-EVIDENCE-INGEST',
+        implementationAttemptId: 'IMP-EVIDENCE-INGEST',
         executionIterationId: 'exec-001',
         runId: 'run-001',
         status: 'done',

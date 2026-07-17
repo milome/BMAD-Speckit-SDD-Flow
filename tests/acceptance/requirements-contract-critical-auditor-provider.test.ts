@@ -6,6 +6,7 @@ import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main
 import {
   artifacts,
   buildValidResponseFromRequest,
+  createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
   issueCodes,
@@ -16,21 +17,43 @@ import {
   sha256File,
   sourcePromotionDecisionPath,
   stagingMustDecompositionPacket,
-  writeConsumerRequirement,
+  writeMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
+function createAuthoringConsumerFixture(root: string, recordId: string) {
+  const materialization = writeMinimalConsumerRequirement(
+    root,
+    `docs/requirements/${recordId.toLowerCase()}.md`,
+    createMinimalConsumerRequirementDescriptor(recordId)
+  );
+  return {
+    ...materialization,
+    authoringOptions: {
+      ...materialization.authoringOptions,
+      entrySource: 'session_requirements',
+    },
+  };
+}
+
 function createRequestForResponseFile(root: string, recordId: string) {
-  const source = writeConsumerRequirement(root);
+  const materialization = createAuthoringConsumerFixture(root, recordId);
+  const source = materialization.sourcePath;
   const beforeHash = sha256File(source);
-  const first = runAuthoring(root, source, recordId, {
-    targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-    requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-  });
+  const first = runAuthoring(root, source, recordId, materialization.authoringOptions);
   const requestPath = roundArtifact(root, recordId, 'request', 1);
+  if (!existsSync(requestPath)) {
+    throw new Error(
+      `critical auditor request was not generated: ${JSON.stringify({
+        blockingStage: first.blockingStage ?? null,
+        issueCodes: issueCodes(first),
+      })}`
+    );
+  }
   return {
     source,
     beforeHash,
     first,
+    authoringOptions: materialization.authoringOptions,
     requestPath,
     request: readJson<Record<string, unknown>>(requestPath),
     packet: stagingMustDecompositionPacket(root, recordId),
@@ -247,8 +270,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
 
       const result = runAuthoring(root, fixture.source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...fixture.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: responsePath,
         maxCriticalAuditorRounds: 1,
@@ -293,8 +315,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
 
       const result = runAuthoring(root, fixture.source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...fixture.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: responsePath,
       });
@@ -321,14 +342,39 @@ describe('requirements contract Critical Auditor provider modes', () => {
       writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
 
       const result = runAuthoring(root, fixture.source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...fixture.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: responsePath,
       });
 
       expect(issueCodes(result)).toContain(
         'critical_auditor_response_checked_projection_quality_rule_missing'
+      );
+      expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(false);
+      expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('response_file rejects no-new-gap responses without independent Judge run evidence', () => {
+    const root = createTempRoot('requirements-contract-response-file-missing-judge-evidence-');
+    try {
+      const recordId = 'REQ-RESPONSE-FILE-MISSING-JUDGE-EVIDENCE';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const responsePath = roundArtifact(root, recordId, 'response', 1);
+      const response = buildValidResponseFromRequest(fixture.request, fixture.packet);
+      delete response.independentProviderEvidence;
+      writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
+
+      const result = runAuthoring(root, fixture.source, recordId, {
+        ...fixture.authoringOptions,
+        criticalAuditorProviderMode: 'response_file',
+        criticalAuditorResponseFile: responsePath,
+      });
+
+      expect(issueCodes(result)).toContain(
+        'critical_auditor_independent_provider_evidence_required'
       );
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(false);
       expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
@@ -365,8 +411,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
 
       const result = runAuthoring(root, fixture.source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...fixture.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: responsePath,
         maxCriticalAuditorRounds: 1,
@@ -415,8 +460,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
 
       const result = runAuthoring(root, fixture.source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...fixture.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: responsePath,
         maxCriticalAuditorRounds: 1,
@@ -440,11 +484,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
     const root = createTempRoot('requirements-contract-response-round-recovery-');
     try {
       const recordId = 'REQ-RESPONSE-ROUND-RECOVERY';
-      const source = writeConsumerRequirement(root);
-      const initial = runAuthoring(root, source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-      });
+      const materialization = createAuthoringConsumerFixture(root, recordId);
+      const source = materialization.sourcePath;
+      const initial = runAuthoring(root, source, recordId, materialization.authoringOptions);
       expect(issueCodes(initial)).toContain('critical_auditor_provider_mode_required');
       const packet = stagingMustDecompositionPacket(root, recordId);
       const responseDir = path.join(root, 'auditor-responses');
@@ -461,8 +503,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
 
       const afterRound1 = runAuthoring(root, source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...materialization.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: responseFile,
         maxCriticalAuditorRounds: 3,
@@ -488,8 +529,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(readJson<Record<string, unknown>>(response2).requestHash).toBe(request2.requestHash);
 
       const afterRound2 = runAuthoring(root, source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...materialization.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseDir: responseDir,
         maxCriticalAuditorRounds: 3,
@@ -521,8 +561,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
 
       const third = runAuthoring(root, source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...materialization.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseDir: responseDir,
         maxCriticalAuditorRounds: 3,
@@ -566,8 +605,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
       writeFileSync(wrongResponse, `${JSON.stringify(wrong, null, 2)}\n`, 'utf8');
 
       const result = runAuthoring(root, fixture.source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...fixture.authoringOptions,
         criticalAuditorProviderMode: 'response_file',
         criticalAuditorResponseFile: wrongResponse,
       });
@@ -614,9 +652,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
           '--requirement-set-id',
           `${recordId}-SET`,
           '--target-path',
-          'vnpy/chart/multi_timeframe_widget.py',
+          fixture.authoringOptions.targetPath,
           '--required-command',
-          'pytest tests/test_multi_timeframe_settings.py',
+          fixture.authoringOptions.requiredCommand,
           '--critical-auditor-provider-mode',
           'response_file',
           flag,
@@ -640,10 +678,13 @@ describe('requirements contract Critical Auditor provider modes', () => {
   it('external_adapter requires an explicit adapter command before writing staging artifacts', () => {
     const root = createTempRoot('requirements-contract-external-adapter-');
     try {
-      const source = writeConsumerRequirement(root);
+      const recordId = 'REQ-EXTERNAL-ADAPTER';
+      const materialization = createAuthoringConsumerFixture(root, recordId);
+      const source = materialization.sourcePath;
       const beforeHash = sha256File(source);
 
-      const result = runAuthoring(root, source, 'REQ-EXTERNAL-ADAPTER', {
+      const result = runAuthoring(root, source, recordId, {
+        ...materialization.authoringOptions,
         criticalAuditorProviderMode: 'external_adapter',
       });
 

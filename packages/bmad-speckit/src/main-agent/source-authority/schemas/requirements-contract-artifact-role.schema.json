@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-artifact-role.schema.json",
+  "title": "Requirements Contract Artifact Role Classification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "activationState",
+    "artifactRole",
+    "classificationAuthority",
+    "outputPolicy",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-artifact-role/v1"
+    },
+    "activationState": {
+      "const": "inactive_schema_boundary"
+    },
+    "artifactRole": {
+      "enum": ["product_prd", "requirement_source_prd", "discovery_envelope"]
+    },
+    "classificationAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources"],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/authoritySource"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "outputPolicy": {
+      "$ref": "#/$defs/outputPolicy"
+    },
+    "decision": {
+      "const": "classified"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/productPrd"
+    },
+    {
+      "$ref": "#/$defs/requirementSourcePrd"
+    },
+    {
+      "$ref": "#/$defs/discoveryEnvelope"
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "authoritySource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "artifactRole"],
+          "properties": {
+            "kind": {
+              "const": "explicit_request"
+            },
+            "artifactRole": {
+              "enum": ["product_prd", "requirement_source_prd", "discovery_envelope"]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "artifactRole", "ref", "hash"],
+          "properties": {
+            "kind": {
+              "enum": ["registered_workflow", "decision_receipt"]
+            },
+            "artifactRole": {
+              "enum": ["product_prd", "requirement_source_prd", "discovery_envelope"]
+            },
+            "ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hash": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        }
+      ]
+    },
+    "outputPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorityClass",
+        "rendererRef",
+        "implementationConfirmationPolicy",
+        "stableRequirementSetIdPolicy",
+        "requirementRecordRegistrationPolicy",
+        "finalImplementationAuthority"
+      ],
+      "properties": {
+        "authorityClass": {
+          "enum": ["product_background", "implementation_semantic_authority", "none"]
+        },
+        "rendererRef": {
+          "enum": [
+            "registered_product_prd_renderer",
+            "canonical_source_prd_renderer",
+            "discovery_envelope_renderer"
+          ]
+        },
+        "implementationConfirmationPolicy": {
+          "enum": ["required", "forbidden"]
+        },
+        "stableRequirementSetIdPolicy": {
+          "enum": ["required", "not_required"]
+        },
+        "requirementRecordRegistrationPolicy": {
+          "enum": ["required", "forbidden"]
+        },
+        "finalImplementationAuthority": {
+          "enum": ["source_authority", "none"]
+        }
+      }
+    },
+    "productPrd": {
+      "properties": {
+        "artifactRole": {
+          "const": "product_prd"
+        },
+        "classificationAuthority": {
+          "properties": {
+            "sources": {
+              "items": {
+                "properties": {
+                  "artifactRole": {
+                    "const": "product_prd"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "outputPolicy": {
+          "properties": {
+            "authorityClass": {
+              "const": "product_background"
+            },
+            "rendererRef": {
+              "const": "registered_product_prd_renderer"
+            },
+            "implementationConfirmationPolicy": {
+              "const": "forbidden"
+            },
+            "stableRequirementSetIdPolicy": {
+              "const": "not_required"
+            },
+            "requirementRecordRegistrationPolicy": {
+              "const": "forbidden"
+            },
+            "finalImplementationAuthority": {
+              "const": "none"
+            }
+          }
+        }
+      }
+    },
+    "requirementSourcePrd": {
+      "properties": {
+        "artifactRole": {
+          "const": "requirement_source_prd"
+        },
+        "classificationAuthority": {
+          "properties": {
+            "sources": {
+              "items": {
+                "properties": {
+                  "artifactRole": {
+                    "const": "requirement_source_prd"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "outputPolicy": {
+          "properties": {
+            "authorityClass": {
+              "const": "implementation_semantic_authority"
+            },
+            "rendererRef": {
+              "const": "canonical_source_prd_renderer"
+            },
+            "implementationConfirmationPolicy": {
+              "const": "required"
+            },
+            "stableRequirementSetIdPolicy": {
+              "const": "required"
+            },
+            "requirementRecordRegistrationPolicy": {
+              "const": "required"
+            },
+            "finalImplementationAuthority": {
+              "const": "source_authority"
+            }
+          }
+        }
+      }
+    },
+    "discoveryEnvelope": {
+      "properties": {
+        "artifactRole": {
+          "const": "discovery_envelope"
+        },
+        "classificationAuthority": {
+          "properties": {
+            "sources": {
+              "items": {
+                "properties": {
+                  "artifactRole": {
+                    "const": "discovery_envelope"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "outputPolicy": {
+          "properties": {
+            "authorityClass": {
+              "const": "none"
+            },
+            "rendererRef": {
+              "const": "discovery_envelope_renderer"
+            },
+            "implementationConfirmationPolicy": {
+              "const": "forbidden"
+            },
+            "stableRequirementSetIdPolicy": {
+              "const": "not_required"
+            },
+            "requirementRecordRegistrationPolicy": {
+              "const": "forbidden"
+            },
+            "finalImplementationAuthority": {
+              "const": "none"
+            }
+          }
+        }
+      }
+    }
+  }
+}

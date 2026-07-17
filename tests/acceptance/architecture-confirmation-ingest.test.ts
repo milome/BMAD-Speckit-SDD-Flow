@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') {
@@ -74,6 +75,9 @@ function writeFixture(root: string): {
   const recordPath = path.join(base, 'requirement-record.json');
   const architecturePath = path.join(architectureDir, 'architecture-confirmation.json');
   const reportPath = path.join(architectureDir, 'architecture-confirmation.render-report.json');
+  const sourcePath = path.join(root, 'docs', 'requirements', 'architecture-confirmation-ingest.md');
+  mkdirSync(path.dirname(sourcePath), { recursive: true });
+  writeFileSync(sourcePath, '# Architecture confirmation ingest fixture\n', 'utf8');
   const architecture = {
     schemaVersion: 'architecture-confirmation/v1',
     recordId: 'REQ-ARCH-INGEST',
@@ -131,9 +135,11 @@ function writeFixture(root: string): {
         recordId: 'REQ-ARCH-INGEST',
         requirementSetId: 'REQ-ARCH-INGEST',
         status: 'user_confirmed',
-        sourcePath: 'docs/requirements/architecture-confirmation-ingest.md',
+        sourcePath,
         sourceDocumentHash: architecture.sourceDocumentHash,
         implementationConfirmationHash: architecture.implementationConfirmationHash,
+        semanticModelHash: architecture.sourceDocumentHash,
+        currentAttemptId: 'implementation-attempt-001',
         confirmationHistory: [
           {
             eventType: 'confirmation_recorded',
@@ -141,7 +147,7 @@ function writeFixture(root: string): {
             requirementSetId: 'REQ-ARCH-INGEST',
             confirmedAt: '2026-05-19T00:00:00.000Z',
             confirmedBy: 'test-user',
-            sourcePath: 'docs/requirements/architecture-confirmation-ingest.md',
+            sourcePath,
             sourceDocumentHash: architecture.sourceDocumentHash,
             implementationConfirmationHash: architecture.implementationConfirmationHash,
             confirmationPageHash:
@@ -191,6 +197,7 @@ function writeFixture(root: string): {
         recordId: 'REQ-ARCH-INGEST',
         runId: 'arch-run-001',
         confirmability: 'confirmable',
+        sourcePath,
         sourceDocumentHash: architecture.sourceDocumentHash,
         implementationConfirmationHash: architecture.implementationConfirmationHash,
         resolvedRecipeHash: recipe.resolvedRecipeHash,
@@ -208,6 +215,10 @@ function writeFixture(root: string): {
     )}\n`,
     'utf8'
   );
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
+  });
   return { architecturePath, reportPath, recordPath, confirmationText };
 }
 
@@ -252,6 +263,19 @@ describe('architecture confirmation ingest', () => {
           'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        semanticModelHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        currentAttemptId: 'implementation-attempt-001',
+        decisionReceiptRef: expect.any(String),
+        decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(record.runtimeStatusDecisionReceipts.at(-1)).toMatchObject({
+        path: record.sixModelResults.architecture_confirmation.decisionReceiptRef,
+        receipt: {
+          modelId: 'architecture_confirmation',
+          implementationAttemptId: 'implementation-attempt-001',
+          receiptHash: record.sixModelResults.architecture_confirmation.decisionReceiptHash,
+        },
       });
       expect(record.currentMentalModel).toBe('implementation_readiness');
       expect(record.stage).toBe('implementation_readiness');

@@ -794,6 +794,9 @@ function collectContradictionQuestions(confirmation) {
         outBoundaryType === 'non_goal_scope_boundary' ||
         outConflictResolution === 'out_of_scope_boundary_only' ||
         outIsBoundaryLinkedToMust;
+      const outIsUnrelatedScopeBoundary =
+        /(?:\bunrelated\b|不相关|无关)/iu.test(outText) &&
+        /(?:outside|out[- ]of[- ]scope|not in scope|范围外|不在范围)/iu.test(outText);
       const outIsProofBoundary =
         /do not treat|must not treat|cannot (?:be|count|serve)|不得把|不能把/iu.test(outText) &&
         /proof|authority|completion|完成证明|权威/u.test(outText);
@@ -805,6 +808,7 @@ function collectContradictionQuestions(confirmation) {
         overlap.length >= 2 &&
         !(
           outIsExplicitScopeBoundary ||
+          outIsUnrelatedScopeBoundary ||
           (outIsProofBoundary &&
             mustIsEvidenceRecording)
         ) &&

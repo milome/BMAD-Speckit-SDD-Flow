@@ -16,8 +16,8 @@ import {
 } from '../helpers/runtime-registry-fixture';
 import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
 
-describe('host-matrix real codex smoke', () => {
-  it('uses the codex worker adapter smoke in real mode instead of only checking codex --version', () => {
+describe('host-matrix real codex execution boundary', () => {
+  it('requires the current main session as the sole Codex execution surface', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'host-matrix-real-codex-'));
     try {
       const contractPath = path.join(
@@ -96,14 +96,18 @@ describe('host-matrix real codex smoke', () => {
         journeys: Array<{
           host: string;
           passed: boolean;
-          workerSmoke?: { attempted: boolean; passed: boolean; taskReportPath: string };
+          mainSessionExecution?: { required: boolean; passed: boolean; detail: string };
         }>;
       };
       expect(report.journeys[0].host).toBe('codex');
       expect(report.journeys[0].passed).toBe(true);
-      expect(report.journeys[0].workerSmoke?.attempted).toBe(true);
-      expect(report.journeys[0].workerSmoke?.passed).toBe(true);
-      expect(fs.existsSync(report.journeys[0].workerSmoke!.taskReportPath)).toBe(true);
+      expect(report.journeys[0].mainSessionExecution).toMatchObject({
+        required: true,
+        passed: true,
+      });
+      expect(report.journeys[0].mainSessionExecution?.detail).toContain(
+        'current main session'
+      );
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

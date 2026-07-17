@@ -68,7 +68,7 @@ main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 ### 阶段二：审计子任务（必做）
 
 1. **触发**：阶段一收敛并生成最终方案 + 任务列表文档后，主 Agent **必须**发起审计子任务。
-2. **子代理**：优先 **code-reviewer**（Codex worker dispatch）；若不可用则 `Codex worker adapter` + `subagent_type: general-purpose`。
+2. **子代理**：优先 **code-reviewer**（Codex worker dispatch）；若不可用则 `current Codex main session` + `subagent_type: general-purpose`。
 3. **审计依据**：使用 [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) 中的完整 prompt 模板（audit-prompts §4 精神 + TASKS 文档适配）；或项目内 `.codex/skills/speckit-workflow/references/audit-prompts.md` §4 的适配版本。
 4. **审计要求**：
    - **批判审计员必须出场**，发言占比 **>70%**；

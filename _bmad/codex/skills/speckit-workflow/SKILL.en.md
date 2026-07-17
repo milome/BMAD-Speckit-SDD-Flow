@@ -112,11 +112,11 @@ This distributed English variant must preserve the same Deferred Gaps contract a
 3. Use `audit-prompts.md` for prompt words corresponding to chapters; (**GAP-070 fix**: use audit-prompts.md §1–§5 for each stage of speckit audit; use the newly created audit-prompts-prd/arch/pr.md for PRD/Arch/PR audit)
 
 **Fallback Strategy**:
-1. If code-reviewer is not available, use `Codex worker adapter` + `subagent_type: general-purpose`
+1. If code-reviewer is not available, use `current Codex main session` + `subagent_type: general-purpose`
 2. Pass in the corresponding chapter content of `audit-prompts.md` as prompt
 3. Require the sub-agent to check item by item according to the audit checklist
 
-**Note**: The subagent_type of Codex worker adapter currently only supports general-purpose, explore, and shell, and does not support code-reviewer.
+**Note**: The subagent_type of current Codex main session currently only supports general-purpose, explore, and shell, and does not support code-reviewer.
 
 ### 0.1.1 Skill binding rules when sub-Agent executes code-review
 

@@ -4,6 +4,10 @@ import {
   REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES,
   SOURCE_PRD_REQUIRED_SECTION_NAMES,
 } from '../rules/requirements-contract-source-prd-rules';
+import {
+  parseRequirementsContractSourceText,
+  type RequirementsContractSourceDocument,
+} from './requirements-contract-source-parser';
 
 export type EntrySource = 'bmad_prd' | 'session_requirements' | 'source_prd_draft';
 
@@ -86,44 +90,16 @@ function readText(filePath: string): string {
   return fs.readFileSync(filePath, 'utf8');
 }
 
-function headingExists(markdown: string, heading: string): boolean {
-  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-  return new RegExp(`^${escaped}\\s*$`, 'mu').test(markdown);
-}
-
-function sectionBody(markdown: string, section: string): string {
-  const lines = markdown.split(/\r?\n/u);
-  const start = lines.findIndex((line) => line.trim() === `## ${section}`);
-  if (start < 0) return '';
-  const end = lines.findIndex((line, index) => index > start && /^##\s+/u.test(line));
-  return lines.slice(start + 1, end < 0 ? lines.length : end).join('\n');
-}
-
-function parseTable(markdown: string, section: string): TableRow[] {
-  const body = sectionBody(markdown, section);
-  const lines = body
-    .split(/\r?\n/u)
-    .map((line) => line.trim())
-    .filter((line) => /^\|.+\|$/u.test(line));
-  if (lines.length < 2) return [];
-  const headerIndex = lines.findIndex((line, index) => index + 1 < lines.length && /^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|$/u.test(lines[index + 1]));
-  if (headerIndex < 0) return [];
-  const columns = splitTableLine(lines[headerIndex]);
-  return lines.slice(headerIndex + 2).map((line) => {
-    const values = splitTableLine(line);
-    return {
-      section,
-      columns,
-      cells: Object.fromEntries(columns.map((column, index) => [column, values[index] ?? ''])),
-    };
-  });
-}
-
-function splitTableLine(line: string): string[] {
-  return line
-    .split('|')
-    .map((cell) => cell.trim())
-    .filter((cell, index, cells) => index > 0 && index < cells.length - 1);
+function tableRows(document: RequirementsContractSourceDocument, section: string): TableRow[] {
+  return document.tables
+    .filter((table) => table.headingPath.at(-1) === section)
+    .flatMap((table) =>
+      table.rows.map((row) => ({
+        section,
+        columns: table.columns,
+        cells: row.cells,
+      }))
+    );
 }
 
 function cell(row: TableRow, column: string): string {
@@ -152,12 +128,19 @@ function projectedMustId(id: string): string | null {
   return null;
 }
 
-function validateRequiredHeadings(markdown: string, sourcePath: string, issues: LintIssue[]): void {
+function validateRequiredHeadings(
+  document: RequirementsContractSourceDocument,
+  sourcePath: string,
+  issues: LintIssue[]
+): void {
   for (const heading of SOURCE_PRD_REQUIRED_SECTION_NAMES) {
-    const literalHeading = heading.startsWith('Requirements Contract Source PRD Template')
-      ? `# ${heading}`
-      : `## ${heading}`;
-    if (!headingExists(markdown, literalHeading)) {
+    const level = heading.startsWith('Requirements Contract Source PRD Template') ? 1 : 2;
+    const literalHeading = `${'#'.repeat(level)} ${heading}`;
+    if (
+      !document.headings.some(
+        (candidate) => candidate.level === level && candidate.text === heading
+      )
+    ) {
       addIssue(issues, 'required_heading_missing', sourcePath, `Missing heading: ${literalHeading}`);
     }
   }
@@ -194,7 +177,11 @@ function validateTemplateFragments(
   }
 }
 
-function validateTables(markdown: string, sourcePath: string, issues: LintIssue[]): Map<string, TableRow[]> {
+function validateTables(
+  document: RequirementsContractSourceDocument,
+  sourcePath: string,
+  issues: LintIssue[]
+): Map<string, TableRow[]> {
   const rowsBySection = new Map<string, TableRow[]>();
   const supportingSections = [
     'Success Criteria',
@@ -208,10 +195,10 @@ function validateTables(markdown: string, sourcePath: string, issues: LintIssue[
     'Source Target State',
   ];
   for (const section of supportingSections) {
-    rowsBySection.set(section, parseTable(markdown, section));
+    rowsBySection.set(section, tableRows(document, section));
   }
   for (const section of Object.keys(REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES.requiredTableColumns)) {
-    const rows = parseTable(markdown, section);
+    const rows = tableRows(document, section);
     rowsBySection.set(section, rows);
     if (rows.length === 0) {
       addIssue(issues, 'source_table_missing', sourcePath, `Source table missing for section: ${section}`);
@@ -327,9 +314,13 @@ function validateNegativeScopeAndPaths(sourcePath: string, rowsBySection: Map<st
   }
 }
 
-function validateCurrentTarget(sourcePath: string, rowsBySection: Map<string, TableRow[]>, issues: LintIssue[]): void {
-  const currentRows = parseTable(readText(sourcePath), 'Source Current State');
-  const targetRows = parseTable(readText(sourcePath), 'Source Target State');
+function validateCurrentTarget(
+  sourcePath: string,
+  rowsBySection: Map<string, TableRow[]>,
+  issues: LintIssue[]
+): void {
+  const currentRows = rowsBySection.get('Source Current State') ?? [];
+  const targetRows = rowsBySection.get('Source Target State') ?? [];
   const ctmRows = rowsBySection.get('Current Target Map') ?? [];
   if (currentRows.length === 0 || targetRows.length === 0 || ctmRows.length === 0) {
     addIssue(issues, 'current_target_map_missing', sourcePath, 'Current, target, and CTM rows are required.');
@@ -374,10 +365,22 @@ export function lintRequirementsContractSourcePrd(input: Partial<Args> = {}): Li
     return result(args, issues, new Map());
   }
   const markdown = readText(args.source);
-  validateRequiredHeadings(markdown, args.source, issues);
+  const parsed = parseRequirementsContractSourceText(markdown, { sourcePath: args.source });
+  if (!parsed.ok) {
+    for (const parserIssue of parsed.issues) {
+      addIssue(
+        issues,
+        parserIssue.code,
+        `${args.source}:${parserIssue.startLine}`,
+        parserIssue.message
+      );
+    }
+    return result(args, issues, new Map());
+  }
+  validateRequiredHeadings(parsed.document, args.source, issues);
   validateMetadata(markdown, args.source, issues);
   validateTemplateFragments(markdown, args.source, args.allowInlineConfirmation, issues);
-  const rowsBySection = validateTables(markdown, args.source, issues);
+  const rowsBySection = validateTables(parsed.document, args.source, issues);
   const known = validateIdGraph(args.source, rowsBySection, issues);
   validateClosure(args.source, rowsBySection, issues);
   validateTrace(args.source, rowsBySection, known, issues);

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-invocation-authority-receipt.schema.json",
+  "title": "Requirements Contract Invocation Authority Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "recordId",
+    "invocationId",
+    "entrySource",
+    "sourceDocumentHash",
+    "arguments",
+    "argumentSetHash",
+    "capturedAt",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-invocation-authority-receipt/v1"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "recordId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "invocationId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "entrySource": {
+      "enum": ["bmad_prd", "session_requirements", "source_prd_draft"]
+    },
+    "sourceDocumentHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "arguments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/argument"
+      }
+    },
+    "argumentSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "capturedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order",
+        "argumentId",
+        "kind",
+        "optionName",
+        "value",
+        "valueHash"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "argumentId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "kind": {
+          "enum": ["target_path", "required_command"]
+        },
+        "optionName": {
+          "enum": ["--target-path", "--required-command"]
+        },
+        "value": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "valueHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

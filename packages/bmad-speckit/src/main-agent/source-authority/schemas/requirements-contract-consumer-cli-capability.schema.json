@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-consumer-cli-capability.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "executionHost", "goalCommandAvailable"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-consumer-cli-capability/v1"
+    },
+    "executionHost": {
+      "enum": ["codex", "claude-code", "cursor-ide", "cursor-cli", "generic"]
+    },
+    "goalCommandAvailable": { "type": "boolean" }
+  }
+}

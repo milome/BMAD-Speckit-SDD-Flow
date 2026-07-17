@@ -25,42 +25,49 @@ const CHECKPOINTS = [
     id: 'cp-00-semantic-kernel',
     legacyId: null,
     name: 'semantic kernel',
+    validatorIdentity: 'requirements-contract.semantic-kernel-source-root.cp-00-semantic-kernel',
     allowedSections: ['semanticKernel', 'scaleAssessment', 'authoring/semantic-kernel.json'],
   },
   {
     id: 'cp-01-must-decomposition-packet',
     legacyId: 'cp-01-header-scope-decisions',
     name: 'must_decomposition_packet',
+    validatorIdentity: 'requirements-contract.must-decomposition-packet.cp-01-must-decomposition-packet',
     allowedSections: ['mustDecompositionPacket', 'authoring/must_decomposition_packet.json'],
   },
   {
     id: 'cp-02-atomic-decomposition-loop-convergence',
     legacyId: 'cp-02-confirmation-core-applicability',
     name: 'atomic decomposition loop convergence',
+    validatorIdentity: 'requirements-contract.critical-auditor-convergence.cp-02-atomic-decomposition-loop-convergence',
     allowedSections: ['criticalAuditorReceipt', 'gapHistory', 'atomicityCompleteness'],
   },
   {
     id: 'cp-03-packet-to-source-materialization',
     legacyId: 'cp-03-must-neg-out-evidence',
     name: 'packet-to-source materialization',
+    validatorIdentity: 'requirements-contract.packet-source-conservation.cp-03-packet-to-source-materialization',
     allowedSections: ['mustExecutionDecompositionMatrix', 'atomicImplementationTaskList', 'packetProjections'],
   },
   {
     id: 'cp-04-id-freeze',
     legacyId: 'cp-04-failure-edge-trace',
     name: 'ID freeze',
+    validatorIdentity: 'requirements-contract.id-namespace-freeze.cp-04-id-freeze',
     allowedSections: ['idFreeze', 'must', 'notDone', 'mustNot', 'evidence', 'traceRows'],
   },
   {
     id: 'cp-05-implementation-confirmation-core',
     legacyId: 'cp-05-views',
     name: 'implementationConfirmation core',
+    validatorIdentity: 'requirements-contract.implementation-confirmation-core.cp-05-implementation-confirmation-core',
     allowedSections: ['implementationConfirmation.core', 'applicability', 'requirementBoundary'],
   },
   {
     id: 'cp-06-projections',
     legacyId: 'cp-06-artifacts-commands-closeout',
     name: 'EVD/TRACE/ACC/E2E/failure/edge/currentTarget/AI-TDD projections',
+    validatorIdentity: 'requirements-contract.projection-closure.cp-06-projections',
     allowedSections: [
       'evidence',
       'traceRows',
@@ -76,15 +83,18 @@ const CHECKPOINTS = [
     id: 'cp-07-human-readable-views',
     legacyId: 'cp-07-conditional-modules',
     name: 'human-readable views',
+    validatorIdentity: 'requirements-contract.human-readable-projection-parity.cp-07-human-readable-views',
     allowedSections: ['sequenceViews', 'flowViews', 'edgeCaseViews', 'boundaryViews', 'humanReadableViews', 'mermaid'],
   },
   {
     id: 'cp-08-pre-render-global-reconciliation',
     legacyId: 'cp-08-human-readable-views-dod-reverse-audit',
     name: 'pre-render global reconciliation',
+    validatorIdentity: 'requirements-contract.global-reconciliation-readiness.cp-08-pre-render-global-reconciliation',
     allowedSections: ['packetSourceReconciliation', 'preRenderGates', 'reverseAuditReport'],
   },
 ];
+const CHECKPOINT_VALIDATOR_VERSION = '1.0.0';
 const EVIDENCE_ONLY_CHECKPOINT_IDS = new Set(
   CHECKPOINTS
     .filter((checkpoint) => checkpoint.id !== 'cp-00-semantic-kernel')
@@ -112,7 +122,7 @@ const AUTHORING_MODES = new Set([
 
 function usage(exitCode = 0) {
   console.log(`Usage:
-  node run_semantic_checkpoints.js --source <source-document.md> --mode plan|status|run|resume|pre-render-gate|checkpoint-persistence [options]
+  node run_semantic_checkpoints.js --source <source-document.md> --mode plan|status|validate|run|resume|pre-render-gate|checkpoint-persistence [options]
 
 Options:
   --assessment <scale-assessment.json>
@@ -170,7 +180,7 @@ function parseArgs(argv) {
     args.source = arg;
   }
   if (!args.source) return { error: 'missing source document path' };
-  if (!['plan', 'status', 'run', 'resume', 'pre-render-gate', 'checkpoint-persistence'].includes(args.mode)) return { error: `unsupported mode ${args.mode}` };
+  if (!['plan', 'status', 'validate', 'run', 'resume', 'pre-render-gate', 'checkpoint-persistence'].includes(args.mode)) return { error: `unsupported mode ${args.mode}` };
   return args;
 }
 
@@ -542,6 +552,104 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
     );
   }
   return { ok: true, evidence };
+}
+
+function checkpointValidatedInputs({ sourcePath, checkpoint, progressPath = '', evidence }) {
+  const checkpointPosition = checkpointIndex(checkpoint.id);
+  const candidates = [
+    { role: 'source_document', path: sourcePath },
+    { role: 'semantic_kernel', path: evidence.semanticKernel },
+  ];
+  if (checkpointPosition >= 1) {
+    candidates.push({ role: 'must_decomposition_packet', path: evidence.mustDecompositionPacket });
+  }
+  if (checkpointPosition >= 2) {
+    for (const receiptPath of evidence.receiptFiles) {
+      candidates.push({ role: 'critical_auditor_receipt', path: receiptPath });
+    }
+  }
+  if (checkpointPosition >= 3) {
+    candidates.push(
+      { role: 'must_decomposition_receipt', path: evidence.mustDecompositionReceipt },
+      { role: 'packet_source_reconciliation', path: evidence.packetSourceReconciliation },
+      { role: 'pre_render_must_decomposition_gate', path: evidence.preRenderMustDecompositionGate }
+    );
+  }
+  if (checkpoint.id === 'cp-08-pre-render-global-reconciliation') {
+    candidates.push({
+      role: 'pre_render_global_consistency_gate',
+      path: defaultGlobalGateReportPath(progressPath),
+    });
+  }
+  const seen = new Set();
+  return candidates
+    .filter((candidate) => candidate.path && fs.existsSync(candidate.path))
+    .filter((candidate) => {
+      const absolute = path.resolve(candidate.path);
+      if (seen.has(absolute)) return false;
+      seen.add(absolute);
+      return true;
+    })
+    .map((candidate) => ({
+      role: candidate.role,
+      path: normalizePathForReport(candidate.path),
+      hash: sha256File(candidate.path),
+    }));
+}
+
+function checkpointSemanticValidationObservation({
+  sourcePath,
+  checkpointId,
+  progressPath = '',
+}) {
+  const checkpoint = checkpointById(checkpointId);
+  if (!checkpoint) {
+    return fail('unknown_checkpoint', `unknown checkpoint ${checkpointId}`, {
+      schemaVersion: 'requirements-contract-checkpoint-validator-observation/v1',
+      decision: 'block',
+      semanticValidationStatus: 'block',
+      blockers: [
+        {
+          code: 'unknown_checkpoint',
+          message: `unknown checkpoint ${checkpointId}`,
+          refs: [],
+        },
+      ],
+      validatedInputs: [],
+    });
+  }
+  const validation = validateCheckpointAuthoringEvidence({
+    sourcePath,
+    checkpoint,
+    progressPath,
+  });
+  const evidence = validation.evidence ?? currentAuthoringEvidence(sourcePath, progressPath);
+  const blockers = validation.ok
+    ? []
+    : asArray(validation.issues).map((item) => ({
+        code: String(item?.code ?? validation.code ?? 'checkpoint_semantic_validation_blocked'),
+        message: String(
+          item?.message ?? validation.message ?? 'checkpoint semantic validation blocked'
+        ),
+        refs: stringList(item?.refs),
+      }));
+  return {
+    ok: validation.ok,
+    schemaVersion: 'requirements-contract-checkpoint-validator-observation/v1',
+    checkpointId: checkpoint.id,
+    validatorIdentity: checkpoint.validatorIdentity,
+    validatorVersion: CHECKPOINT_VALIDATOR_VERSION,
+    validatorHash: sha256File(__filename),
+    decision: validation.ok ? 'pass' : 'block',
+    semanticValidationStatus: validation.ok ? 'pass' : 'block',
+    validatedInputs: checkpointValidatedInputs({
+      sourcePath,
+      checkpoint,
+      progressPath,
+      evidence,
+    }),
+    blockers,
+  };
 }
 
 function buildPlan({ sourcePath, assessment = null, progress = null, progressPath = '' }) {
@@ -1888,6 +1996,36 @@ function main(argv) {
     process.stdout.write(`${JSON.stringify(status, null, 2)}\n`);
     return status.ok ? 0 : 1;
   }
+  if (args.mode === 'validate') {
+    if (!args.checkpoint) {
+      const blocked = fail(
+        'checkpoint_required',
+        'checkpoint semantic validation requires --checkpoint',
+        {
+          schemaVersion: 'requirements-contract-checkpoint-validator-observation/v1',
+          decision: 'block',
+          semanticValidationStatus: 'block',
+          blockers: [
+            {
+              code: 'checkpoint_required',
+              message: 'checkpoint semantic validation requires --checkpoint',
+              refs: [],
+            },
+          ],
+          validatedInputs: [],
+        }
+      );
+      process.stdout.write(`${JSON.stringify(blocked, null, 2)}\n`);
+      return 1;
+    }
+    const observation = checkpointSemanticValidationObservation({
+      sourcePath,
+      checkpointId: args.checkpoint,
+      progressPath,
+    });
+    process.stdout.write(`${JSON.stringify(observation, null, 2)}\n`);
+    return observation.ok ? 0 : 1;
+  }
   if (args.mode === 'pre-render-gate') {
     const gate = buildCombinedPreRenderGateReport({ sourcePath, progressPath });
     updateProgressWithCombinedPreRenderGate({ progressPath, combinedReport: gate.report });
@@ -1979,6 +2117,7 @@ module.exports = {
   CHECKPOINTS,
   buildPlan,
   buildCombinedPreRenderGateReport,
+  checkpointSemanticValidationObservation,
   commitCheckpoint,
   defaultAuthoringRuntimeDir,
   defaultProgressPath,

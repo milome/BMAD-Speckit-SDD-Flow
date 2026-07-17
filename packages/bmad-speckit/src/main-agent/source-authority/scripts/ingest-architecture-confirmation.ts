@@ -9,7 +9,12 @@ import {
   appendControlEventAndReplay,
   type ControlCommitResult,
 } from './requirement-record-control-store';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+} from './requirements-contract-runtime-status-decision-receipt';
 import { hasOpenReconfirmationRequest } from './reconfirmation-runtime';
+import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 
 type JsonObject = Record<string, unknown>;
 
@@ -354,6 +359,40 @@ function appendArchitectureConfirmationResult(input: {
     input.recordedAt,
     input.recordedBy
   );
+  const attemptId = text(current.currentAttemptId) || text(current.runId);
+  const architecturePath = text(input.event.architectureConfirmationPath);
+  const architectureHash = text(input.event.architectureConfirmationArtifactHash);
+  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+    recordId: text(current.recordId),
+    requirementSetId: text(current.requirementSetId) || text(current.recordId),
+    modelId: 'architecture_confirmation',
+    implementationAttemptId: attemptId,
+    sourceDocumentHash: text(current.sourceDocumentHash),
+    implementationConfirmationHash: text(current.implementationConfirmationHash),
+    semanticModelHash: text(current.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'requirement_source',
+        path: text(current.sourcePath),
+        hash: text(current.sourceDocumentHash),
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'architecture_confirmation',
+        path: architecturePath,
+        hash: architectureHash,
+      },
+    ],
+    blockerRefs: [],
+    evidenceRefs: [architecturePath, text(input.event.renderReportPath)].filter(Boolean),
+    authorityClass: 'deterministic_gate',
+    decision: 'pass',
+    effectiveStatus: 'pass',
+    createdAt: input.recordedAt,
+    receiptPath: `runtime/status-decisions/${attemptId}/architecture_confirmation.json`,
+    projection: result,
+  });
   return appendControlEventAndReplay({
     recordPath: input.recordPath,
     writerId: 'architecture-confirmation-ingest',
@@ -361,19 +400,15 @@ function appendArchitectureConfirmationResult(input: {
     recordedAt: input.recordedAt,
     payload: {
       eventType: 'six_model_results_recorded',
-      ...result,
+      ...runtimeStatus.projection,
     },
     reduce: (record) => ({
       ...record,
-      sixModelResults: {
-        ...object(record.sixModelResults),
-        architecture_confirmation: modelResultForArchitectureConfirmation(
-          record,
-          input.event,
-          input.recordedAt,
-          input.recordedBy
-        ),
-      },
+      ...runtimeStatusProjectionRecordPatch({
+        record,
+        modelId: 'architecture_confirmation',
+        update: runtimeStatus,
+      }),
       lastEventType: 'six_model_results_recorded',
       updatedAt: input.recordedAt,
     }),
@@ -740,6 +775,15 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const confirmation = readJson(architecturePath);
   const report = readRenderEvidence(reportPath);
   const record = readJson(recordPath);
+  const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
+    transition: 'architecture-confirmation',
+    requirementRecordPath: recordPath,
+    currentSourcePath: text(report.sourcePath),
+  });
+  if (sourcePrdLintTransition.decision === 'block') {
+    console.error(JSON.stringify({ ok: false, sourcePrdLintTransition }, null, 2));
+    return 3;
+  }
   const confirmedAt = args.confirmedAt ?? new Date().toISOString();
   const confirmationText = confirmationTextFromArgs(args);
   const { event, mismatches } = validate({

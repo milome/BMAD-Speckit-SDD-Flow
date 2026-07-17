@@ -1,0 +1,14 @@
+{
+  "backupHash": "sha256:82115b56fcb6557b7e2aaa851688f7bf38beef3f135bb63e5399cd9c251ba898",
+  "backupPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-confirmation-receipt-bundle.schema.json.backup-198776-1783908684827",
+  "finalHash": "sha256:82115b56fcb6557b7e2aaa851688f7bf38beef3f135bb63e5399cd9c251ba898",
+  "mode": "replace",
+  "originalHash": "sha256:82115b56fcb6557b7e2aaa851688f7bf38beef3f135bb63e5399cd9c251ba898",
+  "promotedAt": "2026-07-13T02:11:24.834Z",
+  "schemaVersion": "large-document-writer-promote-receipt/v1",
+  "sessionDir": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-confirmation-receipt-bundle.schema.json.draft",
+  "targetPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-confirmation-receipt-bundle.schema.json",
+  "tempHash": "sha256:82115b56fcb6557b7e2aaa851688f7bf38beef3f135bb63e5399cd9c251ba898",
+  "tempPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-confirmation-receipt-bundle.schema.json.198776.1783908684830.tmp",
+  "writtenAt": "2026-07-13T02:11:24.833Z"
+}

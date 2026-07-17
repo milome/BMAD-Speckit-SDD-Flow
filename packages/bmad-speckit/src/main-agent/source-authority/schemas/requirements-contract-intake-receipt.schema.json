@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-intake-receipt.schema.json",
+  "title": "Requirements Contract Intake Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "sessionId",
+    "branch",
+    "entrySource",
+    "requestedArtifactRole",
+    "sourceContentHash",
+    "excerpts",
+    "capturedAt",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-intake-receipt/v1"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "sessionId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "branch": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "entrySource": {
+      "const": "session_requirements"
+    },
+    "requestedArtifactRole": {
+      "enum": ["product_prd", "requirement_source_prd", "discovery_envelope"]
+    },
+    "sourceContentHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "excerpts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/excerpt"
+      }
+    },
+    "capturedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "excerpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order",
+        "excerptId",
+        "turnId",
+        "actorIdentityClass",
+        "content",
+        "contentHash",
+        "boundary"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "excerptId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "turnId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "actorIdentityClass": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "content": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "boundary": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/messageBoundary"
+            },
+            {
+              "$ref": "#/$defs/spanBoundary"
+            }
+          ]
+        }
+      }
+    },
+    "messageBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "messageId"],
+      "properties": {
+        "kind": {
+          "const": "message"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "spanBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "messageId", "startUtf8Byte", "endUtf8ByteExclusive"],
+      "properties": {
+        "kind": {
+          "const": "span"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "startUtf8Byte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endUtf8ByteExclusive": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

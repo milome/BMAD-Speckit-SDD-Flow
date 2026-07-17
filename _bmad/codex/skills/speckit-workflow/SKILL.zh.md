@@ -95,11 +95,11 @@ main-agent-orchestration --action dispatch-plan --host <codex|cursor|claude>
 3. 提示词使用 `audit-prompts.md` 对应章节；（**GAP-070 修复**：speckit 各阶段审计用 audit-prompts.md §1–§5；PRD/Arch/PR 审计用新建的 audit-prompts-prd/arch/pr.md）
 
 **回退策略**:
-1. 若code-reviewer不可用，使用 `Codex worker adapter` + `subagent_type: general-purpose`
+1. 若code-reviewer不可用，使用 `current Codex main session` + `subagent_type: general-purpose`
 2. 将 `audit-prompts.md` 对应章节内容作为prompt传入
 3. 要求子代理按审计清单逐项检查
 
-**注意**: Codex worker adapter的subagent_type目前仅支持general-purpose、explore、shell，不支持code-reviewer。
+**注意**: current Codex main session的subagent_type目前仅支持general-purpose、explore、shell，不支持code-reviewer。
 
 ### 0.1.1 子 Agent 执行 code-review 时的技能绑定规则
 

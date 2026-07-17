@@ -305,7 +305,7 @@ export function resolveDispatchRoute(
   if (host === 'codex') {
     return {
       tool: 'codex',
-      subtype: `worker:${taskType}`,
+      subtype: `main-session:${taskType}`,
       fallback: 'disabled',
     };
   }

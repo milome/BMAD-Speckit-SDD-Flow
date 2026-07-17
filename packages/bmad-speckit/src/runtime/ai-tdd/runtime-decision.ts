@@ -2,6 +2,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { MODEL_IDS, loadAiTddProjectionManifests } = require('./projection-manifest');
+const {
+  resolveVerifiedSixModelStatus,
+} = require('../../main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.cjs');
 
 const VIEW_MODE = 'AI-TDD Runtime Six-Model Panorama';
 
@@ -449,84 +452,36 @@ function loadActiveRequirementRecords(projectRoot, options = {}) {
   return { index, records, allRecords, closedRecords };
 }
 
-function modelStatusEvidence(record, modelId, currentMentalModel = '') {
-  const explicit = record.sixModelResults?.[modelId]?.status || record.sixModelResults?.[modelId];
-  if (typeof explicit === 'string') {
-    return { status: explicit, source: 'explicit sixModelResults' };
-  }
-  if (explicit && typeof explicit.status === 'string') {
-    return { status: explicit.status, source: 'explicit sixModelResults' };
-  }
-  if (modelId === 'requirement_confirmation') {
-    if (text(record.status) === 'user_confirmed' && hasMatchingControlledConfirmation(record)) {
-      return {
-        status: 'pass',
-        source: 'controlled confirmation_recorded event with matching hashes',
-      };
-    }
-    return record.sourceDocumentHash && record.implementationConfirmationHash
-      ? {
-          status: 'not_established',
-          source: 'hashes present but controlled user confirmation is missing',
-        }
-      : {
-          status: 'not_established',
-          source: 'missing controlled user confirmation evidence',
-        };
-  }
-  if (modelId === 'architecture_confirmation') {
-    const stateStatus =
-      record.architectureConfirmationState &&
-      typeof record.architectureConfirmationState === 'object' &&
-      !Array.isArray(record.architectureConfirmationState)
-        ? text(record.architectureConfirmationState.status)
-        : text(record.architectureConfirmationState);
-    if (/stale/iu.test(stateStatus)) {
-      return { status: 'stale', source: 'architectureConfirmationState' };
-    }
-    if (hasMatchingControlledArchitectureConfirmation(record)) {
-      return {
-        status: 'pass',
-        source:
-          'canonical active architectureConfirmationState with matching controlled confirmation',
-      };
-    }
-    return record.architectureConfirmationHash || record.architectureConfirmationState === 'active'
-      ? { status: 'pass', source: 'inferred from architectureConfirmationHash' }
-      : { status: 'not_established', source: 'missing architecture confirmation evidence' };
-  }
-  if (modelId === 'implementation_readiness') {
-    const checks = asArray(record.gateChecks).concat(asArray(record.contractChecks));
-    if (checks.some((check) => /fail|blocked/iu.test(text(check.status || check.result)))) {
-      return { status: 'blocked', source: 'gateChecks/contractChecks' };
-    }
-    if (checks.some((check) => /pass|ready|ready_clean|repair_closed/iu.test(text(check.status || check.result)))) {
-      return { status: 'pass', source: 'gateChecks/contractChecks' };
-    }
-    return { status: 'not_established', source: 'missing readiness gate evidence' };
-  }
-  if (modelId === 'execution_closure') {
-    const iterations = asArray(record.executionIterations);
-    const closures = asArray(record.requirementClosures);
-    const artifactIndex = asArray(record.artifactIndex);
-    const requiredCommands = asArray(record.deliveryEvidence?.requiredCommands);
-    if (
-      iterations.length > 0 &&
-      closures.length > 0 &&
-      artifactIndex.length > 0 &&
-      requiredCommands.length > 0
-    ) {
-      return { status: 'pass', source: 'controlled ingest execution closure evidence' };
-    }
-    return { status: 'not_established', source: 'missing controlled ingest execution closure evidence' };
-  }
-  if (modelId === 'delivery_confirmation' && deliveryAwaitingAcceptance(record)) {
-    return { status: 'awaiting_user_acceptance', source: 'delivery acceptance request' };
-  }
-  if (modelId === currentMentalModel) {
-    return { status: 'not_established', source: 'inferred current position' };
-  }
-  return { status: 'not_established', source: 'no model evidence found' };
+function currentImplementationAttemptId(record) {
+  return (
+    text(record.currentAttemptId) ||
+    text(record.implementationAttemptId) ||
+    text(record.runId) ||
+    text(objectValue(record.closeout)?.currentAttemptId) ||
+    'missing-current-attempt'
+  );
+}
+
+function modelStatusEvidence(record, modelId, _currentMentalModel = '') {
+  const verified = resolveVerifiedSixModelStatus({
+    record,
+    modelId,
+    currentImplementationAttemptId: currentImplementationAttemptId(record),
+  });
+  return {
+    status: verified.effectiveStatus,
+    source:
+      verified.projectionIntegrity === 'valid'
+        ? `verified runtime status receipt (${verified.authorityClass})`
+        : verified.blockerRefs.join('; ') || 'runtime status authority not established',
+    projectionStatus: verified.projectionStatus,
+    projectionIntegrity: verified.projectionIntegrity,
+    decisionReceiptRef: verified.decisionReceiptRef,
+    decisionReceiptHash: verified.decisionReceiptHash,
+    authorityClass: verified.authorityClass,
+    blockerRefs: verified.blockerRefs,
+    evidenceRefs: verified.evidenceRefs,
+  };
 }
 
 function statusForModel(record, modelId) {

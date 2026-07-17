@@ -1716,8 +1716,8 @@ describe('main-agent orchestration consumer', () => {
         packetId: packet.packetId,
         status: 'blocked',
         filesChanged: [],
-        validationsRun: ['codex-worker-adapter'],
-        evidence: ['codex did not produce task report'],
+        validationsRun: ['main-session-execution-preparation'],
+        evidence: ['current main session did not produce task report'],
       };
       writeJsonFixture(
         path.join(
@@ -1939,8 +1939,8 @@ describe('main-agent orchestration consumer', () => {
         packetId: 'implement-blocked-before-audit',
         status: 'blocked',
         filesChanged: [],
-        validationsRun: ['codex-worker-adapter'],
-        evidence: ['codex did not produce task report'],
+        validationsRun: ['main-session-execution-preparation'],
+        evidence: ['current main session did not produce task report'],
       };
       writeJsonFixture(
         path.join(

@@ -1,0 +1,21 @@
+schemaVersion: requirements-contract-policy-catalog/v1
+catalogId: requirements-policy-catalog
+catalogVersion: 1.0.0
+catalogHash: sha256:42919c526528ec0abcbb375623c3b2ba1c405977f51725bd5f4890eab9397400
+signature:
+  algorithm: sha256
+  signedCatalogHash: sha256:42919c526528ec0abcbb375623c3b2ba1c405977f51725bd5f4890eab9397400
+  signatureHash: sha256:a81351469d543f5582f6d62023a7dd9cc1f1765fe755ca21f313b58e4a988507
+policies:
+  - policyId: generated-large-document-safe-write
+    policyVersion: 1.0.0
+    fieldKind: compatibility_rule
+    value: safe_write_required
+    applicability:
+      all:
+        - factPath: targetClass
+          operator: equals
+          expected: generated_large_document
+        - factPath: operation
+          operator: equals
+          expected: promotion

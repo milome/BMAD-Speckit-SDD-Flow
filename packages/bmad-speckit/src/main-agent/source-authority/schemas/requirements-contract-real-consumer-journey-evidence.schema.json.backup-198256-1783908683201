@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-real-consumer-journey-evidence/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractHash",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptId",
+    "consumer",
+    "candidatePackage",
+    "formalBoundaryRefs",
+    "stageObservations",
+    "surfaceObservations",
+    "scenarioResults",
+    "resetReceiptRef",
+    "rerunReceiptRef",
+    "substitutionCounts",
+    "journeyHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-real-consumer-journey-evidence/v1" },
+    "contractHash": { "$ref": "#/$defs/hash" },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "normalizedRoot",
+        "projectName",
+        "repositoryRoot",
+        "baselineCommit",
+        "baselineFileIndexHash",
+        "cleanBaselineRestored"
+      ],
+      "properties": {
+        "normalizedRoot": { "const": "D:\\Dev\\BMAD-Speckit-Consumer-Evidence-Closure" },
+        "projectName": { "const": "bmad-speckit-consumer-evidence-closure" },
+        "repositoryRoot": { "type": "string", "minLength": 1 },
+        "baselineCommit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "baselineFileIndexHash": { "$ref": "#/$defs/hash" },
+        "cleanBaselineRestored": { "const": true }
+      }
+    },
+    "candidatePackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "installedHash", "workspaceLinkCount"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "installedHash": { "$ref": "#/$defs/hash" },
+        "workspaceLinkCount": { "const": 0 }
+      }
+    },
+    "formalBoundaryRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["facade", "registry", "adapter", "resolver", "canonicalBoundary"],
+      "properties": {
+        "facade": { "$ref": "#/$defs/nonEmptyRefs" },
+        "registry": { "$ref": "#/$defs/nonEmptyRefs" },
+        "adapter": { "$ref": "#/$defs/nonEmptyRefs" },
+        "resolver": { "$ref": "#/$defs/nonEmptyRefs" },
+        "canonicalBoundary": { "$ref": "#/$defs/nonEmptyRefs" }
+      }
+    },
+    "stageObservations": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stageId", "eventRefs", "transitionReceiptRef", "observedAt"],
+        "properties": {
+          "stageId": { "type": "string", "pattern": "^STAGE-(?:0[1-9]|1[01])$" },
+          "eventRefs": { "$ref": "#/$defs/nonEmptyRefs" },
+          "transitionReceiptRef": { "type": "string", "minLength": 1 },
+          "observedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "surfaceObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "dist",
+        "package",
+        "host",
+        "installed",
+        "api",
+        "database",
+        "events",
+        "traces",
+        "artifactReadback"
+      ],
+      "properties": {
+        "source": { "$ref": "#/$defs/nonEmptyRefs" },
+        "dist": { "$ref": "#/$defs/nonEmptyRefs" },
+        "package": { "$ref": "#/$defs/nonEmptyRefs" },
+        "host": { "$ref": "#/$defs/nonEmptyRefs" },
+        "installed": { "$ref": "#/$defs/nonEmptyRefs" },
+        "api": { "$ref": "#/$defs/refs" },
+        "database": { "$ref": "#/$defs/refs" },
+        "events": { "$ref": "#/$defs/nonEmptyRefs" },
+        "traces": { "$ref": "#/$defs/nonEmptyRefs" },
+        "artifactReadback": { "$ref": "#/$defs/nonEmptyRefs" }
+      }
+    },
+    "scenarioResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["positive", "negative", "boundary", "ordering", "replay", "bypass"],
+      "properties": {
+        "positive": { "$ref": "#/$defs/nonEmptyRefs" },
+        "negative": { "$ref": "#/$defs/nonEmptyRefs" },
+        "boundary": { "$ref": "#/$defs/nonEmptyRefs" },
+        "ordering": { "$ref": "#/$defs/nonEmptyRefs" },
+        "replay": { "$ref": "#/$defs/nonEmptyRefs" },
+        "bypass": { "$ref": "#/$defs/nonEmptyRefs" }
+      }
+    },
+    "resetReceiptRef": { "type": "string", "minLength": 1 },
+    "rerunReceiptRef": { "type": "string", "minLength": 1 },
+    "substitutionCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture", "mock", "alternateRoot", "workspaceLink", "synthetic"],
+      "properties": {
+        "fixture": { "const": 0 },
+        "mock": { "const": 0 },
+        "alternateRoot": { "const": 0 },
+        "workspaceLink": { "const": 0 },
+        "synthetic": { "const": 0 }
+      }
+    },
+    "journeyHash": { "$ref": "#/$defs/hash" },
+    "decision": { "enum": ["PASS", "BLOCK"] }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "refs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "nonEmptyRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

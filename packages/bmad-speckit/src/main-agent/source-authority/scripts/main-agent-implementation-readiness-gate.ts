@@ -6,6 +6,11 @@ import { resolveArchitectureConfirmationHashRecipe } from './architecture-confir
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+} from './requirements-contract-runtime-status-decision-receipt';
+import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -642,15 +647,47 @@ function updateRecord(
     recordedAt: input.evaluatedAt,
     recordedBy: input.evaluatedBy,
   };
-  const previousSixModelResults = nested(record.sixModelResults);
+  const attemptId = text(record.currentAttemptId) || text(record.runId);
+  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    modelId: 'implementation_readiness',
+    implementationAttemptId: attemptId,
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    semanticModelHash: text(record.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'requirement_source',
+        path: text(record.sourcePath),
+        hash: text(record.sourceDocumentHash),
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'implementation_readiness_report',
+        path: normalizePathForRecord(input.reportPath),
+        hash: input.reportHash,
+      },
+    ],
+    blockerRefs: input.blockingReasons,
+    evidenceRefs: [normalizePathForRecord(input.reportPath)],
+    authorityClass: 'deterministic_gate',
+    decision: input.decision === 'pass' ? 'pass' : 'block',
+    effectiveStatus: input.decision === 'pass' ? 'pass' : 'blocked',
+    createdAt: input.evaluatedAt,
+    receiptPath: `runtime/status-decisions/${attemptId}/implementation_readiness.json`,
+    projection: input.resultPayload,
+  });
   return {
     ...record,
     gateChecks: [...objects(record.gateChecks), gateCheck],
-    sixModelResults: {
-      ...previousSixModelResults,
-      implementation_readiness: input.resultPayload,
-    },
-    readinessBaselineMetadata: nested(input.resultPayload.readinessBaselineMetadata),
+    ...runtimeStatusProjectionRecordPatch({
+      record,
+      modelId: 'implementation_readiness',
+      update: runtimeStatus,
+    }),
+    readinessBaselineMetadata: nested(runtimeStatus.projection.readinessBaselineMetadata),
     currentMentalModel: text(record.currentMentalModel) || 'implementation_readiness',
     lastEventType: 'implementation_readiness_result_recorded',
     updatedAt: input.evaluatedAt,
@@ -682,13 +719,29 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'implementation-readiness-report.json')
   );
-  const evaluation = evaluate(record, {
+  const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
+    transition: 'implementation-readiness',
+    requirementRecordPath: recordPath,
+    currentSourcePath: resolveSourcePath(record, args.source),
+  });
+  const baseEvaluation = evaluate(record, {
     recordPath,
     sourcePath: args.source,
     implementationRunKind: args.implementationRunKind,
     evaluatedAt,
     evaluatedBy,
   });
+  const evaluation =
+    sourcePrdLintTransition.decision === 'pass'
+      ? baseEvaluation
+      : {
+          ...baseEvaluation,
+          decision: 'blocked' as const,
+          blockingReasons: unique([
+            ...baseEvaluation.blockingReasons,
+            ...sourcePrdLintTransition.issueCodes,
+          ]),
+        };
   const report = {
     reportType: 'implementation_readiness_report',
     generatedAt: evaluatedAt,

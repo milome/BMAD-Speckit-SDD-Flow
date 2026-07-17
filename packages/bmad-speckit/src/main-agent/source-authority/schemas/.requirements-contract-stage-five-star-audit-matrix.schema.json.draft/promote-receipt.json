@@ -1,0 +1,14 @@
+{
+  "backupHash": "sha256:7bccce305d63c638b0ca8e9817bc8b6dfafafce2ae4019f0272977f4a1fce5b9",
+  "backupPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-stage-five-star-audit-matrix.schema.json.backup-101248-1783908679950",
+  "finalHash": "sha256:7bccce305d63c638b0ca8e9817bc8b6dfafafce2ae4019f0272977f4a1fce5b9",
+  "mode": "replace",
+  "originalHash": "sha256:7bccce305d63c638b0ca8e9817bc8b6dfafafce2ae4019f0272977f4a1fce5b9",
+  "promotedAt": "2026-07-13T02:11:19.954Z",
+  "schemaVersion": "large-document-writer-promote-receipt/v1",
+  "sessionDir": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-stage-five-star-audit-matrix.schema.json.draft",
+  "targetPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\requirements-contract-stage-five-star-audit-matrix.schema.json",
+  "tempHash": "sha256:7bccce305d63c638b0ca8e9817bc8b6dfafafce2ae4019f0272977f4a1fce5b9",
+  "tempPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-stage-five-star-audit-matrix.schema.json.101248.1783908679952.tmp",
+  "writtenAt": "2026-07-13T02:11:19.953Z"
+}

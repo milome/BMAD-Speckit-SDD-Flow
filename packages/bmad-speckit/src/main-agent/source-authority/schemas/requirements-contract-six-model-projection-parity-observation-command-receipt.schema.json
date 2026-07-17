@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "requirements-contract-six-model-projection-parity-observation-command-receipt.schema.json",
+  "title": "Requirements Contract Six-Model Projection Parity Observation Command Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "surface",
+    "contractHash",
+    "requirementSetId",
+    "implementationAttemptId",
+    "observedAt",
+    "applicability",
+    "authorityRef",
+    "artifactRef",
+    "readerInventoryHash",
+    "writerInventoryHash",
+    "caseProofSetHash",
+    "decision",
+    "exitCode",
+    "readbackVerified"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-six-model-projection-parity-observation-command-receipt/v1"
+    },
+    "producer": {
+      "const": "requirements-contract-six-model-projection-parity-observation-producer"
+    },
+    "action": {
+      "const": "requirements-contract-six-model-projection-parity-observe"
+    },
+    "surface": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/surface"
+    },
+    "contractHash": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/hash"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observedAt": {
+      "type": "string",
+      "minLength": 20
+    },
+    "applicability": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/applicability"
+    },
+    "authorityRef": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/fileRef"
+    },
+    "artifactRef": {
+      "anyOf": [
+        {
+          "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/fileRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "readerInventoryHash": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/hash"
+    },
+    "writerInventoryHash": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/hash"
+    },
+    "caseProofSetHash": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/hash"
+    },
+    "decision": {
+      "const": "observed"
+    },
+    "exitCode": {
+      "const": 0
+    },
+    "readbackVerified": {
+      "const": true
+    }
+  }
+}

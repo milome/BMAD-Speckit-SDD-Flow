@@ -11,7 +11,6 @@ const { auditorSpecAction } = require('./actions/auditor-spec');
 const { bmadRuntimeWorkerAction } = require('./actions/bmad-runtime-worker');
 const { bmadArtifactHardcutAction } = require('./actions/bmad-artifact-hardcut');
 const { chaosScenariosAction } = require('./actions/chaos-scenarios');
-const { codexWorkerAdapterAction } = require('./actions/codex-worker-adapter');
 const { compiledPromptRunnerAction } = require('./actions/compiled-prompt-runner');
 const {
   confirmScopeAction,
@@ -200,7 +199,6 @@ const SUPPORTED_ACTIONS = new Set([
   'release-gate',
   'quality-gate',
   'delivery-truth-gate',
-  'codex-worker-adapter',
   'compiled-prompt-runner',
   'implementation-readiness-gate',
   'unified-ingress',
@@ -469,13 +467,6 @@ async function runMainAgentRuntime(context) {
 
   if (context.action === 'delivery-truth-gate') {
     return emitLegacyAction(context, deliveryTruthGateAction);
-  }
-
-  if (context.action === 'codex-worker-adapter') {
-    return emitResponse(
-      context,
-      envelope(context, 'package_runtime_ready', 0, codexWorkerAdapterAction(context))
-    );
   }
 
   if (context.action === 'compiled-prompt-runner') {

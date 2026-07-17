@@ -1,6 +1,6 @@
 ---
 name: goal-execution-contract-generator
-description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document; includes docs-review dependency adaptation, auto-install when missing, and audit/fix iteration until 3 consecutive no-gap rounds.
+description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document.
 ---
 
 # Goal Execution Contract Generator
@@ -32,7 +32,7 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - If it reports `blocked`, stop with `docs_review_dependency_blocked` and include the reported reason.
 6. Generate the contract from the template only when the package CLI is not applicable.
 7. Run the contract completeness gate.
-8. Run docs-review audit/fix rounds.
+8. Delegate semantic review convergence to `multi-view-doc-review-loop`.
 9. Run encoding integrity gate after all text edits.
 
 ## Contract Generation Rules
@@ -189,19 +189,19 @@ Also verify:
 - Every `MUST`, `MUST NOT`, `NOT DONE`, `EVD`, `ARTIFACT`, `PATH`, `TRACE MATRIX`, and `COMMAND` row has deterministic owner, path or target, proof command or artifact, and pass/block condition.
 - Every unavailable or out-of-scope item is expressed as either `blocked_until_<specific_condition>` or a deterministic `NOT DONE` row.
 
-If any check fails, fix the contract before starting docs-review rounds.
+If any check fails, fix the contract before delegating review convergence.
 
-## Docs-Review Audit Loop
+## Review Convergence Delegation
 
-Use the installed `docs-review` skill in local review mode. If the current host cannot invoke `$docs-review` directly after auto-install, read the returned `SKILL.md` path from the dependency script and apply its local review workflow manually.
+`multi-view-doc-review-loop` is the only owner of audit convergence. This generator MUST NOT run an independent audit/fix loop or maintain a no-gap counter.
 
-Loop rules:
+Handoff rules:
 
-1. Run docs-review against the generated contract.
-2. If docs-review reports issues, fix them immediately.
-3. After any fix, reset the consecutive no-gap counter to `0`.
-4. If docs-review reports no issues, increment the consecutive no-gap counter.
-5. Stop only after `3` consecutive no-gap rounds.
+1. Complete generation, source coverage, and the deterministic completeness gate.
+2. Hand the generated target path, source hash, and current target hash to `multi-view-doc-review-loop`.
+3. Let that skill own audit epochs, target freezing, batch fixes, selective revalidation, timeout takeover, and completion receipts.
+4. Run a single final docs-review only after semantic convergence. `docs-review` is a leaf readability and command-order check, not a convergence controller.
+5. If the final docs-review changes goal semantics, authority, scope, acceptance, commands, or modification paths, return the changed target to `multi-view-doc-review-loop`; otherwise rerun only the deterministic completeness gate.
 
 Treat any style, clarity, structure, command-order, or readability issue as a gap. Do not waive docs-review findings unless the finding conflicts with frozen `/goal` contract semantics; if there is a conflict, keep the contract semantics and document the waived docs-review issue in the final response.
 
@@ -226,7 +226,8 @@ Report:
 - Generated contract path.
 - Source path or conversation-derived source summary.
 - docs-review dependency status.
-- docs-review rounds and whether 3 consecutive no-gap rounds were achieved.
+- Audit epoch count, reviewed target hash, required perspective receipts, and selective carry-forward decisions.
+- Result of the single final docs-review.
 - Encoding gate result.
 - Any residual risks or blocked conditions.
 

@@ -44,7 +44,6 @@ describe('main-agent compiled fallback boundary', () => {
       for (const action of [
         'inspect',
         'dispatch-plan',
-        'codex-worker-adapter',
         'compiled-prompt-runner',
         'implementation-readiness-gate',
         'unified-ingress',

@@ -29,7 +29,7 @@ describe('requirements contract authoring metamorphic invariants', () => {
     expect(new Set(hashes)).toHaveLength(1);
   });
 
-  it('closes deterministic seeded source-shape property cases to zero measure', () => {
+  it('keeps deterministic incomplete source cases blocked without synthetic closure', () => {
     const rows = Array.from({ length: 16 }, (_item, index) => {
       const id = index % 2 === 0 ? `FR ID ${index + 1}` : `FR-${String(index + 1).padStart(3, '0')}`;
       const path =
@@ -40,9 +40,20 @@ describe('requirements contract authoring metamorphic invariants', () => {
     });
 
     const models = rows.map(closedModelForSource);
-    expect(models.every((model) => model.invariantClosure.remainingIssueCount === 0)).toBe(true);
-    expect(models.every((model) => model.invariantClosure.measureAfter?.unresolvedInvariantCount === 0)).toBe(true);
-    expect(models.every((model) => model.invariantClosure.measureAfter?.missingProjectionCount === 0)).toBe(true);
+    expect(models.every((model) => model.invariantClosure.terminalState === 'blocked')).toBe(true);
+    expect(
+      models.every(
+        (model) => (model.invariantClosure.measureAfter?.unresolvedInvariantCount ?? 0) > 0
+      )
+    ).toBe(true);
+    expect(
+      models.every(
+        (model) => (model.invariantClosure.measureAfter?.missingProjectionCount ?? 0) > 0
+      )
+    ).toBe(true);
+    expect(models.every((model) => model.evidence.length === 0)).toBe(true);
+    expect(models.every((model) => model.acceptanceCriteria.length === 0)).toBe(true);
+    expect(models.every((model) => model.traceRows.length === 0)).toBe(true);
     expect(new Set(models.map(semanticModelHash)).size).toBe(rows.length);
   });
 });

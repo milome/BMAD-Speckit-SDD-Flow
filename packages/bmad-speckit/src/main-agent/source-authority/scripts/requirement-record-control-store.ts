@@ -311,6 +311,17 @@ function normalizeExecutionIteration(
       text(nested(record.architectureConfirmationState).currentArchitectureConfirmationHash),
     recordedAt,
     recordedBy: text(iteration.recordedBy) || 'canonical-reducer',
+    ...(text(iteration.authorityClass) === 'untrusted_claim'
+      ? {
+          authorityClass: 'untrusted_claim',
+          commandSuccessEligible: false,
+          requirementClosureEligible: false,
+          evidenceAcceptanceEligible: false,
+          gatePassEligible: false,
+          sixModelAdvancementEligible: false,
+          completionEligible: false,
+        }
+      : {}),
   };
 }
 
@@ -821,6 +832,18 @@ function normalizeModelResult(result: JsonObject, record: JsonObject, model: str
     sourceDocumentHash: text(result.sourceDocumentHash) || text(record.sourceDocumentHash),
     implementationConfirmationHash:
       text(result.implementationConfirmationHash) || text(record.implementationConfirmationHash),
+    ...(text(result.semanticModelHash) || text(record.semanticModelHash)
+      ? { semanticModelHash: text(result.semanticModelHash) || text(record.semanticModelHash) }
+      : {}),
+    ...(text(result.currentAttemptId) || text(record.currentAttemptId)
+      ? { currentAttemptId: text(result.currentAttemptId) || text(record.currentAttemptId) }
+      : {}),
+    ...(text(result.decisionReceiptRef)
+      ? { decisionReceiptRef: text(result.decisionReceiptRef) }
+      : {}),
+    ...(text(result.decisionReceiptHash)
+      ? { decisionReceiptHash: text(result.decisionReceiptHash) }
+      : {}),
     status: [
       'pass',
       'blocked',
@@ -944,6 +967,8 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'runtimePolicySnapshotRef',
     'sourceDocumentHash',
     'implementationConfirmationHash',
+    'semanticModelHash',
+    'currentAttemptId',
     'confirmationPageHash',
     'latestConfirmationProjectionHash',
     'confirmationProjectionHistory',
@@ -983,6 +1008,7 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'auditReviewDispatchPackets',
     'auditScoringConvergence',
     'sixModelRuntimeDecisions',
+    'runtimeStatusDecisionReceipts',
     'runtimeModeSelections',
     'taskProgress',
     'auditTriadConvergence',
@@ -1008,12 +1034,19 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   out.sourcePath = text(out.sourcePath) || 'docs/design/unknown.md';
   out.sourceDocumentHash = text(out.sourceDocumentHash);
   out.implementationConfirmationHash = text(out.implementationConfirmationHash);
+  const semanticModelHash = text(out.semanticModelHash);
+  if (semanticModelHash) out.semanticModelHash = semanticModelHash;
+  else delete out.semanticModelHash;
+  const currentAttemptId = text(out.currentAttemptId) || text(out.runId);
+  if (currentAttemptId) out.currentAttemptId = currentAttemptId;
+  else delete out.currentAttemptId;
   const currentMentalModel = normalizeMentalModel(out.currentMentalModel);
   if (currentMentalModel) out.currentMentalModel = currentMentalModel;
   else delete out.currentMentalModel;
   const sixModelResults = normalizeSixModelResults(out.sixModelResults, out);
   if (sixModelResults) out.sixModelResults = sixModelResults;
   else delete out.sixModelResults;
+  out.runtimeStatusDecisionReceipts = objects(out.runtimeStatusDecisionReceipts);
   out.mentalModelTransitions = objects(out.mentalModelTransitions);
   out.pendingBlockerIntake = objects(out.pendingBlockerIntake);
   out.blockerIntakeRuns = objects(out.blockerIntakeRuns);

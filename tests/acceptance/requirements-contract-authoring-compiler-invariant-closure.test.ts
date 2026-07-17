@@ -37,101 +37,130 @@ function compilerSource(): string {
   ].join('\n');
 }
 
-describe('requirements contract authoring compiler invariant closure', () => {
-  it('model_is_projection_authority', () => {
-    const model = compileRequirementContractModel({
-      recordId: 'REQ-COMPILER-AUTHORITY',
-      requirementSetId: 'REQ-COMPILER-AUTHORITY-SET',
-      must: [
-        {
-          id: 'MUST-FR-001',
-          text: 'System MUST compile source-bound requirements into a closed model.',
-          sourceRequirementId: 'FR-001',
-        },
-      ],
-      outOfScope: [{ id: 'OUT-001', text: 'Manual source patching is out of scope.' }],
-      requiredCommands: ['python -m pytest tests/trader/test_gateway_profile_registry.py'],
-    });
+function sourceBoundIncompleteModel(label: string): RequirementContractModel {
+  const normalized = label.toUpperCase();
+  const sourcePath = `docs/requirements/${label}.md`;
+  const must = {
+    id: `REQUIREMENT-${normalized}-PRIMARY`,
+    text: `${label} primary behavior is required.`,
+    sourceRequirementId: `SOURCE-${normalized}-PRIMARY`,
+    sourcePath,
+    sourceSpan: { startLine: 7, endLine: 7 },
+  };
+  const negative = {
+    id: `REQUIREMENT-${normalized}-NEGATIVE`,
+    text: `${label} forbidden behavior must remain absent.`,
+    sourceRequirementId: `SOURCE-${normalized}-NEGATIVE`,
+    sourcePath,
+    sourceSpan: { startLine: 8, endLine: 8 },
+  };
+  const boundary = {
+    id: `BOUNDARY-${normalized}`,
+    text: `${label} unrelated behavior is out of scope.`,
+    authorityState: 'source_boundary' as const,
+    provenance: {
+      sourceRequirementId: `SOURCE-${normalized}-BOUNDARY`,
+      sourcePath,
+      sourceSpan: { startLine: 9, endLine: 9 },
+    },
+  };
+  return compileRequirementContractModel({
+    recordId: `MODEL-${normalized}`,
+    requirementSetId: `MODEL-${normalized}-SET`,
+    must: [must],
+    notDone: [negative],
+    outOfScope: [boundary],
+    requiredCommands: [
+      {
+        id: `VALIDATION-${normalized}`,
+        command: `npx vitest run tests/${label}.test.ts`,
+        requirementRefs: [must.id],
+      },
+    ],
+    targetPaths: [
+      {
+        id: `MODIFICATION-${normalized}`,
+        path: `src/${label}.ts`,
+        requirementRefs: [must.id],
+      },
+    ],
+  });
+}
 
+describe('requirements contract authoring compiler invariant closure', () => {
+  it('treats the model as projection authority without materializing missing views', () => {
+    const model = sourceBoundIncompleteModel('projection-authority');
     const closed = closeRequirementContractInvariants(model);
 
-    expect(closed.businessViews.map((row) => row.id)).toContain('SEQ-BUSINESS-001');
-    expect(closed.traceRows.every((row) => row.businessViewRefs.includes('SEQ-BUSINESS-001'))).toBe(
-      true
+    expect(closed.businessViews).toEqual(model.businessViews);
+    expect(closed.traceRows).toEqual(model.traceRows);
+    expect(closed.invariantClosure.terminalState).toBe('blocked');
+    expect(closed.invariantClosure.issues.map((issue) => issue.code)).toContain(
+      'missing_business_view_projection'
     );
     expect(closed.invariantClosure.rendererBlockerPolicy).toBe(
       'renderer_blocker_release_failure'
     );
   });
 
-  it('closure_measure_is_computed', () => {
-    const model = compileRequirementContractModel({
-      recordId: 'REQ-COMPILER-MEASURE',
-      requirementSetId: 'REQ-COMPILER-MEASURE-SET',
-      must: [
-        {
-          id: 'MUST-FR-001',
-          text: 'System MUST compute a closure measure before projection.',
-          sourceRequirementId: 'FR-001',
-        },
-      ],
-      outOfScope: [{ id: 'OUT-001', text: 'Unmeasured projection success is out of scope.' }],
-      requiredCommands: ['python -m pytest tests/trader/test_gateway_profile_registry.py'],
+  it('keeps checkpoint-produced projection obligations out of the pre-checkpoint closure profile', () => {
+    const model = sourceBoundIncompleteModel('pre-checkpoint-profile');
+    const preCheckpoint = closeRequirementContractInvariants(model, {
+      profile: 'pre_checkpoint',
     });
+    const full = closeRequirementContractInvariants(model);
 
+    expect(preCheckpoint.invariantClosure.terminalState).toBe('confirmable');
+    expect(preCheckpoint.invariantClosure.issues).toEqual([]);
+    expect(full.invariantClosure.terminalState).toBe('blocked');
+    expect(full.invariantClosure.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining([
+        'missing_evidence_coverage',
+        'missing_acceptance_coverage',
+        'missing_trace_coverage',
+        'missing_business_view_projection',
+      ])
+    );
+  });
+
+  it('computes before and after measures from the actual unchanged model', () => {
+    const model = sourceBoundIncompleteModel('closure-measure');
     const closed = closeRequirementContractInvariants(model);
-    const closure = closed.invariantClosure as unknown as Record<string, unknown>;
 
-    expect(closure.measureBefore).toMatchObject({
+    expect(closed.invariantClosure.measureBefore).toMatchObject({
       unresolvedInvariantCount: expect.any(Number),
       orphanReferenceCount: expect.any(Number),
       missingProjectionCount: expect.any(Number),
       localizationParityCount: expect.any(Number),
       schemaValidationCount: expect.any(Number),
     });
-    expect(closure.measureAfter).toMatchObject({
-      unresolvedInvariantCount: 0,
-      orphanReferenceCount: 0,
-      missingProjectionCount: 0,
-      localizationParityCount: 0,
-      schemaValidationCount: 0,
-    });
-  });
-
-  it('closes model invariants before source materialization', () => {
-    const model = compileRequirementContractModel({
-      recordId: 'REQ-COMPILER-UNIT',
-      requirementSetId: 'REQ-COMPILER-UNIT-SET',
-      must: [
-        {
-          id: 'MUST-FR-001',
-          text: 'System MUST compile source-bound requirements into a closed model.',
-          sourceRequirementId: 'FR-001',
-        },
-      ],
-      outOfScope: [{ id: 'OUT-001', text: 'User confirmation is out of scope.' }],
-      requiredCommands: ['python -m pytest tests/trader/test_gateway_profile_registry.py'],
-    });
-    const closed: RequirementContractModel = closeRequirementContractInvariants(model);
-
-    expect(closed.invariantClosure.remainingIssueCount).toBe(0);
-    expect(closed.invariantClosure.appliedPasses).toEqual(
-      expect.arrayContaining([
-        'closeMustCoverage',
-        'closeNegCoverage',
-        'closeOutBoundaryViews',
-        'closeTraceViewRefs',
-        'closeAcceptanceCoverage',
-        'closeArtifactPlan',
-        'closeTargetModificationPaths',
-        'closeApplicabilityDomains',
-      ])
+    expect(closed.invariantClosure.measureAfter).toEqual(
+      closed.invariantClosure.measureBefore
     );
-    expect(closed.traceRows[0].sequenceViewRefs).toContain('SEQ-BUSINESS-001');
-    expect(closed.traceRows[0].boundaryViewRefs).toContain('BOUND-001');
+    expect(closed.invariantClosure.measureAfter?.unresolvedInvariantCount).toBeGreaterThan(0);
+    expect(closed.invariantClosure.measureAfter?.missingProjectionCount).toBeGreaterThan(0);
   });
 
-  it('writes model and closure reports during author-confirmation-ready-source', () => {
+  it('records only executed validation passes without changing semantic fields', () => {
+    const model = sourceBoundIncompleteModel('pass-receipts');
+    const closed: RequirementContractModel = closeRequirementContractInvariants(model);
+    const receipts = closed.invariantClosure.roundReceipts ?? [];
+
+    expect(closed.invariantClosure.remainingIssueCount).toBe(
+      closed.invariantClosure.issues.length
+    );
+    expect(closed.invariantClosure.appliedPasses).toEqual(
+      receipts.map((receipt) => receipt.passId)
+    );
+    expect(closed.invariantClosure.appliedPasses).not.toContain('closeMustCoverage');
+    expect(closed.invariantClosure.appliedPasses).not.toContain('closeNegCoverage');
+    expect(receipts.every((receipt) => receipt.outputs.changedFields.length === 0)).toBe(true);
+    expect(closed.evidence).toEqual(model.evidence);
+    expect(closed.acceptanceCriteria).toEqual(model.acceptanceCriteria);
+    expect(closed.targetModificationPaths).toEqual(model.targetModificationPaths);
+  });
+
+  it('writes a blocking measured report when source semantics are incomplete', () => {
     const root = createTempRoot('bmad-compiler-closure-');
     try {
       const intakeSource = writeText(root, 'source.md', compilerSource());
@@ -141,19 +170,35 @@ describe('requirements contract authoring compiler invariant closure', () => {
         targetPath: 'tests/trader/test_gateway_profile_registry.py',
         requiredCommand: 'python -m pytest tests/trader/test_gateway_profile_registry.py',
         confirmationLanguage: 'en-US',
+        sessionId: 'session-compiler-closure',
+        sessionTurnId: 'turn-compiler-closure',
+        sessionMessageId: 'message-compiler-closure',
+        sessionActorIdentityClass: 'requesting_user',
+        sessionBranch: 'test-compiler-closure',
+        sessionCapturedAt: '2026-07-14T00:00:00.000Z',
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
       const paths = artifacts(root, recordId, `${recordId}-SET`);
       const modelPath = path.join(paths.authoring, 'requirement-contract-model.json');
       const reportPath = path.join(paths.authoring, 'compiler-closure-report.json');
+      expect(existsSync(paths.invocationAuthorityReceipt)).toBe(true);
+      expect(readJson<Record<string, unknown>>(paths.invocationAuthorityReceipt)).toMatchObject({
+        schemaVersion: 'requirements-contract-invocation-authority-receipt/v1',
+        requirementSetId: `${recordId}-SET`,
+        recordId,
+        entrySource: 'session_requirements',
+      });
       expect(existsSync(modelPath)).toBe(true);
       expect(existsSync(reportPath)).toBe(true);
       expect(readJson<Record<string, unknown>>(reportPath)).toMatchObject({
-        remainingIssueCount: 0,
+        terminalState: 'blocked',
         rendererBlockerPolicy: 'renderer_blocker_release_failure',
       });
-      expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
+      expect(
+        Number(readJson<Record<string, unknown>>(reportPath).remainingIssueCount)
+      ).toBeGreaterThan(0);
+      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
         'renderer_blocker_release_failure'
       );
     } finally {

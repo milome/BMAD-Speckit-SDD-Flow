@@ -44,6 +44,8 @@ test('npm pack --dry-run includes packaged _bmad hook cjs files', () => {
     'dist/runtime/ai-tdd/runtime-decision.js',
     'dist/commands/large-doc.js',
     'dist/utils/large-document-writer/index.js',
+    'dist/main-agent/source-authority/scripts/requirements-contract-checkpoint-semantic-validation.js',
+    'dist/main-agent/source-authority/schemas/requirements-contract-checkpoint-semantic-validation-receipt.schema.json',
   ];
 
   const expectedHookSubset = expectedHookFiles.filter((file) => file.endsWith('.cjs'));

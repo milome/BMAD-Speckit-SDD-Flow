@@ -1,0 +1,10 @@
+{
+  "acceptedAt": "2026-07-13T02:11:22.531Z",
+  "bytes": 5531,
+  "chunkHash": "sha256:89521775ad98db3d630d39d5328f31f398c95351b8b5d0bb6fa914ad8d97608e",
+  "chunkId": "001",
+  "chunkPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\src\\main-agent\\source-authority\\schemas\\.requirements-contract-real-consumer-journey-evidence.schema.json.draft\\chunks\\001.md",
+  "schemaVersion": "large-document-writer-chunk-receipt/v1",
+  "sectionId": "schema",
+  "wrapped": true
+}

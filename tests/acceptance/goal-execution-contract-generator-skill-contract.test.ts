@@ -26,4 +26,33 @@ describe('goal-execution-contract-generator skill contract', () => {
     expect(skill).toContain('.tmp/*.cjs generation scripts are failure evidence only');
     expect(skill).toContain('not a success path');
   });
+
+  it('delegates review convergence to one hash-bound multi-view loop', () => {
+    for (const skillRoot of ['_bmad', '.codex']) {
+      const generatorSkill = readFileSync(
+        join(ROOT, skillRoot, 'skills', 'goal-execution-contract-generator', 'SKILL.md'),
+        'utf8'
+      );
+      const reviewSkill = readFileSync(
+        join(ROOT, skillRoot, 'skills', 'multi-view-doc-review-loop', 'SKILL.md'),
+        'utf8'
+      );
+
+      expect(generatorSkill).toContain(
+        'Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection.'
+      );
+      expect(generatorSkill).not.toContain('3 consecutive no-gap');
+      expect(generatorSkill).toContain('multi-view-doc-review-loop');
+      expect(generatorSkill).toContain('single final docs-review');
+
+      expect(reviewSkill).toContain('auditEpochId');
+      expect(reviewSkill).toContain('targetHash');
+      expect(reviewSkill).toContain('MUST NOT edit');
+      expect(reviewSkill).toContain('batch fix');
+      expect(reviewSkill).toContain('Selective Revalidation Matrix');
+      expect(reviewSkill).toContain('180000');
+      expect(reviewSkill).toContain('two audit epochs');
+      expect(reviewSkill).toContain('single final docs-review');
+    }
+  });
 });

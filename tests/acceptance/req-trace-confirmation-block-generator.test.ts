@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { requiredCommandExecutionDescriptorsFromModelPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -795,6 +796,16 @@ describe('req trace generator confirmation block gate', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);
     const outDir = path.join(tempDir, 'trace-execution');
+    const commandReceiptRoot = path.join(tempDir, 'command-receipts', 'IMP-TRACE-001');
+    const controlledExecutionContext = {
+      requirementSetId: 'REQ-TRACE-001',
+      transactionId: 'TX-TRACE-001',
+      implementationAttemptId: 'IMP-TRACE-001',
+      architectureAuditAttemptId: 'AUDIT-ARCH-TRACE-001',
+      activePhaseAuditAttemptId: 'AUDIT-ARCH-TRACE-001',
+      contractHash: `sha256:${'a'.repeat(64)}`,
+      inputSnapshotHash: `sha256:${'b'.repeat(64)}`,
+    };
     const result = runNodePrompt([
       '--source-document',
       source,
@@ -804,6 +815,24 @@ describe('req trace generator confirmation block gate', () => {
       outDir,
       '--execution-host',
       'codex',
+      '--requirement-set-id',
+      controlledExecutionContext.requirementSetId,
+      '--transaction-id',
+      controlledExecutionContext.transactionId,
+      '--implementation-attempt-id',
+      controlledExecutionContext.implementationAttemptId,
+      '--architecture-audit-attempt-id',
+      controlledExecutionContext.architectureAuditAttemptId,
+      '--active-phase-audit-attempt-id',
+      controlledExecutionContext.activePhaseAuditAttemptId,
+      '--contract-hash',
+      controlledExecutionContext.contractHash,
+      '--input-snapshot-hash',
+      controlledExecutionContext.inputSnapshotHash,
+      '--command-cwd',
+      ROOT,
+      '--command-receipt-root',
+      commandReceiptRoot,
       '--json',
     ]);
 
@@ -818,6 +847,34 @@ describe('req trace generator confirmation block gate', () => {
     const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(requiredCommandExecutionDescriptorsFromModelPacket(packet)).toEqual({
+      issueCodes: [],
+      descriptors: [
+        {
+          id: 'CMD-TEST-001',
+          command:
+            'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          normalizedCommand:
+            'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          argv: [
+            'npx',
+            'vitest',
+            'run',
+            'tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          ],
+          cwd: normalizePathForAssert(ROOT),
+          receiptPath: normalizePathForAssert(
+            path.join(commandReceiptRoot, 'CMD-TEST-001.json')
+          ),
+          requirementRefs: ['MUST-001'],
+          acceptanceRefs: ['ACC-001', 'E2E-001'],
+          traceRefs: ['TRACE-001'],
+        },
+      ],
+    });
+    expect(packet.controlledExecutionContext).toEqual(controlledExecutionContext);
+    expect(packet.executionHandoff.requiredValidationCommandRefs).toEqual(['CMD-TEST-001']);
+    expect(packet.executionHandoff).not.toHaveProperty('requiredValidationCommands');
 
     expect(packet.artifactRole).toBe('execution_authority');
     expect(packet.sourceDocumentHash).toBe(currentHashes(source).sourceDocumentHash);
@@ -918,6 +975,29 @@ describe('req trace generator confirmation block gate', () => {
       aiTddManifestComplete: true,
       atomicTaskLineageComplete: true,
     });
+  });
+
+  it('blocks a partial controlled command execution context', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'trace-execution-partial-context');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--requirement-set-id',
+      'REQ-TRACE-001',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('BLOCK: CONTROLLED_EXECUTION_CONTEXT_INCOMPLETE');
+    expect(fs.existsSync(path.join(outDir, 'model_packet.json'))).toBe(false);
   });
 
   it('blocks execution packet generation when architecture confirmation is required but not recorded', () => {

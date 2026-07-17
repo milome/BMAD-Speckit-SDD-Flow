@@ -28,6 +28,17 @@ export interface CompiledPromptRunResult {
   stdoutPath: string | null;
   stderrPath: string | null;
   auditReceiptPath: string | null;
+  productionArgv?: string[];
+  productionArgvHash?: string;
+  generatorRef?: { path: string; hash: string };
+  runnerRef?: { path: string; hash: string };
+  executionReceipt?: {
+    exitCode: number;
+    stdoutHash: string;
+    stderrHash: string;
+    startedAt: string;
+    completedAt: string;
+  };
 }
 
 const FORBIDDEN_PROFILE_AUTHORITY_FIELDS = [
@@ -204,6 +215,19 @@ export function runMainAgentCompiledPrompt(input: {
   profileRefPath?: string | null;
   goalCommandAvailable?: 'true' | 'false' | 'auto';
   reqTraceSkillDir?: string | null;
+  outDir?: string | null;
+  taskReportPath?: string | null;
+  promptLanguage?: 'zh-CN' | 'en-US' | 'bilingual' | 'auto';
+  humanPromptProfile?: 'full' | 'compact';
+  requirementSetId?: string | null;
+  transactionId?: string | null;
+  implementationAttemptId?: string | null;
+  architectureAuditAttemptId?: string | null;
+  activePhaseAuditAttemptId?: string | null;
+  contractHash?: string | null;
+  inputSnapshotHash?: string | null;
+  commandCwd?: string | null;
+  commandReceiptRoot?: string | null;
 }): CompiledPromptRunResult {
   const confirmedSource = resolveConfirmedSource(input);
   if (confirmedSource.status !== 'confirmed') {
@@ -223,13 +247,17 @@ export function runMainAgentCompiledPrompt(input: {
   }
 
   const recordDir = path.dirname(confirmedSource.recordPath);
-  const outDir = path.join(recordDir, 'trace-execution', input.packetId);
+  const outDir = input.outDir
+    ? path.resolve(input.outDir)
+    : path.join(recordDir, 'trace-execution', input.packetId);
   const confirmedRecord = readJson(confirmedSource.recordPath);
   const sessionId =
     text(confirmedRecord.requirementSetId) ||
     text(confirmedRecord.recordId) ||
     path.basename(recordDir);
-  const taskReportPath = defaultTaskReportPath(input.projectRoot, sessionId, input.packetId);
+  const taskReportPath = input.taskReportPath
+    ? path.resolve(input.taskReportPath)
+    : defaultTaskReportPath(input.projectRoot, sessionId, input.packetId);
   fs.mkdirSync(outDir, { recursive: true });
   const profileRefPath =
     input.profileRefPath ?? path.join(outDir, 'execution-discipline-profile.json');
@@ -254,9 +282,9 @@ export function runMainAgentCompiledPrompt(input: {
     '--execution-host',
     input.executionHost,
     '--prompt-language',
-    'auto',
+    input.promptLanguage ?? 'auto',
     '--human-prompt-profile',
-    'full',
+    input.humanPromptProfile ?? 'full',
     '--json',
     '--goal-command-available',
     input.goalCommandAvailable ?? 'auto',
@@ -265,15 +293,57 @@ export function runMainAgentCompiledPrompt(input: {
     '--task-report-path',
     taskReportPath,
   ];
+  const controlledExecutionArgs = [
+    ['--requirement-set-id', input.requirementSetId],
+    ['--transaction-id', input.transactionId],
+    ['--implementation-attempt-id', input.implementationAttemptId],
+    ['--architecture-audit-attempt-id', input.architectureAuditAttemptId],
+    ['--active-phase-audit-attempt-id', input.activePhaseAuditAttemptId],
+    ['--contract-hash', input.contractHash],
+    ['--input-snapshot-hash', input.inputSnapshotHash],
+    ['--command-cwd', input.commandCwd],
+    ['--command-receipt-root', input.commandReceiptRoot],
+  ] as const;
+  const controlledExecutionArgCount = controlledExecutionArgs.filter(
+    ([, value]) => typeof value === 'string' && value.length > 0
+  ).length;
+  if (
+    controlledExecutionArgCount !== 0 &&
+    controlledExecutionArgCount !== controlledExecutionArgs.length
+  ) {
+    throw new Error('compiled_prompt_controlled_execution_context_partial');
+  }
+  if (controlledExecutionArgCount === controlledExecutionArgs.length) {
+    for (const [flag, value] of controlledExecutionArgs) {
+      args.push(flag, value as string);
+    }
+  }
   if (fs.existsSync(profileRefPath)) {
     args.push('--execution-discipline-profile-ref', profileRefPath);
   }
+  const productionArgv = [process.execPath, ...args];
+  const startedAt = new Date().toISOString();
   const result = spawnSync(process.execPath, args, {
     cwd: input.projectRoot,
     encoding: 'utf8',
   });
+  const completedAt = new Date().toISOString();
   fs.writeFileSync(stdoutPath, result.stdout ?? '', 'utf8');
   fs.writeFileSync(stderrPath, result.stderr ?? result.error?.message ?? '', 'utf8');
+  const executionReceipt = {
+    exitCode: result.status ?? 1,
+    stdoutHash: sha256File(stdoutPath),
+    stderrHash: sha256File(stderrPath),
+    startedAt,
+    completedAt,
+  };
+  const invocationIdentity = {
+    productionArgv,
+    productionArgvHash: sha256Json(productionArgv),
+    generatorRef: { path: script, hash: sha256File(script) },
+    runnerRef: { path: __filename, hash: sha256File(__filename) },
+    executionReceipt,
+  };
 
   const blockingReasons: string[] = [];
   if ((result.status ?? 1) !== 0) blockingReasons.push(`compiler_exit_${result.status ?? 1}`);
@@ -300,6 +370,7 @@ export function runMainAgentCompiledPrompt(input: {
       stdoutPath,
       stderrPath,
       auditReceiptPath: fs.existsSync(auditReceiptPath) ? auditReceiptPath : null,
+      ...invocationIdentity,
     };
   }
 
@@ -382,6 +453,7 @@ export function runMainAgentCompiledPrompt(input: {
       stdoutPath,
       stderrPath,
       auditReceiptPath,
+      ...invocationIdentity,
     };
   }
 
@@ -406,5 +478,6 @@ export function runMainAgentCompiledPrompt(input: {
     stdoutPath,
     stderrPath,
     auditReceiptPath,
+    ...invocationIdentity,
   };
 }

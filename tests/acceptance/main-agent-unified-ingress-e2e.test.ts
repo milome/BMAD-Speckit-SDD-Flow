@@ -159,44 +159,6 @@ const REGISTRY_BINDING = {
     'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 };
 
-function writeFakeCodexBinary(root: string): string {
-  const fakeCodexPath = path.join(root, 'fake-codex.cjs');
-  fs.writeFileSync(
-    fakeCodexPath,
-    [
-      "const fs = require('fs');",
-      "const path = require('path');",
-      "const input = fs.readFileSync(0, 'utf8');",
-      'const reportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
-      'const packetId = input.match(/Packet ID: (.+)/i)?.[1]?.trim();',
-      'if (!reportPath || !packetId) process.exit(2);',
-      'const reportDir = path.dirname(reportPath);',
-      "const evidencePath = path.join(reportDir, 'fake-codex-unified-ingress-evidence.json');",
-      'fs.mkdirSync(reportDir, { recursive: true });',
-      "fs.writeFileSync(evidencePath, JSON.stringify({ packetId, validation: 'fake-codex-unified-ingress', status: 'done' }, null, 2) + '\\n', 'utf8');",
-      "fs.writeFileSync(reportPath, JSON.stringify({ packetId, status: 'done', filesChanged: [], validationsRun: ['fake-codex-unified-ingress'], evidence: [evidencePath], downstreamContext: ['codex cli ingress completed'] }, null, 2) + '\\n', 'utf8');",
-      'process.exit(0);',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
-  const fakeCodexBin =
-    process.platform === 'win32'
-      ? path.join(root, 'fake-codex.cmd')
-      : path.join(root, 'fake-codex');
-  fs.writeFileSync(
-    fakeCodexBin,
-    process.platform === 'win32'
-      ? `@echo off\r\n"${process.execPath}" "${fakeCodexPath}" %*\r\n`
-      : `#!/usr/bin/env sh\n"${process.execPath}" "${fakeCodexPath}" "$@"\n`,
-    'utf8'
-  );
-  if (process.platform !== 'win32') {
-    fs.chmodSync(fakeCodexBin, 0o755);
-  }
-  return fakeCodexBin;
-}
-
 function codexHookTrustEnvelope(
   overrides: Partial<GovernanceTransportEnvelope> = {}
 ): GovernanceTransportEnvelope {
@@ -432,13 +394,9 @@ describe('main-agent unified ingress e2e', () => {
     }
   });
 
-  it('supports codex as a native no-hooks cli_ingress branch with non-smoke worker execution', () => {
+  it('routes Codex no-hooks ingress to current main-session execution', () => {
     const root = prepareRoot('codex', false);
-    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
-    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
-      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
       const receipt = runUnifiedIngress(ingressInput(root, 'codex'));
 
       expect(receipt.hostMode).toBe('no_hooks');
@@ -446,32 +404,19 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.degradationLevel).toBe('none');
       expect(receipt.degradationReason).toBeNull();
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
-      expect(receipt.runLoop.status).toBe('completed');
+      expect(receipt.runLoop.status).toBe('blocked');
       expect(receipt.runLoop.resolvedHost).toBe('codex');
-      expect(receipt.runLoop.pendingPacketStatus).toBe('completed');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('invalidated');
+      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
       expect(receipt.sameControlPlane).toBe(true);
     } finally {
-      if (previous === undefined) {
-        delete process.env.CODEX_WORKER_ADAPTER_BIN;
-      } else {
-        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
-      }
-      if (previousAllow === undefined) {
-        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-      } else {
-        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('allows codex hooks_enabled only with a validated hook trust envelope', () => {
     const root = prepareRoot('codex', false);
-    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
-    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
-      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'codex'),
         codexHookTrustEnvelope: codexHookTrustEnvelope(),
@@ -484,29 +429,17 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hookTrustEnvelopeValidation?.ok).toBe(true);
       expect(receipt.degradationReason).toBeNull();
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
-      expect(receipt.runLoop.status).toBe('completed');
+      expect(receipt.runLoop.status).toBe('blocked');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('invalidated');
+      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
     } finally {
-      if (previous === undefined) {
-        delete process.env.CODEX_WORKER_ADAPTER_BIN;
-      } else {
-        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
-      }
-      if (previousAllow === undefined) {
-        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-      } else {
-        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('degrades codex hook claims to no_hooks when trust proof is incomplete', () => {
     const root = prepareRoot('codex', false);
-    const previous = process.env.CODEX_WORKER_ADAPTER_BIN;
-    const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
     try {
-      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
-      process.env.CODEX_WORKER_ADAPTER_BIN = writeFakeCodexBinary(root);
       const invalid = codexHookTrustEnvelope({
         payload: {
           hookTrust: 'trusted',
@@ -532,16 +465,6 @@ describe('main-agent unified ingress e2e', () => {
         'codex_runtime_policy_snapshot_hash_missing'
       );
     } finally {
-      if (previous === undefined) {
-        delete process.env.CODEX_WORKER_ADAPTER_BIN;
-      } else {
-        process.env.CODEX_WORKER_ADAPTER_BIN = previous;
-      }
-      if (previousAllow === undefined) {
-        delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-      } else {
-        process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-      }
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

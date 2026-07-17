@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
+  createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   issueCodes,
   readJson,
@@ -20,15 +21,15 @@ describe('requirements contract intake first authoring', () => {
         '_bmad-output/runtime/requirement-records/REQ-INTAKE-FIRST/authoring/intake'
       );
       mkdirSync(intakeDir, { recursive: true });
-      const intake = writeMinimalConsumerRequirement(
+      const { sourcePath: intake, authoringOptions } = writeMinimalConsumerRequirement(
         root,
-        '_bmad-output/runtime/requirement-records/REQ-INTAKE-FIRST/authoring/intake/intake-source.md'
+        '_bmad-output/runtime/requirement-records/REQ-INTAKE-FIRST/authoring/intake/intake-source.md',
+        createMinimalConsumerRequirementDescriptor('REQ-INTAKE-FIRST')
       );
       const target = path.join(root, 'docs/plans/new-intake-source.md');
 
       const result = runIntakeAuthoring(root, intake, target, 'REQ-INTAKE-FIRST', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...authoringOptions,
       });
       const paths = artifacts(root, 'REQ-INTAKE-FIRST', 'REQ-INTAKE-FIRST-SET');
       const ledger = readJson<Record<string, unknown>>(paths.authoringTransaction);

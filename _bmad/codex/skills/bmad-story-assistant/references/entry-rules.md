@@ -26,5 +26,5 @@ These rules are mandatory for every BMAD Story Assistant execution. Read this re
 
 - Create Story, Story audit, Dev Story, post-implementation audit, and skill self-audit must preserve the main Agent/subagent boundary defined by the skill.
 - For audit steps, prefer Codex worker dispatch with `code-reviewer` when that agent is available.
-- Codex worker adapter does not support `code-reviewer` as a subagent type; if dispatch fails or `code-reviewer` is unavailable, fall back to Codex worker adapter `general-purpose`.
+- current Codex main session does not support `code-reviewer` as a subagent type; if dispatch fails or `code-reviewer` is unavailable, fall back to current Codex main session `general-purpose`.
 - The fallback must receive the full audit prompt and required parsable block instructions. It is not a license for the main Agent to self-review, self-pass, or skip the closed loop.

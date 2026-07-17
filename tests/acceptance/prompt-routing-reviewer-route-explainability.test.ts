@@ -83,7 +83,7 @@ describe('prompt-routing reviewer route explainability', () => {
             runtimeTargetPath: '.codex/agents/code-reviewer.toml',
             preferredRoute: expect.objectContaining({
               tool: 'codex',
-              subtypeOrExecutor: 'worker:audit',
+              subtypeOrExecutor: 'main-session:audit',
             }),
           }),
         }),

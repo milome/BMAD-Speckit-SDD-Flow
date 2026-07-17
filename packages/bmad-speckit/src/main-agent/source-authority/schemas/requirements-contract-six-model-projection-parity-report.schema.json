@@ -1,0 +1,805 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "requirements-contract-six-model-projection-parity-report.schema.json",
+  "title": "Requirements Contract Six-Model Projection Parity Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "decision",
+    "contractHash",
+    "requirementSetId",
+    "implementationAttemptId",
+    "modelOrder",
+    "surfaces",
+    "exactCases",
+    "observations",
+    "unknownSurfaces",
+    "counts",
+    "coverage",
+    "caseCompleteness",
+    "surfaceCompleteness",
+    "readerInventoryCoverage",
+    "writerInventoryCoverage",
+    "blockingReasons"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-six-model-projection-parity-report/v1"
+    },
+    "producer": {
+      "const": "requirements-contract-six-model-projection-parity-verifier"
+    },
+    "action": {
+      "const": "requirements-contract-six-model-projection-parity-verify"
+    },
+    "decision": {
+      "enum": [
+        "PASS",
+        "BLOCK"
+      ]
+    },
+    "contractHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modelOrder": {
+      "$ref": "#/definitions/modelOrder"
+    },
+    "surfaces": {
+      "$ref": "#/definitions/surfaces"
+    },
+    "exactCases": {
+      "$ref": "#/definitions/exactCases"
+    },
+    "observations": {
+      "type": "array",
+      "items": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "source"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "package-dist"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "codex"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "cursor"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "claude"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "installed"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "generated-dist"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "packed-package"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/observation"
+            },
+            {
+              "properties": {
+                "surface": {
+                  "const": "root-host"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "additionalItems": false,
+      "minItems": 9,
+      "maxItems": 9
+    },
+    "unknownSurfaces": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "counts": {
+      "$ref": "#/definitions/counts"
+    },
+    "coverage": {
+      "$ref": "#/definitions/coverage"
+    },
+    "caseCompleteness": {
+      "$ref": "#/definitions/coverage"
+    },
+    "surfaceCompleteness": {
+      "$ref": "#/definitions/coverage"
+    },
+    "readerInventoryCoverage": {
+      "$ref": "#/definitions/coverage"
+    },
+    "writerInventoryCoverage": {
+      "$ref": "#/definitions/coverage"
+    },
+    "blockingReasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "PASS"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "counts": {
+            "properties": {
+              "facade": {
+                "const": 0
+              },
+              "receipt": {
+                "const": 0
+              },
+              "projection": {
+                "const": 0
+              },
+              "bridge": {
+                "const": 0
+              },
+              "panorama": {
+                "const": 0
+              }
+            }
+          },
+          "coverage": {
+            "const": 1
+          },
+          "caseCompleteness": {
+            "const": 1
+          },
+          "surfaceCompleteness": {
+            "const": 1
+          },
+          "readerInventoryCoverage": {
+            "const": 1
+          },
+          "writerInventoryCoverage": {
+            "const": 1
+          },
+          "blockingReasons": {
+            "maxItems": 0
+          },
+          "observations": {
+            "items": {
+              "properties": {
+                "valid": {
+                  "const": true
+                },
+                "trustValid": {
+                  "const": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableHash": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullableString": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "coverage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "modelOrder": {
+      "type": "array",
+      "items": [
+        {
+          "const": "requirement_confirmation"
+        },
+        {
+          "const": "architecture_confirmation"
+        },
+        {
+          "const": "implementation_readiness"
+        },
+        {
+          "const": "execution_closure"
+        },
+        {
+          "const": "audit_review"
+        },
+        {
+          "const": "delivery_confirmation"
+        }
+      ],
+      "additionalItems": false,
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "surfaces": {
+      "type": "array",
+      "items": [
+        {
+          "const": "source"
+        },
+        {
+          "const": "package-dist"
+        },
+        {
+          "const": "codex"
+        },
+        {
+          "const": "cursor"
+        },
+        {
+          "const": "claude"
+        },
+        {
+          "const": "installed"
+        },
+        {
+          "const": "generated-dist"
+        },
+        {
+          "const": "packed-package"
+        },
+        {
+          "const": "root-host"
+        }
+      ],
+      "additionalItems": false,
+      "minItems": 9,
+      "maxItems": 9
+    },
+    "exactCases": {
+      "type": "array",
+      "items": [
+        {
+          "const": "valid_receipt"
+        },
+        {
+          "const": "missing_receipt"
+        },
+        {
+          "const": "missing_projection"
+        },
+        {
+          "const": "projection_mismatch"
+        },
+        {
+          "const": "stale_attempt"
+        },
+        {
+          "const": "blocked_receipt"
+        },
+        {
+          "const": "synthetic_bridge"
+        },
+        {
+          "const": "complete_panorama"
+        }
+      ],
+      "additionalItems": false,
+      "minItems": 8,
+      "maxItems": 8
+    },
+    "applicability": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicable",
+            "reason"
+          ],
+          "properties": {
+            "applicable": {
+              "const": true
+            },
+            "reason": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicable",
+            "reason"
+          ],
+          "properties": {
+            "applicable": {
+              "const": false
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash",
+        "readbackHash",
+        "readbackVerified"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackHash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "facade",
+        "receipt",
+        "projection",
+        "bridge",
+        "panorama"
+      ],
+      "properties": {
+        "facade": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "receipt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "projection": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bridge": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "panorama": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effectiveStatus",
+        "projectionStatus",
+        "projectionIntegrity",
+        "receiptState",
+        "authorityClass",
+        "syntheticBridgePass"
+      ],
+      "properties": {
+        "effectiveStatus": {
+          "enum": [
+            "pass",
+            "not_established",
+            "blocked",
+            "stale",
+            "unverified"
+          ]
+        },
+        "projectionStatus": {
+          "enum": [
+            "pass",
+            "not_established",
+            "blocked",
+            "stale",
+            null
+          ]
+        },
+        "projectionIntegrity": {
+          "enum": [
+            "valid",
+            "missing",
+            "mismatch",
+            "stale",
+            "unverified"
+          ]
+        },
+        "receiptState": {
+          "enum": [
+            "valid",
+            "missing",
+            "stale",
+            "blocked",
+            "unverified"
+          ]
+        },
+        "authorityClass": {
+          "enum": [
+            "controlled_confirmation",
+            "deterministic_gate",
+            "none",
+            "unverified"
+          ]
+        },
+        "syntheticBridgePass": {
+          "type": "boolean"
+        },
+        "panoramaModelOrder": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6
+        },
+        "panoramaRowCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseId",
+        "present",
+        "valid",
+        "proofRef",
+        "controlledCommandReceiptRef",
+        "behaviorObservationRef",
+        "outcome",
+        "derivedCounts",
+        "issues"
+      ],
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "present": {
+          "type": "boolean"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "proofRef": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/fileRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "controlledCommandReceiptRef": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/fileRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "behaviorObservationRef": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/fileRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/outcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "derivedCounts": {
+          "$ref": "#/definitions/counts"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface",
+        "present",
+        "valid",
+        "trustValid",
+        "schemaVersion",
+        "producer",
+        "action",
+        "contractHash",
+        "requirementSetId",
+        "implementationAttemptId",
+        "observedAt",
+        "applicability",
+        "observationPath",
+        "observationHash",
+        "authorityRef",
+        "commandReceiptRef",
+        "artifactRef",
+        "readerCount",
+        "writerCount",
+        "readerInventoryHash",
+        "writerInventoryHash",
+        "cases",
+        "derivedCounts",
+        "issues"
+      ],
+      "properties": {
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "present": {
+          "type": "boolean"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "trustValid": {
+          "type": "boolean"
+        },
+        "schemaVersion": {
+          "$ref": "#/definitions/nullableString"
+        },
+        "producer": {
+          "$ref": "#/definitions/nullableString"
+        },
+        "action": {
+          "$ref": "#/definitions/nullableString"
+        },
+        "contractHash": {
+          "$ref": "#/definitions/nullableHash"
+        },
+        "requirementSetId": {
+          "$ref": "#/definitions/nullableString"
+        },
+        "implementationAttemptId": {
+          "$ref": "#/definitions/nullableString"
+        },
+        "observedAt": {
+          "$ref": "#/definitions/nullableString"
+        },
+        "applicability": {
+          "$ref": "#/definitions/applicability"
+        },
+        "observationPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observationHash": {
+          "$ref": "#/definitions/nullableHash"
+        },
+        "authorityRef": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/fileRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commandReceiptRef": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/fileRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifactRef": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/fileRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readerCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "writerCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "readerInventoryHash": {
+          "$ref": "#/definitions/nullableHash"
+        },
+        "writerInventoryHash": {
+          "$ref": "#/definitions/nullableHash"
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/case"
+          },
+          "maxItems": 8
+        },
+        "derivedCounts": {
+          "$ref": "#/definitions/counts"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

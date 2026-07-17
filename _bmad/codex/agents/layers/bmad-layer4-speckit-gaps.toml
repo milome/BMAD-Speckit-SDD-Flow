@@ -2,7 +2,7 @@ name = "layers__bmad-layer4-speckit-gaps"
 description = "BMAD Codex custom agent for Layer 4 Agent: GAPS (改进版)."
 sandbox_mode = "read-only"
 
-developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+developer_instructions = """You are running as a BMAD Codex custom agent in the current Codex host session.
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks

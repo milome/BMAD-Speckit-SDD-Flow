@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-production-activation-receipt.schema.json",
+  "title": "Requirements Contract Production Activation Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "activationOutcome",
+    "selectedReceiptPath",
+    "requirementSetId",
+    "implementationAttemptId",
+    "activationAttemptId",
+    "activationReceiptId",
+    "selectedReceiptSchemaVersion",
+    "selectedReceiptSchemaHash",
+    "activationPlan",
+    "candidateSnapshot",
+    "commands",
+    "lock",
+    "compareAndSwap"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-production-activation-receipt/v1"
+    },
+    "activationOutcome": {
+      "enum": ["success", "blocked"]
+    },
+    "selectedReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "activationAttemptId": {
+      "$ref": "#/$defs/activationAttemptId"
+    },
+    "activationReceiptId": {
+      "$ref": "#/$defs/activationReceiptId"
+    },
+    "selectedReceiptSchemaVersion": {
+      "const": "requirements-contract-production-activation-receipt/v1"
+    },
+    "selectedReceiptSchemaHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "activationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "promotionReceiptPath", "promotionReceiptHash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-plans/ACT-ATTEMPT-[^/]+\\.json$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "promotionReceiptPath": {
+          "type": "string",
+          "pattern": "^docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-plan-write-receipts/ACT-ATTEMPT-[^/]+\\.receipt\\.json$"
+        },
+        "promotionReceiptHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "candidateSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/activation/IMPL-ATTEMPT-[^/]+/ACT-ATTEMPT-[^/]+/candidate-snapshot/$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/cmd09"
+        },
+        {
+          "$ref": "#/$defs/cmd11"
+        },
+        {
+          "$ref": "#/$defs/cmd13"
+        },
+        {
+          "$ref": "#/$defs/cmd18"
+        }
+      ],
+      "items": false
+    },
+    "lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acquired", "lockIdentityHash"],
+      "properties": {
+        "acquired": {
+          "type": "boolean"
+        },
+        "lockIdentityHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "compareAndSwap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registryPreimageHash", "registryTargetHash", "decision"],
+      "properties": {
+        "registryPreimageHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "registryTargetHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "decision": {
+          "enum": ["pass", "blocked"]
+        }
+      }
+    },
+    "readback": {
+      "$ref": "#/$defs/readback"
+    },
+    "failure": {
+      "$ref": "#/$defs/failure"
+    },
+    "restoration": {
+      "$ref": "#/$defs/restoration"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "activationOutcome": {
+          "const": "success"
+        },
+        "selectedReceiptPath": {
+          "const": "docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-receipt.json"
+        }
+      },
+      "required": ["readback"],
+      "not": {
+        "anyOf": [
+          {
+            "required": ["failure"]
+          },
+          {
+            "required": ["restoration"]
+          }
+        ]
+      }
+    },
+    {
+      "properties": {
+        "activationOutcome": {
+          "const": "blocked"
+        },
+        "selectedReceiptPath": {
+          "pattern": "^docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-attempts/ACT-ATTEMPT-[^/]+\\.json$"
+        }
+      },
+      "required": ["failure", "restoration"],
+      "not": {
+        "required": ["readback"]
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "activationAttemptId": {
+      "type": "string",
+      "pattern": "^ACT-ATTEMPT-[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "activationReceiptId": {
+      "type": "string",
+      "pattern": "^ACT-RECEIPT-[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "argvHash", "exitCode", "stdoutHash", "stderrHash", "decision"],
+      "properties": {
+        "commandId": {
+          "enum": ["CMD-09", "CMD-11", "CMD-13", "CMD-18"]
+        },
+        "argvHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "exitCode": {
+          "type": "integer"
+        },
+        "stdoutHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderrHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "decision": {
+          "enum": ["pass", "blocked"]
+        }
+      }
+    },
+    "cmd09": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-09"
+            }
+          }
+        }
+      ]
+    },
+    "cmd11": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-11"
+            }
+          }
+        }
+      ]
+    },
+    "cmd13": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-13"
+            }
+          }
+        }
+      ]
+    },
+    "cmd18": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-18"
+            }
+          }
+        }
+      ]
+    },
+    "readback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registryHash", "selectorDecision", "activeImplementationAttemptId", "decision"],
+      "properties": {
+        "registryHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "selectorDecision": {
+          "const": "pass"
+        },
+        "activeImplementationAttemptId": {
+          "type": "string",
+          "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+        },
+        "decision": {
+          "const": "pass"
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "phase", "stderrHash"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "phase": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "stderrHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "restoration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registryRestored", "restoredRegistryHash", "decision"],
+      "properties": {
+        "registryRestored": {
+          "const": true
+        },
+        "restoredRegistryHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "decision": {
+          "const": "pass"
+        }
+      }
+    }
+  }
+}

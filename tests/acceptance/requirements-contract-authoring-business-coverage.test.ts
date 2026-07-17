@@ -463,6 +463,59 @@ describe('requirements contract sanitized real fixture coverage', () => {
     expect(visualIssue?.refs).toEqual(['businessVisuals', 'MUST-002']);
   });
 
+  it('does not classify exact Source MUST payload as generic current-target boilerplate', () => {
+    const sourceMustText =
+      'Critical Auditor can inspect all source-derived MUST references before promotion.';
+    const issues = collectProjectionQualityIssues({
+      must: [
+        {
+          id: 'MUST-001',
+          text: 'Preserve each authored MUST as an independently traceable product behavior.',
+        },
+        {
+          id: 'MUST-002',
+          text: sourceMustText,
+        },
+      ],
+      traceRows: [
+        { id: 'TRACE-001', covers: ['MUST-001'] },
+        { id: 'TRACE-002', covers: ['MUST-002'] },
+      ],
+      requirementBoundary: {
+        business: {
+          requirementIds: ['MUST-001', 'MUST-002'],
+        },
+      },
+      currentTargetMap: {
+        diffRows: [
+          {
+            id: 'CT-MUST-001',
+            requirementRefs: ['MUST-001'],
+            derivedFromMustRef: 'MUST-001',
+            currentState: 'Current product behavior remains independently traceable.',
+            targetState:
+              'Target product behavior preserves each authored MUST as an independently traceable product behavior.',
+            targetFiles: ['src/product.ts'],
+            traceRows: ['TRACE-001'],
+          },
+          {
+            id: 'CT-MUST-002',
+            requirementRefs: ['MUST-002'],
+            derivedFromMustRef: 'MUST-002',
+            currentState: 'Current auditor visibility is incomplete.',
+            targetState: `Target product behavior: ${sourceMustText}`,
+            targetFiles: ['src/auditor.ts'],
+            traceRows: ['TRACE-002'],
+          },
+        ],
+      },
+    });
+
+    expect(issues.find((issue) => issue.code === 'current_target_map_not_product_specific')).toBe(
+      undefined
+    );
+  });
+
   it('projects currentTargetMap from explicit source current and target state sections', () => {
     const root = createTempRoot('requirements-contract-source-state-sections-');
     try {
