@@ -12,6 +12,7 @@ import {
   cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
+  installJudgeRuntimeConfig,
   readJson,
   removeTempRoot,
   runAuthoring,
@@ -35,6 +36,7 @@ function checkpointReceipts(paths: ReturnType<typeof artifacts>): Array<Record<s
 describe('requirements contract checkpoint semantic validation', () => {
   it('publishes one current schema-valid semantic receipt for each cp-00 through cp-08 validator', () => {
     const root = createTempRoot('requirements-contract-checkpoint-semantic-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-semantic-validation'
@@ -94,6 +96,7 @@ describe('requirements contract checkpoint semantic validation', () => {
 
   it('invalidates and replaces receipts from a different implementation attempt', () => {
     const root = createTempRoot('requirements-contract-checkpoint-cross-attempt-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor('checkpoint-cross-attempt');
       const materialized = writeLintReadyMinimalConsumerRequirement(
@@ -132,6 +135,7 @@ describe('requirements contract checkpoint semantic validation', () => {
 
   it('invalidates and replaces receipts from a different requirement set', () => {
     const root = createTempRoot('requirements-contract-checkpoint-cross-requirement-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-cross-requirement'
@@ -174,6 +178,7 @@ describe('requirements contract checkpoint semantic validation', () => {
 
   it('invalidates every receipt when the canonical semantic binding changes', () => {
     const root = createTempRoot('requirements-contract-checkpoint-semantic-change-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-semantic-change'
@@ -232,6 +237,7 @@ describe('requirements contract checkpoint semantic validation', () => {
 
   it('regenerates checkpoints when explicit persistence evidence is stale', () => {
     const root = createTempRoot('requirements-contract-checkpoint-explicit-stale-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-explicit-stale'
@@ -296,6 +302,7 @@ describe('requirements contract checkpoint semantic validation', () => {
 
   it('fails closed before checkpoint receipts when implementationAttemptId is missing', () => {
     const root = createTempRoot('requirements-contract-checkpoint-missing-attempt-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-missing-attempt'
@@ -328,6 +335,7 @@ describe('requirements contract checkpoint semantic validation', () => {
 
   it('propagates a new attempt through the production current-source checkpoint refresh boundary', () => {
     const root = createTempRoot('requirements-contract-checkpoint-repair-attempt-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-repair-attempt'

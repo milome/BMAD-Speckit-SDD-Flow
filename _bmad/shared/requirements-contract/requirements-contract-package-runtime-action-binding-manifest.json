@@ -917,11 +917,11 @@
       "actionId": "requirements-contract-six-model-projection-parity-verify",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier.ts",
-        "hash": "sha256:a6b7926d16311a30263613f62e352294e214472987d25ecca475138b79a14d45"
+        "hash": "sha256:ef682efa711684a3fadf2d25a321c76a587d78e162cdab4509d2f0652cc40630"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier.js",
-        "hash": "sha256:334b09aa76b131729aafbcfe7986e824fb7be1a3498888db8da4869784a2f978"
+        "hash": "sha256:6f1faed3d4d989da3de5c292d60290715f66e2a7d8adf1cf80d4cb098cc79f0b"
       },
       "semanticGate": {
         "gateId": "requirements-contract-six-model-projection-parity-verify:semantic-gate",
@@ -948,12 +948,12 @@
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier.js",
-        "hash": "sha256:334b09aa76b131729aafbcfe7986e824fb7be1a3498888db8da4869784a2f978"
+        "hash": "sha256:6f1faed3d4d989da3de5c292d60290715f66e2a7d8adf1cf80d4cb098cc79f0b"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier.js",
-          "hash": "sha256:334b09aa76b131729aafbcfe7986e824fb7be1a3498888db8da4869784a2f978"
+          "hash": "sha256:6f1faed3d4d989da3de5c292d60290715f66e2a7d8adf1cf80d4cb098cc79f0b"
         }
       ],
       "runtimeRefs": [],

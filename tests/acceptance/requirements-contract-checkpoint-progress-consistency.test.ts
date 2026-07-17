@@ -8,6 +8,7 @@ import {
   cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
+  installJudgeRuntimeConfig,
   readJson,
   removeTempRoot,
   runAuthoring,
@@ -17,6 +18,7 @@ import {
 describe('requirements contract checkpoint progress consistency', () => {
   it('derives completed progression only from committed persistence plus passing semantic validation', () => {
     const root = createTempRoot('requirements-contract-checkpoint-progress-');
+    installJudgeRuntimeConfig(root);
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-progress-consistency'

@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
+import { runRequirementsContractSixModelProjectionParityCase } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-case-runner';
+import { resolveSixModelProjectionParitySurfaceFileSets } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-evidence-builder';
 import {
   createRuntimeStatusProjectionUpdate,
   runtimeStatusProjectionRecordPatch,
@@ -191,5 +196,228 @@ describe('verified six-model status facade', () => {
       projectionIntegrity: 'invalid',
       blockerRefs: ['runtime_status_bound_artifact_hash_mismatch:evidence/gate.json'],
     });
+  });
+
+  it('executes the complete AMEND-07 parity case set against the real source authority core', () => {
+    const runtimeCorePath = path.resolve(
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.cjs'
+    );
+    const expected = {
+      valid_receipt: ['pass', 'pass', 'valid', 'valid', 'controlled_confirmation'],
+      missing_receipt: ['not_established', 'pass', 'missing', 'missing', 'none'],
+      missing_projection: ['not_established', null, 'missing', 'valid', 'none'],
+      projection_mismatch: ['blocked', 'blocked', 'mismatch', 'valid', 'controlled_confirmation'],
+      stale_attempt: ['stale', 'pass', 'stale', 'stale', 'controlled_confirmation'],
+      blocked_receipt: ['blocked', 'blocked', 'valid', 'blocked', 'deterministic_gate'],
+      synthetic_bridge: ['not_established', 'not_established', 'missing', 'missing', 'none'],
+      complete_panorama: ['not_established', null, 'missing', 'missing', 'none'],
+    } as const;
+
+    for (const [caseId, outcome] of Object.entries(expected)) {
+      const observation = runRequirementsContractSixModelProjectionParityCase({
+        runtimeCorePath,
+        surface: 'source',
+        caseId,
+        contractHash: hash('6'),
+        requirementSetId: 'REQSET-PARITY-CASE',
+        implementationAttemptId: 'IMP-PARITY-CASE',
+        observedAt: '2026-07-17T00:00:00.000Z',
+      });
+
+      expect(observation.outcome).toMatchObject({
+        effectiveStatus: outcome[0],
+        projectionStatus: outcome[1],
+        projectionIntegrity: outcome[2],
+        receiptState: outcome[3],
+        authorityClass: outcome[4],
+        syntheticBridgePass: false,
+      });
+    }
+
+    const panorama = runRequirementsContractSixModelProjectionParityCase({
+      runtimeCorePath,
+      surface: 'source',
+      caseId: 'complete_panorama',
+      contractHash: hash('6'),
+      requirementSetId: 'REQSET-PARITY-CASE',
+      implementationAttemptId: 'IMP-PARITY-CASE',
+      observedAt: '2026-07-17T00:00:00.000Z',
+    });
+    expect(panorama.outcome.panoramaModelOrder).toEqual([
+      'requirement_confirmation',
+      'architecture_confirmation',
+      'implementation_readiness',
+      'execution_closure',
+      'audit_review',
+      'delivery_confirmation',
+    ]);
+    expect(panorama.outcome.panoramaRowCount).toBe(6);
+  });
+
+  it('derives parity runtime record identity from the controlled command inputs', () => {
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'six-model-parity-record-'));
+    const runtimeCorePath = path.join(temporaryRoot, 'capture-runtime-core.cjs');
+    const capturePath = path.join(temporaryRoot, 'captured-record.json');
+    fs.writeFileSync(
+      runtimeCorePath,
+      [
+        "const fs = require('node:fs');",
+        'module.exports = {',
+        '  resolveVerifiedSixModelStatus(input) {',
+        "    fs.writeFileSync(process.env.BMAD_PARITY_RECORD_CAPTURE, JSON.stringify(input.record), 'utf8');",
+        "    return { effectiveStatus: 'pass', projectionStatus: 'pass', projectionIntegrity: 'valid', authorityClass: 'controlled_confirmation' };",
+        '  },',
+        '  resolveVerifiedSixModelPanorama() { return []; },',
+        '};',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+    const previousCapture = process.env.BMAD_PARITY_RECORD_CAPTURE;
+    process.env.BMAD_PARITY_RECORD_CAPTURE = capturePath;
+    try {
+      runRequirementsContractSixModelProjectionParityCase({
+        runtimeCorePath,
+        surface: 'source',
+        caseId: 'valid_receipt',
+        contractHash: hash('7'),
+        requirementSetId: 'REQSET-PARITY-A',
+        implementationAttemptId: 'IMP-PARITY-A',
+        observedAt: '2026-07-17T00:00:00.000Z',
+      });
+      const first = JSON.parse(fs.readFileSync(capturePath, 'utf8')) as Record<string, string>;
+
+      runRequirementsContractSixModelProjectionParityCase({
+        runtimeCorePath,
+        surface: 'source',
+        caseId: 'valid_receipt',
+        contractHash: hash('8'),
+        requirementSetId: 'REQSET-PARITY-B',
+        implementationAttemptId: 'IMP-PARITY-B',
+        observedAt: '2026-07-17T00:00:01.000Z',
+      });
+      const second = JSON.parse(fs.readFileSync(capturePath, 'utf8')) as Record<string, string>;
+
+      expect(first).toMatchObject({
+        recordId: 'REQSET-PARITY-A',
+        requirementSetId: 'REQSET-PARITY-A',
+        currentAttemptId: 'IMP-PARITY-A',
+        sourceDocumentHash: hash('7'),
+      });
+      expect(second).toMatchObject({
+        recordId: 'REQSET-PARITY-B',
+        requirementSetId: 'REQSET-PARITY-B',
+        currentAttemptId: 'IMP-PARITY-B',
+        sourceDocumentHash: hash('8'),
+      });
+      expect(first.implementationConfirmationHash).not.toBe(second.implementationConfirmationHash);
+      expect(first.semanticModelHash).not.toBe(second.semanticModelHash);
+    } finally {
+      if (previousCapture === undefined) delete process.env.BMAD_PARITY_RECORD_CAPTURE;
+      else process.env.BMAD_PARITY_RECORD_CAPTURE = previousCapture;
+      fs.rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves generated-dist parity readers and writers from the emitted mixed runtime tree', () => {
+    const repositoryRoot = path.resolve('.');
+    const packageRoot = path.join(repositoryRoot, 'packages', 'bmad-speckit');
+    const generatedDist = resolveSixModelProjectionParitySurfaceFileSets({
+      repositoryRoot,
+      packageRoot,
+      installedRoot: path.join(repositoryRoot, '.unused-installed-root'),
+      extractedRoot: path.join(repositoryRoot, '.unused-extracted-root'),
+      tarball: path.join(repositoryRoot, '.unused-package.tgz'),
+    })['generated-dist'];
+
+    expect(generatedDist.readerPaths).toEqual([
+      path.join(
+        packageRoot,
+        'dist',
+        'main-agent',
+        'source-authority',
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'verified-six-model-status-facade.ts'
+      ),
+      path.join(
+        packageRoot,
+        'dist',
+        'main-agent',
+        'source-authority',
+        'packages',
+        'bmad-speckit',
+        'src',
+        'runtime',
+        'bmads-renderer.js'
+      ),
+    ]);
+    expect(generatedDist.writerPaths).toEqual([
+      path.join(
+        packageRoot,
+        'dist',
+        'main-agent',
+        'source-authority',
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'requirements-contract-runtime-status-decision-receipt.ts'
+      ),
+    ]);
+  });
+
+  it('blocks canonical verification with an explicit reason when evidence generation fails', async () => {
+    const failure = 'canonical parity generation failed';
+    const buildEvidence = vi.fn(() => {
+      throw new Error(failure);
+    });
+    vi.resetModules();
+    vi.doMock(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-evidence-builder',
+      async () => {
+        const actual = await vi.importActual<
+          typeof import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-evidence-builder')
+        >(
+          '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-evidence-builder'
+        );
+        return {
+          ...actual,
+          buildRequirementsContractSixModelProjectionParityEvidence: buildEvidence,
+        };
+      }
+    );
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'six-model-parity-verifier-'));
+    const out = path.join(temporaryRoot, 'report.json');
+    try {
+      const { requirementsContractSixModelProjectionParityVerifyCommand } = await import(
+        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier'
+      );
+      const exitCode = requirementsContractSixModelProjectionParityVerifyCommand({
+        evidenceRoot: path.resolve('docs/plans/evidence/loop-engineering-remediation'),
+        out,
+      });
+      const report = JSON.parse(fs.readFileSync(out, 'utf8')) as {
+        decision: string;
+        blockingReasons: string[];
+      };
+
+      expect(buildEvidence).toHaveBeenCalledOnce();
+      expect(exitCode).toBe(2);
+      expect(report.decision).toBe('BLOCK');
+      expect(report.blockingReasons).toContain(`canonical_evidence_build_failed:${failure}`);
+    } finally {
+      vi.doUnmock(
+        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-evidence-builder'
+      );
+      vi.resetModules();
+      fs.rmSync(temporaryRoot, { recursive: true, force: true });
+    }
   });
 });

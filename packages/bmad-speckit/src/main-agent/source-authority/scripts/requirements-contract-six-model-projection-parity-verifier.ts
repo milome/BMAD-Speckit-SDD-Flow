@@ -16,6 +16,10 @@ import {
   SIX_MODEL_PARITY_SURFACES,
   canonicalSixModelParityJson,
 } from './requirements-contract-six-model-projection-parity-observation-producer';
+import {
+  buildRequirementsContractSixModelProjectionParityEvidence,
+  isCanonicalSixModelProjectionParityEvidenceRoot,
+} from './requirements-contract-six-model-projection-parity-evidence-builder';
 
 interface SafeWriteReceipt {
   schemaVersion: 'large-document-writer-safe-write/v1';
@@ -1528,6 +1532,16 @@ export function requirementsContractSixModelProjectionParityVerifyCommand(
 ): number {
   const evidenceRoot = path.resolve(options.evidenceRoot);
   const blockingReasons: string[] = [];
+  if (isCanonicalSixModelProjectionParityEvidenceRoot(evidenceRoot)) {
+    try {
+      buildRequirementsContractSixModelProjectionParityEvidence({ evidenceRoot });
+    } catch (error) {
+      addUnique(
+        blockingReasons,
+        `canonical_evidence_build_failed:${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
   const authority = readAuthority(evidenceRoot, blockingReasons);
   const observationSchema = schemaDocument(
     'requirements-contract-six-model-projection-parity-observation.schema.json'

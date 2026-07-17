@@ -570,6 +570,7 @@ function materializeInstalledPackage(root) {
           RUST_BACKTRACE: '1',
           npm_config_loglevel: 'error',
         },
+        maxBuffer: 64 * 1024 * 1024,
         timeout: 180_000,
       }
     ),
