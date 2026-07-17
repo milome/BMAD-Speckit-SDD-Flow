@@ -15,7 +15,7 @@ import {
   readJson,
   removeTempRoot,
   runAuthoring,
-  writeMinimalConsumerRequirement,
+  writeLintReadyMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
 function checkpointReceiptValidator() {
@@ -39,7 +39,7 @@ describe('requirements contract checkpoint semantic validation', () => {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-semantic-validation'
       );
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-semantic-validation.md',
         descriptor
@@ -96,7 +96,7 @@ describe('requirements contract checkpoint semantic validation', () => {
     const root = createTempRoot('requirements-contract-checkpoint-cross-attempt-');
     try {
       const descriptor = createMinimalConsumerRequirementDescriptor('checkpoint-cross-attempt');
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-cross-attempt.md',
         descriptor
@@ -136,7 +136,7 @@ describe('requirements contract checkpoint semantic validation', () => {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-cross-requirement'
       );
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-cross-requirement.md',
         descriptor
@@ -179,7 +179,11 @@ describe('requirements contract checkpoint semantic validation', () => {
         'checkpoint-semantic-change'
       );
       const relativeSourcePath = 'docs/plans/checkpoint-semantic-change.md';
-      const materialized = writeMinimalConsumerRequirement(root, relativeSourcePath, descriptor);
+      const materialized = writeLintReadyMinimalConsumerRequirement(
+        root,
+        relativeSourcePath,
+        descriptor
+      );
       const recordId = 'REQ-CHECKPOINT-SEMANTIC-CHANGE';
       const firstResult = runAuthoring(root, materialized.sourcePath, recordId, {
         ...materialized.authoringOptions,
@@ -197,7 +201,7 @@ describe('requirements contract checkpoint semantic validation', () => {
           requirement: `${descriptor.semantics.requirement} Preserve the changed semantic binding.`,
         },
       };
-      const changedMaterialization = writeMinimalConsumerRequirement(
+      const changedMaterialization = writeLintReadyMinimalConsumerRequirement(
         root,
         relativeSourcePath,
         changedDescriptor
@@ -233,7 +237,11 @@ describe('requirements contract checkpoint semantic validation', () => {
         'checkpoint-explicit-stale'
       );
       const relativeSourcePath = 'docs/plans/checkpoint-explicit-stale.md';
-      const materialized = writeMinimalConsumerRequirement(root, relativeSourcePath, descriptor);
+      const materialized = writeLintReadyMinimalConsumerRequirement(
+        root,
+        relativeSourcePath,
+        descriptor
+      );
       const recordId = 'REQ-CHECKPOINT-EXPLICIT-STALE';
       const firstResult = runAuthoring(root, materialized.sourcePath, recordId, {
         ...materialized.authoringOptions,
@@ -250,7 +258,7 @@ describe('requirements contract checkpoint semantic validation', () => {
         'utf8'
       );
       const firstReceipts = checkpointReceipts(paths);
-      const changedMaterialization = writeMinimalConsumerRequirement(
+      const changedMaterialization = writeLintReadyMinimalConsumerRequirement(
         root,
         relativeSourcePath,
         {
@@ -292,7 +300,7 @@ describe('requirements contract checkpoint semantic validation', () => {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-missing-attempt'
       );
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-missing-attempt.md',
         descriptor
@@ -324,7 +332,7 @@ describe('requirements contract checkpoint semantic validation', () => {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-repair-attempt'
       );
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-repair-attempt.md',
         descriptor

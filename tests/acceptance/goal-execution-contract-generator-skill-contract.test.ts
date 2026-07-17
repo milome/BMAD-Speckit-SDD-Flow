@@ -44,6 +44,7 @@ describe('goal-execution-contract-generator skill contract', () => {
       expect(generatorSkill).not.toContain('3 consecutive no-gap');
       expect(generatorSkill).toContain('multi-view-doc-review-loop');
       expect(generatorSkill).toContain('single final docs-review');
+      expect(generatorSkill).toContain('check-contract-command-portability.js');
 
       expect(reviewSkill).toContain('auditEpochId');
       expect(reviewSkill).toContain('targetHash');
@@ -53,6 +54,13 @@ describe('goal-execution-contract-generator skill contract', () => {
       expect(reviewSkill).toContain('180000');
       expect(reviewSkill).toContain('two audit epochs');
       expect(reviewSkill).toContain('single final docs-review');
+      expect(reviewSkill).toContain(
+        'Existing user authorization remains valid across internal convergence cycles'
+      );
+      expect(reviewSkill).toContain(
+        'keep that perspective local for the remainder of the convergence run'
+      );
+      expect(reviewSkill).not.toContain('start a new user-authorized convergence cycle');
     }
   });
 });

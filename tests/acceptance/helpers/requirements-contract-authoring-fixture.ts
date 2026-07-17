@@ -765,6 +765,179 @@ export function writeMinimalConsumerRequirement(
   };
 }
 
+export function writeLintReadyMinimalConsumerRequirement(
+  root: string,
+  relativePath: string,
+  descriptor: MinimalConsumerRequirementDescriptor,
+  options: MinimalConsumerRequirementWriteOptions = {}
+): MinimalConsumerRequirementMaterialization {
+  const materialized = writeMinimalConsumerRequirement(root, relativePath, descriptor, options);
+  const { refs, semantics, target, verification } = descriptor;
+  const legacyBody = readFileSync(materialized.sourcePath, 'utf8').replace(
+    /^# [^\n]+\r?\n\r?\n/u,
+    ''
+  );
+  const sourceWithCompleteRequirements = legacyBody.replace(
+    /## Functional Requirements[\s\S]*?(?=## Negative Requirements And Not Done Conditions)/u,
+    [
+      '## Functional Requirements',
+      '',
+      '| ID | Requirement | Source rationale | Acceptance link | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      `| ${refs.functionalRequirementId} | ${semantics.requirement} | Preserve the source-authorized Consumer result. | ${refs.acceptanceId} | ${semantics.oracle} | ${refs.acceptanceId} ${refs.commandId} ${refs.mustTraceId} | ${refs.pathId} owns implementation and remediation. |`,
+      '',
+      '## Non-Functional Requirements',
+      '',
+      '| ID | Category | Requirement | Threshold and evidence | Per-MUST oracle | Assertion source | Responsibility mapping |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      `| NFR-001 | Auditability | The authoring flow must preserve current-attempt checkpoint evidence. | ACC-001, E2E-001, CMD-001, and TRACE-001 prove current checkpoint Receipts. | ${semantics.oracle} | ACC-001 E2E-001 CMD-001 TRACE-001 | ${refs.pathId} owns checkpoint evidence. |`,
+      '',
+    ].join('\n')
+  );
+  const sourceWithNfrFailureAuthority = sourceWithCompleteRequirements.replace(
+    `| ${refs.acceptanceId} ${refs.negativeAcceptanceId} ${refs.endToEndId} | ${refs.mustRequirementId} |`,
+    `| ${refs.acceptanceId} ${refs.negativeAcceptanceId} ${refs.endToEndId} | ${refs.mustRequirementId} MUST-NFR-001 |`
+  );
+  const sourceWithNfrAcceptance = sourceWithNfrFailureAuthority.replace(
+    '\n\n## Test And Verification Paths',
+    [
+      `\n| ACC-001 | Current-attempt checkpoint Receipt set | MUST-NFR-001 | ${verification.requiredCommand} | ${semantics.oracle} | CMD-001 TRACE-001 | ${refs.pathId} owns checkpoint evidence. |`,
+      '',
+      '## Test And Verification Paths',
+    ].join('\n')
+  );
+  const sourceWithNfrCommand = sourceWithNfrAcceptance.replace(
+    '\n\n## Trace Matrix Source',
+    [
+      `\n| CMD-001 | contract-validation | MUST-NFR-001 | ${verification.requiredCommand} | Exit code 0 and current checkpoint Receipts. | ${semantics.oracle} | ACC-001 TRACE-001 | ${refs.pathId} owns execution and remediation. | ${verification.testPath} ${target.path} |`,
+      `| E2E-001 | e2e | MUST-NFR-001 | ${verification.requiredCommand} | Exit code 0 and current checkpoint Receipts. | ${semantics.oracle} | ACC-001 CMD-001 TRACE-001 | ${refs.pathId} owns execution and remediation. | ${verification.testPath} ${target.path} |`,
+      '',
+      '## Trace Matrix Source',
+    ].join('\n')
+  );
+  const sourceWithNfrTrace = sourceWithNfrCommand.replace(
+    '\n\n## Implementation Path Map',
+    [
+      `\n| TRACE-001 | MUST-NFR-001 | ACC-001 E2E-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | ${refs.pathId} | none | ${semantics.oracle} | MUST-NFR-001 closes through ACC-001, E2E-001, and TRACE-001. | ${refs.pathId} owns checkpoint remediation. |`,
+      '',
+      '## Implementation Path Map',
+    ].join('\n')
+  );
+  const canonicalSourcePrd = [
+    '---',
+    `id: checkpoint-fixture-${descriptor.seedHash.slice('sha256:'.length, 24)}`,
+    `title: ${semantics.title}`,
+    'status: draft',
+    'authoritativeImplementationSource: true',
+    'sourceKind: requirements_contract_source_prd',
+    'classification: test_fixture',
+    'authoring:',
+    '  mode: checkpoint_fixture',
+    '---',
+    '# Requirements Contract Source PRD Template',
+    '',
+    '## Template Authority',
+    '',
+    'This fixture exercises the canonical Source PRD authoring contract.',
+    '',
+    '## Source Metadata',
+    '',
+    `The source identity is checkpoint-fixture-${descriptor.seedHash.slice('sha256:'.length, 24)}.`,
+    '',
+    '## Requirement Extraction Boundary',
+    '',
+    'Only the ID-bound requirement tables are requirement-bearing.',
+    '',
+    '## Requirement Projection Authority',
+    '',
+    'Canonical projection preserves every source requirement and closure reference.',
+    '',
+    '## Renderer Field Source Schema',
+    '',
+    'Renderer fields derive from the ID-bound source tables.',
+    '',
+    '## Non-Requirement-Bearing Provenance Reference',
+    '',
+    'Fixture provenance text does not create requirements.',
+    '',
+    '## Product Context',
+    '',
+    sourceWithNfrTrace.trimEnd(),
+    '',
+    '## Success Criteria',
+    '',
+    `${refs.acceptanceId} and ${verification.requiredCommand} prove checkpoint closure.`,
+    '',
+    '## In Scope',
+    '',
+    `Checkpoint persistence for ${target.path}.`,
+    '',
+    '## User Journeys',
+    '',
+    'The author receives current semantic checkpoint Receipts before progression.',
+    '',
+    '## Architecture Decision Records',
+    '',
+    'Checkpoint authority remains current-attempt and fail-closed.',
+    '',
+    '## Source Current State',
+    '',
+    '| ID | Current behavior | Current path | Limitation | Evidence |',
+    '| --- | --- | --- | --- | --- |',
+    `| CUR-001 | Checkpoint state requires current semantic evidence. | ${target.path} | Stale or missing Receipts block progress. | ${refs.acceptanceId} |`,
+    '',
+    '## Source Target State',
+    '',
+    '| ID | Target behavior | Target path | Acceptance state | Evidence |',
+    '| --- | --- | --- | --- | --- |',
+    `| TGT-001 | Every checkpoint publishes a current semantic Receipt. | ${target.path} | ${verification.requiredCommand} exits 0. | ${refs.acceptanceId} ${refs.commandId} |`,
+    '',
+    '## Current Target Map',
+    '',
+    '| ID | Current refs | Target refs | Transition | Invariant | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| CTM-001 | CUR-001 | TGT-001 | verify | Invalid checkpoint state never advances. | ${refs.functionalRequirementId} NFR-001 | ${semantics.oracle} | ${refs.acceptanceId} ${refs.commandId} ${refs.mustTraceId} TRACE-001 | ${refs.pathId} owns recovery. |`,
+    '',
+    '## Source-to-Contract Projection Map',
+    '',
+    'Source rows project without creating synthetic requirements.',
+    '',
+    '## Human-Readable ID-Bound Views',
+    '',
+    'Happy-path sequence view',
+    'Failure-path sequence view',
+    'State and flow view',
+    'Edge-case view',
+    'Business and governance boundary view',
+    'Artifact automation plan',
+    'Current-vs-target map',
+    'aiTddContractExecutionManifestProjection',
+    '',
+    '## Revision History',
+    '',
+    'Initial checkpoint fixture revision.',
+    '',
+    '## Validation Provenance',
+    '',
+    verification.requiredCommand,
+    '',
+    '## Audit Findings',
+    '',
+    'No open fixture findings.',
+    '',
+    '## Comments',
+    '',
+    'Generated only for checkpoint acceptance tests.',
+    '',
+    '## Change Log',
+    '',
+    `Fixture seed ${descriptor.seedHash}.`,
+    '',
+  ].join('\n');
+  writeFileSync(materialized.sourcePath, canonicalSourcePrd, 'utf8');
+  return materialized;
+}
+
 export function expectSourceHashUnchanged(source: string, beforeHash: string): void {
   if (!existsSync(source)) {
     throw new Error(`source disappeared: ${source}`);

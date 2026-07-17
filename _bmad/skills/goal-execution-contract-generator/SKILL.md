@@ -31,7 +31,7 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - If it reports `available` or `installed`, continue.
    - If it reports `blocked`, stop with `docs_review_dependency_blocked` and include the reported reason.
 6. Generate the contract from the template only when the package CLI is not applicable.
-7. Run the contract completeness gate.
+7. Run the contract completeness gate and command portability gate.
 8. Delegate semantic review convergence to `multi-view-doc-review-loop`.
 9. Run encoding integrity gate after all text edits.
 
@@ -191,13 +191,23 @@ Also verify:
 
 If any check fails, fix the contract before delegating review convergence.
 
+## Command Portability Gate
+
+Run command portability checks before freezing the first semantic-review hash and after every command-text repair.
+
+- On Windows, run `node <skill-dir>/scripts/check-contract-command-portability.js --target <path> --shell pwsh --json`.
+- Treat any non-zero result as a generation blocker. Fix every reported occurrence in one batch before semantic review or promotion.
+- Reject unquoted Git extended revision expressions such as `git rev-parse HEAD^{tree}` in PowerShell contracts. Require `git rev-parse "HEAD^{tree}"` or an equivalent quoted revision argument.
+- Smoke-test read-only commands in their declared shell when repository state permits. Do not execute mutating, destructive, credentialed, release, commit, push, or deployment commands during contract generation.
+- Record the target hash and portability receipt with the deterministic completeness evidence so a later docs-review cannot discover the same command defect after semantic convergence.
+
 ## Review Convergence Delegation
 
 `multi-view-doc-review-loop` is the only owner of audit convergence. This generator MUST NOT run an independent audit/fix loop or maintain a no-gap counter.
 
 Handoff rules:
 
-1. Complete generation, source coverage, and the deterministic completeness gate.
+1. Complete generation, source coverage, the deterministic completeness gate, and the command portability gate.
 2. Hand the generated target path, source hash, and current target hash to `multi-view-doc-review-loop`.
 3. Let that skill own audit epochs, target freezing, batch fixes, selective revalidation, timeout takeover, and completion receipts.
 4. Run a single final docs-review only after semantic convergence. `docs-review` is a leaf readability and command-order check, not a convergence controller.
@@ -213,6 +223,12 @@ Use PowerShell 7 on Windows:
 pwsh.exe -NoLogo -NoProfile -Command "& { node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install }"
 ```
 
+Run the command portability gate before semantic review and after command-text changes:
+
+```powershell
+pwsh.exe -NoLogo -NoProfile -Command "& { node <skill-dir>/scripts/check-contract-command-portability.js --target <path> --shell pwsh --json }"
+```
+
 Run the project encoding gate before and after Markdown/skill edits when available:
 
 ```powershell
@@ -226,6 +242,7 @@ Report:
 - Generated contract path.
 - Source path or conversation-derived source summary.
 - docs-review dependency status.
+- Command portability gate result.
 - Audit epoch count, reviewed target hash, required perspective receipts, and selective carry-forward decisions.
 - Result of the single final docs-review.
 - Encoding gate result.

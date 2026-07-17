@@ -11,7 +11,7 @@ import {
   readJson,
   removeTempRoot,
   runAuthoring,
-  writeMinimalConsumerRequirement,
+  writeLintReadyMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
 describe('requirements contract checkpoint progress consistency', () => {
@@ -21,7 +21,7 @@ describe('requirements contract checkpoint progress consistency', () => {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'checkpoint-progress-consistency'
       );
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-progress-consistency.md',
         descriptor

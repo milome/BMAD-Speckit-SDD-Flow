@@ -177,6 +177,10 @@ import {
   requiredCommandIdsFromModelPacket,
   validateModelPacketCommandExecutionReceipts,
 } from './requirements-contract-command-execution-receipt';
+import {
+  resolveCurrentDispatchPointer,
+  type CurrentDispatchPointerExpectedIdentity,
+} from './requirements-contract-current-dispatch-pointer';
 import { runNativeGoalInvocation as runNativeGoalInvocationUntyped } from '../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker';
 
 const requireCommonJs = createRequire(__filename);
@@ -2540,6 +2544,24 @@ function sourceTextDeclaresRequirementsContractSourcePrd(sourceText: string): bo
     /\bsourceKind\s*:\s*requirements_contract_source_prd\b/iu.test(sourceText) ||
     /\bauthoritativeImplementationSource\s*:\s*true\b/iu.test(sourceText)
   );
+}
+
+export function resolveCurrentCompiledPromptRefFromDispatchPointer(input: {
+  pointerPath: string;
+  expected: CurrentDispatchPointerExpectedIdentity;
+}): CompiledPromptRef {
+  const { pointer } = resolveCurrentDispatchPointer(input);
+  return {
+    modelPacketPath: pointer.modelPacketRef.path,
+    modelPacketHash: pointer.modelPacketRef.hash,
+    humanPromptPath: pointer.humanPromptRef.path,
+    humanPromptHash: pointer.humanPromptRef.hash,
+    auditReceiptPath: pointer.auditReceiptRef.path,
+    auditReceiptHash: pointer.auditReceiptRef.hash,
+    goalExecutionPath: pointer.goalExecutionRef.path,
+    goalExecutionHash: pointer.goalExecutionRef.hash,
+    sourceDocumentHash: pointer.sourceDocumentHash,
+  };
 }
 
 function shouldRunSourcePrdInstanceLint(input: {

@@ -25,7 +25,10 @@ The Main Agent owns the full control loop. Subagents provide read-only findings 
 - Main Agent computes the changed semantic slices and revalidates only perspectives selected by the Selective Revalidation Matrix.
 - Main Agent allows at most two audit epochs in one convergence cycle: one initial epoch and one repair epoch.
 - Main Agent uses one wait deadline of `180000` milliseconds. If a required reviewer misses the deadline, the Main Agent performs that perspective locally against the same target hash instead of waiting again.
-- Main Agent halts when a required user decision is unresolved, repository evidence contradicts the requested contract, the second epoch still has Blocker or Major issues, or all required latest-hash receipts pass.
+- After any required reviewer times out once, keep that perspective local for the remainder of the convergence run; do not redispatch it in later epochs or internal cycles.
+- Existing user authorization remains valid across internal convergence cycles until convergence succeeds or a real user decision, destructive approval, missing capability, credential requirement, or directly conflicting user change blocks progress.
+- A two-epoch cycle boundary is internal bookkeeping, not a user-facing stop condition. If deterministic repairs remain after epoch 2, close the cycle and immediately start the next internal cycle under the existing authorization.
+- Main Agent halts only when a required user decision is unresolved, repository evidence contradicts the requested contract, an external capability is unavailable, a directly conflicting user change appears, or all required latest-hash receipts pass.
 - Main Agent performs the final verification commands, checks encoding integrity when text files changed, and writes the final response with round count, fixed issues, unresolved risks, and evidence.
 
 ## Audit Snapshot Barrier
@@ -115,7 +118,7 @@ Primary question: does the contract point to the right files and enforce the rig
 1. Identify the review target: files, diff, pasted content, or PR.
 2. Determine whether the user asked for `review only` or `review and fix`.
 3. If key context is missing and cannot be found by scanning the repository, ask one focused question before starting.
-4. Run deterministic structure, placeholder, identifier, reference, and hash checks before model review.
+4. Run deterministic structure, placeholder, identifier, reference, hash, and applicable command-portability checks before model review.
 5. Freeze epoch 1 and dispatch the required perspectives in parallel against one `targetHash`.
 6. Wait once for at most `180000` milliseconds; perform any timed-out required perspective locally against the frozen target.
 7. Merge and deduplicate findings, then close epoch 1.
@@ -124,9 +127,9 @@ Primary question: does the contract point to the right files and enforce the rig
 10. Compute changed semantic slices and select invalidated perspectives with the Selective Revalidation Matrix.
 11. If no perspective is invalidated, rerun deterministic checks and continue to final docs-review.
 12. Otherwise freeze epoch 2 and run only invalidated perspectives against the new hash.
-13. Stop with `review_convergence_blocked` when epoch 2 still has any Blocker or Major issue.
+13. If epoch 2 still has a deterministically repairable Blocker or Major issue, close the current internal cycle, batch all known occurrences into one repair, and start the next internal cycle without asking the user to continue.
 14. Run a single final docs-review as a leaf readability and command-order check.
-15. If docs-review changes governed semantics, start a new user-authorized convergence cycle; otherwise rerun deterministic checks and finish.
+15. If docs-review changes governed semantics, commands, authority, scope, acceptance, or modification paths, start the next internal convergence cycle under the existing user authorization; ask the user only when the finding requires a real decision or approval. Otherwise rerun deterministic checks and finish.
 
 ## Selective Revalidation Matrix
 
@@ -209,10 +212,10 @@ Stop successfully when deterministic checks pass, every required perspective has
 
 Stop with residual risks when:
 
-- Two audit epochs have completed and material issues remain.
 - A required user decision is still unresolved.
 - Repository evidence contradicts the requested contract and cannot be reconciled safely.
 - The target document is missing required context and the context cannot be inferred.
 - An audit target changes while frozen and the replacement hash cannot be established.
+- The same material blocker persists across three internal cycles without a deterministic repair and cannot progress without user input or an external-state change.
 
 In the final response, report epoch IDs, latest target hash, required and carried-forward perspectives, timeout takeovers, issues fixed, the single final docs-review result, unresolved risks, and verification evidence.

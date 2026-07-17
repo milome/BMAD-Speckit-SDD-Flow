@@ -44,6 +44,13 @@ function loadRenderer() {
   ]));
 }
 
+function loadCommandPortabilityChecker() {
+  return require(firstExistingPath([
+    path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'check-contract-command-portability.js'),
+    path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', 'scripts', 'check-contract-command-portability.js'),
+  ]));
+}
+
 function failurePayload(failureClass, error, extra = {}) {
   const payload = {
     ok: false,
@@ -106,6 +113,23 @@ function generate(args) {
     },
     generationMode: 'source_plan_strict',
   });
+  const { auditCommandPortability } = loadCommandPortabilityChecker();
+  const commandPortabilityAudit = auditCommandPortability({
+    content: rendered.document,
+    targetPath: resolvedOut,
+    shell: 'pwsh',
+  });
+  if (commandPortabilityAudit.status !== 'PASS') {
+    throw Object.assign(
+      new Error(
+        `generated goal contract contains ${commandPortabilityAudit.issueCount} non-portable command occurrence(s)`
+      ),
+      {
+        failureClass: 'command_portability_failed',
+        commandPortabilityAudit,
+      }
+    );
+  }
   const writeReceipt = safeWriteText(resolvedOut, rendered.document, { mode: fs.existsSync(resolvedOut) ? 'replace' : 'create' });
   const goalContractHash = sha256File(resolvedOut);
   const coverageReceipt = {
@@ -137,6 +161,7 @@ function generate(args) {
     rendererAudit: rendered.audit,
     coverageAudit: { decision: 'pass', unmappedSourceObligations: [] },
     implementationProofAudit,
+    commandPortabilityAudit,
     writeReceipt,
   };
   writeGenerationReceipt(generationReceiptPath, generationReceipt);
@@ -168,6 +193,9 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
     const payload = failurePayload(failureClass, error, {
       ...(error.coverageAudit ? { coverageAudit: error.coverageAudit } : {}),
       ...(error.implementationProofAudit ? { implementationProofAudit: error.implementationProofAudit } : {}),
+      ...(error.commandPortabilityAudit
+        ? { commandPortabilityAudit: error.commandPortabilityAudit }
+        : {}),
     });
     if (json) emitJson(payload);
     else console.error(payload.message);

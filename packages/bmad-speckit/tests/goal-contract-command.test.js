@@ -163,4 +163,41 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.ok, false);
     assert.equal(payload.failureClass, 'source_plan_missing');
   });
+
+  it('fails closed before writing a contract with non-portable PowerShell Git revisions', () => {
+    const root = tempRoot();
+    const sourcePath = path.join(root, 'non-portable-command-plan.md');
+    const out = path.join(root, 'goal-execution-plan.md');
+    fs.writeFileSync(
+      sourcePath,
+      [
+        '# Non-Portable Command Plan',
+        '',
+        '## File Map',
+        '',
+        '- Modify `packages/bmad-speckit/src/commands/goal-contract.ts`.',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task 1: Capture the tree hash',
+        '',
+        '- MUST capture the current Git tree hash.',
+        '',
+        '```powershell',
+        'git rev-parse HEAD^{tree}',
+        '```',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runCli(['generate', '--source', sourcePath, '--out', out, '--json']);
+
+    assert.notEqual(result.status, 0);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ok, false);
+    assert.equal(payload.failureClass, 'command_portability_failed');
+    assert.equal(payload.commandPortabilityAudit.status, 'FAIL');
+    assert.ok(payload.commandPortabilityAudit.issueCount >= 1);
+    assert.equal(fs.existsSync(out), false);
+  });
 });

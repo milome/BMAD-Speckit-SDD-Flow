@@ -279,6 +279,7 @@ const runtimeAssetDirectories = [
   '_bmad/runtime/hooks',
   '_bmad/shared/contract-execution-manifest',
   '_bmad/shared/critical-auditor-profile',
+  '_bmad/shared/goal-contract',
   '_bmad/skills/requirements-contract-authoring',
   '_bmad/core/agents/code-reviewer',
   '_bmad/core/skills/bmad-party-mode',
