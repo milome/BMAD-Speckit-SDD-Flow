@@ -146,9 +146,9 @@ export function createTerminalCloseoutFixture() {
   const targetDefinitions = [
     {
       order: 1,
-      artifactRole: 'AMEND05-SAFE-WRITE-MANIFEST',
-      targetPath: `${TERMINAL_BASE}/amend05-safe-write-receipt-manifest.json`,
-      receiptPath: `${TERMINAL_BASE}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+      artifactRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
+      targetPath: `${TERMINAL_BASE}/safe-write-receipt-manifest.json`,
+      receiptPath: `${TERMINAL_BASE}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
       predecessorRole: 'not_applicable',
     },
     {
@@ -156,7 +156,7 @@ export function createTerminalCloseoutFixture() {
       artifactRole: 'EVD-15',
       targetPath: `${TERMINAL_BASE}/G15-final-gates.json`,
       receiptPath: `${TERMINAL_BASE}/finalization-receipts/G15-final-gates.receipt.json`,
-      predecessorRole: 'AMEND05-SAFE-WRITE-MANIFEST',
+      predecessorRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
     },
     {
       order: 3,

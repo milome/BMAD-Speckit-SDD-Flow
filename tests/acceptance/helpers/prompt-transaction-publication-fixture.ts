@@ -208,7 +208,7 @@ implementationConfirmation:
     semanticGapPolicy:
       semanticGapAction: reconfirm_required
       nonSemanticGapAction: repair_and_rerun
-    amend05Bindings:
+    safeWriteBindings:
       safeWriteTargetRefs:
         - ${commandAuthority.artifactRefs[0]}
         - ${commandAuthority.targetPathRefs[0]}

@@ -147,7 +147,7 @@ export function compiledPromptRunnerFor(
         finalGateMatrix: manifestProjection.finalGateMatrix,
         executionLoopProtocol: manifestProjection.executionLoopProtocol,
         semanticGapPolicy: manifestProjection.semanticGapPolicy,
-        amend05Bindings: manifestProjection.amend05Bindings,
+        safeWriteBindings: manifestProjection.safeWriteBindings,
       },
       ...options.extraPacket,
     };
