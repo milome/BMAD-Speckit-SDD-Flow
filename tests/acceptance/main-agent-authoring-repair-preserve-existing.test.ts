@@ -16,8 +16,9 @@ import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   mainMainAgentOrchestration,
-  runMainAgentAuthoringRepair,
+  runMainAgentAuthoringRepair as runMainAgentAuthoringRepairRaw,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { criticalAuditorIndependentProviderRunHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
 
 const requireForTest = createRequire(import.meta.url);
 const SKILL_SCRIPTS = path.join(
@@ -32,6 +33,46 @@ const {
   implementationConfirmationHashFor: implementationConfirmationHashForContract,
   sourceDocumentHashFor: sourceDocumentHashForContract,
 } = requireForTest(path.join(SKILL_SCRIPTS, 'pre_render_definition_drilldown_lib.js'));
+const authoringRepairAttemptIds = new Map<string, string>();
+
+function ensureCriticalAuditorProviderConfig(root: string): void {
+  const target = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  if (existsSync(target)) return;
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(
+    target,
+    readFileSync(path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'), 'utf8'),
+    'utf8'
+  );
+}
+
+function authoringRepairAttemptId(
+  root: string,
+  recordId = '',
+  requirementSetId = ''
+): string {
+  const attemptKey = [path.resolve(root), recordId, requirementSetId].join('|');
+  let implementationAttemptId = authoringRepairAttemptIds.get(attemptKey);
+  if (!implementationAttemptId) {
+    implementationAttemptId = `implementation-attempt-${crypto.randomUUID()}`;
+    authoringRepairAttemptIds.set(attemptKey, implementationAttemptId);
+  }
+  return implementationAttemptId;
+}
+
+function runMainAgentAuthoringRepair(
+  root: string,
+  options: Parameters<typeof runMainAgentAuthoringRepairRaw>[1]
+): ReturnType<typeof runMainAgentAuthoringRepairRaw> {
+  ensureCriticalAuditorProviderConfig(root);
+  const implementationAttemptId =
+    options.implementationAttemptId ??
+    authoringRepairAttemptId(root, options.recordId, options.requirementSetId);
+  return runMainAgentAuthoringRepairRaw(root, {
+    ...options,
+    implementationAttemptId,
+  });
+}
 
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
@@ -672,6 +713,82 @@ function checkedProjectionQualityRuleCodesForRequest(request: any): string[] {
   );
 }
 
+function withIndependentProviderEvidence(
+  request: Record<string, any>,
+  response: Record<string, unknown>
+): Record<string, unknown> {
+  const binding = request.independentProviderBinding;
+  if (!binding || typeof binding !== 'object' || Array.isArray(binding)) {
+    throw new Error('critical auditor request does not contain independentProviderBinding');
+  }
+  const evidenceWithoutRunHash = Object.fromEntries(
+    Object.entries({
+      ...binding,
+      transactionId: request.transactionId,
+      auditAttemptId: request.auditAttemptId,
+      providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
+      requestHash: request.requestHash,
+      responseHash: sha256Text(JSON.stringify(response)),
+      sourceDocumentHash: request.sourceDocumentHash,
+      semanticModelHash: request.semanticModelHash,
+      projectionSetHash: request.projectionSetHash,
+    }).filter(([, value]) => value !== undefined)
+  );
+  return {
+    ...response,
+    independentProviderEvidence: {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
+  };
+}
+
+function criticalAuditorResponseIdentity(request: Record<string, any>): Record<string, unknown> {
+  return {
+    requestHash: request.requestHash,
+    recordId: request.recordId,
+    roundIndex: request.roundIndex,
+    transactionId: request.transactionId,
+    auditAttemptId: request.auditAttemptId,
+    namespaceVersion: request.namespaceVersion,
+    sourceHash: request.sourceHash,
+    sourceDocumentHash: request.sourceDocumentHash,
+    semanticModelHash: request.semanticModelHash,
+    implementationConfirmationHash: request.implementationConfirmationHash,
+    packetHash: request.packetHash,
+    projectionSetHash: request.projectionSetHash,
+  };
+}
+
+function nextNumericId(existingIds: unknown[], prefix: string, offset = 1): string {
+  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const pattern = new RegExp(`^${escapedPrefix}-([0-9]{3})$`, 'u');
+  const highest = existingIds.reduce((max, value) => {
+    const match = String(value ?? '')
+      .trim()
+      .toUpperCase()
+      .match(pattern);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `${prefix}-${String(highest + offset).padStart(3, '0')}`;
+}
+
+function canonicalMustRefs(request: Record<string, any>): string[] {
+  return (request.mustRefs ?? []).map((value: unknown) => {
+    const id = String(value ?? '')
+      .trim()
+      .toUpperCase();
+    const legacy = id.match(/^MUST-([0-9]{3})$/u);
+    return legacy ? `MUST-FR-${legacy[1]}` : id;
+  });
+}
+
+function firstRequestMustRef(request: Record<string, any>): string {
+  const mustRef = String(request.mustRefs?.[0] ?? '').trim();
+  if (!mustRef) throw new Error('critical auditor request must expose at least one mustRef');
+  return mustRef;
+}
+
 function writeNoNewGapResponse(
   requestPath: string,
   responsePath: string,
@@ -683,12 +800,7 @@ function writeNoNewGapResponse(
   const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
-    requestHash: request.requestHash,
-    recordId: request.recordId,
-    roundIndex: request.roundIndex,
-    sourceDocumentHash: request.sourceDocumentHash,
-    implementationConfirmationHash: request.implementationConfirmationHash,
-    packetHash: request.packetHash,
+    ...criticalAuditorResponseIdentity(request),
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
@@ -710,7 +822,8 @@ function writeNoNewGapResponse(
     rationale: `Round ${request.roundIndex} found no new valid gap.`,
     ...overrides,
   };
-  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  const response = withIndependentProviderEvidence(request, body);
+  writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
 
@@ -723,14 +836,11 @@ function writeNewValidGapResponse(
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
   const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
+  const sourceMustRef = firstRequestMustRef(request);
+  const repairMustId = nextNumericId(canonicalMustRefs(request), 'MUST-FR');
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
-    requestHash: request.requestHash,
-    recordId: request.recordId,
-    roundIndex: request.roundIndex,
-    sourceDocumentHash: request.sourceDocumentHash,
-    implementationConfirmationHash: request.implementationConfirmationHash,
-    packetHash: request.packetHash,
+    ...criticalAuditorResponseIdentity(request),
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
@@ -758,12 +868,12 @@ function writeNewValidGapResponse(
             sourceText: 'Add source-bound missing requirement.',
             targetField: 'implementationConfirmation.must',
             newValue: {
-              id: 'MUST-REPAIR-001',
+              id: repairMustId,
               text: 'Add source-bound missing requirement.',
             },
             reason: 'Critical Auditor found an omitted requirement.',
-            mustRefs: request.mustRefs?.length ? [request.mustRefs[0]] : ['MUST-001'],
-            requirementIds: ['REQ-REPAIR-001'],
+            mustRefs: [sourceMustRef],
+            requirementIds: [repairMustId],
           },
         ],
       },
@@ -772,7 +882,8 @@ function writeNewValidGapResponse(
     rationale: `Round ${request.roundIndex} found a valid repairable gap.`,
     ...overrides,
   };
-  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  const response = withIndependentProviderEvidence(request, body);
+  writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
 
@@ -787,12 +898,7 @@ function writeBlockedResponse(
   const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
-    requestHash: request.requestHash,
-    recordId: request.recordId,
-    roundIndex: request.roundIndex,
-    sourceDocumentHash: request.sourceDocumentHash,
-    implementationConfirmationHash: request.implementationConfirmationHash,
-    packetHash: request.packetHash,
+    ...criticalAuditorResponseIdentity(request),
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
@@ -818,7 +924,8 @@ function writeBlockedResponse(
     rationale: `Round ${request.roundIndex} blocked on non-semantic audit dependency.`,
     ...overrides,
   };
-  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  const response = withIndependentProviderEvidence(request, body);
+  writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
 
@@ -833,12 +940,7 @@ function writeInsufficientAuditResponse(
   const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
-    requestHash: request.requestHash,
-    recordId: request.recordId,
-    roundIndex: request.roundIndex,
-    sourceDocumentHash: request.sourceDocumentHash,
-    implementationConfirmationHash: request.implementationConfirmationHash,
-    packetHash: request.packetHash,
+    ...criticalAuditorResponseIdentity(request),
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
@@ -863,12 +965,16 @@ function writeInsufficientAuditResponse(
     rationale: `Round ${request.roundIndex} did not provide enough audit evidence.`,
     ...overrides,
   };
-  writeFileSync(responsePath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  const response = withIndependentProviderEvidence(request, body);
+  writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
 
 function writeSingleMustRepairResponse(requestPath: string, responsePath: string) {
-  return writeNewValidGapResponse(requestPath, responsePath, {
+  const request = readJson(requestPath);
+  const sourceMustRef = firstRequestMustRef(request);
+  const mustId = nextNumericId(canonicalMustRefs(request), 'MUST-FR');
+  writeNewValidGapResponse(requestPath, responsePath, {
     validatedGaps: [
       {
         id: 'VALID-GAP-SINGLE-MUST',
@@ -881,17 +987,18 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
             sourceText: 'Repair must rebuild the packet.',
             targetField: 'implementationConfirmation.must',
             newValue: {
-              id: 'MUST-REBUILT-001',
+              id: mustId,
               text: 'Repair must rebuild the packet.',
             },
             reason: 'Validated gap requires packet rebuild.',
-            mustRefs: ['MUST-001'],
-            requirementIds: ['REQ-REBUILT-001'],
+            mustRefs: [sourceMustRef],
+            requirementIds: [mustId],
           },
         ],
       },
     ],
   });
+  return { responsePath, mustId };
 }
 
 describe('main-agent authoring-repair preserve-existing lane', () => {
@@ -1836,6 +1943,49 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         mode: 'preserve-existing',
       });
       const request = readJson(paths.request(1));
+      const existingConfirmation = readInlineConfirmation(source);
+      const repairIds = {
+        must: [
+          nextNumericId(canonicalMustRefs(request), 'MUST-FR'),
+          nextNumericId(canonicalMustRefs(request), 'MUST-FR', 2),
+        ],
+        negative: nextNumericId(
+          existingConfirmation.notDone.map((row: any) => row.id),
+          'NEG'
+        ),
+        outOfScope: nextNumericId(
+          existingConfirmation.mustNot.map((row: any) => row.id),
+          'OUT'
+        ),
+        evidence: nextNumericId(
+          existingConfirmation.evidence.map((row: any) => row.id),
+          'EVD'
+        ),
+        trace: nextNumericId(
+          existingConfirmation.traceRows.map((row: any) => row.id),
+          'TRACE'
+        ),
+        acceptance: nextNumericId(
+          existingConfirmation.acceptanceTests.map((row: any) => row.id),
+          'ACC'
+        ),
+        e2e: nextNumericId(
+          existingConfirmation.e2eSuites.map((row: any) => row.id),
+          'E2E'
+        ),
+        businessView: nextNumericId(
+          (existingConfirmation.businessViews ?? []).map((row: any) => row.id),
+          'BUSINESS-VIEW'
+        ),
+        target: nextNumericId(
+          existingConfirmation.targetModificationPaths.map((row: any) => row.id),
+          'TARGET-MOD'
+        ),
+        command: nextNumericId(
+          existingConfirmation.requiredCommands.map((row: any) => row.id),
+          'CMD'
+        ),
+      };
       const actionBase = {
         sourceSpan: { startLine: 10, endLine: 11 },
         sourceText: 'Materialize every semantic field from a Critical Auditor gap.',
@@ -1853,63 +2003,69 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 actionId: 'REPAIR-ADD-MUST',
                 type: 'add_must',
                 targetField: 'implementationConfirmation.must',
-                newValue: { id: 'MUST-REPAIR-001', text: 'Repair adds a business MUST.' },
+                newValue: { id: repairIds.must[0], text: 'Repair adds a business MUST.' },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-SPLIT-MUST',
                 type: 'split_must',
                 targetField: 'implementationConfirmation.must',
-                newValue: { id: 'MUST-REPAIR-002', text: 'Repair splits a broad MUST.' },
+                newValue: { id: repairIds.must[1], text: 'Repair splits a broad MUST.' },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-NEG',
                 type: 'add_neg',
                 targetField: 'implementationConfirmation.negativeRequirements',
-                newValue: { id: 'NEG-REPAIR-001', text: 'Repair adds a negative requirement.' },
+                newValue: { id: repairIds.negative, text: 'Repair adds a negative requirement.' },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-OUT',
                 type: 'add_out',
                 targetField: 'implementationConfirmation.outOfScope',
-                newValue: { id: 'OUT-REPAIR-001', text: 'Repair adds an out-of-scope boundary.' },
+                newValue: {
+                  id: repairIds.outOfScope,
+                  text: 'Repair adds an out-of-scope boundary.',
+                },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-EVD',
                 type: 'add_evidence',
                 targetField: 'implementationConfirmation.evidence',
-                newValue: { id: 'EVD-REPAIR-001', text: 'Repair adds evidence.' },
+                newValue: { id: repairIds.evidence, text: 'Repair adds evidence.' },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-TRACE',
                 type: 'add_trace',
                 targetField: 'implementationConfirmation.traceRows',
-                newValue: { id: 'TRACE-REPAIR-001', covers: ['MUST-REPAIR-001'] },
+                newValue: { id: repairIds.trace, covers: [repairIds.must[0]] },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-ACC',
                 type: 'add_acc',
                 targetField: 'implementationConfirmation.acceptanceCriteria',
-                newValue: { id: 'ACC-REPAIR-001', file: 'tests/acceptance/repair.test.ts' },
+                newValue: {
+                  id: repairIds.acceptance,
+                  file: 'tests/acceptance/repair.test.ts',
+                },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-E2E',
                 type: 'add_e2e',
                 targetField: 'implementationConfirmation.e2eScenarios',
-                newValue: { id: 'E2E-REPAIR-001', file: 'tests/e2e/repair.e2e.ts' },
+                newValue: { id: repairIds.e2e, file: 'tests/e2e/repair.e2e.ts' },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-BUSINESS',
                 type: 'add_business_view',
                 targetField: 'implementationConfirmation.businessViews',
-                newValue: { id: 'BUSINESS-VIEW-REPAIR-001', title: 'Repair business view' },
+                newValue: { id: repairIds.businessView, title: 'Repair business view' },
                 ...actionBase,
               },
               {
@@ -1917,7 +2073,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 type: 'replace_target_path',
                 targetField: 'implementationConfirmation.targetModificationPaths',
                 newValue: {
-                  id: 'TARGET-MOD-REPAIR-001',
+                  id: repairIds.target,
                   path: 'src/repair-target.ts',
                   coverageRole: 'modify',
                 },
@@ -1928,7 +2084,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 type: 'replace_validation_command',
                 targetField: 'implementationConfirmation.requiredCommands',
                 newValue: {
-                  id: 'CMD-REPAIR-001',
+                  id: repairIds.command,
                   command: 'npm run repair:test',
                   targetFiles: ['src/repair-target.ts'],
                 },
@@ -1958,22 +2114,26 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       });
       const confirmation = readInlineConfirmation(source);
       expect(confirmation.must.map((row: any) => row.id)).toEqual(
-        expect.arrayContaining(['MUST-REPAIR-001', 'MUST-REPAIR-002'])
+        expect.arrayContaining(repairIds.must)
       );
-      expect(confirmation.notDone.map((row: any) => row.id)).toContain('NEG-REPAIR-001');
+      expect(confirmation.notDone.map((row: any) => row.id)).toContain(repairIds.negative);
       expect(confirmation.negativeRequirements.map((row: any) => row.id)).toContain(
-        'NEG-REPAIR-001'
+        repairIds.negative
       );
-      expect(confirmation.mustNot.map((row: any) => row.id)).toContain('OUT-REPAIR-001');
-      expect(confirmation.outOfScope.map((row: any) => row.id)).toContain('OUT-REPAIR-001');
-      expect(confirmation.evidence.map((row: any) => row.id)).toContain('EVD-REPAIR-001');
-      expect(confirmation.traceRows.map((row: any) => row.id)).toContain('TRACE-REPAIR-001');
-      expect(confirmation.acceptanceTests.map((row: any) => row.id)).toContain('ACC-REPAIR-001');
-      expect(confirmation.acceptanceCriteria.map((row: any) => row.id)).toContain('ACC-REPAIR-001');
-      expect(confirmation.e2eSuites.map((row: any) => row.id)).toContain('E2E-REPAIR-001');
-      expect(confirmation.e2eScenarios.map((row: any) => row.id)).toContain('E2E-REPAIR-001');
+      expect(confirmation.mustNot.map((row: any) => row.id)).toContain(repairIds.outOfScope);
+      expect(confirmation.outOfScope.map((row: any) => row.id)).toContain(repairIds.outOfScope);
+      expect(confirmation.evidence.map((row: any) => row.id)).toContain(repairIds.evidence);
+      expect(confirmation.traceRows.map((row: any) => row.id)).toContain(repairIds.trace);
+      expect(confirmation.acceptanceTests.map((row: any) => row.id)).toContain(
+        repairIds.acceptance
+      );
+      expect(confirmation.acceptanceCriteria.map((row: any) => row.id)).toContain(
+        repairIds.acceptance
+      );
+      expect(confirmation.e2eSuites.map((row: any) => row.id)).toContain(repairIds.e2e);
+      expect(confirmation.e2eScenarios.map((row: any) => row.id)).toContain(repairIds.e2e);
       expect(confirmation.businessViews.map((row: any) => row.id)).toContain(
-        'BUSINESS-VIEW-REPAIR-001'
+        repairIds.businessView
       );
       expect(confirmation.targetModificationPaths.map((row: any) => row.path)).toContain(
         'src/repair-target.ts'
@@ -2043,7 +2203,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         mode: 'preserve-existing',
       });
       expect(initial.blockingStage).toBe('critical_auditor_round_required');
-      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
+      const repair = writeSingleMustRepairResponse(paths.request(1), paths.response(1));
 
       const repaired = runMainAgentAuthoringRepair(root, {
         source,
@@ -2061,7 +2221,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       });
       const confirmation = readInlineConfirmation(source);
       expect(confirmation.status).toBe('reconfirm_required');
-      expect(confirmation.must.map((row: any) => row.id)).toContain('MUST-REBUILT-001');
+      expect(confirmation.must.map((row: any) => row.id)).toContain(repair.mustId);
       expect(confirmation.reconfirmationRequest).toMatchObject({
         required: true,
         reasonCode: 'controlled_authoring_repair_changed_confirmed_scope',
@@ -2603,6 +2763,52 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
       const source = writeRichSource(root, recordId);
       const confirmation = readInlineConfirmation(source);
+      const primaryMustRef = String(confirmation.must[0].id);
+      const secondaryMustRef = nextNumericId(
+        confirmation.must.map((row: any) => row.id),
+        primaryMustRef.replace(/-[0-9]{3}$/u, '')
+      );
+      const primaryNegRef = String(confirmation.notDone[0].id);
+      const secondaryNegRef = nextNumericId(
+        confirmation.notDone.map((row: any) => row.id),
+        primaryNegRef.replace(/-[0-9]{3}$/u, '')
+      );
+      const primaryTraceRef = String(confirmation.traceRows[0].id);
+      const secondaryTraceRef = nextNumericId(
+        confirmation.traceRows.map((row: any) => row.id),
+        primaryTraceRef.replace(/-[0-9]{3}$/u, '')
+      );
+      const primaryEvidenceRef = String(confirmation.traceRows[0].evidenceRefs[0]);
+      const primaryCommandRef = String(
+        confirmation.traceRows[0].contractValidationCommandRefs[0]
+      );
+      const secondaryCommandRef = nextNumericId(
+        confirmation.requiredCommands.map((row: any) => row.id),
+        primaryCommandRef.replace(/-[0-9]{3}$/u, '')
+      );
+      const primaryAcceptanceRef = String(confirmation.traceRows[0].acceptanceRefs[0]);
+      const primaryArtifactRef = String(confirmation.traceRows[0].artifactRefs[0]);
+      const primaryFailurePathRef = String(confirmation.failurePaths[0].id);
+      const ordinalFor = (ref: string) => {
+        const match = ref.match(/([0-9]{3})$/u);
+        if (!match) throw new Error(`numeric identity suffix missing: ${ref}`);
+        return match[1];
+      };
+      const primaryAtomicTaskRef = `TASK-${ordinalFor(primaryMustRef)}-001`;
+      const secondaryAtomicTaskRef = `TASK-${ordinalFor(secondaryMustRef)}-001`;
+      const primaryDecompositionRef = `MDM-${ordinalFor(primaryMustRef)}`;
+      const secondaryDecompositionRef = `MDM-${ordinalFor(secondaryMustRef)}`;
+      const primaryNegTraceRef = `TRACE-${primaryNegRef}`;
+      const secondaryNegTraceRef = `TRACE-${secondaryNegRef}`;
+      const primaryNegAcceptanceRef = `ACC-${primaryNegRef}`;
+      const secondaryNegAcceptanceRef = `ACC-${secondaryNegRef}`;
+      const secondaryFailurePathRef = `FAIL-${secondaryNegRef}`;
+      const secondaryEdgeCaseRef = `EDGE-${secondaryMustRef}`;
+      const secondaryTargetModificationRef = `TARGET-MOD-${ordinalFor(secondaryMustRef)}-SCOPE`;
+      const generatedPrimaryTaskPattern = new RegExp(
+        `^${primaryAtomicTaskRef.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}-A[0-9A-F]{12}$`,
+        'u'
+      );
       const packetHash = fixedHash('a');
       const owned = (mustRef: string) => ({
         derivedFromMustRef: mustRef,
@@ -2634,38 +2840,38 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           text: 'Queue overflow preserves independent recovery, rejection, handoff, and tick isolation outcomes.',
         },
         {
-          id: 'MUST-002',
+          id: secondaryMustRef,
           text: 'DataService metadata failure returns metadata_unavailable without creating MainTrading quote context.',
-          evidenceRefs: ['EVD-001'],
-          coveredByTraceRows: ['TRACE-002'],
-          ...owned('MUST-002'),
+          evidenceRefs: [primaryEvidenceRef],
+          coveredByTraceRows: [secondaryTraceRef],
+          ...owned(secondaryMustRef),
         },
       ];
       confirmation.notDone = [
         confirmation.notDone[0],
         {
-          id: 'NEG-002',
+          id: secondaryNegRef,
           text: 'Telemetry exporter success must not control product hot-path safety.',
-          evidenceRefs: ['EVD-001'],
+          evidenceRefs: [primaryEvidenceRef],
           whyItBlocksCompletion: 'Exporter coupling would block product hot paths.',
           negativeAssertionRequired: true,
-          coveredByTraceRows: ['TRACE-NEG-002'],
+          coveredByTraceRows: [secondaryNegTraceRef],
           coveredByFailurePath: [],
         },
       ];
       confirmation.atomicImplementationTaskList = [
         {
-          id: 'TASK-001-001',
-          text: `Implement and prove MUST-001 atomic behavior 1: ${compoundOracle}`,
+          id: primaryAtomicTaskRef,
+          text: `Implement and prove ${primaryMustRef} atomic behavior 1: ${compoundOracle}`,
           targetFiles: originalTargets,
-          traceRows: ['TRACE-001'],
-          evidenceRefs: ['EVD-001'],
+          traceRows: [primaryTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
           primaryObservableBehaviors: [compoundOracle],
           primaryAcceptanceOracles: [compoundOracle],
-          ...owned('MUST-001'),
+          ...owned(primaryMustRef),
         },
         {
-          id: 'TASK-002-001',
+          id: secondaryAtomicTaskRef,
           text: 'Implement metadata unavailable behavior.',
           targetFiles: [
             'src/metadata.ts',
@@ -2673,90 +2879,90 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
             'src/tick_databus.ts',
             'tests/metadata.test.ts',
           ],
-          traceRows: ['TRACE-002'],
-          evidenceRefs: ['EVD-001'],
+          traceRows: [secondaryTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
           primaryObservableBehaviors: ['Metadata failure returns metadata_unavailable.'],
           primaryAcceptanceOracles: ['MainTrading quote context is not created.'],
-          ...owned('MUST-002'),
+          ...owned(secondaryMustRef),
         },
       ];
       confirmation.mustExecutionDecompositionMatrix = [
         {
-          id: 'MDM-001',
-          mustRef: 'MUST-001',
-          atomicTaskRefs: ['TASK-001-001'],
-          ...owned('MUST-001'),
+          id: primaryDecompositionRef,
+          mustRef: primaryMustRef,
+          atomicTaskRefs: [primaryAtomicTaskRef],
+          ...owned(primaryMustRef),
         },
         {
-          id: 'MDM-002',
-          mustRef: 'MUST-002',
-          atomicTaskRefs: ['TASK-002-001'],
-          ...owned('MUST-002'),
+          id: secondaryDecompositionRef,
+          mustRef: secondaryMustRef,
+          atomicTaskRefs: [secondaryAtomicTaskRef],
+          ...owned(secondaryMustRef),
         },
       ];
       confirmation.traceRows = [
         {
           ...confirmation.traceRows[0],
-          covers: ['MUST-001'],
-          taskRefs: ['TASK-001-001'],
-          ...owned('MUST-001'),
+          covers: [primaryMustRef],
+          taskRefs: [primaryAtomicTaskRef],
+          ...owned(primaryMustRef),
         },
         {
-          id: 'TRACE-002',
-          covers: ['MUST-002'],
-          taskRefs: ['TASK-002-001'],
-          evidenceRefs: ['EVD-001'],
-          contractValidationCommandRefs: ['CMD-001'],
-          deliveryEvidenceCommandRefs: ['CMD-001'],
-          acceptanceRefs: ['ACC-001'],
-          artifactRefs: ['ART-001'],
+          id: secondaryTraceRef,
+          covers: [secondaryMustRef],
+          taskRefs: [secondaryAtomicTaskRef],
+          evidenceRefs: [primaryEvidenceRef],
+          contractValidationCommandRefs: [primaryCommandRef],
+          deliveryEvidenceCommandRefs: [primaryCommandRef],
+          acceptanceRefs: [primaryAcceptanceRef],
+          artifactRefs: [primaryArtifactRef],
           status: 'PENDING',
-          ...owned('MUST-002'),
+          ...owned(secondaryMustRef),
         },
         {
-          id: 'TRACE-NEG-001',
-          covers: ['NEG-001'],
-          evidenceRefs: ['EVD-001'],
-          contractValidationCommandRefs: ['CMD-001'],
-          deliveryEvidenceCommandRefs: ['CMD-001'],
-          acceptanceRefs: ['ACC-NEG-001'],
-          artifactRefs: ['ART-001'],
+          id: primaryNegTraceRef,
+          covers: [primaryNegRef],
+          evidenceRefs: [primaryEvidenceRef],
+          contractValidationCommandRefs: [primaryCommandRef],
+          deliveryEvidenceCommandRefs: [primaryCommandRef],
+          acceptanceRefs: [primaryNegAcceptanceRef],
+          artifactRefs: [primaryArtifactRef],
           status: 'PENDING',
-          ...owned('MUST-001'),
+          ...owned(primaryMustRef),
         },
         {
-          id: 'TRACE-NEG-002',
-          covers: ['NEG-002'],
-          evidenceRefs: ['EVD-001'],
-          contractValidationCommandRefs: ['CMD-001'],
-          deliveryEvidenceCommandRefs: ['CMD-001'],
-          acceptanceRefs: ['ACC-NEG-002'],
-          artifactRefs: ['ART-001'],
+          id: secondaryNegTraceRef,
+          covers: [secondaryNegRef],
+          evidenceRefs: [primaryEvidenceRef],
+          contractValidationCommandRefs: [primaryCommandRef],
+          deliveryEvidenceCommandRefs: [primaryCommandRef],
+          acceptanceRefs: [secondaryNegAcceptanceRef],
+          artifactRefs: [primaryArtifactRef],
           status: 'PENDING',
-          ...owned('MUST-001'),
+          ...owned(primaryMustRef),
         },
       ];
       confirmation.acceptanceTests = [
         confirmation.acceptanceTests[0],
         {
-          id: 'ACC-NEG-001',
+          id: primaryNegAcceptanceRef,
           file: 'tests/negative-isolation.test.ts',
-          covers: ['NEG-001'],
-          traceRows: ['TRACE-NEG-001'],
-          evidenceRefs: ['EVD-001'],
-          commandRefs: ['CMD-001'],
+          covers: [primaryNegRef],
+          traceRows: [primaryNegTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
+          commandRefs: [primaryCommandRef],
           oracle: 'Exporter failure never blocks product hot paths.',
-          ...owned('MUST-001'),
+          ...owned(primaryMustRef),
         },
         {
-          id: 'ACC-NEG-002',
+          id: secondaryNegAcceptanceRef,
           file: 'tests/exporter-isolation.test.ts',
-          covers: ['NEG-002'],
-          traceRows: ['TRACE-NEG-002'],
-          evidenceRefs: ['EVD-001'],
-          commandRefs: ['CMD-001'],
+          covers: [secondaryNegRef],
+          traceRows: [secondaryNegTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
+          commandRefs: [primaryCommandRef],
           oracle: 'Exporter failure never blocks product hot paths.',
-          ...owned('MUST-001'),
+          ...owned(primaryMustRef),
         },
       ];
       confirmation.failurePaths = [
@@ -2766,22 +2972,22 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           trigger: 'DataService metadata is unavailable.',
           expectedBehavior:
             'Return metadata_unavailable without creating MainTrading quote context.',
-          ownerMustRefs: ['MUST-001', 'MUST-002'],
-          traceRows: ['TRACE-001', 'TRACE-002'],
-          linkedEvidenceIds: ['EVD-001'],
-          ...owned('MUST-001'),
+          ownerMustRefs: [primaryMustRef, secondaryMustRef],
+          traceRows: [primaryTraceRef, secondaryTraceRef],
+          linkedEvidenceIds: [primaryEvidenceRef],
+          ...owned(primaryMustRef),
         },
         {
-          id: 'FAIL-NEG-002',
+          id: secondaryFailurePathRef,
           title: 'Telemetry exporter failure',
           trigger: 'Telemetry exporter delivery fails.',
           expectedBehavior: 'Product hot paths continue without waiting on exporter recovery.',
           forbiddenBehavior: 'Exporter state must not control product hot-path progress.',
           blocksCompletionWhenViolated: true,
-          linkedNegIds: ['NEG-002'],
-          traceRows: ['TRACE-NEG-002'],
-          acceptanceRefs: ['ACC-NEG-002'],
-          linkedEvidenceIds: ['EVD-001'],
+          linkedNegIds: [secondaryNegRef],
+          traceRows: [secondaryNegTraceRef],
+          acceptanceRefs: [secondaryNegAcceptanceRef],
+          linkedEvidenceIds: [primaryEvidenceRef],
           derivedFromPacketHash: packetHash,
           projectionStatus: 'synchronized',
         },
@@ -2789,15 +2995,15 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       confirmation.edgeCases = [
         confirmation.edgeCases[0],
         {
-          id: 'EDGE-MUST-002',
+          id: secondaryEdgeCaseRef,
           category: 'metadata_failure_boundary',
           condition: 'DataService metadata is unavailable before quote context creation.',
           expectedBehavior: 'Return metadata_unavailable without creating quote context.',
           forbiddenBehavior: 'Do not infer success from unrelated negative boundaries.',
-          linkedFailurePathIds: ['FAIL-001', 'FAIL-NEG-002'],
-          linkedNegIds: ['NEG-001', 'NEG-002'],
-          traceRows: ['TRACE-002'],
-          linkedEvidenceIds: ['EVD-001'],
+          linkedFailurePathIds: [primaryFailurePathRef, secondaryFailurePathRef],
+          linkedNegIds: [primaryNegRef, secondaryNegRef],
+          traceRows: [secondaryTraceRef],
+          linkedEvidenceIds: [primaryEvidenceRef],
           derivedFromPacketHash: packetHash,
           projectionStatus: 'synchronized',
         },
@@ -2810,30 +3016,30 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           path: targetPath,
           changeType: 'modify',
           coverageRole: 'modify',
-          requirementRefs: ['MUST-001'],
-          traceRefs: ['TRACE-001'],
-          evidenceRefs: ['EVD-001'],
-          ...owned('MUST-001'),
+          requirementRefs: [primaryMustRef],
+          traceRefs: [primaryTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
+          ...owned(primaryMustRef),
         })),
         {
           ...confirmation.targetModificationPaths[0],
-          id: 'TARGET-MOD-002-SCOPE',
+          id: secondaryTargetModificationRef,
           path: 'src/metadata.ts',
-          traceRefs: ['TRACE-002'],
-          evidenceRefs: ['EVD-001'],
-          ...owned('MUST-002'),
+          traceRefs: [secondaryTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
+          ...owned(secondaryMustRef),
         },
       ];
       confirmation.requiredCommands = [
         ...confirmation.requiredCommands,
         {
           ...confirmation.requiredCommands[0],
-          id: 'CMD-002',
+          id: secondaryCommandRef,
           command: 'npx vitest run tests/metadata.test.ts',
           targetFiles: ['tests/metadata.test.ts'],
-          traceRows: ['TRACE-002'],
-          evidenceRefs: ['EVD-001'],
-          ...owned('MUST-002'),
+          traceRows: [secondaryTraceRef],
+          evidenceRefs: [primaryEvidenceRef],
+          ...owned(secondaryMustRef),
         },
       ];
       rewriteInlineConfirmation(source, confirmation);
@@ -2849,16 +3055,16 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(result.blockingStage).toBe('critical_auditor_round_required');
       const repaired = readInlineConfirmation(source);
       const queueTasks = repaired.atomicImplementationTaskList.filter(
-        (row: any) => row.derivedFromMustRef === 'MUST-001'
+        (row: any) => row.derivedFromMustRef === primaryMustRef
       );
       expect(queueTasks).toHaveLength(5);
-      expect(queueTasks[0].id).toBe('TASK-001-001');
+      expect(queueTasks[0].id).toBe(primaryAtomicTaskRef);
       expect(queueTasks.slice(1).map((row: any) => row.id)).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
-          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
-          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
-          expect.stringMatching(/^TASK-001-001-A[0-9A-F]{12}$/u),
+          expect.stringMatching(generatedPrimaryTaskPattern),
+          expect.stringMatching(generatedPrimaryTaskPattern),
+          expect.stringMatching(generatedPrimaryTaskPattern),
+          expect.stringMatching(generatedPrimaryTaskPattern),
         ])
       );
       expect(new Set(queueTasks.map((row: any) => row.id)).size).toBe(queueTasks.length);
@@ -2902,47 +3108,59 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         [...new Set(queueTasks.flatMap((row: any) => row.targetFiles))]
       ).toEqual(expect.arrayContaining(authorityOnlyTargets));
       expect(
-        repaired.atomicImplementationTaskList.find((row: any) => row.id === 'TASK-002-001')
+        repaired.atomicImplementationTaskList.find((row: any) => row.id === secondaryAtomicTaskRef)
           .targetFiles
       ).toEqual(['src/metadata.ts', 'tests/metadata.test.ts']);
       expect(
-        repaired.mustExecutionDecompositionMatrix.find((row: any) => row.mustRef === 'MUST-001')
+        repaired.mustExecutionDecompositionMatrix.find(
+          (row: any) => row.mustRef === primaryMustRef
+        )
           .atomicTaskRefs
       ).toEqual(queueTasks.map((row: any) => row.id));
-      expect(repaired.traceRows.find((row: any) => row.id === 'TRACE-001').taskRefs).toEqual(
-        queueTasks.map((row: any) => row.id)
-      );
       expect(
-        repaired.acceptanceTests.find((row: any) => row.id === 'ACC-NEG-001').derivedFromMustRef
-      ).toBe('MUST-002');
+        repaired.traceRows.find((row: any) => row.id === primaryTraceRef).taskRefs
+      ).toEqual(queueTasks.map((row: any) => row.id));
       expect(
-        repaired.traceRows.find((row: any) => row.id === 'TRACE-NEG-001').derivedFromMustRef
-      ).toBe('MUST-002');
-      expect(repaired.acceptanceTests.find((row: any) => row.id === 'ACC-NEG-002')).toMatchObject({
-        derivedFromRequirementRef: 'NEG-002',
+        repaired.acceptanceTests.find((row: any) => row.id === primaryNegAcceptanceRef)
+          .derivedFromMustRef
+      ).toBe(secondaryMustRef);
+      expect(
+        repaired.traceRows.find((row: any) => row.id === primaryNegTraceRef).derivedFromMustRef
+      ).toBe(secondaryMustRef);
+      expect(
+        repaired.acceptanceTests.find((row: any) => row.id === secondaryNegAcceptanceRef)
+      ).toMatchObject({
+        derivedFromRequirementRef: secondaryNegRef,
       });
       expect(
-        repaired.acceptanceTests.find((row: any) => row.id === 'ACC-NEG-002').derivedFromMustRef
+        repaired.acceptanceTests.find((row: any) => row.id === secondaryNegAcceptanceRef)
+          .derivedFromMustRef
       ).toBeUndefined();
-      expect(repaired.traceRows.find((row: any) => row.id === 'TRACE-NEG-002')).toMatchObject({
-        derivedFromRequirementRef: 'NEG-002',
+      expect(
+        repaired.traceRows.find((row: any) => row.id === secondaryNegTraceRef)
+      ).toMatchObject({
+        derivedFromRequirementRef: secondaryNegRef,
       });
       expect(
-        repaired.traceRows.find((row: any) => row.id === 'TRACE-NEG-002').derivedFromMustRef
+        repaired.traceRows.find((row: any) => row.id === secondaryNegTraceRef).derivedFromMustRef
       ).toBeUndefined();
-      expect(repaired.failurePaths[0].ownerMustRefs).toEqual(['MUST-002']);
-      expect(repaired.failurePaths[0].derivedFromMustRef).toBe('MUST-002');
-      expect(repaired.failurePaths.find((row: any) => row.id === 'FAIL-NEG-002')).toMatchObject({
-        derivedFromRequirementRef: 'NEG-002',
+      expect(repaired.failurePaths[0].ownerMustRefs).toEqual([secondaryMustRef]);
+      expect(repaired.failurePaths[0].derivedFromMustRef).toBe(secondaryMustRef);
+      expect(
+        repaired.failurePaths.find((row: any) => row.id === secondaryFailurePathRef)
+      ).toMatchObject({
+        derivedFromRequirementRef: secondaryNegRef,
       });
       expect(
-        repaired.failurePaths.find((row: any) => row.id === 'FAIL-NEG-002').derivedFromMustRef
+        repaired.failurePaths.find((row: any) => row.id === secondaryFailurePathRef)
+          .derivedFromMustRef
       ).toBeUndefined();
-      expect(repaired.edgeCases.find((row: any) => row.id === 'EDGE-MUST-002')).toMatchObject({
-        derivedFromMustRef: 'MUST-002',
+      expect(repaired.edgeCases.find((row: any) => row.id === secondaryEdgeCaseRef)).toMatchObject({
+        derivedFromMustRef: secondaryMustRef,
       });
       expect(
-        repaired.edgeCases.find((row: any) => row.id === 'EDGE-MUST-002').derivedFromRequirementRef
+        repaired.edgeCases.find((row: any) => row.id === secondaryEdgeCaseRef)
+          .derivedFromRequirementRef
       ).toBeUndefined();
 
       const packet = readJson(authoringPaths(root, recordId).packet).must_decomposition_packet;
@@ -2950,28 +3168,32 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         packet.mustPackets.flatMap((mustPacket: any) =>
           mustPacket.mustAcceptanceProjection.map((row: any) => row.id)
         )
-      ).not.toContain('ACC-NEG-001');
+      ).not.toContain(primaryNegAcceptanceRef);
       expect(
         packet.mustPackets.flatMap((mustPacket: any) =>
           mustPacket.mustTraceProjection.map((row: any) => row.id)
         )
-      ).not.toContain('TRACE-NEG-001');
+      ).not.toContain(primaryNegTraceRef);
       expect(
         packet.mustPackets.flatMap((mustPacket: any) =>
           mustPacket.mustFailureEdgeProjection.map((row: any) => row.id)
         )
-      ).not.toContain('FAIL-NEG-002');
+      ).not.toContain(secondaryFailurePathRef);
       expect(
         packet.mustPackets
-          .find((mustPacket: any) => mustPacket.mustRef === 'MUST-002')
+          .find((mustPacket: any) => mustPacket.mustRef === secondaryMustRef)
           .mustFailureEdgeProjection.map((row: any) => row.id)
-      ).toContain('EDGE-MUST-002');
+      ).toContain(secondaryEdgeCaseRef);
       const reconciliation = readJson(authoringPaths(root, recordId).reconciliation);
+      const ownershipProjectionRefs = [
+        secondaryNegAcceptanceRef,
+        secondaryNegTraceRef,
+        secondaryFailurePathRef,
+        secondaryEdgeCaseRef,
+      ];
       expect(
         reconciliation.issues.filter((issue: any) =>
-          ['ACC-NEG-002', 'TRACE-NEG-002', 'FAIL-NEG-002', 'EDGE-MUST-002'].some((id) =>
-            issue.refs?.includes(id)
-          )
+          ownershipProjectionRefs.some((id) => issue.refs?.includes(id))
         )
       ).toEqual([]);
     } finally {
@@ -3356,7 +3578,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         mode: 'preserve-existing',
       });
       const originalRequest = readJson(paths.request(1));
-      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
+      const repair = writeSingleMustRepairResponse(paths.request(1), paths.response(1));
 
       const result = runMainAgentAuthoringRepair(root, {
         source,
@@ -3369,14 +3591,14 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const rebuiltPacket = readJson(paths.packet).must_decomposition_packet;
       const restartedRequest = readJson(paths.request(1));
 
-      expect(repairedConfirmation.must.map((row: any) => row.id)).toContain('MUST-REBUILT-001');
-      expect(rebuiltPacket.mustRefs).toContain('MUST-REBUILT-001');
+      expect(repairedConfirmation.must.map((row: any) => row.id)).toContain(repair.mustId);
+      expect(rebuiltPacket.mustRefs).toContain(repair.mustId);
       expect(rebuiltPacket.packetHash).not.toBe(originalRequest.packetHash);
       expect(rebuiltPacket.implementationConfirmationHash).toBe(
         result.implementationConfirmationHash
       );
       expect(restartedRequest.packetHash).toBe(rebuiltPacket.packetHash);
-      expect(restartedRequest.mustRefs).toContain('MUST-REBUILT-001');
+      expect(restartedRequest.mustRefs).toContain(repair.mustId);
       expect(restartedRequest.previousReceipts).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -3449,8 +3671,14 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const sourceBeforeGap = readFileSync(source, 'utf8');
       const promotionReceiptBeforeGap = readFileSync(paths.promotionReceipt, 'utf8');
       const requestBeforeGap = readFileSync(paths.request(1), 'utf8');
-      writeSingleMustRepairResponse(paths.request(1), paths.response(1));
-      const responseBeforeGap = readFileSync(paths.response(1), 'utf8');
+      const requestBeforeGapObject = JSON.parse(requestBeforeGap);
+      const frozenGateArtifactContents = Object.fromEntries(
+        ['reportPath', 'receiptPath', 'reconciliationReportPath'].map((field) => {
+          const artifactPath = path.resolve(root, requestBeforeGapObject.gateDryRun[field]);
+          return [artifactPath, readFileSync(artifactPath, 'utf8')];
+        })
+      );
+      const repair = writeSingleMustRepairResponse(paths.request(1), paths.response(1));
 
       const completed = runMainAgentAuthoringRepair(root, {
         source,
@@ -3463,6 +3691,14 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         artifact.includes('/archive/')
       );
       expect(archiveArtifact).toBeTruthy();
+      const archivedRequest = readFileSync(
+        path.join(root, archiveArtifact as string, path.basename(paths.request(1))),
+        'utf8'
+      );
+      const archivedResponse = readFileSync(
+        path.join(root, archiveArtifact as string, path.basename(paths.response(1))),
+        'utf8'
+      );
       const archivedReceipt = readFileSync(
         path.join(root, archiveArtifact as string, path.basename(paths.receipt(1))),
         'utf8'
@@ -3481,9 +3717,64 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       // and before the promotion helper replaces the authoritative source.
       writeFileSync(source, sourceBeforeGap, 'utf8');
       writeFileSync(paths.promotionReceipt, promotionReceiptBeforeGap, 'utf8');
-      writeFileSync(paths.request(1), requestBeforeGap, 'utf8');
-      writeFileSync(paths.response(1), responseBeforeGap, 'utf8');
+      writeFileSync(paths.request(1), archivedRequest, 'utf8');
+      writeFileSync(paths.response(1), archivedResponse, 'utf8');
       writeFileSync(paths.receipt(1), archivedReceipt, 'utf8');
+      for (const [artifactPath, contents] of Object.entries(frozenGateArtifactContents)) {
+        writeFileSync(artifactPath, contents as string, 'utf8');
+      }
+      const restoredRequest = readJson(paths.request(1));
+      const restoredResponse = readJson(paths.response(1));
+      const restoredReceipt = readJson(paths.receipt(1)).criticalAuditorReceipt;
+      const { receiptHash, ...receiptPayload } = restoredReceipt;
+      const currentSourceText = readFileSync(source, 'utf8');
+      const currentSourceExtraction = extractImplementationConfirmationForHash(currentSourceText);
+      const currentSourceDocumentHash = sourceDocumentHashForContract(
+        currentSourceText,
+        currentSourceExtraction.blockText,
+        currentSourceExtraction.confirmation
+      );
+      const currentImplementationConfirmationHash = implementationConfirmationHashForContract(
+        currentSourceExtraction.confirmation
+      );
+      const auditBindingChecks = {
+        receiptHash:
+          receiptHash === sha256Json(receiptPayload) ||
+          receiptHash ===
+            sha256Json({
+              ...receiptPayload,
+              transactionId: receiptPayload.transactionId,
+              namespaceVersion: receiptPayload.namespaceVersion,
+            }),
+        verdict:
+          restoredResponse.verdict === 'new_valid_gap' &&
+          restoredReceipt.convergenceDecision.verdict === 'new_valid_gap',
+        requestHash:
+          restoredResponse.requestHash === restoredRequest.requestHash &&
+          restoredReceipt.requestHash === restoredRequest.requestHash,
+        gateDryRunHash:
+          restoredResponse.gateDryRunHash === restoredRequest.gateDryRun.gateDryRunHash &&
+          restoredReceipt.gateDryRunHash === restoredRequest.gateDryRun.gateDryRunHash,
+        sourceDocumentHash:
+          restoredResponse.sourceDocumentHash === currentSourceDocumentHash &&
+          restoredRequest.sourceDocumentHash === currentSourceDocumentHash &&
+          restoredReceipt.sourceDocumentHash === currentSourceDocumentHash,
+        implementationConfirmationHash:
+          restoredResponse.implementationConfirmationHash ===
+            currentImplementationConfirmationHash &&
+          restoredRequest.implementationConfirmationHash ===
+            currentImplementationConfirmationHash &&
+          restoredReceipt.implementationConfirmationHash === currentImplementationConfirmationHash,
+        packetHash:
+          restoredResponse.packetHash === restoredRequest.packetHash &&
+          restoredReceipt.packetHash === restoredRequest.packetHash,
+        validatedGaps:
+          sha256Json(restoredReceipt.validatedGaps) ===
+          sha256Json(restoredResponse.validatedGaps),
+      };
+      expect(auditBindingChecks).toEqual(
+        Object.fromEntries(Object.keys(auditBindingChecks).map((key) => [key, true]))
+      );
       makeCheckpointReceiptsStale(paths);
 
       const resumed = runMainAgentAuthoringRepair(root, {
@@ -3502,7 +3793,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         consecutiveNoNewGapRounds: 0,
       });
       expect(readInlineConfirmation(source).must.map((row: any) => row.id)).toContain(
-        'MUST-REBUILT-001'
+        repair.mustId
       );
       expect(readJson(paths.request(1))).toMatchObject({
         roundIndex: 1,
@@ -3661,7 +3952,17 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         mode: 'preserve-existing',
         criticalAuditorResponse: paths.response(1),
       });
-      expect(result).toMatchObject({
+      expect(
+        result,
+        JSON.stringify(
+          result.blockingIssues.map((issue: any) => ({
+            code: issue.code,
+            refs: issue.refs,
+          })),
+          null,
+          2
+        )
+      ).toMatchObject({
         ok: false,
         status: 'blocked',
         blockingStage: 'critical_auditor_round_required',
@@ -3721,7 +4022,17 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
-      expect(result).toMatchObject({
+      expect(
+        result,
+        JSON.stringify(
+          result.blockingIssues.map((issue: any) => ({
+            code: issue.code,
+            refs: issue.refs,
+          })),
+          null,
+          2
+        )
+      ).toMatchObject({
         ok: false,
         status: 'blocked',
         blockingStage: 'critical_auditor_round_required',
@@ -3733,8 +4044,41 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const refreshedPromotionReceipt = readJson(paths.promotionReceipt);
       expect(refreshedPromotionReceipt.targetHash).toBe(sha256Text(readFileSync(source, 'utf8')));
       const checkpointEvidence = readJson(paths.checkpointPersistenceEvidence);
-      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
-      for (let index = 0; index < 9; index += 1) {
+      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(false);
+      const passedCheckpointReceipts = [0, 1].map((index) =>
+        readJson(paths.checkpointReceipt(index))
+      );
+      expect(checkpointEvidence.checkpointPersistenceRef.completedCheckpointIds).toEqual(
+        passedCheckpointReceipts.map((receipt) => receipt.checkpointId)
+      );
+      for (const checkpointReceipt of passedCheckpointReceipts) {
+        expect(checkpointReceipt).toMatchObject({
+          sourceDocumentHash: result.sourceDocumentHash,
+          implementationConfirmationHash: result.implementationConfirmationHash,
+          persistenceStatus: 'committed',
+          semanticValidationStatus: 'pass',
+          decision: 'pass',
+        });
+      }
+      const deferredCheckpointReceipt = readJson(paths.checkpointReceipt(2));
+      expect(deferredCheckpointReceipt).toMatchObject({
+        sourceDocumentHash: result.sourceDocumentHash,
+        implementationConfirmationHash: result.implementationConfirmationHash,
+        persistenceStatus: 'committed',
+        semanticValidationStatus: 'block',
+        decision: 'block',
+      });
+      expect(
+        deferredCheckpointReceipt.blockers.every((blocker: any) =>
+          checkpointEvidence.checkpointPersistenceRef.preRenderGatePolicy.deferredCriticalAuditorBlockers
+            .map((policyBlocker: any) => policyBlocker.code)
+            .includes(blocker.code)
+        )
+      ).toBe(true);
+      for (let index = 3; index < 9; index += 1) {
+        expect(existsSync(paths.checkpointReceipt(index))).toBe(false);
+      }
+      for (let index = 0; index < 3; index += 1) {
         const checkpointReceipt = readJson(paths.checkpointReceipt(index));
         expect(checkpointReceipt.sourceDocumentHash).toBe(result.sourceDocumentHash);
         expect(checkpointReceipt.implementationConfirmationHash).toBe(
@@ -4115,8 +4459,10 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-cli-'));
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const requirementSetId = `${recordId}-SET`;
       const source = writeRichSource(root, recordId);
       writePromotionReceipt(root, source, recordId);
+      ensureCriticalAuditorProviderConfig(root);
       const exitCode = mainMainAgentOrchestration([
         '--cwd',
         root,
@@ -4127,7 +4473,9 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         '--record-id',
         recordId,
         '--requirement-set-id',
-        `${recordId}-SET`,
+        requirementSetId,
+        '--implementation-attempt-id',
+        authoringRepairAttemptId(root, recordId, requirementSetId),
         '--mode',
         'preserve-existing',
         '--json',

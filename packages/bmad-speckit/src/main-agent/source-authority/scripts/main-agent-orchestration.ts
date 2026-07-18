@@ -7853,20 +7853,29 @@ function planProductionSemanticSourceRootCandidates(input: {
   const appendUnregisteredRoot = (root: ProductionSemanticSourceRootCandidate): void => {
     if (!registeredRootIds.has(root.sourceRootId)) roots.push(root);
   };
-  const inlineMustOnlyAuthority =
+  const inlineMaterializedAuthority =
     registeredRoots.length === 0 &&
     input.mustRequirements.length > 0 &&
     input.mustRequirements.every(
-      (requirement) => requirement.source === 'inline_implementation_confirmation'
+      (requirement) =>
+        requirement.source === 'inline_implementation_confirmation' ||
+        requirement.source === 'critical_auditor_validated_gap'
     );
   const currentSourceAuthoritySnapshot = {
     sourceContent: input.sourceText,
     sourceHash: sha256Text(input.sourceText),
   };
-  const sourceAuthoritySnapshot = inlineMustOnlyAuthority
+  const sourceAuthoritySnapshot = inlineMaterializedAuthority
     ? currentSourceAuthoritySnapshot
     : registeredSourceAuthoritySnapshot;
-  const sourceHash = sourceAuthoritySnapshot.sourceHash;
+  const authoritySnapshotForProjectedRow = (
+    row: Record<string, unknown>
+  ): { sourceContent: string; sourceHash: string } =>
+    asStringArray(row.headingPath).some(
+      (heading) => normalizedHeadingLabel(heading) === 'implementationconfirmation'
+    )
+      ? currentSourceAuthoritySnapshot
+      : sourceAuthoritySnapshot;
   const sourceNegativeRows = buildNegativeRequirementRows({
     blocks: input.structuredBlocks,
     packetHash: input.packetHash,
@@ -7919,6 +7928,7 @@ function planProductionSemanticSourceRootCandidates(input: {
 
   for (const row of sourceNegativeRows) {
     const id = normalizeText(row.id);
+    const rowAuthoritySnapshot = authoritySnapshotForProjectedRow(row);
     const sourceSpan = sourceRootSpan({
       id,
       sourceSpan: recordObject(row.sourceSpan) as {
@@ -7936,7 +7946,7 @@ function planProductionSemanticSourceRootCandidates(input: {
         kind: 'negative',
         text: normalizeText(row.text),
         sourcePath,
-        sourceHash,
+        sourceHash: rowAuthoritySnapshot.sourceHash,
         sourceSpan,
         sourceRequirementId: id,
         headingPath: asStringArray(row.headingPath),
@@ -7947,7 +7957,7 @@ function planProductionSemanticSourceRootCandidates(input: {
         },
       }),
       sourcePath,
-      sourceContent: sourceAuthoritySnapshot.sourceContent,
+      sourceContent: rowAuthoritySnapshot.sourceContent,
       sourceSpan,
       proposedAuthorityClass: 'source_extracted',
     });
@@ -7955,6 +7965,7 @@ function planProductionSemanticSourceRootCandidates(input: {
 
   for (const row of sourceBoundaryRows) {
     const id = normalizeText(row.id);
+    const rowAuthoritySnapshot = authoritySnapshotForProjectedRow(row);
     const sourceSpan = sourceRootSpan({
       id,
       sourceSpan: recordObject(row.sourceSpan) as {
@@ -7972,7 +7983,7 @@ function planProductionSemanticSourceRootCandidates(input: {
         kind: 'out_of_scope',
         text: normalizeText(row.text),
         sourcePath,
-        sourceHash,
+        sourceHash: rowAuthoritySnapshot.sourceHash,
         sourceSpan,
         sourceRequirementId: id,
         headingPath: asStringArray(row.headingPath),
@@ -7982,7 +7993,7 @@ function planProductionSemanticSourceRootCandidates(input: {
         },
       }),
       sourcePath,
-      sourceContent: sourceAuthoritySnapshot.sourceContent,
+      sourceContent: rowAuthoritySnapshot.sourceContent,
       sourceSpan,
       proposedAuthorityClass: 'source_extracted',
     });
@@ -10693,6 +10704,7 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
       artifacts: string[];
     } {
   const artifacts: string[] = [];
+  const createdAt = new Date().toISOString();
   const prepareScript = resolveSkillScript(input.root, 'prepare-current-source-promotion.js');
   const prepare = runNodeJson(
     prepareScript,
@@ -10745,52 +10757,171 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
     };
   }
 
-  let routeDecision = readJsonIfExists(input.paths.scaleRoutingDecision);
-  if (!routeDecision || !fs.existsSync(input.paths.scaleAssessmentInitial)) {
-    const scale = runPreConfirmationScaleAssessment({
-      root: input.root,
-      sourcePath: input.paths.draftSourcePreview,
-      paths: input.paths,
-      phase: 'initial_assessment',
-    });
-    artifacts.push(input.paths.scaleAssessmentInitial, input.paths.scaleRoutingDecision);
-    if (scale.issues.length > 0 || !scale.routingDecision) {
-      return {
-        ok: false,
-        artifacts,
-        issues: [
-          preConfirmationIssue(
-            'current_source_promotion_scale_routing_refresh_failed',
-            'Skill-local current-source promotion could not refresh scale routing before promotion receipt refresh.',
-            [toRootRelativePath(input.root, input.paths.scaleRoutingDecision)],
-            'source_materialization'
-          ),
-          ...scale.issues,
-        ],
-      };
-    }
-    routeDecision = scale.routingDecision;
+  const sourceDocumentHash = normalizeText(prepare.json.semanticSourceHash);
+  const implementationConfirmationHash = normalizeText(
+    prepare.json.implementationConfirmationHash
+  );
+  if (!sourceDocumentHash || !implementationConfirmationHash) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        preConfirmationIssue(
+          'current_source_promotion_checkpoint_hash_binding_missing',
+          'Skill-local current-source promotion prep did not return semantic source and implementationConfirmation hashes required for artifact and checkpoint refresh.',
+          [toRootRelativePath(input.root, prepareScript)],
+          'source_materialization'
+        ),
+      ],
+    };
   }
+
+  const draftText = fs.readFileSync(input.paths.draftSourcePreview, 'utf8');
+  const draftExtraction = extractImplementationConfirmationBlock(draftText);
+  if (!draftExtraction) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        preConfirmationIssue(
+          'current_source_promotion_draft_implementation_confirmation_missing',
+          'Skill-local current-source promotion draft must retain implementationConfirmation before semantic artifact refresh.',
+          [toRootRelativePath(input.root, input.paths.draftSourcePreview)],
+          'source_materialization'
+        ),
+      ],
+    };
+  }
+  const refreshedArtifacts = buildPreserveExistingAuthoringArtifacts({
+    root: input.root,
+    sourcePath: input.paths.draftSourcePreview,
+    paths: input.paths,
+    recordId: input.recordId,
+    requirementSetId: input.requirementSetId,
+    createdAt,
+    sourceText: draftText,
+    extraction: draftExtraction,
+    consecutiveNoNewGapRounds: 0,
+  });
+  artifacts.push(
+    input.paths.semanticKernel,
+    input.paths.mustDecompositionPacket,
+    input.paths.semanticIr,
+    input.paths.semanticConservationManifest,
+    input.paths.renderRoundTripReport
+  );
+  if (
+    refreshedArtifacts.sourceDocumentHash !== sourceDocumentHash ||
+    refreshedArtifacts.implementationConfirmationHash !== implementationConfirmationHash
+  ) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        preConfirmationIssue(
+          'current_source_promotion_artifact_hash_binding_mismatch',
+          'Skill-local semantic artifacts do not bind the hashes returned by current-source promotion prep.',
+          [
+            sourceDocumentHash,
+            refreshedArtifacts.sourceDocumentHash,
+            implementationConfirmationHash,
+            refreshedArtifacts.implementationConfirmationHash,
+          ],
+          'source_materialization'
+        ),
+      ],
+    };
+  }
+
+  const mustGateScript = resolveSkillScript(input.root, 'pre_render_must_decomposition_gate.js');
+  const mustGate = runNodeJson(
+    mustGateScript,
+    [
+      '--source',
+      input.paths.draftSourcePreview,
+      '--authoring-dir',
+      input.paths.authoringDir,
+      '--semantic-kernel',
+      input.paths.semanticKernel,
+      '--must-decomposition-packet',
+      input.paths.mustDecompositionPacket,
+      '--out',
+      input.paths.preRenderMustGate,
+      '--receipt',
+      input.paths.mustDecompositionReceipt,
+      '--reconciliation-report',
+      input.paths.reconciliationReport,
+      '--json',
+    ],
+    input.root
+  );
+  artifacts.push(
+    input.paths.preRenderMustGate,
+    input.paths.mustDecompositionReceipt,
+    input.paths.reconciliationReport
+  );
+  if (!mustGate.json && !fs.existsSync(input.paths.reconciliationReport)) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        commandFailureIssue(
+          'current_source_promotion_reconciliation_report_missing',
+          mustGateScript,
+          mustGate
+        ),
+      ],
+    };
+  }
+
+  const initialScale = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: input.paths.draftSourcePreview,
+    paths: input.paths,
+    phase: 'initial_assessment',
+  });
+  artifacts.push(input.paths.scaleAssessmentInitial, input.paths.scaleRoutingDecision);
+  if (initialScale.issues.length > 0 || !initialScale.routingDecision) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        preConfirmationIssue(
+          'current_source_promotion_scale_routing_refresh_failed',
+          'Skill-local current-source promotion could not refresh scale routing before promotion receipt refresh.',
+          [toRootRelativePath(input.root, input.paths.scaleRoutingDecision)],
+          'source_materialization'
+        ),
+        ...initialScale.issues,
+      ],
+    };
+  }
+  const postMaterializationScale = runPreConfirmationScaleAssessment({
+    root: input.root,
+    sourcePath: input.paths.draftSourcePreview,
+    paths: input.paths,
+    phase: 'post_materialization_assessment',
+  });
+  artifacts.push(input.paths.scaleAssessmentPostMaterialization, input.paths.scaleRoutingDecision);
+  if (postMaterializationScale.issues.length > 0 || !postMaterializationScale.routingDecision) {
+    return {
+      ok: false,
+      artifacts,
+      issues: [
+        preConfirmationIssue(
+          'current_source_promotion_post_materialization_scale_routing_refresh_failed',
+          'Skill-local current-source promotion could not refresh post-materialization scale routing before promotion receipt refresh.',
+          [toRootRelativePath(input.root, input.paths.scaleRoutingDecision)],
+          'source_materialization'
+        ),
+        ...postMaterializationScale.issues,
+      ],
+    };
+  }
+
+  const routeDecision = postMaterializationScale.routingDecision;
   const routeDecisionText = normalizeText(routeDecision?.decision);
   if (['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routeDecisionText)) {
-    const sourceDocumentHash = normalizeText(prepare.json.semanticSourceHash);
-    const implementationConfirmationHash = normalizeText(
-      prepare.json.implementationConfirmationHash
-    );
-    if (!sourceDocumentHash || !implementationConfirmationHash) {
-      return {
-        ok: false,
-        artifacts,
-        issues: [
-          preConfirmationIssue(
-            'current_source_promotion_checkpoint_hash_binding_missing',
-            'Skill-local current-source promotion prep did not return semantic source and implementationConfirmation hashes required for checkpoint persistence refresh.',
-            [toRootRelativePath(input.root, prepareScript)],
-            'source_materialization'
-          ),
-        ],
-      };
-    }
     const checkpointRefresh = refreshCurrentSourceCheckpointPersistence(input.root, {
       source: input.paths.draftSourcePreview,
       recordId: input.recordId,
@@ -10798,7 +10929,7 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
       implementationAttemptId: input.implementationAttemptId,
       sourceDocumentHash,
       implementationConfirmationHash,
-      createdAt: new Date().toISOString(),
+      createdAt,
       routeDecision,
       forceRefresh: true,
     });
@@ -14668,6 +14799,58 @@ function resyncExistingAtomicTaskDecomposition(confirmation: Record<string, unkn
   return { confirmation: changed ? nextConfirmation : confirmation, changed };
 }
 
+function semanticProjectionOwnershipText(row: Record<string, unknown>): string {
+  return uniqueNonEmpty([
+    normalizeText(row.title),
+    normalizeText(row.text),
+    normalizeText(row.trigger),
+    normalizeText(row.condition),
+    normalizeText(row.expectedBehavior),
+    normalizeText(row.forbiddenBehavior),
+    normalizeText(row.oracle),
+    ...asStringArray(row.primaryObservableBehaviors),
+    ...asStringArray(row.primaryAcceptanceOracles),
+  ]).join(' ');
+}
+
+function semanticProjectionOwnershipScore(
+  projectionText: string,
+  requirementText: string
+): number {
+  const projectionTokens = new Set(semanticBusinessTokens(projectionText));
+  return semanticBusinessTokens(requirementText).reduce((score, token) => {
+    if (projectionTokens.has(token)) return score + token.length;
+    const partialMatch = [...projectionTokens].some(
+      (projectionToken) =>
+        projectionToken.length >= 4 &&
+        token.length >= 4 &&
+        (projectionToken.includes(token) || token.includes(projectionToken))
+    );
+    return score + (partialMatch ? Math.min(token.length, 6) : 0);
+  }, 0);
+}
+
+function uniquelyDominantSemanticMustRef(input: {
+  row: Record<string, unknown>;
+  candidateMustRefs: string[];
+  mustRowsById: Map<string, Record<string, unknown>>;
+}): string {
+  const projectionText = semanticProjectionOwnershipText(input.row);
+  const scored = uniqueStrings(input.candidateMustRefs)
+    .map((mustRef) => ({
+      mustRef,
+      score: semanticProjectionOwnershipScore(
+        projectionText,
+        normalizeText(input.mustRowsById.get(mustRef)?.text)
+      ),
+    }))
+    .sort((left, right) => right.score - left.score || left.mustRef.localeCompare(right.mustRef));
+  if (scored.length === 0 || scored[0].score <= 0 || scored[0].score === scored[1]?.score) {
+    return '';
+  }
+  return scored[0].mustRef;
+}
+
 function resyncExistingBusinessVisualProofClosure(
   confirmation: Record<string, unknown>,
   context?: {
@@ -14768,6 +14951,40 @@ function resyncExistingBusinessVisualProofClosure(
   if (nextFailurePaths.length > 0) {
     nextConfirmation.failurePaths = nextFailurePaths;
   }
+  const mustRowsById = new Map(
+    asRecordArray(nextConfirmation.must)
+      .map((row) => [normalizeText(row.id), row] as const)
+      .filter(([id]) => Boolean(id))
+  );
+  const knownMustIds = new Set(mustRowsById.keys());
+  let semanticFailureOwnershipChanged = false;
+  const semanticallyOwnedFailurePaths = asRecordArray(nextConfirmation.failurePaths).map((row) => {
+    const candidateMustRefs = uniqueStrings([
+      ...asStringArray(row.ownerMustRefs),
+      normalizeText(row.derivedFromMustRef),
+    ]).filter((ref) => knownMustIds.has(ref));
+    if (candidateMustRefs.length <= 1) return row;
+    const semanticOwner = uniquelyDominantSemanticMustRef({
+      row,
+      candidateMustRefs,
+      mustRowsById,
+    });
+    if (!semanticOwner) return row;
+    const nextRow = {
+      ...row,
+      ownerMustRefs: [semanticOwner],
+      derivedFromMustRef: semanticOwner,
+    };
+    if (stableStringify(nextRow) === stableStringify(row)) return row;
+    semanticFailureOwnershipChanged = true;
+    return nextRow;
+  });
+  if (semanticFailureOwnershipChanged) {
+    nextConfirmation.failurePaths = semanticallyOwnedFailurePaths;
+    changed = true;
+    shouldForceCurrentTargetMapRebuild = true;
+    changedViewIds.add('failurePaths');
+  }
   const viewRefsByTraceField: Record<string, Set<string>> = {
     sequenceViewRefs: new Set<string>(),
     flowViewRefs: new Set<string>(),
@@ -14778,11 +14995,6 @@ function resyncExistingBusinessVisualProofClosure(
     flowViewRefs: new Set<string>(),
     edgeCaseViewRefs: new Set<string>(),
   };
-  const mustRowsById = new Map(
-    asRecordArray(confirmation.must)
-      .map((row) => [normalizeText(row.id), row] as const)
-      .filter(([id]) => Boolean(id))
-  );
   const notDoneRowsById = new Map(
     asRecordArray(confirmation.notDone)
       .map((row) => [normalizeText(row.id), row] as const)
@@ -14794,7 +15006,6 @@ function resyncExistingBusinessVisualProofClosure(
   ];
   const failurePathRows = asRecordArray(nextConfirmation.failurePaths);
   const edgeCaseRows = asRecordArray(nextConfirmation.edgeCases);
-  const knownMustIds = new Set(mustIds);
   const knownNegIds = new Set(notDoneRowsById.keys());
   const knownRequirementIds = new Set([...mustIds, ...notDoneRowsById.keys()]);
 
@@ -16417,8 +16628,9 @@ function buildCriticalAuditorReceipt(input: {
       resetsConvergenceCounter: !isClean,
     },
   };
-  receipt.receiptHash = sha256Json(receipt);
-  return receipt;
+  const persistedReceipt = JSON.parse(JSON.stringify(receipt)) as Record<string, unknown>;
+  persistedReceipt.receiptHash = sha256Json(persistedReceipt);
+  return persistedReceipt;
 }
 
 function criticalAuditorReceiptMatchesCurrent(input: {
@@ -19836,8 +20048,10 @@ export function runMainAgentAuthoringRepair(
         recordId: identity.recordId,
         roundIndex: 1,
         sourceDocumentHash: rebuilt.sourceDocumentHash,
+        semanticModelHash: rebuilt.semanticKernelHash,
         implementationConfirmationHash: rebuilt.implementationConfirmationHash,
         packetHash: rebuilt.packetHash,
+        projectionSetHash: criticalAuditorProjectionSetHash(rebuilt.effectivePacket),
         auditInputHash: rebuilt.auditInputHash,
         mustRequirements: rebuilt.mustRequirements,
         packet: rebuilt.effectivePacket,
@@ -19922,8 +20136,10 @@ export function runMainAgentAuthoringRepair(
       recordId: identity.recordId,
       roundIndex: 1,
       sourceDocumentHash,
+      semanticModelHash: semanticKernelHash,
       implementationConfirmationHash,
       packetHash,
+      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
       auditInputHash,
       mustRequirements,
       packet: effectivePacket,
@@ -19967,8 +20183,10 @@ export function runMainAgentAuthoringRepair(
       recordId: identity.recordId,
       roundIndex,
       sourceDocumentHash,
+      semanticModelHash: semanticKernelHash,
       implementationConfirmationHash,
       packetHash,
+      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
       auditInputHash,
       mustRequirements,
       packet: effectivePacket,
@@ -22744,8 +22962,10 @@ export function runMainAgentPreConfirmationDrilldown(
         transactionId: stagingTransaction.transactionId,
         namespaceVersion: stagingTransaction.namespaceVersion,
         sourceDocumentHash: previewSourceDocumentHash,
+        semanticModelHash: semanticKernelHash,
         implementationConfirmationHash: previewImplementationConfirmationHash,
         packetHash,
+        projectionSetHash: criticalAuditorProjectionSetHash(previewPacket),
         auditInputHash,
         mustRequirements,
         packet: previewPacket,

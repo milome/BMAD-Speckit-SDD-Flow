@@ -1112,6 +1112,18 @@ function cleanCriticalAuditorRound(input: any) {
   });
 }
 
+function criticalAuditorRoundSequences(
+  inputs: Array<{ auditInputHash: string; roundIndex: number }>
+): number[][] {
+  const roundsByAuditInput = new Map<string, number[]>();
+  for (const input of inputs) {
+    const rounds = roundsByAuditInput.get(input.auditInputHash) ?? [];
+    rounds.push(input.roundIndex);
+    roundsByAuditInput.set(input.auditInputHash, rounds);
+  }
+  return [...roundsByAuditInput.values()];
+}
+
 function captureMainAgentCli(args: string[]): {
   exitCode: number;
   stdout: string;
@@ -2167,7 +2179,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     installJudgeRuntimeConfig(root);
     try {
       const source = writeDraftSource(root);
-      const seenRounds: number[] = [];
+      const seenAuditorInputs: Array<{ auditInputHash: string; roundIndex: number }> = [];
 
       const result = runWithAuthoringLocalization(root, {
         source,
@@ -2177,7 +2189,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         ...authorityForSource(root, source),
         criticalAuditorRound: (input) => {
           const { roundIndex } = input;
-          seenRounds.push(roundIndex);
+          seenAuditorInputs.push(input);
           if (roundIndex <= 2) {
             return {
               verdict: 'new_valid_gap',
@@ -2227,7 +2239,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const mustGate = readJson(paths.mustGate);
 
       expectCheckpointAutoPromoted(result, paths);
-      expect(seenRounds).toEqual([1, 2, 3, 4, 5]);
+      expect(criticalAuditorRoundSequences(seenAuditorInputs)).toEqual([
+        [1, 2, 3, 4, 5],
+        [1, 2, 3, 4, 5],
+      ]);
       expect(existsSync(paths.receipt1)).toBe(true);
       expect(existsSync(paths.receipt2)).toBe(true);
       expect(existsSync(paths.receipt3)).toBe(true);
@@ -2344,7 +2359,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const sourceText = readFileSync(paths.draftSourcePreview, 'utf8');
 
       expectCheckpointAutoPromoted(result, paths);
-      expect(seenAuditorInputs.map((input) => input.roundIndex)).toEqual([1, 2, 3, 4]);
+      expect(criticalAuditorRoundSequences(seenAuditorInputs)).toEqual([
+        [1, 2, 3, 4],
+        [1, 2, 3, 4],
+      ]);
       expect(mustGate.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
 
       const mustRows = confirmation.must as Array<{ id: string; text: string }>;

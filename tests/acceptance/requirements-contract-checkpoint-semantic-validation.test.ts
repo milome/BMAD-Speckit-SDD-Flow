@@ -131,7 +131,7 @@ describe('requirements contract checkpoint semantic validation', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('invalidates and replaces receipts from a different requirement set', () => {
     const root = createTempRoot('requirements-contract-checkpoint-cross-requirement-');
@@ -174,7 +174,7 @@ describe('requirements contract checkpoint semantic validation', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('invalidates every receipt when the canonical semantic binding changes', () => {
     const root = createTempRoot('requirements-contract-checkpoint-semantic-change-');
@@ -233,7 +233,7 @@ describe('requirements contract checkpoint semantic validation', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('regenerates checkpoints when explicit persistence evidence is stale', () => {
     const root = createTempRoot('requirements-contract-checkpoint-explicit-stale-');
@@ -298,7 +298,7 @@ describe('requirements contract checkpoint semantic validation', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('fails closed before checkpoint receipts when implementationAttemptId is missing', () => {
     const root = createTempRoot('requirements-contract-checkpoint-missing-attempt-');

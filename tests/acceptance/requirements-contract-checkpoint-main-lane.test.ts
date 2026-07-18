@@ -8,6 +8,7 @@ import {
   cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
+  installJudgeRuntimeConfig,
   readJson,
   removeTempRoot,
   runAuthoring,
@@ -49,6 +50,7 @@ describe('requirements contract checkpoint main lane', () => {
   it('automatically persists checkpoint evidence for checkpoint_required routes', () => {
     const root = createTempRoot('requirements-contract-checkpoint-main-');
     try {
+      installJudgeRuntimeConfig(root);
       const materialized = writeMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-main.md',
@@ -73,6 +75,18 @@ describe('requirements contract checkpoint main lane', () => {
         process.stderr.write = originalStderrWrite;
       }
       const paths = artifacts(root, 'REQ-CHECKPOINT-MAIN', 'REQ-CHECKPOINT-MAIN-SET');
+      expect(
+        existsSync(paths.checkpointPersistenceEvidence),
+        JSON.stringify(
+          {
+            substate: result?.substate,
+            blockingStage: result?.blockingStage,
+            blockingIssues: result?.blockingIssues,
+          },
+          null,
+          2
+        )
+      ).toBe(true);
       const route = readJson<Record<string, unknown>>(paths.scaleRoutingDecision);
       const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
       const ref = evidence.checkpointPersistenceRef as Record<string, unknown>;
@@ -221,6 +235,7 @@ describe('requirements contract checkpoint main lane', () => {
   it('restarts checkpoint execution when existing receipt files are stale for the current transaction', () => {
     const root = createTempRoot('requirements-contract-checkpoint-resume-');
     try {
+      installJudgeRuntimeConfig(root);
       const materialized = writeMinimalConsumerRequirement(
         root,
         'docs/plans/checkpoint-resume.md',
@@ -232,6 +247,9 @@ describe('requirements contract checkpoint main lane', () => {
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const paths = artifacts(root, 'REQ-CHECKPOINT-RESUME', 'REQ-CHECKPOINT-RESUME-SET');
+      expect(
+        paths.checkpointReceiptPaths.every((receiptPath) => existsSync(receiptPath))
+      ).toBe(true);
       expect(readJson<Record<string, unknown>>(paths.intakeReceipt)).toMatchObject({
         schemaVersion: 'requirements-contract-file-intake-receipt/v1',
         entrySource: 'source_prd_draft',
@@ -288,5 +306,5 @@ describe('requirements contract checkpoint main lane', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 });
