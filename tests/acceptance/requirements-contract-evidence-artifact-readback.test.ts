@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
+import { createRequirementsContractNormalizedTraceGraph } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-trace-graph';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 function sha256(value: Buffer | string): string {
@@ -100,6 +101,16 @@ function materializeFixture() {
   const sourceDocumentHash = `sha256:${'1'.repeat(64)}`;
   const implementationConfirmationHash = `sha256:${'2'.repeat(64)}`;
   const architectureConfirmationHash = `sha256:${'3'.repeat(64)}`;
+  const semanticModelHash = sha256(`semantic-model:${authority.requirementSetId}`);
+  const packetHash = sha256(`packet:${authority.requirementSetId}`);
+  const lockPath = path.join(root, 'package-lock.json');
+  fs.writeFileSync(
+    lockPath,
+    `${JSON.stringify({ lockfileVersion: 3, packages: {} }, null, 2)}\n`,
+    'utf8'
+  );
+  const commandOutputPath = path.join(executionDir, 'command-output.txt');
+  fs.writeFileSync(commandOutputPath, 'artifact readback acceptance passed\n', 'utf8');
   const artifactPath = path.join(executionDir, 'behavior-observation.json');
   const artifactBytes = `${JSON.stringify({ decision: 'pass' }, null, 2)}\n`;
   fs.writeFileSync(artifactPath, artifactBytes, 'utf8');
@@ -125,6 +136,10 @@ function materializeFixture() {
         status: 'user_confirmed',
         sourceDocumentHash,
         implementationConfirmationHash,
+        transactionId: authority.transactionId,
+        currentAttemptId: authority.implementationAttemptId,
+        semanticModelHash,
+        packetHash,
         architectureConfirmationState: {
           status: 'active',
           currentArchitectureConfirmationHash: architectureConfirmationHash,
@@ -216,6 +231,96 @@ function materializeFixture() {
     )}\n`,
     'utf8'
   );
+  const packet = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+  const commandRun = packet.commandRuns[0];
+  const command = commandRun.command;
+  const runtimeVersions = { node: process.version };
+  const environment = { platform: process.platform, architecture: process.arch };
+  Object.assign(packet, { semanticModelHash, packetHash });
+  Object.assign(commandRun, {
+    normalizedCommand: command,
+    cwd: root,
+    executorIdentity: {
+      class: 'controlled_detached_executor',
+      id: `EXECUTOR-${authority.runId}`,
+    },
+    runtimeVersions,
+    dependencyLockHashes: [
+      {
+        path: 'package-lock.json',
+        hash: sha256(fs.readFileSync(lockPath)),
+      },
+    ],
+    environment,
+    environmentFingerprint: sha256Stable({ environment, runtimeVersions }),
+    environmentCompatibilityDecision: 'pass',
+    transactionId: authority.transactionId,
+    implementationAttemptId: authority.implementationAttemptId,
+    sourceDocumentHash,
+    semanticModelHash,
+    packetHash,
+    outputPath: commandOutputPath,
+    outputHash: sha256(fs.readFileSync(commandOutputPath)),
+    coveredRequirementIds: [authority.requirementRef],
+  });
+  const oracleId = `ORACLE-${authority.requirementRef}`;
+  const graph = createRequirementsContractNormalizedTraceGraph({
+    requirementSetId: authority.requirementSetId,
+    sourceAuthorityHash: sourceDocumentHash,
+    semanticModelHash,
+    semanticConservationManifestHash: sha256(
+      `semantic-conservation:${authority.requirementSetId}`
+    ),
+    nodes: [
+      {
+        id: authority.requirementRef,
+        nodeType: 'requirement',
+        bodyHash: sha256(`${authority.requirementRef}:body`),
+        sourceRootRef: `${authority.requirementRef}:source`,
+        sourceRootPayloadHash: sha256(`${authority.requirementRef}:source-root`),
+        authorityClass: 'source_authorized',
+      },
+      {
+        id: oracleId,
+        nodeType: 'oracle',
+        bodyHash: sha256(`${oracleId}:body`),
+        sourceRootRef: `${oracleId}:source`,
+        sourceRootPayloadHash: sha256(`${oracleId}:source-root`),
+        authorityClass: 'independent_oracle',
+      },
+    ],
+    edges: [
+      {
+        edgeId: `EDGE-${authority.requirementRef}`,
+        edgeType: 'verified_by',
+        fromRef: authority.requirementRef,
+        toRef: oracleId,
+        sourceRef: authority.traceRef,
+        sourceHash: sha256(`${authority.requirementRef}:${oracleId}:edge`),
+        proofRefs: [authority.evidenceRef],
+        applicability: 'applicable',
+      },
+    ],
+  });
+  packet.normalizedTraceGraph = graph;
+  packet.independentOracleResults = [
+    {
+      requirementId: authority.requirementRef,
+      oracleId,
+      decision: 'pass',
+      transactionId: authority.transactionId,
+      implementationAttemptId: authority.implementationAttemptId,
+      sourceDocumentHash,
+      semanticModelHash,
+      packetHash,
+      graphHash: graph.graphHash,
+      commandId: commandRun.commandId,
+      outputHash: commandRun.outputHash,
+      evidenceRefs: [authority.evidenceRef],
+      observedAt: '2026-07-16T00:00:02.000Z',
+    },
+  ];
+  fs.writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
   return {
     root,
     recordPath,
