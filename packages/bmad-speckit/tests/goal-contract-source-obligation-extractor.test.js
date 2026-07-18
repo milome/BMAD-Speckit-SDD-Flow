@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { extractSourceObligations } = require('../src/utils/goal-contract/source-obligation-extractor');
+const { extractSourceObligations } = require('../dist/utils/goal-contract/source-obligation-extractor');
 
 const SOURCE_PATH = 'docs/plans/source-plan.md';
 const SOURCE_TEXT = [
