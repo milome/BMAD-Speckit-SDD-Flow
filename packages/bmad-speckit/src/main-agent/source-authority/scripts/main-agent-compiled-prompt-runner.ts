@@ -50,6 +50,7 @@ const FORBIDDEN_PROFILE_AUTHORITY_FIELDS = [
   'legacyPromptBody',
   'sourcePathAuthority',
 ];
+const MAIN_AGENT_COMPILE_ENTRY = 'main_agent_compile';
 
 function text(value: unknown): string {
   return String(value ?? '').trim();
@@ -90,6 +91,33 @@ function hasForbiddenProfileField(value: unknown, pathPrefix = ''): string[] {
     const own = FORBIDDEN_PROFILE_AUTHORITY_FIELDS.includes(key) ? [currentPath] : [];
     return [...own, ...hasForbiddenProfileField(item, currentPath)];
   });
+}
+
+function validateCompilerMetadata(
+  artifact: 'audit_receipt' | 'model_packet',
+  value: Record<string, unknown>,
+  expectedCompiler: { path: string; hash: string },
+  blockingReasons: string[]
+): void {
+  const entryScenario = text(value.entryScenario);
+  if (entryScenario !== MAIN_AGENT_COMPILE_ENTRY) {
+    blockingReasons.push(`${artifact}_entry_scenario_mismatch:${entryScenario || 'missing'}`);
+  }
+  if (value.entryExplicit !== true) {
+    blockingReasons.push(`${artifact}_entry_explicit_missing`);
+  }
+
+  const compilerIdentity = value.compilerIdentity as Record<string, unknown> | undefined;
+  const compilerPath = text(compilerIdentity?.path);
+  if (
+    !compilerPath ||
+    path.normalize(path.resolve(compilerPath)) !== path.normalize(path.resolve(expectedCompiler.path))
+  ) {
+    blockingReasons.push(`${artifact}_compiler_path_mismatch`);
+  }
+  if (text(compilerIdentity?.hash) !== expectedCompiler.hash) {
+    blockingReasons.push(`${artifact}_compiler_hash_mismatch`);
+  }
 }
 
 function writeProfileSnapshot(filePath: string, profile: ExecutionDisciplineProfile): void {
@@ -273,6 +301,8 @@ export function runMainAgentCompiledPrompt(input: {
   const stderrPath = path.join(outDir, 'compiler.stderr.log');
   const args = [
     script,
+    '--entry',
+    'main_agent_compile',
     '--requirement-record',
     confirmedSource.recordPath,
     '--source-document',
@@ -379,6 +409,8 @@ export function runMainAgentCompiledPrompt(input: {
   const goalExecutionPath = path.join(outDir, 'goal_execution.md');
   const goalMode = text((receipt.goalCommand as Record<string, unknown> | undefined)?.mode);
   const receiptDecision = text(receipt.decision);
+  validateCompilerMetadata('model_packet', packet, invocationIdentity.generatorRef, blockingReasons);
+  validateCompilerMetadata('audit_receipt', receipt, invocationIdentity.generatorRef, blockingReasons);
   if (receiptDecision !== 'pass') {
     blockingReasons.push(`audit_receipt_${receiptDecision || 'not_pass'}`);
   }
