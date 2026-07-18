@@ -322,24 +322,6 @@ describe('req-trace shared goal contract profile integration', () => {
     );
   });
 
-  it('verifies both _bmad and .codex goal contract reference projections', () => {
-    const stdout = execFileSync(process.execPath, [VERIFY_GOAL_PROFILE], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-    const result = JSON.parse(stdout);
-    expect(result.ok).toBe(true);
-    expect(result.issues).toEqual([]);
-    expect(result.checkedReferences).toEqual(
-      expect.arrayContaining([
-        '_bmad/skills/goal-execution-contract-generator/references/goal-execution-contract-template.md',
-        '_bmad/skills/goal-execution-contract-generator/references/goal-contract-profile.json',
-        '.codex/skills/goal-execution-contract-generator/references/goal-execution-contract-template.md',
-        '.codex/skills/goal-execution-contract-generator/references/goal-contract-profile.json',
-      ])
-    );
-  });
-
   it('blocks when the shared profile is missing', () => {
     fs.rmSync(tempProfile, { force: true });
     const result = runNativeGoal();

@@ -1,11 +1,114 @@
 {
   "schemaVersion": "goal-contract-profile.schema/v1",
   "profileId": "bmad-speckit-goal-execution-contract",
-  "profileVersion": "2.0.0",
+  "profileVersion": "2.1.0",
   "contractVersion": "goal-execution-contract/v1",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
-  "templateHash": "sha256:abc91d30075176630c391aed169f357d361bdb7faf8d139aa0a9568bc61e5dc9",
-  "profileHash": "sha256:67e4ffbae2182adfcb8838e7a4345b8cdd0339898848203996266220187036e4",
+  "templateHash": "sha256:0b2903baf933aa6f658ba7613ed314862624ca3c0db5d193b9effae977240d70",
+  "profileHash": "sha256:4299a86e4d3c9bff9b18f1f94a9e0a38b26fb7edf742d2db89660431f5db0656",
+  "entryProfiles": {
+    "req_trace_direct": {
+      "sourceAuthority": "confirmed_implementation_confirmation_and_requirement_record",
+      "requiredOutputs": [
+        "model_packet.json",
+        "human_prompt.txt",
+        "audit_receipt.json",
+        "goal_execution.md"
+      ],
+      "finalArtifactAuthority": "model_packet.json",
+      "compilerRoute": "shared_requirement_trace_compiler",
+      "dualViewPolicy": "forbidden",
+      "artifactRoles": {
+        "model_packet.json": "machine_authority",
+        "human_prompt.txt": "projection",
+        "audit_receipt.json": "receipt",
+        "goal_execution.md": "projection"
+      },
+      "requiredSections": [],
+      "requiredFrontMatterFields": [
+        "entryScenario"
+      ],
+      "requiredSlots": [],
+      "invariantFragments": [],
+      "requiredSemantics": [
+        "four_artifact_authority",
+        "dual_view_forbidden"
+      ]
+    },
+    "main_agent_compile": {
+      "sourceAuthority": "confirmed_implementation_confirmation_and_execution_discipline_profile",
+      "requiredOutputs": [
+        "model_packet.json",
+        "human_prompt.txt",
+        "audit_receipt.json",
+        "goal_execution.md"
+      ],
+      "finalArtifactAuthority": "model_packet.json",
+      "compilerRoute": "shared_requirement_trace_compiler",
+      "dualViewPolicy": "forbidden",
+      "artifactRoles": {
+        "model_packet.json": "machine_authority",
+        "human_prompt.txt": "projection",
+        "audit_receipt.json": "receipt",
+        "goal_execution.md": "projection"
+      },
+      "requiredSections": [],
+      "requiredFrontMatterFields": [
+        "entryScenario"
+      ],
+      "requiredSlots": [],
+      "invariantFragments": [],
+      "requiredSemantics": [
+        "four_artifact_authority",
+        "dual_view_forbidden"
+      ]
+    },
+    "standalone_goal_contract": {
+      "sourceAuthority": "source_plan_or_bounded_conversation_snapshot",
+      "requiredOutputs": [
+        "*-goal-execution-plan.md"
+      ],
+      "finalArtifactAuthority": "standalone_goal_execution_plan_markdown",
+      "compilerRoute": "standalone_dual_view_goal_contract_generator",
+      "dualViewPolicy": "required",
+      "artifactRoles": {
+        "*-goal-execution-plan.md": "frozen_execution_authority"
+      },
+      "requiredSections": [
+        "Trace Slice Tracking Matrix",
+        "Strict Acceptance Checklist",
+        "Acceptance Traceability Matrix",
+        "Source Coverage Matrix",
+        "Manual Verification Scenarios",
+        "Completion Evidence Packet",
+        "Stop Conditions",
+        "Expected Evidence Freeze"
+      ],
+      "requiredFrontMatterFields": [
+        "entryScenario",
+        "finalArtifactAuthority"
+      ],
+      "requiredSlots": [
+        "traceSliceTrackingMatrix",
+        "strictAcceptanceChecklist",
+        "acceptanceTraceabilityMatrix",
+        "sourceCoverageMatrix",
+        "manualVerificationScenarios",
+        "completionEvidencePacket",
+        "expectedEvidenceFreeze",
+        "stopConditions"
+      ],
+      "invariantFragments": [
+        "standalone Markdown contract is the frozen execution authority"
+      ],
+      "requiredSemantics": [
+        "standalone_trace_slice_tracking",
+        "standalone_expected_evidence_registry",
+        "deterministic_validation",
+        "hash_bound_three_perspective_audit"
+      ]
+    }
+  },
   "requiredSections": [
     "/goal Entry",
     "Contract Freeze Rules",
@@ -62,7 +165,54 @@
     "completionEvidencePacket",
     "stopConditions"
   ],
-  "optionalSlots": [],
+  "optionalSlots": [
+    "traceSliceTrackingMatrix",
+    "expectedEvidenceFreeze"
+  ],
+  "projectionDimensions": [
+    {
+      "id": "projection.trace_slices",
+      "sectionTitle": "Trace Slice Tracking Matrix",
+      "semanticRole": "execution_order",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.strict_acceptance",
+      "sectionTitle": "Strict Acceptance Checklist",
+      "semanticRole": "executor_completion_checklist",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.acceptance_traceability",
+      "sectionTitle": "Acceptance Traceability Matrix",
+      "semanticRole": "acceptance_implementation_evidence_join",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.source_coverage",
+      "sectionTitle": "Source Coverage Matrix",
+      "semanticRole": "source_obligation_completeness",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.manual_scenarios",
+      "sectionTitle": "Manual Verification Scenarios",
+      "semanticRole": "human_observable_real_entry_behavior",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.completion_evidence",
+      "sectionTitle": "Completion Evidence Packet",
+      "semanticRole": "expected_observed_evidence_closure",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.stop_conditions",
+      "sectionTitle": "Stop Conditions",
+      "semanticRole": "terminal_decision_failure_classification",
+      "runtimeEvidenceAuthority": false
+    }
+  ],
   "invariantFragments": [
     "model_packet.json is the machine-readable execution authority",
     "goal_execution.md is not execution authority",
