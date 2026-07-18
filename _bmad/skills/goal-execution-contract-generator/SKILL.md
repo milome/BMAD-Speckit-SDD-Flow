@@ -19,7 +19,9 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - Run `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json`.
    - Build one immutable `SourceSnapshot` from the exact Source Plan bytes or LF-normalized ordered conversation segments.
    - Invoke `StandaloneViewProvider.deriveImplementationView` with only that snapshot, repository facts, and the implementation role contract.
-   - Record provider/session identity and input/output hashes; do not persist the transient Implementation View as an authority file.
+   - Invoke `StandaloneViewProvider.deriveAcceptanceEvidenceView` separately with the same snapshot and the acceptance/evidence role contract.
+   - Require distinct provider session identities, reject cross-view inputs or shared responses, and record both input/output hashes.
+   - Do not persist either transient view as an authority file.
    - Treat `coverageReceiptPath`, `generationReceiptPath`, `sourcePlanHash`, `goalContractHash`, `sourceObligationCount`, and `unmappedSourceObligations: 0` from the JSON output as required generation evidence.
    - Require the coverage receipt before public release use.
    - The installed consumer invocation must work for Codex, Claude Code, and Cursor without host-specific lock-in and without consumer root `scripts/`.

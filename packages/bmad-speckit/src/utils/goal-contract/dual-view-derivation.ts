@@ -21,6 +21,24 @@ const FORBIDDEN_IMPLEMENTATION_FIELDS = Object.freeze([
   'sharedResponseId',
 ]);
 
+const ACCEPTANCE_EVIDENCE_REQUIRED_FIELDS = Object.freeze([
+  'acceptanceItems',
+  'negativeControls',
+  'productionEntryPoints',
+  'manualScenarios',
+  'expectedEvidence',
+  'antiCheatRules',
+  'stopConditions',
+]);
+
+const FORBIDDEN_ACCEPTANCE_EVIDENCE_FIELDS = Object.freeze([
+  'implementationView',
+  'otherView',
+  'reconciliationFindings',
+  'sharedResponse',
+  'sharedResponseId',
+]);
+
 function sha256(value) {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
@@ -171,12 +189,119 @@ function validateImplementationView(view) {
   };
 }
 
+function validateAcceptanceEvidenceView(view) {
+  if (!view || typeof view !== 'object' || Array.isArray(view)) {
+    return {
+      decision: 'block',
+      failureClass: 'acceptance_evidence_view_incomplete',
+      missingFields: ACCEPTANCE_EVIDENCE_REQUIRED_FIELDS,
+    };
+  }
+  const missingFields = ACCEPTANCE_EVIDENCE_REQUIRED_FIELDS.filter(
+    (field) => !Array.isArray(view[field]) || view[field].length === 0
+  );
+  if (missingFields.length > 0) {
+    return {
+      decision: 'block',
+      failureClass: 'acceptance_evidence_view_incomplete',
+      missingFields,
+    };
+  }
+  const forbiddenFields = FORBIDDEN_ACCEPTANCE_EVIDENCE_FIELDS.filter(
+    (field) => Object.prototype.hasOwnProperty.call(view, field)
+  );
+  if (forbiddenFields.length > 0) {
+    return {
+      decision: 'block',
+      failureClass: 'view_isolation_violation',
+      forbiddenFields,
+    };
+  }
+  return {
+    decision: 'pass',
+    acceptanceCount: view.acceptanceItems.length,
+    evidenceCount: view.expectedEvidence.length,
+    negativeControlCount: view.negativeControls.length,
+  };
+}
+
+function assertNoCrossViewInput(request, viewType) {
+  const forbidden =
+    viewType === 'implementation'
+      ? ['acceptanceEvidenceView', 'acceptanceView', 'otherView', 'sharedResponse']
+      : ['implementationView', 'otherView', 'sharedResponse'];
+  const forbiddenFields = forbidden.filter((field) =>
+    Object.prototype.hasOwnProperty.call(request || {}, field)
+  );
+  if (forbiddenFields.length > 0) {
+    throw failure('view_isolation_violation', { viewType, forbiddenFields });
+  }
+}
+
+function assertViewIsolation(implementationResult, acceptanceEvidenceResult) {
+  const implementationReceipt = implementationResult?.receipt;
+  const acceptanceReceipt = acceptanceEvidenceResult?.receipt;
+  const violations = [];
+  if (implementationReceipt?.viewType !== 'implementation') {
+    violations.push('implementation_view_type');
+  }
+  if (acceptanceReceipt?.viewType !== 'acceptance_evidence') {
+    violations.push('acceptance_evidence_view_type');
+  }
+  if (
+    !implementationReceipt?.inputHash ||
+    implementationReceipt.inputHash !== acceptanceReceipt?.inputHash
+  ) {
+    violations.push('snapshot_hash_mismatch');
+  }
+  if (
+    !implementationReceipt?.sessionIdentity ||
+    implementationReceipt.sessionIdentity === acceptanceReceipt?.sessionIdentity
+  ) {
+    violations.push('provider_session_not_isolated');
+  }
+  if (
+    implementationReceipt?.persistedViewAuthorityFiles !== 0 ||
+    acceptanceReceipt?.persistedViewAuthorityFiles !== 0
+  ) {
+    violations.push('persisted_view_authority');
+  }
+  if (violations.length > 0) {
+    throw failure('view_isolation_violation', { violations });
+  }
+  return {
+    decision: 'pass',
+    snapshotHash: implementationReceipt.inputHash,
+    persistedViewAuthorityFiles: 0,
+  };
+}
+
 class StandaloneViewProvider {
   constructor(adapter = {}) {
     this.adapter = adapter;
+    this.sessionIdentities = new Set();
   }
 
-  async deriveImplementationView({ snapshot, repositoryFacts = {} }) {
+  reserveSessionIdentity(role) {
+    const sessionIdentity = this.adapter.createSessionIdentity(role);
+    if (!sessionIdentity) {
+      throw failure('BLOCKED_ENVIRONMENT', {
+        unavailableCapability: 'isolated_provider_session',
+      });
+    }
+    if (this.sessionIdentities.has(sessionIdentity)) {
+      throw failure('view_isolation_violation', {
+        role,
+        violations: ['provider_session_reused'],
+      });
+    }
+    this.sessionIdentities.add(sessionIdentity);
+    return String(sessionIdentity);
+  }
+
+  async deriveImplementationView(request) {
+    assertNoCrossViewInput(request, 'implementation');
+    const { snapshot, repositoryFacts = {} } = request || {};
     if (
       typeof this.adapter.deriveImplementationView !== 'function' ||
       typeof this.adapter.createSessionIdentity !== 'function'
@@ -188,14 +313,7 @@ class StandaloneViewProvider {
     if (!snapshot?.aggregateHash || !Object.isFrozen(snapshot)) {
       throw failure('source_snapshot_not_frozen');
     }
-    const sessionIdentity = this.adapter.createSessionIdentity(
-      'implementation_view'
-    );
-    if (!sessionIdentity) {
-      throw failure('BLOCKED_ENVIRONMENT', {
-        unavailableCapability: 'isolated_provider_session',
-      });
-    }
+    const sessionIdentity = this.reserveSessionIdentity('implementation_view');
     const providerInput = deepFreeze({
       snapshot,
       snapshotHash: snapshot.aggregateHash,
@@ -223,10 +341,58 @@ class StandaloneViewProvider {
       }),
     };
   }
+
+  async deriveAcceptanceEvidenceView(request) {
+    assertNoCrossViewInput(request, 'acceptance_evidence');
+    const { snapshot, repositoryFacts = {} } = request || {};
+    if (
+      typeof this.adapter.deriveAcceptanceEvidenceView !== 'function' ||
+      typeof this.adapter.createSessionIdentity !== 'function'
+    ) {
+      throw failure('BLOCKED_ENVIRONMENT', {
+        unavailableCapability: 'isolated_acceptance_evidence_view_provider',
+      });
+    }
+    if (!snapshot?.aggregateHash || !Object.isFrozen(snapshot)) {
+      throw failure('source_snapshot_not_frozen');
+    }
+    const sessionIdentity = this.reserveSessionIdentity(
+      'acceptance_evidence_view'
+    );
+    const providerInput = deepFreeze({
+      snapshot,
+      snapshotHash: snapshot.aggregateHash,
+      repositoryFacts: structuredClone(repositoryFacts),
+      roleContract: 'acceptance_evidence_view/v1',
+    });
+    const rawView =
+      await this.adapter.deriveAcceptanceEvidenceView(providerInput);
+    const validation = validateAcceptanceEvidenceView(rawView);
+    if (validation.decision !== 'pass') {
+      throw failure(validation.failureClass, validation);
+    }
+    const view = deepFreeze(structuredClone(rawView));
+    return {
+      view,
+      validation,
+      receipt: deepFreeze({
+        schemaVersion: 'goal-contract-view-provider-receipt/v1',
+        viewType: 'acceptance_evidence',
+        providerIdentity: String(this.adapter.providerIdentity || 'unknown'),
+        sessionIdentity,
+        inputHash: snapshot.aggregateHash,
+        outputHash: sha256(Buffer.from(stableStringify(view), 'utf8')),
+        completedAt: new Date().toISOString(),
+        persistedViewAuthorityFiles: 0,
+      }),
+    };
+  }
 }
 
 module.exports = {
   StandaloneViewProvider,
+  assertViewIsolation,
   buildSourceSnapshot,
+  validateAcceptanceEvidenceView,
   validateImplementationView,
 };

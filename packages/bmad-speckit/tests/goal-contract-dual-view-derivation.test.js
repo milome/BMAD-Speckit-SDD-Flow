@@ -5,7 +5,9 @@ const path = require('node:path');
 
 const {
   StandaloneViewProvider,
+  assertViewIsolation,
   buildSourceSnapshot,
+  validateAcceptanceEvidenceView,
   validateImplementationView,
 } = require('../src/utils/goal-contract/dual-view-derivation.ts');
 
@@ -25,6 +27,18 @@ function implementationView() {
     commitPolicy: 'exactly_one_atomic_commit',
     closeConditions: ['Implementation View is complete.'],
     synchronizationObligations: ['package-source'],
+  };
+}
+
+function acceptanceEvidenceView() {
+  return {
+    acceptanceItems: [{ id: 'AC-01', passCondition: 'Three entries are explicit.' }],
+    negativeControls: ['unknown entry blocks'],
+    productionEntryPoints: ['bmad-speckit goal-contract generate'],
+    manualScenarios: ['Run one standalone generation journey.'],
+    expectedEvidence: [{ id: 'EVD-01', producer: 'CMD-02' }],
+    antiCheatRules: ['fixture-only evidence cannot close acceptance'],
+    stopConditions: ['BLOCKED_ENVIRONMENT'],
   };
 }
 
@@ -49,6 +63,10 @@ describe('goal-contract dual-view derivation', () => {
       /goal-contract generate --entry standalone_goal_contract/u
     );
     assert.match(skill, /StandaloneViewProvider\.deriveImplementationView/u);
+    assert.match(
+      skill,
+      /StandaloneViewProvider\.deriveAcceptanceEvidenceView/u
+    );
     assert.match(skill, /immutable `SourceSnapshot`/u);
   });
 
@@ -162,6 +180,65 @@ describe('goal-contract dual-view derivation', () => {
     await assert.rejects(
       () => unavailableProvider.deriveImplementationView({ snapshot }),
       (error) => error.failureClass === 'BLOCKED_ENVIRONMENT'
+    );
+  });
+
+  it('derives a separate complete Acceptance/Evidence View from the same snapshot', async () => {
+    const snapshot = buildSourceSnapshot({
+      sourceType: 'source_plan',
+      sourcePath: 'docs/plans/source.md',
+      rawBytes: Buffer.from('# Plan\n', 'utf8'),
+    });
+    const provider = new StandaloneViewProvider({
+      providerIdentity: 'provider-a',
+      createSessionIdentity: (role) => `${role}-session`,
+      deriveImplementationView: async () => implementationView(),
+      deriveAcceptanceEvidenceView: async () => acceptanceEvidenceView(),
+    });
+
+    const implementation = await provider.deriveImplementationView({ snapshot });
+    const acceptanceEvidence = await provider.deriveAcceptanceEvidenceView({
+      snapshot,
+    });
+    const isolation = assertViewIsolation(implementation, acceptanceEvidence);
+
+    assert.equal(acceptanceEvidence.validation.decision, 'pass');
+    assert.deepEqual(acceptanceEvidence.view, acceptanceEvidenceView());
+    assert.equal(
+      acceptanceEvidence.receipt.inputHash,
+      implementation.receipt.inputHash
+    );
+    assert.notEqual(
+      acceptanceEvidence.receipt.sessionIdentity,
+      implementation.receipt.sessionIdentity
+    );
+    assert.equal(isolation.decision, 'pass');
+    assert.equal(isolation.persistedViewAuthorityFiles, 0);
+  });
+
+  it('rejects incomplete Acceptance/Evidence Views and cross-view input', async () => {
+    assert.equal(
+      validateAcceptanceEvidenceView({ acceptanceItems: [] }).failureClass,
+      'acceptance_evidence_view_incomplete'
+    );
+    const snapshot = buildSourceSnapshot({
+      sourceType: 'source_plan',
+      sourcePath: 'docs/plans/source.md',
+      rawBytes: Buffer.from('# Plan\n', 'utf8'),
+    });
+    const provider = new StandaloneViewProvider({
+      providerIdentity: 'provider-a',
+      createSessionIdentity: (role) => `${role}-session`,
+      deriveAcceptanceEvidenceView: async () => acceptanceEvidenceView(),
+    });
+
+    await assert.rejects(
+      () =>
+        provider.deriveAcceptanceEvidenceView({
+          snapshot,
+          implementationView: implementationView(),
+        }),
+      (error) => error.failureClass === 'view_isolation_violation'
     );
   });
 });
