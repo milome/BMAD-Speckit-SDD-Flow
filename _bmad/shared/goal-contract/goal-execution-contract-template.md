@@ -88,6 +88,13 @@ Use this section to bind any domain-specific classifier, state machine, schema, 
 <!-- goal-slot:domainAddenda required dynamic=domainAddenda -->
 <!-- /goal-slot:domainAddenda -->
 
+## Trace Slice Tracking Matrix
+
+This dimension owns ordered execution, path scope, command impact, dependency, commit, and close-condition bindings.
+
+<!-- goal-slot:traceSliceTrackingMatrix optional dynamic=traceEvidence -->
+<!-- /goal-slot:traceSliceTrackingMatrix -->
+
 ## Implementation Tasks
 
 <!-- goal-slot:implementationTasks required dynamic=traceSlices -->

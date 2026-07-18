@@ -1,8 +1,24 @@
-const { buildSourceCoverageMatrix, validateSourceCoverage } = require('./source-coverage-matrix');
+const {
+  buildSourceCoverageMatrix,
+  validateSourceCoverage,
+} = require(
+  __filename.endsWith('.ts')
+    ? './source-coverage-matrix.ts'
+    : './source-coverage-matrix'
+);
 const {
   resolveEntryProfileOverlay,
   validateEntryProfile,
-} = require('./entry-scenarios');
+} = require(
+  __filename.endsWith('.ts') ? './entry-scenarios.ts' : './entry-scenarios'
+);
+const {
+  projectEvidenceDimensions,
+} = require(
+  __filename.endsWith('.ts')
+    ? './evidence-projections.ts'
+    : './evidence-projections'
+);
 
 function repoPath(filePath) {
   return String(filePath).replace(/\\/g, '/');
@@ -165,7 +181,37 @@ function buildCommands(sourceObligations, coverageReceiptPath) {
     .join('\n\n');
 }
 
-function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, generatedAt = new Date().toISOString() }) {
+function buildProjectionSlotData(evidenceGraph) {
+  const projections = projectEvidenceDimensions(evidenceGraph);
+  const projectionById = new Map(
+    projections.map((projection) => [projection.projectionId, projection])
+  );
+  function markdown(projectionId) {
+    return projectionById.get(projectionId)?.markdown || '';
+  }
+  return {
+    traceSliceTrackingMatrix: markdown('projection.trace_slices'),
+    strictAcceptanceChecklist: markdown('projection.strict_acceptance'),
+    acceptanceTraceabilityMatrix: markdown(
+      'projection.acceptance_traceability'
+    ),
+    sourceCoverageMatrix: markdown('projection.source_coverage'),
+    manualVerificationScenarios: markdown('projection.manual_scenarios'),
+    completionEvidencePacket: markdown('projection.completion_evidence'),
+    stopConditions: markdown('projection.stop_conditions'),
+    projectionReceipt: {
+      schemaVersion: 'goal-contract-projection-receipt/v1',
+      graphHash: evidenceGraph.graphHash,
+      projectionIds: projections.map(
+        (projection) => projection.projectionId
+      ),
+      requiredSectionCount: projections.length,
+      runtimeEvidenceAuthority: false,
+    },
+  };
+}
+
+function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, evidenceGraph = null, generatedAt = new Date().toISOString() }) {
   const entryProfileValidation = validateEntryProfile(
     profile,
     'standalone_goal_contract'
@@ -199,6 +245,9 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
   }
   const lastTaskId = registries.tasks.at(-1);
   const lastAcceptanceId = registries.acceptance.at(-1);
+  const projectionSlots = evidenceGraph
+    ? buildProjectionSlotData(evidenceGraph)
+    : null;
   const slotData = {
     frontMatter: frontMatter({
       profile,
@@ -234,23 +283,40 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
       '- `unmappedSourceObligations` MUST equal `0`.',
     ].join('\n'),
     implementationTasks: buildImplementationTasks(registries.sourceObligations),
-    strictAcceptanceChecklist: buildAcceptance(registries.sourceObligations),
-    acceptanceTraceabilityMatrix: buildTrace(registries.sourceObligations),
-    sourceCoverageMatrix: buildSourceCoverageMatrix({ sourceObligations: registries.sourceObligations }),
+    traceSliceTrackingMatrix:
+      projectionSlots?.traceSliceTrackingMatrix ||
+      buildTrace(registries.sourceObligations),
+    strictAcceptanceChecklist:
+      projectionSlots?.strictAcceptanceChecklist ||
+      buildAcceptance(registries.sourceObligations),
+    acceptanceTraceabilityMatrix:
+      projectionSlots?.acceptanceTraceabilityMatrix ||
+      buildTrace(registries.sourceObligations),
+    sourceCoverageMatrix:
+      projectionSlots?.sourceCoverageMatrix ||
+      buildSourceCoverageMatrix({
+        sourceObligations: registries.sourceObligations,
+      }),
     requiredTestCommands: buildCommands(registries.sourceObligations, coverageReceiptPath),
-    manualVerificationScenarios: '- MV001: Inspect the coverage receipt and confirm `decision` is `pass` and `unmappedSourceObligations` is empty.',
-    completionEvidencePacket: [
-      `- \`sourcePlanPath\`: \`${source.sourcePlanPath}\`.`,
-      `- \`sourcePlanHash\`: \`${source.sourcePlanHash}\`.`,
-      `- \`coverageReceiptPath\`: \`${repoPath(coverageReceiptPath)}\`.`,
-      `- \`generationReceiptPath\`: \`${repoPath(generationReceiptPath)}\`.`,
-      '- `residualRisks`: `none` only when all required commands pass.',
-    ].join('\n'),
-    stopConditions: [
-      '- STOP001: If source hash differs from the front matter source hash, stop with `contract_amendment_required:source_plan_hash_mismatch`.',
-      '- STOP002: If any source obligation is unmapped, stop with `source_coverage_unmapped`.',
-      '- STOP003: If coverage receipt is missing, stop with `coverage_receipt_missing`.',
-    ].join('\n'),
+    manualVerificationScenarios:
+      projectionSlots?.manualVerificationScenarios ||
+      '- MV001: Inspect the coverage receipt and confirm `decision` is `pass` and `unmappedSourceObligations` is empty.',
+    completionEvidencePacket:
+      projectionSlots?.completionEvidencePacket ||
+      [
+        `- \`sourcePlanPath\`: \`${source.sourcePlanPath}\`.`,
+        `- \`sourcePlanHash\`: \`${source.sourcePlanHash}\`.`,
+        `- \`coverageReceiptPath\`: \`${repoPath(coverageReceiptPath)}\`.`,
+        `- \`generationReceiptPath\`: \`${repoPath(generationReceiptPath)}\`.`,
+        '- `residualRisks`: `none` only when all required commands pass.',
+      ].join('\n'),
+    stopConditions:
+      projectionSlots?.stopConditions ||
+      [
+        '- STOP001: If source hash differs from the front matter source hash, stop with `contract_amendment_required:source_plan_hash_mismatch`.',
+        '- STOP002: If any source obligation is unmapped, stop with `source_coverage_unmapped`.',
+        '- STOP003: If coverage receipt is missing, stop with `coverage_receipt_missing`.',
+      ].join('\n'),
   };
   return {
     slotData,
@@ -259,10 +325,12 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
     implementationProofAudit: proofAudit,
     entryProfile,
     entryProfileValidation,
+    projectionReceipt: projectionSlots?.projectionReceipt || null,
   };
 }
 
 module.exports = {
+  buildProjectionSlotData,
   buildSlotData,
   implementationProofAudit,
   makeRegistries,

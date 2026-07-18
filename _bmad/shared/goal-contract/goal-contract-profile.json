@@ -4,8 +4,8 @@
   "profileVersion": "2.1.0",
   "contractVersion": "goal-execution-contract/v1",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
-  "templateHash": "sha256:abc91d30075176630c391aed169f357d361bdb7faf8d139aa0a9568bc61e5dc9",
-  "profileHash": "sha256:58451629318a20bb5f819bf56f58486bc3e8ffeaf47a3522f0bfbefe050c84e8",
+  "templateHash": "sha256:3a26deebb994d5cfe87f6f5e331cfa17c15a9f0f713fc8c2fb2cfeda65b6851e",
+  "profileHash": "sha256:b6aa341e15cbf06e636a2a7c6d385213db6cef0a9043ce00daac63a379bfde1d",
   "entryProfiles": {
     "req_trace_direct": {
       "sourceAuthority": "confirmed_implementation_confirmation_and_requirement_record",
@@ -76,13 +76,27 @@
       },
       "requiredSections": [
         "Trace Slice Tracking Matrix",
+        "Strict Acceptance Checklist",
+        "Acceptance Traceability Matrix",
+        "Source Coverage Matrix",
+        "Manual Verification Scenarios",
+        "Completion Evidence Packet",
+        "Stop Conditions",
         "Expected Evidence Freeze"
       ],
       "requiredFrontMatterFields": [
         "entryScenario",
         "finalArtifactAuthority"
       ],
-      "requiredSlots": [],
+      "requiredSlots": [
+        "traceSliceTrackingMatrix",
+        "strictAcceptanceChecklist",
+        "acceptanceTraceabilityMatrix",
+        "sourceCoverageMatrix",
+        "manualVerificationScenarios",
+        "completionEvidencePacket",
+        "stopConditions"
+      ],
       "invariantFragments": [
         "standalone Markdown contract is the frozen execution authority"
       ],
@@ -150,7 +164,53 @@
     "completionEvidencePacket",
     "stopConditions"
   ],
-  "optionalSlots": [],
+  "optionalSlots": [
+    "traceSliceTrackingMatrix"
+  ],
+  "projectionDimensions": [
+    {
+      "id": "projection.trace_slices",
+      "sectionTitle": "Trace Slice Tracking Matrix",
+      "semanticRole": "execution_order",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.strict_acceptance",
+      "sectionTitle": "Strict Acceptance Checklist",
+      "semanticRole": "executor_completion_checklist",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.acceptance_traceability",
+      "sectionTitle": "Acceptance Traceability Matrix",
+      "semanticRole": "acceptance_implementation_evidence_join",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.source_coverage",
+      "sectionTitle": "Source Coverage Matrix",
+      "semanticRole": "source_obligation_completeness",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.manual_scenarios",
+      "sectionTitle": "Manual Verification Scenarios",
+      "semanticRole": "human_observable_real_entry_behavior",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.completion_evidence",
+      "sectionTitle": "Completion Evidence Packet",
+      "semanticRole": "expected_observed_evidence_closure",
+      "runtimeEvidenceAuthority": false
+    },
+    {
+      "id": "projection.stop_conditions",
+      "sectionTitle": "Stop Conditions",
+      "semanticRole": "terminal_decision_failure_classification",
+      "runtimeEvidenceAuthority": false
+    }
+  ],
   "invariantFragments": [
     "model_packet.json is the machine-readable execution authority",
     "goal_execution.md is not execution authority",

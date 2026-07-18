@@ -124,6 +124,10 @@ function auditRenderedDocument(document, profile, slotInfo, templateText) {
   const renderedSections = extractSections(document);
   const missingRequiredSections = (profile.requiredSections ?? []).filter((section) => !renderedSections.includes(section));
   const missingInvariantFragments = (profile.invariantFragments ?? []).filter((fragment) => !document.includes(fragment));
+  const projectionDimensions = profile.projectionDimensions ?? [];
+  const renderedProjectionIds = projectionDimensions
+    .filter((projection) => renderedSections.includes(projection.sectionTitle))
+    .map((projection) => projection.id);
   const requiredSlots = new Set(profile.requiredSlots ?? []);
   const renderedRequiredSlots = slotInfo.slots
     .filter((slot) => requiredSlots.has(slot.name))
@@ -141,6 +145,9 @@ function auditRenderedDocument(document, profile, slotInfo, templateText) {
     missingRequiredSections,
     invariantFragmentsPassed: missingInvariantFragments.length === 0,
     missingInvariantFragments,
+    projectionSectionCount: renderedProjectionIds.length,
+    projectionIds: renderedProjectionIds,
+    runtimeEvidenceAuthority: false,
     contentHash: sha256(document),
   };
 }
