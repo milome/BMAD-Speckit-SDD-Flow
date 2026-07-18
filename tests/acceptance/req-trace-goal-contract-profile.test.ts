@@ -22,14 +22,6 @@ const CANONICAL_PROFILE = path.join(
   'goal-contract',
   'goal-contract-profile.json'
 );
-const VERIFY_GOAL_PROFILE = path.join(
-  ROOT,
-  '_bmad',
-  'shared',
-  'goal-contract',
-  'scripts',
-  'verify-goal-contract-profile.js'
-);
 const SKILL_MD = path.join(
   ROOT,
   '_bmad',
