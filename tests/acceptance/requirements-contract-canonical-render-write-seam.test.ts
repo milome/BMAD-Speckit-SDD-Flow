@@ -29,9 +29,21 @@ describe.runIf(existsSync(seamPath))('canonical PRD render/write seam', () => {
         title: 'Checkout Product',
         sections: [{ heading: 'Vision', body: 'Fast, recoverable checkout.' }],
       });
+      const canonicalFixture = readFileSync(
+        path.resolve(
+          'packages/bmad-speckit/src/main-agent/source-authority/tests/fixtures/source-prd/golden-source-prd.md'
+        ),
+        'utf8'
+      );
+      const semanticStart = canonicalFixture.indexOf('## Product Context');
+      const semanticEnd = canonicalFixture.indexOf('## Revision History');
+      const directIntake = canonicalFixture.slice(semanticStart, semanticEnd).trim();
       const source = renderCanonicalRequirementSourcePrd({
+        recordId: 'REQ-CHECKOUT',
         requirementSetId: 'REQ-CHECKOUT',
         title: 'Checkout Requirements',
+        entrySource: 'session_requirements',
+        createdAt: '2026-07-18T00:00:00.000Z',
         semanticModelHash: `sha256:${'1'.repeat(64)}`,
         sourceAuthorityHash: `sha256:${'2'.repeat(64)}`,
         proofRefs: {
@@ -45,15 +57,13 @@ describe.runIf(existsSync(seamPath))('canonical PRD render/write seam', () => {
             hash: `sha256:${'5'.repeat(64)}`,
           },
         },
-        sections: [{ heading: 'Requirements', body: '- MUST retry exactly three times.' }],
-        implementationConfirmation: {
-          compactTraceMarkdown: '| Requirement | Acceptance |\\n|---|---|\\n| MUST-001 | AC-001 |',
-        },
+        sourceText: `${directIntake}\n\nimplementationConfirmation:\n  status: draft\n`,
       });
 
       expect(product.content).not.toContain('implementationConfirmation');
       expect(source.content).toContain('implementationConfirmation');
       expect(source.content).toContain('REQ-CHECKOUT');
+      expect(source.content).toContain('# Requirements Contract Source PRD Template');
       expect(writeRegisteredPrdRender({ rendered: product, targetPath: productPath }).targetRef.hash)
         .toBe(product.renderedContentHash);
       expect(writeRegisteredPrdRender({ rendered: source, targetPath: sourcePath }).targetRef.hash)

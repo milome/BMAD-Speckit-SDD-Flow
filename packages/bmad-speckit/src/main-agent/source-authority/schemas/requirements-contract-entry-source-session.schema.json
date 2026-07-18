@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-entry-source-session.schema.json",
+  "title": "Requirements Contract Entry Source Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "entrySource",
+    "requirementSetId",
+    "authority",
+    "compilationOrder",
+    "intakeReceiptHash",
+    "discoverySessionHash",
+    "candidateBatchHash",
+    "intakeReceipt",
+    "discoverySession",
+    "semanticCandidateBatch",
+    "entrySourceSessionHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-entry-source-session/v1"
+    },
+    "entrySource": {
+      "const": "session_requirements"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority": {
+      "const": "none"
+    },
+    "compilationOrder": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "const": "intake_receipt"
+        },
+        {
+          "const": "discovery_session"
+        },
+        {
+          "const": "semantic_candidate_batch"
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "intakeReceiptHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "discoverySessionHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "candidateBatchHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "intakeReceipt": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "requirementSetId",
+        "sessionId",
+        "entrySource",
+        "receiptHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-intake-receipt/v1"
+        },
+        "requirementSetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entrySource": {
+          "const": "session_requirements"
+        },
+        "receiptHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "discoverySession": {
+      "type": "object",
+      "required": ["schemaVersion", "sessionId", "authorityClass", "sessionHash"],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-discovery-session/v1"
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorityClass": {
+          "const": "none"
+        },
+        "sessionHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "semanticCandidateBatch": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "requirementSetId",
+        "discoverySessionId",
+        "candidateBatchHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-semantic-candidate-batch/v1"
+        },
+        "requirementSetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "discoverySessionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidateBatchHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "entrySourceSessionHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

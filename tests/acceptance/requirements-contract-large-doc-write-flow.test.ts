@@ -138,6 +138,13 @@ function writeAuthoringPromotionGuard(
     extractedDraft.confirmation
   );
   const draftImplementationHash = implementationConfirmationHashFor(extractedDraft.confirmation);
+  const checkpointIdentity = {
+    recordId: String(extractedDraft.confirmation.recordId),
+    requirementSetId: String(extractedDraft.confirmation.requirementSetId),
+    implementationAttemptId: 'IMP-LARGE-DOC-FIXTURE',
+    semanticModelHash: sha256Json({ name, semanticModel: 'fixture' }),
+    semanticConservationManifestHash: sha256Json({ name, manifest: 'fixture' }),
+  };
   const scaleAssessment = {
     schemaVersion: 'contract-authoring-scale-assessment/v1',
     phase: 'initial_assessment',
@@ -224,11 +231,26 @@ function writeAuthoringPromotionGuard(
   if (options.includeCheckpointEvidence) {
     const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId) => {
       const receiptPayload = {
-        schemaVersion: 'requirements-contract-checkpoint-receipt/v1',
+        schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
         checkpointId,
-        status: 'passed',
+        validatorIdentity: `requirements-contract-large-doc-fixture/${checkpointId}`,
+        validatorVersion: '1.0.0',
+        validatorHash: sha256Text(`validator:${checkpointId}`),
+        ...checkpointIdentity,
         sourceDocumentHash: draftSemanticSourceHash,
         implementationConfirmationHash: draftImplementationHash,
+        persistenceStatus: 'committed',
+        semanticValidationStatus: 'pass',
+        validatedInputs: [
+          {
+            role: 'source_document',
+            path: options.draftPath.replace(/\\/g, '/'),
+            hash: draftHash,
+          },
+        ],
+        blockers: [],
+        decision: 'pass',
+        createdAt: '2026-06-02T00:00:00.000Z',
       };
       const receiptPath = writeJson(`${name}-${checkpointId}-receipt.json`, {
         ...receiptPayload,
@@ -239,9 +261,12 @@ function writeAuthoringPromotionGuard(
         path: receiptPath.replace(/\\/g, '/'),
         hash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
         status: 'passed',
+        persistenceStatus: 'committed',
+        semanticValidationStatus: 'pass',
       };
     });
     paths.checkpointPersistenceEvidencePath = writeJson(`${name}-checkpoint-persistence-evidence.json`, {
+      ...checkpointIdentity,
       checkpointPersistenceSatisfiedCandidate: true,
       checkpointPersistenceRef: {
         routeDecisionHash: `sha256:${'3'.repeat(64)}`,
@@ -1049,7 +1074,7 @@ describe('requirements-contract large document write flow', () => {
     expect(listTemporaryExecutables(authoringDir)).toEqual([]);
   });
 
-  it('writes Critical Auditor no-new-gap responses through a skill-local script without helper scripts', () => {
+  it('blocks deterministic Critical Auditor no-new-gap response writing without helper scripts', () => {
     const authoringDir = path.join(
       tempDir,
       '_bmad-output',
@@ -1121,22 +1146,16 @@ describe('requirements-contract large document write flow', () => {
       '--json',
     ], tempDir);
     const responsePath = path.join(authoringDir, 'critical-auditor-round-response-1.json');
-    const response = JSON.parse(fs.readFileSync(responsePath, 'utf8'));
 
-    expect(written.result.status).toBe(0);
-    expect(written.json.ok).toBe(true);
-    expect(response).toMatchObject({
-      schemaVersion: 'critical-auditor-round-response/v1',
-      verdict: 'no_new_valid_gap',
+    expect(written.result.status).toBe(1);
+    expect(written.json).toMatchObject({
+      ok: false,
+      failureClass: 'critical_auditor_independent_provider_evidence_required',
+      issues: ['deterministic_no_new_gap_response_writer_forbidden'],
       requestHash: `sha256:${'1'.repeat(64)}`,
-      sourceDocumentHash: `sha256:${'2'.repeat(64)}`,
-      implementationConfirmationHash: `sha256:${'3'.repeat(64)}`,
-      packetHash: `sha256:${'4'.repeat(64)}`,
-      gateDryRunHash: `sha256:${'5'.repeat(64)}`,
-      reconciliationIssueCount: 0,
-      checkedProjectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
-      reviewedProjectionRefs: ['DECOMP-MUST-001', 'TASK-MUST-001'],
+      receiptWritten: false,
     });
+    expect(fs.existsSync(responsePath)).toBe(false);
     expect(listTemporaryExecutables(authoringDir)).toEqual([]);
   });
 

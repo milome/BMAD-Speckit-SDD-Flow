@@ -89,7 +89,7 @@ function writeRecord(root: string, artifacts: Array<Record<string, unknown>> = [
 }
 
 describe('main-agent BMAD artifact hardcut', () => {
-  it('keeps the BMAD create-PRD template as discovery plus source PRD projection seed', () => {
+  it('keeps the BMAD create-PRD template as a non-authoritative Discovery Envelope', () => {
     const template = readFileSync(
       path.join(
         process.cwd(),
@@ -103,18 +103,27 @@ describe('main-agent BMAD artifact hardcut', () => {
       ),
       'utf8'
     );
+    const canonicalTemplate = readFileSync(
+      path.join(
+        process.cwd(),
+        '_bmad',
+        'shared',
+        'requirements-contract',
+        'templates',
+        'discovery-prd-envelope-template.md'
+      ),
+      'utf8'
+    );
 
-    expect(template).toContain('## BMAD Discovery Layer');
-    expect(template).toContain('## Functional Requirements');
-    expect(template).toContain('## Non-Functional Requirements');
-    expect(template).toContain('## Negative Requirements And Not Done Conditions');
-    expect(template).toContain('## Trace Matrix Source');
-    expect(template).toContain('## Implementation Path Map');
-    expect(template).toContain('## Source Current State');
-    expect(template).toContain('## Source Target State');
-    expect(template).toContain('## Current Target Map');
-    expect(template).toContain('## Source PRD Instance Lint Handoff');
-    expect(template).not.toMatch(/^implementationConfirmation:\s*$/mu);
+    expect(template).toBe(canonicalTemplate);
+    expect(template).toContain('artifactRole: discovery_envelope');
+    expect(template).toContain('authority: none');
+    expect(template).toContain('## Workflow Progress');
+    expect(template).toContain('## Semantic Candidate References');
+    expect(template).toContain('## Materialization Handoff');
+    expect(template).not.toMatch(
+      /implementationConfirmation|currentTargetMap|## Trace Matrix Source|## Acceptance Evidence|## Implementation Path Map/u
+    );
   });
 
   it('passes when BMAD authoring paths are preserved and new runtime artifacts are requirement-scoped', () => {

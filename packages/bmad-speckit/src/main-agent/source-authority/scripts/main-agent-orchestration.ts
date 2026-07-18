@@ -126,6 +126,7 @@ import {
   validateRegisteredSourceRootInventory,
 } from './requirements-contract-source-root-registry';
 import { evaluateRequirementsContractRenderRoundTrip } from './requirements-contract-render-roundtrip-gate';
+import { renderCanonicalRequirementSourcePrd } from './requirements-contract-prd-render-write-seam';
 import {
   createCheckpointSemanticValidationReceipt,
   deriveCheckpointProgressState,
@@ -22187,12 +22188,109 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const materializedDraftText =
+  const preRendererDraftText =
     pendingFinalCriticalAuditorDraftText({
       transaction: stagingTransaction,
       recordId: identity.recordId,
       packetHash,
     }) ?? materializeImplementationConfirmationText(sourceText, draftConfirmation);
+  let materializedDraftText = preRendererDraftText;
+  if (entryMode === 'intake_to_new_source') {
+    try {
+      if (!entryIntakeAuthority || !productionSemanticPipeline) {
+        throw new Error('Canonical Source PRD rendering requires current intake and semantic proof');
+      }
+      const intakeReceipt = recordObject(entryIntakeAuthority.intakeReceipt);
+      const intentLineageLedger = readJsonIfExists(paths.intentLineageLedger);
+      const semanticConservationManifest =
+        productionSemanticPipeline.semanticConservationManifest;
+      const proofRefs = {
+        intakeReceipt: {
+          path: toRootRelativePath(root, paths.intakeReceipt),
+          hash: normalizeText(intakeReceipt.receiptHash),
+        },
+        intentLineageLedger: {
+          path: toRootRelativePath(root, paths.intentLineageLedger),
+          hash: normalizeText(intentLineageLedger?.ledgerHash),
+        },
+        semanticConservationManifest: {
+          path: toRootRelativePath(root, paths.semanticConservationManifest),
+          hash: normalizeText(semanticConservationManifest.manifestHash),
+        },
+      };
+      const extraction = extractImplementationConfirmationBlock(preRendererDraftText);
+      if (!extraction) {
+        throw new Error('Canonical Source PRD rendering requires implementationConfirmation');
+      }
+      const sourceWithProofBindings = materializeImplementationConfirmationText(
+        preRendererDraftText,
+        {
+          ...extraction.confirmation,
+          upstreamProofs: proofRefs,
+        }
+      );
+      const rendered = renderCanonicalRequirementSourcePrd({
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        title:
+          /^#\s+(.+?)\s*$/mu.exec(sourceText)?.[1] ??
+          `Requirements Contract ${identity.requirementSetId}`,
+        entrySource: detectedEntrySource,
+        createdAt,
+        semanticModelHash: productionSemanticPipeline.semanticIr.semanticModelHash,
+        sourceAuthorityHash: semanticConservationManifest.hashChain.sourceAuthorityHash,
+        proofRefs,
+        sourceText: sourceWithProofBindings,
+      });
+      materializedDraftText = rendered.content;
+      const renderReceiptPreimage = {
+        schemaVersion: 'requirements-contract-canonical-source-prd-render-receipt/v1',
+        rendererId: rendered.rendererId,
+        artifactRole: rendered.artifactRole,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        entrySource: detectedEntrySource,
+        semanticModelHash: productionSemanticPipeline.semanticIr.semanticModelHash,
+        sourceAuthorityHash: semanticConservationManifest.hashChain.sourceAuthorityHash,
+        proofRefs,
+        targetSourcePath: toRootRelativePath(root, sourcePath),
+        stagedDraftPath: toRootRelativePath(root, stagingTransaction.draftSource),
+        renderedContentHash: rendered.renderedContentHash,
+        createdAt,
+      };
+      writeJsonUtf8(
+        path.join(paths.authoringDir, 'canonical-source-prd-render-receipt.json'),
+        {
+          ...renderReceiptPreimage,
+          receiptHash: sha256Json(renderReceiptPreimage),
+        }
+      );
+    } catch (error) {
+      const issue = preConfirmationIssue(
+        'canonical_source_prd_render_failed',
+        error instanceof Error ? error.message : String(error),
+        [
+          toRootRelativePath(root, paths.semanticConservationManifest),
+          toRootRelativePath(root, paths.draftSourcePreview),
+        ],
+        'canonical_source_prd_renderer'
+      );
+      return buildPreConfirmationResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'blocked_by_render_gate',
+        issues: [issue],
+        confirmationLanguage: language,
+        entrySource,
+        sourcePrdInstanceLint: preStagingSourcePrdLint,
+        blockingStage: 'canonical_source_prd_render_failed',
+        sourceMutationPerformed: false,
+      });
+    }
+  }
   const stagedDraftText = fs.existsSync(stagingTransaction.draftSource)
     ? fs.readFileSync(stagingTransaction.draftSource, 'utf8')
     : null;

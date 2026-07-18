@@ -188,7 +188,7 @@ node <skill-dir>/scripts/prepare-current-source-promotion.js \
   --json
 ```
 
-For a main-session Critical Auditor no-new-gap response, use the skill-local response writer. Do not create `write-critical-auditor-no-new-gap-response.cjs` or similar helpers inside `_bmad-output/.../authoring`. The writer consumes a current round request, fails closed when the gate dry-run has actionable blockers or reconciliation issues, writes only `critical-auditor-round-response-<n>.json`, and never writes receipt files.
+Do not use a deterministic script as Critical Auditor no-new-gap authority. The skill-local `write-critical-auditor-no-new-gap-response.js` path is retained only as a fail-closed compatibility probe: it consumes the current request and returns `critical_auditor_independent_provider_evidence_required`. It never writes receipt files or response files. Obtain the response from an independently bound provider/model identity and ingest it through the controlled authoring flow. Do not create executable helpers inside `_bmad-output/.../authoring`.
 
 ```bash
 node <skill-dir>/scripts/write-critical-auditor-no-new-gap-response.js \

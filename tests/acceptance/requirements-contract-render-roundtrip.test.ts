@@ -12,11 +12,13 @@ import {
   cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
+  installJudgeRuntimeConfig,
   readJson,
   removeTempRoot,
   runAuthoring,
   runIntakeAuthoring,
   sha256File,
+  writeCanonicalizableDirectIntakeRequirement,
   writeMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
@@ -57,6 +59,7 @@ describe('requirements contract render round-trip gate', () => {
   it('rereads the audited draft through Canonical Parser, IR, and conservation before checkpoints', () => {
     const root = createTempRoot('requirements-contract-render-roundtrip-');
     try {
+      installJudgeRuntimeConfig(root);
       const descriptor = createMinimalConsumerRequirementDescriptor('render-roundtrip');
       const materialized = writeMinimalConsumerRequirement(
         root,
@@ -102,9 +105,10 @@ describe('requirements contract render round-trip gate', () => {
   it('preserves original intake provenance through rendered Source PRD readback', () => {
     const root = createTempRoot('requirements-contract-render-roundtrip-intake-');
     try {
+      installJudgeRuntimeConfig(root);
       const recordId = 'REQ-RENDER-ROUNDTRIP-INTAKE';
       const descriptor = createMinimalConsumerRequirementDescriptor(recordId);
-      const materialized = writeMinimalConsumerRequirement(
+      const materialized = writeCanonicalizableDirectIntakeRequirement(
         root,
         `_bmad-output/runtime/requirement-records/${recordId}/authoring/intake/intake-source.md`,
         descriptor
@@ -121,6 +125,25 @@ describe('requirements contract render round-trip gate', () => {
         }
       );
       const paths = artifacts(root, recordId, `${recordId}-SET`);
+      const sourcePrdLintReportPath = path.join(
+        paths.authoring,
+        'source-prd-instance-lint-report.json'
+      );
+      const sourcePrdLintReport = existsSync(sourcePrdLintReportPath)
+        ? readJson<Record<string, any>>(sourcePrdLintReportPath)
+        : null;
+      expect(
+        result.blockingIssues,
+        JSON.stringify(
+          {
+            blockingStage: result.blockingStage,
+            blockingIssues: result.blockingIssues,
+            sourcePrdLintReport,
+          },
+          null,
+          2
+        )
+      ).toEqual([]);
       const report = readJson<Record<string, any>>(paths.renderRoundTripReport);
 
       expect(

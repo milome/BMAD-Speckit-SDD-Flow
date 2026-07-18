@@ -998,6 +998,36 @@ export function writeLintReadyMinimalConsumerRequirement(
   return materialized;
 }
 
+export function writeCanonicalizableDirectIntakeRequirement(
+  root: string,
+  relativePath: string,
+  descriptor: MinimalConsumerRequirementDescriptor,
+  options: MinimalConsumerRequirementWriteOptions = {}
+): MinimalConsumerRequirementMaterialization {
+  const materialized = writeLintReadyMinimalConsumerRequirement(
+    root,
+    relativePath,
+    descriptor,
+    options
+  );
+  const canonicalSource = readFileSync(materialized.sourcePath, 'utf8');
+  const semanticStart = canonicalSource.indexOf('## Product Context');
+  const semanticEnd = canonicalSource.indexOf('## Revision History');
+  if (semanticStart < 0 || semanticEnd <= semanticStart) {
+    throw new Error('canonicalizable direct intake fixture boundaries are missing');
+  }
+  const directIntake = [
+    `# ${descriptor.semantics.title}`,
+    '',
+    `Target file: \`${descriptor.target.path}\``,
+    '',
+    canonicalSource.slice(semanticStart, semanticEnd).trim(),
+    '',
+  ].join('\n');
+  writeFileSync(materialized.sourcePath, directIntake, 'utf8');
+  return materialized;
+}
+
 export function expectSourceHashUnchanged(source: string, beforeHash: string): void {
   if (!existsSync(source)) {
     throw new Error(`source disappeared: ${source}`);
