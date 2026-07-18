@@ -4,8 +4,8 @@
   "profileVersion": "2.1.0",
   "contractVersion": "goal-execution-contract/v1",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
-  "templateHash": "sha256:3a26deebb994d5cfe87f6f5e331cfa17c15a9f0f713fc8c2fb2cfeda65b6851e",
-  "profileHash": "sha256:b6aa341e15cbf06e636a2a7c6d385213db6cef0a9043ce00daac63a379bfde1d",
+  "templateHash": "sha256:0b2903baf933aa6f658ba7613ed314862624ca3c0db5d193b9effae977240d70",
+  "profileHash": "sha256:4299a86e4d3c9bff9b18f1f94a9e0a38b26fb7edf742d2db89660431f5db0656",
   "entryProfiles": {
     "req_trace_direct": {
       "sourceAuthority": "confirmed_implementation_confirmation_and_requirement_record",
@@ -95,6 +95,7 @@
         "sourceCoverageMatrix",
         "manualVerificationScenarios",
         "completionEvidencePacket",
+        "expectedEvidenceFreeze",
         "stopConditions"
       ],
       "invariantFragments": [
@@ -165,7 +166,8 @@
     "stopConditions"
   ],
   "optionalSlots": [
-    "traceSliceTrackingMatrix"
+    "traceSliceTrackingMatrix",
+    "expectedEvidenceFreeze"
   ],
   "projectionDimensions": [
     {

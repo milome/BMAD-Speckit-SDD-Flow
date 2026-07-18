@@ -140,6 +140,13 @@ The final implementation response must include the rendered evidence packet fiel
 <!-- goal-slot:completionEvidencePacket required dynamic=evidencePacket -->
 <!-- /goal-slot:completionEvidencePacket -->
 
+## Expected Evidence Freeze
+
+Expected EVD is design-time authority. Observed Evidence remains runtime closure and cannot be synthesized by this section.
+
+<!-- goal-slot:expectedEvidenceFreeze optional dynamic=expectedEvidence -->
+<!-- /goal-slot:expectedEvidenceFreeze -->
+
 ## Stop Conditions
 
 <!-- goal-slot:stopConditions required dynamic=stopConditions -->

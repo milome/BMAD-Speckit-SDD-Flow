@@ -184,5 +184,7 @@ describe('goal-contract implementation proof audit', () => {
     assert.equal(generation.implementationProofAudit.decision, 'pass');
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
     assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u);
+    assert.doesNotMatch(goalText, /\bObserved(?: Evidence)?:\s*PASS\b/u);
+    assert.equal(generation.evidenceTerminalState ?? null, null);
   });
 });

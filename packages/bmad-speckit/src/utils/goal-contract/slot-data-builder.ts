@@ -211,7 +211,30 @@ function buildProjectionSlotData(evidenceGraph) {
   };
 }
 
-function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, evidenceGraph = null, generatedAt = new Date().toISOString() }) {
+function buildExpectedEvidenceFreezeSlot(registry) {
+  if (!registry?.immutable || !Array.isArray(registry.items)) return '';
+  return [
+    `- Registry hash: \`${registry.registryHash}\``,
+    `- Contract hash: \`${registry.contractHash}\``,
+    `- Frozen at: \`${registry.frozenAt}\``,
+    `- Expected evidence count: \`${registry.itemCount}\``,
+    '',
+    '| Evidence ID | Producer | Command | Production Entry | Admissible Types | Minimum Strength | Required Fields | Freshness | Failure Class |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...registry.items.map(
+      (item) =>
+        `| ${item.id} | ${item.producer} | ${item.commandId} | ${
+          item.productionEntryPoint
+        } | ${(item.admissibleObservedEvidenceTypes || []).join(', ')} | ${
+          item.minimumStrength
+        } | ${(item.requiredFields || []).join(', ')} | maxAgeMs=${
+          item.freshness.maxAgeMs
+        } | ${item.failureClass} |`
+    ),
+  ].join('\n');
+}
+
+function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, evidenceGraph = null, expectedEvidenceRegistry = null, generatedAt = new Date().toISOString() }) {
   const entryProfileValidation = validateEntryProfile(
     profile,
     'standalone_goal_contract'
@@ -310,6 +333,9 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
         `- \`generationReceiptPath\`: \`${repoPath(generationReceiptPath)}\`.`,
         '- `residualRisks`: `none` only when all required commands pass.',
       ].join('\n'),
+    expectedEvidenceFreeze: buildExpectedEvidenceFreezeSlot(
+      expectedEvidenceRegistry
+    ),
     stopConditions:
       projectionSlots?.stopConditions ||
       [
@@ -330,6 +356,7 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
 }
 
 module.exports = {
+  buildExpectedEvidenceFreezeSlot,
   buildProjectionSlotData,
   buildSlotData,
   implementationProofAudit,
