@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-grill-question.schema.json",
+  "title": "Requirements Grill Question Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "questionId",
+    "fieldRef",
+    "issueCode",
+    "sourceEvidence",
+    "investigations",
+    "dependencies",
+    "affectedRequirementRefs",
+    "affectedArtifactRefs",
+    "options",
+    "recommendation",
+    "responsePaths",
+    "questionHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-grill-question/v1" },
+    "questionId": { "$ref": "#/$defs/nonEmpty" },
+    "fieldRef": { "$ref": "#/$defs/nonEmpty" },
+    "issueCode": { "$ref": "#/$defs/nonEmpty" },
+    "sourceEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sourceEvidence" }
+    },
+    "investigations": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/investigation" }
+    },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmpty" }
+    },
+    "affectedRequirementRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmpty" }
+    },
+    "affectedArtifactRefs": { "$ref": "#/$defs/affectedArtifacts" },
+    "options": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/option" }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["optionId", "rationale", "selected"],
+      "properties": {
+        "optionId": { "$ref": "#/$defs/nonEmpty" },
+        "rationale": { "$ref": "#/$defs/nonEmpty" },
+        "selected": { "const": false }
+      }
+    },
+    "responsePaths": {
+      "prefixItems": [
+        { "const": "select_option" },
+        { "const": "custom_answer" },
+        { "const": "reject" },
+        { "const": "defer" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "questionHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmpty" }
+    },
+    "sourceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "excerptHash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "excerptHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "investigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref", "hash", "finding", "resolution"],
+      "properties": {
+        "kind": {
+          "enum": ["source", "repository", "architecture", "policy", "glossary", "tests"]
+        },
+        "ref": { "$ref": "#/$defs/nonEmpty" },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "finding": { "$ref": "#/$defs/nonEmpty" },
+        "resolution": { "const": "unresolved" }
+      }
+    },
+    "affectedArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticIr", "render", "oracle", "red", "packet", "evidence"],
+      "properties": {
+        "semanticIr": { "$ref": "#/$defs/stringRefs" },
+        "render": { "$ref": "#/$defs/stringRefs" },
+        "oracle": { "$ref": "#/$defs/stringRefs" },
+        "red": { "$ref": "#/$defs/stringRefs" },
+        "packet": { "$ref": "#/$defs/stringRefs" },
+        "evidence": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optionId",
+        "value",
+        "provenanceRefs",
+        "behaviorImpact",
+        "deliveryImpact"
+      ],
+      "properties": {
+        "optionId": { "$ref": "#/$defs/nonEmpty" },
+        "value": true,
+        "provenanceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "behaviorImpact": { "$ref": "#/$defs/nonEmpty" },
+        "deliveryImpact": { "$ref": "#/$defs/nonEmpty" }
+      }
+    }
+  }
+}

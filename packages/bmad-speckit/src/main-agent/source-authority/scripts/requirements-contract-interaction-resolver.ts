@@ -53,6 +53,42 @@ export interface InteractionDecisionReceipt {
   confirmedAt: string;
 }
 
+export interface CreateInteractionDecisionReceiptInput {
+  receiptRef: string;
+  questionId: string;
+  questionHash: string;
+  responseId: string;
+  responseHash: string;
+  selection:
+    | { kind: 'option'; optionId: string }
+    | { kind: 'custom_answer'; customAnswer: string };
+  fieldRef: string;
+  value: unknown;
+  sequenceModelBefore: Record<string, unknown>;
+  sequenceModelAfter: Record<string, unknown>;
+  affectedRequirementRefs: string[];
+  invalidatedArtifactRefs: string[];
+  confirmedAt: string;
+}
+
+export interface DecisionDocumentationEffects {
+  authorityReceiptRef: string;
+  contextUpdate: {
+    applicability: 'domain_vocabulary_only' | 'not_applicable';
+    entries: Array<{ term: string; definition: string }>;
+  };
+  adr: {
+    applicability: 'required' | 'not_applicable';
+    criteria: {
+      hardToReverse: boolean;
+      surprising: boolean;
+      realTradeoff: boolean;
+    };
+    authorityReceiptRef: string;
+  };
+  conversationAuthority: false;
+}
+
 export interface TrustedDecisionReceiptReadback {
   receiptPath: string;
   receiptFileHash: string;
@@ -187,6 +223,140 @@ function decisionReceiptSchemaPath(): string {
   return path.resolve(__dirname, '..', 'schemas', DECISION_RECEIPT_SCHEMA);
 }
 
+export function validateInteractionDecisionReceipt(
+  value: unknown
+): value is InteractionDecisionReceipt {
+  if (!isRecord(value)) return false;
+  const schemaText = readFileSync(decisionReceiptSchemaPath(), 'utf8');
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
+    JSON.parse(schemaText) as object
+  );
+  if (!validate(value)) return false;
+  const { receiptHash, ...payload } = value;
+  return (
+    typeof receiptHash === 'string' &&
+    SHA256.test(receiptHash) &&
+    receiptHash === sha256Stable(payload)
+  );
+}
+
+export function createInteractionDecisionReceipt(
+  input: CreateInteractionDecisionReceiptInput
+): InteractionDecisionReceipt {
+  if (
+    !isNonEmptyString(input.receiptRef) ||
+    !isNonEmptyString(input.questionId) ||
+    !SHA256.test(input.questionHash) ||
+    !isNonEmptyString(input.responseId) ||
+    !SHA256.test(input.responseHash) ||
+    !isNonEmptyString(input.fieldRef) ||
+    !isCanonicalJsonValue(input.value) ||
+    !isCanonicalJsonValue(input.sequenceModelBefore) ||
+    !isCanonicalJsonValue(input.sequenceModelAfter) ||
+    !isStringArray(input.affectedRequirementRefs) ||
+    input.affectedRequirementRefs.length === 0 ||
+    !isStringArray(input.invalidatedArtifactRefs) ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u.test(input.confirmedAt)
+  ) {
+    throw new Error('decision_receipt_input_invalid');
+  }
+  const selection = input.selection;
+  if (
+    !isRecord(selection) ||
+    !(
+      (selection.kind === 'option' &&
+        hasExactKeys(selection, ['kind', 'optionId']) &&
+        isNonEmptyString(selection.optionId)) ||
+      (selection.kind === 'custom_answer' &&
+        hasExactKeys(selection, ['kind', 'customAnswer']) &&
+        isNonEmptyString(selection.customAnswer))
+    )
+  ) {
+    throw new Error('decision_receipt_selection_invalid');
+  }
+  const affectedRequirementRefs = [...new Set(input.affectedRequirementRefs)];
+  const invalidatedArtifactRefs = [...new Set(input.invalidatedArtifactRefs)];
+  if (
+    affectedRequirementRefs.length !== input.affectedRequirementRefs.length ||
+    invalidatedArtifactRefs.length !== input.invalidatedArtifactRefs.length
+  ) {
+    throw new Error('decision_receipt_refs_duplicate');
+  }
+  const payload = {
+    schemaVersion: 'requirements-decision-receipt/v1' as const,
+    receiptRef: input.receiptRef,
+    questionId: input.questionId,
+    questionHash: input.questionHash,
+    responseId: input.responseId,
+    responseHash: input.responseHash,
+    selection: clone(input.selection),
+    fieldRef: input.fieldRef,
+    valueHash: sha256Stable(input.value),
+    authorityState: 'human_confirmed' as const,
+    sequenceModelHashBefore: sha256Stable(input.sequenceModelBefore),
+    sequenceModelHashAfter: sha256Stable(input.sequenceModelAfter),
+    affectedRequirementRefs,
+    invalidatedArtifactRefs,
+    confirmedAt: input.confirmedAt,
+  };
+  const receipt: InteractionDecisionReceipt = {
+    ...payload,
+    receiptHash: sha256Stable(payload),
+  };
+  if (!validateInteractionDecisionReceipt(receipt)) {
+    throw new Error('decision_receipt_schema_invalid');
+  }
+  return receipt;
+}
+
+export function deriveDecisionDocumentationEffects(input: {
+  receiptRef: string;
+  domainVocabulary?: Array<{ term: string; definition: string }>;
+  adrCriteria: {
+    hardToReverse: boolean;
+    surprising: boolean;
+    realTradeoff: boolean;
+  };
+}): DecisionDocumentationEffects {
+  if (
+    !isNonEmptyString(input.receiptRef) ||
+    !isRecord(input.adrCriteria) ||
+    !['hardToReverse', 'surprising', 'realTradeoff'].every(
+      (key) => typeof input.adrCriteria[key as keyof typeof input.adrCriteria] === 'boolean'
+    )
+  ) {
+    throw new Error('decision_documentation_effects_input_invalid');
+  }
+  const entries = (input.domainVocabulary ?? []).map((entry) => {
+    if (
+      !isRecord(entry) ||
+      !hasExactKeys(entry, ['term', 'definition']) ||
+      !isNonEmptyString(entry.term) ||
+      !isNonEmptyString(entry.definition)
+    ) {
+      throw new Error('decision_domain_vocabulary_invalid');
+    }
+    return { term: entry.term, definition: entry.definition };
+  });
+  const adrRequired =
+    input.adrCriteria.hardToReverse &&
+    input.adrCriteria.surprising &&
+    input.adrCriteria.realTradeoff;
+  return {
+    authorityReceiptRef: input.receiptRef,
+    contextUpdate: {
+      applicability: entries.length > 0 ? 'domain_vocabulary_only' : 'not_applicable',
+      entries,
+    },
+    adr: {
+      applicability: adrRequired ? 'required' : 'not_applicable',
+      criteria: { ...input.adrCriteria },
+      authorityReceiptRef: input.receiptRef,
+    },
+    conversationAuthority: false,
+  };
+}
+
 function validDecisionReceipt(
   receiptRef: string,
   registry: InteractionResolutionInput['trustedDecisionReceipts'],
@@ -215,14 +385,13 @@ function validDecisionReceipt(
     return null;
   }
   const schemaText = readFileSync(decisionReceiptSchemaPath(), 'utf8');
-  if (readback.schemaHash !== sha256Text(schemaText)) return null;
-  const schema = JSON.parse(schemaText) as object;
-  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
-  if (!validate(receipt) || !isNonEmptyString(receipt.receiptHash)) return null;
-  const { receiptHash, ...payload } = receipt;
+  if (
+    readback.schemaHash !== sha256Text(schemaText) ||
+    !validateInteractionDecisionReceipt(receipt)
+  ) {
+    return null;
+  }
   return (
-    SHA256.test(receiptHash) &&
-    receiptHash === sha256Stable(payload) &&
     receipt.fieldRef === candidate.fieldRef &&
     receipt.valueHash === sha256Stable(candidate.value) &&
     receipt.authorityState === 'human_confirmed' &&

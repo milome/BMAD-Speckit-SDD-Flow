@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-grill-response.schema.json",
+  "title": "Requirements Grill Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "responseId",
+    "questionId",
+    "questionHash",
+    "decision",
+    "respondedAt",
+    "responseHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-grill-response/v1" },
+    "responseId": { "$ref": "#/$defs/nonEmpty" },
+    "questionId": { "$ref": "#/$defs/nonEmpty" },
+    "questionHash": { "$ref": "#/$defs/sha256" },
+    "decision": {
+      "enum": ["select_option", "custom_answer", "reject", "defer"]
+    },
+    "optionId": { "$ref": "#/$defs/nonEmpty" },
+    "customAnswer": { "$ref": "#/$defs/nonEmpty" },
+    "reason": { "$ref": "#/$defs/nonEmpty" },
+    "respondedAt": { "$ref": "#/$defs/timestamp" },
+    "responseHash": { "$ref": "#/$defs/sha256" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "decision": { "const": "select_option" } } },
+      "then": {
+        "required": ["optionId"],
+        "not": { "anyOf": [{ "required": ["customAnswer"] }, { "required": ["reason"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "custom_answer" } } },
+      "then": {
+        "required": ["customAnswer"],
+        "not": { "anyOf": [{ "required": ["optionId"] }, { "required": ["reason"] }] }
+      }
+    },
+    {
+      "if": {
+        "properties": { "decision": { "enum": ["reject", "defer"] } }
+      },
+      "then": {
+        "required": ["reason"],
+        "not": { "anyOf": [{ "required": ["optionId"] }, { "required": ["customAnswer"] }] }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    }
+  }
+}
