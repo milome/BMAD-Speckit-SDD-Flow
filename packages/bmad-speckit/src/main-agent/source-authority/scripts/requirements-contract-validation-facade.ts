@@ -5,6 +5,14 @@ import {
   validateRequirementContractModelV2,
   type RequirementContractModelV2Issue,
 } from './requirements-contract-model';
+import {
+  evaluateRequirementsContractLintProfile,
+  type RequirementsContractLintProfile,
+  type RequirementsContractLintProfileResult,
+} from '../rules/requirements-contract-lint-profile-registry';
+import type {
+  RequirementsConfirmationRenderInput,
+} from './requirements-contract-confirmation-render-input';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 export type RequirementsContractValidationMode =
@@ -240,6 +248,13 @@ export function validateRequirementsContractDocument(
       blockingUnresolvedCount: unresolvedIssues.length,
     },
   };
+}
+
+export function validateRequirementsContractRenderInput(
+  input: RequirementsConfirmationRenderInput,
+  profile: RequirementsContractLintProfile
+): RequirementsContractLintProfileResult {
+  return evaluateRequirementsContractLintProfile(input, profile);
 }
 
 export function createRequirementsContractLifecycleValidationReport(input: {

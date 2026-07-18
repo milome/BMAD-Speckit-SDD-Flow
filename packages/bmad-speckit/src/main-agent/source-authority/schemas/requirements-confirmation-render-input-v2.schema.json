@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-confirmation-render-input-v2.schema.json",
+  "title": "Requirements Confirmation Render Input V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "semanticModelHash",
+    "authority",
+    "fields",
+    "requiredRenderFieldCount",
+    "coveredFieldCount",
+    "blockingUnresolvedCount",
+    "syntheticFieldCount",
+    "authorityInvalidCount",
+    "requiredFieldSetHash",
+    "fieldSetHash",
+    "renderInputHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-confirmation-render-input/v2" },
+    "requirementSetId": { "$ref": "#/$defs/nonEmpty" },
+    "semanticModelHash": { "$ref": "#/$defs/sha256" },
+    "authority": { "const": "none" },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/field" }
+    },
+    "requiredRenderFieldCount": { "type": "integer", "minimum": 1 },
+    "coveredFieldCount": { "type": "integer", "minimum": 0 },
+    "blockingUnresolvedCount": { "type": "integer", "minimum": 0 },
+    "syntheticFieldCount": { "type": "integer", "minimum": 0 },
+    "authorityInvalidCount": { "type": "integer", "minimum": 0 },
+    "requiredFieldSetHash": { "$ref": "#/$defs/sha256" },
+    "fieldSetHash": { "$ref": "#/$defs/sha256" },
+    "renderInputHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fieldRef",
+        "value",
+        "semanticModelHash",
+        "authorityClass",
+        "provenanceRefs",
+        "applicability",
+        "derivationRule",
+        "synthetic"
+      ],
+      "properties": {
+        "fieldRef": { "$ref": "#/$defs/nonEmpty" },
+        "value": true,
+        "semanticModelHash": { "$ref": "#/$defs/sha256" },
+        "authorityClass": {
+          "enum": [
+            "source_grounded",
+            "rule_derived",
+            "repository_derived",
+            "policy_inherited",
+            "human_confirmed",
+            "none"
+          ]
+        },
+        "provenanceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "applicability": {
+          "enum": ["applicable", "not_applicable", "unresolved"]
+        },
+        "derivationRule": {
+          "oneOf": [{ "$ref": "#/$defs/nonEmpty" }, { "type": "null" }]
+        },
+        "synthetic": { "type": "boolean" }
+      }
+    }
+  }
+}
