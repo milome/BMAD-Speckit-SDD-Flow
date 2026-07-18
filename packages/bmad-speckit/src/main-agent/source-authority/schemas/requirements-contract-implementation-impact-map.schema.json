@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-implementation-impact-map.schema.json",
+  "title": "Requirements Contract Implementation Impact Map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sequenceContractHash",
+    "taskDagHash",
+    "entries",
+    "unprovenTaskIds",
+    "unprovenImpactCount",
+    "decision",
+    "impactMapHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-implementation-impact-map/v1"
+    },
+    "sequenceContractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "taskDagHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "taskId",
+          "scenarioRef",
+          "stepRef",
+          "traceRefs",
+          "requirementRefs",
+          "owningComponent",
+          "path",
+          "symbol",
+          "changeType",
+          "ownershipProofRefs"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenarioRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stepRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "traceRefs": {
+            "$ref": "#/$defs/nonEmptyStringArray"
+          },
+          "requirementRefs": {
+            "$ref": "#/$defs/nonEmptyStringArray"
+          },
+          "owningComponent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbol": {
+            "type": "string",
+            "minLength": 1
+          },
+          "changeType": {
+            "enum": ["create", "modify", "delete", "verify"]
+          },
+          "ownershipProofRefs": {
+            "$ref": "#/$defs/nonEmptyStringArray"
+          }
+        }
+      }
+    },
+    "unprovenTaskIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "unprovenImpactCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decision": {
+      "enum": ["pass", "block"]
+    },
+    "impactMapHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "pass"
+          }
+        },
+        "required": ["decision"]
+      },
+      "then": {
+        "properties": {
+          "entries": {
+            "minItems": 1
+          },
+          "unprovenTaskIds": {
+            "maxItems": 0
+          },
+          "unprovenImpactCount": {
+            "const": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "unprovenTaskIds": {
+            "minItems": 1
+          },
+          "unprovenImpactCount": {
+            "minimum": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
