@@ -82,6 +82,12 @@ describe('bmad-speckit goal-contract command', () => {
     const goalText = fs.readFileSync(out, 'utf8');
     assert.match(goalText, /sourceBytes: \d+/u);
     assert.match(goalText, /sourceLines: \d+/u);
+    assert.match(goalText, /goalContractProfileVersion: 2\.1\.0/u);
+    assert.match(goalText, /entryScenario: standalone_goal_contract/u);
+    assert.match(
+      goalText,
+      /finalArtifactAuthority: standalone_goal_execution_plan_markdown/u
+    );
     assert.match(goalText, /coverageReceiptPath:/u);
     assert.match(goalText, /generationReceiptPath:/u);
     assert.match(goalText, /unmappedSourceObligations: 0/u);
@@ -91,6 +97,10 @@ describe('bmad-speckit goal-contract command', () => {
     assert.doesNotMatch(goalText, /rg -n -F 'SRC001' -- '.*source-plan\.md'/u);
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
     assert.match(goalText, /sourceTextHash=sha256:[0-9a-f]{64}/u);
+    assert.match(
+      goalText,
+      /standalone Markdown contract is the frozen execution authority/u
+    );
 
     const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
     const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));

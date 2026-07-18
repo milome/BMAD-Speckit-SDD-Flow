@@ -1,4 +1,8 @@
 const { buildSourceCoverageMatrix, validateSourceCoverage } = require('./source-coverage-matrix');
+const {
+  resolveEntryProfileOverlay,
+  validateEntryProfile,
+} = require('./entry-scenarios');
 
 function repoPath(filePath) {
   return String(filePath).replace(/\\/g, '/');
@@ -72,6 +76,8 @@ function frontMatter(metadata) {
     'goalContractVersion: goal-execution-contract/v1',
     `goalContractProfileVersion: ${metadata.profile.profileVersion}`,
     `goalContractProfileHash: ${metadata.profile.profileHash}`,
+    `entryScenario: ${metadata.entryProfile.entryScenario}`,
+    `finalArtifactAuthority: ${metadata.entryProfile.finalArtifactAuthority}`,
     'contractMode: frozen',
     'rewritePolicy: forbidden',
     'executionMode: execute_only',
@@ -160,6 +166,19 @@ function buildCommands(sourceObligations, coverageReceiptPath) {
 }
 
 function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, generatedAt = new Date().toISOString() }) {
+  const entryProfileValidation = validateEntryProfile(
+    profile,
+    'standalone_goal_contract'
+  );
+  if (entryProfileValidation.decision !== 'pass') {
+    const error = new Error(entryProfileValidation.failureClass);
+    Object.assign(error, entryProfileValidation);
+    throw error;
+  }
+  const entryProfile = resolveEntryProfileOverlay(
+    profile,
+    'standalone_goal_contract'
+  );
   const registries = makeRegistries(source.sourceObligations);
   const proofAudit = implementationProofAudit(registries.sourceObligations);
   if (proofAudit.decision !== 'pass') {
@@ -183,6 +202,7 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
   const slotData = {
     frontMatter: frontMatter({
       profile,
+      entryProfile,
       source,
       coverageReceiptPath,
       generationReceiptPath,
@@ -195,7 +215,10 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
       `- \`${repoPath(outPath)}\` is the frozen human and model execution authority for this generated goal contract.`,
       `- \`${source.sourcePlanPath}\` is the source plan for this generated goal contract.`,
       `- \`sourcePlanHash=${source.sourcePlanHash}\` binds this contract to source bytes.`,
-      '- `model_packet.json is the machine-readable execution authority` only when a req-trace model packet exists for the same implementation run.',
+      `- \`entryScenario=${entryProfile.entryScenario}\` selects the standalone authority profile.`,
+      `- \`finalArtifactAuthority=${entryProfile.finalArtifactAuthority}\` binds authority to one Markdown contract.`,
+      '- The standalone Markdown contract is the frozen execution authority and does not defer to a nonexistent model packet.',
+      '- `model_packet.json is the machine-readable execution authority` only for the two four-artifact compilation entries.',
       '- `goal_execution.md is not execution authority`; this generated contract is the frozen execution source for this goal.',
       '- `/goal completion is not closeout proof`; completion requires command evidence and receipt evidence.',
     ].join('\n'),
@@ -229,7 +252,14 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
       '- STOP003: If coverage receipt is missing, stop with `coverage_receipt_missing`.',
     ].join('\n'),
   };
-  return { slotData, registries, coverageAudit, implementationProofAudit: proofAudit };
+  return {
+    slotData,
+    registries,
+    coverageAudit,
+    implementationProofAudit: proofAudit,
+    entryProfile,
+    entryProfileValidation,
+  };
 }
 
 module.exports = {
