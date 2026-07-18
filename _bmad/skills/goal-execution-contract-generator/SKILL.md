@@ -16,7 +16,10 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - Default: `docs/plans/YYYY-MM-DD-<slug>-goal-execution-plan.md`.
    - Use the user-provided path if present.
 3. For source-plan goal contracts, use the first-class package CLI:
-   - Run `bmad-speckit goal-contract generate --source <path> --out <path> --json`.
+   - Run `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json`.
+   - Build one immutable `SourceSnapshot` from the exact Source Plan bytes or LF-normalized ordered conversation segments.
+   - Invoke `StandaloneViewProvider.deriveImplementationView` with only that snapshot, repository facts, and the implementation role contract.
+   - Record provider/session identity and input/output hashes; do not persist the transient Implementation View as an authority file.
    - Treat `coverageReceiptPath`, `generationReceiptPath`, `sourcePlanHash`, `goalContractHash`, `sourceObligationCount`, and `unmappedSourceObligations: 0` from the JSON output as required generation evidence.
    - Require the coverage receipt before public release use.
    - The installed consumer invocation must work for Codex, Claude Code, and Cursor without host-specific lock-in and without consumer root `scripts/`.
@@ -37,7 +40,7 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 
 ## Contract Generation Rules
 
-- `bmad-speckit goal-contract generate --source <path> --out <path> --json` is the required success path for source-plan contracts.
+- `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json` is the required success path for source-plan contracts.
 - `.tmp/*.cjs generation scripts are failure evidence only`; they are not a success path and must not be cited as successful generation proof.
 - `large-document-writer is transport only`; it must not own source-plan obligation extraction, task generation, acceptance generation, command generation, or source coverage semantics.
 - Coverage receipt is source coverage evidence only; it is not implementation evidence.
