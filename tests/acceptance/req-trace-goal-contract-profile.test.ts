@@ -58,19 +58,29 @@ afterEach(() => {
 });
 
 function runNativeGoal(
-  input: { taskReportPath?: string | null } = {}
+  input: {
+    taskReportPath?: string | null;
+    entry?: string | null;
+    extraArgs?: string[];
+    suffix?: string;
+  } = {}
 ): { status: number; stdout: string; stderr: string; outDir: string; taskReportPath: string | null } {
-  const outDir = path.join(tempDir, 'out');
+  const outDir = path.join(tempDir, input.suffix ?? 'out');
   const taskReportPath =
     input.taskReportPath === null
       ? null
       : input.taskReportPath ?? path.join(tempDir, 'task-report.json');
   const taskReportArgs = taskReportPath ? ['--task-report-path', taskReportPath] : [];
+  const entryArgs =
+    input.entry === null
+      ? []
+      : ['--entry', input.entry ?? 'req_trace_direct'];
   try {
     const stdout = execFileSync(
       process.execPath,
       [
         SCRIPT,
+        ...entryArgs,
         '--source-document',
         fixture.sourcePath,
         '--requirement-record',
@@ -84,6 +94,7 @@ function runNativeGoal(
         '--goal-contract-profile',
         tempProfile,
         ...taskReportArgs,
+        ...(input.extraArgs ?? []),
         '--json',
       ],
       { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
@@ -133,6 +144,64 @@ function writeProfile(mutator: (profile: Record<string, any>) => Record<string, 
 }
 
 describe('req-trace shared goal contract profile integration', () => {
+  it('requires an explicit direct entry before compiling artifacts', () => {
+    const result = runNativeGoal({ entry: null, suffix: 'missing-entry' });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toContain('ENTRY_REQUIRED');
+    expect(fs.existsSync(path.join(result.outDir, 'model_packet.json'))).toBe(false);
+    expect(fs.existsSync(path.join(result.outDir, 'human_prompt.txt'))).toBe(false);
+    expect(fs.existsSync(path.join(result.outDir, 'audit_receipt.json'))).toBe(false);
+    expect(fs.existsSync(path.join(result.outDir, 'goal_execution.md'))).toBe(false);
+  });
+
+  it('binds the direct entry, compiler identity, and profile artifact roles', () => {
+    const result = runNativeGoal({ suffix: 'entry-metadata' });
+
+    expect(result.status).toBe(0);
+    const packet = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'model_packet.json'), 'utf8')
+    );
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(result.outDir, 'audit_receipt.json'), 'utf8')
+    );
+    const profile = JSON.parse(canonicalProfile);
+    const directProfile = profile.entryProfiles.req_trace_direct;
+
+    expect(packet.entryScenario).toBe('req_trace_direct');
+    expect(packet.finalArtifactAuthority).toBe(directProfile.finalArtifactAuthority);
+    expect(receipt.entryScenario).toBe('req_trace_direct');
+    expect(receipt.entryExplicit).toBe(true);
+    expect(receipt.compilerIdentity.path).toMatch(/generate_prompt\.js$/u);
+    expect(receipt.compilerIdentity.hash).toMatch(/^sha256:[0-9a-f]{64}$/u);
+    expect(receipt.artifactRoles).toEqual(directProfile.artifactRoles);
+    expect(receipt.entryCompatibility).toEqual({
+      compilerRoute: directProfile.compilerRoute,
+      dualViewPolicy: directProfile.dualViewPolicy,
+      profileHash: profile.profileHash,
+      profileVersion: profile.profileVersion,
+      sourceAuthority: directProfile.sourceAuthority,
+    });
+  });
+
+  it('rejects wrong entry routes and dual-view semantic payloads', () => {
+    const wrongEntry = runNativeGoal({
+      entry: 'standalone_goal_contract',
+      suffix: 'wrong-entry',
+    });
+    const dualView = runNativeGoal({
+      suffix: 'dual-view',
+      extraArgs: ['--dual-view-payload', path.join(tempDir, 'dual-view.json')],
+    });
+
+    expect(wrongEntry.status).not.toBe(0);
+    expect(wrongEntry.stdout).toContain('ENTRY_ROUTE_MISMATCH');
+    expect(fs.existsSync(path.join(wrongEntry.outDir, 'model_packet.json'))).toBe(false);
+    expect(dualView.status).not.toBe(0);
+    expect(dualView.stdout).toContain('ENTRY_AUTHORITY_VIOLATION');
+    expect(fs.existsSync(path.join(dualView.outDir, 'model_packet.json'))).toBe(false);
+  });
+
   it('native goal generation fails when task report path is missing', () => {
     const result = runNativeGoal({ taskReportPath: null });
 

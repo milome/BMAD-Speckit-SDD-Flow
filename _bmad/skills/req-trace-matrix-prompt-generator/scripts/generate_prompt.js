@@ -33,6 +33,12 @@ const GOAL_DOCUMENT_FILENAME = 'goal_execution.md';
 const GOAL_CONTRACT_TEMPLATE_PATH = '_bmad/shared/goal-contract/goal-execution-contract-template.md';
 const GOAL_CONTRACT_PROFILE_PATH = '_bmad/shared/goal-contract/goal-contract-profile.json';
 const GOAL_CONTRACT_RENDERER_PATH = '_bmad/shared/goal-contract/scripts/render-goal-contract.js';
+const FORBIDDEN_SEMANTIC_INPUT_KEYS = [
+  'dualViewPayload',
+  'implementationView',
+  'acceptanceEvidenceView',
+  'standaloneSource',
+];
 const CONTROLLED_EXECUTION_ARG_KEYS = [
   'requirementSetId',
   'transactionId',
@@ -88,6 +94,9 @@ function parseArgs(argv) {
     goalCommandAvailable: 'auto',
     packetId: null,
     taskReportPath: null,
+    entry: null,
+    entryExplicit: false,
+    entryValues: [],
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -113,6 +122,10 @@ function parseArgs(argv) {
     }
     if (key === 'finalGate' || key === 'extraRule') {
       args[key].push(value);
+    } else if (key === 'entry') {
+      args.entryValues.push(value);
+      args.entry = value;
+      args.entryExplicit = true;
     } else {
       args[key] = value;
     }
@@ -133,6 +146,18 @@ function normalizeArgs(args) {
   const allowedProfiles = new Set(['full', 'compact']);
   const allowedGoalAvailability = new Set(['true', 'false', 'auto']);
 
+  if (args.entryValues.length > 1) {
+    throw new BlockedInput(
+      'BLOCK: ENTRY_DUPLICATED',
+      'Provide exactly one --entry value.'
+    );
+  }
+  if (!args.entry) {
+    throw new BlockedInput(
+      'BLOCK: ENTRY_REQUIRED',
+      'Provide exactly one explicit --entry value.'
+    );
+  }
   if (!allowedHosts.has(args.executionHost)) {
     throw new Error(`Unsupported --execution-host: ${args.executionHost}`);
   }
@@ -280,6 +305,62 @@ function stableStringify(value) {
 
 function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
+}
+
+function compilerIdentity() {
+  return {
+    path: path.resolve(__filename).replace(/\\/gu, '/'),
+    hash: sha256(fs.readFileSync(__filename, 'utf8')),
+  };
+}
+
+function resolveCompilerEntryProfile(args) {
+  const profile = readGoalContractProfile(args);
+  const entryProfile = profile.entryProfiles?.[args.entry];
+  if (
+    !entryProfile ||
+    entryProfile.compilerRoute !== 'shared_requirement_trace_compiler' ||
+    entryProfile.dualViewPolicy !== 'forbidden'
+  ) {
+    throw new BlockedInput(
+      'BLOCK: ENTRY_ROUTE_MISMATCH',
+      `Unsupported --entry: ${args.entry}`
+    );
+  }
+  const forbiddenSemanticInputs = FORBIDDEN_SEMANTIC_INPUT_KEYS.filter(
+    (key) => String(args[key] ?? '').trim()
+  );
+  if (forbiddenSemanticInputs.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: ENTRY_AUTHORITY_VIOLATION',
+      `Entry ${args.entry} rejects semantic derivation payloads: ${forbiddenSemanticInputs.join(', ')}`
+    );
+  }
+  args.resolvedGoalContractProfile = profile;
+  args.resolvedEntryProfile = entryProfile;
+}
+
+function entryMetadata(args) {
+  const profile = args.resolvedGoalContractProfile;
+  const entryProfile = args.resolvedEntryProfile;
+  const metadata = {
+    entryScenario: args.entry,
+    entryExplicit: args.entryExplicit,
+    compilerIdentity: compilerIdentity(),
+  };
+  if (!profile || !entryProfile) return metadata;
+  return {
+    ...metadata,
+    entryCompatibility: {
+      compilerRoute: entryProfile.compilerRoute,
+      dualViewPolicy: entryProfile.dualViewPolicy,
+      profileHash: profile.profileHash,
+      profileVersion: profile.profileVersion,
+      sourceAuthority: entryProfile.sourceAuthority,
+    },
+    finalArtifactAuthority: entryProfile.finalArtifactAuthority,
+    artifactRoles: { ...entryProfile.artifactRoles },
+  };
 }
 
 function profileHashFor(profile) {
@@ -1693,6 +1774,7 @@ function buildModelPacket(context, args) {
   return {
     schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
     artifactRole: 'execution_authority',
+    ...entryMetadata(args),
     recordId,
     packetId,
     sourceDocument: sourceLabel,
@@ -2612,6 +2694,7 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
   ];
   const receipt = {
     schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
+    ...entryMetadata(args),
     recordId: packet.recordId,
     decision: validationReasons.length === 0 ? 'pass' : 'blocked',
     blockingReasons: validationReasons,
@@ -2713,6 +2796,7 @@ function buildBlockedReceipt(args, context, blockingReasons, message, extra = {}
   const recordId = context?.record?.recordId ?? context?.confirmation?.recordId ?? 'unknown';
   const receipt = {
     schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
+    ...entryMetadata(args),
     recordId,
     decision: 'blocked',
     blockingReasons: unique(blockingReasons),
@@ -2747,6 +2831,7 @@ function compileArtifacts(args) {
   let context;
   const outDir = path.resolve(args.outDir);
   try {
+    resolveCompilerEntryProfile(args);
     context = compilerInputContext(args);
     const blockingReasons = validateCompilerContract(context.confirmation, context.record, {
       criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
@@ -2838,6 +2923,7 @@ function compileArtifacts(args) {
     const summary = {
       decision: receipt.decision,
       blockingReasons: receipt.blockingReasons,
+      ...entryMetadata(args),
       outputs,
       outputHashes,
     };
@@ -2865,6 +2951,7 @@ function buildPrompt(args) {
       'Conversation-only requirements must first be written into an implementation source document with implementationConfirmation.status=draft and then explicitly confirmed by the user.'
     );
   }
+  resolveCompilerEntryProfile(args);
 
   const sourcePath = args.sourceDocument || args.contract;
   const sourceText = readText(sourcePath);

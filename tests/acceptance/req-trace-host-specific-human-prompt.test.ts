@@ -16,6 +16,7 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
+const DIRECT_ENTRY_ARGS = ['--entry', 'req_trace_direct'] as const;
 let tempDir: string;
 let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
@@ -41,6 +42,7 @@ function runHost(
     process.execPath,
     [
       SCRIPT,
+      ...DIRECT_ENTRY_ARGS,
       '--source-document',
       fixture.sourcePath,
       '--requirement-record',
@@ -212,6 +214,7 @@ function runLongGoal(extraArgs: string[] = []): {
     process.execPath,
     [
       SCRIPT,
+      ...DIRECT_ENTRY_ARGS,
       '--source-document',
       fixture.source,
       '--requirement-record',
@@ -386,6 +389,7 @@ describe('req trace host-specific human prompt generation', () => {
         process.execPath,
         [
           SCRIPT,
+          ...DIRECT_ENTRY_ARGS,
           '--source-document',
           fixture.sourcePath,
           '--requirement-record',

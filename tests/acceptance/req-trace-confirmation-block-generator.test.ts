@@ -367,7 +367,10 @@ function run(
   options: { env?: NodeJS.ProcessEnv } = {}
 ): { stdout: string; status: number } {
   try {
-    const stdout = execFileSync('python', [SCRIPT, ...args], {
+    const entryArgs = args.includes('--entry')
+      ? []
+      : ['--entry', 'req_trace_direct'];
+    const stdout = execFileSync('python', [SCRIPT, ...entryArgs, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
       env: options.env,
@@ -381,7 +384,10 @@ function run(
 
 function runNodePrompt(args: string[]): { stdout: string; status: number } {
   try {
-    const stdout = execFileSync(process.execPath, [NODE_SCRIPT, ...args], {
+    const entryArgs = args.includes('--entry')
+      ? []
+      : ['--entry', 'req_trace_direct'];
+    const stdout = execFileSync(process.execPath, [NODE_SCRIPT, ...entryArgs, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
