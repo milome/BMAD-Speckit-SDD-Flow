@@ -17,6 +17,11 @@ const {
   projectTraceSlices,
 } = require('../src/utils/goal-contract/evidence-projections.ts');
 const {
+  projectionIssueCodes,
+  validateEvidenceGraph,
+  validateGoalContractProjections,
+} = require('../src/utils/goal-contract/projection-validator.ts');
+const {
   buildProjectionSlotData,
 } = require('../src/utils/goal-contract/slot-data-builder.ts');
 const {
@@ -153,10 +158,14 @@ function projectionFunctions() {
   ];
 }
 
+function makeProjections(graph) {
+  return projectionFunctions().map((project) => project(graph));
+}
+
 describe('goal-contract evidence projections', () => {
   it('renders seven distinct semantic dimensions from one graph', () => {
     const graph = makeGraph();
-    const projections = projectionFunctions().map((project) => project(graph));
+    const projections = makeProjections(graph);
     const commandLiteral = graph.nodes.find(
       (node) => node.nodeType === 'command'
     ).literal;
@@ -248,5 +257,175 @@ describe('goal-contract evidence projections', () => {
     }
     assert.equal(projectionSlots.projectionReceipt.requiredSectionCount, 7);
     assert.equal(projectionSlots.projectionReceipt.runtimeEvidenceAuthority, false);
+  });
+
+  it('validates a complete graph and seven independent projections', () => {
+    const graph = makeGraph();
+    const projections = makeProjections(graph);
+
+    assert.deepEqual(validateEvidenceGraph(graph), {
+      decision: 'pass',
+      evidenceClassification: 'projection_only',
+      runtimeEvidenceAuthority: false,
+      issues: [],
+    });
+    assert.deepEqual(
+      validateGoalContractProjections({ graph, projections }),
+      {
+        decision: 'pass',
+        evidenceClassification: 'projection_only',
+        runtimeEvidenceAuthority: false,
+        issues: [],
+      }
+    );
+  });
+
+  it('returns exact typed blockers for malformed graph and projection fixtures', () => {
+    const graphCases = [
+      {
+        expected: projectionIssueCodes.sourceDuplicate,
+        mutate(graph) {
+          const edge = graph.edges.find(
+            (candidate) => candidate.edgeType === 'source_to_trace'
+          );
+          graph.edges.push({ ...edge, id: `${edge.id}-duplicate` });
+        },
+      },
+      {
+        expected: projectionIssueCodes.sourceUnmapped,
+        mutate(graph) {
+          graph.edges = graph.edges.filter(
+            (edge) => edge.edgeType !== 'source_to_trace'
+          );
+        },
+      },
+      {
+        expected: projectionIssueCodes.evidenceUnclosed,
+        mutate(graph) {
+          graph.edges = graph.edges.filter(
+            (edge) => edge.edgeType !== 'acceptance_to_evidence'
+          );
+        },
+      },
+      {
+        expected: projectionIssueCodes.dependencyInvalid,
+        mutate(graph) {
+          const trace = graph.nodes.find((node) => node.nodeType === 'trace');
+          trace.dependencies = [trace.id];
+        },
+      },
+      {
+        expected: projectionIssueCodes.allowedPathMissing,
+        mutate(graph) {
+          graph.edges = graph.edges.filter(
+            (edge) => edge.edgeType !== 'trace_to_path'
+          );
+        },
+      },
+      {
+        expected: projectionIssueCodes.commitPolicyInvalid,
+        mutate(graph) {
+          const trace = graph.nodes.find((node) => node.nodeType === 'trace');
+          trace.commitPolicy = 'commit_when_convenient';
+        },
+      },
+    ];
+
+    for (const testCase of graphCases) {
+      const graph = structuredClone(makeGraph());
+      testCase.mutate(graph);
+      const result = validateEvidenceGraph(graph);
+      assert.equal(result.decision, 'block');
+      assert.ok(
+        result.issues.some((issue) => issue.code === testCase.expected),
+        `${testCase.expected} was not emitted`
+      );
+    }
+
+    const projectionCases = [
+      {
+        expected: projectionIssueCodes.columnMissing,
+        mutate({ projections }) {
+          const row = projections.find(
+            (projection) =>
+              projection.projectionId === 'projection.trace_slices'
+          ).rows[0];
+          delete row.closeCondition;
+        },
+      },
+      {
+        expected: projectionIssueCodes.fieldEmpty,
+        mutate({ projections }) {
+          const row = projections.find(
+            (projection) =>
+              projection.projectionId === 'projection.trace_slices'
+          ).rows[0];
+          row.allowedPathIds = [];
+        },
+      },
+      {
+        expected: projectionIssueCodes.acceptanceUndefined,
+        mutate({ graph, projections }) {
+          const row = projections.find(
+            (projection) =>
+              projection.projectionId === 'projection.trace_slices'
+          ).rows[0];
+          row.acceptanceIds = [
+            makeId(
+              'AC',
+              graph.nodes.filter((node) => node.nodeType === 'acceptance')
+                .length + 1
+            ),
+          ];
+        },
+      },
+      {
+        expected: projectionIssueCodes.commandUndefined,
+        mutate({ graph, projections }) {
+          const row = projections.find(
+            (projection) =>
+              projection.projectionId === 'projection.trace_slices'
+          ).rows[0];
+          row.directCommands = [
+            makeId(
+              'CMD',
+              graph.nodes.filter((node) => node.nodeType === 'command').length +
+                1
+            ),
+          ];
+        },
+      },
+      {
+        expected: projectionIssueCodes.rangeMismatch,
+        mutate({ projections }) {
+          const projection = projections.find(
+            (candidate) =>
+              candidate.projectionId === 'projection.trace_slices'
+          );
+          projection.declaredRanges.trace.count += 1;
+        },
+      },
+      {
+        expected: projectionIssueCodes.literalDrift,
+        mutate({ projections }) {
+          const projection = projections.find(
+            (candidate) => candidate.sharedLiterals.commands.length > 0
+          );
+          projection.sharedLiterals.commands[0] += ' --drift';
+        },
+      },
+    ];
+
+    for (const testCase of projectionCases) {
+      const graph = structuredClone(makeGraph());
+      const projections = structuredClone(makeProjections(graph));
+      testCase.mutate({ graph, projections });
+      const result = validateGoalContractProjections({ graph, projections });
+      assert.equal(result.decision, 'block');
+      assert.ok(
+        result.issues.some((issue) => issue.code === testCase.expected),
+        `${testCase.expected} was not emitted`
+      );
+    }
   });
 });

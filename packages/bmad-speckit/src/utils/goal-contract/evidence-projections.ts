@@ -70,6 +70,7 @@ function symbolLiterals(symbols, symbolIds) {
 }
 
 function baseProjection({
+  graph,
   projectionId,
   rows,
   markdown,
@@ -84,6 +85,7 @@ function baseProjection({
     semanticRole: definition.semanticRole,
     runtimeEvidenceAuthority: false,
     evidenceClassification: 'projection_only',
+    declaredRanges: structuredClone(graph.ranges),
     rows,
     markdown,
     sharedLiterals: {
@@ -152,6 +154,7 @@ function projectTraceSlices(graph) {
     ),
   ].join('\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.trace_slices',
     rows,
     markdown,
@@ -205,6 +208,7 @@ function projectStrictAcceptance(graph) {
     )
     .join('\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.strict_acceptance',
     rows,
     markdown,
@@ -246,6 +250,7 @@ function projectAcceptanceTraceability(graph) {
     ),
   ].join('\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.acceptance_traceability',
     rows,
     markdown,
@@ -297,6 +302,7 @@ function projectSourceCoverage(graph) {
     ),
   ].join('\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.source_coverage',
     rows,
     markdown,
@@ -340,6 +346,7 @@ function projectManualScenarios(graph) {
     )
     .join('\n\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.manual_scenarios',
     rows,
     markdown,
@@ -387,6 +394,7 @@ function projectCompletionEvidence(graph) {
     ),
   ].join('\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.completion_evidence',
     rows,
     markdown,
@@ -426,6 +434,7 @@ function projectStopConditions(graph) {
     )
     .join('\n');
   return baseProjection({
+    graph,
     projectionId: 'projection.stop_conditions',
     rows,
     markdown,
