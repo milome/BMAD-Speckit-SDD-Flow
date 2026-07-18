@@ -1,18 +1,21 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { LargeDocumentWriterError, block } = require('./errors');
-const { assembleSession, readValidationReceipt } = require('./assembler');
-const { addChunk, listChunkState } = require('./chunk-store');
-const { initSession, readManifest, sessionPaths, updateManifest } = require('./draft-session');
+const sourceSuffix = __filename.endsWith('.ts') ? '.ts' : '';
+const { LargeDocumentWriterError, block } = require(`./errors${sourceSuffix}`);
+const { assembleSession, readValidationReceipt } = require(`./assembler${sourceSuffix}`);
+const { addChunk, listChunkState } = require(`./chunk-store${sourceSuffix}`);
+const { initSession, readManifest, sessionPaths, updateManifest } = require(
+  `./draft-session${sourceSuffix}`
+);
 const {
   normalizePath,
   sha256File,
   sha256Text,
   stableStringify,
   writeJsonReceipt,
-} = require('./receipts');
-const { safeWriteJson, safeWriteText } = require('./safe-writer');
-const { validateAssembly } = require('./validators');
+} = require(`./receipts${sourceSuffix}`);
+const { safeWriteJson, safeWriteText } = require(`./safe-writer${sourceSuffix}`);
+const { validateAssembly } = require(`./validators${sourceSuffix}`);
 
 function getSessionStatus({ sessionDir }) {
   const manifest = readManifest(sessionDir);

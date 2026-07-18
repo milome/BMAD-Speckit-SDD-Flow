@@ -1,8 +1,9 @@
 const fs = require('node:fs');
-const { block } = require('./errors');
-const { readManifest, sessionPaths } = require('./draft-session');
-const { readChunkWithReceipt } = require('./chunk-store');
-const { sha256Text, writeJsonReceipt } = require('./receipts');
+const sourceSuffix = __filename.endsWith('.ts') ? '.ts' : '';
+const { block } = require(`./errors${sourceSuffix}`);
+const { readManifest, sessionPaths } = require(`./draft-session${sourceSuffix}`);
+const { readChunkWithReceipt } = require(`./chunk-store${sourceSuffix}`);
+const { sha256Text, writeJsonReceipt } = require(`./receipts${sourceSuffix}`);
 
 function assembleSession({ sessionDir }) {
   const manifest = readManifest(sessionDir);
