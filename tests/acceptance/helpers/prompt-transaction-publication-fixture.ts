@@ -322,11 +322,7 @@ implementationConfirmation:
       'requirements-contract-package-runtime-action-binding-manifest.json'
     ),
     {
-      schemaVersion: 'requirements-contract-package-runtime-action-binding-manifest/v1',
-      contractRef: {
-        path: actionBindingSchema.properties.contractRef.properties.path.const,
-        hash: actionBindingSchema.properties.contractRef.properties.hash.const,
-      },
+      schemaVersion: 'requirements-contract-package-runtime-action-binding-manifest/v2',
       actionUniverseHash: actionBindingSchema.properties.actionUniverseHash.const,
       actions: actionBindings,
       packageRuntimeRoutingOnlyActionCount: 0,

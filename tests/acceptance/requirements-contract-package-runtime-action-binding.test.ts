@@ -28,7 +28,6 @@ type ActionBinding = {
 
 type ActionBindingManifest = {
   schemaVersion: string;
-  contractRef: FileRef;
   actionUniverseHash: string;
   actions: ActionBinding[];
   packageRuntimeRoutingOnlyActionCount: number;
@@ -56,16 +55,16 @@ const SCHEMA_PATH = path.join(
   'requirements-contract-package-runtime-action-binding-manifest.schema.json'
 );
 const CLI_PATH = path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
-const CONTRACT_PATH = path.join(
+const MANIFEST_GENERATOR_PATH = path.join(
   ROOT,
-  'docs',
-  'plans',
-  '2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md'
+  'packages',
+  'bmad-speckit',
+  'src',
+  'main-agent',
+  'source-authority',
+  'scripts',
+  'requirements-contract-package-runtime-action-binding-manifest.ts'
 );
-const CONTRACT_RELATIVE_PATH =
-  'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
-const CONTRACT_HASH =
-  'sha256:d6f39af7a0995a16496913b2e224445a2a440e5ecf285e54f66b1fdaa46652c4';
 const CONTRACT_ACTION_IDS = [
   'requirements-contract-six-model-projection-parity-verify',
   'requirements-contract-prompt-transaction-publish',
@@ -148,7 +147,6 @@ describe('requirements contract package runtime action binding', () => {
     if (!manifest) return;
 
     const actionIds = manifest.actions.map((action) => action.actionId).sort();
-    expect(fileHash(CONTRACT_PATH)).toBe(CONTRACT_HASH);
     expect(actionIds, 'manifest action universe must equal the frozen 20-action set').toEqual(
       FROZEN_ACTION_IDS
     );
@@ -156,12 +154,33 @@ describe('requirements contract package runtime action binding', () => {
       registeredRuntimeActionIds(),
       'CLI action universe must equal the frozen 20-action set'
     ).toEqual(FROZEN_ACTION_IDS);
-    expect(manifest.contractRef).toEqual({
-      path: CONTRACT_RELATIVE_PATH,
-      hash: CONTRACT_HASH,
-    });
     expect(manifest.actionUniverseHash).toBe(actionUniverseHash(FROZEN_ACTION_IDS));
     expect(new Set(actionIds).size).toBe(actionIds.length);
+  });
+
+  it('keeps product action binding independent from Goal execution contracts', () => {
+    const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as Record<string, unknown>;
+    const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8')) as {
+      required?: string[];
+      properties?: {
+        schemaVersion?: { const?: string };
+        [key: string]: unknown;
+      };
+    };
+    const generatorSource = readFileSync(MANIFEST_GENERATOR_PATH, 'utf8');
+
+    expect(manifest.schemaVersion).toBe(
+      'requirements-contract-package-runtime-action-binding-manifest/v2'
+    );
+    expect(schema.properties?.schemaVersion?.const).toBe(
+      'requirements-contract-package-runtime-action-binding-manifest/v2'
+    );
+    expect(manifest).not.toHaveProperty('contractRef');
+    expect(schema.required ?? []).not.toContain('contractRef');
+    expect(schema.properties ?? {}).not.toHaveProperty('contractRef');
+    expect(generatorSource).not.toContain('CONTRACT_RELATIVE_PATH');
+    expect(generatorSource).not.toContain('CONTRACT_HASH');
+    expect(generatorSource).not.toContain('docs/plans/');
   });
 
   it('binds semantic gates, schemas, behavior tests, and hashes instead of routing success', () => {

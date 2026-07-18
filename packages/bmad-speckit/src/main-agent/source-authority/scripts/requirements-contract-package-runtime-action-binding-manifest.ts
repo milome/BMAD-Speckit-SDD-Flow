@@ -36,10 +36,6 @@ const SCRIPT_ROOT =
   'packages/bmad-speckit/src/main-agent/source-authority/scripts';
 const DIST_SCRIPT_ROOT =
   'packages/bmad-speckit/dist/main-agent/source-authority/scripts';
-const CONTRACT_RELATIVE_PATH =
-  'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
-const CONTRACT_HASH =
-  'sha256:d6f39af7a0995a16496913b2e224445a2a440e5ecf285e54f66b1fdaa46652c4';
 const FROZEN_ACTION_IDS = [
   'requirements-contract-six-model-projection-parity-verify',
   'requirements-contract-prompt-transaction-publish',
@@ -486,15 +482,6 @@ function registeredActionIds(root: string): string[] {
 }
 
 export function buildPackageRuntimeActionBindingManifest(root: string): JsonRecord {
-  const contractRef = repositoryFileRef(root, CONTRACT_RELATIVE_PATH);
-  if (contractRef.hash !== CONTRACT_HASH) {
-    throw new Error(
-      `package_runtime_action_binding_contract_hash_mismatch:${JSON.stringify({
-        expected: CONTRACT_HASH,
-        actual: contractRef.hash,
-      })}`
-    );
-  }
   const specActionIds = ACTION_BINDING_SPECS.map((spec) => spec.actionId);
   if (JSON.stringify(specActionIds) !== JSON.stringify(FROZEN_ACTION_IDS)) {
     throw new Error(
@@ -560,8 +547,7 @@ export function buildPackageRuntimeActionBindingManifest(root: string): JsonReco
       action.installedSurfaceRefs.length > 0
   ).length;
   return {
-    schemaVersion: 'requirements-contract-package-runtime-action-binding-manifest/v1',
-    contractRef,
+    schemaVersion: 'requirements-contract-package-runtime-action-binding-manifest/v2',
     actionUniverseHash: ACTION_UNIVERSE_HASH,
     actions,
     packageRuntimeRoutingOnlyActionCount: actions.filter((action) => action.routingOnly).length,
