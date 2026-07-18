@@ -4,6 +4,10 @@ const { safeWriteText, sha256File } = require('../utils/large-document-writer');
 const { extractSourceObligations } = require('../utils/goal-contract/source-obligation-extractor');
 const { buildSlotData } = require('../utils/goal-contract/slot-data-builder');
 const {
+  resolveEntryScenario,
+  validateEntryAuthority,
+} = require('../utils/goal-contract/entry-scenarios');
+const {
   defaultReceiptPaths,
   writeCoverageReceipt,
   writeGenerationReceipt,
@@ -27,6 +31,16 @@ function take(args, name, fallback = undefined) {
 
 function has(args, name) {
   return args.includes(name);
+}
+
+function takeAll(args, name) {
+  const values = [];
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== name) continue;
+    const value = args[index + 1];
+    if (value && !value.startsWith('-')) values.push(value);
+  }
+  return values;
 }
 
 function emitJson(value) {
@@ -68,10 +82,23 @@ function failurePayload(failureClass, error, extra = {}) {
 }
 
 function generate(args) {
+  const entry = resolveEntryScenario(takeAll(args, '--entry'));
+  if (entry.entryScenario !== 'standalone_goal_contract') {
+    throw Object.assign(new Error('entry_route_mismatch'), {
+      failureClass: 'entry_route_mismatch',
+      entryScenario: entry.entryScenario,
+      expectedEntryScenario: 'standalone_goal_contract',
+    });
+  }
   const sourcePath = take(args, '--source');
   const outPath = take(args, '--out');
-  if (!sourcePath || !outPath) {
-    throw Object.assign(new Error('--source and --out are required'), { failureClass: 'invalid_arguments' });
+  const entryAuthority = validateEntryAuthority({
+    entryScenario: entry.entryScenario,
+    sourceAuthority: sourcePath ? entry.sourceAuthority : null,
+    requestedOutputs: outPath ? [path.basename(outPath)] : [],
+  });
+  if (entryAuthority.decision !== 'pass') {
+    throw Object.assign(new Error(entryAuthority.failureClass), entryAuthority);
   }
   if (!fs.existsSync(sourcePath)) {
     throw Object.assign(new Error(`source plan missing: ${sourcePath}`), { failureClass: 'source_plan_missing' });
@@ -134,6 +161,7 @@ function generate(args) {
   const goalContractHash = sha256File(resolvedOut);
   const coverageReceipt = {
     schemaVersion: 'goal-contract-source-coverage-receipt/v1',
+    entryScenario: entry.entryScenario,
     sourcePlanPath: source.sourcePlanPath,
     sourcePlanHash: source.sourcePlanHash,
     sourceBytes: source.sourceBytes,
@@ -150,6 +178,7 @@ function generate(args) {
   const generationReceipt = {
     ok: true,
     schemaVersion: 'goal-contract-generation-receipt/v1',
+    entryScenario: entry.entryScenario,
     sourcePlanPath: source.sourcePlanPath,
     sourcePlanHash: source.sourcePlanHash,
     goalContractPath: normalize(resolvedOut),
@@ -178,7 +207,9 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
     }
     if (subcommand !== 'generate') {
       throw Object.assign(
-        new Error('Usage: bmad-speckit goal-contract generate --source <plan.md> --out <goal.md> --json'),
+        new Error(
+          'Usage: bmad-speckit goal-contract generate --entry standalone_goal_contract --source <plan.md> --out <goal.md> --json'
+        ),
         {
           failureClass: 'invalid_subcommand',
         }
@@ -191,6 +222,16 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
   } catch (error) {
     const failureClass = error.failureClass || error.code || 'goal_contract_generation_failed';
     const payload = failurePayload(failureClass, error, {
+      ...(error.entryScenario ? { entryScenario: error.entryScenario } : {}),
+      ...(error.expectedEntryScenario
+        ? { expectedEntryScenario: error.expectedEntryScenario }
+        : {}),
+      ...(error.requestedOutputs
+        ? { requestedOutputs: error.requestedOutputs }
+        : {}),
+      ...(error.requiredOutputs
+        ? { requiredOutputs: error.requiredOutputs }
+        : {}),
       ...(error.coverageAudit ? { coverageAudit: error.coverageAudit } : {}),
       ...(error.implementationProofAudit ? { implementationProofAudit: error.implementationProofAudit } : {}),
       ...(error.commandPortabilityAudit

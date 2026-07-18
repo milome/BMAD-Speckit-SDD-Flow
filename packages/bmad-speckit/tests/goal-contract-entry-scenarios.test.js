@@ -14,7 +14,9 @@ const PROFILE = require(path.resolve(
 ));
 const {
   ENTRY_SCENARIOS,
+  resolveEntryScenario,
   resolveEntryProfileOverlay,
+  validateEntryAuthority,
   validateEntryProfile,
 } = require('../src/utils/goal-contract/entry-scenarios.ts');
 
@@ -24,6 +26,15 @@ const FOUR_ARTIFACTS = [
   'audit_receipt.json',
   'goal_execution.md',
 ];
+
+function capturedFailureClass(run) {
+  try {
+    run();
+    return null;
+  } catch (error) {
+    return error.failureClass;
+  }
+}
 
 describe('goal-contract entry scenarios', () => {
   it('freezes the three exact entry authority contracts', () => {
@@ -105,5 +116,57 @@ describe('goal-contract entry scenarios', () => {
     assert.deepEqual(validation.unsupportedSemantics, [
       'future_semantic_contract',
     ]);
+  });
+
+  it('requires one exact normalized entry token', () => {
+    assert.equal(capturedFailureClass(() => resolveEntryScenario([])), 'entry_missing');
+    assert.equal(
+      capturedFailureClass(() => resolveEntryScenario(['standalone_goal_contract', 'standalone_goal_contract'])),
+      'entry_duplicated'
+    );
+    assert.equal(
+      capturedFailureClass(() => resolveEntryScenario(['goal-execution-plan.md'])),
+      'entry_unknown'
+    );
+    assert.equal(
+      resolveEntryScenario(['standalone_goal_contract']).entryScenario,
+      'standalone_goal_contract'
+    );
+  });
+
+  it('fails closed on authority, output, and dual-view mismatches', () => {
+    assert.equal(
+      validateEntryAuthority({
+        entryScenario: 'standalone_goal_contract',
+        sourceAuthority: null,
+        requestedOutputs: ['example-goal-execution-plan.md'],
+      }).failureClass,
+      'entry_source_authority_missing'
+    );
+    assert.equal(
+      validateEntryAuthority({
+        entryScenario: 'standalone_goal_contract',
+        sourceAuthority: 'confirmed_implementation_confirmation_and_requirement_record',
+        requestedOutputs: ['example-goal-execution-plan.md'],
+      }).failureClass,
+      'entry_authority_mismatch'
+    );
+    assert.equal(
+      validateEntryAuthority({
+        entryScenario: 'standalone_goal_contract',
+        sourceAuthority: 'source_plan_or_bounded_conversation_snapshot',
+        requestedOutputs: ['model_packet.json'],
+      }).failureClass,
+      'entry_output_set_mismatch'
+    );
+    assert.equal(
+      validateEntryAuthority({
+        entryScenario: 'req_trace_direct',
+        sourceAuthority: 'confirmed_implementation_confirmation_and_requirement_record',
+        requestedOutputs: FOUR_ARTIFACTS,
+        dualViewRequested: true,
+      }).failureClass,
+      'entry_dual_view_forbidden'
+    );
   });
 });

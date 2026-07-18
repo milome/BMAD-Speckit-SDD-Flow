@@ -69,6 +69,87 @@ function validationBlock(failureClass, extra = {}) {
   return { decision: 'block', failureClass, ...extra };
 }
 
+function entryFailure(failureClass, extra = {}) {
+  const error = new Error(failureClass);
+  Object.assign(error, { failureClass, ...extra });
+  return error;
+}
+
+function resolveEntryScenario(entryValues) {
+  const values = (entryValues || []).filter(
+    (value) => typeof value === 'string' && value.trim()
+  );
+  if (values.length === 0) {
+    throw entryFailure('entry_missing');
+  }
+  if (values.length !== 1) {
+    throw entryFailure('entry_duplicated', { entryValues: values });
+  }
+  const entryScenario = values[0].trim();
+  const scenario = ENTRY_SCENARIOS[entryScenario];
+  if (!scenario) {
+    throw entryFailure('entry_unknown', { entryScenario });
+  }
+  return scenario;
+}
+
+function standaloneOutputMatches(output) {
+  return /(?:^|-)goal-execution-plan\.md$/u.test(String(output || ''));
+}
+
+function sameOutputSet(requestedOutputs, requiredOutputs, entryScenario) {
+  const requested = [...new Set(requestedOutputs || [])].sort();
+  if (entryScenario === 'standalone_goal_contract') {
+    return requested.length === 1 && standaloneOutputMatches(requested[0]);
+  }
+  return sameValue(requested, [...requiredOutputs].sort());
+}
+
+function validateEntryAuthority({
+  entryScenario,
+  sourceAuthority,
+  requestedOutputs,
+  dualViewRequested = false,
+}) {
+  const scenario = ENTRY_SCENARIOS[entryScenario];
+  if (!scenario) {
+    return validationBlock('entry_unknown', { entryScenario });
+  }
+  if (!sourceAuthority) {
+    return validationBlock('entry_source_authority_missing', {
+      entryScenario,
+    });
+  }
+  if (sourceAuthority !== scenario.sourceAuthority) {
+    return validationBlock('entry_authority_mismatch', {
+      entryScenario,
+      expectedSourceAuthority: scenario.sourceAuthority,
+      actualSourceAuthority: sourceAuthority,
+    });
+  }
+  if (
+    !sameOutputSet(
+      requestedOutputs,
+      scenario.requiredOutputs,
+      entryScenario
+    )
+  ) {
+    return validationBlock('entry_output_set_mismatch', {
+      entryScenario,
+      requestedOutputs: requestedOutputs || [],
+      requiredOutputs: scenario.requiredOutputs,
+    });
+  }
+  if (scenario.dualViewPolicy === 'forbidden' && dualViewRequested) {
+    return validationBlock('entry_dual_view_forbidden', { entryScenario });
+  }
+  return {
+    decision: 'pass',
+    entryScenario,
+    finalArtifactAuthority: scenario.finalArtifactAuthority,
+  };
+}
+
 function validateEntryProfile(profile, entryScenario) {
   const scenario = ENTRY_SCENARIOS[entryScenario];
   if (!scenario) {
@@ -146,6 +227,8 @@ function resolveEntryProfileOverlay(profile, entryScenario) {
 
 module.exports = {
   ENTRY_SCENARIOS,
+  resolveEntryScenario,
   resolveEntryProfileOverlay,
+  validateEntryAuthority,
   validateEntryProfile,
 };

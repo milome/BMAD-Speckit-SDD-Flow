@@ -19,6 +19,10 @@ function runCli(args, options = {}) {
   });
 }
 
+function standaloneGenerateArgs(args) {
+  return ['generate', '--entry', 'standalone_goal_contract', ...args];
+}
+
 function writePlan(root, lines) {
   const sourcePath = path.join(root, 'source-plan.md');
   fs.writeFileSync(sourcePath, `${lines.join('\n')}\n`, 'utf8');
@@ -40,9 +44,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '- Optional internal refactor may update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.notEqual(result.status, 0);
@@ -65,9 +69,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '- The allowed seam can update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.notEqual(result.status, 0);
@@ -104,9 +108,9 @@ describe('goal-contract implementation proof audit', () => {
       'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
       '```',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -133,9 +137,9 @@ describe('goal-contract implementation proof audit', () => {
       'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
       '```',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -164,9 +168,9 @@ describe('goal-contract implementation proof audit', () => {
       'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
       '```',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);

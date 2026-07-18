@@ -19,6 +19,10 @@ function runCli(args, options = {}) {
   });
 }
 
+function standaloneGenerateArgs(args) {
+  return ['generate', '--entry', 'standalone_goal_contract', ...args];
+}
+
 function writeSourcePlan(root) {
   const sourcePath = path.join(root, 'source-plan.md');
   fs.writeFileSync(
@@ -66,7 +70,7 @@ describe('bmad-speckit goal-contract command', () => {
     const source = writeSourcePlan(root);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const payload = JSON.parse(result.stdout);
@@ -150,7 +154,7 @@ describe('bmad-speckit goal-contract command', () => {
     );
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', sourcePath, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', sourcePath, '--out', out, '--json']));
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const goalText = fs.readFileSync(out, 'utf8');
@@ -166,7 +170,13 @@ describe('bmad-speckit goal-contract command', () => {
     const root = tempRoot();
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', path.join(root, 'missing.md'), '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs([
+      '--source',
+      path.join(root, 'missing.md'),
+      '--out',
+      out,
+      '--json',
+    ]));
 
     assert.notEqual(result.status, 0);
     const payload = JSON.parse(result.stdout);
@@ -200,7 +210,7 @@ describe('bmad-speckit goal-contract command', () => {
       'utf8'
     );
 
-    const result = runCli(['generate', '--source', sourcePath, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', sourcePath, '--out', out, '--json']));
 
     assert.notEqual(result.status, 0);
     const payload = JSON.parse(result.stdout);
@@ -209,5 +219,87 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.commandPortabilityAudit.status, 'FAIL');
     assert.ok(payload.commandPortabilityAudit.issueCount >= 1);
     assert.equal(fs.existsSync(out), false);
+  });
+
+  it('fails closed when entry selection is missing, unknown, or duplicated', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const out = path.join(root, 'goal-execution-plan.md');
+    const cases = [
+      {
+        args: ['generate', '--source', source, '--out', out, '--json'],
+        failureClass: 'entry_missing',
+      },
+      {
+        args: ['generate', '--entry', 'unknown', '--source', source, '--out', out, '--json'],
+        failureClass: 'entry_unknown',
+      },
+      {
+        args: [
+          'generate',
+          '--entry',
+          'standalone_goal_contract',
+          '--entry',
+          'standalone_goal_contract',
+          '--source',
+          source,
+          '--out',
+          out,
+          '--json',
+        ],
+        failureClass: 'entry_duplicated',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const result = runCli(testCase.args);
+      assert.notEqual(result.status, 0);
+      assert.equal(JSON.parse(result.stdout).failureClass, testCase.failureClass);
+      assert.equal(fs.existsSync(out), false);
+    }
+  });
+
+  it('rejects incompatible entry routes, output sets, and missing authority', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const cases = [
+      {
+        args: [
+          'generate',
+          '--entry',
+          'req_trace_direct',
+          '--source',
+          source,
+          '--out',
+          path.join(root, 'goal-execution-plan.md'),
+          '--json',
+        ],
+        failureClass: 'entry_route_mismatch',
+      },
+      {
+        args: standaloneGenerateArgs([
+          '--source',
+          source,
+          '--out',
+          path.join(root, 'model_packet.json'),
+          '--json',
+        ]),
+        failureClass: 'entry_output_set_mismatch',
+      },
+      {
+        args: standaloneGenerateArgs([
+          '--out',
+          path.join(root, 'goal-execution-plan.md'),
+          '--json',
+        ]),
+        failureClass: 'entry_source_authority_missing',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const result = runCli(testCase.args);
+      assert.notEqual(result.status, 0);
+      assert.equal(JSON.parse(result.stdout).failureClass, testCase.failureClass);
+    }
   });
 });
