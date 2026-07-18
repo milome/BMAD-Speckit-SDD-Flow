@@ -13,6 +13,11 @@ This is an orchestration skill. Do not duplicate the full rules from `grill-with
 
 Use one hash-bound convergence controller. Run the required independent perspectives once against a frozen target, batch fix accepted findings, and selectively revalidate only perspectives invalidated by the change. Do not stack an independent docs-review loop on top.
 
+Audit-profile rule:
+
+- `standalone_goal_contract`: the latest-hash three-perspective PASS is terminal; `finalDocsReviewRequired: false`.
+- Other document workflows: preserve their existing single final docs-review behavior unless their own governing contract says otherwise.
+
 ## Main Agent Orchestration Control
 
 The Main Agent owns the full control loop. Subagents provide read-only findings only.
@@ -125,17 +130,17 @@ Primary question: does the contract point to the right files and enforce the rig
 8. Mark findings as accepted, rejected with evidence, or blocked by a user decision.
 9. Apply one batch fix in the main session when fixing is allowed.
 10. Compute changed semantic slices and select invalidated perspectives with the Selective Revalidation Matrix.
-11. If no perspective is invalidated, rerun deterministic checks and continue to final docs-review.
+11. If no perspective is invalidated, rerun deterministic checks and apply the active audit-profile completion rule.
 12. Otherwise freeze epoch 2 and run only invalidated perspectives against the new hash.
 13. If epoch 2 still has a deterministically repairable Blocker or Major issue, close the current internal cycle, batch all known occurrences into one repair, and start the next internal cycle without asking the user to continue.
-14. Run a single final docs-review as a leaf readability and command-order check.
-15. If docs-review changes governed semantics, commands, authority, scope, acceptance, or modification paths, start the next internal convergence cycle under the existing user authorization; ask the user only when the finding requires a real decision or approval. Otherwise rerun deterministic checks and finish.
+14. For `standalone_goal_contract`, finish after latest-hash perspective closure and deterministic checks; do not run final docs-review.
+15. For other document workflows, retain one final docs-review as a leaf check. If it changes governed semantics, start the next internal convergence cycle; otherwise rerun deterministic checks and finish.
 
 ## Selective Revalidation Matrix
 
 | Changed slice | Required revalidation |
 |---|---|
-| Formatting, spelling, heading, table layout | Deterministic checks and single final docs-review |
+| Formatting, spelling, heading, table layout | Deterministic checks; retained final docs-review only when the active non-standalone profile requires it |
 | File paths, commands, tests, execution order | Execution Determinism; Change Path |
 | Acceptance, evidence, traceability | Goal Semantics; Execution Determinism |
 | Goal, scope, non-goal, authority | All three perspectives |
@@ -208,7 +213,7 @@ Use stable IDs:
 
 ## Stop Conditions
 
-Stop successfully when deterministic checks pass, every required perspective has a PASS receipt for the latest hash or a valid selective carry-forward receipt, no Blocker or Major remains, the single final docs-review is resolved, and encoding verification passes.
+Stop successfully when deterministic checks pass, every required perspective has a PASS receipt for the latest hash or a valid selective carry-forward receipt, no Blocker or Major remains, the active audit-profile completion rule is satisfied, and encoding verification passes.
 
 Stop with residual risks when:
 
@@ -218,4 +223,4 @@ Stop with residual risks when:
 - An audit target changes while frozen and the replacement hash cannot be established.
 - The same material blocker persists across three internal cycles without a deterministic repair and cannot progress without user input or an external-state change.
 
-In the final response, report epoch IDs, latest target hash, required and carried-forward perspectives, timeout takeovers, issues fixed, the single final docs-review result, unresolved risks, and verification evidence.
+In the final response, report epoch IDs, latest target hash, required and carried-forward perspectives, timeout takeovers, issues fixed, the audit-profile completion result, unresolved risks, and verification evidence.

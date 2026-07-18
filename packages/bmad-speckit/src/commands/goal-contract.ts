@@ -12,6 +12,10 @@ const {
   writeCoverageReceipt,
   writeGenerationReceipt,
 } = require('../utils/goal-contract/goal-contract-receipts');
+const {
+  resolveAuditProfile,
+  runStandaloneDeterministicPreflight,
+} = require('../utils/goal-contract/standalone-audit-controller');
 const { goalContractReleaseGateCommand } = require('../utils/goal-contract/release-gate');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
@@ -81,6 +85,20 @@ function failurePayload(failureClass, error, extra = {}) {
   return payload;
 }
 
+function rendererIssues(audit) {
+  const issues = [];
+  for (const [field, code] of [
+    ['missingRequiredSlots', 'required_slot_missing'],
+    ['missingRequiredSections', 'required_section_missing'],
+    ['missingInvariantFragments', 'invariant_fragment_missing'],
+  ]) {
+    for (const location of audit?.[field] || []) {
+      issues.push({ code, location });
+    }
+  }
+  return issues;
+}
+
 function generate(args) {
   const entry = resolveEntryScenario(takeAll(args, '--entry'));
   if (entry.entryScenario !== 'standalone_goal_contract') {
@@ -141,19 +159,76 @@ function generate(args) {
     generationMode: 'source_plan_strict',
   });
   const { auditCommandPortability } = loadCommandPortabilityChecker();
+  const preflightStartedAt = new Date().toISOString();
   const commandPortabilityAudit = auditCommandPortability({
     content: rendered.document,
     targetPath: resolvedOut,
     shell: 'pwsh',
   });
-  if (commandPortabilityAudit.status !== 'PASS') {
+  const deterministicPreflight = runStandaloneDeterministicPreflight({
+    checks: [
+      {
+        id: 'renderer_structure',
+        run: () => {
+          const issues = rendererIssues(rendered.audit);
+          return {
+            decision: issues.length === 0 ? 'pass' : 'block',
+            issues,
+          };
+        },
+      },
+      {
+        id: 'source_coverage',
+        run: () => ({
+          decision:
+            rendered.audit.coverageDecision === 'pass' &&
+            implementationProofAudit.decision === 'pass'
+              ? 'pass'
+              : 'block',
+          issues: [],
+        }),
+      },
+      {
+        id: 'command_portability',
+        run: () => ({
+          decision:
+            commandPortabilityAudit.status === 'PASS' ? 'pass' : 'block',
+          issues: (commandPortabilityAudit.issues || []).map((item) => ({
+            code: item.code || 'command_not_portable',
+            location:
+              item.location ||
+              item.line ||
+              item.command ||
+              normalize(resolvedOut),
+          })),
+        }),
+      },
+    ],
+    startedAt: preflightStartedAt,
+    completedAt: new Date().toISOString(),
+  });
+  const auditMetrics = {
+    schemaVersion: 'standalone-audit-metrics/v1',
+    sequence: ['deterministic_preflight'],
+    deterministicCheckCount: deterministicPreflight.checkCount,
+    deterministicIssueCount: deterministicPreflight.issueCount,
+    auditEpochOpened: false,
+    persistedTransientViews: 0,
+  };
+  const auditProfile = resolveAuditProfile(entry.entryScenario);
+  if (deterministicPreflight.decision !== 'pass') {
     throw Object.assign(
       new Error(
-        `generated goal contract contains ${commandPortabilityAudit.issueCount} non-portable command occurrence(s)`
+        `goal-contract deterministic preflight failed with ${deterministicPreflight.issueCount} issue(s)`
       ),
       {
-        failureClass: 'command_portability_failed',
+        failureClass:
+          commandPortabilityAudit.status === 'PASS'
+            ? 'deterministic_preflight_failed'
+            : 'command_portability_failed',
         commandPortabilityAudit,
+        deterministicPreflight,
+        auditMetrics,
       }
     );
   }
@@ -191,6 +266,9 @@ function generate(args) {
     coverageAudit: { decision: 'pass', unmappedSourceObligations: [] },
     implementationProofAudit,
     commandPortabilityAudit,
+    deterministicPreflight,
+    auditMetrics,
+    auditProfile,
     writeReceipt,
   };
   writeGenerationReceipt(generationReceiptPath, generationReceipt);
@@ -237,6 +315,10 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
       ...(error.commandPortabilityAudit
         ? { commandPortabilityAudit: error.commandPortabilityAudit }
         : {}),
+      ...(error.deterministicPreflight
+        ? { deterministicPreflight: error.deterministicPreflight }
+        : {}),
+      ...(error.auditMetrics ? { auditMetrics: error.auditMetrics } : {}),
     });
     if (json) emitJson(payload);
     else console.error(payload.message);

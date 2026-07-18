@@ -117,6 +117,17 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.implementationProofAudit.decision, 'pass');
     assert.equal(generation.implementationProofAudit.decision, 'pass');
     assert.equal(generation.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations, false);
+    assert.equal(payload.deterministicPreflight.decision, 'pass');
+    assert.equal(payload.deterministicPreflight.auditEpochAllowed, true);
+    assert.equal(payload.auditMetrics.auditEpochOpened, false);
+    assert.deepEqual(payload.auditMetrics.sequence, [
+      'deterministic_preflight',
+    ]);
+    assert.equal(payload.auditProfile.finalDocsReviewRequired, false);
+    assert.deepEqual(
+      generation.deterministicPreflight,
+      payload.deterministicPreflight
+    );
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
   });
 
@@ -218,6 +229,13 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.failureClass, 'command_portability_failed');
     assert.equal(payload.commandPortabilityAudit.status, 'FAIL');
     assert.ok(payload.commandPortabilityAudit.issueCount >= 1);
+    assert.equal(payload.deterministicPreflight.decision, 'block');
+    assert.equal(payload.deterministicPreflight.auditEpochAllowed, false);
+    assert.ok(
+      payload.deterministicPreflight.issues.some(
+        (issue) => issue.checkId === 'command_portability'
+      )
+    );
     assert.equal(fs.existsSync(out), false);
   });
 

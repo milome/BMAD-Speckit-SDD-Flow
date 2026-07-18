@@ -31,10 +31,10 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - Resolve `references/goal-execution-contract-template.md` and `references/goal-contract-profile.json` relative to this skill directory.
    - If the template is missing, stop with `goal_contract_template_missing`.
    - If the profile is missing, continue only for manual contract authoring, and report `goal_contract_profile_missing` as a packaging defect.
-5. Run docs-review dependency adaptation before writing the contract:
-   - Run `node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install`, replacing `<skill-dir>` with this skill's installed directory.
-   - If it reports `available` or `installed`, continue.
-   - If it reports `blocked`, stop with `docs_review_dependency_blocked` and include the reported reason.
+5. Run docs-review dependency adaptation only for a non-standalone compatibility workflow that explicitly retains docs-review:
+   - Standalone Goal-contract generation MUST NOT install, invoke, or wait for docs-review.
+   - For a retained non-standalone workflow, run `node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install`, replacing `<skill-dir>` with this skill's installed directory.
+   - If that retained workflow reports `blocked`, stop it with `docs_review_dependency_blocked` and include the reported reason.
 6. Generate the contract from the template only when the package CLI is not applicable.
 7. Run the contract completeness gate and command portability gate.
 8. Delegate semantic review convergence to `multi-view-doc-review-loop`.
@@ -215,14 +215,14 @@ Handoff rules:
 1. Complete generation, source coverage, the deterministic completeness gate, and the command portability gate.
 2. Hand the generated target path, source hash, and current target hash to `multi-view-doc-review-loop`.
 3. Let that skill own audit epochs, target freezing, batch fixes, selective revalidation, timeout takeover, and completion receipts.
-4. Run a single final docs-review only after semantic convergence. `docs-review` is a leaf readability and command-order check, not a convergence controller.
-5. If the final docs-review changes goal semantics, authority, scope, acceptance, commands, or modification paths, return the changed target to `multi-view-doc-review-loop`; otherwise rerun only the deterministic completeness gate.
+4. For `standalone_goal_contract`, treat the latest-hash three-perspective PASS as the terminal model-audit result and do not run a separate final docs-review.
+5. Preserve any existing final docs-review only for unrelated non-standalone documentation workflows; if it changes governed semantics, return that target to its convergence controller.
 
-Treat any style, clarity, structure, command-order, or readability issue as a gap. Do not waive docs-review findings unless the finding conflicts with frozen `/goal` contract semantics; if there is a conflict, keep the contract semantics and document the waived docs-review issue in the final response.
+Treat standalone style, clarity, structure, command-order, or readability defects as deterministic or three-perspective audit findings. Do not create a second audit loop for them.
 
 ## Required Commands
 
-Use PowerShell 7 on Windows:
+For retained non-standalone docs-review workflows only, use PowerShell 7 on Windows:
 
 ```powershell
 pwsh.exe -NoLogo -NoProfile -Command "& { node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install }"
@@ -246,10 +246,10 @@ Report:
 
 - Generated contract path.
 - Source path or conversation-derived source summary.
-- docs-review dependency status.
+- Standalone docs-review status `not_required`, or the retained non-standalone dependency status.
 - Command portability gate result.
 - Audit epoch count, reviewed target hash, required perspective receipts, and selective carry-forward decisions.
-- Result of the single final docs-review.
+- Standalone latest-hash three-perspective result, or the retained non-standalone final docs-review result.
 - Encoding gate result.
 - Any residual risks or blocked conditions.
 
