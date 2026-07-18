@@ -792,6 +792,84 @@ describe('req trace generator confirmation block gate', () => {
     );
   });
 
+  it('disables automatic commits by default in the generated human prompt', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const promptOnlyResult = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+    ]);
+
+    expect(promptOnlyResult.status, promptOnlyResult.stdout).toBe(0);
+    expect(promptOnlyResult.stdout).toContain(
+      '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
+    );
+    expect(promptOnlyResult.stdout).not.toContain('改为 PASS 后立即本地提交一次');
+
+    for (const profile of ['full', 'compact']) {
+      const outDir = path.join(tempDir, `default-no-auto-commit-${profile}`);
+      const result = runNodePrompt([
+        '--source-document',
+        source,
+        '--requirement-record',
+        record,
+        '--out-dir',
+        outDir,
+        '--human-prompt-profile',
+        profile,
+        '--json',
+      ]);
+
+      expect(result.status, result.stdout).toBe(0);
+      const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+      expect(prompt).toContain('不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。');
+      expect(prompt).not.toContain('改为 PASS 后立即本地提交一次');
+    }
+  });
+
+  it('enables a local commit only with the explicit auto-commit flag', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const promptOnlyResult = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--auto-commit',
+    ]);
+
+    expect(promptOnlyResult.status, promptOnlyResult.stdout).toBe(0);
+    expect(promptOnlyResult.stdout).toContain('改为 PASS 后立即本地提交一次');
+    expect(promptOnlyResult.stdout).not.toContain(
+      '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
+    );
+
+    for (const profile of ['full', 'compact']) {
+      const outDir = path.join(tempDir, `explicit-auto-commit-${profile}`);
+      const result = runNodePrompt([
+        '--source-document',
+        source,
+        '--requirement-record',
+        record,
+        '--out-dir',
+        outDir,
+        '--human-prompt-profile',
+        profile,
+        '--auto-commit',
+        '--json',
+      ]);
+
+      expect(result.status, result.stdout).toBe(0);
+      const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+      expect(prompt).toContain('改为 PASS 后立即本地提交一次');
+      expect(prompt).not.toContain(
+        '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
+      );
+    }
+  });
+
   it('compiles synchronized model packet, human prompt, and audit receipt artifacts', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);

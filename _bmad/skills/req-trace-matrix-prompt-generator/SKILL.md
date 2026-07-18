@@ -122,7 +122,9 @@ Useful options:
 - `--execution-discipline-profile-ref <path>` to load an immutable main-agent generated execution discipline profile snapshot. The profile is `discipline_profile_only` and may be rendered into `human_prompt.txt`, `goal_execution.md`, and `audit_receipt.json`; it must not change confirmed source rows, required commands, packet authority, or mental model state.
 - `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command must reference `goal_execution.md` and `model_packet.json`; it requires `--out-dir` and is length-checked.
 - `--task-report-path <path>` is mandatory when `--goal-command-available true` and `--out-dir` are used. It is the packet-bound TaskReport path that the native `/goal` main session must overwrite with its final execution result.
-- `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
+- Automatic commit is disabled by default.
+- `--auto-commit` only when the user explicitly requires a local commit after PASS; it never permits push.
+- `--no-auto-commit` remains a compatibility override and keeps automatic commit disabled.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.
 

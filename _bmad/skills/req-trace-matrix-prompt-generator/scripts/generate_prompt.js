@@ -79,6 +79,7 @@ function parseArgs(argv) {
   const args = {
     finalGate: [],
     extraRule: [],
+    autoCommit: false,
     noAutoCommit: false,
     json: false,
     executionHost: 'codex',
@@ -90,6 +91,10 @@ function parseArgs(argv) {
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (arg === '--auto-commit') {
+      args.autoCommit = true;
+      continue;
+    }
     if (arg === '--no-auto-commit') {
       args.noAutoCommit = true;
       continue;
@@ -2163,6 +2168,19 @@ function languageLabels(language) {
   };
 }
 
+function renderCommitRule(args, language = 'zh-CN') {
+  const autoCommitEnabled = args.autoCommit && !args.noAutoCommit;
+  const zhRule = autoCommitEnabled
+    ? '改为 PASS 后立即本地提交一次，禁止 push。若源文档或用户指定 commit message 格式，严格使用该格式；否则使用仓库提交规范。'
+    : '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。';
+  const enRule = autoCommitEnabled
+    ? 'After PASS, create one local commit immediately and never push. Use the source document or user-specified commit message format when present; otherwise use the repository convention.'
+    : 'Do not commit automatically. Commit only when the user explicitly requests it, and never push.';
+  if (language === 'en-US') return enRule;
+  if (language === 'bilingual') return `${zhRule} / ${enRule}`;
+  return zhRule;
+}
+
 function renderFullHumanPromptFromPacket(packet, args, hostDirective, language) {
   const labels = languageLabels(language);
   const sourceAuthority = `${packet.sourceDocument}#implementationConfirmation`;
@@ -2214,6 +2232,9 @@ Final gate matrix:
 Stop only when all required current-attempt gates pass, including AI-TDD gate, delivery verification, closeout integrity, and post-closeout review when applicable.
 Required final authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.
 
+Commit policy:
+${renderCommitRule(args, language)}
+
 ${labels.scope}:
 1. Only implement IDs present in model_packet.json and confirmed implementationConfirmation projections.
 2. Do not reduce, replace, reinterpret, or shrink confirmed scope.
@@ -2262,6 +2283,7 @@ Runtime closure authority is the requirement-record/control store.
 PASS requires evidence for covered must, notDone, and evidence IDs.
 Missing evidence remains open/PENDING or MISSING_EVIDENCE.
 Semantic gaps require reconfirm_required; non-semantic failures require repair and rerun.
+Commit policy: ${renderCommitRule(args, language)}
 Completion Evidence Packet must include ${packet.completionEvidencePacketSchema.requiredFields.join(', ')}.
 Full details are in model_packet.json.
 `;
@@ -2880,10 +2902,6 @@ function buildPrompt(args) {
       'Final gate commands must be derived from implementationConfirmation.requiredCommands, closeoutReadinessPreview.requiredCommands, evidence, or --final-gate before PASS.'
     );
   }
-  const commitRule = args.noAutoCommit
-    ? '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
-    : '改为 PASS 后立即本地提交一次，禁止 push。若源文档或用户指定 commit message 格式，严格使用该格式；否则使用仓库提交规范。';
-
   const prompt = `${SKILL_LINE}
 
 continue nonstop
@@ -2919,7 +2937,7 @@ ${renderSuggestedCommands(confirmation)}
 3. taskRefs 完成不等于 requirement PASS。
 4. PASS requires evidence for covered must, notDone, and evidence IDs.
 5. 每完成一个 TRACE 切片，必须通过受控 runtime/control-store 记录 closure evidence；confirmed source traceRows.status 不得作为运行时 PASS/MISSING_EVIDENCE 回写目标。
-6. ${commitRule}
+6. ${renderCommitRule(args)}
 7. 没有证据时 runtime closure 必须保持 open/PENDING 或记录 MISSING_EVIDENCE。
 8. 严禁虚构验证结果、证据路径或 PASS 状态。
 9. 如果需要改变 must/notDone/mustNot/evidence/traceRows 语义，必须把源文档状态改为 reconfirm_required 并停止。
