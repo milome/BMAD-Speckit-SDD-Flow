@@ -296,6 +296,17 @@ export function implementationConfirmationHash(confirmation: JsonObject): string
   return sha256Bytes(stableStringify(semanticConfirmationForHash(confirmation)));
 }
 
+export function sourceDocumentHashForImplementationConfirmation(input: {
+  sourceText: string;
+  blockText: string;
+  confirmation: JsonObject;
+}): string {
+  const normalizedBlock = `implementationConfirmation:${stableStringify(
+    semanticConfirmationForHash(input.confirmation)
+  )}`;
+  return sha256Bytes(input.sourceText.replace(input.blockText, normalizedBlock));
+}
+
 const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
   'derivedFromPacketHash',
   'projectionStatus',

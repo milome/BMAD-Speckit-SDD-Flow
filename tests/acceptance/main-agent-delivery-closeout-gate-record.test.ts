@@ -6,6 +6,11 @@ import { describe, expect, it } from 'vitest';
 import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import {
+  implementationConfirmationHash,
+  readImplementationConfirmation,
+  sourceDocumentHashForImplementationConfirmation,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate';
+import {
   createRuntimeStatusProjectionUpdate,
   runtimeStatusProjectionRecordPatch,
   type RequirementsContractSixModelId,
@@ -602,14 +607,10 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const base = path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'REQ-CLOSEOUT');
   mkdirSync(base, { recursive: true });
   writeDeliveryTruthReport(root);
-  const sourcePath =
-    typeof record.sourcePath === 'string' && record.sourcePath
-      ? path.resolve(root, record.sourcePath)
-      : path.join(root, 'docs', 'requirements', 'delivery-closeout-fixture.md');
-  const recordWithSource = {
-    ...record,
-    sourcePath,
-  };
+  const hasExplicitSourcePath = typeof record.sourcePath === 'string' && record.sourcePath;
+  const sourcePath = hasExplicitSourcePath
+    ? path.resolve(root, record.sourcePath as string)
+    : path.join(root, 'docs', 'requirements', 'delivery-closeout-fixture.md');
   if (
     !readMaybeExists(sourcePath)
   ) {
@@ -623,10 +624,88 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
         '  mustNot: []',
         '  evidence: []',
         '  traceRows: []',
+        '  requiredCommands: []',
+        '  artifactAutomationPlan: []',
+        '  targetModificationPaths: []',
+        '  currentTargetMap:',
+        '    canonicalArtifacts: []',
+        '    pathRegistry: []',
+        '    existingArtifacts: []',
+        '  applicability:',
+        '    governanceEvents: { applies: false, reasonCode: not_applicable }',
+        '    runtimeRecovery: { applies: false, reasonCode: not_applicable }',
+        '    scoringDashboardSft: { applies: false, reasonCode: not_applicable }',
+        '    currentTargetMap: { applies: false, reasonCode: not_applicable }',
+        '    scriptsAndHooks: { applies: false, reasonCode: not_applicable }',
+        '    aiTddContractGate: { applies: false, reasonCode: not_applicable }',
         '',
       ].join('\n')
     );
   }
+  const confirmedSource = readImplementationConfirmation(sourcePath);
+  const sourceDocumentHash =
+    sourceDocumentHashForImplementationConfirmation(confirmedSource);
+  const implementationHash = implementationConfirmationHash(confirmedSource.confirmation);
+  const semanticModelHash = sha256Text(
+    stableStringify({
+      sourceDocumentHash,
+      implementationConfirmationHash: implementationHash,
+    })
+  );
+  const sourceAmendmentHashes = [
+    sha256Text(
+      stableStringify({
+        sourceDocumentHash,
+        amendmentRole: 'confirmed-source-baseline',
+      })
+    ),
+  ];
+  const bindAuthorityHashes = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(bindAuthorityHashes);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
+        if (key === 'sourceDocumentHash') return [key, sourceDocumentHash];
+        if (key === 'implementationConfirmationHash') return [key, implementationHash];
+        if (key === 'semanticModelHash') return [key, semanticModelHash];
+        return [key, bindAuthorityHashes(entry)];
+      })
+    );
+  };
+  const boundRecord = bindAuthorityHashes(record) as Record<string, unknown>;
+  const recordWithSource = withVerifiedCloseoutPrerequisites({
+    ...boundRecord,
+    sourcePath,
+    sourceDocumentHash,
+    implementationConfirmationHash: implementationHash,
+    semanticModelHash,
+    sourceAmendmentHashes,
+    aiTddContractGate: hasExplicitSourcePath
+      ? boundRecord.aiTddContractGate
+      : (boundRecord.aiTddContractGate ?? { enforcementMode: 'skipped_by_policy' }),
+    confirmationHistory: [
+      ...((Array.isArray(boundRecord.confirmationHistory)
+        ? boundRecord.confirmationHistory
+        : []) as Record<string, unknown>[]),
+      {
+        eventType: 'confirmation_recorded',
+        recordId: recordText(boundRecord, 'recordId'),
+        requirementSetId:
+          recordText(boundRecord, 'requirementSetId') || recordText(boundRecord, 'recordId'),
+        confirmedAt: '2026-05-19T00:00:00.000Z',
+        confirmedBy: 'main-agent-delivery-closeout-gate-record.test',
+        sourcePath,
+        sourceDocumentHash,
+        implementationConfirmationHash: implementationHash,
+        confirmationPageHash: sha256Text(`${sourceDocumentHash}:confirmation-page`),
+        confirmationText: 'confirmed source authority fixture',
+        renderReportPath: normalizeSlashes(
+          path.join(path.dirname(sourcePath), 'confirmation-render-report.json')
+        ),
+        htmlPath: normalizeSlashes(path.join(path.dirname(sourcePath), 'confirmation.html')),
+      },
+    ],
+  });
   const coveragePath = path.join(base, 'evidence', 'failure-case-coverage.json');
   mkdirSync(path.dirname(coveragePath), { recursive: true });
   writeFileSync(
@@ -661,11 +740,11 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const recordWithCoverage = {
     ...recordWithSource,
     extensionRefs: [
-      ...(((record.extensionRefs as unknown[]) ?? []) as Record<string, unknown>[]),
+      ...(((recordWithSource.extensionRefs as unknown[]) ?? []) as Record<string, unknown>[]),
       production.extensionRef,
     ],
     artifactIndex: [
-      ...(((record.artifactIndex as unknown[]) ?? []) as Record<string, unknown>[]),
+      ...(((recordWithSource.artifactIndex as unknown[]) ?? []) as Record<string, unknown>[]),
       {
         artifactType: 'failure_case_coverage',
         sourceOfTruthRole: 'evidence',
@@ -1015,9 +1094,17 @@ function withVerifiedCloseoutPrerequisites(
     currentAttemptId: CURRENT_IMPLEMENTATION_ATTEMPT_ID,
   };
   for (const modelId of [
+    'requirement_confirmation',
+    'architecture_confirmation',
+    'implementation_readiness',
     'execution_closure',
     'audit_review',
   ] as const satisfies readonly RequirementsContractSixModelId[]) {
+    const existingModel = (
+      (record.sixModelResults as Record<string, unknown> | undefined)?.[modelId] ?? {}
+    ) as Record<string, unknown>;
+    const effectiveStatus = recordText(existingModel, 'status') || 'not_established';
+    const passed = effectiveStatus === 'pass';
     const update = createRuntimeStatusProjectionUpdate({
       recordId: recordText(record, 'recordId'),
       requirementSetId: recordText(record, 'requirementSetId'),
@@ -1040,14 +1127,19 @@ function withVerifiedCloseoutPrerequisites(
           hash: HASH,
         },
       ],
-      blockerRefs: [],
+      blockerRefs: passed ? [] : [`${modelId}_${effectiveStatus}`],
       evidenceRefs: [`fixtures/${modelId}-gate.json`],
       authorityClass: 'deterministic_gate',
-      decision: 'pass',
-      effectiveStatus: 'pass',
+      decision: passed ? 'pass' : 'block',
+      effectiveStatus,
       createdAt: '2026-05-19T00:00:00.000Z',
       receiptPath: `runtime/status-decisions/${CURRENT_IMPLEMENTATION_ATTEMPT_ID}/${modelId}.json`,
-      projection: modelResult(modelId),
+      projection: modelResultWithHashes(
+        modelId,
+        recordText(record, 'sourceDocumentHash'),
+        recordText(record, 'implementationConfirmationHash'),
+        effectiveStatus
+      ),
     });
     record = {
       ...record,
@@ -1126,7 +1218,7 @@ describe('requirement-scoped delivery closeout gate', () => {
           'deliveryEvidence.requiredCommands_missing',
           'negative_or_regression_command_missing',
         ]),
-        semanticModelHash: HASH,
+        semanticModelHash: record.semanticModelHash,
         currentAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
         decisionReceiptRef: expect.any(String),
         decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
