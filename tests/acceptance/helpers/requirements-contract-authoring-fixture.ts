@@ -480,8 +480,10 @@ export function buildValidResponseFromRequest(
     requestHash: request.requestHash,
     sourceHash: request.sourceHash,
     sourceDocumentHash: request.sourceDocumentHash,
+    semanticModelHash: request.semanticModelHash,
     implementationConfirmationHash: request.implementationConfirmationHash,
     packetHash: request.packetHash,
+    projectionSetHash: request.projectionSetHash,
     gateDryRunHash: gateDryRun.gateDryRunHash ?? gateDryRun.hash,
     reconciliationIssueCount: (gateDryRun.reconciliation as Record<string, unknown>).issueCount,
     checkedProjectionGroups: request.packetProjectionSummary

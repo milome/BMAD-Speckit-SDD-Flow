@@ -7,6 +7,7 @@ import {
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
+  installJudgeRuntimeConfig,
   issueCodes,
   readImplementationConfirmation,
   readJson,
@@ -156,6 +157,7 @@ describe('requirements contract staging transaction', () => {
   it('promotes source and writes promotion receipt only after three validated no-gap rounds', () => {
     const root = createTempRoot('requirements-contract-staging-promote-');
     try {
+      installJudgeRuntimeConfig(root);
       const { sourcePath: source, authoringOptions } = writeMinimalConsumerRequirement(
         root,
         'docs/requirements/minimal-consumer.md',
@@ -225,6 +227,7 @@ describe('requirements contract staging transaction', () => {
   it('stops promotion without overwrite when source hash changes after transaction start', () => {
     const root = createTempRoot('requirements-contract-staging-source-race-');
     try {
+      installJudgeRuntimeConfig(root);
       const source = writeConsumerRequirement(root);
       const beforeHash = sha256File(source);
       let changed = false;

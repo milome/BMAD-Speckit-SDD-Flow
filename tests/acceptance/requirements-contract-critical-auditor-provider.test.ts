@@ -1,8 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import {
+  mainMainAgentOrchestration,
+  validateCriticalAuditorReceiptBinding,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   artifacts,
   buildValidResponseFromRequest,
@@ -535,10 +538,22 @@ describe('requirements contract Critical Auditor provider modes', () => {
         criticalAuditorResponseDir: responseDir,
         maxCriticalAuditorRounds: 3,
       });
-      expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(true);
-      expect(existsSync(roundArtifact(root, recordId, 'receipt', 2))).toBe(true);
+      const afterRound2State = {
+        issueCodes: issueCodes(afterRound2),
+        blockingStage: afterRound2.blockingStage,
+        receipt1Exists: existsSync(roundArtifact(root, recordId, 'receipt', 1)),
+        receipt2Exists: existsSync(roundArtifact(root, recordId, 'receipt', 2)),
+        response1Exists: existsSync(roundArtifact(root, recordId, 'response', 1)),
+        response2Exists: existsSync(roundArtifact(root, recordId, 'response', 2)),
+      };
+      expect(afterRound2State).toMatchObject({
+        receipt1Exists: true,
+        receipt2Exists: true,
+        response1Exists: true,
+        response2Exists: true,
+      });
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 3))).toBe(false);
-      expect(issueCodes(afterRound2)).toContain('critical_auditor_response_file_missing');
+      expect(issueCodes(afterRound2)).toEqual(['critical_auditor_response_file_missing']);
       expect(issueCodes(afterRound2)).not.toContain(
         'critical_auditor_response_request_hash_mismatch'
       );
@@ -567,27 +582,139 @@ describe('requirements contract Critical Auditor provider modes', () => {
         criticalAuditorResponseDir: responseDir,
         maxCriticalAuditorRounds: 3,
       });
+      const currentRequest1 = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 1)
+      );
+      const archiveRoot = path.resolve(
+        path.dirname(roundArtifact(root, recordId, 'request', 1)),
+        '..',
+        '..',
+        'archive'
+      );
+      const finalDraftArchive = readdirSync(archiveRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) =>
+          readJson<{
+            schemaVersion: string;
+            reason: string;
+            artifacts: string[];
+          }>(path.join(archiveRoot, entry.name, 'archive-manifest.json'))
+        )
+        .find((manifest) => manifest.reason === 'final_draft_binding_changed_restart_from_round_1');
 
+      expect(finalDraftArchive).toMatchObject({
+        schemaVersion: 'critical-auditor-stale-archive/v1',
+        reason: 'final_draft_binding_changed_restart_from_round_1',
+      });
+      for (const roundIndex of [1, 2, 3]) {
+        expect(finalDraftArchive?.artifacts).toContain(
+          `critical-auditor-receipt-round-${roundIndex}.json`
+        );
+        for (const kind of ['request', 'response'] as const) {
+          expect(
+            finalDraftArchive?.artifacts.some((artifact) =>
+              artifact.endsWith(`critical-auditor-round-${kind}-${roundIndex}.json`)
+            )
+          ).toBe(true);
+        }
+      }
+      expect(third.blockingStage).toBe('critical_auditor_receipt_binding_invalid');
+      expect(issueCodes(third)).toEqual(['critical_auditor_response_file_missing']);
+      expect(currentRequest1.requestHash).not.toBe(request1.requestHash);
+      expect(currentRequest1.previousReceipts).toEqual([]);
+      for (const roundIndex of [1, 2, 3]) {
+        expect(existsSync(roundArtifact(root, recordId, 'receipt', roundIndex))).toBe(false);
+        expect(existsSync(roundArtifact(root, recordId, 'response', roundIndex))).toBe(false);
+      }
+
+      const freshResponseDir = path.join(root, 'fresh-auditor-responses');
+      mkdirSync(freshResponseDir, { recursive: true });
+      const writeFreshRoundResponse = (roundIndex: number) => {
+        const currentRequest = readJson<Record<string, unknown>>(
+          roundArtifact(root, recordId, 'request', roundIndex)
+        );
+        writeFileSync(
+          path.join(freshResponseDir, `critical-auditor-round-response-${roundIndex}.json`),
+          `${JSON.stringify(
+            buildValidResponseFromRequest(
+              currentRequest,
+              stagingMustDecompositionPacket(root, recordId)
+            ),
+            null,
+            2
+          )}\n`,
+          'utf8'
+        );
+        return currentRequest;
+      };
+      const runFreshRound = () =>
+        runAuthoring(root, source, recordId, {
+          ...materialization.authoringOptions,
+          criticalAuditorProviderMode: 'response_file',
+          criticalAuditorResponseDir: freshResponseDir,
+          maxCriticalAuditorRounds: 3,
+        });
+
+      const freshRequest1 = writeFreshRoundResponse(1);
+      const afterFreshRound1 = runFreshRound();
+      expect(issueCodes(afterFreshRound1)).toEqual(['critical_auditor_response_file_missing']);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(true);
+      expect(existsSync(roundArtifact(root, recordId, 'receipt', 2))).toBe(false);
+
+      const freshRequest2 = writeFreshRoundResponse(2);
+      const afterFreshRound2 = runFreshRound();
+      expect(issueCodes(afterFreshRound2)).toEqual(['critical_auditor_response_file_missing']);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 2))).toBe(true);
-      expect(existsSync(roundArtifact(root, recordId, 'receipt', 3))).toBe(true);
-      const finalRequest2 = readJson<Record<string, unknown>>(
-        roundArtifact(root, recordId, 'request', 2)
-      );
-      const finalRequest3 = readJson<Record<string, unknown>>(
-        roundArtifact(root, recordId, 'request', 3)
-      );
+      expect(existsSync(roundArtifact(root, recordId, 'receipt', 3))).toBe(false);
+
+      const freshRequest3 = writeFreshRoundResponse(3);
+      const final = runFreshRound();
+      expect(final.blockingStage).toBeNull();
+      expect(issueCodes(final)).not.toContain('critical_auditor_response_request_hash_mismatch');
       expect(
-        readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
-          roundArtifact(root, recordId, 'receipt', 2)
-        ).criticalAuditorReceipt.requestHash
-      ).toBe(finalRequest2.requestHash);
-      expect(
-        readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
-          roundArtifact(root, recordId, 'receipt', 3)
-        ).criticalAuditorReceipt.requestHash
-      ).toBe(finalRequest3.requestHash);
-      expect(issueCodes(third)).not.toContain('critical_auditor_response_request_hash_mismatch');
+        readJson<Record<string, unknown>>(sourcePromotionDecisionPath(root, recordId)).finalDecision
+      ).toBe('allow_source_promotion');
+      expect(existsSync(artifacts(root, recordId, `${recordId}-SET`).promotionReceipt)).toBe(true);
+
+      const freshRequests = [freshRequest1, freshRequest2, freshRequest3];
+      for (const [index, freshRequest] of freshRequests.entries()) {
+        const roundIndex = index + 1;
+        const finalRequest = readJson<Record<string, unknown>>(
+          roundArtifact(root, recordId, 'request', roundIndex)
+        );
+        const finalResponse = readJson<Record<string, unknown>>(
+          roundArtifact(root, recordId, 'response', roundIndex)
+        );
+        const finalReceipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+          roundArtifact(root, recordId, 'receipt', roundIndex)
+        ).criticalAuditorReceipt;
+        const gateDryRun = finalRequest.gateDryRun as Record<string, unknown>;
+        const validation = validateCriticalAuditorReceiptBinding({
+          receipt: finalReceipt,
+          response: finalResponse,
+          expectation: {
+            roundIndex,
+            transactionId: String(finalRequest.transactionId),
+            namespaceVersion: String(finalRequest.namespaceVersion),
+            auditInputHash: String(finalRequest.auditInputHash),
+            recordId: String(finalRequest.recordId),
+            sourceDocumentHash: String(finalRequest.sourceDocumentHash),
+            semanticModelHash: String(finalRequest.semanticModelHash),
+            implementationConfirmationHash: String(finalRequest.implementationConfirmationHash),
+            packetHash: String(finalRequest.packetHash),
+            projectionSetHash: String(finalRequest.projectionSetHash),
+            requestHash: String(finalRequest.requestHash),
+            gateDryRunHash: String(gateDryRun.gateDryRunHash),
+          },
+        });
+
+        expect(finalRequest.requestHash).toBe(freshRequest.requestHash);
+        expect(validation).toMatchObject({
+          ok: true,
+          issueCodes: [],
+          responseHash: finalReceipt.responseHash,
+        });
+      }
     } finally {
       removeTempRoot(root);
     }

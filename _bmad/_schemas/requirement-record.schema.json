@@ -782,11 +782,59 @@
       "properties": {
         "commandId": { "$ref": "#/$defs/nonEmptyString" },
         "command": { "$ref": "#/$defs/nonEmptyString" },
+        "normalizedCommand": { "$ref": "#/$defs/nonEmptyString" },
+        "cwd": { "$ref": "#/$defs/nonEmptyString" },
+        "executorIdentity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["class", "id"],
+          "properties": {
+            "class": { "$ref": "#/$defs/nonEmptyString" },
+            "id": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "runtimeVersions": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "dependencyLockHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "hash"],
+            "properties": {
+              "path": { "$ref": "#/$defs/nonEmptyString" },
+              "hash": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": true
+        },
+        "environmentFingerprint": { "$ref": "#/$defs/sha256" },
+        "environmentCompatibilityDecision": { "const": "pass" },
+        "transactionId": { "$ref": "#/$defs/nonEmptyString" },
+        "implementationAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "semanticModelHash": { "$ref": "#/$defs/sha256" },
+        "packetHash": { "$ref": "#/$defs/sha256" },
         "runId": { "$ref": "#/$defs/nonEmptyString" },
         "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
         "exitCode": { "type": "integer" },
         "startedAt": { "type": "string", "format": "date-time" },
         "completedAt": { "type": "string", "format": "date-time" },
+        "outputPath": { "$ref": "#/$defs/nonEmptyString" },
+        "outputHash": { "$ref": "#/$defs/sha256" },
+        "coveredRequirementIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
         "outputSummary": { "type": "string" }
       }
     },
@@ -1266,6 +1314,9 @@
         "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
         "requirementId": { "$ref": "#/$defs/nonEmptyString" },
         "status": { "enum": ["open", "pass", "fail", "blocked"] },
+        "oracleId": { "$ref": "#/$defs/nonEmptyString" },
+        "oracleResultHash": { "$ref": "#/$defs/sha256" },
+        "oracleObservedAt": { "type": "string", "format": "date-time" },
         "traceRows": {
           "type": "array",
           "items": { "$ref": "#/$defs/nonEmptyString" }

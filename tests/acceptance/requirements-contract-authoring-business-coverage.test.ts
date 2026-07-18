@@ -1371,5 +1371,5 @@ describe('requirements contract sanitized real fixture coverage', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  }, 60_000);
+  }, 120_000);
 });

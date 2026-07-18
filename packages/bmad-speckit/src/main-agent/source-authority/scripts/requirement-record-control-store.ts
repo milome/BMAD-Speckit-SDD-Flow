@@ -175,9 +175,39 @@ function normalizeCommandRunRef(
   fallback: { runId: string; startedAt: string; completedAt: string }
 ): JsonObject {
   const commandId = text(command.commandId) || text(command.id) || 'UNKNOWN-COMMAND';
+  const executorIdentity = nested(command.executorIdentity);
+  const runtimeVersions = nested(command.runtimeVersions);
+  const environment = nested(command.environment);
+  const dependencyLockHashes = objects(command.dependencyLockHashes);
+  const coveredRequirementIds = strings(command.coveredRequirementIds);
   return {
     commandId,
     command: text(command.command) || commandId,
+    ...(text(command.normalizedCommand)
+      ? { normalizedCommand: text(command.normalizedCommand).replace(/\s+/gu, ' ') }
+      : {}),
+    ...(text(command.cwd) ? { cwd: normalizePathForRecord(text(command.cwd)) } : {}),
+    ...(Object.keys(executorIdentity).length > 0 ? { executorIdentity } : {}),
+    ...(Object.keys(runtimeVersions).length > 0 ? { runtimeVersions } : {}),
+    ...(dependencyLockHashes.length > 0 ? { dependencyLockHashes } : {}),
+    ...(Object.keys(environment).length > 0 ? { environment } : {}),
+    ...(text(command.environmentFingerprint)
+      ? { environmentFingerprint: text(command.environmentFingerprint) }
+      : {}),
+    ...(text(command.environmentCompatibilityDecision)
+      ? { environmentCompatibilityDecision: text(command.environmentCompatibilityDecision) }
+      : {}),
+    ...(text(command.transactionId) ? { transactionId: text(command.transactionId) } : {}),
+    ...(text(command.implementationAttemptId)
+      ? { implementationAttemptId: text(command.implementationAttemptId) }
+      : {}),
+    ...(text(command.sourceDocumentHash)
+      ? { sourceDocumentHash: text(command.sourceDocumentHash) }
+      : {}),
+    ...(text(command.semanticModelHash)
+      ? { semanticModelHash: text(command.semanticModelHash) }
+      : {}),
+    ...(text(command.packetHash) ? { packetHash: text(command.packetHash) } : {}),
     runId: text(command.runId) || fallback.runId,
     ...(text(command.closeoutAttemptId)
       ? { closeoutAttemptId: text(command.closeoutAttemptId) }
@@ -185,6 +215,11 @@ function normalizeCommandRunRef(
     exitCode: Number.isInteger(command.exitCode) ? command.exitCode : 0,
     startedAt: text(command.startedAt) || fallback.startedAt,
     completedAt: text(command.completedAt) || fallback.completedAt,
+    ...(text(command.outputPath)
+      ? { outputPath: normalizePathForRecord(text(command.outputPath)) }
+      : {}),
+    ...(text(command.outputHash) ? { outputHash: text(command.outputHash) } : {}),
+    ...(coveredRequirementIds.length > 0 ? { coveredRequirementIds } : {}),
     ...(text(command.outputSummary) ? { outputSummary: text(command.outputSummary) } : {}),
   };
 }
@@ -338,6 +373,13 @@ function normalizeClosure(closure: JsonObject, record: JsonObject): JsonObject {
     status: ['open', 'pass', 'fail', 'blocked'].includes(text(closure.status))
       ? text(closure.status)
       : 'open',
+    ...(text(closure.oracleId) ? { oracleId: text(closure.oracleId) } : {}),
+    ...(text(closure.oracleResultHash)
+      ? { oracleResultHash: text(closure.oracleResultHash) }
+      : {}),
+    ...(text(closure.oracleObservedAt)
+      ? { oracleObservedAt: text(closure.oracleObservedAt) }
+      : {}),
     traceRows: strings(closure.traceRows),
     evidenceRefs: strings(closure.evidenceRefs),
     commandRunRefs: objects(closure.commandRunRefs).map((command) =>

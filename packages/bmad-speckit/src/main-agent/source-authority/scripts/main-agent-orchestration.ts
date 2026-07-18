@@ -1870,7 +1870,9 @@ interface CriticalAuditorRoundResult {
   namespaceVersion?: string;
   requestHash?: string;
   sourceHash?: string;
+  sourceDocumentHash?: string;
   semanticModelHash?: string;
+  implementationConfirmationHash?: string;
   packetHash?: string;
   projectionSetHash?: string;
   independentProviderEvidence?: CriticalAuditorIndependentProviderEvidence;
@@ -15999,13 +16001,351 @@ function buildPreserveExistingMustDecompositionPacket(input: {
   return payload;
 }
 
+export const CRITICAL_AUDITOR_RECEIPT_BINDING_ISSUE_CODES = [
+  'critical_auditor_receipt_missing',
+  'critical_auditor_response_artifact_missing',
+  'critical_auditor_receipt_hash_missing',
+  'critical_auditor_receipt_hash_mismatch',
+  'critical_auditor_receipt_schema_version_mismatch',
+  'critical_auditor_receipt_round_index_mismatch',
+  'critical_auditor_receipt_transaction_id_mismatch',
+  'critical_auditor_receipt_namespace_version_mismatch',
+  'critical_auditor_receipt_record_id_mismatch',
+  'critical_auditor_receipt_input_hash_mismatch',
+  'critical_auditor_receipt_source_document_hash_mismatch',
+  'critical_auditor_receipt_semantic_model_hash_mismatch',
+  'critical_auditor_receipt_implementation_confirmation_hash_mismatch',
+  'critical_auditor_receipt_packet_hash_mismatch',
+  'critical_auditor_receipt_content_hash_mismatch',
+  'critical_auditor_receipt_projection_set_hash_mismatch',
+  'critical_auditor_receipt_request_hash_mismatch',
+  'critical_auditor_receipt_gate_dry_run_hash_mismatch',
+  'critical_auditor_receipt_response_hash_missing',
+  'critical_auditor_receipt_response_hash_mismatch',
+  'critical_auditor_response_schema_version_mismatch',
+  'critical_auditor_response_round_index_mismatch',
+  'critical_auditor_response_transaction_id_mismatch',
+  'critical_auditor_response_namespace_version_mismatch',
+  'critical_auditor_response_request_hash_mismatch',
+  'critical_auditor_response_gate_dry_run_hash_mismatch',
+  'critical_auditor_response_source_document_hash_mismatch',
+  'critical_auditor_response_semantic_model_hash_mismatch',
+  'critical_auditor_response_implementation_confirmation_hash_mismatch',
+  'critical_auditor_response_packet_hash_mismatch',
+  'critical_auditor_response_projection_set_hash_mismatch',
+] as const;
+
+export type CriticalAuditorReceiptBindingIssueCode =
+  (typeof CRITICAL_AUDITOR_RECEIPT_BINDING_ISSUE_CODES)[number];
+
+export interface CriticalAuditorReceiptBindingExpectation {
+  roundIndex: number;
+  transactionId: string;
+  namespaceVersion: string;
+  auditInputHash: string;
+  recordId: string;
+  sourceDocumentHash: string;
+  semanticModelHash: string;
+  implementationConfirmationHash: string;
+  packetHash: string;
+  projectionSetHash: string;
+  requestHash: string;
+  gateDryRunHash: string;
+}
+
+export interface CriticalAuditorReceiptBindingValidation {
+  ok: boolean;
+  issueCodes: CriticalAuditorReceiptBindingIssueCode[];
+  responseHash: string | null;
+}
+
+export interface CriticalAuditorReceiptBindingRound {
+  expectation: CriticalAuditorReceiptBindingExpectation;
+  receipt: Record<string, unknown> | null;
+  response: Record<string, unknown> | null;
+}
+
+export function validateCriticalAuditorReceiptBinding(
+  input: CriticalAuditorReceiptBindingRound
+): CriticalAuditorReceiptBindingValidation {
+  const issueCodes: CriticalAuditorReceiptBindingIssueCode[] = [];
+  const receipt = input.receipt;
+  const response = input.response;
+  const expected = input.expectation;
+  const compare = (
+    actual: unknown,
+    expectedValue: string | number,
+    issueCode: CriticalAuditorReceiptBindingIssueCode
+  ) => {
+    const matches =
+      typeof expectedValue === 'number'
+        ? Number(actual) === expectedValue
+        : normalizeText(actual) === expectedValue;
+    if (!matches) {
+      issueCodes.push(issueCode);
+    }
+  };
+
+  if (!receipt) {
+    issueCodes.push('critical_auditor_receipt_missing');
+  } else {
+    const receiptHash = normalizeText(receipt.receiptHash);
+    const receiptForHash = { ...receipt };
+    delete receiptForHash.receiptHash;
+    if (!receiptHash) {
+      issueCodes.push('critical_auditor_receipt_hash_missing');
+    } else if (receiptHash !== sha256Json(receiptForHash)) {
+      issueCodes.push('critical_auditor_receipt_hash_mismatch');
+    }
+    compare(
+      receipt.schemaVersion,
+      'critical-auditor-receipt/v1',
+      'critical_auditor_receipt_schema_version_mismatch'
+    );
+    compare(
+      receipt.roundIndex,
+      expected.roundIndex,
+      'critical_auditor_receipt_round_index_mismatch'
+    );
+    compare(
+      receipt.transactionId,
+      expected.transactionId,
+      'critical_auditor_receipt_transaction_id_mismatch'
+    );
+    compare(
+      receipt.namespaceVersion,
+      expected.namespaceVersion,
+      'critical_auditor_receipt_namespace_version_mismatch'
+    );
+    compare(receipt.recordId, expected.recordId, 'critical_auditor_receipt_record_id_mismatch');
+    compare(
+      receipt.inputHash,
+      expected.auditInputHash,
+      'critical_auditor_receipt_input_hash_mismatch'
+    );
+    compare(
+      receipt.sourceDocumentHash,
+      expected.sourceDocumentHash,
+      'critical_auditor_receipt_source_document_hash_mismatch'
+    );
+    compare(
+      receipt.semanticModelHash,
+      expected.semanticModelHash,
+      'critical_auditor_receipt_semantic_model_hash_mismatch'
+    );
+    compare(
+      receipt.implementationConfirmationHash,
+      expected.implementationConfirmationHash,
+      'critical_auditor_receipt_implementation_confirmation_hash_mismatch'
+    );
+    compare(
+      receipt.packetHash,
+      expected.packetHash,
+      'critical_auditor_receipt_packet_hash_mismatch'
+    );
+    compare(
+      receipt.contentHash,
+      expected.packetHash,
+      'critical_auditor_receipt_content_hash_mismatch'
+    );
+    compare(
+      receipt.projectionSetHash,
+      expected.projectionSetHash,
+      'critical_auditor_receipt_projection_set_hash_mismatch'
+    );
+    compare(
+      receipt.requestHash,
+      expected.requestHash,
+      'critical_auditor_receipt_request_hash_mismatch'
+    );
+    compare(
+      receipt.gateDryRunHash,
+      expected.gateDryRunHash,
+      'critical_auditor_receipt_gate_dry_run_hash_mismatch'
+    );
+  }
+
+  const responseHash = response ? sha256Json(response) : null;
+  if (!response) {
+    issueCodes.push('critical_auditor_response_artifact_missing');
+  } else {
+    compare(
+      response.schemaVersion,
+      'critical-auditor-round-response/v1',
+      'critical_auditor_response_schema_version_mismatch'
+    );
+    compare(
+      response.roundIndex,
+      expected.roundIndex,
+      'critical_auditor_response_round_index_mismatch'
+    );
+    compare(
+      response.transactionId,
+      expected.transactionId,
+      'critical_auditor_response_transaction_id_mismatch'
+    );
+    compare(
+      response.namespaceVersion,
+      expected.namespaceVersion,
+      'critical_auditor_response_namespace_version_mismatch'
+    );
+    compare(
+      response.requestHash,
+      expected.requestHash,
+      'critical_auditor_response_request_hash_mismatch'
+    );
+    compare(
+      response.gateDryRunHash,
+      expected.gateDryRunHash,
+      'critical_auditor_response_gate_dry_run_hash_mismatch'
+    );
+    compare(
+      response.sourceDocumentHash,
+      expected.sourceDocumentHash,
+      'critical_auditor_response_source_document_hash_mismatch'
+    );
+    compare(
+      response.semanticModelHash,
+      expected.semanticModelHash,
+      'critical_auditor_response_semantic_model_hash_mismatch'
+    );
+    compare(
+      response.implementationConfirmationHash,
+      expected.implementationConfirmationHash,
+      'critical_auditor_response_implementation_confirmation_hash_mismatch'
+    );
+    compare(
+      response.packetHash,
+      expected.packetHash,
+      'critical_auditor_response_packet_hash_mismatch'
+    );
+    compare(
+      response.projectionSetHash,
+      expected.projectionSetHash,
+      'critical_auditor_response_projection_set_hash_mismatch'
+    );
+  }
+
+  if (receipt) {
+    const storedResponseHash = normalizeText(receipt.responseHash);
+    if (!storedResponseHash) {
+      issueCodes.push('critical_auditor_receipt_response_hash_missing');
+    } else if (responseHash && storedResponseHash !== responseHash) {
+      issueCodes.push('critical_auditor_receipt_response_hash_mismatch');
+    }
+  }
+
+  const uniqueIssueCodes = [...new Set(issueCodes)];
+  return {
+    ok: uniqueIssueCodes.length === 0,
+    issueCodes: uniqueIssueCodes,
+    responseHash,
+  };
+}
+
+export function evaluateCriticalAuditorReceiptBindingSequence(
+  rounds: readonly CriticalAuditorReceiptBindingRound[]
+): {
+  ok: boolean;
+  consecutiveValidNoNewGapRounds: number;
+  latestReceiptHash: string | null;
+  issueCodes: CriticalAuditorReceiptBindingIssueCode[];
+} {
+  const issueCodes: CriticalAuditorReceiptBindingIssueCode[] = [];
+  let consecutiveValidNoNewGapRounds = 0;
+  let latestReceiptHash: string | null = null;
+  for (const round of rounds) {
+    const validation = validateCriticalAuditorReceiptBinding(round);
+    if (!validation.ok) {
+      issueCodes.push(...validation.issueCodes);
+      consecutiveValidNoNewGapRounds = 0;
+      latestReceiptHash = null;
+      continue;
+    }
+    const verdict = normalizeText(recordObject(round.receipt?.convergenceDecision).verdict);
+    consecutiveValidNoNewGapRounds = isNoNewGapVerdict(verdict as CriticalAuditorVerdict)
+      ? consecutiveValidNoNewGapRounds + 1
+      : 0;
+    latestReceiptHash = normalizeText(round.receipt?.receiptHash) || null;
+  }
+  const uniqueIssueCodes = [...new Set(issueCodes)];
+  return {
+    ok: uniqueIssueCodes.length === 0,
+    consecutiveValidNoNewGapRounds,
+    latestReceiptHash,
+    issueCodes: uniqueIssueCodes,
+  };
+}
+
+function buildCriticalAuditorResponseArtifact(input: {
+  roundIndex: number;
+  transaction: CriticalAuditorStagingTransaction;
+  requestHash: string;
+  sourceDocumentHash: string;
+  semanticModelHash: string;
+  implementationConfirmationHash: string;
+  packetHash: string;
+  projectionSetHash: string;
+  gateDryRunHash: string;
+  auditResult: CriticalAuditorRoundResult;
+}): Record<string, unknown> {
+  return {
+    schemaVersion: 'critical-auditor-round-response/v1',
+    roundIndex: input.roundIndex,
+    transactionId: input.transaction.transactionId,
+    namespaceVersion: input.transaction.namespaceVersion,
+    requestHash: input.requestHash,
+    sourceHash: input.sourceDocumentHash,
+    sourceDocumentHash: input.sourceDocumentHash,
+    semanticModelHash: input.semanticModelHash,
+    implementationConfirmationHash: input.implementationConfirmationHash,
+    packetHash: input.packetHash,
+    projectionSetHash: input.projectionSetHash,
+    gateDryRunHash: input.gateDryRunHash,
+    ...input.auditResult,
+  };
+}
+
+function criticalAuditorResponseArtifactMatchesExpectation(
+  response: Record<string, unknown> | null,
+  expectation: Pick<
+    CriticalAuditorReceiptBindingExpectation,
+    | 'roundIndex'
+    | 'transactionId'
+    | 'namespaceVersion'
+    | 'sourceDocumentHash'
+    | 'semanticModelHash'
+    | 'implementationConfirmationHash'
+    | 'packetHash'
+    | 'projectionSetHash'
+    | 'requestHash'
+    | 'gateDryRunHash'
+  >
+): response is Record<string, unknown> {
+  return (
+    Boolean(response) &&
+    normalizeText(response?.schemaVersion) === 'critical-auditor-round-response/v1' &&
+    Number(response?.roundIndex) === expectation.roundIndex &&
+    normalizeText(response?.transactionId) === expectation.transactionId &&
+    normalizeText(response?.namespaceVersion) === expectation.namespaceVersion &&
+    normalizeText(response?.sourceDocumentHash) === expectation.sourceDocumentHash &&
+    normalizeText(response?.semanticModelHash) === expectation.semanticModelHash &&
+    normalizeText(response?.implementationConfirmationHash) ===
+      expectation.implementationConfirmationHash &&
+    normalizeText(response?.packetHash) === expectation.packetHash &&
+    normalizeText(response?.projectionSetHash) === expectation.projectionSetHash &&
+    normalizeText(response?.requestHash) === expectation.requestHash &&
+    normalizeText(response?.gateDryRunHash) === expectation.gateDryRunHash
+  );
+}
+
 function buildCriticalAuditorReceipt(input: {
   roundIndex: number;
   transactionId?: string;
   namespaceVersion?: string;
   requestHash?: string;
   gateDryRunHash?: string;
-  responseHash?: string;
+  responseHash: string;
   auditInputHash: string;
   recordId: string;
   sourceDocumentHash: string;
@@ -16058,7 +16398,7 @@ function buildCriticalAuditorReceipt(input: {
     reviewedProjectionRefs: auditResult.reviewedProjectionRefs ?? [],
     reviewedMustRefs: auditResult.reviewedMustRefs ?? [],
     gateDryRunHash: input.gateDryRunHash ?? auditResult.gateDryRunHash ?? null,
-    responseHash: input.responseHash ?? null,
+    responseHash: input.responseHash,
     independentProviderExpectation: input.independentProviderExpectation ?? null,
     independentProviderEvidence: auditResult.independentProviderEvidence ?? null,
     reconciliationIssueCount: auditResult.reconciliationIssueCount ?? null,
@@ -16082,6 +16422,7 @@ function buildCriticalAuditorReceipt(input: {
 
 function criticalAuditorReceiptMatchesCurrent(input: {
   receipt: Record<string, unknown> | null;
+  response: Record<string, unknown> | null;
   roundIndex: number;
   transaction: CriticalAuditorStagingTransaction;
   auditInputHash: string;
@@ -16095,29 +16436,25 @@ function criticalAuditorReceiptMatchesCurrent(input: {
   gateDryRunHash: string;
 }): boolean {
   const receipt = input.receipt;
-  if (!receipt) return false;
-  const receiptHash = normalizeText(receipt.receiptHash);
-  const receiptForHash = { ...receipt };
-  delete receiptForHash.receiptHash;
-  if (!receiptHash || receiptHash !== sha256Json(receiptForHash)) return false;
-  if (normalizeText(receipt.schemaVersion) !== 'critical-auditor-receipt/v1') return false;
-  if (Number(receipt.roundIndex) !== input.roundIndex) return false;
-  if (normalizeText(receipt.transactionId) !== input.transaction.transactionId) return false;
-  if (normalizeText(receipt.namespaceVersion) !== input.transaction.namespaceVersion) return false;
-  if (normalizeText(receipt.recordId) !== input.recordId) return false;
-  if (normalizeText(receipt.inputHash) !== input.auditInputHash) return false;
-  if (normalizeText(receipt.sourceDocumentHash) !== input.sourceDocumentHash) return false;
-  if (normalizeText(receipt.semanticModelHash) !== input.semanticModelHash) return false;
-  if (
-    normalizeText(receipt.implementationConfirmationHash) !== input.implementationConfirmationHash
-  ) {
-    return false;
-  }
-  if (normalizeText(receipt.packetHash) !== input.packetHash) return false;
-  if (normalizeText(receipt.contentHash) !== input.packetHash) return false;
-  if (normalizeText(receipt.projectionSetHash) !== input.projectionSetHash) return false;
-  if (normalizeText(receipt.requestHash) !== input.requestHash) return false;
-  if (normalizeText(receipt.gateDryRunHash) !== input.gateDryRunHash) return false;
+  const bindingValidation = validateCriticalAuditorReceiptBinding({
+    receipt,
+    response: input.response,
+    expectation: {
+      roundIndex: input.roundIndex,
+      transactionId: input.transaction.transactionId,
+      namespaceVersion: input.transaction.namespaceVersion,
+      auditInputHash: input.auditInputHash,
+      recordId: input.recordId,
+      sourceDocumentHash: input.sourceDocumentHash,
+      semanticModelHash: input.semanticModelHash,
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      packetHash: input.packetHash,
+      projectionSetHash: input.projectionSetHash,
+      requestHash: input.requestHash,
+      gateDryRunHash: input.gateDryRunHash,
+    },
+  });
+  if (!bindingValidation.ok || !receipt) return false;
   const verdict = normalizeText(recordObject(receipt.convergenceDecision).verdict);
   if (isNoNewGapVerdict(verdict as CriticalAuditorVerdict)) {
     const expectation = recordObject(receipt.independentProviderExpectation);
@@ -16505,6 +16842,7 @@ function runCriticalAuditorReceiptLoop(input: {
   auditInputHash: string;
   recordId: string;
   sourceDocumentHash: string;
+  semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
   mustRefs: string[];
@@ -16599,6 +16937,7 @@ function runCriticalAuditorReceiptLoop(input: {
   const provider = input.roundProvider;
   const maxRounds = input.maxRounds && input.maxRounds > 0 ? input.maxRounds : 12;
   const receipts: Record<string, unknown>[] = [];
+  const bindingRounds: CriticalAuditorReceiptBindingRound[] = [];
   const issues: PreConfirmationDrilldownIssue[] = [];
   let latestReceiptHash: string | null = null;
   let consecutiveNoNewGapRounds = 0;
@@ -16643,12 +16982,14 @@ function runCriticalAuditorReceiptLoop(input: {
       createdAt: input.createdAt,
     });
     const requestPath = criticalAuditorRequestPath(input.transaction, roundIndex);
+    const responsePath = criticalAuditorResponsePath(input.transaction, roundIndex);
     const receiptPath = criticalAuditorReceiptPath(input.transaction, roundIndex);
     const mirrorPath = path.join(
       input.paths.authoringDir,
       `critical-auditor-receipt-round-${roundIndex}.json`
     );
     const existingRequest = readJsonIfExists(requestPath);
+    const existingResponse = readJsonIfExists(responsePath);
     const existingReceipt = unwrapCriticalAuditorReceipt(readJsonIfExists(receiptPath));
     const existingFrozenGateDryRun = existingRequest
       ? criticalAuditorGateDryRunSummaryFromRequest(existingRequest, gateDryRun)
@@ -16661,6 +17002,7 @@ function runCriticalAuditorReceiptLoop(input: {
         criticalAuditorSubstantiveGateBindingHash(gateDryRun) &&
       criticalAuditorReceiptMatchesCurrent({
         receipt: existingReceipt,
+        response: existingResponse,
         roundIndex,
         transaction: input.transaction,
         auditInputHash: input.auditInputHash,
@@ -16691,6 +17033,7 @@ function runCriticalAuditorReceiptLoop(input: {
       !receipt &&
       criticalAuditorReceiptMatchesCurrent({
         receipt: existingReceipt,
+        response: existingResponse,
         roundIndex,
         transaction: input.transaction,
         auditInputHash: input.auditInputHash,
@@ -16706,6 +17049,7 @@ function runCriticalAuditorReceiptLoop(input: {
     ) {
       receipt = existingReceipt;
     }
+    let acceptedResponse = receipt ? existingResponse : null;
     if (!receipt) {
       if (!providerBinding.binding) {
         issues.push(
@@ -16774,13 +17118,46 @@ function runCriticalAuditorReceiptLoop(input: {
         issues.push(...bindingIssues);
         break;
       }
-      receipt = buildCriticalAuditorReceipt({
+      const responseExpectation = {
+        roundIndex,
+        transactionId: input.transaction.transactionId,
+        namespaceVersion: input.transaction.namespaceVersion,
+        sourceDocumentHash: input.sourceDocumentHash,
+        semanticModelHash: input.semanticModelHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        packetHash: input.packetHash,
+        projectionSetHash,
+        requestHash: normalizeText(request.requestHash),
+        gateDryRunHash: frozenGateDryRun.hash,
+      };
+      const persistedResponse = readJsonIfExists(responsePath);
+      acceptedResponse = criticalAuditorResponseArtifactMatchesExpectation(
+        persistedResponse,
+        responseExpectation
+      )
+        ? persistedResponse
+        : buildCriticalAuditorResponseArtifact({
+            roundIndex,
+            transaction: input.transaction,
+            requestHash: responseExpectation.requestHash,
+            sourceDocumentHash: input.sourceDocumentHash,
+            semanticModelHash: input.semanticModelHash,
+            implementationConfirmationHash: input.implementationConfirmationHash,
+            packetHash: input.packetHash,
+            projectionSetHash,
+            gateDryRunHash: frozenGateDryRun.hash,
+            auditResult,
+          });
+      if (acceptedResponse !== persistedResponse) {
+        writeJsonUtf8(responsePath, acceptedResponse);
+      }
+      const candidateReceipt = buildCriticalAuditorReceipt({
         roundIndex,
         transactionId: input.transaction.transactionId,
         namespaceVersion: input.transaction.namespaceVersion,
         requestHash: normalizeText(request.requestHash),
         gateDryRunHash: frozenGateDryRun.hash,
-        responseHash: sha256Json(auditResult),
+        responseHash: sha256Json(acceptedResponse),
         auditInputHash: input.auditInputHash,
         recordId: input.recordId,
         sourceDocumentHash: input.sourceDocumentHash,
@@ -16792,9 +17169,62 @@ function runCriticalAuditorReceiptLoop(input: {
         createdAt: input.createdAt,
         auditResult,
       });
+      const bindingValidation = validateCriticalAuditorReceiptBinding({
+        receipt: candidateReceipt,
+        response: acceptedResponse,
+        expectation: {
+          roundIndex,
+          transactionId: input.transaction.transactionId,
+          namespaceVersion: input.transaction.namespaceVersion,
+          auditInputHash: input.auditInputHash,
+          recordId: input.recordId,
+          sourceDocumentHash: input.sourceDocumentHash,
+          semanticModelHash: input.semanticModelHash,
+          implementationConfirmationHash: input.implementationConfirmationHash,
+          packetHash: input.packetHash,
+          projectionSetHash,
+          requestHash: normalizeText(request.requestHash),
+          gateDryRunHash: frozenGateDryRun.hash,
+        },
+      });
+      if (!bindingValidation.ok) {
+        issues.push(
+          ...bindingValidation.issueCodes.map((code) =>
+            preConfirmationIssue(
+              code,
+              `Critical Auditor receipt binding is invalid: ${code}`,
+              [responsePath, receiptPath],
+              'critical_auditor'
+            )
+          )
+        );
+        break;
+      }
+      receipt = candidateReceipt;
+    }
+    if (!receipt || !acceptedResponse) {
+      break;
     }
     latestReceiptHash = normalizeText(receipt.receiptHash);
     receipts.push(receipt);
+    bindingRounds.push({
+      receipt,
+      response: acceptedResponse,
+      expectation: {
+        roundIndex,
+        transactionId: input.transaction.transactionId,
+        namespaceVersion: input.transaction.namespaceVersion,
+        auditInputHash: input.auditInputHash,
+        recordId: input.recordId,
+        sourceDocumentHash: input.sourceDocumentHash,
+        semanticModelHash: input.semanticModelHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        packetHash: input.packetHash,
+        projectionSetHash,
+        requestHash: normalizeText(request.requestHash),
+        gateDryRunHash: frozenGateDryRun.hash,
+      },
+    });
     writeCriticalAuditorReceiptMirror({
       rootReceiptPath: receiptPath,
       mirrorPath,
@@ -16843,20 +17273,22 @@ function runCriticalAuditorReceiptLoop(input: {
     consecutiveNoNewGapRounds = isNoNewGapVerdict(verdict) ? consecutiveNoNewGapRounds + 1 : 0;
   }
 
-  const derivedConvergence = deriveAuditConvergenceFromReceipts(
-    receipts,
-    input.sourceDocumentHash,
-    input.semanticModelHash,
-    input.implementationConfirmationHash,
-    input.packetHash,
-    projectionSetHash
-  );
-  if (derivedConvergence.issues.length > 0) {
-    issues.push(...derivedConvergence.issues);
+  const derivedConvergence = evaluateCriticalAuditorReceiptBindingSequence(bindingRounds);
+  if (!derivedConvergence.ok) {
+    issues.push(
+      ...derivedConvergence.issueCodes.map((code) =>
+        preConfirmationIssue(
+          code,
+          `Critical Auditor convergence binding is invalid: ${code}`,
+          ['critical_auditor_receipt_loop'],
+          'critical_auditor'
+        )
+      )
+    );
     consecutiveNoNewGapRounds = 0;
     latestReceiptHash = null;
   } else {
-    consecutiveNoNewGapRounds = derivedConvergence.consecutiveNoNewGapRounds;
+    consecutiveNoNewGapRounds = derivedConvergence.consecutiveValidNoNewGapRounds;
     latestReceiptHash = derivedConvergence.latestReceiptHash;
   }
 
@@ -16872,245 +17304,6 @@ function runCriticalAuditorReceiptLoop(input: {
   }
 
   return { latestReceiptHash, consecutiveNoNewGapRounds, receipts, issues };
-}
-
-function mirrorCriticalAuditorReceiptsForCurrentDraft(input: {
-  root: string;
-  sourcePath: string;
-  paths: PreConfirmationPaths;
-  transaction: CriticalAuditorStagingTransaction;
-  receipts: Record<string, unknown>[];
-  auditInputHash: string;
-  recordId: string;
-  sourceDocumentHash: string;
-  implementationConfirmationHash: string;
-  packetHash: string;
-  mustRequirements: SourceMustRequirement[];
-  packet: Record<string, unknown>;
-  createdAt: string;
-}): { latestReceiptHash: string | null; receipts: Record<string, unknown>[] } {
-  let latestReceiptHash: string | null = null;
-  const mirrored: Record<string, unknown>[] = [];
-  for (const [index, receipt] of input.receipts.entries()) {
-    const roundIndex = Number(receipt.roundIndex ?? index + 1);
-    const auditResult: CriticalAuditorRoundResult = {
-      verdict: normalizeCriticalAuditorVerdict(recordObject(receipt.convergenceDecision).verdict),
-      gapCandidates: asRecordArray(receipt.gapCandidates),
-      validatedGaps: asRecordArray(receipt.validatedGaps),
-      rejectedGapCandidates: asRecordArray(receipt.rejectedGapCandidates),
-      mutationPressureFindings: asRecordArray(receipt.mutationPressureFindings),
-      overBroadTaskFindings: asRecordArray(receipt.overBroadTaskFindings),
-      missingProjectionFindings: asRecordArray(receipt.missingProjectionFindings),
-      invalidProofFindings: asRecordArray(receipt.invalidProofFindings),
-      legacyBypassFindings: asRecordArray(receipt.legacyBypassFindings),
-      sourceMaterializationFindings: asRecordArray(receipt.sourceMaterializationFindings),
-      reviewedMustRefs: asStringArray(receipt.reviewedMustRefs),
-      reviewedProjectionRefs: asStringArray(receipt.reviewedProjectionRefs),
-      checkedProjectionGroups: asStringArray(receipt.checkedProjectionGroups),
-      checkedProjectionQualityRuleCodes: asStringArray(receipt.checkedProjectionQualityRuleCodes),
-      priorFindingsDisposition: asRecordArray(receipt.priorFindingsDisposition),
-      falsePositiveProofs: asRecordArray(receipt.falsePositiveProofs),
-      independentProviderEvidence: recordObject(
-        receipt.independentProviderEvidence
-      ) as unknown as CriticalAuditorIndependentProviderEvidence,
-      rationale:
-        normalizeText(receipt.noNewGapRationale) ||
-        'No new valid gap detected in mirrored final draft receipt.',
-      gateDryRunHash: normalizeText(receipt.gateDryRunHash) || undefined,
-      reconciliationIssueCount:
-        typeof receipt.reconciliationIssueCount === 'number'
-          ? receipt.reconciliationIssueCount
-          : undefined,
-    };
-    const gateDryRun = buildCriticalAuditorGateDryRunSummary({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      roundIndex,
-    });
-    const candidateRequest = buildCriticalAuditorRoundRequest({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      recordId: input.recordId,
-      roundIndex,
-      transactionId: input.transaction.transactionId,
-      namespaceVersion: input.transaction.namespaceVersion,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(input.packet),
-      auditInputHash: input.auditInputHash,
-      mustRequirements: input.mustRequirements,
-      packet: input.packet,
-      previousReceipts: mirrored,
-      gateDryRun,
-      createdAt: input.createdAt,
-    });
-    const request = writeOrReuseCriticalAuditorRoundRequest({
-      requestPath: criticalAuditorRequestPath(input.transaction, roundIndex),
-      candidate: candidateRequest,
-    });
-    const frozenGateDryRun = criticalAuditorGateDryRunSummaryFromRequest(request, gateDryRun);
-    const receiptPath = criticalAuditorReceiptPath(input.transaction, roundIndex);
-    const existingReceipt = unwrapCriticalAuditorReceipt(readJsonIfExists(receiptPath));
-    const currentReceipt = criticalAuditorReceiptMatchesCurrent({
-      receipt: existingReceipt,
-      roundIndex,
-      transaction: input.transaction,
-      auditInputHash: input.auditInputHash,
-      recordId: input.recordId,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(input.packet),
-      requestHash: normalizeText(request.requestHash),
-      gateDryRunHash: frozenGateDryRun.hash,
-    })
-      ? existingReceipt
-      : null;
-    const mirroredReceipt =
-      currentReceipt ??
-      buildCriticalAuditorReceipt({
-        roundIndex,
-        transactionId: input.transaction.transactionId,
-        namespaceVersion: input.transaction.namespaceVersion,
-        requestHash: normalizeText(request.requestHash),
-        gateDryRunHash: frozenGateDryRun.hash,
-        responseHash: normalizeText(receipt.responseHash) || undefined,
-        auditInputHash: input.auditInputHash,
-        recordId: input.recordId,
-        sourceDocumentHash: input.sourceDocumentHash,
-        semanticModelHash: input.semanticModelHash,
-        implementationConfirmationHash: input.implementationConfirmationHash,
-        packetHash: input.packetHash,
-        projectionSetHash: criticalAuditorProjectionSetHash(input.packet),
-        independentProviderExpectation:
-          criticalAuditorIndependentProviderExpectationFromRequest(request).expectation ??
-          undefined,
-        createdAt: input.createdAt,
-        auditResult,
-      });
-    latestReceiptHash = normalizeText(mirroredReceipt.receiptHash);
-    writeCriticalAuditorReceiptMirror({
-      rootReceiptPath: receiptPath,
-      mirrorPath: path.join(
-        input.paths.authoringDir,
-        `critical-auditor-receipt-round-${roundIndex}.json`
-      ),
-      transaction: input.transaction,
-      authoringDir: input.paths.authoringDir,
-      receipt: mirroredReceipt,
-    });
-    mirrored.push(mirroredReceipt);
-  }
-  return { latestReceiptHash, receipts: mirrored };
-}
-
-function deriveAuditConvergenceFromReceipts(
-  receipts: Record<string, unknown>[],
-  sourceDocumentHash: string,
-  semanticModelHash: string,
-  implementationConfirmationHash: string,
-  packetHash: string,
-  projectionSetHash: string
-): {
-  consecutiveNoNewGapRounds: number;
-  latestReceiptHash: string | null;
-  issues: PreConfirmationDrilldownIssue[];
-} {
-  let consecutiveNoNewGapRounds = 0;
-  let latestReceiptHash: string | null = null;
-  for (const receipt of receipts) {
-    const receiptHash = normalizeText(receipt.receiptHash);
-    const receiptForHash = { ...receipt };
-    delete receiptForHash.receiptHash;
-    const hashMatches = receiptHash === sha256Json(receiptForHash);
-    const sourceMatches = normalizeText(receipt.sourceDocumentHash) === sourceDocumentHash;
-    const semanticModelMatches =
-      normalizeText(receipt.semanticModelHash) === semanticModelHash;
-    const confirmationMatches =
-      normalizeText(receipt.implementationConfirmationHash) === implementationConfirmationHash;
-    const packetMatches = normalizeText(receipt.contentHash) === packetHash;
-    const projectionSetMatches =
-      normalizeText(receipt.projectionSetHash) === projectionSetHash;
-    if (
-      !receiptHash ||
-      !hashMatches ||
-      !sourceMatches ||
-      !semanticModelMatches ||
-      !confirmationMatches ||
-      !packetMatches ||
-      !projectionSetMatches
-    ) {
-      return {
-        consecutiveNoNewGapRounds: 0,
-        latestReceiptHash: null,
-        issues: [
-          preConfirmationIssue(
-            'synthetic_audit_convergence_forbidden',
-            'Audit convergence cannot be claimed without real Critical Auditor receipts bound to the current source, confirmation, packet, and receipt hash.',
-            ['critical_auditor_receipt_loop'],
-            'critical_auditor'
-          ),
-        ],
-      };
-    }
-    const verdict = normalizeText(recordObject(receipt.convergenceDecision).verdict);
-    if (isNoNewGapVerdict(verdict as CriticalAuditorVerdict)) {
-      const expectation = recordObject(receipt.independentProviderExpectation);
-      const expectationFields = [
-        'providerId',
-        'model',
-        'transport',
-        'apiStyle',
-        'configuredBaseUrlHash',
-        'independenceClass',
-        'providerRegistryHash',
-        'providerConfigurationHash',
-        'requestHash',
-      ];
-      const expectationMatches =
-        expectationFields.every((field) => Boolean(normalizeText(expectation[field]))) &&
-        normalizeText(expectation.requestHash) === normalizeText(receipt.requestHash) &&
-        normalizeText(expectation.sourceDocumentHash) === sourceDocumentHash &&
-        normalizeText(expectation.semanticModelHash) === semanticModelHash &&
-        normalizeText(expectation.projectionSetHash) === projectionSetHash;
-      const providerValidation = expectationMatches
-        ? validateCriticalAuditorIndependentProviderEvidence({
-            expected: expectation as unknown as CriticalAuditorIndependentProviderExpectation,
-            evidence: receipt.independentProviderEvidence,
-          })
-        : {
-            ok: false,
-            issueCodes: ['critical_auditor_independent_provider_expectation_stale'],
-          };
-      if (!providerValidation.ok) {
-        return {
-          consecutiveNoNewGapRounds: 0,
-          latestReceiptHash: null,
-          issues: providerValidation.issueCodes.map((code) =>
-            preConfirmationIssue(
-              code,
-              `Critical Auditor convergence receipt has invalid independent provider evidence: ${code}`,
-              ['independentProviderEvidence'],
-              'critical_auditor'
-            )
-          ),
-        };
-      }
-    }
-    consecutiveNoNewGapRounds = isNoNewGapVerdict(verdict as CriticalAuditorVerdict)
-      ? consecutiveNoNewGapRounds + 1
-      : 0;
-    latestReceiptHash = receiptHash;
-  }
-  return {
-    consecutiveNoNewGapRounds,
-    latestReceiptHash,
-    issues: consecutiveNoNewGapRounds >= 3 ? [] : receipts.length > 0 ? [] : [],
-  };
 }
 
 function readCriticalAuditorReceipts(authoringDir: string): Record<string, unknown>[] {
@@ -17471,16 +17664,25 @@ function criticalAuditorRoundRequestHashMatchesContent(request: Record<string, u
 function criticalAuditorSubstantiveGateBindingHash(
   gateDryRun: CriticalAuditorGateDryRunSummary
 ): string {
+  const failedChecks = gateDryRun.failedChecks.filter(
+    (code) => !CRITICAL_AUDITOR_ACTIONABLE_DRY_RUN_EXCLUSIONS.has(code)
+  );
+  const actionableBlockingIssues = gateDryRun.actionableBlockingIssues.map((issue) => ({
+    code: issue.code,
+    message: issue.message,
+    refs: issue.refs,
+  }));
+  const substantiveVerdict =
+    failedChecks.length === 0 &&
+    actionableBlockingIssues.length === 0 &&
+    normalizeText(gateDryRun.reconciliation.verdict) === 'pass' &&
+    gateDryRun.reconciliation.issueCount === 0
+      ? 'PASS'
+      : gateDryRun.verdict;
   return sha256Json({
-    verdict: gateDryRun.verdict,
-    failedChecks: gateDryRun.failedChecks.filter(
-      (code) => !CRITICAL_AUDITOR_ACTIONABLE_DRY_RUN_EXCLUSIONS.has(code)
-    ),
-    actionableBlockingIssues: gateDryRun.actionableBlockingIssues.map((issue) => ({
-      code: issue.code,
-      message: issue.message,
-      refs: issue.refs,
-    })),
+    verdict: substantiveVerdict,
+    failedChecks,
+    actionableBlockingIssues,
     reconciliation: gateDryRun.reconciliation,
   });
 }
@@ -17539,6 +17741,81 @@ function criticalAuditorGateDryRunSummaryFromRequest(
     hash:
       normalizeText(gateDryRun.gateDryRunHash) || normalizeText(gateDryRun.hash) || fallback.hash,
   };
+}
+
+function pendingFinalCriticalAuditorDraftText(input: {
+  transaction: CriticalAuditorStagingTransaction;
+  recordId: string;
+  packetHash: string;
+}): string | null {
+  const finalDraftSource = path.join(input.transaction.stagingDir, 'final-draft-source.md');
+  const request = readJsonIfExists(criticalAuditorRequestPath(input.transaction, 1));
+  const kernel = recordObject(
+    readJsonIfExists(input.transaction.semanticKernel)?.semanticKernel
+  );
+  const packet = recordObject(
+    readJsonIfExists(input.transaction.mustDecompositionPacket)?.must_decomposition_packet
+  );
+  if (
+    !fs.existsSync(finalDraftSource) ||
+    !request ||
+    Object.keys(kernel).length === 0 ||
+    Object.keys(packet).length === 0 ||
+    !criticalAuditorRoundRequestHashMatchesContent(request)
+  ) {
+    return null;
+  }
+
+  const draftText = fs.readFileSync(finalDraftSource, 'utf8');
+  const extraction = extractImplementationConfirmationBlock(draftText);
+  if (!extraction) {
+    return null;
+  }
+  const sourceDocumentHash = sourceDocumentHashForPreConfirmation(
+    draftText,
+    extraction.blockText,
+    extraction.confirmation
+  );
+  const implementationConfirmationHash =
+    implementationConfirmationHashForPreConfirmation(extraction.confirmation);
+  const semanticModelHash = normalizeText(kernel.kernelHash);
+  const projectionSetHash = criticalAuditorProjectionSetHash(packet);
+  const auditInputHash = sha256Json({
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    semanticKernelHash: semanticModelHash,
+    packetHash: input.packetHash,
+  });
+  const criticalAuditor = recordObject(
+    recordObject(extraction.confirmation.preConfirmationDrilldown).criticalAuditor
+  );
+  const convergenceIsFinal =
+    Number(criticalAuditor.consecutiveNoNewGapRounds ?? 0) >= 3 &&
+    normalizeText(criticalAuditor.convergenceVerdict) === 'bounded_no_new_gap';
+  const requestMatchesFinalDraft =
+    normalizeText(request.schemaVersion) === 'critical-auditor-round-request/v1' &&
+    Number(request.roundIndex) === 1 &&
+    normalizeText(request.recordId) === input.recordId &&
+    normalizeText(request.transactionId) === input.transaction.transactionId &&
+    normalizeText(request.namespaceVersion) === input.transaction.namespaceVersion &&
+    normalizeText(request.sourceDocumentHash) === sourceDocumentHash &&
+    normalizeText(request.semanticModelHash) === semanticModelHash &&
+    normalizeText(request.implementationConfirmationHash) === implementationConfirmationHash &&
+    normalizeText(request.packetHash) === input.packetHash &&
+    normalizeText(request.projectionSetHash) === projectionSetHash &&
+    normalizeText(request.auditInputHash) === auditInputHash &&
+    normalizeText(request.auditAttemptId) ===
+      criticalAuditorAuditAttemptId({
+        transactionId: input.transaction.transactionId,
+        auditInputHash,
+      }) &&
+    normalizeText(kernel.sourceDocumentHash) === sourceDocumentHash &&
+    normalizeText(kernel.implementationConfirmationHash) === implementationConfirmationHash &&
+    normalizeText(packet.sourceDocumentHash) === sourceDocumentHash &&
+    normalizeText(packet.implementationConfirmationHash) === implementationConfirmationHash &&
+    normalizeText(packet.semanticKernelHash) === semanticModelHash;
+
+  return convergenceIsFinal && requestMatchesFinalDraft ? draftText : null;
 }
 
 function findCriticalAuditorRequestPath(authoringDir: string, roundIndex: number): string {
@@ -17842,6 +18119,16 @@ function validateCriticalAuditorResponse(input: {
       )
     );
   }
+  if (normalizeText(parsed.semanticModelHash) !== normalizeText(input.request.semanticModelHash)) {
+    issues.push(
+      preConfirmationIssue(
+        'critical_auditor_response_semantic_model_hash_stale',
+        'Critical Auditor response semanticModelHash is stale',
+        ['semanticModelHash'],
+        'critical_auditor'
+      )
+    );
+  }
   if (
     normalizeText(parsed.implementationConfirmationHash) !== input.implementationConfirmationHash
   ) {
@@ -17926,6 +18213,16 @@ function validateCriticalAuditorResponse(input: {
           ['independentProviderEvidence'],
           'critical_auditor'
         )
+      )
+    );
+  }
+  if (normalizeText(parsed.projectionSetHash) !== normalizeText(input.request.projectionSetHash)) {
+    issues.push(
+      preConfirmationIssue(
+        'critical_auditor_response_projection_set_hash_mismatch',
+        'Critical Auditor response projectionSetHash does not match the current request',
+        ['projectionSetHash'],
+        'critical_auditor'
       )
     );
   }
@@ -18158,6 +18455,15 @@ function validateCriticalAuditorResponse(input: {
   return {
     response: {
       verdict,
+      transactionId: normalizeText(parsed.transactionId),
+      namespaceVersion: normalizeText(parsed.namespaceVersion),
+      requestHash,
+      sourceHash: normalizeText(parsed.sourceHash) || input.sourceDocumentHash,
+      sourceDocumentHash: input.sourceDocumentHash,
+      semanticModelHash: normalizeText(parsed.semanticModelHash),
+      implementationConfirmationHash: input.implementationConfirmationHash,
+      packetHash: input.packetHash,
+      projectionSetHash: normalizeText(parsed.projectionSetHash),
       gapCandidates: asRecordArray(parsed.gapCandidates),
       validatedGaps: isNoNewGapVerdict(verdict) ? parsedValidatedGaps : repairActionValidation.gaps,
       rejectedGapCandidates: asRecordArray(parsed.rejectedGapCandidates),
@@ -19303,11 +19609,37 @@ export function runMainAgentAuthoringRepair(
         issues: validation.issues,
       });
     }
+    if (!response) {
+      return buildAuthoringRepairResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_response_invalid',
+        nextRequiredAction: 'write_current_critical_auditor_round_response',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        packetHash,
+        warnings,
+        issues: [
+          preConfirmationIssue(
+            'critical_auditor_response_unreadable',
+            'Critical Auditor response is missing or unreadable',
+            [responsePath],
+            'critical_auditor'
+          ),
+        ],
+      });
+    }
     const receipt = buildCriticalAuditorReceipt({
       roundIndex,
+      transactionId: normalizeText(request.transactionId),
+      namespaceVersion: normalizeText(request.namespaceVersion),
       requestHash: normalizeText(request.requestHash),
       gateDryRunHash: responseGateDryRun.hash,
-      responseHash: sha256Json(validation.response),
+      responseHash: sha256Json(response),
       auditInputHash,
       recordId: identity.recordId,
       sourceDocumentHash,
@@ -19319,6 +19651,48 @@ export function runMainAgentAuthoringRepair(
       createdAt,
       auditResult: validation.response,
     });
+    const receiptBinding = validateCriticalAuditorReceiptBinding({
+      receipt,
+      response,
+      expectation: {
+        roundIndex,
+        transactionId: normalizeText(request.transactionId),
+        namespaceVersion: normalizeText(request.namespaceVersion),
+        auditInputHash,
+        recordId: identity.recordId,
+        sourceDocumentHash,
+        semanticModelHash: semanticKernelHash,
+        implementationConfirmationHash,
+        packetHash,
+        projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+        requestHash: normalizeText(request.requestHash),
+        gateDryRunHash: responseGateDryRun.hash,
+      },
+    });
+    if (!receiptBinding.ok) {
+      return buildAuthoringRepairResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        status: 'blocked',
+        blockingStage: 'critical_auditor_receipt_binding_invalid',
+        nextRequiredAction: 'write_current_critical_auditor_round_response',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        packetHash,
+        warnings,
+        issues: receiptBinding.issueCodes.map((code) =>
+          preConfirmationIssue(
+            code,
+            `Critical Auditor receipt binding is invalid: ${code}`,
+            [responsePath],
+            'critical_auditor'
+          )
+        ),
+      });
+    }
     writeJsonUtf8(
       path.join(paths.authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
       {
@@ -21813,10 +22187,12 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const materializedDraftText = materializeImplementationConfirmationText(
-    sourceText,
-    draftConfirmation
-  );
+  const materializedDraftText =
+    pendingFinalCriticalAuditorDraftText({
+      transaction: stagingTransaction,
+      recordId: identity.recordId,
+      packetHash,
+    }) ?? materializeImplementationConfirmationText(sourceText, draftConfirmation);
   const stagedDraftText = fs.existsSync(stagingTransaction.draftSource)
     ? fs.readFileSync(stagingTransaction.draftSource, 'utf8')
     : null;
@@ -22573,22 +22949,106 @@ export function runMainAgentPreConfirmationDrilldown(
     semanticKernelHash: finalSemanticKernelHash,
     packetHash,
   });
-  const finalCriticalAuditorLoop = mirrorCriticalAuditorReceiptsForCurrentDraft({
+  const finalStaleAuditIssues = [
+    ...collectStaleCriticalAuditorArtifactIssues({
+      authoringDir: paths.authoringDir,
+      auditInputHash: finalAuditInputHash,
+      sourceDocumentHash: auditedPreviewSourceDocumentHash,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+      packetHash,
+    }),
+    ...collectStaleCriticalAuditorArtifactIssues({
+      authoringDir: stagingTransaction.stagingDir,
+      auditInputHash: finalAuditInputHash,
+      sourceDocumentHash: auditedPreviewSourceDocumentHash,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+      packetHash,
+    }),
+  ];
+  if (finalStaleAuditIssues.length > 0) {
+    archiveCriticalAuditorArtifacts({
+      authoringDir: paths.authoringDir,
+      stagingDir: stagingTransaction.stagingDir,
+      reason: 'final_draft_binding_changed_restart_from_round_1',
+      auditInputHash: finalAuditInputHash,
+      createdAt,
+    });
+  }
+  const finalCriticalAuditorLoop = runCriticalAuditorReceiptLoop({
     root,
     sourcePath: paths.draftSourcePreview,
     paths,
     transaction: stagingTransaction,
-    receipts: criticalAuditorLoop.receipts,
     auditInputHash: finalAuditInputHash,
     recordId: identity.recordId,
     sourceDocumentHash: auditedPreviewSourceDocumentHash,
     semanticModelHash: finalSemanticKernelHash,
     implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
     packetHash,
-    mustRequirements,
+    mustRefs: mustRequirements.map((requirement) => requirement.id),
+    sourceRequirementTexts: mustRequirements.map((requirement) => requirement.text),
+    mustPacketCount: mustRequirements.length,
     packet: finalPacket,
     createdAt,
+    roundProvider: options.criticalAuditorRound ?? fileBackedProvider,
+    maxRounds: options.maxCriticalAuditorRounds,
   });
+  if (
+    finalCriticalAuditorLoop.issues.length > 0 ||
+    finalCriticalAuditorLoop.consecutiveNoNewGapRounds < 3
+  ) {
+    const finalAuditIssues =
+      finalCriticalAuditorLoop.issues.length > 0
+        ? finalCriticalAuditorLoop.issues
+        : [
+            preConfirmationIssue(
+              'critical_auditor_no_new_gap_convergence_not_reached',
+              'Final draft requires three consecutive current response-bound Critical Auditor receipts.',
+              ['critical_auditor_receipt_loop'],
+              'critical_auditor'
+            ),
+          ];
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'critical_auditor_receipt_binding_invalid',
+      root,
+      createdAt,
+    });
+    writeSourceMutationDecision({
+      root,
+      sourcePath,
+      paths,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      createdAt,
+      sourceHashBefore,
+      issues: finalAuditIssues,
+      coverageDecision: 'pass',
+      targetAuthorityDecision: 'pass',
+      validationAuthorityDecision: 'pass',
+      projectionSanityDecision: 'pass',
+      auditEvidenceDecision: 'block',
+      scaleRoutingDecision:
+        normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
+      reverseAuditDraftValidationDecision: 'block',
+      sourceMutationPerformed: false,
+    });
+    return buildPreConfirmationResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      substate: 'blocked_by_render_gate',
+      issues: finalAuditIssues,
+      sourceDocumentHash: auditedPreviewSourceDocumentHash,
+      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+      criticalAuditorProviderMode,
+      blockingStage: 'critical_auditor_receipt_binding_invalid',
+      sourceMutationPerformed: false,
+      stagingTransaction,
+    });
+  }
 
   try {
     if (!productionSemanticPipeline || !entryIntakeAuthority) {

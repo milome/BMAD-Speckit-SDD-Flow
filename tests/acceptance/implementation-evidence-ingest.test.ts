@@ -4,7 +4,16 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
+import { createRequirementsContractNormalizedTraceGraph } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-trace-graph';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+
+const FIXTURE_SUFFIX = crypto.randomUUID();
+const FIXTURE_TRANSACTION_ID = `TX-${FIXTURE_SUFFIX}`;
+const FIXTURE_IMPLEMENTATION_ATTEMPT_ID = `IMP-${FIXTURE_SUFFIX}`;
+const FIXTURE_RUN_ID = `RUN-${FIXTURE_SUFFIX}`;
+const FIXTURE_CLOSEOUT_ATTEMPT_ID = `CLOSEOUT-${FIXTURE_SUFFIX}`;
+const FIXTURE_SEMANTIC_MODEL_HASH = sha256(`semantic-model:${FIXTURE_SUFFIX}`);
+const FIXTURE_PACKET_HASH = sha256(`model-packet:${FIXTURE_SUFFIX}`);
 
 function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
@@ -49,8 +58,8 @@ function artifactRef(
     },
     requirementSetId: 'REQ-EVIDENCE-INGEST',
     requirementRefs: artifact.relatedRequirementIds.map(String),
-    transactionId: 'TX-EVIDENCE-INGEST',
-    implementationAttemptId: 'IMP-EVIDENCE-INGEST',
+    transactionId: FIXTURE_TRANSACTION_ID,
+    implementationAttemptId: FIXTURE_IMPLEMENTATION_ATTEMPT_ID,
     publishedAt: '2026-05-19T00:00:00.000Z',
     readbackAt: '2026-05-19T00:00:01.000Z',
     publication: {
@@ -78,6 +87,71 @@ function artifactRef(
     schemaPath,
     readbackReceiptPath,
   };
+}
+
+function bindIndependentOracleAuthority(
+  packet: Record<string, unknown>,
+  requirementIds: string[]
+): void {
+  const commandRun = (packet.commandRuns as Array<Record<string, unknown>>)[0];
+  commandRun.coveredRequirementIds = requirementIds;
+  const nodes = requirementIds.flatMap((requirementId) => {
+    const oracleId = `ORACLE-${requirementId}`;
+    return [
+      {
+        id: requirementId,
+        nodeType: 'requirement' as const,
+        bodyHash: sha256(`${requirementId}:body`),
+        sourceRootRef: `${requirementId}:source`,
+        sourceRootPayloadHash: sha256(`${requirementId}:source-root`),
+        authorityClass: 'source_authorized',
+      },
+      {
+        id: oracleId,
+        nodeType: 'oracle' as const,
+        bodyHash: sha256(`${oracleId}:body`),
+        sourceRootRef: `${oracleId}:source`,
+        sourceRootPayloadHash: sha256(`${oracleId}:source-root`),
+        authorityClass: 'independent_oracle',
+      },
+    ];
+  });
+  const graph = createRequirementsContractNormalizedTraceGraph({
+    requirementSetId: String(packet.requirementSetId),
+    sourceAuthorityHash: String(packet.sourceDocumentHash),
+    semanticModelHash: String(packet.semanticModelHash),
+    semanticConservationManifestHash: sha256(`conservation:${FIXTURE_SUFFIX}`),
+    nodes,
+    edges: requirementIds.map((requirementId) => {
+      const oracleId = `ORACLE-${requirementId}`;
+      return {
+        edgeId: `EDGE-${crypto.randomUUID()}`,
+        edgeType: 'verified_by' as const,
+        fromRef: requirementId,
+        toRef: oracleId,
+        sourceRef: `${requirementId}:trace`,
+        sourceHash: sha256(`${requirementId}:${oracleId}:edge`),
+        proofRefs: [`PROOF-${crypto.randomUUID()}`],
+        applicability: 'applicable' as const,
+      };
+    }),
+  });
+  packet.normalizedTraceGraph = graph;
+  packet.independentOracleResults = requirementIds.map((requirementId) => ({
+    requirementId,
+    oracleId: `ORACLE-${requirementId}`,
+    decision: 'pass',
+    transactionId: packet.transactionId,
+    implementationAttemptId: packet.implementationAttemptId,
+    sourceDocumentHash: packet.sourceDocumentHash,
+    semanticModelHash: packet.semanticModelHash,
+    packetHash: packet.packetHash,
+    graphHash: graph.graphHash,
+    commandId: commandRun.commandId,
+    outputHash: commandRun.outputHash,
+    evidenceRefs: packet.evidenceRefs,
+    observedAt: '2026-05-19T00:00:05.000Z',
+  }));
 }
 
 const globalContractTraceabilityPolicy = {
@@ -143,6 +217,8 @@ function writeFixture(root: string): {
   evidencePath: string;
   artifactPath: string;
 } {
+  const lockPath = path.join(root, 'package-lock.json');
+  writeFileSync(lockPath, `${JSON.stringify({ lockfileVersion: 3, packages: {} }, null, 2)}\n`, 'utf8');
   const base = path.join(
     root,
     '_bmad-output',
@@ -152,6 +228,8 @@ function writeFixture(root: string): {
   );
   const evidenceDir = path.join(base, 'execution');
   mkdirSync(evidenceDir, { recursive: true });
+  const commandOutputPath = path.join(evidenceDir, 'command-output.txt');
+  writeFileSync(commandOutputPath, 'implementation evidence ingest passed\n', 'utf8');
   const artifactPath = path.join(evidenceDir, 'implementation-evidence.json');
   const artifactContent = JSON.stringify({ assertion: 'negative regression evidence' }, null, 2);
   writeFileSync(artifactPath, `${artifactContent}\n`, 'utf8');
@@ -167,6 +245,10 @@ function writeFixture(root: string): {
           'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        transactionId: FIXTURE_TRANSACTION_ID,
+        currentAttemptId: FIXTURE_IMPLEMENTATION_ATTEMPT_ID,
+        semanticModelHash: FIXTURE_SEMANTIC_MODEL_HASH,
+        packetHash: FIXTURE_PACKET_HASH,
         architectureConfirmationState: {
           status: 'active',
           currentArchitectureConfirmationHash:
@@ -181,87 +263,110 @@ function writeFixture(root: string): {
     'utf8'
   );
   const evidencePath = path.join(evidenceDir, 'packet.json');
-  writeFileSync(
-    evidencePath,
-    `${JSON.stringify(
+  const command = 'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts';
+  const environment = { platform: process.platform, architecture: process.arch };
+  const runtimeVersions = { node: process.version };
+  const packet: Record<string, unknown> = {
+    eventType: 'execution_iteration_recorded',
+    recordId: 'REQ-EVIDENCE-INGEST',
+    requirementSetId: 'REQ-EVIDENCE-INGEST',
+    transactionId: FIXTURE_TRANSACTION_ID,
+    implementationAttemptId: FIXTURE_IMPLEMENTATION_ATTEMPT_ID,
+    semanticModelHash: FIXTURE_SEMANTIC_MODEL_HASH,
+    packetHash: FIXTURE_PACKET_HASH,
+    executionIterationId: 'exec-001',
+    runId: FIXTURE_RUN_ID,
+    status: 'done',
+    sourceDocumentHash:
+      'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    implementationConfirmationHash:
+      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    architectureConfirmationHash:
+      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    traceRows: ['TRACE-003'],
+    taskRefs: ['TASK-DELIVERY-CORE-EVIDENCE'],
+    evidenceRefs: ['EVD-006'],
+    filesChanged: [
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
+    ],
+    implementationDelta: {
+      filesChanged: [
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
+      ],
+      diffSummaryRef: 'diff-summary.md',
+      behaviorAffecting: true,
+      negativeAssertionArtifactRefs: [
+        artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
+      ],
+    },
+    diffSummary: 'Add controlled implementation evidence ingest.',
+    commandRuns: [
       {
-        eventType: 'execution_iteration_recorded',
-        recordId: 'REQ-EVIDENCE-INGEST',
-        requirementSetId: 'REQ-EVIDENCE-INGEST',
-        transactionId: 'TX-EVIDENCE-INGEST',
-        implementationAttemptId: 'IMP-EVIDENCE-INGEST',
-        executionIterationId: 'exec-001',
-        runId: 'run-001',
-        status: 'done',
+        commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+        command,
+        normalizedCommand: command,
+        cwd: root,
+        executorIdentity: {
+          class: 'controlled_detached_executor',
+          id: `EXECUTOR-${FIXTURE_SUFFIX}`,
+        },
+        runtimeVersions,
+        dependencyLockHashes: [{ path: 'package-lock.json', hash: sha256(readFileSync(lockPath)) }],
+        environment,
+        environmentFingerprint: sha256Stable({ environment, runtimeVersions }),
+        environmentCompatibilityDecision: 'pass',
+        transactionId: FIXTURE_TRANSACTION_ID,
+        implementationAttemptId: FIXTURE_IMPLEMENTATION_ATTEMPT_ID,
         sourceDocumentHash:
           'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        implementationConfirmationHash:
-          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-        architectureConfirmationHash:
-          'sha256:3333333333333333333333333333333333333333333333333333333333333333',
-        traceRows: ['TRACE-003'],
-        taskRefs: ['TASK-DELIVERY-CORE-EVIDENCE'],
-        evidenceRefs: ['EVD-006'],
-        filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts'],
-        implementationDelta: {
-          filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts'],
-          diffSummaryRef: 'diff-summary.md',
-          behaviorAffecting: true,
-          negativeAssertionArtifactRefs: [
-            artifactRef(artifactPath, sha256(`${artifactContent}\n`)),
-          ],
-        },
-        diffSummary: 'Add controlled implementation evidence ingest.',
-        commandRuns: [
-          {
-            commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-            command: 'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
-            runId: 'run-001',
-            closeoutAttemptId: 'closeout-001',
-            exitCode: 0,
-            startedAt: '2026-05-19T00:00:00.000Z',
-            completedAt: '2026-05-19T00:00:05.000Z',
-            outputSummary: '3 tests passed',
-          },
-        ],
-        artifactRefs: [artifactRef(artifactPath, sha256(`${artifactContent}\n`))],
-        entryFlowState: {
-          entryFlow: 'standalone_tasks',
-          entryFlowClass: 'task_packet_entry',
-          workflowAdapter: 'direct',
-          contractAuthoringRequired: true,
-          globalContractTraceabilityPolicy,
-          traceStatusPolicy,
-        },
-        deliveryEvidence: {
-          requiredCommands: [
-            {
-              commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-              command: 'npx vitest run tests/acceptance/implementation-evidence-ingest.test.ts',
-              commandType: 'delivery_evidence',
-              blockingIfMissing: true,
-              traceRows: ['TRACE-003'],
-              evidenceRefs: ['EVD-006'],
-              artifactRefs: [artifactRef(artifactPath, sha256(`${artifactContent}\n`))],
-            },
-          ],
-          historicalRunRefs: [
-            {
-              commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-              runId: 'run-001',
-              closeoutAttemptId: 'closeout-001',
-            },
-          ],
-        },
-        requirementClosures: [{ requirementId: 'MUST-005', status: 'pass' }],
-        gateChecks: [{ gate: 'Execution Closure Check', decision: 'pass' }],
-        closeoutAttemptId: 'closeout-001',
+        semanticModelHash: FIXTURE_SEMANTIC_MODEL_HASH,
+        packetHash: FIXTURE_PACKET_HASH,
+        runId: FIXTURE_RUN_ID,
+        closeoutAttemptId: FIXTURE_CLOSEOUT_ATTEMPT_ID,
+        exitCode: 0,
+        startedAt: '2026-05-19T00:00:00.000Z',
+        completedAt: '2026-05-19T00:00:05.000Z',
+        outputPath: commandOutputPath,
+        outputHash: sha256(readFileSync(commandOutputPath)),
+        coveredRequirementIds: ['MUST-005'],
+        outputSummary: 'implementation evidence ingest passed',
       },
-      null,
-      2
-    )}\n`,
-    'utf8'
-  );
+    ],
+    artifactRefs: [artifactRef(artifactPath, sha256(`${artifactContent}\n`))],
+    entryFlowState: {
+      entryFlow: 'standalone_tasks',
+      entryFlowClass: 'task_packet_entry',
+      workflowAdapter: 'direct',
+      contractAuthoringRequired: true,
+      globalContractTraceabilityPolicy,
+      traceStatusPolicy,
+    },
+    deliveryEvidence: {
+      requiredCommands: [
+        {
+          commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+          command,
+          commandType: 'delivery_evidence',
+          blockingIfMissing: true,
+          traceRows: ['TRACE-003'],
+          evidenceRefs: ['EVD-006'],
+          artifactRefs: [artifactRef(artifactPath, sha256(`${artifactContent}\n`))],
+        },
+      ],
+      historicalRunRefs: [
+        {
+          commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
+          runId: FIXTURE_RUN_ID,
+          closeoutAttemptId: FIXTURE_CLOSEOUT_ATTEMPT_ID,
+        },
+      ],
+    },
+    requirementClosures: [{ requirementId: 'MUST-005', status: 'pass' }],
+    gateChecks: [{ gate: 'Execution Closure Check', decision: 'pass' }],
+    closeoutAttemptId: FIXTURE_CLOSEOUT_ATTEMPT_ID,
+  };
+  bindIndependentOracleAuthority(packet, ['MUST-005']);
+  writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
   return { recordPath, evidencePath, artifactPath };
 }
 
@@ -306,28 +411,20 @@ describe('implementation evidence ingest', () => {
       });
       expect(record.executionIterations[0].commandRunRefs[0]).toMatchObject({
         commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-        runId: 'run-001',
-        closeoutAttemptId: 'closeout-001',
+        runId: FIXTURE_RUN_ID,
+        closeoutAttemptId: FIXTURE_CLOSEOUT_ATTEMPT_ID,
+        implementationAttemptId: FIXTURE_IMPLEMENTATION_ATTEMPT_ID,
+        semanticModelHash: FIXTURE_SEMANTIC_MODEL_HASH,
+        packetHash: FIXTURE_PACKET_HASH,
+        coveredRequirementIds: ['MUST-005'],
       });
       expect(record.requirementClosures[0]).toMatchObject({
         eventType: 'requirement_closure_recorded',
         requirementId: 'MUST-005',
         status: 'pass',
+        oracleId: 'ORACLE-MUST-005',
       });
-      expect(record.requirementClosures).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            eventType: 'requirement_closure_recorded',
-            requirementId: 'TRACE-003',
-            status: 'pass',
-          }),
-          expect.objectContaining({
-            eventType: 'requirement_closure_recorded',
-            requirementId: 'EVD-006',
-            status: 'pass',
-          }),
-        ])
-      );
+      expect(record.requirementClosures).toHaveLength(1);
       expect(record.gateChecks[0]).toMatchObject({
         eventType: 'gate_check_recorded',
         gate: 'Execution Closure Check',
@@ -360,8 +457,8 @@ describe('implementation evidence ingest', () => {
       );
       expect(record.deliveryEvidence.historicalRunRefs[0]).toMatchObject({
         commandId: 'CMD-IMPLEMENTATION-EVIDENCE-INGEST-TEST',
-        runId: 'run-001',
-        closeoutAttemptId: 'closeout-001',
+        runId: FIXTURE_RUN_ID,
+        closeoutAttemptId: FIXTURE_CLOSEOUT_ATTEMPT_ID,
       });
       expect(existsSync(path.join(path.dirname(fixture.recordPath), 'artifact-index.jsonl'))).toBe(
         true
@@ -404,6 +501,7 @@ describe('implementation evidence ingest', () => {
         { requirementId: 'MUST-011', status: 'pass' },
         { requirementId: 'MUST-017', status: 'pass' },
       ];
+      bindIndependentOracleAuthority(packet, ['MUST-011', 'MUST-017']);
       writeFileSync(fixture.evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
 
       const code = mainIngestImplementationEvidence([
@@ -482,12 +580,13 @@ describe('implementation evidence ingest', () => {
         executionIterationId: 'exec-001',
         status: 'done',
       });
-      expect(updated.requirementClosures).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ requirementId: 'TRACE-003', status: 'pass' }),
-          expect.objectContaining({ requirementId: 'EVD-006', status: 'pass' }),
-        ])
-      );
+      expect(updated.requirementClosures).toEqual([
+        expect.objectContaining({
+          requirementId: 'MUST-005',
+          status: 'pass',
+          oracleId: 'ORACLE-MUST-005',
+        }),
+      ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -739,6 +838,7 @@ describe('implementation evidence ingest', () => {
         hashMismatches: [],
         noHookFallbackRefs: [{ sourceType: 'execution_iteration', id: 'exec-fallback-001' }],
       };
+      bindIndependentOracleAuthority(packet, ['MUST-005']);
       writeFileSync(evidencePath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
       const prev = process.cwd();
       process.chdir(root);
