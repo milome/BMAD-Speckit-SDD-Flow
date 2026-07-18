@@ -35,6 +35,7 @@ import {
   writeGovernedText,
   type GovernedReadbackRef,
 } from './requirements-contract-governed-write';
+import { auditModelPacketParity } from './requirements-contract-model-packet-parity';
 
 // Runtime schemas validate these records before publication uses dynamic fields.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -378,27 +379,23 @@ function assertExactRunnerOutputSet(
 }
 
 function quarantineExecutableOutputs(
-  authority: PromptPublicationAuthority,
+  outDir: string,
   staleTransactionId: string,
   additionalCandidates: string[] = []
 ): string {
-  const quarantineRoot = path.join(
-    authority.paths.outDir,
-    '.quarantine',
-    staleTransactionId
-  );
+  const quarantineRoot = path.join(outDir, '.quarantine', staleTransactionId);
   if (fs.existsSync(quarantineRoot)) {
     throw new Error('prompt_transaction_quarantine_identity_collision');
   }
   fs.mkdirSync(quarantineRoot, { recursive: true });
   const candidates = [
     ...ALL_OUTPUTS.flatMap((name) => [
-      path.join(authority.paths.outDir, name),
-      path.join(authority.paths.outDir, `${name}.safe-write-receipt.json`),
+      path.join(outDir, name),
+      path.join(outDir, `${name}.safe-write-receipt.json`),
     ]),
     ...additionalCandidates,
   ];
-  for (const entry of fs.readdirSync(authority.paths.outDir, { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(outDir, { withFileTypes: true })) {
     if (
       entry.isDirectory() ||
       entry.name === '.prompt-transaction.lock' ||
@@ -407,7 +404,7 @@ function quarantineExecutableOutputs(
     ) {
       continue;
     }
-    candidates.push(path.join(authority.paths.outDir, entry.name));
+    candidates.push(path.join(outDir, entry.name));
   }
   for (const candidate of [...new Set(candidates)]) {
       if (!fs.existsSync(candidate)) continue;
@@ -418,6 +415,130 @@ function quarantineExecutableOutputs(
       fs.renameSync(candidate, target);
   }
   return quarantineRoot;
+}
+
+function publishBlockedFromExistingManifest(
+  outDir: string,
+  existingManifest: JsonRecord,
+  blockingReason: string,
+  createdAt: string
+): void {
+  const manifestPath = path.join(outDir, 'transaction-manifest.json');
+  const auditReceiptPath = path.join(outDir, 'audit_receipt.json');
+  const manifest = {
+    schemaVersion: MANIFEST_SCHEMA_VERSION,
+    transactionId: existingManifest.transactionId,
+    requirementSetId: existingManifest.requirementSetId,
+    implementationAttemptId: existingManifest.implementationAttemptId,
+    attemptSequence: existingManifest.attemptSequence,
+    sourceHash: existingManifest.sourceHash,
+    sourceAmendmentHashes: existingManifest.sourceAmendmentHashes,
+    semanticModelHash: existingManifest.semanticModelHash,
+    contractHash: existingManifest.contractHash,
+    requirementRecordRef: existingManifest.requirementRecordRef,
+    attemptContextRef: existingManifest.attemptContextRef,
+    sourceRef: existingManifest.sourceRef,
+    stageRegistryRef: existingManifest.stageRegistryRef,
+    installedStageRegistryRef: existingManifest.installedStageRegistryRef,
+    confirmationReceiptRefs: existingManifest.confirmationReceiptRefs,
+    confirmationPageRefs: existingManifest.confirmationPageRefs,
+    consumerRef: existingManifest.consumerRef,
+    universeHashes: existingManifest.universeHashes,
+    createdAt,
+    transactionStatus: 'blocked',
+    hostDirective: 'unresolved',
+    executionDisposition: 'non_executable',
+    blockingReasons: [blockingReason],
+    failedPhase: 'authority_resolution',
+    outputs: {
+      transactionManifestPath: slash(manifestPath),
+      auditReceipt: {
+        path: slash(auditReceiptPath),
+        hashApplicability: 'downstream_external',
+      },
+    },
+  };
+  assertSchema(
+    'requirements-contract-prompt-transaction-manifest.schema.json',
+    manifest,
+    'prompt_transaction_manifest'
+  );
+  const manifestWrite = writeGovernedText(
+    manifestPath,
+    `${JSON.stringify(manifest, null, 2)}\n`
+  );
+  writeGovernedJson(auditReceiptPath, {
+    schemaVersion: 'requirements-contract-prompt-transaction-audit-receipt/v1',
+    decision: 'BLOCK',
+    transactionId: existingManifest.transactionId,
+    requirementSetId: existingManifest.requirementSetId,
+    implementationAttemptId: existingManifest.implementationAttemptId,
+    blockingReasons: [blockingReason],
+    failedPhase: 'authority_resolution',
+    promptTransaction: {
+      manifestPath: slash(manifestPath),
+      manifestHash: manifestWrite.targetRef.hash,
+    },
+    authorityPolicy: {
+      executionAuthorityClaim: false,
+      closeoutAuthorityClaim: false,
+    },
+    createdAt,
+  });
+}
+
+function invalidateExistingTransactionAfterAuthorityFailure(
+  options: PromptTransactionPublishOptions,
+  blockingReason: string,
+  createdAt: string,
+  lockDeps?: PromptTransactionLockDeps
+): boolean {
+  const outDir = path.resolve(options.cwd, options.outDir);
+  const manifestPath = path.join(outDir, 'transaction-manifest.json');
+  if (!fs.existsSync(manifestPath)) return false;
+  const existingManifest = readJson(manifestPath);
+  assertSchema(
+    'requirements-contract-prompt-transaction-manifest.schema.json',
+    existingManifest,
+    'existing_prompt_transaction_manifest'
+  );
+  if (
+    existingManifest.transactionStatus !== 'pass' ||
+    existingManifest.executionDisposition !== 'executable'
+  ) {
+    return false;
+  }
+  const requirementRecordPath = path.resolve(options.cwd, options.requirementRecord);
+  if (
+    !samePath(existingManifest.requirementRecordRef?.path ?? '', requirementRecordPath) ||
+    existingManifest.implementationAttemptId !== options.packetId ||
+    !samePath(existingManifest.outputs?.transactionManifestPath ?? '', manifestPath)
+  ) {
+    throw new Error('authority_failure_existing_transaction_scope_mismatch');
+  }
+  const auditReceiptPath = path.join(outDir, 'audit_receipt.json');
+  if (!samePath(existingManifest.outputs?.auditReceipt?.path ?? '', auditReceiptPath)) {
+    throw new Error('authority_failure_existing_transaction_output_mismatch');
+  }
+  const lockHandle = acquirePromptTransactionLock(
+    {
+      outDir,
+      transactionId: String(existingManifest.transactionId),
+    },
+    lockDeps
+  );
+  try {
+    quarantineExecutableOutputs(outDir, String(existingManifest.transactionId), [
+      path.resolve(options.cwd, options.currentDispatchPointer),
+      `${path.resolve(options.cwd, options.currentDispatchPointer)}.safe-write-receipt.json`,
+      path.resolve(options.cwd, options.evidenceOut),
+      `${path.resolve(options.cwd, options.evidenceOut)}.safe-write-receipt.json`,
+    ]);
+    publishBlockedFromExistingManifest(outDir, existingManifest, blockingReason, createdAt);
+    return true;
+  } finally {
+    releasePromptTransactionLock(lockHandle);
+  }
 }
 
 function removePublicationEvidence(authority: PromptPublicationAuthority): void {
@@ -676,6 +797,31 @@ export async function requirementsContractPromptTransactionPublishCommand(
     );
     const projectedPacket = finalPacket(rawPacket, authority);
     assertNoAuthorityClaims(projectedPacket);
+    const packetParity = auditModelPacketParity({
+      sourcePath: authority.paths.source,
+      packet: projectedPacket,
+    });
+    if (packetParity.reverseHashEdges.length > 0) {
+      throw new Error(
+        `prompt_transaction_reverse_hash_edge_detected:${packetParity.reverseHashEdges.join(',')}`
+      );
+    }
+    if (packetParity.projectionDriftCount > 0) {
+      throw new Error(
+        `model_packet_parity_failed:${[
+          ...packetParity.taskMismatches.map((item) => `task:${item}`),
+          ...packetParity.acceptanceMismatches.map((item) => `acceptance:${item}`),
+          ...packetParity.sourceObligationMismatches.map(
+            (item) => `source_obligation:${item}`
+          ),
+          ...packetParity.commandMismatches.map((item) => `command:${item}`),
+          ...packetParity.stopConditionMismatches.map(
+            (item) => `stop_condition:${item}`
+          ),
+          ...packetParity.amendmentMismatches.map((item) => `amendment:${item}`),
+        ].join(',')}`
+      );
+    }
     const packetWrite = writeGovernedJson(
       path.join(authority.paths.outDir, 'model_packet.json'),
       projectedPacket
@@ -887,16 +1033,17 @@ export async function requirementsContractPromptTransactionPublishCommand(
       outputSetObserved,
       promptTransactionOutputSetMismatchCount: 0,
       promptTransactionArgvMismatchCount: 0,
-      promptTransactionReverseHashEdgeCount: 0,
+      promptTransactionReverseHashEdgeCount: packetParity.reverseHashEdges.length,
       safeWriteReceiptRefs,
-      modelPacketProjectionDriftCount: 0,
+      modelPacketProjectionDriftCount: packetParity.projectionDriftCount,
       modelPacketAuthorityClaimCount: 0,
-      modelPacketTaskParityCount: 0,
-      modelPacketAcceptanceParityCount: 0,
-      modelPacketSourceObligationParityCount: 0,
-      modelPacketCommandParityCount: 0,
-      modelPacketStopConditionParityCount: 0,
-      modelPacketAmendmentParityCount: 0,
+      modelPacketTaskParityCount: packetParity.taskMismatches.length,
+      modelPacketAcceptanceParityCount: packetParity.acceptanceMismatches.length,
+      modelPacketSourceObligationParityCount:
+        packetParity.sourceObligationMismatches.length,
+      modelPacketCommandParityCount: packetParity.commandMismatches.length,
+      modelPacketStopConditionParityCount: packetParity.stopConditionMismatches.length,
+      modelPacketAmendmentParityCount: packetParity.amendmentMismatches.length,
       promptTransactionLockPath: slash(
         path.join(authority.paths.outDir, '.prompt-transaction.lock')
       ),
@@ -943,8 +1090,29 @@ export async function requirementsContractPromptTransactionPublishCommand(
     if (options.json) process.stdout.write(`${JSON.stringify(evidence)}\n`);
     return 0;
   } catch (error) {
+    let blockingReason = error instanceof Error ? error.message : String(error);
+    const requiresPreLockInvalidation =
+      !authority ||
+      (authority !== null &&
+        lockHandle === null &&
+        blockingReason.startsWith('source_prd_lint_transition_blocked:'));
+    if (requiresPreLockInvalidation) {
+      try {
+        invalidateExistingTransactionAfterAuthorityFailure(
+          options,
+          blockingReason,
+          (deps.now ?? (() => new Date().toISOString()))(),
+          deps.lockDeps
+        );
+      } catch (sanitizationError) {
+        blockingReason = `${blockingReason};authority_resolution_sanitization_failed:${
+          sanitizationError instanceof Error
+            ? sanitizationError.message
+            : String(sanitizationError)
+        }`;
+      }
+    }
     if (authority) {
-      const blockingReason = error instanceof Error ? error.message : String(error);
       const isMatchingPointerReplay =
         blockingReason === 'current_dispatch_pointer_replay_rejected' &&
         runtimeBindings !== null &&
@@ -965,7 +1133,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
           : [];
         removePublicationEvidence(authority);
         quarantineExecutableOutputs(
-          authority,
+          authority.paths.outDir,
           authority.identity.transactionId,
           pointerCandidates
         );
@@ -984,7 +1152,10 @@ export async function requirementsContractPromptTransactionPublishCommand(
       }
       if (publicationTouchedOutputs) {
         removePublicationEvidence(authority);
-        quarantineExecutableOutputs(authority, authority.identity.transactionId);
+        quarantineExecutableOutputs(
+          authority.paths.outDir,
+          authority.identity.transactionId
+        );
       }
     }
     if (options.json) {
@@ -992,7 +1163,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
         `${JSON.stringify({
           action: ACTION,
           decision: 'BLOCK',
-          error: error instanceof Error ? error.message : String(error),
+          error: blockingReason,
         })}\n`
       );
     }

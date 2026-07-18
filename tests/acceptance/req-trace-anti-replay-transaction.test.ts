@@ -240,4 +240,44 @@ describe('req-trace prompt transaction anti-replay and lock ownership', () => {
     });
     expect(receipt).toMatchObject({ decision: 'BLOCK' });
   });
+
+  it('quarantines the prior executable transaction when the source mutates after PASS', async () => {
+    const value = fixture();
+    const publisher = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher'
+    );
+    expect(
+      await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(value),
+      })
+    ).toBe(0);
+
+    fs.appendFileSync(value.paths.sourcePath, '\n# Source mutation after prompt publication\n', 'utf8');
+
+    expect(
+      await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(value),
+      })
+    ).toBe(1);
+
+    const quarantine = path.join(
+      value.paths.outDir,
+      '.quarantine',
+      value.identity.transactionId
+    );
+    expect(fs.existsSync(path.join(quarantine, 'model_packet.json'))).toBe(true);
+    expect(fs.existsSync(path.join(value.paths.outDir, 'model_packet.json'))).toBe(false);
+    expect(
+      JSON.parse(
+        fs.readFileSync(path.join(value.paths.outDir, 'transaction-manifest.json'), 'utf8')
+      )
+    ).toMatchObject({
+      transactionStatus: 'blocked',
+      executionDisposition: 'non_executable',
+      failedPhase: 'authority_resolution',
+    });
+    expect(
+      JSON.parse(fs.readFileSync(path.join(value.paths.outDir, 'audit_receipt.json'), 'utf8'))
+    ).toMatchObject({ decision: 'BLOCK' });
+  });
 });

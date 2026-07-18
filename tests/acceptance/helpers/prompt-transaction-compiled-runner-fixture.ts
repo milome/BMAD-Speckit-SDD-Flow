@@ -40,6 +40,7 @@ export function compiledPromptRunnerFor(
     extraPacket?: Record<string, unknown>;
     extraOutputName?: string;
     goalMode?: 'native_goal_document_ref' | 'direct_prompt';
+    packetTransform?: (packet: JsonRecord, confirmation: JsonRecord) => JsonRecord;
     runnerPath?: string;
   } = {}
 ) {
@@ -64,17 +65,96 @@ export function compiledPromptRunnerFor(
     };
     const source = yaml.load(fs.readFileSync(value.paths.sourcePath, 'utf8')) as JsonRecord;
     const confirmation = source.implementationConfirmation as JsonRecord;
+    const manifestProjection =
+      (confirmation.aiTddContractExecutionManifestProjection as JsonRecord | undefined) ?? {};
     const requiredCommands = (confirmation.requiredCommands as JsonRecord[]).map((command) =>
       controlledRequiredCommandDescriptor(confirmation, command, controlledExecutionContext)
     );
-    const packetPath = writeJson(path.join(outDir, 'model_packet.json'), {
+    const packet = {
       artifactRole: options.artifactRole ?? 'execution_authority',
       sourceDocumentHash: value.identity.sourceDocumentHash,
       implementationConfirmationHash: value.identity.implementationConfirmationHash,
       controlledExecutionContext,
+      traceOrder: (confirmation.traceRows as JsonRecord[]).map((row) => String(row.id)),
+      atomicImplementationTaskList: confirmation.atomicImplementationTaskList,
+      mustToAtomicTaskMap: confirmation.mustToAtomicTaskMap,
+      atomicTaskToTraceMap: confirmation.atomicTaskToTraceMap,
+      requirements: {
+        must: confirmation.must,
+        notDone: confirmation.notDone,
+        mustNot: confirmation.mustNot,
+        evidence: confirmation.evidence,
+      },
+      errorCaseCoverage: {
+        failurePaths: confirmation.failurePaths,
+        edgeCases: confirmation.edgeCases,
+        acceptanceTests: confirmation.acceptanceTests,
+        e2eSuites: confirmation.e2eSuites,
+      },
+      executionHandoff: {
+        requiredValidationCommandRefs: requiredCommands.map((command) => command.id),
+        stopConditions: [
+          'reconfirm_required_on_semantic_gap',
+          'scope_expansion_requires_reconfirmation',
+          'validation_unavailable_requires_blocked_TaskReport',
+          'write_strict_TaskReport_before_returning_to_main_agent',
+        ],
+      },
       requiredCommands,
+      finalGateMatrix: manifestProjection.finalGateMatrix,
+      executionLoopProtocol: manifestProjection.executionLoopProtocol,
+      semanticGapPolicy: manifestProjection.semanticGapPolicy,
+      contractExecutionManifest: {
+        atomicImplementationTaskLineage: manifestProjection.atomicImplementationTaskLineage,
+        requirements: [
+          ...(confirmation.must as JsonRecord[]).map((row) => ({ ...row, kind: 'must' })),
+          ...(confirmation.notDone as JsonRecord[]).map((row) => ({ ...row, kind: 'not_done' })),
+          ...(confirmation.mustNot as JsonRecord[]).map((row) => ({ ...row, kind: 'must_not' })),
+        ],
+        evidence: confirmation.evidence,
+        traceRows: (confirmation.traceRows as JsonRecord[]).map((row) => ({
+          id: row.id,
+          covers: row.covers,
+          evidenceRefs: row.evidenceRefs,
+          commandRefs: [
+            ...new Set([
+              ...(row.commandRefs ?? []),
+              ...(row.contractValidationCommandRefs ?? []),
+              ...(row.deliveryEvidenceCommandRefs ?? []),
+            ]),
+          ],
+          artifactRefs: row.artifactRefs,
+          canonicalSurfaceRefs: row.canonicalSurfaceRefs,
+          currentTargetMapRefs: row.currentTargetMapRefs,
+          targetModificationPaths: row.targetModificationPaths,
+          acceptanceRefs: row.acceptanceRefs,
+          status: row.status,
+        })),
+        requiredCommands: confirmation.requiredCommands,
+        acceptanceTests: confirmation.acceptanceTests,
+        e2eSuites: confirmation.e2eSuites,
+        targetArtifacts: [
+          ...(confirmation.artifactAutomationPlan as JsonRecord[]),
+          ...((confirmation.currentTargetMap?.canonicalArtifacts as JsonRecord[] | undefined) ?? []),
+          ...(
+            (confirmation.currentTargetMap?.existingArtifacts as JsonRecord[] | undefined) ?? []
+          ).filter((row) => Boolean(row.completionProofPolicy)),
+        ],
+        targetModificationPaths: confirmation.targetModificationPaths,
+        currentTargetMap: confirmation.currentTargetMap,
+        currentTargetMapRefs: manifestProjection.currentTargetMapRefs,
+        canonicalSurfaceRefs: manifestProjection.canonicalSurfaceRefs,
+        finalGateMatrix: manifestProjection.finalGateMatrix,
+        executionLoopProtocol: manifestProjection.executionLoopProtocol,
+        semanticGapPolicy: manifestProjection.semanticGapPolicy,
+        amend05Bindings: manifestProjection.amend05Bindings,
+      },
       ...options.extraPacket,
-    });
+    };
+    const packetPath = writeJson(
+      path.join(outDir, 'model_packet.json'),
+      options.packetTransform?.(structuredClone(packet), confirmation) ?? packet
+    );
     const promptPath = writeText(
       path.join(outDir, 'human_prompt.txt'),
       'model_packet.json is the machine-readable execution authority.\ncompiled prompt\n'

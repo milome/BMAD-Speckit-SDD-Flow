@@ -72,9 +72,18 @@ export function materializePromptPublicationFixture() {
     command: `node ${commandScriptRelativePath}`,
     argv: ['node', commandScriptRelativePath],
     requirementRefs: [`MUST-${commandNumber}`],
+    notDoneRefs: [`NOTDONE-${commandNumber}`],
+    mustNotRefs: [`NEG-${commandNumber}`],
     acceptanceRefs: [`ACC-${commandNumber}`, `E2E-${commandNumber}`],
     traceRefs: [`TRACE-${commandNumber}`],
+    taskRefs: [`TASK-${commandNumber}`],
     evidenceRefs: [`EVD-${commandNumber}`],
+    failurePathRefs: [`FAIL-${commandNumber}`],
+    edgeCaseRefs: [`EDGE-${commandNumber}`],
+    artifactRefs: [`ART-${commandNumber}`],
+    targetPathRefs: [`TARGET-${commandNumber}`],
+    currentTargetMapRefs: [`CTM-${commandNumber}`],
+    canonicalSurfaceRefs: [`SURFACE-${commandNumber}`],
   };
   const recordRoot = path.join(
     root,
@@ -93,26 +102,79 @@ implementationConfirmation:
     - id: ${commandAuthority.requirementRefs[0]}
       text: "Publish controlled command execution descriptors."
       evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
+  notDone:
+    - id: ${commandAuthority.notDoneRefs[0]}
+      text: "Do not close the prompt transaction without complete parity."
+      evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
+  mustNot:
+    - id: ${commandAuthority.mustNotRefs[0]}
+      text: "Do not publish a partial or authoritative packet."
+      evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
   evidence:
     - id: ${commandAuthority.evidenceRefs[0]}
       text: "Observe the controlled command descriptor projection."
       requiredCommandRefs: [${commandAuthority.id}]
       oracle: "The packet preserves exact source-derived command bindings."
+  failurePaths:
+    - id: ${commandAuthority.failurePathRefs[0]}
+      trigger: "A source obligation is omitted from the packet."
+      expectedBehavior: "Block publication."
+  edgeCases:
+    - id: ${commandAuthority.edgeCaseRefs[0]}
+      condition: "A packet adds an unconfirmed executable binding."
+      expectedBehavior: "Block publication."
   traceRows:
     - id: ${commandAuthority.traceRefs[0]}
-      covers: [${commandAuthority.requirementRefs[0]}]
+      covers: [${commandAuthority.requirementRefs[0]}, ${commandAuthority.mustNotRefs[0]}]
+      taskRefs: [${commandAuthority.taskRefs[0]}]
       evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
       acceptanceRefs: [${commandAuthority.acceptanceRefs.join(', ')}]
       e2eRefs: [${commandAuthority.acceptanceRefs[1]}]
+      failurePathRefs: [${commandAuthority.failurePathRefs[0]}]
+      edgeCaseRefs: [${commandAuthority.edgeCaseRefs[0]}]
+      artifactRefs: [${commandAuthority.artifactRefs[0]}]
+      targetModificationPaths: [${commandScriptRelativePath}]
+      currentTargetMapRefs: [${commandAuthority.currentTargetMapRefs[0]}]
+      canonicalSurfaceRefs: [${commandAuthority.canonicalSurfaceRefs[0]}]
       contractValidationCommandRefs: [${commandAuthority.id}]
       deliveryEvidenceCommandRefs: [${commandAuthority.id}]
       status: PENDING
+  atomicImplementationTaskList:
+    - id: ${commandAuthority.taskRefs[0]}
+      title: "Publish the prompt transaction."
+      mustRefs: [${commandAuthority.requirementRefs[0]}]
+      traceRefs: [${commandAuthority.traceRefs[0]}]
+      evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
+      targetFiles: [${commandScriptRelativePath}]
+  mustToAtomicTaskMap:
+    ${commandAuthority.requirementRefs[0]}: [${commandAuthority.taskRefs[0]}]
+  atomicTaskToTraceMap:
+    ${commandAuthority.taskRefs[0]}: [${commandAuthority.traceRefs[0]}]
   acceptanceTests:
     - id: ${commandAuthority.acceptanceRefs[0]}
       commandRefs: [${commandAuthority.id}]
+      covers: [${commandAuthority.requirementRefs[0]}]
+      traceRows: [${commandAuthority.traceRefs[0]}]
+      failurePathRefs: [${commandAuthority.failurePathRefs[0]}]
+      edgeCaseRefs: [${commandAuthority.edgeCaseRefs[0]}]
   e2eSuites:
     - id: ${commandAuthority.acceptanceRefs[1]}
       commandRefs: [${commandAuthority.id}]
+      covers: [${commandAuthority.requirementRefs[0]}, ${commandAuthority.mustNotRefs[0]}]
+      traceRows: [${commandAuthority.traceRefs[0]}]
+      failurePathRefs: [${commandAuthority.failurePathRefs[0]}]
+      edgeCaseRefs: [${commandAuthority.edgeCaseRefs[0]}]
+  artifactAutomationPlan:
+    - id: ${commandAuthority.artifactRefs[0]}
+      artifactType: json
+      path: model_packet.json
+      traceRows: [${commandAuthority.traceRefs[0]}]
+      evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
+  targetModificationPaths:
+    - id: ${commandAuthority.targetPathRefs[0]}
+      path: ${commandScriptRelativePath}
+      traceRows: [${commandAuthority.traceRefs[0]}]
+      evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
   requiredCommands:
     - id: ${commandAuthority.id}
       command: "${commandAuthority.command}"
@@ -121,6 +183,35 @@ implementationConfirmation:
       evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
   closeoutReadinessPreview:
     requiredCommands: [${commandAuthority.id}]
+  currentTargetMap:
+    schemaVersion: current-target-map/v1
+    canonicalArtifacts:
+      - id: ${commandAuthority.canonicalSurfaceRefs[0]}
+        targetPathOrField: model_packet.json
+        traceRows: [${commandAuthority.traceRefs[0]}]
+        evidenceRefs: [${commandAuthority.evidenceRefs[0]}]
+  aiTddContractExecutionManifestProjection:
+    schemaVersion: contract-execution-manifest/v1
+    atomicImplementationTaskLineage:
+      requiredMaps: [atomicImplementationTaskList, mustToAtomicTaskMap, atomicTaskToTraceMap]
+    currentTargetMapRefs: [${commandAuthority.currentTargetMapRefs[0]}]
+    canonicalSurfaceRefs: [${commandAuthority.canonicalSurfaceRefs[0]}]
+    finalGateMatrix:
+      requiredCurrentAttemptGates:
+        - gateId: required-commands
+          commandRefs: [${commandAuthority.id}]
+          passRequired: true
+      stopCondition: all_required_current_attempt_gates_pass
+    executionLoopProtocol:
+      mode: bounded_until_final_acceptance
+      stopConditions: [finalGateMatrix_allows_closeout]
+    semanticGapPolicy:
+      semanticGapAction: reconfirm_required
+      nonSemanticGapAction: repair_and_rerun
+    amend05Bindings:
+      safeWriteTargetRefs:
+        - ${commandAuthority.artifactRefs[0]}
+        - ${commandAuthority.targetPathRefs[0]}
 `
   );
   const sourceDocumentHash = fileHash(sourcePath);

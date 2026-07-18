@@ -595,11 +595,11 @@
       "capabilityActionId": "requirements-contract-consumer-cli-capability-observe",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.ts",
-        "hash": "sha256:90f6f06ada36695967ce7b3c56355656b5cee54c1fcb3bbdf8bcb22df0103d19"
+        "hash": "sha256:3e7eb20fa0a097399bc8421c096fcd24bd5629b6c4ff6f58dbceceb13d2ab390"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js",
-        "hash": "sha256:81c9c2cb569fbc43101ac37b16bc3b87f987f33149265df89d75cbcff686ff5e"
+        "hash": "sha256:67e626eb96ef825d74db5edfd6d39a3e0efbf7e27116c63c72a8fa9cab0ee798"
       },
       "semanticGate": {
         "gateId": "requirements-contract-prompt-transaction-publish:semantic-gate",
@@ -638,12 +638,12 @@
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js",
-        "hash": "sha256:81c9c2cb569fbc43101ac37b16bc3b87f987f33149265df89d75cbcff686ff5e"
+        "hash": "sha256:67e626eb96ef825d74db5edfd6d39a3e0efbf7e27116c63c72a8fa9cab0ee798"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js",
-          "hash": "sha256:81c9c2cb569fbc43101ac37b16bc3b87f987f33149265df89d75cbcff686ff5e"
+          "hash": "sha256:67e626eb96ef825d74db5edfd6d39a3e0efbf7e27116c63c72a8fa9cab0ee798"
         }
       ],
       "runtimeRefs": [
