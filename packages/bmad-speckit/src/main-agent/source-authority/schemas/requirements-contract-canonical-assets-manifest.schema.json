@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-canonical-assets-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "owner", "manifestHash", "assets", "authority"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-canonical-assets-manifest/v2" },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "const": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts"
+        },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "manifestHash": { "$ref": "#/$defs/hash" },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "authority": { "const": "none" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "version", "path", "role", "assetKind", "authorityClass", "sha256"],
+      "properties": {
+        "assetId": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "version": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "assetKind": {
+          "enum": [
+            "schema",
+            "parser",
+            "registry",
+            "facade",
+            "template",
+            "renderer",
+            "profile",
+            "resolver",
+            "adapter",
+            "producer",
+            "validator",
+            "projector",
+            "reference",
+            "codec"
+          ]
+        },
+        "symbolRef": { "type": "string", "minLength": 1 },
+        "authorityClass": {
+          "enum": [
+            "deterministic_contract",
+            "product_background",
+            "implementation_semantic_authority",
+            "execution_contract_authority",
+            "none"
+          ]
+        },
+        "sha256": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

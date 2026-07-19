@@ -2,9 +2,7 @@ import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
-import {
-  canonicalizeRequirementRecord,
-} from './requirement-record-control-store';
+import { canonicalizeRequirementRecord } from './requirement-record-control-store';
 import { validateRequirementRecordSchemaObject } from './requirement-record-live-schema-gate';
 import {
   canonicalJson,
@@ -15,6 +13,19 @@ import {
 } from './requirements-contract-governed-write';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
+
+const safeWriter = require('../../../utils/large-document-writer') as {
+  safeWriteText(
+    targetPath: string,
+    text: string,
+    options: { mode: 'create' | 'replace' }
+  ): {
+    backupPath: string | null;
+    originalHash: string | null;
+    backupHash: string | null;
+    finalHash: string;
+  };
+};
 
 export interface RequirementsContractFinalizationSafeWriteOptions {
   cwd?: string;
@@ -39,12 +50,12 @@ const SHA256 = /^sha256:[a-f0-9]{64}$/u;
 
 const ROLES = [
   {
-    artifactRole: 'AMEND05-SAFE-WRITE-MANIFEST',
-    validationProfile: 'amend05-safe-write-manifest',
-    draftName: 'amend05-safe-write-receipt-manifest.json',
-    target: `${BASE}/amend05-safe-write-receipt-manifest.json`,
-    receipt: `${BASE}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
-    schemaName: 'requirements-contract-amend05-safe-write-receipt-manifest.schema.json',
+    artifactRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
+    validationProfile: 'safe-write-receipt-manifest',
+    draftName: 'safe-write-receipt-manifest.json',
+    target: `${BASE}/safe-write-receipt-manifest.json`,
+    receipt: `${BASE}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
+    schemaName: 'requirements-contract-safe-write-receipt-manifest.schema.json',
     predecessorRole: null,
   },
   {
@@ -54,7 +65,7 @@ const ROLES = [
     target: `${BASE}/G15-final-gates.json`,
     receipt: `${BASE}/finalization-receipts/G15-final-gates.receipt.json`,
     schemaName: 'requirements-contract-goal-task-evidence.schema.json',
-    predecessorRole: 'AMEND05-SAFE-WRITE-MANIFEST',
+    predecessorRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
   },
   {
     artifactRole: 'ARTIFACT-01',
@@ -95,13 +106,6 @@ function validate(value: JsonRecord, schemaName: string, label: string): void {
 
 function relative(root: string, filePath: string): string {
   return slash(path.relative(root, filePath));
-}
-
-function promoteExactBytes(targetPath: string, text: string, identity: string): void {
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  const temporaryPath = `${targetPath}.${identity}.tmp`;
-  fs.writeFileSync(temporaryPath, text, 'utf8');
-  fs.renameSync(temporaryPath, targetPath);
 }
 
 function exactArgv(options: RequirementsContractFinalizationSafeWriteOptions): string[] {
@@ -254,6 +258,9 @@ export async function requirementsContractFinalizationSafeWriteCommand(
   }
   assertNoSymlinkEscape(root, draftPath);
   assertNoSymlinkEscape(root, targetPath);
+  if (!fs.existsSync(draftPath) || !fs.statSync(draftPath).isFile()) {
+    throw new Error('finalization_safe_write_draft_missing');
+  }
   const finalizationRunId = `FINALIZATION-RUN-${randomUUID().toUpperCase()}`;
   const recordRef = { path: expectedRecordPath, hash: fileHash(recordPath) };
   const argv = exactArgv(options);
@@ -311,9 +318,6 @@ export async function requirementsContractFinalizationSafeWriteCommand(
     throw new Error(`finalization_safe_write_blocked:${blockedRelative}:${code}`);
   };
   try {
-    if (!fs.existsSync(draftPath) || !fs.statSync(draftPath).isFile()) {
-      throw new Error('finalization_safe_write_draft_missing');
-    }
     const attemptRoot = path.dirname(draftPath);
     const activeDrafts = fs
       .readdirSync(attemptRoot, { withFileTypes: true })
@@ -353,9 +357,34 @@ export async function requirementsContractFinalizationSafeWriteCommand(
     if (draftBytes < options.minBytes) throw new Error('finalization_safe_write_min_bytes');
     const targetExistedBefore = fs.existsSync(targetPath);
     const previousHash = targetExistedBefore ? fileHash(targetPath) : null;
-    promoteExactBytes(targetPath, draftText, finalizationRunId);
+    const nonexistenceProofHash = targetExistedBefore
+      ? null
+      : sha256(`finalization-target-nonexistence/v1\n${role.target}\n${finalizationRunId}\n`);
+    const promotion = safeWriter.safeWriteText(targetPath, draftText, {
+      mode: targetExistedBefore ? 'replace' : 'create',
+    });
+    const backupPath = promotion.backupPath ? relative(root, promotion.backupPath) : null;
+    if (targetExistedBefore) {
+      if (
+        !promotion.backupPath ||
+        !fs.existsSync(promotion.backupPath) ||
+        promotion.originalHash !== previousHash ||
+        promotion.backupHash !== previousHash ||
+        fileHash(promotion.backupPath) !== previousHash
+      ) {
+        throw new Error('finalization_safe_write_backup_mismatch');
+      }
+    } else if (
+      promotion.backupPath !== null ||
+      promotion.originalHash !== null ||
+      promotion.backupHash !== null
+    ) {
+      throw new Error('finalization_safe_write_nonexistence_proof_mismatch');
+    }
     const readbackHash = fileHash(targetPath);
-    if (readbackHash !== draftHash) throw new Error('finalization_safe_write_readback_mismatch');
+    if (promotion.finalHash !== draftHash || readbackHash !== draftHash) {
+      throw new Error('finalization_safe_write_readback_mismatch');
+    }
     const passReceipt = {
       schemaVersion: 'requirements-contract-finalization-safe-write-receipt/v1',
       commandId: 'requirements-contract-finalization-safe-write',
@@ -375,6 +404,10 @@ export async function requirementsContractFinalizationSafeWriteCommand(
         minBytes: 2,
         targetExistedBefore,
         previousHash,
+        backupApplicability: targetExistedBefore ? 'required' : 'not_applicable',
+        backupPath,
+        backupHash: promotion.backupHash,
+        nonexistenceProofHash,
         promotedHash: draftHash,
         readbackHash,
       },

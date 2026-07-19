@@ -425,7 +425,7 @@ export async function requirementsContractStageFiveStarAuditCommand(
     writeGovernedJson(outputPaths[3], candidate);
     candidateRef = ref(root, slash(path.relative(root, outputPaths[3])));
     const revocation = {
-      schemaVersion: 'requirements-contract-stage-five-star-candidate-revocation-receipt/v1',
+      schemaVersion: 'requirements-contract-stage-candidate-revocation-receipt/v1',
       ...candidateRef,
       candidateReceipt: candidateRef,
       auditAttemptId: context.phaseAuditAttemptId,
@@ -437,7 +437,7 @@ export async function requirementsContractStageFiveStarAuditCommand(
     delete revocation.hash;
     validate(
       revocation,
-      'requirements-contract-stage-five-star-candidate-revocation-receipt.schema.json',
+      'requirements-contract-stage-candidate-revocation-receipt.schema.json',
       'stage_five_star_revocation'
     );
     writeGovernedJson(outputPaths[4], revocation);

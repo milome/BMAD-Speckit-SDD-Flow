@@ -113,6 +113,7 @@ function normalizeCommandTargets(manifest, audit) {
 }
 
 function normalizeContractExecutionManifest(input) {
+  const activeV2 = input.sourceFormatVersion === 'v2';
   const confirmation = input.confirmation ?? {};
   const sourceProjection = isObject(confirmation.aiTddContractExecutionManifestProjection)
     ? confirmation.aiTddContractExecutionManifestProjection
@@ -125,6 +126,10 @@ function normalizeContractExecutionManifest(input) {
     ...sourceProjection,
     ...(input.manifest ?? {}),
   };
+  if (activeV2) {
+    delete base.currentTargetMap;
+    delete base.currentTargetMapRefs;
+  }
   const commandTargetCollection = normalizeCommandTargets(base, audit);
   const normalized = {
     ...base,
@@ -137,7 +142,7 @@ function normalizeContractExecutionManifest(input) {
   if (commandTargetCollection !== undefined) {
     normalized[CANONICAL_COMMAND_TARGET_FIELD] = commandTargetCollection;
   }
-  if (!normalized.currentTargetMap && confirmation.currentTargetMap) {
+  if (!activeV2 && !normalized.currentTargetMap && confirmation.currentTargetMap) {
     normalized.currentTargetMap = confirmation.currentTargetMap;
   }
   return { manifest: normalized, audit };

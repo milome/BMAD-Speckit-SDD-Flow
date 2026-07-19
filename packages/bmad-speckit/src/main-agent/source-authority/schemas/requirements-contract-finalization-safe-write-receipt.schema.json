@@ -48,11 +48,11 @@
     },
     "argvHash": { "$ref": "#/$defs/sha256" },
     "artifactRole": {
-      "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+      "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
     },
     "validationProfile": {
       "enum": [
-        "amend05-safe-write-manifest",
+        "safe-write-receipt-manifest",
         "goal-task-evidence",
         "implementation-evidence-bundle"
       ]
@@ -72,7 +72,7 @@
             "path": { "type": "string", "minLength": 1 },
             "hash": { "$ref": "#/$defs/sha256" },
             "artifactRole": {
-              "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15"]
+              "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15"]
             }
           }
         }
@@ -89,6 +89,18 @@
         "minBytes": { "const": 2 },
         "targetExistedBefore": { "type": "boolean" },
         "previousHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "backupApplicability": {
+          "enum": ["required", "not_applicable"]
+        },
+        "backupPath": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "backupHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "nonexistenceProofHash": {
           "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
         },
         "promotedHash": { "$ref": "#/$defs/sha256" },
@@ -122,7 +134,7 @@
       }
     },
     "retryRole": {
-      "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+      "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
     }
   },
   "oneOf": [
@@ -132,25 +144,50 @@
         {
           "properties": {
             "target": {
-              "required": ["promotedHash", "readbackHash"]
+              "required": [
+                "targetExistedBefore",
+                "previousHash",
+                "backupApplicability",
+                "backupPath",
+                "backupHash",
+                "nonexistenceProofHash",
+                "promotedHash",
+                "readbackHash"
+              ],
+              "oneOf": [
+                {
+                  "properties": {
+                    "targetExistedBefore": { "const": true },
+                    "previousHash": { "$ref": "#/$defs/sha256" },
+                    "backupApplicability": { "const": "required" },
+                    "backupPath": { "type": "string", "minLength": 1 },
+                    "backupHash": { "$ref": "#/$defs/sha256" },
+                    "nonexistenceProofHash": { "type": "null" }
+                  }
+                },
+                {
+                  "properties": {
+                    "targetExistedBefore": { "const": false },
+                    "previousHash": { "type": "null" },
+                    "backupApplicability": { "const": "not_applicable" },
+                    "backupPath": { "type": "null" },
+                    "backupHash": { "type": "null" },
+                    "nonexistenceProofHash": { "$ref": "#/$defs/sha256" }
+                  }
+                }
+              ]
             },
             "draft": {
               "required": ["hash", "bytes"],
               "not": {
-                "anyOf": [
-                  { "required": ["archivedPath"] },
-                  { "required": ["archivedHash"] }
-                ]
+                "anyOf": [{ "required": ["archivedPath"] }, { "required": ["archivedHash"] }]
               }
             }
           }
         }
       ],
       "not": {
-        "anyOf": [
-          { "required": ["failure"] },
-          { "required": ["retryRole"] }
-        ]
+        "anyOf": [{ "required": ["failure"] }, { "required": ["retryRole"] }]
       }
     },
     {
@@ -161,10 +198,7 @@
           "properties": {
             "target": {
               "not": {
-                "anyOf": [
-                  { "required": ["promotedHash"] },
-                  { "required": ["readbackHash"] }
-                ]
+                "anyOf": [{ "required": ["promotedHash"] }, { "required": ["readbackHash"] }]
               }
             },
             "draft": {

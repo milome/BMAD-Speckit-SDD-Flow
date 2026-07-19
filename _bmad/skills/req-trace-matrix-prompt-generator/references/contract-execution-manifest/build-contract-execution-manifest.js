@@ -638,14 +638,19 @@ function evidenceTrustStates(confirmation) {
 }
 
 function buildDerivedContractExecutionManifest(input) {
+  const activeV2 = input.sourceFormatVersion === 'v2';
   const confirmation = input.confirmation ?? {};
-  const projection = nested(confirmation.aiTddContractExecutionManifestProjection);
+  const projection = { ...nested(confirmation.aiTddContractExecutionManifestProjection) };
+  if (activeV2) {
+    delete projection.currentTargetMap;
+    delete projection.currentTargetMapRefs;
+  }
   const acceptance = acceptanceRows(confirmation);
   const targetRows = targetArtifacts(confirmation);
   const controls = negativeControls(confirmation, targetRows);
   const commandTargets = commandTargetCollection(confirmation);
   const traceClosures = traceClosureAssertions(confirmation);
-  const currentTargetMap = currentTargetMapSection(confirmation);
+  const currentTargetMap = activeV2 ? null : currentTargetMapSection(confirmation);
   const targetMods = targetModificationPaths(confirmation);
   const targetModCoverage = targetModificationPathCoverage(confirmation, targetMods);
   const canonicalSurfaces = canonicalSurfaceReconciliation(targetRows);
@@ -667,6 +672,7 @@ function buildDerivedContractExecutionManifest(input) {
   ]);
   const overrides = {};
   for (const [key, value] of Object.entries(providedManifest)) {
+    if (activeV2 && key === 'currentTargetMap') continue;
     if (!projectionOnlyKeys.has(key)) overrides[key] = value;
   }
   const commandTargetOverride =
@@ -688,6 +694,26 @@ function buildDerivedContractExecutionManifest(input) {
     }
     return fallback;
   };
+  const closeoutGateSections = [
+    commandTargets,
+    traceClosures,
+    ...(currentTargetMap ? [currentTargetMap] : []),
+    targetModCoverage,
+    canonicalSurfaces,
+    legacyControls,
+    closeout,
+    evidenceTrust,
+  ];
+  const requiredManifestSections = [
+    'commandTargetCollection',
+    'traceClosureAssertions',
+    ...(currentTargetMap ? ['currentTargetMap'] : []),
+    'targetModificationPathCoverage',
+    'canonicalSurfaceReconciliation',
+    'legacyDenial',
+    'closeoutProof',
+    'evidenceTrustStates',
+  ];
   const rawManifest = {
     ...projection,
     ...overrides,
@@ -707,7 +733,7 @@ function buildDerivedContractExecutionManifest(input) {
       commandRefs: commandRefs(row),
       artifactRefs: strings(row.artifactRefs),
       canonicalSurfaceRefs: strings(row.canonicalSurfaceRefs),
-      currentTargetMapRefs: strings(row.currentTargetMapRefs),
+      ...(activeV2 ? {} : { currentTargetMapRefs: strings(row.currentTargetMapRefs) }),
       targetModificationPaths: strings(row.targetModificationPaths),
       acceptanceRefs: strings(row.acceptanceRefs),
       status: text(row.status),
@@ -733,7 +759,9 @@ function buildDerivedContractExecutionManifest(input) {
     errorCaseCoverage: overrides.errorCaseCoverage ?? errorCaseCoverage(confirmation, acceptance),
     commandTargetCollection: commandTargetOverride ?? commandTargets,
     traceClosureAssertions: overrides.traceClosureAssertions ?? traceClosures,
-    currentTargetMap: derivedSection('currentTargetMap', currentTargetMap),
+    ...(currentTargetMap
+      ? { currentTargetMap: derivedSection('currentTargetMap', currentTargetMap) }
+      : {}),
     targetModificationPathCoverage: derivedSection(
       'targetModificationPathCoverage',
       targetModCoverage
@@ -745,30 +773,19 @@ function buildDerivedContractExecutionManifest(input) {
     legacyDenial: derivedSection('legacyDenial', legacyControls),
     closeoutProof: derivedSection('closeoutProof', closeout),
     evidenceTrustStates: derivedSection('evidenceTrustStates', evidenceTrust),
-    closeoutGates: overrides.closeoutGates ?? {
-      decision: [
-        commandTargets,
-        traceClosures,
-        currentTargetMap,
-        targetModCoverage,
-        canonicalSurfaces,
-        legacyControls,
-        closeout,
-        evidenceTrust,
-      ].every((section) => section.ready === true)
+    closeoutGates: activeV2
+      ? {
+          decision: closeoutGateSections.every((section) => section.ready === true)
+            ? 'pass'
+            : 'blocked',
+          requiredManifestSections,
+        }
+      : overrides.closeoutGates ?? {
+          decision: closeoutGateSections.every((section) => section.ready === true)
         ? 'pass'
         : 'blocked',
-      requiredManifestSections: [
-        'commandTargetCollection',
-        'traceClosureAssertions',
-        'currentTargetMap',
-        'targetModificationPathCoverage',
-        'canonicalSurfaceReconciliation',
-        'legacyDenial',
-        'closeoutProof',
-        'evidenceTrustStates',
-      ],
-    },
+          requiredManifestSections,
+        },
   };
   return buildContractExecutionManifest({ ...input, manifest: rawManifest });
 }
@@ -788,6 +805,7 @@ function buildContractExecutionManifest(input) {
     confirmation,
     manifest: input.manifest,
     builderVersion: input.builderVersion ?? CANONICAL_BUILDER_VERSION,
+    sourceFormatVersion: input.sourceFormatVersion,
   });
   const manifest = {
     ...normalized.manifest,

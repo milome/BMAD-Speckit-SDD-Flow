@@ -1,9 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import Ajv from 'ajv';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import {
+  canonicalJson,
   fileHash,
+  sha256,
   slash,
   writeGovernedJson,
   type GovernedReadbackRef,
@@ -12,6 +15,12 @@ import {
 // AJV validates these schema-driven records before governed publication and replay.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
+type VerifiedFile = {
+  path: string;
+  realPath: string;
+  hash: string;
+  bytes: Buffer;
+};
 
 export interface CurrentDispatchPointerPublication {
   pointer: JsonRecord;
@@ -54,7 +63,10 @@ function validator(schemaName = 'requirements-contract-current-dispatch-pointer.
     'schemas',
     schemaName
   );
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const ajv =
+    schemaName === 'requirements-contract-large-document-writer-safe-write-receipt.schema.json'
+      ? new Ajv({ allErrors: true, strict: false })
+      : new Ajv2020({ allErrors: true, strict: false });
   addFormats(ajv);
   return ajv.compile(JSON.parse(fs.readFileSync(schemaPath, 'utf8')));
 }
@@ -74,9 +86,69 @@ function assertValid(value: unknown): void {
   );
 }
 
-function readJsonObject(filePath: string, issueCode: string): JsonRecord {
+function normalizedPath(value: string): string {
+  const resolved = path.resolve(value);
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+}
+
+function resolveRealDirectory(rootPath: string, issueCode: string): string {
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    const resolved = path.resolve(rootPath);
+    if (!fs.statSync(resolved).isDirectory()) throw new Error(issueCode);
+    return fs.realpathSync(resolved);
+  } catch {
+    throw new Error(issueCode);
+  }
+}
+
+function sameFilePath(left: unknown, right: unknown): boolean {
+  return (
+    typeof left === 'string' &&
+    typeof right === 'string' &&
+    normalizedPath(left) === normalizedPath(right)
+  );
+}
+
+function assertContainedRealPath(
+  rootRealPath: string,
+  targetRealPath: string,
+  issueCode: string
+): void {
+  const relative = path.relative(rootRealPath, targetRealPath);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(issueCode);
+  }
+}
+
+function readStableFile(
+  filePath: string,
+  missingIssueCode: string,
+  readbackIssueCode: string
+): VerifiedFile {
+  const resolved = path.resolve(filePath);
+  let realPath: string;
+  try {
+    if (!fs.statSync(resolved).isFile()) throw new Error(missingIssueCode);
+    realPath = fs.realpathSync(resolved);
+  } catch {
+    throw new Error(missingIssueCode);
+  }
+  const first = fs.readFileSync(realPath);
+  const second = fs.readFileSync(realPath);
+  if (!first.equals(second)) {
+    throw new Error(readbackIssueCode);
+  }
+  return {
+    path: resolved,
+    realPath,
+    hash: sha256(first),
+    bytes: first,
+  };
+}
+
+function parseJsonObject(bytes: Buffer, issueCode: string): JsonRecord {
+  try {
+    const parsed = JSON.parse(bytes.toString('utf8')) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new Error(issueCode);
     }
@@ -87,56 +159,55 @@ function readJsonObject(filePath: string, issueCode: string): JsonRecord {
   }
 }
 
-function sameFilePath(left: unknown, right: unknown): boolean {
-  return (
-    typeof left === 'string' &&
-    typeof right === 'string' &&
-    path.resolve(left) === path.resolve(right)
-  );
-}
-
 function assertFileRef(
   ref: JsonRecord,
   label: string,
+  rootRealPath: string,
+  scope: 'authority' | 'consumer',
   readbackRequired = false
-): void {
-  const candidate = typeof ref.path === 'string' ? path.resolve(ref.path) : '';
-  if (!candidate || !fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
+): VerifiedFile {
+  if (!ref || typeof ref !== 'object' || Array.isArray(ref) || typeof ref.path !== 'string') {
     throw new Error(`current_dispatch_pointer_reference_missing:${label}`);
   }
-  const observedHash = fileHash(candidate);
+  const verified = readStableFile(
+    ref.path,
+    `current_dispatch_pointer_reference_missing:${label}`,
+    `current_dispatch_pointer_reference_readback_mismatch:${label}`
+  );
+  assertContainedRealPath(
+    rootRealPath,
+    verified.realPath,
+    `current_dispatch_pointer_reference_outside_${scope}_root:${label}`
+  );
   if (
-    observedHash !== ref.hash ||
+    verified.hash !== ref.hash ||
     (readbackRequired &&
       (ref.readbackVerified !== true ||
         ref.readbackHash !== ref.hash ||
-        observedHash !== ref.readbackHash))
+        verified.hash !== ref.readbackHash))
   ) {
     throw new Error(`current_dispatch_pointer_reference_hash_mismatch:${label}`);
   }
+  return verified;
 }
 
-function assertPointerReferences(pointer: JsonRecord): void {
-  const fileRefs: Array<[string, JsonRecord]> = [
+function assertPointerReferences(
+  pointer: JsonRecord,
+  authorityRootRealPath: string
+): Map<string, VerifiedFile> {
+  const consumerRootRealPath = resolveRealDirectory(
+    pointer.consumerRef?.root,
+    'current_dispatch_pointer_consumer_root_invalid'
+  );
+  const verified = new Map<string, VerifiedFile>();
+  const authorityFileRefs: Array<[string, JsonRecord]> = [
     ['requirementRecordRef', pointer.requirementRecordRef],
     ['attemptContextRef', pointer.attemptContextRef],
     ['stageRegistryRef', pointer.stageRegistryRef],
-    ['installedStageRegistryRef', pointer.installedStageRegistryRef],
     ['confirmationReceiptRefs.requirements', pointer.confirmationReceiptRefs?.requirements],
     ['confirmationReceiptRefs.architecture', pointer.confirmationReceiptRefs?.architecture],
     ['confirmationPageRefs.requirements', pointer.confirmationPageRefs?.requirements],
     ['confirmationPageRefs.architecture', pointer.confirmationPageRefs?.architecture],
-    ['consumerRef.marker', pointer.consumerRef?.marker],
-    ['consumerRef.profile', pointer.consumerRef?.profile],
-    [
-      'packageRuntimeActionBindingManifestRef',
-      pointer.packageRuntimeActionBindingManifestRef,
-    ],
-  ].filter((entry): entry is [string, JsonRecord] =>
-    Boolean(entry[1]) && typeof entry[1] === 'object' && !Array.isArray(entry[1])
-  );
-  for (const [label, ref] of fileRefs) assertFileRef(ref, label);
-  const readbackRefs: Array<[string, JsonRecord]> = [
     ['transactionManifestRef', pointer.transactionManifestRef],
     ['modelPacketRef', pointer.modelPacketRef],
     ['auditReceiptRef', pointer.auditReceiptRef],
@@ -145,10 +216,45 @@ function assertPointerReferences(pointer: JsonRecord): void {
     ...(pointer.goalExecutionRef
       ? ([['goalExecutionRef', pointer.goalExecutionRef]] as Array<[string, JsonRecord]>)
       : []),
-  ].filter((entry): entry is [string, JsonRecord] =>
-    Boolean(entry[1]) && typeof entry[1] === 'object' && !Array.isArray(entry[1])
-  );
-  for (const [label, ref] of readbackRefs) assertFileRef(ref, label, true);
+    ...(pointer.supersededPointerRef
+      ? ([['supersededPointerRef', pointer.supersededPointerRef]] as Array<[string, JsonRecord]>)
+      : []),
+  ];
+  for (const [label, ref] of authorityFileRefs) {
+    verified.set(
+      label,
+      assertFileRef(
+        ref,
+        label,
+        authorityRootRealPath,
+        'authority',
+        label.endsWith('Ref') &&
+          [
+            'transactionManifestRef',
+            'modelPacketRef',
+            'auditReceiptRef',
+            'humanPromptRef',
+            'capabilityObservationRef',
+            'goalExecutionRef',
+          ].includes(label)
+      )
+    );
+  }
+  const consumerFileRefs: Array<[string, JsonRecord]> = [
+    ['installedStageRegistryRef', pointer.installedStageRegistryRef],
+    ['consumerRef.marker', pointer.consumerRef?.marker],
+    ['consumerRef.profile', pointer.consumerRef?.profile],
+    [
+      'packageRuntimeActionBindingManifestRef',
+      pointer.packageRuntimeActionBindingManifestRef,
+    ],
+  ];
+  for (const [label, ref] of consumerFileRefs) {
+    verified.set(
+      label,
+      assertFileRef(ref, label, consumerRootRealPath, 'consumer')
+    );
+  }
   const sourceRef =
     pointer.sourceRef &&
     typeof pointer.sourceRef === 'object' &&
@@ -158,31 +264,47 @@ function assertPointerReferences(pointer: JsonRecord): void {
   if (!sourceRef) {
     throw new Error('current_dispatch_pointer_reference_missing:sourceRef');
   }
-  assertFileRef(
-    {
-      path: sourceRef.path,
-      hash: sourceRef.sourceDocumentHash,
-    },
-    'sourceRef'
+  verified.set(
+    'sourceRef',
+    assertFileRef(
+      {
+        path: sourceRef.path,
+        hash: sourceRef.sourceDocumentHash,
+      },
+      'sourceRef',
+      authorityRootRealPath,
+      'authority'
+    )
   );
+  return verified;
 }
 
-function assertPointerSafeWriteReceipt(pointerPath: string, pointerHash: string): void {
+function assertPointerSafeWriteReceipt(
+  pointerPath: string,
+  pointerHash: string,
+  authorityRootRealPath: string
+): void {
   const receiptPath = `${pointerPath}.safe-write-receipt.json`;
-  if (!fs.existsSync(receiptPath) || !fs.statSync(receiptPath).isFile()) {
-    throw new Error('current_dispatch_pointer_safe_write_receipt_missing');
-  }
-  const first = fs.readFileSync(receiptPath);
-  const second = fs.readFileSync(receiptPath);
-  if (!first.equals(second)) {
-    throw new Error('current_dispatch_pointer_safe_write_receipt_readback_mismatch');
-  }
-  const receipt = readJsonObject(
+  const receiptFile = readStableFile(
     receiptPath,
+    'current_dispatch_pointer_safe_write_receipt_missing',
+    'current_dispatch_pointer_safe_write_receipt_readback_mismatch'
+  );
+  assertContainedRealPath(
+    authorityRootRealPath,
+    receiptFile.realPath,
+    'current_dispatch_pointer_safe_write_receipt_outside_authority_root'
+  );
+  const receipt = parseJsonObject(
+    receiptFile.bytes,
+    'current_dispatch_pointer_safe_write_receipt_invalid'
+  );
+  assertSchema(
+    receipt,
+    'requirements-contract-large-document-writer-safe-write-receipt.schema.json',
     'current_dispatch_pointer_safe_write_receipt_invalid'
   );
   if (
-    receipt.schemaVersion !== 'large-document-writer-safe-write/v1' ||
     !sameFilePath(receipt.targetPath, pointerPath) ||
     receipt.finalHash !== pointerHash
   ) {
@@ -205,12 +327,223 @@ function assertExpectedIdentity(
   }
 }
 
+function assertSameBinding(field: string, actual: unknown, expected: unknown): void {
+  if (canonicalJson(actual) !== canonicalJson(expected)) {
+    throw new Error(`current_dispatch_pointer_transaction_manifest_mismatch:${field}`);
+  }
+}
+
+function assertManifestOutputRef(
+  field: string,
+  actual: unknown,
+  expected: JsonRecord | null
+): void {
+  if (expected === null) {
+    if (actual !== undefined) {
+      throw new Error(`current_dispatch_pointer_transaction_manifest_output_mismatch:${field}`);
+    }
+    return;
+  }
+  if (
+    !actual ||
+    typeof actual !== 'object' ||
+    Array.isArray(actual) ||
+    !sameFilePath((actual as JsonRecord).path, expected.path) ||
+    (actual as JsonRecord).hash !== expected.hash
+  ) {
+    throw new Error(`current_dispatch_pointer_transaction_manifest_output_mismatch:${field}`);
+  }
+}
+
+function containsExecutionAuthorityClaim(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return value.some(containsExecutionAuthorityClaim);
+  return Object.entries(value as JsonRecord).some(
+    ([key, child]) =>
+      (key === 'executionAuthorityClaim' && child === true) ||
+      (key === 'artifactRole' && child === 'execution_authority') ||
+      containsExecutionAuthorityClaim(child)
+  );
+}
+
+function assertModelPacketBindings(input: {
+  pointer: JsonRecord;
+  modelPacket: JsonRecord;
+  transactionManifest: JsonRecord;
+  requirementRecord: JsonRecord;
+  authorityRootRealPath: string;
+}): void {
+  const {
+    pointer,
+    modelPacket,
+    transactionManifest,
+    requirementRecord,
+    authorityRootRealPath,
+  } = input;
+  const promptTransaction = modelPacket.promptTransaction;
+  const controlledExecutionContext = modelPacket.controlledExecutionContext;
+  const authorityPolicy = modelPacket.authorityPolicy;
+  const requiredStructures: Array<[string, unknown, 'array' | 'object']> = [
+    ['traceOrder', modelPacket.traceOrder, 'array'],
+    ['atomicImplementationTaskList', modelPacket.atomicImplementationTaskList, 'array'],
+    ['mustToAtomicTaskMap', modelPacket.mustToAtomicTaskMap, 'object'],
+    ['atomicTaskToTraceMap', modelPacket.atomicTaskToTraceMap, 'object'],
+    ['requirements', modelPacket.requirements, 'object'],
+    ['errorCaseCoverage', modelPacket.errorCaseCoverage, 'object'],
+    ['executionHandoff', modelPacket.executionHandoff, 'object'],
+    ['requiredCommands', modelPacket.requiredCommands, 'array'],
+    ['contractExecutionManifest', modelPacket.contractExecutionManifest, 'object'],
+  ];
+  if (
+    modelPacket.artifactRole !== 'non_authoritative_projection' ||
+    containsExecutionAuthorityClaim(modelPacket)
+  ) {
+    throw new Error('current_dispatch_pointer_model_packet_authority_policy_invalid');
+  }
+  if (
+    !authorityPolicy ||
+    typeof authorityPolicy !== 'object' ||
+    Array.isArray(authorityPolicy) ||
+    authorityPolicy.primaryAuthority !== 'confirmed_source_and_requirement_record' ||
+    authorityPolicy.modelPacketRole !== 'non_authoritative_projection' ||
+    authorityPolicy.humanPromptRole !== 'non_authoritative_projection' ||
+    authorityPolicy.transactionManifestRole !== 'publication_integrity_manifest' ||
+    authorityPolicy.auditReceiptRole !==
+      'transaction_integrity_receipt_not_closeout_authority' ||
+    authorityPolicy.executionAuthorityClaim !== false ||
+    authorityPolicy.closeoutAuthorityClaim !== false ||
+    authorityPolicy.sourceTraceMutationPolicy !==
+      'confirmed_source_traceRows_status_must_not_be_rewritten'
+  ) {
+    throw new Error('current_dispatch_pointer_model_packet_authority_policy_invalid');
+  }
+  for (const [field, value, kind] of requiredStructures) {
+    const valid =
+      kind === 'array'
+        ? Array.isArray(value)
+        : Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+    if (!valid) {
+      throw new Error(`current_dispatch_pointer_model_packet_structure_invalid:${field}`);
+    }
+  }
+  if (
+    !promptTransaction ||
+    typeof promptTransaction !== 'object' ||
+    Array.isArray(promptTransaction) ||
+    canonicalJson(Object.keys(promptTransaction).sort()) !==
+      canonicalJson(['manifestPath', 'manifestSchemaVersion', 'transactionId'])
+  ) {
+    throw new Error('current_dispatch_pointer_model_packet_binding_missing');
+  }
+  if (
+    !controlledExecutionContext ||
+    typeof controlledExecutionContext !== 'object' ||
+    Array.isArray(controlledExecutionContext)
+  ) {
+    throw new Error('current_dispatch_pointer_model_packet_binding_missing');
+  }
+  const packetBindings: Array<[string, unknown, unknown]> = [
+    ['packetId', modelPacket.packetId, pointer.packetId],
+    ['sourceDocumentHash', modelPacket.sourceDocumentHash, pointer.sourceDocumentHash],
+    [
+      'implementationConfirmationHash',
+      modelPacket.implementationConfirmationHash,
+      requirementRecord.implementationConfirmationHash,
+    ],
+    ['transactionId', promptTransaction.transactionId, pointer.transactionId],
+    [
+      'manifestSchemaVersion',
+      promptTransaction.manifestSchemaVersion,
+      transactionManifest.schemaVersion,
+    ],
+    [
+      'requirementSetId',
+      controlledExecutionContext.requirementSetId,
+      pointer.requirementSetId,
+    ],
+    [
+      'implementationAttemptId',
+      controlledExecutionContext.implementationAttemptId,
+      pointer.implementationAttemptId,
+    ],
+    ['transactionId', controlledExecutionContext.transactionId, pointer.transactionId],
+    ['contractHash', controlledExecutionContext.contractHash, pointer.contractHash],
+    [
+      'inputSnapshotHash',
+      controlledExecutionContext.inputSnapshotHash,
+      pointer.attemptContextRef.hash,
+    ],
+  ];
+  for (const [field, actual, expected] of packetBindings) {
+    if (actual !== expected) {
+      throw new Error(`current_dispatch_pointer_model_packet_mismatch:${field}`);
+    }
+  }
+  if (!sameFilePath(promptTransaction.manifestPath, pointer.transactionManifestRef.path)) {
+    throw new Error('current_dispatch_pointer_model_packet_manifest_path_mismatch');
+  }
+  if (!sameFilePath(controlledExecutionContext.commandCwd, authorityRootRealPath)) {
+    throw new Error('current_dispatch_pointer_model_packet_mismatch:commandCwd');
+  }
+  const commandReceiptRoot = path.resolve(
+    String(controlledExecutionContext.commandReceiptRoot ?? '')
+  );
+  const relativeCommandReceiptRoot = path.relative(authorityRootRealPath, commandReceiptRoot);
+  if (
+    !relativeCommandReceiptRoot ||
+    relativeCommandReceiptRoot.startsWith('..') ||
+    path.isAbsolute(relativeCommandReceiptRoot)
+  ) {
+    throw new Error('current_dispatch_pointer_model_packet_mismatch:commandReceiptRoot');
+  }
+}
+
+function assertAuditReceiptBindings(input: {
+  pointer: JsonRecord;
+  auditReceipt: JsonRecord;
+}): void {
+  const { pointer, auditReceipt } = input;
+  const transaction = auditReceipt.promptTransaction;
+  if (
+    auditReceipt.schemaVersion !==
+      'requirements-contract-prompt-transaction-audit-receipt/v1' ||
+    auditReceipt.decision !== 'PASS' ||
+    auditReceipt.transactionId !== pointer.transactionId ||
+    auditReceipt.requirementSetId !== pointer.requirementSetId ||
+    auditReceipt.implementationAttemptId !== pointer.implementationAttemptId ||
+    !transaction ||
+    typeof transaction !== 'object' ||
+    Array.isArray(transaction) ||
+    !sameFilePath(transaction.manifestPath, pointer.transactionManifestRef.path) ||
+    transaction.manifestHash !== pointer.transactionManifestRef.hash ||
+    transaction.modelPacketHash !== pointer.modelPacketRef.hash ||
+    transaction.humanPromptHash !== pointer.humanPromptRef.hash ||
+    transaction.goalExecutionHash !== (pointer.goalExecutionRef?.hash ?? null) ||
+    auditReceipt.authorityPolicy?.executionAuthorityClaim !== false ||
+    auditReceipt.authorityPolicy?.closeoutAuthorityClaim !== false
+  ) {
+    throw new Error('current_dispatch_pointer_audit_receipt_binding_mismatch');
+  }
+}
+
 function assertPayloadBindings(input: {
   pointer: JsonRecord;
   modelPacket: JsonRecord;
   transactionManifest: JsonRecord;
+  auditReceipt: JsonRecord;
+  requirementRecord: JsonRecord;
+  attemptContext: JsonRecord;
+  authorityRootRealPath: string;
 }): void {
-  const { pointer, modelPacket, transactionManifest } = input;
+  const {
+    pointer,
+    modelPacket,
+    transactionManifest,
+    auditReceipt,
+    requirementRecord,
+    attemptContext,
+    authorityRootRealPath,
+  } = input;
   assertSchema(
     transactionManifest,
     'requirements-contract-prompt-transaction-manifest.schema.json',
@@ -238,83 +571,221 @@ function assertPayloadBindings(input: {
       throw new Error(`current_dispatch_pointer_transaction_manifest_mismatch:${field}`);
     }
   }
+  const refBindings: Array<[string, unknown, unknown]> = [
+    ['requirementRecordRef', transactionManifest.requirementRecordRef, pointer.requirementRecordRef],
+    ['attemptContextRef', transactionManifest.attemptContextRef, pointer.attemptContextRef],
+    ['sourceRef', transactionManifest.sourceRef, pointer.sourceRef],
+    ['stageRegistryRef', transactionManifest.stageRegistryRef, pointer.stageRegistryRef],
+    [
+      'installedStageRegistryRef',
+      transactionManifest.installedStageRegistryRef,
+      pointer.installedStageRegistryRef,
+    ],
+    [
+      'confirmationReceiptRefs',
+      transactionManifest.confirmationReceiptRefs,
+      pointer.confirmationReceiptRefs,
+    ],
+    [
+      'confirmationPageRefs',
+      transactionManifest.confirmationPageRefs,
+      pointer.confirmationPageRefs,
+    ],
+    ['universeHashes', transactionManifest.universeHashes, pointer.universeHashes],
+    [
+      'capabilityObservationRef',
+      transactionManifest.capabilityObservationRef,
+      pointer.capabilityObservationRef,
+    ],
+  ];
+  for (const [field, actual, expected] of refBindings) {
+    assertSameBinding(field, actual, expected);
+  }
+  if (
+    transactionManifest.consumerRef?.consumerId !== pointer.consumerRef.consumerId ||
+    !sameFilePath(transactionManifest.consumerRef?.root, pointer.consumerRef.root) ||
+    canonicalJson(transactionManifest.consumerRef?.marker) !==
+      canonicalJson(pointer.consumerRef.marker) ||
+    canonicalJson(transactionManifest.consumerRef?.profile) !==
+      canonicalJson(pointer.consumerRef.profile) ||
+    canonicalJson(transactionManifest.consumerRef?.actionBindingManifest) !==
+      canonicalJson(pointer.packageRuntimeActionBindingManifestRef)
+  ) {
+    throw new Error('current_dispatch_pointer_transaction_manifest_mismatch:consumerRef');
+  }
   if (
     !sameFilePath(
       transactionManifest.outputs?.transactionManifestPath,
       pointer.transactionManifestRef.path
-    ) ||
-    !sameFilePath(transactionManifest.outputs?.modelPacket?.path, pointer.modelPacketRef.path) ||
-    transactionManifest.outputs?.modelPacket?.hash !== pointer.modelPacketRef.hash
+    )
   ) {
-    throw new Error('current_dispatch_pointer_transaction_manifest_output_mismatch');
+    throw new Error(
+      'current_dispatch_pointer_transaction_manifest_output_mismatch:transactionManifest'
+    );
   }
-
-  const promptTransaction = modelPacket.promptTransaction;
-  const controlledExecutionContext = modelPacket.controlledExecutionContext;
+  assertManifestOutputRef(
+    'modelPacket',
+    transactionManifest.outputs?.modelPacket,
+    pointer.modelPacketRef
+  );
+  assertManifestOutputRef(
+    'humanPrompt',
+    transactionManifest.outputs?.humanPrompt,
+    pointer.humanPromptRef
+  );
+  assertManifestOutputRef(
+    'goalExecution',
+    transactionManifest.outputs?.goalExecution,
+    pointer.goalExecutionRef
+  );
   if (
-    !promptTransaction ||
-    typeof promptTransaction !== 'object' ||
-    Array.isArray(promptTransaction) ||
-    !controlledExecutionContext ||
-    typeof controlledExecutionContext !== 'object' ||
-    Array.isArray(controlledExecutionContext)
+    !sameFilePath(transactionManifest.outputs?.auditReceipt?.path, pointer.auditReceiptRef.path)
   ) {
-    throw new Error('current_dispatch_pointer_model_packet_binding_missing');
+    throw new Error(
+      'current_dispatch_pointer_transaction_manifest_output_mismatch:auditReceipt'
+    );
   }
-  const packetBindings: Array<[string, unknown, unknown]> = [
-    ['packetId', modelPacket.packetId, pointer.packetId],
-    ['transactionId', promptTransaction.transactionId, pointer.transactionId],
+  const consumerRootRealPath = resolveRealDirectory(
+    pointer.consumerRef.root,
+    'current_dispatch_pointer_consumer_root_invalid'
+  );
+  for (const [label, ref] of [
+    ['transactionManifest.generatorRef', transactionManifest.generatorRef],
+    ['transactionManifest.runnerRef', transactionManifest.runnerRef],
     [
-      'manifestSchemaVersion',
-      promptTransaction.manifestSchemaVersion,
-      transactionManifest.schemaVersion,
+      'transactionManifest.consumerRef.actionBindingManifest',
+      transactionManifest.consumerRef.actionBindingManifest,
+    ],
+  ] as Array<[string, JsonRecord]>) {
+    assertFileRef(ref, label, consumerRootRealPath, 'consumer');
+  }
+  for (const [label, ref] of [
+    ['transactionManifest.requirementRecordRef', transactionManifest.requirementRecordRef],
+    ['transactionManifest.attemptContextRef', transactionManifest.attemptContextRef],
+    ['transactionManifest.stageRegistryRef', transactionManifest.stageRegistryRef],
+    [
+      'transactionManifest.confirmationReceiptRefs.requirements',
+      transactionManifest.confirmationReceiptRefs.requirements,
     ],
     [
-      'requirementSetId',
-      controlledExecutionContext.requirementSetId,
-      pointer.requirementSetId,
+      'transactionManifest.confirmationReceiptRefs.architecture',
+      transactionManifest.confirmationReceiptRefs.architecture,
     ],
     [
-      'implementationAttemptId',
-      controlledExecutionContext.implementationAttemptId,
-      pointer.implementationAttemptId,
+      'transactionManifest.confirmationPageRefs.requirements',
+      transactionManifest.confirmationPageRefs.requirements,
     ],
-    ['transactionId', controlledExecutionContext.transactionId, pointer.transactionId],
-    ['contractHash', controlledExecutionContext.contractHash, pointer.contractHash],
-  ];
-  for (const [field, actual, expected] of packetBindings) {
-    if (actual !== expected) {
-      throw new Error(`current_dispatch_pointer_model_packet_mismatch:${field}`);
+    [
+      'transactionManifest.confirmationPageRefs.architecture',
+      transactionManifest.confirmationPageRefs.architecture,
+    ],
+    [
+      'transactionManifest.capabilityObservationRef',
+      transactionManifest.capabilityObservationRef,
+    ],
+    ['transactionManifest.outputs.modelPacket', transactionManifest.outputs.modelPacket],
+    ['transactionManifest.outputs.humanPrompt', transactionManifest.outputs.humanPrompt],
+    ...(transactionManifest.outputs.goalExecution
+      ? ([
+          [
+            'transactionManifest.outputs.goalExecution',
+            transactionManifest.outputs.goalExecution,
+          ],
+        ] as Array<[string, JsonRecord]>)
+      : []),
+  ] as Array<[string, JsonRecord]>) {
+    assertFileRef(ref, label, authorityRootRealPath, 'authority');
+  }
+  if (
+    requirementRecord.requirementSetId !== pointer.requirementSetId ||
+    (requirementRecord.currentAttemptId ?? requirementRecord.implementationAttemptId) !==
+      pointer.implementationAttemptId ||
+    requirementRecord.sourceDocumentHash !== pointer.sourceDocumentHash ||
+    requirementRecord.semanticModelHash !== pointer.semanticModelHash
+  ) {
+    throw new Error('current_dispatch_pointer_requirement_record_binding_mismatch');
+  }
+  for (const field of [
+    'transactionId',
+    'requirementSetId',
+    'implementationAttemptId',
+    'contractHash',
+    'sourceDocumentHash',
+    'semanticModelHash',
+  ]) {
+    const expectedField = field === 'contractHash' ? 'contractHash' : field;
+    if (attemptContext[field] !== pointer[expectedField]) {
+      throw new Error(`current_dispatch_pointer_attempt_context_mismatch:${field}`);
     }
   }
-  if (!sameFilePath(promptTransaction.manifestPath, pointer.transactionManifestRef.path)) {
-    throw new Error('current_dispatch_pointer_model_packet_manifest_path_mismatch');
-  }
+  assertModelPacketBindings({
+    pointer,
+    modelPacket,
+    transactionManifest,
+    requirementRecord,
+    authorityRootRealPath,
+  });
+  assertAuditReceiptBindings({ pointer, auditReceipt });
 }
 
 export function resolveCurrentDispatchPointer(input: {
+  authorityRoot: string;
   pointerPath: string;
   expected: CurrentDispatchPointerExpectedIdentity;
 }): CurrentDispatchPointerResolution {
+  const authorityRootRealPath = resolveRealDirectory(
+    input.authorityRoot,
+    'current_dispatch_pointer_authority_root_invalid'
+  );
   const pointerPath = path.resolve(input.pointerPath);
-  if (!fs.existsSync(pointerPath) || !fs.statSync(pointerPath).isFile()) {
-    throw new Error('current_dispatch_pointer_missing');
-  }
-  const pointer = readJsonObject(pointerPath, 'current_dispatch_pointer_json_invalid');
+  const pointerFile = readStableFile(
+    pointerPath,
+    'current_dispatch_pointer_missing',
+    'current_dispatch_pointer_readback_mismatch'
+  );
+  assertContainedRealPath(
+    authorityRootRealPath,
+    pointerFile.realPath,
+    'current_dispatch_pointer_outside_authority_root'
+  );
+  const pointer = parseJsonObject(
+    pointerFile.bytes,
+    'current_dispatch_pointer_json_invalid'
+  );
   assertValid(pointer);
   assertExpectedIdentity(pointer, input.expected);
-  assertPointerReferences(pointer);
-  const pointerHash = fileHash(pointerPath);
-  assertPointerSafeWriteReceipt(pointerPath, pointerHash);
-  const modelPacket = readJsonObject(
-    path.resolve(pointer.modelPacketRef.path),
+  const verifiedRefs = assertPointerReferences(pointer, authorityRootRealPath);
+  const pointerHash = pointerFile.hash;
+  assertPointerSafeWriteReceipt(pointerPath, pointerHash, authorityRootRealPath);
+  const modelPacket = parseJsonObject(
+    verifiedRefs.get('modelPacketRef')!.bytes,
     'current_dispatch_pointer_model_packet_json_invalid'
   );
-  const transactionManifest = readJsonObject(
-    path.resolve(pointer.transactionManifestRef.path),
+  const transactionManifest = parseJsonObject(
+    verifiedRefs.get('transactionManifestRef')!.bytes,
     'current_dispatch_pointer_transaction_manifest_json_invalid'
   );
-  assertPayloadBindings({ pointer, modelPacket, transactionManifest });
+  const auditReceipt = parseJsonObject(
+    verifiedRefs.get('auditReceiptRef')!.bytes,
+    'current_dispatch_pointer_audit_receipt_json_invalid'
+  );
+  const requirementRecord = parseJsonObject(
+    verifiedRefs.get('requirementRecordRef')!.bytes,
+    'current_dispatch_pointer_requirement_record_json_invalid'
+  );
+  const attemptContext = parseJsonObject(
+    verifiedRefs.get('attemptContextRef')!.bytes,
+    'current_dispatch_pointer_attempt_context_json_invalid'
+  );
+  assertPayloadBindings({
+    pointer,
+    modelPacket,
+    transactionManifest,
+    auditReceipt,
+    requirementRecord,
+    attemptContext,
+    authorityRootRealPath,
+  });
   return {
     pointerPath: slash(pointerPath),
     pointerHash,
@@ -325,11 +796,33 @@ export function resolveCurrentDispatchPointer(input: {
 }
 
 export function publishCurrentDispatchPointer(input: {
+  authorityRoot: string;
   targetPath: string;
   expectedPreimageHash: string | null;
   pointer: JsonRecord;
 }): CurrentDispatchPointerPublication {
+  const authorityRootRealPath = resolveRealDirectory(
+    input.authorityRoot,
+    'current_dispatch_pointer_authority_root_invalid'
+  );
   const targetPath = path.resolve(input.targetPath);
+  let existingAncestor = targetPath;
+  while (!fs.existsSync(existingAncestor)) {
+    const parent = path.dirname(existingAncestor);
+    if (parent === existingAncestor) {
+      throw new Error('current_dispatch_pointer_outside_authority_root');
+    }
+    existingAncestor = parent;
+  }
+  const prospectiveRealPath = path.resolve(
+    fs.realpathSync(existingAncestor),
+    path.relative(existingAncestor, targetPath)
+  );
+  assertContainedRealPath(
+    authorityRootRealPath,
+    prospectiveRealPath,
+    'current_dispatch_pointer_outside_authority_root'
+  );
   const previousBytes = fs.existsSync(targetPath) ? fs.readFileSync(targetPath) : null;
   const previousPointer = previousBytes
     ? (JSON.parse(previousBytes.toString('utf8')) as JsonRecord)
@@ -340,7 +833,7 @@ export function publishCurrentDispatchPointer(input: {
   }
   assertCurrentDispatchPointerReplaySafe(targetPath, Number(input.pointer.attemptSequence));
   assertValid(input.pointer);
-  assertPointerReferences(input.pointer);
+  assertPointerReferences(input.pointer, authorityRootRealPath);
   if (
     (observedPreimageHash === null && fs.existsSync(targetPath)) ||
     (observedPreimageHash !== null && fileHash(targetPath) !== observedPreimageHash)

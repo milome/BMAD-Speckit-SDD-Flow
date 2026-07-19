@@ -47,13 +47,13 @@
                   "const": 1
                 },
                 "artifactRole": {
-                  "const": "AMEND05-SAFE-WRITE-MANIFEST"
+                  "const": "SAFE-WRITE-RECEIPT-MANIFEST"
                 },
                 "targetPath": {
-                  "const": "docs/plans/evidence/loop-engineering-remediation/amend05-safe-write-receipt-manifest.json"
+                  "const": "docs/plans/evidence/loop-engineering-remediation/safe-write-receipt-manifest.json"
                 },
                 "receiptPath": {
-                  "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json"
+                  "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json"
                 },
                 "predecessorRole": {
                   "const": "not_applicable"
@@ -82,7 +82,7 @@
                   "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/G15-final-gates.receipt.json"
                 },
                 "predecessorRole": {
-                  "const": "AMEND05-SAFE-WRITE-MANIFEST"
+                  "const": "SAFE-WRITE-RECEIPT-MANIFEST"
                 }
               }
             }
@@ -241,7 +241,7 @@
           "maximum": 3
         },
         "artifactRole": {
-          "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+          "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
         },
         "targetPath": {
           "type": "string",
@@ -259,7 +259,7 @@
           "const": 2
         },
         "predecessorRole": {
-          "enum": ["not_applicable", "AMEND05-SAFE-WRITE-MANIFEST", "EVD-15"]
+          "enum": ["not_applicable", "SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15"]
         },
         "targetHash": {
           "$ref": "#/$defs/sha256"

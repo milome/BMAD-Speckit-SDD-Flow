@@ -398,9 +398,9 @@ export function auditModelPacketParity(input: {
   );
   compare(
     amendmentMismatches,
-    'amend05Bindings',
-    projection.amend05Bindings ?? null,
-    packetManifest.amend05Bindings ?? null
+    'safeWriteBindings',
+    projection.safeWriteBindings ?? null,
+    packetManifest.safeWriteBindings ?? null
   );
 
   const promptTransaction = record(packet.promptTransaction);

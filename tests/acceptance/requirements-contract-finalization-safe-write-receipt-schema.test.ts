@@ -26,11 +26,11 @@ function receipt(result: 'PASS' | 'BLOCK' = 'PASS') {
     predecessor: {
       applicable: true,
       expectedReceiptPath:
-        'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json',
+        'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json',
       receipt: {
-        path: 'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json',
+        path: 'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json',
         hash: HASH,
-        artifactRole: 'AMEND05-SAFE-WRITE-MANIFEST',
+        artifactRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
       },
     },
     target: {
@@ -40,6 +40,10 @@ function receipt(result: 'PASS' | 'BLOCK' = 'PASS') {
       minBytes: 2,
       targetExistedBefore: true,
       previousHash: HASH,
+      backupApplicability: 'required',
+      backupPath: 'docs/plans/evidence/loop-engineering-remediation/G15-final-gates.json.backup-1',
+      backupHash: HASH,
+      nonexistenceProofHash: null,
       promotedHash: HASH,
       readbackHash: HASH,
     },
@@ -97,6 +101,27 @@ describe('requirements-contract-finalization-safe-write-receipt/v1', () => {
     delete (incomplete.target as Record<string, unknown>).readbackHash;
 
     expect(validate(incomplete)).toBe(false);
+  });
+
+  it('requires backup proof for replacement and nonexistence proof for creation', () => {
+    const validate = validator();
+    const created = receipt('PASS');
+    Object.assign(created.target as Record<string, unknown>, {
+      targetExistedBefore: false,
+      previousHash: null,
+      backupApplicability: 'not_applicable',
+      backupPath: null,
+      backupHash: null,
+      nonexistenceProofHash: HASH,
+    });
+    const replacementWithoutBackup = receipt('PASS');
+    (replacementWithoutBackup.target as Record<string, unknown>).backupPath = null;
+    const creationWithoutProof = structuredClone(created);
+    (creationWithoutProof.target as Record<string, unknown>).nonexistenceProofHash = null;
+
+    expect(validate(created), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate(replacementWithoutBackup)).toBe(false);
+    expect(validate(creationWithoutProof)).toBe(false);
   });
 
   it('requires an archived draft for BLOCK and forbids PASS-only target facts', () => {

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-production-bypass-evidence-materializer-input.schema.json",
+  "title": "Requirements Contract Production Bypass Evidence Materializer Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requirementRecordPath",
+    "transactionId",
+    "implementationAttemptId",
+    "attemptContextPath",
+    "pointerReceiptPath",
+    "implementationEvidencePath",
+    "evidenceRoot",
+    "contractHash",
+    "sourceHash",
+    "semanticModelHash"
+  ],
+  "properties": {
+    "requirementRecordPath": {
+      "$ref": "#/$defs/path"
+    },
+    "transactionId": {
+      "$ref": "#/$defs/id"
+    },
+    "implementationAttemptId": {
+      "$ref": "#/$defs/id"
+    },
+    "attemptContextPath": {
+      "$ref": "#/$defs/path"
+    },
+    "pointerReceiptPath": {
+      "$ref": "#/$defs/path"
+    },
+    "implementationEvidencePath": {
+      "$ref": "#/$defs/path"
+    },
+    "evidenceRoot": {
+      "$ref": "#/$defs/path"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-consumer-registry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "owner",
+    "registryHash",
+    "validationModes",
+    "discoveryRules",
+    "consumers",
+    "discovery",
+    "authority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-consumer-registry/v2" },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "const": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts"
+        },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "registryHash": { "$ref": "#/$defs/hash" },
+    "validationModes": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "draft" },
+        { "const": "confirmation-ready" },
+        { "const": "execution" },
+        { "const": "closeout" }
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "discoveryRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ruleId", "root", "fileNamePattern"],
+        "properties": {
+          "ruleId": { "type": "string", "minLength": 1 },
+          "root": { "type": "string", "minLength": 1 },
+          "fileNamePattern": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "consumers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/consumer" }
+    },
+    "discovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discoveredPaths", "declaredPaths", "unregisteredConsumerCount"],
+      "properties": {
+        "discoveredPaths": { "$ref": "#/$defs/pathList" },
+        "declaredPaths": { "$ref": "#/$defs/pathList" },
+        "unregisteredConsumerCount": { "const": 0 }
+      }
+    },
+    "authority": { "const": "none" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "pathList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consumerId",
+        "path",
+        "pathHash",
+        "inputRole",
+        "parserRef",
+        "schemaRef",
+        "validatorRef",
+        "projectionRef",
+        "supportedModes",
+        "readFacadeRef",
+        "adapterRef",
+        "sourceFormatVersion",
+        "legacyReadEligibility",
+        "directConfirmationFieldRead",
+        "authority"
+      ],
+      "properties": {
+        "consumerId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "path": { "type": "string", "minLength": 1 },
+        "pathHash": { "$ref": "#/$defs/hash" },
+        "inputRole": { "type": "string", "minLength": 1 },
+        "parserRef": { "type": "string", "minLength": 1 },
+        "schemaRef": { "type": "string", "minLength": 1 },
+        "validatorRef": { "type": "string", "minLength": 1 },
+        "projectionRef": { "type": "string", "minLength": 1 },
+        "supportedModes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["draft", "confirmation-ready", "execution", "closeout"] }
+        },
+        "readFacadeRef": { "type": "string", "minLength": 1 },
+        "adapterRef": { "type": "string", "minLength": 1 },
+        "sourceFormatVersion": { "enum": ["v1", "v2", "v1_or_v2", "discovery"] },
+        "legacyReadEligibility": { "enum": ["not_applicable", "registered_inventory_only"] },
+        "confirmationComposition": { "$ref": "#/$defs/confirmationComposition" },
+        "closeoutComposition": { "$ref": "#/$defs/closeoutComposition" },
+        "directConfirmationFieldRead": { "const": false },
+        "authority": { "const": "none" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "supportedModes": { "contains": { "const": "confirmation-ready" } }
+            }
+          },
+          "then": { "required": ["confirmationComposition"] },
+          "else": { "not": { "required": ["confirmationComposition"] } }
+        },
+        {
+          "if": {
+            "properties": {
+              "supportedModes": { "contains": { "const": "closeout" } }
+            }
+          },
+          "then": { "required": ["closeoutComposition"] },
+          "else": { "not": { "required": ["closeoutComposition"] } }
+        }
+      ]
+    },
+    "confirmationComposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codec",
+        "schema",
+        "validator",
+        "projector",
+        "renderInputSchema",
+        "renderInputProjector",
+        "renderer",
+        "reference",
+        "rendererSpecification"
+      ],
+      "properties": {
+        "codec": { "const": "implementation_confirmation_codec" },
+        "schema": { "const": "implementation_confirmation_schema" },
+        "validator": { "const": "implementation_confirmation_validator" },
+        "projector": { "const": "implementation_confirmation_projector" },
+        "renderInputSchema": { "const": "confirmation_render_input_schema" },
+        "renderInputProjector": { "const": "confirmation_render_input_projector" },
+        "renderer": { "const": "confirmation_renderer" },
+        "reference": { "const": "implementation_confirmation_reference" },
+        "rendererSpecification": { "const": "confirmation_renderer_specification" }
+      }
+    },
+    "closeoutComposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packetSchema", "renderer", "readbackReceiptSchema", "finalResponseProjector"],
+      "properties": {
+        "packetSchema": { "const": "closeout_packet_schema" },
+        "renderer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["assetId", "symbolRef"],
+          "properties": {
+            "assetId": { "const": "closeout_renderer" },
+            "symbolRef": { "const": "renderRequirementsContractTerminalCloseout" }
+          }
+        },
+        "readbackReceiptSchema": { "const": "closeout_readback_receipt_schema" },
+        "finalResponseProjector": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["assetId", "symbolRef"],
+          "properties": {
+            "assetId": { "const": "closeout_final_response_projector" },
+            "symbolRef": { "const": "projectRequirementsContractTerminalCloseout" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "requirements-contract-judge-provider-registry/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
+    "hash": "sha256:4e74e49c66d67d3cba9a6bbaad4021d95727457176293b573bc64888495abfe0"
+  },
+  "sourceConfig": {
+    "path": "_bmad/_config/governance-remediation.yaml",
+    "hash": "sha256:c10bcfcf9c71afe6d5b207af56e51a36e9b89faad85c1ce900b8655fb50a6bad"
+  },
+  "activeProviderRef": "local-sonnet-judge",
+  "providers": [
+    {
+      "providerRef": "local-sonnet-judge",
+      "provider": {
+        "enabled": true,
+        "transport": "openai-compatible",
+        "apiStyle": "chat_completions",
+        "model": "claude-sonnet-5",
+        "credentialRef": "local-sonnet-judge",
+        "endpoint": {
+          "baseUrl": "http://localhost:3010",
+          "resolutionMode": "transport_managed",
+          "routingOwnership": "transport_adapter",
+          "upstreamVersioning": "gateway_managed",
+          "explicitOperationPath": null
+        },
+        "authentication": {
+          "type": "bearer",
+          "sensitivity": "placeholder",
+          "arbitraryNonEmptyValueAllowed": true
+        },
+        "auditPolicy": {
+          "independenceClass": "different_provider_different_model",
+          "blindReview": true,
+          "allowPassAuthority": false,
+          "toolsAllowed": false,
+          "implementationWritesAllowed": false
+        },
+        "requestPolicy": {
+          "timeoutMs": 120000,
+          "maximumAttempts": 1,
+          "structuredResponseRequired": true
+        }
+      },
+      "adapterRef": "OpenAICompatibleJudgeAdapter"
+    }
+  ],
+  "registryHash": "sha256:a7c15e3eaf7d59910e05ec4831ab310bc1be9f323884a797fd7556431a78c494"
+}

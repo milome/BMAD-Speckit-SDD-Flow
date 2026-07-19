@@ -46,7 +46,12 @@ describe('requirements contract Judge credential initializer', () => {
       });
       const credentialPath = path.join(root, 'private/judge.credentials.yaml');
       const credential = yaml.load(readFileSync(credentialPath, 'utf8')) as {
-        credentials: { active: { value: string } };
+        providers: {
+          active: {
+            authenticationType: 'bearer';
+            apiKey: string;
+          };
+        };
       };
       const serializedReceipt = JSON.stringify(receipt);
 
@@ -56,7 +61,8 @@ describe('requirements contract Judge credential initializer', () => {
       expect(receipt.redactionDecision).toBe('pass');
       expect(receipt.platformPermissionDecision).toBe('pass');
       expect(receipt.decision).toBe('pass');
-      expect(serializedReceipt).not.toContain(credential.credentials.active.value);
+      expect(credential.providers.active.authenticationType).toBe('bearer');
+      expect(serializedReceipt).not.toContain(credential.providers.active.apiKey);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

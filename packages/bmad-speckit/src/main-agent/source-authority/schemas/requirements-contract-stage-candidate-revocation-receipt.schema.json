@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "requirements-contract-stage-five-star-candidate-revocation-receipt/v1",
+  "$id": "requirements-contract-stage-candidate-revocation-receipt/v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -13,7 +13,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "requirements-contract-stage-five-star-candidate-revocation-receipt/v1"
+      "const": "requirements-contract-stage-candidate-revocation-receipt/v1"
     },
     "candidateReceipt": { "$ref": "#/$defs/ref" },
     "auditAttemptId": { "type": "string", "minLength": 1 },

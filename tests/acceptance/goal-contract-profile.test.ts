@@ -65,7 +65,7 @@ describe('shared goal contract profile', () => {
     expect(output.issues).toEqual([]);
     expect(output.templateHash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(output.profileHash).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(output.profileVersion).toBe('2.0.0');
+    expect(output.profileVersion).toBe(readJson<{ profileVersion: string }>(PROFILE).profileVersion);
   });
 
   it('uses one canonical template hash for LF, CRLF, and leading BOM template text', () => {
@@ -191,10 +191,13 @@ describe('shared goal contract profile', () => {
 
   it('keeps profile as a machine index rather than full Markdown prose', () => {
     const profileText = fs.readFileSync(PROFILE, 'utf8');
-    const templateText = fs.readFileSync(TEMPLATE, 'utf8');
     const profile = readJson<Record<string, any>>(PROFILE);
     const lock = readJson<Record<string, any>>(LOCK);
 
+    expect(profileText.trimStart()).toMatch(/^\{/u);
+    expect(profileText).not.toContain('<!-- goal-slot:');
+    expect(profileText).not.toMatch(/^\s*#{1,6}\s+/mu);
+    expect(profileText).not.toContain('```');
     expect(profile.governanceRules.profileIsGenerationSource).toBe(false);
     expect(profile.governanceRules.templateIsHumanCanonical).toBe(true);
     expect(profile.invariantFragments).toEqual(
@@ -207,7 +210,6 @@ describe('shared goal contract profile', () => {
     expect(profileText).not.toContain(
       'Every checkbox must have direct evidence before completion is claimed.'
     );
-    expect(profileText.length).toBeLessThan(templateText.length);
     expect(lock.templateHash).toBe(profile.templateHash);
     expect(lock.profileHash).toBe(profile.profileHash);
   });

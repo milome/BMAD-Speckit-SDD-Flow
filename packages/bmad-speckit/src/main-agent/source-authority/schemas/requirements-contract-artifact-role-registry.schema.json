@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-artifact-role-registry/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "owner", "registryHash", "classificationSchemaVersion", "allowedRoles", "allowedAuthoritySources", "rolePolicies", "applicabilityRules", "authority"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-artifact-role-registry/v1"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "registryHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "classificationSchemaVersion": {
+      "const": "requirements-contract-artifact-role/v1"
+    },
+    "allowedRoles": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "product_prd" },
+        { "const": "requirement_source_prd" },
+        { "const": "discovery_envelope" }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "allowedAuthoritySources": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "explicit_request" },
+        { "const": "registered_workflow" },
+        { "const": "decision_receipt" }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "rolePolicies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product_prd", "requirement_source_prd", "discovery_envelope"],
+      "properties": {
+        "product_prd": {
+          "$ref": "#/$defs/productPrdPolicy"
+        },
+        "requirement_source_prd": {
+          "$ref": "#/$defs/requirementSourcePrdPolicy"
+        },
+        "discovery_envelope": {
+          "$ref": "#/$defs/discoveryEnvelopePolicy"
+        }
+      }
+    },
+    "applicabilityRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoritySelection", "authorityAgreement", "heuristicSignals"],
+      "properties": {
+        "authoritySelection": {
+          "const": "explicit_request_or_registered_workflow_or_decision_receipt"
+        },
+        "authorityAgreement": {
+          "const": "all_authorities_must_select_one_role"
+        },
+        "heuristicSignals": {
+          "const": "non_authoritative"
+        }
+      }
+    },
+    "authority": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "productPrdPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityClass", "rendererRef", "implementationConfirmationPolicy", "stableRequirementSetIdPolicy", "requirementRecordRegistrationPolicy", "finalImplementationAuthority"],
+      "properties": {
+        "authorityClass": { "const": "product_background" },
+        "rendererRef": { "const": "registered_product_prd_renderer" },
+        "implementationConfirmationPolicy": { "const": "forbidden" },
+        "stableRequirementSetIdPolicy": { "const": "not_required" },
+        "requirementRecordRegistrationPolicy": { "const": "forbidden" },
+        "finalImplementationAuthority": { "const": "none" }
+      }
+    },
+    "requirementSourcePrdPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityClass", "rendererRef", "implementationConfirmationPolicy", "stableRequirementSetIdPolicy", "requirementRecordRegistrationPolicy", "finalImplementationAuthority"],
+      "properties": {
+        "authorityClass": { "const": "implementation_semantic_authority" },
+        "rendererRef": { "const": "canonical_source_prd_renderer" },
+        "implementationConfirmationPolicy": { "const": "required" },
+        "stableRequirementSetIdPolicy": { "const": "required" },
+        "requirementRecordRegistrationPolicy": { "const": "required" },
+        "finalImplementationAuthority": { "const": "source_authority" }
+      }
+    },
+    "discoveryEnvelopePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityClass", "rendererRef", "implementationConfirmationPolicy", "stableRequirementSetIdPolicy", "requirementRecordRegistrationPolicy", "finalImplementationAuthority"],
+      "properties": {
+        "authorityClass": { "const": "none" },
+        "rendererRef": { "const": "discovery_envelope_renderer" },
+        "implementationConfirmationPolicy": { "const": "forbidden" },
+        "stableRequirementSetIdPolicy": { "const": "not_required" },
+        "requirementRecordRegistrationPolicy": { "const": "forbidden" },
+        "finalImplementationAuthority": { "const": "none" }
+      }
+    }
+  }
+}

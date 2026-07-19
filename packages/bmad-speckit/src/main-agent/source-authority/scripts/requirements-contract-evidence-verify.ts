@@ -7,6 +7,10 @@ import {
   sha256,
   slash,
 } from './requirements-contract-governed-write';
+import {
+  deriveRequirementsContractFrozenUniverse,
+  validateRequirementsContractEvidenceUniverse,
+} from './requirements-contract-frozen-universe';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
 
@@ -25,13 +29,6 @@ const SELF_HASH_KEYS = new Set([
   'implementationEvidenceHash',
 ]);
 
-function ids(prefix: string, start: number, end: number, width: number): string[] {
-  return Array.from(
-    { length: end - start + 1 },
-    (_, index) => `${prefix}${String(start + index).padStart(width, '0')}`
-  );
-}
-
 function readJson(filePath: string): JsonRecord {
   const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -47,16 +44,6 @@ function resolveWithin(root: string, value: string): string {
     throw new Error(`evidence_verify_path_escape:${value}`);
   }
   return resolved;
-}
-
-function exactUniverse(actual: unknown, expected: string[], label: string): void {
-  if (
-    !Array.isArray(actual) ||
-    actual.some((entry) => typeof entry !== 'string') ||
-    canonicalJson(actual) !== canonicalJson(expected)
-  ) {
-    throw new Error(`evidence_verify_${label}_universe_mismatch`);
-  }
 }
 
 function validateBundleSchema(bundle: JsonRecord): void {
@@ -188,6 +175,29 @@ function commandId(): string {
   return value;
 }
 
+function resolveContractPath(root: string, bundle: JsonRecord): string {
+  const receiptPath = bundle.contractPromotionReadbackReceiptPath;
+  if (typeof receiptPath !== 'string' || receiptPath.length === 0) {
+    throw new Error('evidence_verify_contract_binding_missing');
+  }
+  const receipt = readJson(resolveWithin(root, receiptPath));
+  if (
+    receipt.schemaVersion !== 'contract-promotion-readback-receipt/v1' ||
+    receipt.decision !== 'pass' ||
+    receipt.readbackVerified !== true ||
+    typeof receipt.targetPath !== 'string' ||
+    receipt.expectedHash !== bundle.contractHash ||
+    receipt.observedHash !== bundle.contractHash
+  ) {
+    throw new Error('evidence_verify_contract_binding_invalid');
+  }
+  const contractPath = resolveWithin(root, receipt.targetPath);
+  if (fileHash(contractPath) !== bundle.contractHash) {
+    throw new Error('evidence_verify_contract_hash_mismatch');
+  }
+  return contractPath;
+}
+
 export async function requirementsContractEvidenceVerifyCommand(
   options: RequirementsContractEvidenceVerifyOptions
 ): Promise<JsonRecord> {
@@ -195,6 +205,7 @@ export async function requirementsContractEvidenceVerifyCommand(
   const bundlePath = resolveWithin(root, options.bundle);
   const bundle = readJson(bundlePath);
   validateBundleSchema(bundle);
+  const universe = deriveRequirementsContractFrozenUniverse(resolveContractPath(root, bundle));
   const auditIds = [
     bundle.auditAttemptId,
     bundle.architectureAuditAttemptId,
@@ -204,23 +215,28 @@ export async function requirementsContractEvidenceVerifyCommand(
   if (new Set(auditIds).size !== auditIds.length) {
     throw new Error('evidence_verify_audit_identity_reuse');
   }
-  exactUniverse(bundle.coverage.storyIds, ids('S', 1, 183, 3), 'story');
-  exactUniverse(bundle.coverage.acceptanceIds, ids('AC-', 1, 219, 2), 'acceptance');
-  exactUniverse(bundle.coverage.traceIds, ids('TR-', 1, 219, 2), 'trace');
-  exactUniverse(bundle.coverage.commandIds, ids('CMD-', 1, 36, 2), 'command');
+  validateRequirementsContractEvidenceUniverse(
+    {
+      sourceAmendmentHashes: bundle.sourceAmendmentHashes,
+      coverage: bundle.coverage,
+      evidenceIndex: bundle.evidenceIndex,
+      artifactIndex: bundle.artifactIndex,
+    },
+    universe
+  );
   const verifiedArtifactCount = verifyIndex(
     root,
     bundlePath,
     bundle.artifactIndex,
     'artifactId',
-    ids('ARTIFACT-', 2, 54, 2)
+    universe.artifactIndexIds
   );
   const verifiedEvidenceCount = verifyIndex(
     root,
     bundlePath,
     bundle.evidenceIndex,
     'evidenceId',
-    ids('EVD-', 0, 16, 2)
+    universe.evidenceIds
   );
   const criticalMetricCount = verifyCriticalMetrics(bundle.criticalMetrics);
   const externalBindingCount = verifyNestedBindings(root, bundlePath, bundle);

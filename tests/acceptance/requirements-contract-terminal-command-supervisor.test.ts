@@ -1,11 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractTerminalCommandSupervisorCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-terminal-command-supervisor';
@@ -33,25 +27,22 @@ describe('requirements contract terminal command supervisor', () => {
     const implementationAttemptId = fixture.bundle.implementationAttemptId;
     const declarationHash = sha256('declaration');
     const commandIds = terminalCommandIds();
-    const recordPath =
-      `_bmad-output/runtime/requirement-records/${requirementSetId}/requirement-record.json`;
+    const recordPath = `_bmad-output/runtime/requirement-records/${requirementSetId}/requirement-record.json`;
     try {
       rmSync(path.join(root, fixture.terminalReceiptPath), { force: true });
       const recordHash = write(root, recordPath, '{"schemaVersion":"requirement-record/v1"}\n');
       const contractPath = fixture.contractPath;
-      const contractText = [
+      fixture.bundle.contractHash = fixture.writeContractWithCommandRows([
         `| ${commandIds[0]} | \`node -e "require('fs').appendFileSync('terminal-order.txt','${commandIds[0]}\\n')"\` | Repository root | pass | AC-01 |`,
         `| ${commandIds[1]} | \`node -e "require('fs').appendFileSync('terminal-order.txt','${commandIds[1]}\\n')"\` | Repository root | pass | AC-01 |`,
-        '',
-      ].join('\n');
-      fixture.bundle.contractHash = write(root, contractPath, contractText);
+      ]);
       write(root, fixture.bundlePath, `${JSON.stringify(fixture.bundle)}\n`);
       const roles = [
         [
-          'AMEND05-SAFE-WRITE-MANIFEST',
-          'amend05-safe-write-manifest',
-          `${base}/amend05-safe-write-receipt-manifest.json`,
-          `${base}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+          'SAFE-WRITE-RECEIPT-MANIFEST',
+          'safe-write-receipt-manifest',
+          `${base}/safe-write-receipt-manifest.json`,
+          `${base}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
           'not_applicable',
         ],
         [
@@ -59,7 +50,7 @@ describe('requirements contract terminal command supervisor', () => {
           'goal-task-evidence',
           `${base}/G15-final-gates.json`,
           `${base}/finalization-receipts/G15-final-gates.receipt.json`,
-          `${base}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+          `${base}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
         ],
         [
           'ARTIFACT-01',
@@ -100,10 +91,18 @@ describe('requirements contract terminal command supervisor', () => {
             minBytes: 2,
             targetExistedBefore: false,
             previousHash: null,
+            backupApplicability: 'not_applicable',
+            backupPath: null,
+            backupHash: null,
+            nonexistenceProofHash: sha256(`terminal-fixture-nonexistence/v1\n${targetPath}\n`),
             promotedHash: targetHash,
             readbackHash: targetHash,
           },
-          draft: { path: `${base}/.finalization-staging/${artifactRole}.json`, hash: targetHash, bytes: targetText.length },
+          draft: {
+            path: `${base}/.finalization-staging/${artifactRole}.json`,
+            hash: targetHash,
+            bytes: targetText.length,
+          },
           writerIdentity: 'requirements-contract-finalization-safe-writer/v1',
           result: 'PASS',
           selectedReceiptPath: receiptPath,

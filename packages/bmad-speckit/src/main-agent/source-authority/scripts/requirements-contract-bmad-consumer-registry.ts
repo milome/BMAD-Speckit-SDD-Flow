@@ -57,6 +57,8 @@ const CONSUMERS: readonly RequirementsContractBmadConsumer[] = Object.freeze([
 ]);
 
 export const REQUIREMENTS_CONTRACT_BMAD_CONSUMERS = CONSUMERS;
+export const REQUIREMENTS_CONTRACT_BMAD_CONSUMER_REGISTRY_HASH =
+  sha256Stable(REQUIREMENTS_CONTRACT_BMAD_CONSUMERS);
 
 export function getRequirementsContractBmadConsumer(
   consumerId: RequirementsContractBmadConsumerId
@@ -65,3 +67,4 @@ export function getRequirementsContractBmadConsumer(
   if (!consumer) throw new Error(`unregistered requirements-contract BMAD consumer: ${consumerId}`);
   return consumer;
 }
+import { sha256Stable } from './requirements-contract-semantic-resolver';

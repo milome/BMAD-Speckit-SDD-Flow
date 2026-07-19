@@ -23,6 +23,11 @@ type ActionBinding = {
   behaviorTestRefs: FileRef[];
   packageDistRef: FileRef;
   installedSurfaceRefs: FileRef[];
+  runtimeRefs?: Array<{
+    role: string;
+    packagePath: string;
+    hash: string;
+  }>;
   routingOnly: boolean;
 };
 
@@ -81,6 +86,7 @@ const CONTRACT_ACTION_IDS = [
   'requirements-contract-evidence-verify',
   'requirements-contract-bundle-publish',
   'requirements-contract-production-activate',
+  'requirements-contract-production-bypass-evidence-materialize',
   'requirements-contract-production-bypass-verify',
   'requirements-contract-judge-provider-smoke',
   'requirements-contract-stage-five-star-audit',
@@ -123,9 +129,7 @@ function expectRepositoryFileRef(ref: FileRef): void {
 
 function registeredRuntimeActionIds(): string[] {
   const cliSource = readFileSync(CLI_PATH, 'utf8');
-  return [
-    ...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu),
-  ]
+  return [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
     .map((match) => match.groups?.actionId ?? '')
     .filter(Boolean)
     .sort();
@@ -147,12 +151,12 @@ describe('requirements contract package runtime action binding', () => {
     if (!manifest) return;
 
     const actionIds = manifest.actions.map((action) => action.actionId).sort();
-    expect(actionIds, 'manifest action universe must equal the frozen 20-action set').toEqual(
+    expect(actionIds, 'manifest action universe must equal the frozen 21-action set').toEqual(
       FROZEN_ACTION_IDS
     );
     expect(
       registeredRuntimeActionIds(),
-      'CLI action universe must equal the frozen 20-action set'
+      'CLI action universe must equal the frozen 21-action set'
     ).toEqual(FROZEN_ACTION_IDS);
     expect(manifest.actionUniverseHash).toBe(actionUniverseHash(FROZEN_ACTION_IDS));
     expect(new Set(actionIds).size).toBe(actionIds.length);
@@ -201,9 +205,9 @@ describe('requirements contract package runtime action binding', () => {
       action.behaviorTestRefs.forEach(expectRepositoryFileRef);
       expect(action.packageDistRef.hash).toBe(action.distHandlerRef.hash);
       expect(action.installedSurfaceRefs.length).toBeGreaterThan(0);
-      expect(action.installedSurfaceRefs.every((ref) => ref.hash === action.packageDistRef.hash)).toBe(
-        true
-      );
+      expect(
+        action.installedSurfaceRefs.every((ref) => ref.hash === action.packageDistRef.hash)
+      ).toBe(true);
       expect(action.routingOnly).toBe(false);
     }
 
@@ -229,9 +233,7 @@ describe('requirements contract package runtime action binding', () => {
     const independentlyRecomputedInstalledMismatchCount = manifest.actions.filter((action) =>
       action.installedSurfaceRefs.some((ref) => {
         const installedSurfacePath = path.resolve(ROOT, 'packages', 'bmad-speckit', ref.path);
-        return (
-          !existsSync(installedSurfacePath) || fileHash(installedSurfacePath) !== ref.hash
-        );
+        return !existsSync(installedSurfacePath) || fileHash(installedSurfacePath) !== ref.hash;
       })
     ).length;
 
@@ -248,6 +250,49 @@ describe('requirements contract package runtime action binding', () => {
         independentlyRecomputedInstalledMismatchCount === 0
         ? 'pass'
         : 'block'
+    );
+  });
+
+  it('binds current Recovery and Judge runtime owners without legacy schema paths', () => {
+    const manifest = readManifest();
+    if (!manifest) return;
+
+    const stageAudit = manifest.actions.find(
+      (action) => action.actionId === 'requirements-contract-stage-five-star-audit'
+    );
+    const reverseAudit = manifest.actions.find(
+      (action) => action.actionId === 'requirements-contract-reverse-audit'
+    );
+    expect(stageAudit).toBeDefined();
+    expect(reverseAudit).toBeDefined();
+    if (!stageAudit || !reverseAudit) return;
+
+    const stageOutputPaths = stageAudit.outputSchemaRefs.map((ref) => ref.path);
+    expect(stageOutputPaths).toContain(
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-stage-candidate-revocation-receipt.schema.json'
+    );
+    expect(stageOutputPaths).not.toContain(
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-stage-five-star-candidate-revocation-receipt.schema.json'
+    );
+
+    expect(reverseAudit.inputSchemaRefs.map((ref) => ref.path)).toEqual(
+      expect.arrayContaining([
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-runtime.schema.json',
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credentials.schema.json',
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-provider-registry.schema.json',
+      ])
+    );
+    expect(reverseAudit.outputSchemaRefs.map((ref) => ref.path)).toContain(
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json'
+    );
+    expect(reverseAudit.runtimeRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: 'judge-credential-resolver' }),
+        expect.objectContaining({ role: 'judge-provider-registry' }),
+        expect.objectContaining({ role: 'openai-compatible-judge-adapter' }),
+        expect.objectContaining({ role: 'anthropic-compatible-judge-adapter' }),
+        expect.objectContaining({ role: 'judge-provider-registry-projection' }),
+      ])
     );
   });
 });

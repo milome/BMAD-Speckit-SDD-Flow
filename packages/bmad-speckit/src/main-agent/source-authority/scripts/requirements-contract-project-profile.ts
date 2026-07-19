@@ -30,13 +30,24 @@ export type RequirementsContractProjectKind =
   | 'governance_framework'
   | 'hybrid';
 
+export const REQUIREMENTS_CONTRACT_PROJECT_KINDS: readonly RequirementsContractProjectKind[] =
+  ['consumer_product', 'governance_framework', 'hybrid'];
+
+export type RequirementsContractProjectClassificationAuthorityKind =
+  | 'install_manifest'
+  | 'registered_architecture_record'
+  | 'decision_receipt';
+
+export const REQUIREMENTS_CONTRACT_PROJECT_CLASSIFICATION_AUTHORITY_KINDS: readonly RequirementsContractProjectClassificationAuthorityKind[] =
+  ['install_manifest', 'registered_architecture_record', 'decision_receipt'];
+
 export interface RequirementsContractProjectProfile {
   schemaVersion: 'requirements-contract-project-profile/v1';
   projectKind: RequirementsContractProjectKind;
   owningSystem: string;
   governanceFramework: string;
   classificationAuthority: {
-    kind: 'install_manifest' | 'registered_architecture_record' | 'decision_receipt';
+    kind: RequirementsContractProjectClassificationAuthorityKind;
     ref: string;
     hash: string;
   };
@@ -51,6 +62,74 @@ export type RequirementsContractDiagramView =
   | 'data_security_flow'
   | 'scope_boundary'
   | 'governance_flow';
+
+export const REQUIREMENTS_CONTRACT_DIAGRAM_POLICY = {
+  sequenceFirst: true,
+  views: [
+    {
+      view: 'primary_business_sequence',
+      consumerProductPolicy: 'required_when_critical_interaction',
+    },
+    {
+      view: 'failure_compensation_sequence',
+      consumerProductPolicy: 'required_when_failure_or_compensation_semantics',
+    },
+    {
+      view: 'state_lifecycle',
+      consumerProductPolicy: 'required_when_authorized_state_transition',
+    },
+    {
+      view: 'deployment_delta',
+      consumerProductPolicy: 'required_when_deployment_semantics_change',
+    },
+    {
+      view: 'data_security_flow',
+      consumerProductPolicy: 'required_when_data_or_security_semantics_change',
+    },
+    {
+      view: 'scope_boundary',
+      consumerProductPolicy: 'table_unless_decision_receipt',
+    },
+    {
+      view: 'governance_flow',
+      consumerProductPolicy: 'forbidden',
+    },
+  ] as const satisfies ReadonlyArray<{
+    view: RequirementsContractDiagramView;
+    consumerProductPolicy: string;
+  }>,
+  readability: {
+    minFontPx: 14,
+    minParticipantGapPx: 24,
+    minMessageRowHeightPx: 28,
+    scale: 1,
+  },
+  decomposition: {
+    maxParticipants: 8,
+    maxMessages: 25,
+    maxControlBlocks: 5,
+  },
+  syntheticFallbackAllowed: false,
+} as const;
+
+export const REQUIREMENTS_CONTRACT_PROJECT_PROFILE_COMPONENT_ROLES = [
+  'project_profile_schema',
+  'project_profile_resolver',
+  'diagram_applicability_schema',
+  'diagram_applicability_planner',
+  'sequence_contract_schema',
+  'sequence_compiler',
+  'diagram_set_schema',
+  'diagram_set_planner',
+  'mermaid_projection',
+  'sequence_trace_compiler',
+  'deployment_model_schema',
+  'deployment_delta_schema',
+  'deployment_model',
+  'deployment_delta',
+  'observed_sequence_producer',
+  'validation_facade',
+] as const;
 
 export interface RequirementsContractDiagramApplicability {
   schemaVersion: 'requirements-contract-diagram-applicability/v1';
@@ -91,25 +170,15 @@ const SOURCE_IDENTITY_AUTHORITY_KINDS = new Set<RequirementSourceIdentityAuthori
   'discovery_session_receipt',
   'legacy_migration_receipt',
 ]);
-const PROJECT_KINDS = new Set<RequirementsContractProjectKind>([
-  'consumer_product',
-  'governance_framework',
-  'hybrid',
-]);
-const PROJECT_CLASSIFICATION_AUTHORITY_KINDS = new Set([
-  'install_manifest',
-  'registered_architecture_record',
-  'decision_receipt',
-]);
-const DIAGRAM_VIEWS: RequirementsContractDiagramView[] = [
-  'primary_business_sequence',
-  'failure_compensation_sequence',
-  'state_lifecycle',
-  'deployment_delta',
-  'data_security_flow',
-  'scope_boundary',
-  'governance_flow',
-];
+const PROJECT_KINDS = new Set<RequirementsContractProjectKind>(
+  REQUIREMENTS_CONTRACT_PROJECT_KINDS
+);
+const PROJECT_CLASSIFICATION_AUTHORITY_KINDS =
+  new Set<RequirementsContractProjectClassificationAuthorityKind>(
+    REQUIREMENTS_CONTRACT_PROJECT_CLASSIFICATION_AUTHORITY_KINDS
+  );
+const DIAGRAM_VIEWS: RequirementsContractDiagramView[] =
+  REQUIREMENTS_CONTRACT_DIAGRAM_POLICY.views.map(({ view }) => view);
 
 function schemaPath(fileName: string): string {
   const candidates = [

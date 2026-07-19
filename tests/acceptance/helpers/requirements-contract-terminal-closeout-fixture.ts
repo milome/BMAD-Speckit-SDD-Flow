@@ -28,6 +28,52 @@ export function writeJson(root: string, relativePath: string, value: unknown) {
   return { path: relativePath, hash: sha256(serialized), decision: 'PASS' };
 }
 
+function writeText(root: string, relativePath: string, value: string) {
+  const target = path.join(root, relativePath);
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, value, 'utf8');
+  return { path: relativePath, hash: sha256(value), decision: 'PASS' };
+}
+
+function frozenContractText(sourceAmendmentHashes: string[]) {
+  const amendmentIds = ids('AMEND-', 1, sourceAmendmentHashes.length, 2);
+  return [
+    '# Goal Execution Contract',
+    '',
+    '<!-- goal-slot:frontMatter required dynamic=frontMatter -->',
+    '---',
+    'sourceObligationRange: S001-S188',
+    `sourceAmendmentId: ${amendmentIds.join('+')}`,
+    ...amendmentIds.flatMap((amendmentId, index) => {
+      const key = amendmentId.toLowerCase().replace('-', '');
+      return [
+        `${key}Authority: fixture/${amendmentId}`,
+        `${key}SourceHash: ${sourceAmendmentHashes[index]}`,
+      ];
+    }),
+    'taskRange: G00-G15',
+    'acceptanceRange: AC-01-AC-226',
+    '---',
+    '<!-- /goal-slot:frontMatter -->',
+    '',
+    'The effective universes remain exactly:',
+    '',
+    '```text',
+    'G00-G15',
+    'S001-S188',
+    'AC-01-AC-226',
+    'TR-01-TR-226',
+    'CMD-01-CMD-37',
+    'EVD-00-EVD-16',
+    'ARTIFACT-01-ARTIFACT-56',
+    'DSA-01-DSA-16',
+    'MS-01-MS-75',
+    'STAGE-01-STAGE-11',
+    '```',
+    '',
+  ].join('\n');
+}
+
 export function terminalCommandIds() {
   const schema = JSON.parse(
     readFileSync(
@@ -46,11 +92,16 @@ export function terminalCommandIds() {
 export function createTerminalCloseoutFixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'requirements-terminal-closeout-'));
   const contractPath =
-    'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
-  const contractRef = writeJson(root, contractPath, {
-    schemaVersion: 'requirements-contract-test-contract/v1',
-  });
-  const artifactIndex = ids('ARTIFACT-', 2, 54, 2).map((artifactId) => ({
+    'docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md';
+  const sourceAmendmentHashes = ids('AMEND-', 1, 13, 2).map((id) => sha256(id));
+  const contractRef = writeText(root, contractPath, frozenContractText(sourceAmendmentHashes));
+  const writeContractWithCommandRows = (commandRows: string[]) =>
+    writeText(
+      root,
+      contractPath,
+      `${frozenContractText(sourceAmendmentHashes)}${commandRows.join('\n')}\n`
+    ).hash;
+  const artifactIndex = ids('ARTIFACT-', 2, 56, 2).map((artifactId) => ({
     artifactId,
     ...writeJson(root, `artifacts/${artifactId}.json`, {
       schemaVersion: 'requirements-contract-test-artifact/v1',
@@ -82,16 +133,16 @@ export function createTerminalCloseoutFixture() {
     evidenceBundleId: `EVIDENCE-${randomUUID()}`,
     contractHash: contractRef.hash,
     sourcePlanHash: sha256('source-plan'),
-    sourceAmendmentHashes: ids('AMEND-', 1, 10, 2).map((id) => sha256(id)),
+    sourceAmendmentHashes,
     aggregateAmendmentHash: sha256('aggregate'),
     semanticModelHash: sha256('semantic-model'),
     sequenceContractHash: sha256('sequence-contract'),
     closureReportHash: sha256('closure-report'),
     coverage: {
-      storyIds: ids('S', 1, 183, 3),
-      acceptanceIds: ids('AC-', 1, 219, 2),
-      traceIds: ids('TR-', 1, 219, 2),
-      commandIds: ids('CMD-', 1, 36, 2),
+      storyIds: ids('S', 1, 188, 3),
+      acceptanceIds: ids('AC-', 1, 226, 2),
+      traceIds: ids('TR-', 1, 226, 2),
+      commandIds: ids('CMD-', 1, 37, 2),
     },
     criticalMetrics: {
       openGapCount: 0,
@@ -191,6 +242,7 @@ export function createTerminalCloseoutFixture() {
   return {
     root,
     contractPath,
+    writeContractWithCommandRows,
     bundlePath,
     bundle,
     terminalReceiptPath,

@@ -85,6 +85,68 @@ describe('six-model receipt to projection transaction', () => {
     });
   });
 
+  it('canonicalizes Windows binding paths before receipt and artifact publication', () => {
+    const windowsInput = {
+      ...input(),
+      stageInputs: [
+        {
+          role: 'input',
+          path: 'C:\\workspace\\evidence\\input.json',
+          hash: hash('4'),
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: 'gate',
+          path: 'C:\\workspace\\evidence\\gate.json',
+          hash: hash('5'),
+        },
+      ],
+      evidenceRefs: ['C:\\workspace\\evidence\\gate.json'],
+      receiptPath: 'runtime\\status\\implementation-readiness.json',
+    };
+    const update = createRuntimeStatusProjectionUpdate(windowsInput);
+
+    expect(update.receiptRef).toMatchObject({
+      path: 'runtime/status/implementation-readiness.json',
+      receipt: {
+        stageInputs: [
+          {
+            path: 'C:/workspace/evidence/input.json',
+          },
+        ],
+        deterministicGateOutputs: [
+          {
+            path: 'C:/workspace/evidence/gate.json',
+          },
+        ],
+        evidenceRefs: ['C:/workspace/evidence/gate.json'],
+      },
+    });
+    expect(update.projection.decisionReceiptRef).toBe(
+      'runtime/status/implementation-readiness.json'
+    );
+
+    const patch = runtimeStatusProjectionRecordPatch({
+      record: { sixModelResults: {}, runtimeStatusDecisionReceipts: [], artifactIndex: [] },
+      modelId: 'implementation_readiness',
+      update,
+    });
+    expect(patch.artifactIndex).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'runtime/status/implementation-readiness.json',
+        }),
+        expect.objectContaining({
+          path: 'C:/workspace/evidence/input.json',
+        }),
+        expect.objectContaining({
+          path: 'C:/workspace/evidence/gate.json',
+        }),
+      ])
+    );
+  });
+
   it('rejects receipt mutation after publication', () => {
     const update = createRuntimeStatusProjectionUpdate(input());
     const mutated = {

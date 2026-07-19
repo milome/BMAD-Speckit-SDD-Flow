@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "requirements-contract-artifact-role-registry/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.ts",
+    "hash": "sha256:e3990aeeac3c906a2c50142510185659da894a937f99047f990996a711c9d7f1"
+  },
+  "registryHash": "sha256:cd82fec54a6e710ef4140118be84e959e2b3757d992466d0ae8d55c95f96e1f1",
+  "classificationSchemaVersion": "requirements-contract-artifact-role/v1",
+  "allowedRoles": [
+    "product_prd",
+    "requirement_source_prd",
+    "discovery_envelope"
+  ],
+  "allowedAuthoritySources": [
+    "explicit_request",
+    "registered_workflow",
+    "decision_receipt"
+  ],
+  "rolePolicies": {
+    "product_prd": {
+      "authorityClass": "product_background",
+      "rendererRef": "registered_product_prd_renderer",
+      "implementationConfirmationPolicy": "forbidden",
+      "stableRequirementSetIdPolicy": "not_required",
+      "requirementRecordRegistrationPolicy": "forbidden",
+      "finalImplementationAuthority": "none"
+    },
+    "requirement_source_prd": {
+      "authorityClass": "implementation_semantic_authority",
+      "rendererRef": "canonical_source_prd_renderer",
+      "implementationConfirmationPolicy": "required",
+      "stableRequirementSetIdPolicy": "required",
+      "requirementRecordRegistrationPolicy": "required",
+      "finalImplementationAuthority": "source_authority"
+    },
+    "discovery_envelope": {
+      "authorityClass": "none",
+      "rendererRef": "discovery_envelope_renderer",
+      "implementationConfirmationPolicy": "forbidden",
+      "stableRequirementSetIdPolicy": "not_required",
+      "requirementRecordRegistrationPolicy": "forbidden",
+      "finalImplementationAuthority": "none"
+    }
+  },
+  "applicabilityRules": {
+    "authoritySelection": "explicit_request_or_registered_workflow_or_decision_receipt",
+    "authorityAgreement": "all_authorities_must_select_one_role",
+    "heuristicSignals": "non_authoritative"
+  },
+  "authority": "none"
+}

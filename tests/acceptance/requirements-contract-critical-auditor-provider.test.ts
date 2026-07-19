@@ -28,7 +28,10 @@ function createAuthoringConsumerFixture(root: string, recordId: string) {
   mkdirSync(path.dirname(configTarget), { recursive: true });
   writeFileSync(
     configTarget,
-    readFileSync(path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'), 'utf8'),
+    readFileSync(
+      path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'),
+      'utf8'
+    ),
     'utf8'
   );
   const materialization = writeMinimalConsumerRequirement(
@@ -124,6 +127,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
       });
       expect(existsSync(responsePath)).toBe(false);
       expect(response.requestHash).toBe((fixture.request as any).requestHash);
+      const writerSource = readFileSync(script, 'utf8');
+      expect(writerSource).not.toContain('function buildResponse(');
+      expect(writerSource).not.toMatch(/verdict:\s*["']no_new_valid_gap["']/u);
     } finally {
       removeTempRoot(root);
     }
@@ -718,7 +724,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('response_file rejects wrong round hash', () => {
     const root = createTempRoot('requirements-contract-response-wrong-round-');
@@ -810,8 +816,9 @@ describe('requirements contract Critical Auditor provider modes', () => {
         expect(result.sourceMutationPerformed).toBe(false);
         const receiptPath = roundArtifact(root, recordId, 'receipt', 1);
         expect(existsSync(receiptPath), JSON.stringify(result)).toBe(true);
-        const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(receiptPath)
-          .criticalAuditorReceipt;
+        const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+          receiptPath
+        ).criticalAuditorReceipt;
         expect(receipt.requestHash).toBe(fixture.request.requestHash);
       } finally {
         process.stdout.write = originalWrite;
@@ -838,6 +845,181 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(result.sourceMutationPerformed).toBe(false);
       expectSourceHashUnchanged(source, beforeHash);
     } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('external_adapter executes a read-only provider command and binds its run evidence', () => {
+    const root = createTempRoot('requirements-contract-external-adapter-execution-');
+    try {
+      const recordId = 'REQ-EXTERNAL-ADAPTER-EXECUTION';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const adapterPath = path.join(root, 'critical-auditor-test-adapter.cjs');
+      writeFileSync(
+        adapterPath,
+        [
+          "const fs = require('node:fs');",
+          'const args = process.argv.slice(2);',
+          "const requestIndex = args.indexOf('--request');",
+          'if (requestIndex < 0 || !args[requestIndex + 1]) process.exit(2);',
+          "const request = JSON.parse(fs.readFileSync(args[requestIndex + 1], 'utf8'));",
+          'const binding = request.independentProviderBinding;',
+          'const gateDryRun = request.gateDryRun;',
+          'const result = {',
+          "  schemaVersion: 'critical-auditor-external-adapter-result/v1',",
+          '  providerRun: { ...binding, providerRunId: `provider-run-${request.roundIndex}` },',
+          '  response: {',
+          "    schemaVersion: 'critical-auditor-round-response/v1',",
+          "    verdict: 'no_new_valid_gap',",
+          '    roundIndex: request.roundIndex,',
+          '    transactionId: request.transactionId,',
+          '    namespaceVersion: request.namespaceVersion,',
+          '    requestHash: request.requestHash,',
+          '    sourceHash: request.sourceHash,',
+          '    sourceDocumentHash: request.sourceDocumentHash,',
+          '    semanticModelHash: request.semanticModelHash,',
+          '    implementationConfirmationHash: request.implementationConfirmationHash,',
+          '    packetHash: request.packetHash,',
+          '    projectionSetHash: request.projectionSetHash,',
+          '    gateDryRunHash: gateDryRun.gateDryRunHash,',
+          '    reconciliationIssueCount: gateDryRun.reconciliation.issueCount,',
+          '    checkedProjectionGroups: request.packetProjectionSummary.projectionGroups,',
+          '    checkedProjectionQualityRuleCodes: request.projectionQualityGate.requiredRuleCodes,',
+          '    reviewedMustRefs: request.mustRefs,',
+          '    reviewedProjectionRefs: request.packetProjectionSummary.projectionRefs.slice(0, 1),',
+          '    priorFindingsDisposition: [{',
+          '      findingRef: `ROUND-${request.roundIndex}-BASELINE`,',
+          "      disposition: request.roundIndex === 1 ? 'new' : 'unchanged',",
+          '      evidenceRefs: [gateDryRun.reportPath],',
+          '    }],',
+          '    rejectedGapCandidates: [{',
+          '      id: `REJ-${request.roundIndex}`,',
+          "      reason: 'no new valid gap detected',",
+          '    }],',
+          '    falsePositiveProofs: (gateDryRun.actionableBlockingIssues || []).map((issue) => ({',
+          "      blockerCode: String(issue.code || ''),",
+          "      proofType: 'current_source_packet_hash_match',",
+          '      evidenceRefs: [gateDryRun.reportPath],',
+          '    })),',
+          '    rationale: `Provider run ${request.roundIndex} found no new valid gap.`,',
+          '  },',
+          '};',
+          'process.stdout.write(`${JSON.stringify(result)}\\n`);',
+        ].join('\n'),
+        'utf8'
+      );
+
+      const result = runAuthoring(root, fixture.source, recordId, {
+        ...fixture.authoringOptions,
+        criticalAuditorProviderMode: 'external_adapter',
+        criticalAuditorExternalAdapterCommand: JSON.stringify([process.execPath, adapterPath]),
+        maxCriticalAuditorRounds: 1,
+      });
+      const response = readJson<Record<string, any>>(roundArtifact(root, recordId, 'response', 1));
+      const receipt = readJson<{ criticalAuditorReceipt: Record<string, any> }>(
+        roundArtifact(root, recordId, 'receipt', 1)
+      ).criticalAuditorReceipt;
+
+      expect(issueCodes(result)).toContain('critical_auditor_no_new_gap_convergence_not_reached');
+      expect(response.independentProviderEvidence).toMatchObject({
+        providerId: 'local-sonnet-judge',
+        model: 'claude-sonnet-5',
+        providerRunId: 'provider-run-1',
+        requestHash: fixture.request.requestHash,
+      });
+      expect(receipt.independentProviderEvidence).toEqual(response.independentProviderEvidence);
+      expect(receipt.responseHash).toBeDefined();
+      expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('external_adapter removes all Judge override environment variables before execution', () => {
+    const root = createTempRoot('requirements-contract-external-adapter-environment-');
+    const previousJudgeOverride = process.env.JUDGE_CUSTOM_OVERRIDE;
+    const previousBmadJudgeOverride = process.env.BMAD_JUDGE_CUSTOM_OVERRIDE;
+    try {
+      const recordId = 'REQ-EXTERNAL-ADAPTER-ENVIRONMENT';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const adapterPath = path.join(root, 'critical-auditor-environment-adapter.cjs');
+      writeFileSync(
+        adapterPath,
+        [
+          "const fs = require('node:fs');",
+          'const leaked = Object.keys(process.env).filter((key) => /^(?:BMAD_)?JUDGE_/iu.test(key));',
+          'if (leaked.length > 0) {',
+          '  process.stderr.write(JSON.stringify({ leaked }));',
+          '  process.exit(73);',
+          '}',
+          'const args = process.argv.slice(2);',
+          "const requestIndex = args.indexOf('--request');",
+          'if (requestIndex < 0 || !args[requestIndex + 1]) process.exit(2);',
+          "const request = JSON.parse(fs.readFileSync(args[requestIndex + 1], 'utf8'));",
+          'const binding = request.independentProviderBinding;',
+          'const gateDryRun = request.gateDryRun;',
+          'const result = {',
+          "  schemaVersion: 'critical-auditor-external-adapter-result/v1',",
+          '  providerRun: { ...binding, providerRunId: `provider-run-${request.roundIndex}` },',
+          '  response: {',
+          "    schemaVersion: 'critical-auditor-round-response/v1',",
+          "    verdict: 'no_new_valid_gap',",
+          '    roundIndex: request.roundIndex,',
+          '    transactionId: request.transactionId,',
+          '    namespaceVersion: request.namespaceVersion,',
+          '    requestHash: request.requestHash,',
+          '    sourceHash: request.sourceHash,',
+          '    sourceDocumentHash: request.sourceDocumentHash,',
+          '    semanticModelHash: request.semanticModelHash,',
+          '    implementationConfirmationHash: request.implementationConfirmationHash,',
+          '    packetHash: request.packetHash,',
+          '    projectionSetHash: request.projectionSetHash,',
+          '    gateDryRunHash: gateDryRun.gateDryRunHash,',
+          '    reconciliationIssueCount: gateDryRun.reconciliation.issueCount,',
+          '    checkedProjectionGroups: request.packetProjectionSummary.projectionGroups,',
+          '    checkedProjectionQualityRuleCodes: request.projectionQualityGate.requiredRuleCodes,',
+          '    reviewedMustRefs: request.mustRefs,',
+          '    reviewedProjectionRefs: request.packetProjectionSummary.projectionRefs.slice(0, 1),',
+          '    priorFindingsDisposition: [{',
+          '      findingRef: `ROUND-${request.roundIndex}-BASELINE`,',
+          "      disposition: request.roundIndex === 1 ? 'new' : 'unchanged',",
+          '      evidenceRefs: [gateDryRun.reportPath],',
+          '    }],',
+          '    rejectedGapCandidates: [{',
+          '      id: `REJ-${request.roundIndex}`,',
+          "      reason: 'no new valid gap detected',",
+          '    }],',
+          '    falsePositiveProofs: (gateDryRun.actionableBlockingIssues || []).map((issue) => ({',
+          "      blockerCode: String(issue.code || ''),",
+          "      proofType: 'current_source_packet_hash_match',",
+          '      evidenceRefs: [gateDryRun.reportPath],',
+          '    })),',
+          '    rationale: `Provider run ${request.roundIndex} found no new valid gap.`,',
+          '  },',
+          '};',
+          'process.stdout.write(`${JSON.stringify(result)}\\n`);',
+        ].join('\n'),
+        'utf8'
+      );
+      process.env.JUDGE_CUSTOM_OVERRIDE = 'forbidden';
+      process.env.BMAD_JUDGE_CUSTOM_OVERRIDE = 'forbidden';
+
+      const result = runAuthoring(root, fixture.source, recordId, {
+        ...fixture.authoringOptions,
+        criticalAuditorProviderMode: 'external_adapter',
+        criticalAuditorExternalAdapterCommand: JSON.stringify([process.execPath, adapterPath]),
+        maxCriticalAuditorRounds: 1,
+      });
+
+      expect(issueCodes(result)).toContain('critical_auditor_no_new_gap_convergence_not_reached');
+      expect(issueCodes(result)).not.toContain('critical_auditor_external_adapter_failed');
+      expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(true);
+      expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
+    } finally {
+      if (previousJudgeOverride === undefined) delete process.env.JUDGE_CUSTOM_OVERRIDE;
+      else process.env.JUDGE_CUSTOM_OVERRIDE = previousJudgeOverride;
+      if (previousBmadJudgeOverride === undefined) delete process.env.BMAD_JUDGE_CUSTOM_OVERRIDE;
+      else process.env.BMAD_JUDGE_CUSTOM_OVERRIDE = previousBmadJudgeOverride;
       removeTempRoot(root);
     }
   });

@@ -52,12 +52,12 @@
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 }
     },
-    "verifiedArtifactCount": { "const": 53 },
-    "verifiedEvidenceCount": { "const": 17 },
-    "coveredStoryCount": { "const": 183 },
-    "coveredAcceptanceCount": { "const": 219 },
-    "coveredTraceCount": { "const": 219 },
-    "coveredCommandCount": { "const": 36 },
+    "verifiedArtifactCount": { "type": "integer", "minimum": 1 },
+    "verifiedEvidenceCount": { "type": "integer", "minimum": 1 },
+    "coveredStoryCount": { "type": "integer", "minimum": 1 },
+    "coveredAcceptanceCount": { "type": "integer", "minimum": 1 },
+    "coveredTraceCount": { "type": "integer", "minimum": 1 },
+    "coveredCommandCount": { "type": "integer", "minimum": 1 },
     "criticalMetricCount": { "type": "integer", "minimum": 1 },
     "externalBindingCount": { "type": "integer", "minimum": 0 },
     "decision": { "const": "pass" }

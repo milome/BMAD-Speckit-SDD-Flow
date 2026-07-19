@@ -76,6 +76,35 @@ describe('requirements contract production bypass closure evaluation', () => {
     }
   });
 
+  it('reads current dispatch metrics from canonical pointer selectionMetrics', () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), 'production-bypass-pointer-'));
+    const evidenceRoot = path.join(projectRoot, 'evidence');
+    try {
+      writePassingProductionBypassEvidence({ projectRoot, evidenceRoot });
+      const pointerPath = path.join(evidenceRoot, 'current-dispatch-pointer-receipt.json');
+      const pointer = JSON.parse(readFileSync(pointerPath, 'utf8')) as Record<string, any>;
+      pointer.selectionMetrics = {
+        historicalFallbackCount: pointer.historicalPacketSelectionCount,
+        missingBindingCount: pointer.packetWithoutTransactionBindingCount,
+        currentDispatchPointerCoverage: pointer.currentDispatchPointerCoverage,
+      };
+      delete pointer.historicalPacketSelectionCount;
+      delete pointer.packetWithoutTransactionBindingCount;
+      delete pointer.currentDispatchPointerCoverage;
+      writeFileSync(pointerPath, `${JSON.stringify(pointer, null, 2)}\n`, 'utf8');
+
+      const report = runCommand(projectRoot, evidenceRoot);
+
+      expect(report.correctnessDecision).toBe('PASS');
+      expect(report.productionBypassClosureIssueCount).toBe(0);
+      expect(report.historicalPacketSelectionCount).toBe(0);
+      expect(report.packetWithoutTransactionBindingCount).toBe(0);
+      expect(report.currentDispatchPointerCoverage).toBe(1);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when a canonical upstream artifact is missing', () => {
     const projectRoot = mkdtempSync(path.join(tmpdir(), 'production-bypass-missing-'));
     const evidenceRoot = path.join(projectRoot, 'evidence');

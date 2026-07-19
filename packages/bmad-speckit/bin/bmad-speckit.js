@@ -98,7 +98,10 @@ function registerWave312PublicCommand(commandName, exportName, description) {
     .action((opts, command) =>
       runCommandPromise(
         commandName,
-        loadCommand(`../dist/commands/${commandName}`, exportName)(opts, forwardedArgsFromCommand(command))
+        loadCommand(`../dist/commands/${commandName}`, exportName)(
+          opts,
+          forwardedArgsFromCommand(command)
+        )
       )
     );
 }
@@ -120,7 +123,10 @@ program
   .description('Initialize a new bmad-speckit project')
   .option('--here', 'Use current directory')
   .option('--ai <name>', 'AI selection, comma-separated for multi (e.g. cursor-agent,claude)')
-  .option('--ai-commands-dir <path>', 'Commands directory for generic AI (required when --ai generic)')
+  .option(
+    '--ai-commands-dir <path>',
+    'Commands directory for generic AI (required when --ai generic)'
+  )
   .option('-y, --yes', 'Skip all prompts, use defaults')
   .option('--template <tag|url>', 'Template version (latest, v1.0.0) or tarball URL')
   .option('--network-timeout <ms>', 'Network timeout in ms (overrides env and config)')
@@ -131,7 +137,10 @@ program
   .option('--bmad-path <path>', 'Shared _bmad path (worktree mode, no copy)')
   .option('--ai-skills', 'Publish AI skills to project-local skill directories (default)')
   .option('--no-ai-skills', 'Skip publishing AI skills')
-  .option('--allow-global-skill-writes', 'Allow explicit user-global skill writes for registries that declare skillScope=user-global')
+  .option(
+    '--allow-global-skill-writes',
+    'Allow explicit user-global skill writes for registries that declare skillScope=user-global'
+  )
   .option('--debug', 'Enable debug output')
   .option('--github-token <token>', 'GitHub API token')
   .option('--skip-tls', 'Skip SSL/TLS verification (not recommended)')
@@ -145,7 +154,10 @@ program
   .option('--json', 'Output as JSON')
   .option('--ignore-agent-tools', 'Skip AI tool (detectCommand) detection')
   .action((opts) =>
-    loadCommand('../dist/commands/check', 'checkCommand')({
+    loadCommand(
+      '../dist/commands/check',
+      'checkCommand'
+    )({
       cwd: process.cwd(),
       listAi: opts.listAi,
       json: opts.json,
@@ -158,7 +170,10 @@ program
   .description('Show CLI version, template version, Node version')
   .option('--json', 'Output as JSON')
   .action((opts) =>
-    loadCommand('../dist/commands/version', 'versionCommand')({
+    loadCommand(
+      '../dist/commands/version',
+      'versionCommand'
+    )({
       cwd: process.cwd(),
       json: opts.json,
     })
@@ -182,11 +197,17 @@ program
   .command('uninstall')
   .description('Safely uninstall managed bmad-speckit install surface from current project')
   .option('--target <path>', 'Project root to uninstall from', '.')
-  .option('--agent <ids>', 'Optional agent filter (cursor|claude-code|codex|cursor,claude-code,codex)')
+  .option(
+    '--agent <ids>',
+    'Optional agent filter (cursor|claude-code|codex|cursor,claude-code,codex)'
+  )
   .option('--remove-global-skills', 'Also remove managed global skill directories')
   .option('--dry-run', 'Preview uninstall actions without changing files')
   .action((opts) =>
-    loadCommand('../dist/commands/uninstall', 'uninstallCommand')({
+    loadCommand(
+      '../dist/commands/uninstall',
+      'uninstallCommand'
+    )({
       target: opts.target,
       agent: opts.agent,
       removeGlobalSkills: opts.removeGlobalSkills,
@@ -196,12 +217,18 @@ program
 
 program
   .command('add-agent <ai>')
-  .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
-  .action((ai) => loadCommand('../dist/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
+  .description(
+    'Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)'
+  )
+  .action((ai) =>
+    loadCommand('../dist/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() })
+  );
 
 program
   .command('large-doc')
-  .description('Create, validate, safely promote, and clean up large generated document draft sessions')
+  .description(
+    'Create, validate, safely promote, and clean up large generated document draft sessions'
+  )
   .option('--json', 'Print machine-readable JSON')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
@@ -278,9 +305,7 @@ ralphCmd
   .option('--storySlug <slug>', 'Story slug')
   .action((opts) => loadCommand('../dist/commands/ralph', 'ralphVerifyCommand')(opts));
 
-const configCmd = program
-  .command('config')
-  .description('Get/set/list bmad-speckit config');
+const configCmd = program.command('config').description('Get/set/list bmad-speckit config');
 
 configCmd
   .command('get <key>')
@@ -344,7 +369,10 @@ program
   .option('--agent <agent>', 'Agent type (cursor|claude-code|codex)')
   .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
   .action((opts) => {
-    loadCommand('../dist/commands/score', 'scoreCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/score',
+      'scoreCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -370,9 +398,10 @@ program
   .option('--dataPath <path>', 'Scoring data directory for --run-id compatibility')
   .allowUnknownOption(false)
   .action((opts) => {
-    loadCommand('../dist/commands/eval-question-generate', 'evalQuestionGenerateCli')(opts).then(
-      (exitCode) => process.exit(exitCode)
-    );
+    loadCommand(
+      '../dist/commands/eval-question-generate',
+      'evalQuestionGenerateCli'
+    )(opts).then((exitCode) => process.exit(exitCode));
   });
 
 program
@@ -386,7 +415,10 @@ program
   .option('--scenario <scenario>', 'Scenario filter (real_dev|eval_question|all)', 'real_dev')
   .option('--dataPath <path>', 'Scoring data directory')
   .action((opts) => {
-    loadCommand('../dist/commands/coach', 'coachCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/coach',
+      'coachCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -419,7 +451,9 @@ program
 
 program
   .command('sft-extract')
-  .description('Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)')
+  .description(
+    'Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)'
+  )
   .option('--min-score <n>', 'Minimum score for inclusion (default: 90, minimum: 90)')
   .option(
     '--target <target>',
@@ -427,13 +461,19 @@ program
     'legacy_instruction_io'
   )
   .option('--output <path>', 'Output file path')
-  .option('--bundle-dir <path>', 'Bundle output directory when --target is not legacy_instruction_io')
+  .option(
+    '--bundle-dir <path>',
+    'Bundle output directory when --target is not legacy_instruction_io'
+  )
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--split-seed <n>', 'Deterministic split seed for canonical exporters')
   .option('--max-tokens <n>', 'Maximum token estimate allowed for canonical exporters')
   .option('--drop-no-code-pair', 'Reject samples without code pair in canonical exporters')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-extract', 'sftExtractCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-extract',
+      'sftExtractCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -454,7 +494,10 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-preview', 'sftPreviewCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-preview',
+      'sftPreviewCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -475,7 +518,10 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-validate', 'sftValidateCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-validate',
+      'sftValidateCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -496,7 +542,10 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-bundle', 'sftBundleCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-bundle',
+      'sftBundleCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -519,7 +568,10 @@ program
   .option('--persist', 'After sprint-status write: refresh registry using last-*-run.json')
   .action((opts) => {
     try {
-      loadCommand('../dist/commands/ensure-run-runtime-context', 'ensureRunRuntimeContextCommand')(opts);
+      loadCommand(
+        '../dist/commands/ensure-run-runtime-context',
+        'ensureRunRuntimeContextCommand'
+      )(opts);
     } catch (err) {
       console.error(err);
       process.exit(1);
@@ -569,7 +621,10 @@ program
   .option('--dashboard-port <n>', 'Port to auto-start the dashboard on')
   .option('--host <host>', 'Dashboard host when auto-starting', '127.0.0.1')
   .action((opts) => {
-    loadCommand('../dist/commands/runtime-mcp', 'runtimeMcpCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/runtime-mcp',
+      'runtimeMcpCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -582,7 +637,10 @@ program
   .option('--timeoutMs <ms>', 'Request timeout in ms')
   .option('--prompt <text>', 'Custom smoke prompt')
   .action((opts) => {
-    loadCommand('../dist/commands/provider-smoke', 'providerSmokeCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/provider-smoke',
+      'providerSmokeCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -596,7 +654,10 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Open the dashboard in the default browser')
   .action((opts) => {
-    loadCommand('../dist/commands/dashboard-start', 'dashboardStartCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/dashboard-start',
+      'dashboardStartCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -630,7 +691,10 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Start a stable background server and open the dashboard in the browser')
   .action((opts) => {
-    loadCommand('../dist/commands/dashboard-live', 'dashboardLiveCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/dashboard-live',
+      'dashboardLiveCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -712,16 +776,17 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, _command) =>
-    runRuntimeModule(
-      '../dist/main-agent/index.js',
-      'mainAgentRuntimeCommand',
-      ['--legacy-orchestration', ...rawArgsAfterCommandName('main-agent-orchestration')]
-    )
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      '--legacy-orchestration',
+      ...rawArgsAfterCommandName('main-agent-orchestration'),
+    ])
   );
 
 program
   .command('confirm-scope')
-  .description('Confirm requirement scope through controlled ingest after exact chat hash confirmation')
+  .description(
+    'Confirm requirement scope through controlled ingest after exact chat hash confirmation'
+  )
   .option('--json', 'Print machine-readable JSON')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
@@ -844,20 +909,32 @@ registerWave312PublicCommand(
   'architectureDriftCheckCommand',
   'Run the package architecture drift check surface'
 );
-registerWave312PublicCommand('coach-diagnose', 'coachDiagnoseCommand', 'Run the package coach diagnosis surface');
+registerWave312PublicCommand(
+  'coach-diagnose',
+  'coachDiagnoseCommand',
+  'Run the package coach diagnosis surface'
+);
 registerWave312PublicCommand(
   'emit-runtime-policy',
   'emitRuntimePolicyCommand',
   'Emit the package runtime policy surface'
 );
-registerWave312PublicCommand('init-to-root', 'initToRootCommand', 'Run the package init-to-root surface');
+registerWave312PublicCommand(
+  'init-to-root',
+  'initToRootCommand',
+  'Run the package init-to-root surface'
+);
 registerWave312PublicCommand(
   'live-smoke-speckit-workflow',
   'liveSmokeSpeckitWorkflowCommand',
   'Run the package live smoke workflow surface'
 );
 registerWave312PublicCommand('setup', 'setupCommand', 'Run the package setup surface');
-registerWave312PublicCommand('speckit-cli', 'speckitCliCommand', 'Run the package Speckit CLI surface');
+registerWave312PublicCommand(
+  'speckit-cli',
+  'speckitCliCommand',
+  'Run the package Speckit CLI surface'
+);
 registerWave312PublicCommand(
   'validate-single-source-whitelist',
   'validateSingleSourceWhitelistCommand',
@@ -945,6 +1022,42 @@ program
         consumerRoot: opts.consumerRoot,
         currentDispatchPointer: opts.currentDispatchPointer,
         evidenceOut: opts.evidenceOut,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-production-bypass-evidence-materialize')
+  .description('Materialize current production bypass evidence aggregates')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--transaction-id <id>', 'Current transaction id')
+  .requiredOption('--implementation-attempt-id <id>', 'Current implementation attempt id')
+  .requiredOption('--attempt-context <path>', 'Current attempt context receipt')
+  .requiredOption('--pointer-receipt <path>', 'Current dispatch pointer receipt')
+  .requiredOption('--implementation-evidence <path>', 'Current implementation evidence index')
+  .requiredOption('--evidence-root <path>', 'Target directory for verifier evidence')
+  .requiredOption('--contract-hash <hash>', 'Current frozen contract hash')
+  .requiredOption('--source-hash <hash>', 'Current source document hash')
+  .requiredOption('--semantic-model-hash <hash>', 'Current semantic model hash')
+  .option('--json', 'Print machine-readable JSON summary')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-production-bypass-evidence-materialize',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.js',
+        'requirementsContractProductionBypassEvidenceMaterializeCommand'
+      )({
+        requirementRecordPath: opts.requirementRecord,
+        transactionId: opts.transactionId,
+        implementationAttemptId: opts.implementationAttemptId,
+        attemptContextPath: opts.attemptContext,
+        pointerReceiptPath: opts.pointerReceipt,
+        implementationEvidencePath: opts.implementationEvidence,
+        evidenceRoot: opts.evidenceRoot,
+        contractHash: opts.contractHash,
+        sourceHash: opts.sourceHash,
+        semanticModelHash: opts.semanticModelHash,
         json: Boolean(opts.json),
       })
     )
@@ -1287,7 +1400,7 @@ program
         firstCommand: opts.firstCommand,
         secondCommand: opts.secondCommand,
         json: Boolean(opts.json),
-      })
+      }).then((receipt) => (receipt.result === 'PASS' ? 0 : 1))
     )
   );
 
@@ -1516,7 +1629,11 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    emitDeprecatedAlias('eval-questions', 'source-repository evaluation workflow', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias(
+      'eval-questions',
+      'source-repository evaluation workflow',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program

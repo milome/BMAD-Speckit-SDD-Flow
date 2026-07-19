@@ -4,11 +4,14 @@ import {
   validateDiagramSet,
   validateSequenceContract,
 } from './requirements-contract-sequence-model';
+import { REQUIREMENTS_CONTRACT_DIAGRAM_POLICY } from './requirements-contract-project-profile';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 
-const MAX_PARTICIPANTS = 8;
-const MAX_MESSAGES = 25;
-const MAX_CONTROL_BLOCKS = 5;
+const {
+  maxParticipants: MAX_PARTICIPANTS,
+  maxMessages: MAX_MESSAGES,
+  maxControlBlocks: MAX_CONTROL_BLOCKS,
+} = REQUIREMENTS_CONTRACT_DIAGRAM_POLICY.decomposition;
 
 type Diagram = RequirementsContractDiagramSet['diagrams'][number];
 

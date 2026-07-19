@@ -1,5 +1,8 @@
 import { sha256Stable } from '../scripts/requirements-contract-semantic-resolver';
 
+export const REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY_OWNER_PATH =
+  'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-trace-edge-type-registry.ts';
+
 export const REQUIREMENTS_CONTRACT_TRACE_DIMENSIONS = [
   'scenario',
   'sequenceStep',
@@ -66,6 +69,29 @@ export const REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY = {
 
 export function requirementsContractTraceEdgeTypeRegistryHash(): string {
   return sha256Stable(REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY);
+}
+
+export function createRequirementsContractTraceEdgeTypeRegistryProjection(
+  ownerHash: string
+) {
+  if (!/^sha256:[a-f0-9]{64}$/u.test(ownerHash)) {
+    throw new Error('trace_edge_type_registry_owner_hash_invalid');
+  }
+  return {
+    schemaVersion: REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY.schemaVersion,
+    owner: {
+      path: REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY_OWNER_PATH,
+      hash: ownerHash,
+    },
+    registryHash: requirementsContractTraceEdgeTypeRegistryHash(),
+    dimensions: [...REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY.dimensions],
+    edgeTypes: REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY.edgeTypes.map((entry) => ({
+      edgeType: entry.edgeType,
+      requiredDimensions: [...entry.requiredDimensions],
+      notApplicableDimensions: [...entry.notApplicableDimensions],
+    })),
+    authority: REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY.authority,
+  };
 }
 
 interface BoundDimension {

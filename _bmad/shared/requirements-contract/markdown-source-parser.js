@@ -161,13 +161,21 @@ function headingPaths(lines, ignored, frontMatter) {
   return { headings, paths };
 }
 
-function yamlAuthorityBlocks(lines, ignored, authorityRootKeys, sourcePath, issues) {
+function yamlAuthorityBlocks(
+  lines,
+  ignored,
+  frontMatter,
+  authorityRootKeys,
+  sourcePath,
+  issues
+) {
   const allowed = new Set(authorityRootKeys || []);
   const firstByKey = new Map();
   const blocks = [];
   if (allowed.size === 0) return blocks;
 
   for (let index = 0; index < lines.length; index += 1) {
+    if (frontMatter && index >= frontMatter.start && index <= frontMatter.end) continue;
     if (ignored[index]) continue;
     const match = lines[index].match(/^([A-Za-z_][A-Za-z0-9_-]*):\s*(?:#.*)?$/);
     if (!match || !allowed.has(match[1])) continue;
@@ -350,6 +358,7 @@ function parseRequirementsContractMarkdown(source, options = {}) {
   const yamlBlocks = yamlAuthorityBlocks(
     lines,
     ignored,
+    frontMatter,
     options.authorityRootKeys,
     sourcePath,
     issues

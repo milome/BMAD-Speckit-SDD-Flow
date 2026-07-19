@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "requirements-contract-trace-edge-type-registry/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-trace-edge-type-registry.ts",
+    "hash": "sha256:1f2760f7b28c21290114e1571cdf804f2d53a373a8656975846d8f91b17d9d51"
+  },
+  "registryHash": "sha256:90bd16e394f07dcd790f608f03abf60a6d27f6e668b599a0bcf47a7ddf5d1891",
+  "dimensions": ["scenario", "sequenceStep", "branch", "target", "task", "red", "oracle", "command", "acceptance", "evidenceRequirement"],
+  "edgeTypes": [
+    {
+      "edgeType": "requires",
+      "requiredDimensions": ["scenario", "sequenceStep", "branch", "target", "task", "acceptance"],
+      "notApplicableDimensions": ["red", "oracle", "command", "evidenceRequirement"]
+    },
+    {
+      "edgeType": "verified_by",
+      "requiredDimensions": ["red", "oracle", "command", "acceptance", "evidenceRequirement"],
+      "notApplicableDimensions": ["scenario", "sequenceStep", "branch", "target", "task"]
+    },
+    {
+      "edgeType": "implemented_in",
+      "requiredDimensions": ["target", "task"],
+      "notApplicableDimensions": ["scenario", "sequenceStep", "branch", "red", "oracle", "command", "acceptance", "evidenceRequirement"]
+    },
+    {
+      "edgeType": "produces",
+      "requiredDimensions": ["target", "evidenceRequirement"],
+      "notApplicableDimensions": ["scenario", "sequenceStep", "branch", "task", "red", "oracle", "command", "acceptance"]
+    },
+    {
+      "edgeType": "bounded_by",
+      "requiredDimensions": ["branch", "red", "acceptance"],
+      "notApplicableDimensions": ["scenario", "sequenceStep", "target", "task", "oracle", "command", "evidenceRequirement"]
+    },
+    {
+      "edgeType": "derived_from",
+      "requiredDimensions": ["scenario", "sequenceStep", "acceptance"],
+      "notApplicableDimensions": ["branch", "target", "task", "red", "oracle", "command", "evidenceRequirement"]
+    }
+  ],
+  "authority": "none"
+}

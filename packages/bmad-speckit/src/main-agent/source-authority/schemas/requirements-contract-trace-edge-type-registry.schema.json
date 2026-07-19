@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-trace-edge-type-registry/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "owner", "registryHash", "dimensions", "edgeTypes", "authority"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-trace-edge-type-registry/v1"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "registryHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "dimensions": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "scenario" },
+        { "const": "sequenceStep" },
+        { "const": "branch" },
+        { "const": "target" },
+        { "const": "task" },
+        { "const": "red" },
+        { "const": "oracle" },
+        { "const": "command" },
+        { "const": "acceptance" },
+        { "const": "evidenceRequirement" }
+      ],
+      "items": false,
+      "minItems": 10,
+      "maxItems": 10
+    },
+    "edgeTypes": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["edgeType", "requiredDimensions", "notApplicableDimensions"],
+        "properties": {
+          "edgeType": {
+            "enum": ["requires", "verified_by", "implemented_in", "produces", "bounded_by", "derived_from"]
+          },
+          "requiredDimensions": {
+            "$ref": "#/$defs/dimensions"
+          },
+          "notApplicableDimensions": {
+            "$ref": "#/$defs/dimensions"
+          }
+        }
+      }
+    },
+    "authority": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "dimensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["scenario", "sequenceStep", "branch", "target", "task", "red", "oracle", "command", "acceptance", "evidenceRequirement"]
+      }
+    }
+  }
+}

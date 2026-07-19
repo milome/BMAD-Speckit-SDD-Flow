@@ -27,6 +27,8 @@
     "redHash",
     "baseEvidenceHash",
     "auditUniverseHash",
+    "judgeAuditUnitSetRef",
+    "judgeAuditUnitSetHash",
     "baseJudgeInputBundleHash",
     "authorizedChallengeDerivationProtocolHash",
     "decision"
@@ -57,6 +59,8 @@
     "redHash": { "$ref": "#/$defs/hash" },
     "baseEvidenceHash": { "$ref": "#/$defs/hash" },
     "auditUniverseHash": { "$ref": "#/$defs/hash" },
+    "judgeAuditUnitSetRef": { "$ref": "#/$defs/judgeAuditUnitSetRef" },
+    "judgeAuditUnitSetHash": { "$ref": "#/$defs/hash" },
     "baseJudgeInputBundleHash": { "$ref": "#/$defs/hash" },
     "authorizedChallengeDerivationProtocolHash": { "$ref": "#/$defs/hash" },
     "decision": { "const": "frozen" }
@@ -65,6 +69,16 @@
     "hash": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "judgeAuditUnitSetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "schemaVersion"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "schemaVersion": { "const": "requirements-contract-judge-audit-unit-set/v1" }
+      }
     }
   }
 }

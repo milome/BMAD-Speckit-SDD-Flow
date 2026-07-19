@@ -80,7 +80,8 @@ const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
     file: 'source-authority/scripts/critical-auditor-profile.js',
     forbidden: '../../../../../../_bmad/shared/critical-auditor-profile',
     required: '../_bmad/shared/critical-auditor-profile',
-    runtimeTarget: 'source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
+    runtimeTarget:
+      'source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
   },
   {
     file: 'source-authority/scripts/query-validate.js',
@@ -120,7 +121,10 @@ function runtimeTargetBasePath(base) {
 }
 
 function isTypeScriptRuntimeSourcePath(relativePath) {
-  return TYPE_SCRIPT_FAMILY_SOURCE_RE.test(relativePath) && !TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(relativePath);
+  return (
+    TYPE_SCRIPT_FAMILY_SOURCE_RE.test(relativePath) &&
+    !TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(relativePath)
+  );
 }
 
 function sourceAuthorityRelativeToDistRelativePath(relativePath) {
@@ -129,7 +133,8 @@ function sourceAuthorityRelativeToDistRelativePath(relativePath) {
   }
   const distPath = `source-authority/${relativePath}`;
   if (TYPE_SCRIPT_DECLARATION_SOURCE_RE.test(distPath)) return distPath;
-  if (/\.source\.(?:ts|tsx)$/u.test(distPath)) return distPath.replace(/\.source\.(?:ts|tsx)$/u, '.js');
+  if (/\.source\.(?:ts|tsx)$/u.test(distPath))
+    return distPath.replace(/\.source\.(?:ts|tsx)$/u, '.js');
   if (/\.(?:ts|tsx)$/u.test(distPath)) return distPath.replace(/\.(?:ts|tsx)$/u, '.js');
   if (/\.cts$/u.test(distPath)) return distPath.replace(/\.cts$/u, '.cjs');
   if (/\.mts$/u.test(distPath)) return distPath.replace(/\.mts$/u, '.mjs');
@@ -340,12 +345,7 @@ describe('main-agent dist build', () => {
       path.join(REPO_ROOT, '.claude', actionBindingManifestRelativePath),
       path.join(PACKAGE_ROOT, '_bmad', actionBindingManifestRelativePath),
       path.join(PACKAGE_DIST_ROOT, '_bmad', actionBindingManifestRelativePath),
-      path.join(
-        DIST_ROOT,
-        'source-authority',
-        '_bmad',
-        actionBindingManifestRelativePath
-      ),
+      path.join(DIST_ROOT, 'source-authority', '_bmad', actionBindingManifestRelativePath),
     ];
     for (const manifestPath of actionBindingManifestPaths) {
       assert.equal(fs.existsSync(manifestPath), true, `missing ${manifestPath}`);
@@ -376,6 +376,7 @@ describe('main-agent dist build', () => {
         'requirements-contract-judge-credentials-init',
         'requirements-contract-judge-provider-smoke',
         'requirements-contract-production-activate',
+        'requirements-contract-production-bypass-evidence-materialize',
         'requirements-contract-production-bypass-verify',
         'requirements-contract-prompt-transaction-publish',
         'requirements-contract-real-consumer-journey',
@@ -430,7 +431,11 @@ describe('main-agent dist build', () => {
         false,
         `package source JS must not coexist with TS source authority: ${relativePath}`
       );
-      assert.equal(fs.existsSync(distFile), true, `package TS source was not compiled: ${relativePath}`);
+      assert.equal(
+        fs.existsSync(distFile),
+        true,
+        `package TS source was not compiled: ${relativePath}`
+      );
       assert.equal(
         fs.existsSync(sourceAuthorityDistFile),
         true,
@@ -448,7 +453,8 @@ describe('main-agent dist build', () => {
     );
 
     const sourceAuthorityRoot = path.join(PACKAGE_ROOT, 'src', 'main-agent', 'source-authority');
-    const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles(sourceAuthorityRoot);
+    const sourceAuthorityTypeScriptFiles =
+      collectSourceAuthorityTypeScriptFiles(sourceAuthorityRoot);
     assert.ok(
       sourceAuthorityTypeScriptFiles.length > 0,
       'source-authority TypeScript inventory must not be empty'
@@ -567,7 +573,12 @@ describe('main-agent dist build', () => {
         `${expectedImport.file} must require package dist JS`
       );
       assert.equal(
-        fs.existsSync(path.join(runtimeTargetBasePath(expectedImport.runtimeTargetBase), expectedImport.runtimeTarget)),
+        fs.existsSync(
+          path.join(
+            runtimeTargetBasePath(expectedImport.runtimeTargetBase),
+            expectedImport.runtimeTarget
+          )
+        ),
         true,
         `missing rewritten runtime target ${expectedImport.runtimeTarget}`
       );
@@ -616,10 +627,26 @@ describe('main-agent dist build', () => {
       'templates',
       'requirements-contract-source-prd-template.schema.json'
     );
-    assert.equal(fs.existsSync(sourcePrdRuleRegistry), true, 'dist missing source PRD rule registry');
-    assert.equal(fs.existsSync(sourcePrdInstanceLint), true, 'dist missing source PRD instance lint CLI');
-    assert.equal(fs.existsSync(sourcePrdTemplateLint), true, 'dist missing source PRD template lint CLI');
-    assert.equal(fs.existsSync(sourcePrdTemplateSchema), true, 'dist missing source PRD template schema');
+    assert.equal(
+      fs.existsSync(sourcePrdRuleRegistry),
+      true,
+      'dist missing source PRD rule registry'
+    );
+    assert.equal(
+      fs.existsSync(sourcePrdInstanceLint),
+      true,
+      'dist missing source PRD instance lint CLI'
+    );
+    assert.equal(
+      fs.existsSync(sourcePrdTemplateLint),
+      true,
+      'dist missing source PRD template lint CLI'
+    );
+    assert.equal(
+      fs.existsSync(sourcePrdTemplateSchema),
+      true,
+      'dist missing source PRD template schema'
+    );
     const instanceLintSource = fs.readFileSync(sourcePrdInstanceLint, 'utf8');
     assert.match(instanceLintSource, /requirements-contract-source-prd-rules/u);
 
@@ -630,13 +657,24 @@ describe('main-agent dist build', () => {
       'source-authority package manifest inventory must not be empty'
     );
     for (const relativePath of sourceAuthorityPackageJsonFiles) {
-      const manifestText = fs.readFileSync(path.join(sourceAuthorityDistRoot, relativePath), 'utf8');
+      const manifestText = fs.readFileSync(
+        path.join(sourceAuthorityDistRoot, relativePath),
+        'utf8'
+      );
       const manifest = JSON.parse(manifestText);
       assert.equal(manifest.scripts, undefined, `${relativePath} must not expose package scripts`);
       assert.equal(manifest.bin, undefined, `${relativePath} must not expose package bins`);
-      assert.equal(manifest.devDependencies, undefined, `${relativePath} must not expose dev dependencies`);
+      assert.equal(
+        manifest.devDependencies,
+        undefined,
+        `${relativePath} must not expose dev dependencies`
+      );
       assert.equal(manifest.dependencies?.tsx, undefined, `${relativePath} must not depend on tsx`);
-      assert.equal(manifest.dependencies?.['ts-node'], undefined, `${relativePath} must not depend on ts-node`);
+      assert.equal(
+        manifest.dependencies?.['ts-node'],
+        undefined,
+        `${relativePath} must not depend on ts-node`
+      );
       assert.doesNotMatch(
         manifestText,
         /\b(?:tsx|ts-node)\b/i,
@@ -647,7 +685,11 @@ describe('main-agent dist build', () => {
     for (const relativePath of EXPECTED_SOURCE_AUTHORITY_ASSETS) {
       const distAsset = path.join(DIST_ROOT, 'source-authority', relativePath);
       const repoAsset = path.join(REPO_ROOT, relativePath);
-      assert.equal(fs.existsSync(distAsset), true, `missing source-authority asset ${relativePath}`);
+      assert.equal(
+        fs.existsSync(distAsset),
+        true,
+        `missing source-authority asset ${relativePath}`
+      );
       assert.equal(
         fs.readFileSync(distAsset, 'utf8'),
         fs.readFileSync(repoAsset, 'utf8'),
@@ -660,7 +702,11 @@ describe('main-agent dist build', () => {
       const packageDistAsset = path.join(PACKAGE_DIST_ROOT, relativePath);
       const repoAsset = path.join(REPO_ROOT, relativePath);
 
-      assert.equal(fs.existsSync(packageAsset), true, `missing package runtime asset ${relativePath}`);
+      assert.equal(
+        fs.existsSync(packageAsset),
+        true,
+        `missing package runtime asset ${relativePath}`
+      );
       assert.equal(
         fs.existsSync(packageDistAsset),
         true,
@@ -678,12 +724,9 @@ describe('main-agent dist build', () => {
       );
     }
 
-    const criticalAuditorProfileRuntime = require(path.join(
-      DIST_ROOT,
-      'source-authority',
-      'scripts',
-      'critical-auditor-profile.js'
-    ));
+    const criticalAuditorProfileRuntime = require(
+      path.join(DIST_ROOT, 'source-authority', 'scripts', 'critical-auditor-profile.js')
+    );
     const profile = criticalAuditorProfileRuntime.resolveCriticalAuditorProfile(REPO_ROOT);
     assert.equal(profile.schemaVersion, 'critical-auditor-profile/v1');
   });
@@ -711,7 +754,8 @@ describe('main-agent dist build', () => {
   });
 
   it('builds package _bmad mirror before source-authority import rewriting', () => {
-    const packageRuntimeAsset = 'packages/bmad-speckit/_bmad/runtime/hooks/deferred-gap-governance.cjs';
+    const packageRuntimeAsset =
+      'packages/bmad-speckit/_bmad/runtime/hooks/deferred-gap-governance.cjs';
     withTemporarilyMovedFiles([packageRuntimeAsset], () => {
       execFileSync(process.execPath, [BUILD_SCRIPT], {
         cwd: PACKAGE_ROOT,

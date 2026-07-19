@@ -1,10 +1,8 @@
 import authorityCore from './requirements-contract-runtime-status-authority-core.cjs';
 
-export const REQUIREMENTS_CONTRACT_SIX_MODEL_IDS =
-  authorityCore.SIX_MODEL_IDS;
+export const REQUIREMENTS_CONTRACT_SIX_MODEL_IDS = authorityCore.SIX_MODEL_IDS;
 
-export type RequirementsContractSixModelId =
-  (typeof REQUIREMENTS_CONTRACT_SIX_MODEL_IDS)[number];
+export type RequirementsContractSixModelId = (typeof REQUIREMENTS_CONTRACT_SIX_MODEL_IDS)[number];
 
 export interface RuntimeStatusBinding {
   role: string;
@@ -25,17 +23,9 @@ export interface RequirementsContractRuntimeStatusDecisionReceipt {
   deterministicGateOutputs: RuntimeStatusBinding[];
   blockerRefs: string[];
   evidenceRefs: string[];
-  authorityClass:
-    | 'controlled_confirmation'
-    | 'deterministic_gate'
-    | 'controlled_closeout';
+  authorityClass: 'controlled_confirmation' | 'deterministic_gate' | 'controlled_closeout';
   decision: 'pass' | 'block' | 'stale';
-  effectiveStatus:
-    | 'pass'
-    | 'blocked'
-    | 'stale'
-    | 'not_established'
-    | 'awaiting_user_acceptance';
+  effectiveStatus: 'pass' | 'blocked' | 'stale' | 'not_established' | 'awaiting_user_acceptance';
   createdAt: string;
   receiptHash: string;
 }
@@ -45,8 +35,7 @@ export type CreateRuntimeStatusDecisionReceiptInput = Omit<
   'schemaVersion' | 'receiptHash'
 >;
 
-export interface CreateRuntimeStatusProjectionUpdateInput
-  extends CreateRuntimeStatusDecisionReceiptInput {
+export interface CreateRuntimeStatusProjectionUpdateInput extends CreateRuntimeStatusDecisionReceiptInput {
   receiptPath: string;
   projection: Record<string, unknown>;
 }
@@ -61,10 +50,42 @@ export interface RuntimeStatusProjectionUpdate {
   missingAuthorityBindings: string[];
 }
 
+function normalizeRuntimeStatusPath(value: string): string {
+  return value.replace(/\\/gu, '/');
+}
+
+function normalizeRuntimeStatusBindings(bindings: RuntimeStatusBinding[]): RuntimeStatusBinding[] {
+  return bindings.map((binding) => ({
+    ...binding,
+    path: normalizeRuntimeStatusPath(binding.path),
+  }));
+}
+
+function normalizeDecisionReceiptInput(
+  input: CreateRuntimeStatusDecisionReceiptInput
+): CreateRuntimeStatusDecisionReceiptInput {
+  return {
+    ...input,
+    stageInputs: normalizeRuntimeStatusBindings(input.stageInputs),
+    deterministicGateOutputs: normalizeRuntimeStatusBindings(input.deterministicGateOutputs),
+    evidenceRefs: input.evidenceRefs.map(normalizeRuntimeStatusPath),
+  };
+}
+
+function normalizeProjectionUpdateInput(
+  input: CreateRuntimeStatusProjectionUpdateInput
+): CreateRuntimeStatusProjectionUpdateInput {
+  return {
+    ...normalizeDecisionReceiptInput(input),
+    receiptPath: normalizeRuntimeStatusPath(input.receiptPath),
+    projection: input.projection,
+  };
+}
+
 export function createRuntimeStatusDecisionReceipt(
   input: CreateRuntimeStatusDecisionReceiptInput
 ): RequirementsContractRuntimeStatusDecisionReceipt {
-  return authorityCore.createRuntimeStatusDecisionReceipt(input);
+  return authorityCore.createRuntimeStatusDecisionReceipt(normalizeDecisionReceiptInput(input));
 }
 
 export function validateRuntimeStatusDecisionReceipt(
@@ -82,9 +103,7 @@ function validBindings(bindings: RuntimeStatusBinding[]): boolean {
     bindings.length > 0 &&
     bindings.every(
       (binding) =>
-        binding.role.trim().length > 0 &&
-        binding.path.trim().length > 0 &&
-        isSha256(binding.hash)
+        binding.role.trim().length > 0 && binding.path.trim().length > 0 && isSha256(binding.hash)
     )
   );
 }
@@ -92,32 +111,34 @@ function validBindings(bindings: RuntimeStatusBinding[]): boolean {
 export function createRuntimeStatusProjectionUpdate(
   input: CreateRuntimeStatusProjectionUpdateInput
 ): RuntimeStatusProjectionUpdate {
+  const normalizedInput = normalizeProjectionUpdateInput(input);
   const missingAuthorityBindings = [
-    ...(!input.recordId.trim() ? ['recordId'] : []),
-    ...(!input.requirementSetId.trim() ? ['requirementSetId'] : []),
-    ...(!input.implementationAttemptId.trim() ? ['implementationAttemptId'] : []),
-    ...(!isSha256(input.sourceDocumentHash) ? ['sourceDocumentHash'] : []),
-    ...(!isSha256(input.implementationConfirmationHash)
+    ...(!normalizedInput.recordId.trim() ? ['recordId'] : []),
+    ...(!normalizedInput.requirementSetId.trim() ? ['requirementSetId'] : []),
+    ...(!normalizedInput.implementationAttemptId.trim() ? ['implementationAttemptId'] : []),
+    ...(!isSha256(normalizedInput.sourceDocumentHash) ? ['sourceDocumentHash'] : []),
+    ...(!isSha256(normalizedInput.implementationConfirmationHash)
       ? ['implementationConfirmationHash']
       : []),
-    ...(!isSha256(input.semanticModelHash) ? ['semanticModelHash'] : []),
-    ...(!validBindings(input.stageInputs) ? ['stageInputs'] : []),
-    ...(!validBindings(input.deterministicGateOutputs)
+    ...(!isSha256(normalizedInput.semanticModelHash) ? ['semanticModelHash'] : []),
+    ...(!validBindings(normalizedInput.stageInputs) ? ['stageInputs'] : []),
+    ...(!validBindings(normalizedInput.deterministicGateOutputs)
       ? ['deterministicGateOutputs']
       : []),
-    ...(!input.receiptPath.trim() ? ['receiptPath'] : []),
+    ...(!normalizedInput.receiptPath.trim() ? ['receiptPath'] : []),
   ];
   if (missingAuthorityBindings.length > 0) {
     const blocker = `runtime_status_authority_context_missing:${missingAuthorityBindings.join(',')}`;
-    const blockingReasons = Array.isArray(input.projection.blockingReasons)
-      ? input.projection.blockingReasons.map(String)
+    const blockingReasons = Array.isArray(normalizedInput.projection.blockingReasons)
+      ? normalizedInput.projection.blockingReasons.map(String)
       : [];
     return {
       projection: {
-        ...input.projection,
+        ...normalizedInput.projection,
         status:
-          input.effectiveStatus === 'blocked' || input.effectiveStatus === 'stale'
-            ? input.effectiveStatus
+          normalizedInput.effectiveStatus === 'blocked' ||
+          normalizedInput.effectiveStatus === 'stale'
+            ? normalizedInput.effectiveStatus
             : 'not_established',
         blockingReasons: [...new Set([...blockingReasons, blocker])],
       },
@@ -126,7 +147,7 @@ export function createRuntimeStatusProjectionUpdate(
       missingAuthorityBindings,
     };
   }
-  const binding = createRuntimeStatusProjectionBinding(input);
+  const binding = createRuntimeStatusProjectionBinding(normalizedInput);
   return {
     ...binding,
     authorityEstablished: true,
@@ -141,7 +162,9 @@ function objectValue(value: unknown): Record<string, unknown> {
 }
 
 function objectValues(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.map(objectValue).filter((item) => Object.keys(item).length) : [];
+  return Array.isArray(value)
+    ? value.map(objectValue).filter((item) => Object.keys(item).length)
+    : [];
 }
 
 export function runtimeStatusProjectionRecordPatch(input: {
@@ -237,17 +260,9 @@ export function createRuntimeStatusProjectionBinding(input: {
   deterministicGateOutputs: RuntimeStatusBinding[];
   blockerRefs: string[];
   evidenceRefs: string[];
-  authorityClass:
-    | 'controlled_confirmation'
-    | 'deterministic_gate'
-    | 'controlled_closeout';
+  authorityClass: 'controlled_confirmation' | 'deterministic_gate' | 'controlled_closeout';
   decision: 'pass' | 'block' | 'stale';
-  effectiveStatus:
-    | 'pass'
-    | 'blocked'
-    | 'stale'
-    | 'not_established'
-    | 'awaiting_user_acceptance';
+  effectiveStatus: 'pass' | 'blocked' | 'stale' | 'not_established' | 'awaiting_user_acceptance';
   createdAt: string;
   receiptPath: string;
   projection: Record<string, unknown>;
@@ -258,36 +273,37 @@ export function createRuntimeStatusProjectionBinding(input: {
     receipt: RequirementsContractRuntimeStatusDecisionReceipt;
   };
 } {
+  const normalizedInput = normalizeProjectionUpdateInput(input);
   const receipt = createRuntimeStatusDecisionReceipt({
-    recordId: input.recordId,
-    requirementSetId: input.requirementSetId,
-    modelId: input.modelId,
-    implementationAttemptId: input.implementationAttemptId,
-    sourceDocumentHash: input.sourceDocumentHash,
-    implementationConfirmationHash: input.implementationConfirmationHash,
-    semanticModelHash: input.semanticModelHash,
-    stageInputs: input.stageInputs,
-    deterministicGateOutputs: input.deterministicGateOutputs,
-    blockerRefs: input.blockerRefs,
-    evidenceRefs: input.evidenceRefs,
-    authorityClass: input.authorityClass,
-    decision: input.decision,
-    effectiveStatus: input.effectiveStatus,
-    createdAt: input.createdAt,
+    recordId: normalizedInput.recordId,
+    requirementSetId: normalizedInput.requirementSetId,
+    modelId: normalizedInput.modelId,
+    implementationAttemptId: normalizedInput.implementationAttemptId,
+    sourceDocumentHash: normalizedInput.sourceDocumentHash,
+    implementationConfirmationHash: normalizedInput.implementationConfirmationHash,
+    semanticModelHash: normalizedInput.semanticModelHash,
+    stageInputs: normalizedInput.stageInputs,
+    deterministicGateOutputs: normalizedInput.deterministicGateOutputs,
+    blockerRefs: normalizedInput.blockerRefs,
+    evidenceRefs: normalizedInput.evidenceRefs,
+    authorityClass: normalizedInput.authorityClass,
+    decision: normalizedInput.decision,
+    effectiveStatus: normalizedInput.effectiveStatus,
+    createdAt: normalizedInput.createdAt,
   });
   return {
     projection: {
-      ...input.projection,
-      status: input.effectiveStatus,
-      currentAttemptId: input.implementationAttemptId,
-      sourceDocumentHash: input.sourceDocumentHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      semanticModelHash: input.semanticModelHash,
-      decisionReceiptRef: input.receiptPath,
+      ...normalizedInput.projection,
+      status: normalizedInput.effectiveStatus,
+      currentAttemptId: normalizedInput.implementationAttemptId,
+      sourceDocumentHash: normalizedInput.sourceDocumentHash,
+      implementationConfirmationHash: normalizedInput.implementationConfirmationHash,
+      semanticModelHash: normalizedInput.semanticModelHash,
+      decisionReceiptRef: normalizedInput.receiptPath,
       decisionReceiptHash: receipt.receiptHash,
     },
     receiptRef: {
-      path: input.receiptPath,
+      path: normalizedInput.receiptPath,
       receipt,
     },
   };

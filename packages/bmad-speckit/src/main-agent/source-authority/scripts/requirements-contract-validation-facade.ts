@@ -6,6 +6,27 @@ import {
   type RequirementContractModelV2Issue,
 } from './requirements-contract-model';
 import {
+  type RequirementsContractDiagramApplicability,
+  type RequirementsContractProjectProfile,
+  validateDiagramApplicability,
+  validateRequirementsContractProjectProfile,
+} from './requirements-contract-project-profile';
+import {
+  type RequirementsContractDiagramSet,
+  type RequirementsContractSequenceContract,
+  validateDiagramSet,
+  validateSequenceContract,
+} from './requirements-contract-sequence-model';
+import { requirementsContractDiagramProjectionHash } from './requirements-contract-diagram-set-planner';
+import {
+  type RequirementsContractDeploymentModel,
+  validateRequirementsContractDeploymentModel,
+} from './requirements-contract-deployment-model';
+import {
+  type RequirementsContractDeploymentDelta,
+  validateRequirementsContractDeploymentDelta,
+} from './requirements-contract-deployment-delta';
+import {
   evaluateRequirementsContractLintProfile,
   type RequirementsContractLintProfile,
   type RequirementsContractLintProfileResult,
@@ -91,6 +112,18 @@ export interface RequirementsContractLifecycleValidationReport
     hash: string;
   };
   reportHash: string;
+}
+
+export interface RequirementsContractInteractionValidationIssue {
+  code: string;
+  path: string;
+  message: string;
+}
+
+export interface RequirementsContractInteractionValidationResult {
+  ok: boolean;
+  decision: 'pass' | 'block';
+  issues: RequirementsContractInteractionValidationIssue[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -255,6 +288,231 @@ export function validateRequirementsContractRenderInput(
   profile: RequirementsContractLintProfile
 ): RequirementsContractLintProfileResult {
   return evaluateRequirementsContractLintProfile(input, profile);
+}
+
+function addInteractionIssue(
+  issues: RequirementsContractInteractionValidationIssue[],
+  issue: RequirementsContractInteractionValidationIssue
+): void {
+  if (issues.some((candidate) => candidate.code === issue.code && candidate.path === issue.path)) {
+    return;
+  }
+  issues.push(issue);
+}
+
+function addInteractionIssues(
+  target: RequirementsContractInteractionValidationIssue[],
+  prefix: string,
+  source: Array<{ code: string; path: string; message: string }>
+): void {
+  for (const issue of source) {
+    addInteractionIssue(target, {
+      ...issue,
+      path: `${prefix}${issue.path === '/' ? '' : issue.path}`,
+    });
+  }
+}
+
+export function validateRequirementsContractInteractionArtifacts(input: {
+  projectProfile: RequirementsContractProjectProfile;
+  projectProfileHash: string;
+  diagramApplicability: RequirementsContractDiagramApplicability;
+  sequenceContract: RequirementsContractSequenceContract;
+  diagramSets: RequirementsContractDiagramSet[];
+  deploymentBaseline?: RequirementsContractDeploymentModel;
+  deploymentDelta?: RequirementsContractDeploymentDelta;
+}): RequirementsContractInteractionValidationResult {
+  const issues: RequirementsContractInteractionValidationIssue[] = [];
+  addInteractionIssues(
+    issues,
+    '/projectProfile',
+    validateRequirementsContractProjectProfile(input.projectProfile).issues
+  );
+  const expectedProjectProfileHash = sha256Stable(input.projectProfile);
+  if (input.projectProfileHash !== expectedProjectProfileHash) {
+    addInteractionIssue(issues, {
+      code: 'project_profile_hash_mismatch',
+      path: '/projectProfileHash',
+      message: 'project profile hash does not match canonical profile content',
+    });
+  }
+  if (input.diagramApplicability.projectProfileHash !== input.projectProfileHash) {
+    addInteractionIssue(issues, {
+      code: 'diagram_applicability_project_profile_hash_mismatch',
+      path: '/diagramApplicability/projectProfileHash',
+      message: 'diagram applicability is not bound to the current project profile',
+    });
+  }
+  addInteractionIssues(
+    issues,
+    '/diagramApplicability',
+    validateDiagramApplicability(input.diagramApplicability, input.projectProfile).issues
+  );
+  if (
+    input.sequenceContract.projectProfileHash !== input.projectProfileHash ||
+    input.sequenceContract.projectKind !== input.projectProfile.projectKind
+  ) {
+    addInteractionIssue(issues, {
+      code: 'sequence_project_profile_mismatch',
+      path: '/sequenceContract/projectProfileHash',
+      message: 'sequence contract is not bound to the current project profile',
+    });
+  }
+  addInteractionIssues(
+    issues,
+    '/sequenceContract',
+    validateSequenceContract(input.sequenceContract).issues
+  );
+
+  const scenarioIds = new Set(
+    input.sequenceContract.sequenceScenarios.map((scenario) => scenario.id)
+  );
+  const messageRefs = new Set(
+    input.sequenceContract.sequenceScenarios.flatMap((scenario) =>
+      scenario.steps.map((step) => `${scenario.id}#${step.id}`)
+    )
+  );
+  input.diagramSets.forEach((diagramSet, setIndex) => {
+    const setPath = `/diagramSets/${setIndex}`;
+    addInteractionIssues(issues, setPath, validateDiagramSet(diagramSet).issues);
+    if (diagramSet.sequenceContractHash !== input.sequenceContract.sequenceContractHash) {
+      addInteractionIssue(issues, {
+        code: 'diagram_sequence_contract_hash_mismatch',
+        path: `${setPath}/sequenceContractHash`,
+        message: 'diagram set is not bound to the current sequence contract',
+      });
+    }
+
+    const diagramByRef = new Map(
+      diagramSet.diagrams.map((diagram) => [diagram.diagramRef, diagram])
+    );
+    const diagramChildRefs = new Set(
+      diagramSet.diagrams.flatMap((diagram) => diagram.blockingChildRefs)
+    );
+    const setChildRefs = new Set(diagramSet.blockingChildRefs);
+    if (
+      diagramChildRefs.size !== setChildRefs.size ||
+      [...diagramChildRefs].some((ref) => !setChildRefs.has(ref))
+    ) {
+      addInteractionIssue(issues, {
+        code: 'diagram_blocking_child_closure_mismatch',
+        path: `${setPath}/blockingChildRefs`,
+        message: 'diagram-level and set-level blocking child refs differ',
+      });
+    }
+
+    diagramSet.diagrams.forEach((diagram, diagramIndex) => {
+      const diagramPath = `${setPath}/diagrams/${diagramIndex}`;
+      if (!scenarioIds.has(diagram.scenarioRef)) {
+        addInteractionIssue(issues, {
+          code: 'unknown_diagram_scenario_ref',
+          path: `${diagramPath}/scenarioRef`,
+          message: `unknown diagram scenario ref: ${diagram.scenarioRef}`,
+        });
+      }
+      diagram.messageRefs.forEach((messageRef, messageIndex) => {
+        if (!messageRefs.has(messageRef)) {
+          addInteractionIssue(issues, {
+            code: 'unknown_diagram_message_ref',
+            path: `${diagramPath}/messageRefs/${messageIndex}`,
+            message: `unknown diagram message ref: ${messageRef}`,
+          });
+        }
+      });
+      const { projectionHash, ...projection } = diagram;
+      const expectedProjectionHash = requirementsContractDiagramProjectionHash({
+        sequenceContractHash: diagramSet.sequenceContractHash,
+        diagram: projection,
+      });
+      if (projectionHash !== expectedProjectionHash) {
+        addInteractionIssue(issues, {
+          code: 'diagram_projection_hash_mismatch',
+          path: `${diagramPath}/projectionHash`,
+          message: `diagram projection hash mismatch: ${diagram.diagramRef}`,
+        });
+      }
+    });
+
+    const expandedChildren = new Set<string>();
+    diagramSet.transitionEdges.forEach((transition, transitionIndex) => {
+      const transitionPath = `${setPath}/transitionEdges/${transitionIndex}`;
+      if (!messageRefs.has(transition.messageRef)) {
+        addInteractionIssue(issues, {
+          code: 'unknown_diagram_transition_message_ref',
+          path: `${transitionPath}/messageRef`,
+          message: `unknown diagram transition message ref: ${transition.messageRef}`,
+        });
+      }
+      const child = diagramByRef.get(transition.expandsTo);
+      if (child) {
+        expandedChildren.add(transition.expandsTo);
+        if (!child.messageRefs.includes(transition.messageRef)) {
+          addInteractionIssue(issues, {
+            code: 'diagram_transition_child_message_mismatch',
+            path: transitionPath,
+            message: `transition message is not rendered by child: ${transition.expandsTo}`,
+          });
+        }
+      }
+    });
+    for (const childRef of setChildRefs) {
+      if (!expandedChildren.has(childRef)) {
+        addInteractionIssue(issues, {
+          code: 'diagram_blocking_child_transition_missing',
+          path: `${setPath}/blockingChildRefs`,
+          message: `blocking child has no transition: ${childRef}`,
+        });
+      }
+    }
+
+    const expectedProjectionHashes = diagramSet.diagrams
+      .map((diagram) => diagram.projectionHash)
+      .sort();
+    const declaredProjectionHashes = [...diagramSet.projectionHashes].sort();
+    if (
+      expectedProjectionHashes.length !== declaredProjectionHashes.length ||
+      expectedProjectionHashes.some(
+        (projectionHash, index) => projectionHash !== declaredProjectionHashes[index]
+      )
+    ) {
+      addInteractionIssue(issues, {
+        code: 'diagram_projection_hash_set_mismatch',
+        path: `${setPath}/projectionHashes`,
+        message: 'diagram projection hash inventory differs from diagram members',
+      });
+    }
+  });
+
+  if (input.deploymentBaseline) {
+    addInteractionIssues(
+      issues,
+      '/deploymentBaseline',
+      validateRequirementsContractDeploymentModel(input.deploymentBaseline).issues
+    );
+  }
+  if (input.deploymentDelta) {
+    addInteractionIssues(
+      issues,
+      '/deploymentDelta',
+      validateRequirementsContractDeploymentDelta(input.deploymentDelta).issues
+    );
+    if (
+      input.deploymentBaseline &&
+      input.deploymentDelta.baselineModelHash !== input.deploymentBaseline.modelHash
+    ) {
+      addInteractionIssue(issues, {
+        code: 'deployment_delta_baseline_hash_mismatch',
+        path: '/deploymentDelta/baselineModelHash',
+        message: 'deployment delta is not bound to the supplied baseline',
+      });
+    }
+  }
+
+  return {
+    ok: issues.length === 0,
+    decision: issues.length === 0 ? 'pass' : 'block',
+    issues,
+  };
 }
 
 export function createRequirementsContractLifecycleValidationReport(input: {

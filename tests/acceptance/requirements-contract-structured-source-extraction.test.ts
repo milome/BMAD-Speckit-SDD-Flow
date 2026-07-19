@@ -55,14 +55,24 @@ describe('requirements contract structured source extraction', () => {
         targetPath: 'src/product_widget.py',
         requiredCommand: 'pytest src/product_widget.py',
       });
+      expect(issueCodes(result), JSON.stringify(result.blockingIssues ?? [])).toContain(
+        'source_projection_authority_missing'
+      );
+
       const paths = artifacts(root, 'REQ-STRUCTURED-SOURCE', 'REQ-STRUCTURED-SOURCE-SET');
       const candidates = readJson(paths.controlledMustCandidates);
+      const draft = readJson(paths.draftImplementationConfirmation);
       const ledger = readJson(paths.requirementCoverageLedger);
       const candidateText = JSON.stringify(candidates.candidates);
       const ledgerText = JSON.stringify(ledger.entries);
+      const mustIds = draft.mustRequirements.map((requirement: Record<string, unknown>) =>
+        String(requirement.id)
+      );
 
-      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(candidates.acceptedCandidateCount).toBeGreaterThanOrEqual(6);
+      expect(mustIds).toHaveLength(candidates.acceptedCandidateCount);
+      expect(new Set(mustIds).size).toBe(mustIds.length);
+      expect(mustIds.every((id: string) => /^MUST-FR-\d{3}$/u.test(id))).toBe(true);
       expect(candidateText).toContain('preserve preview state');
       expect(candidateText).toContain('批量操作必须支持');
       expect(candidateText).toContain('主图摘要展示');

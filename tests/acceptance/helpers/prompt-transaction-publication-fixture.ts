@@ -26,6 +26,24 @@ export function writeText(filePath: string, value: string): string {
 
 export function materializePromptPublicationFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prompt-transaction-publication-'));
+  const stageRegistryPath = path.join(
+    root,
+    'authority',
+    'requirements-contract-stage-registry.ts'
+  );
+  fs.mkdirSync(path.dirname(stageRegistryPath), { recursive: true });
+  fs.copyFileSync(
+    path.resolve(
+      'packages',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'scripts',
+      'requirements-contract-stage-registry.ts'
+    ),
+    stageRegistryPath
+  );
   const seed = randomUUID();
   const token = createHash('sha256').update(seed).digest('hex').slice(0, 16);
   const schemaToken = token.toUpperCase();
@@ -520,9 +538,7 @@ implementationConfirmation:
         `${implementationAttemptId}.json`
       ),
       attemptContext,
-      stageRegistry: path.resolve(
-        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-stage-registry.ts'
-      ),
+      stageRegistry: stageRegistryPath,
       requirementsConfirmationReceipt,
       architectureConfirmationReceipt,
       consumerRoot,
@@ -531,4 +547,49 @@ implementationConfirmation:
       json: true,
     },
   };
+}
+
+export function setPromptPublicationGoalAvailability(
+  fixture: ReturnType<typeof materializePromptPublicationFixture>,
+  goalCommandAvailable: boolean
+): void {
+  writeText(
+    fixture.paths.installedCliPath,
+    [
+      "if (process.argv[2] !== 'requirements-contract-consumer-cli-capability-observe') process.exit(64);",
+      `process.stdout.write(JSON.stringify({schemaVersion:'requirements-contract-consumer-cli-capability/v1',executionHost:'codex',goalCommandAvailable:${goalCommandAvailable}}));`,
+      '',
+    ].join('\n')
+  );
+  const actionBinding = JSON.parse(
+    fs.readFileSync(fixture.paths.actionBindingManifest, 'utf8')
+  ) as {
+    actions: Array<{
+      runtimeRefs?: Array<{ role?: string; hash?: string }>;
+    }>;
+  };
+  const promptActionBinding = actionBinding.actions.find((action) =>
+    action.runtimeRefs?.some((ref) => ref.role === 'installed-cli')
+  );
+  const installedCliBinding = promptActionBinding?.runtimeRefs?.find(
+    (ref) => ref.role === 'installed-cli'
+  );
+  if (!installedCliBinding) {
+    throw new Error('prompt_publication_fixture_installed_cli_binding_missing');
+  }
+  installedCliBinding.hash = fileHash(fixture.paths.installedCliPath);
+  writeJson(fixture.paths.actionBindingManifest, actionBinding);
+
+  const profile = JSON.parse(
+    fs.readFileSync(fixture.paths.consumerProjectProfile, 'utf8')
+  );
+  profile.capabilityProbeArtifactRef.hash = fileHash(fixture.paths.installedCliPath);
+  profile.packageRuntimeActionBindingManifestRef.hash = fileHash(
+    fixture.paths.actionBindingManifest
+  );
+  writeJson(fixture.paths.consumerProjectProfile, profile);
+
+  const attempt = JSON.parse(fs.readFileSync(fixture.paths.attemptContext, 'utf8'));
+  attempt.consumerProjectProfileRef.hash = fileHash(fixture.paths.consumerProjectProfile);
+  writeJson(fixture.paths.attemptContext, attempt);
 }

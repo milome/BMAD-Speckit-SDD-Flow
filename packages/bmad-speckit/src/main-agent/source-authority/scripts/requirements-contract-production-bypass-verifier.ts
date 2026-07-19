@@ -43,8 +43,7 @@ export interface RequirementsContractProductionBypassVerifyOptions {
 }
 
 const SCHEMA_VERSION = 'requirements-contract-production-bypass-closure-report/v1';
-const CORPUS_SCHEMA_VERSION =
-  'requirements-contract-production-bypass-closure-corpus/v1';
+const CORPUS_SCHEMA_VERSION = 'requirements-contract-production-bypass-closure-corpus/v1';
 const PRODUCER = 'requirements-contract-production-bypass-verifier';
 const ACTION = 'requirements-contract-production-bypass-verify';
 const DEFAULT_CORPUS_PATH =
@@ -80,8 +79,7 @@ const COVERAGE_METRICS = [
 ] as const;
 
 const METRIC_SOURCE_FILES: Record<string, string> = {
-  checkpointReceiptWithoutSemanticValidatorCount:
-    'checkpoint-semantic-validation-receipts.json',
+  checkpointReceiptWithoutSemanticValidatorCount: 'checkpoint-semantic-validation-receipts.json',
   checkpointSemanticValidatorCoverage: 'checkpoint-semantic-validation-receipts.json',
   blockedCheckpointMarkedCompletedCount: 'checkpoint-progress-consistency-report.json',
   sourcePrdLintBypassProgressionCount: 'source-prd-lint-state-transition-report.json',
@@ -104,8 +102,7 @@ const METRIC_SOURCE_FILES: Record<string, string> = {
   packageActionSemanticBindingCoverage:
     '_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json',
   syntheticCriticalAuditorNoGapCount: 'critical-auditor-independence-report.json',
-  criticalAuditorProviderIdentityMismatchCount:
-    'critical-auditor-independence-report.json',
+  criticalAuditorProviderIdentityMismatchCount: 'critical-auditor-independence-report.json',
   criticalAuditorProjectionCoverage: 'critical-auditor-independence-report.json',
   currentAttemptClosureWithoutIndependentOracleCount: 'G05-trace-graph.json',
 };
@@ -114,6 +111,11 @@ const FROZEN_METRIC_KINDS = new Map<string, MetricKind>([
   ...ZERO_COUNT_METRICS.map((metric) => [metric, 'zero_count'] as const),
   ...COVERAGE_METRICS.map((metric) => [metric, 'coverage'] as const),
 ]);
+const POINTER_SELECTION_METRICS: Record<string, string> = {
+  historicalPacketSelectionCount: 'historicalFallbackCount',
+  packetWithoutTransactionBindingCount: 'missingBindingCount',
+  currentDispatchPointerCoverage: 'currentDispatchPointerCoverage',
+};
 
 function object(value: unknown): JsonRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -132,17 +134,26 @@ function decisionOf(document: JsonRecord): string | null {
   );
 }
 
+function metricValue(document: JsonRecord, sourcePath: string, metric: string): unknown {
+  if (sourcePath === 'current-dispatch-pointer-receipt.json') {
+    const pointerMetric = POINTER_SELECTION_METRICS[metric];
+    if (pointerMetric) {
+      const selectionMetrics = object(document.selectionMetrics);
+      if (selectionMetrics[pointerMetric] !== undefined) {
+        return selectionMetrics[pointerMetric];
+      }
+    }
+  }
+  return document[metric];
+}
+
 function schemaValidator(name: string) {
   const schemaPath = path.resolve(__dirname, '..', 'schemas', name);
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
   return new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 }
 
-function sourceTarget(
-  cwd: string,
-  evidenceRoot: string,
-  sourcePath: string
-): string {
+function sourceTarget(cwd: string, evidenceRoot: string, sourcePath: string): string {
   return path.resolve(sourcePath.startsWith('_bmad/') ? cwd : evidenceRoot, sourcePath);
 }
 
@@ -223,7 +234,10 @@ function readJsonEvidence(
   }
 }
 
-function readCorpus(corpusPath: string, issues: Issue[]): {
+function readCorpus(
+  corpusPath: string,
+  issues: Issue[]
+): {
   ref: EvidenceRef;
   cases: CorpusCase[];
 } {
@@ -251,9 +265,7 @@ function readCorpus(corpusPath: string, issues: Issue[]): {
       cases.length === FROZEN_METRIC_KINDS.size &&
       actualKinds.size === FROZEN_METRIC_KINDS.size &&
       first.equals(canonicalCorpus) &&
-      [...FROZEN_METRIC_KINDS].every(
-        ([metric, kind]) => actualKinds.get(metric) === kind
-      );
+      [...FROZEN_METRIC_KINDS].every(([metric, kind]) => actualKinds.get(metric) === kind);
     if (!corpusValid) {
       issues.push({ code: 'production_bypass_corpus_invalid', sourcePath: baseRef.sourcePath });
     }
@@ -297,9 +309,7 @@ export function evaluateProductionBypassClosure(
   }
   const cwd = path.resolve(options.cwd);
   const evidenceRoot = path.resolve(options.evidenceRoot);
-  const corpusPath = path.resolve(
-    options.corpusPath ?? defaultCorpusPath(cwd)
-  );
+  const corpusPath = path.resolve(options.corpusPath ?? defaultCorpusPath(cwd));
   const issues: Issue[] = [];
   const corpus = readCorpus(corpusPath, issues);
   const sourcePaths = [...new Set(Object.values(METRIC_SOURCE_FILES))];
@@ -312,7 +322,7 @@ export function evaluateProductionBypassClosure(
   const metricValues: Record<string, number> = {};
   for (const [metric, kind] of FROZEN_METRIC_KINDS) {
     const sourcePath = METRIC_SOURCE_FILES[metric];
-    const actual = documents.get(sourcePath)?.[metric];
+    const actual = metricValue(documents.get(sourcePath) ?? {}, sourcePath, metric);
     const expected = kind === 'zero_count' ? 0 : 1;
     if (typeof actual !== 'number' || !Number.isFinite(actual)) {
       metricValues[metric] = kind === 'zero_count' ? 1 : 0;
@@ -367,8 +377,7 @@ export function evaluateProductionBypassClosure(
   }
   const independentOracleClosureCount = declaredIndependentOracleClosureCount;
   const productionBypassClosureIssueCount = issues.length;
-  const correctnessDecision =
-    productionBypassClosureIssueCount === 0 ? 'PASS' : 'BLOCK';
+  const correctnessDecision = productionBypassClosureIssueCount === 0 ? 'PASS' : 'BLOCK';
   return {
     schemaVersion: SCHEMA_VERSION,
     producer: PRODUCER,

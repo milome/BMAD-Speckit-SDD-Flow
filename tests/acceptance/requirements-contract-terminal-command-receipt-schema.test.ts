@@ -57,9 +57,9 @@ function receipt() {
     finalizationTargets: [
       finalizationTarget(
         1,
-        'AMEND05-SAFE-WRITE-MANIFEST',
-        'docs/plans/evidence/loop-engineering-remediation/amend05-safe-write-receipt-manifest.json',
-        'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json',
+        'SAFE-WRITE-RECEIPT-MANIFEST',
+        'docs/plans/evidence/loop-engineering-remediation/safe-write-receipt-manifest.json',
+        'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json',
         'not_applicable'
       ),
       finalizationTarget(
@@ -67,7 +67,7 @@ function receipt() {
         'EVD-15',
         'docs/plans/evidence/loop-engineering-remediation/G15-final-gates.json',
         'docs/plans/evidence/loop-engineering-remediation/finalization-receipts/G15-final-gates.receipt.json',
-        'AMEND05-SAFE-WRITE-MANIFEST'
+        'SAFE-WRITE-RECEIPT-MANIFEST'
       ),
       finalizationTarget(
         3,

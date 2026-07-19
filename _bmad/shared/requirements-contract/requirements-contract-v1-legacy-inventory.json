@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "requirements-contract-v1-legacy-inventory/v1",
+  "cutoverId": "V2-CUTOVER-019F4C5A-BD07-7170-A123-FD9E9B556BB3",
+  "cutoverPredecessorArtifact12Hash": "sha256:bb0a9c02f46f17fe5be66c476131cb2fb82001af80702161b616e549f63cdaef",
+  "g00BaselineHash": "sha256:0cf615aa5673d9dc1fd91f5920662bdb521b47c7d87383f239a2ccb2f8e7d0c2",
+  "frozen": true,
+  "rows": []
+}

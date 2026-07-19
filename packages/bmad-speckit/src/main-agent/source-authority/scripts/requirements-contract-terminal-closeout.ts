@@ -9,6 +9,10 @@ import {
   slash,
   writeGovernedJson,
 } from './requirements-contract-governed-write';
+import {
+  deriveRequirementsContractFrozenUniverse,
+  validateRequirementsContractEvidenceUniverse,
+} from './requirements-contract-frozen-universe';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
 
@@ -139,6 +143,16 @@ export function renderRequirementsContractTerminalCloseout(
   );
   const contractHash = fileHash(contractPath);
   const bundleHash = fileHash(bundlePath);
+  const universe = deriveRequirementsContractFrozenUniverse(contractPath);
+  validateRequirementsContractEvidenceUniverse(
+    {
+      sourceAmendmentHashes: bundle.sourceAmendmentHashes,
+      coverage: bundle.coverage,
+      evidenceIndex: bundle.evidenceIndex,
+      artifactIndex: bundle.artifactIndex,
+    },
+    universe
+  );
   if (
     terminalReceipt.result !== 'PASS' ||
     terminalReceipt.orderedExecutionDecision !== 'pass' ||
@@ -190,6 +204,15 @@ export function renderRequirementsContractTerminalCloseout(
     upstreamEvidenceHash: sha256(canonicalJson(bundle)),
   };
   rejectForbiddenPacketFacts(packet);
+  validateRequirementsContractEvidenceUniverse(
+    {
+      sourceAmendmentHashes: packet.authority.sourceAmendmentHashes,
+      coverage: packet.coverage,
+      evidenceIndex: packet.evidenceIndex,
+      artifactIndex: packet.artifactIndex,
+    },
+    universe
+  );
   validate(
     packet,
     'requirements-contract-terminal-closeout-packet.schema.json',
@@ -244,6 +267,11 @@ export function projectRequirementsContractTerminalCloseout(
   const readbackReceiptPath = resolveWithin(root, options.readbackReceipt);
   const packet = readJson(packetPath);
   const readbackReceipt = readJson(readbackReceiptPath);
+  const contractPath = resolveWithin(root, String(packet.contract?.path ?? ''));
+  if (fileHash(contractPath) !== packet.contract?.hash) {
+    throw new Error('terminal_closeout_contract_hash_mismatch');
+  }
+  const universe = deriveRequirementsContractFrozenUniverse(contractPath);
   validate(
     packet,
     'requirements-contract-terminal-closeout-packet.schema.json',
@@ -263,6 +291,15 @@ export function projectRequirementsContractTerminalCloseout(
     throw new Error('terminal_closeout_readback_binding_mismatch');
   }
   rejectForbiddenPacketFacts(packet);
+  validateRequirementsContractEvidenceUniverse(
+    {
+      sourceAmendmentHashes: packet.authority.sourceAmendmentHashes,
+      coverage: packet.coverage,
+      evidenceIndex: packet.evidenceIndex,
+      artifactIndex: packet.artifactIndex,
+    },
+    universe
+  );
   return {
     ...packet,
     terminalCloseoutPacketPath: PACKET_PATH,

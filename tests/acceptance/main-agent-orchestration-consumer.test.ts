@@ -4,15 +4,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type {
-  CompiledPromptRef,
   ExecutionPacket,
   RecommendationPacket,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
-import { packetArtifactPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
   buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
   completeMainAgentPendingPacket,
+  ensureMainAgentDispatchPacket,
   invalidateMainAgentPendingPacket,
   mainMainAgentOrchestration,
   runMainAgentControlledReadinessAudit,
@@ -25,10 +24,17 @@ import {
 import { runUnifiedIngressAsync } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import {
+  requirementsContractPromptTransactionPublishCommand,
+  type PromptTransactionPublisherDeps,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher';
+import {
   createDefaultOrchestrationState,
   writeOrchestrationState,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import {
+  defaultRuntimeContextFile,
+  writeRuntimeContext,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   readRuntimeContextRegistry,
@@ -36,9 +42,14 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import { resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
+import { expandSixModelAuthority } from '../helpers/requirement-fixture-runtime';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 import type { ImplementationEntryGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
+import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
+import { materializePromptPublicationFixture } from './helpers/prompt-transaction-publication-fixture';
 
 const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'status',
@@ -132,6 +143,7 @@ function writeFakeReqTraceSkill(root: string): void {
       "const path = require('node:path');",
       'function arg(name) { const index = process.argv.indexOf(name); return index === -1 ? null : process.argv[index + 1]; }',
       "function shaFile(filePath) { return 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'); }",
+      'const compilerIdentity = { path: __filename, hash: shaFile(__filename) };',
       "const outDir = arg('--out-dir');",
       "const recordPath = arg('--requirement-record');",
       "const sourcePath = arg('--source-document');",
@@ -144,10 +156,10 @@ function writeFakeReqTraceSkill(root: string): void {
       "const humanPromptPath = path.join(outDir, 'human_prompt.txt');",
       "const goalExecutionPath = path.join(outDir, 'goal_execution.md');",
       "const auditReceiptPath = path.join(outDir, 'audit_receipt.json');",
-      "fs.writeFileSync(modelPacketPath, JSON.stringify({ artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile }, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(modelPacketPath, JSON.stringify({ entryScenario: 'main_agent_compile', entryExplicit: true, compilerIdentity, artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile }, null, 2) + '\\n', 'utf8');",
       "fs.writeFileSync(humanPromptPath, ['Execution Discipline Profile', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, 'compiled worker body', ''].join('\\n'), 'utf8');",
       "fs.writeFileSync(goalExecutionPath, ['# Goal Execution', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, ''].join('\\n'), 'utf8');",
-      "fs.writeFileSync(auditReceiptPath, JSON.stringify({ decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalExecutionPath) }, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } }, null, 2) + '\\n', 'utf8');",
+      "fs.writeFileSync(auditReceiptPath, JSON.stringify({ entryScenario: 'main_agent_compile', entryExplicit: true, compilerIdentity, decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalExecutionPath) }, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } }, null, 2) + '\\n', 'utf8');",
       'process.exit(0);',
       '',
     ].join('\n')
@@ -215,6 +227,26 @@ function removeTempRoot(root: string): void {
   rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 }
 
+function attachVerifiedSixModelAuthority(
+  record: Record<string, unknown>,
+  rawResults: Record<string, unknown>
+): void {
+  const sixModelAuthority = expandSixModelAuthority({
+    rawResults,
+    recordId: String(record.recordId),
+    requirementSetId: String(record.requirementSetId),
+    implementationAttemptId: String(
+      record.currentAttemptId ?? record.implementationAttemptId ?? record.runId
+    ),
+    sourceDocumentHash: String(record.sourceDocumentHash),
+    implementationConfirmationHash: String(record.implementationConfirmationHash),
+    semanticModelHash: String(record.semanticModelHash),
+  });
+  record.sixModelResults = sixModelAuthority.sixModelResults;
+  record.runtimeStatusDecisionReceipts = sixModelAuthority.runtimeStatusDecisionReceipts;
+  record.artifactIndex = sixModelAuthority.artifactIndex;
+}
+
 function copyCriticalAuditorConfig(root: string): void {
   for (const relativePath of [
     path.join('_bmad', '_config', 'audit-item-mapping.yaml'),
@@ -222,82 +254,6 @@ function copyCriticalAuditorConfig(root: string): void {
   ]) {
     writeTextFixture(path.join(root, relativePath), readFileSync(relativePath, 'utf8'));
   }
-}
-
-function writeCurrentCompiledImplementPacket(
-  root: string,
-  record: Record<string, unknown>,
-  packetId = 'implement-completed'
-): { packetPath: string; compiledPromptRef: CompiledPromptRef } {
-  const requirementSetId = String(record.requirementSetId);
-  const traceDir = path.join(
-    root,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    requirementSetId,
-    'trace-execution',
-    packetId
-  );
-  const modelPacketPath = path.join(traceDir, 'model_packet.json');
-  const humanPromptPath = path.join(traceDir, 'human_prompt.txt');
-  const auditReceiptPath = path.join(traceDir, 'audit_receipt.json');
-  const goalExecutionPath = path.join(traceDir, 'goal_execution.md');
-  writeJsonFixture(modelPacketPath, {
-    schemaVersion: 'model-packet-fixture/v1',
-    sourceDocumentHash: record.sourceDocumentHash,
-    implementationConfirmationHash: record.implementationConfirmationHash,
-  });
-  writeTextFixture(humanPromptPath, 'compiled prompt fixture\n');
-  writeTextFixture(goalExecutionPath, '# goal fixture\n');
-  writeJsonFixture(auditReceiptPath, {
-    decision: 'pass',
-    goalCommand: {
-      mode: 'native_goal_document_ref',
-      documentHash: sha256Text(readFileSync(goalExecutionPath, 'utf8')),
-    },
-  });
-  const compiledPromptRef: CompiledPromptRef = {
-    modelPacketPath,
-    modelPacketHash: sha256Text(readFileSync(modelPacketPath, 'utf8')),
-    humanPromptPath,
-    humanPromptHash: sha256Text(readFileSync(humanPromptPath, 'utf8')),
-    auditReceiptPath,
-    auditReceiptHash: sha256Text(readFileSync(auditReceiptPath, 'utf8')),
-    goalExecutionPath,
-    goalExecutionHash: sha256Text(readFileSync(goalExecutionPath, 'utf8')),
-    sourceDocumentHash: String(record.sourceDocumentHash),
-    implementationConfirmationHash: String(record.implementationConfirmationHash),
-  };
-  const packet: ExecutionPacket = {
-    packetId,
-    parentSessionId: requirementSetId,
-    flow: 'standalone_tasks',
-    phase: 'implement',
-    taskType: 'implement',
-    role: 'implementation-worker',
-    inputArtifacts: [String(record.sourcePath ?? record.artifactPath ?? 'docs/requirements.md')],
-    allowedWriteScope: ['src/**', 'tests/**', 'docs/**', '_bmad-output/**'],
-    expectedDelta: 'fixture implementation packet',
-    successCriteria: ['compiledPromptRef exists'],
-    stopConditions: ['true blocker'],
-    authorityMode: 'compiled_implementation_confirmation',
-    compiledPromptRef,
-    executionStrategy: {
-      eventType: 'execution_strategy_selected',
-      strategyId: 'compiled_trace_direct',
-      availability: 'available',
-      selectedBy: 'policy',
-      strategyOptionsHash: sha256Text('fixture-options'),
-      selectedOptionHash: sha256Text('fixture-option'),
-      modelPacketHash: compiledPromptRef.modelPacketHash,
-      sourceDocumentHash: compiledPromptRef.sourceDocumentHash,
-      implementationConfirmationHash: compiledPromptRef.implementationConfirmationHash,
-    },
-  };
-  const packetPath = packetArtifactPath(root, requirementSetId, packetId);
-  writeJsonFixture(packetPath, packet);
-  return { packetPath, compiledPromptRef };
 }
 
 function writeConfirmedReadinessRecord(root: string): string {
@@ -570,7 +526,8 @@ function writeConfirmedReadinessRecord(root: string): string {
       canonicalArtifacts: [
         {
           id: 'ART-001',
-          targetPathOrField: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+          targetPathOrField:
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
           traceRows: ['TRACE-001'],
           evidenceRefs: ['EVD-001'],
         },
@@ -765,6 +722,10 @@ function writeConfirmedReadinessRecord(root: string): string {
     },
   ];
   writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
+  });
   return recordPath;
 }
 
@@ -789,15 +750,15 @@ describe('main-agent orchestration consumer', () => {
       expect(surface.mainAgentCanContinue).toBe(false);
       expect(surface.continueDecision).toBe('blocked');
       expect(surface.mainAgentNextAction).toBe('contract_authoring_required');
-      expect(surface.mainAgentStageSummary.currentMentalModelStatus).toBe(
-        'no_active_requirement'
-      );
+      expect(surface.mainAgentStageSummary.currentMentalModelStatus).toBe('no_active_requirement');
       expect(surface.mainAgentStageSummary.blockingReasons).toEqual([
         'no_active_requirement',
         'contract_authoring_required',
       ]);
       expect(surface.mainAgentStageSummary.nextAction).toBe('contract_authoring_required');
-      expect(surface.mainAgentStageSummary.nextAction).not.toBe('run_implementation_readiness_gate');
+      expect(surface.mainAgentStageSummary.nextAction).not.toBe(
+        'run_implementation_readiness_gate'
+      );
       expect(surface.diagnostics[0]).toMatchObject({
         category: 'active_requirement',
         repairAction: 'contract_authoring_required',
@@ -837,7 +798,7 @@ describe('main-agent orchestration consumer', () => {
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       record.currentMentalModel = 'implementation_readiness';
-      record.sixModelResults = {
+      attachVerifiedSixModelAuthority(record, {
         requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
         architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
         implementation_readiness: {
@@ -860,7 +821,7 @@ describe('main-agent orchestration consumer', () => {
           status: 'not_established',
           blockingReasons: ['delivery_confirmation_not_established'],
         },
-      };
+      });
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
       const surface = resolveMainAgentOrchestrationSurface({
@@ -1021,7 +982,6 @@ describe('main-agent orchestration consumer', () => {
           ],
         }),
       });
-
       expect(result.status).toBe('completed');
       expect(result.dispatchInstruction?.nextAction).toBe('dispatch_implement');
       expect(result.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
@@ -1075,7 +1035,7 @@ describe('main-agent orchestration consumer', () => {
     }
   }, 40000);
 
-  it('maps closeout pass with no pending packet to completed_no_dispatch without legacy baseline blocker', () => {
+  it('keeps machine closeout pass awaiting controlled user acceptance', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-completed-no-dispatch-'));
     try {
       writeMinimalRequirementRecordContext(root, {
@@ -1117,10 +1077,31 @@ describe('main-agent orchestration consumer', () => {
         'requirement-record.json'
       );
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      record.status = 'awaiting_user_acceptance';
+      record.currentMentalModel = 'delivery_confirmation';
+      record.currentStage = 'delivery_confirmation';
+      record.lastEventType = 'delivery_confirmation_user_acceptance_requested';
+      record.lastAppliedEventId =
+        'delivery_confirmation_user_acceptance_requested:closeout-pass-001';
+      record.sixModelResults = {
+        ...(record.sixModelResults ?? {}),
+        delivery_confirmation: {
+          status: 'awaiting_user_acceptance',
+          blockingReasons: [],
+        },
+      };
       record.closeout = {
         currentAttemptId: 'closeout-pass-001',
         decision: 'pass',
         updatedAt: '2026-05-20T00:01:00.000Z',
+        acceptanceRequest: {
+          status: 'awaiting_user_acceptance',
+          closeoutAttemptId: 'closeout-pass-001',
+          htmlPath: 'confirmation/closeout-confirmation-current.html',
+          renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+          closeoutConfirmationPageHash: `sha256:${'c'.repeat(64)}`,
+          deliveryCloseoutReportHash: `sha256:${'d'.repeat(64)}`,
+        },
         attempts: [
           {
             eventType: 'closeout_check_recorded',
@@ -1137,11 +1118,13 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
       });
 
-      expect(surface.mainAgentNextAction).toBeNull();
+      expect(surface.mainAgentNextAction).toBe('await_user_acceptance');
       expect(surface.mainAgentReady).toBe(false);
-      expect(surface.runtimeResumeProjection?.terminalState).toBe('completed_no_dispatch');
-      expect(surface.diagnostics.map((item) => item.category)).toContain('completed_no_dispatch');
-      expect(surface.drift?.effectiveVerdict).not.toBe('blocked_pending_rereadiness');
+      expect(surface.runtimeResumeProjection?.terminalState).toBeUndefined();
+      expect(surface.sixModelRuntimeDecision?.nextAction).toBe('await_user_acceptance');
+      expect(surface.diagnostics.map((item) => item.category)).not.toContain(
+        'completed_no_dispatch'
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1308,7 +1291,7 @@ describe('main-agent orchestration consumer', () => {
           confirmationPageHash: record.confirmationPageHash,
         },
       ];
-      record.sixModelResults = {
+      attachVerifiedSixModelAuthority(record, {
         requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
         architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
         implementation_readiness: {
@@ -1331,7 +1314,7 @@ describe('main-agent orchestration consumer', () => {
           status: 'not_established',
           blockingReasons: ['delivery_confirmation_not_established'],
         },
-      };
+      });
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
       const sessionId = String(record.requirementSetId);
@@ -1449,7 +1432,7 @@ describe('main-agent orchestration consumer', () => {
           confirmationPageHash: record.confirmationPageHash,
         },
       ];
-      record.sixModelResults = {
+      attachVerifiedSixModelAuthority(record, {
         requirement_confirmation: { model: 'requirement_confirmation', status: 'pass' },
         architecture_confirmation: { model: 'architecture_confirmation', status: 'pass' },
         implementation_readiness: {
@@ -1462,7 +1445,7 @@ describe('main-agent orchestration consumer', () => {
           status: 'not_established',
           blockingReasons: ['execution_closure_not_established'],
         },
-      };
+      });
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
       const sessionId = String(record.requirementSetId);
@@ -1738,7 +1721,6 @@ describe('main-agent orchestration consumer', () => {
         host: 'codex',
         hydratePacket: true,
       });
-
       expect(instruction?.nextAction).toBe('dispatch_implement');
       expect(instruction?.taskType).toBe('implement');
       expect(instruction?.packetId).toMatch(/^implement-/u);
@@ -1747,44 +1729,19 @@ describe('main-agent orchestration consumer', () => {
     }
   });
 
-  it('falls back to audit write scope when active mapping lacks allowedWriteScope', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-scope-fallback-'));
+  it('falls back to audit write scope when active mapping lacks allowedWriteScope', async () => {
+    const fixture = materializePromptPublicationFixture();
     try {
-      copyCriticalAuditorConfig(root);
-      const recordPath = writeMinimalRequirementRecordContext(root, {
-        flow: 'standalone_tasks',
-        stage: 'implement',
-        runId: 'audit-scope-fallback',
-        implementationEntryGate: {
-          gateName: 'implementation-readiness',
-          requestedFlow: 'standalone_tasks',
-          recommendedFlow: 'standalone_tasks',
-          decision: 'pass',
-          readinessStatus: 'ready_clean',
-          blockerCodes: [],
-          blockerSummary: [],
-          rerouteRequired: false,
-          rerouteReason: null,
-          evidenceSources: {
-            readinessReportPath: null,
-            remediationArtifactPath: null,
-            executionRecordPath: null,
-            authoritativeAuditReportPath: null,
-          },
-          semanticFingerprint: 'audit-scope-fallback',
-          evaluatedAt: '2026-05-26T00:00:00.000Z',
-        },
-      });
-      writeFakeReqTraceSkill(root);
-      const record = materializeConfirmedSourceFixture(
-        root,
-        recordPath,
-        'tests/fixtures/requirements/blocked-ready-audit-recovery.md'
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
       );
-      record.sixModelResults = {
-        execution_closure: { model: 'execution_closure', status: 'pass' },
-        audit_review: { model: 'audit_review', status: 'not_established' },
-      };
+      prepareAuditDispatchRuntime(fixture);
+      const record = JSON.parse(readFileSync(fixture.paths.recordPath, 'utf8'));
       record.taskBindings = [
         {
           flow: 'standalone_tasks',
@@ -1792,62 +1749,29 @@ describe('main-agent orchestration consumer', () => {
           allowedWriteScope: [],
         },
       ];
-      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
-      const { packetPath: completedPacketPath } = writeCurrentCompiledImplementPacket(
-        root,
-        record,
-        'implement-completed'
-      );
-      writeJsonFixture(
-        path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'),
-        {
-          version: 1,
-          updatedAt: '2026-05-26T00:00:00.000Z',
-          source: '_bmad-output/runtime/requirement-records/index.json',
-          items: [
-            {
-              requirementId: record.requirementSetId,
-              sourceType: 'controlled_requirement_record',
-              flow: 'standalone_tasks',
-              status: 'user_confirmed',
-              recordId: record.recordId,
-              requirementSetId: record.requirementSetId,
-              recordPath: path.relative(root, recordPath).replace(/\\/g, '/'),
-            },
-          ],
-        }
-      );
-      const state = createDefaultOrchestrationState({
-        sessionId: String(record.requirementSetId),
-        host: 'codex',
-        flow: 'standalone_tasks',
-        currentPhase: 'implement',
-        nextAction: 'dispatch_review',
-        pendingPacket: {
-          packetId: 'implement-completed',
-          packetPath: completedPacketPath,
-          packetKind: 'execution',
-          status: 'completed',
-          createdAt: '2026-05-26T00:00:00.000Z',
+      writeJsonFixture(fixture.paths.recordPath, record);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
         },
-      });
-      state.lastTaskReport = {
-        packetId: 'implement-completed',
-        status: 'done',
-        filesChanged: [],
-        validationsRun: ['fixture'],
-        evidence: ['fixture'],
-      };
-      writeOrchestrationState(root, state);
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
 
       const instruction = buildMainAgentDispatchInstruction({
-        projectRoot: root,
+        projectRoot: fixture.root,
         flow: 'standalone_tasks',
         stage: 'implement',
-        recordId: String(record.recordId),
-        requirementSetId: String(record.requirementSetId),
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
         host: 'codex',
         hydratePacket: true,
+        preferredPacketId: 'audit-scope-fallback',
       });
 
       expect(instruction?.nextAction).toBe('dispatch_review');
@@ -1856,7 +1780,7 @@ describe('main-agent orchestration consumer', () => {
       const packet = JSON.parse(readFileSync(instruction!.packetPath, 'utf8')) as ExecutionPacket;
       expect(packet.allowedWriteScope).toEqual(['docs/**', '_bmad-output/**', 'specs/**']);
     } finally {
-      removeTempRoot(root);
+      fixture.cleanup();
     }
   });
 
@@ -1894,18 +1818,16 @@ describe('main-agent orchestration consumer', () => {
         'tests/fixtures/requirements/blocked-ready-audit-recovery.md'
       );
       record.currentMentalModel = 'implementation_readiness';
-      record.sixModelResults = {
+      attachVerifiedSixModelAuthority(record, {
         implementation_readiness: {
-          model: 'implementation_readiness',
           status: 'pass',
           blockingReasons: [],
         },
         execution_closure: {
-          model: 'execution_closure',
           status: 'not_established',
           blockingReasons: ['execution_closure_not_established'],
         },
-      };
+      });
       writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
       const auditPacket: ExecutionPacket = {
         packetId: 'audit-stale-ready',
@@ -1952,6 +1874,29 @@ describe('main-agent orchestration consumer', () => {
         state
       );
 
+      const beforeHydration = resolveMainAgentOrchestrationSurface({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+      });
+      expect(beforeHydration.sixModelRuntimeDecision?.currentModelStatus).toBe('pass');
+      expect(beforeHydration.mainAgentNextAction).toBe('dispatch_implement');
+      expect(beforeHydration.mainAgentReady).toBe(true);
+
+      const hydrated = ensureMainAgentDispatchPacket({
+        projectRoot: root,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        recordId: String(record.recordId),
+        requirementSetId: String(record.requirementSetId),
+        host: 'codex',
+      });
+      expect((hydrated.pendingPacket as ExecutionPacket | null)?.taskType).toBe('implement');
+      expect((hydrated.pendingPacket as ExecutionPacket | null)?.compilerBlock).toBeNull();
+      expect(hydrated.pendingPacketStatus).toBe('ready_for_main_agent');
+
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: root,
         flow: 'standalone_tasks',
@@ -1959,9 +1904,8 @@ describe('main-agent orchestration consumer', () => {
         recordId: String(record.recordId),
         requirementSetId: String(record.requirementSetId),
         host: 'codex',
-        hydratePacket: true,
+        hydratePacket: false,
       });
-
       expect(instruction?.nextAction).toBe('dispatch_implement');
       expect(instruction?.taskType).toBe('implement');
       expect(instruction?.packetId).toMatch(/^implement-/u);
@@ -2200,24 +2144,76 @@ describe('main-agent orchestration consumer', () => {
         },
       });
       const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      const closeoutAttemptId = 'closeout-attempt-current';
+      const closeoutConfirmationPageHash = `sha256:${'c'.repeat(64)}`;
+      const deliveryCloseoutReportHash = `sha256:${'d'.repeat(64)}`;
+      const acceptedAt = '2026-05-21T00:02:00.000Z';
+      const acceptedBy = 'test-user';
       writeFileSync(
         recordPath,
         `${JSON.stringify(
           {
             ...record,
+            status: 'closed',
+            currentAttemptId: closeoutAttemptId,
+            currentMentalModel: 'delivery_confirmation',
+            currentStage: 'delivery_confirmation',
             lastEventType: 'record_closed',
+            lastAppliedEventId: `record_closed:${closeoutAttemptId}`,
             closeout: {
-              currentAttemptId: 'closeout-attempt-current',
+              currentAttemptId: closeoutAttemptId,
               decision: 'pass',
               blockingReasons: [],
+              acceptanceRequest: {
+                status: 'user_accepted_closeout',
+                closeoutAttemptId,
+                htmlPath: 'confirmation/closeout-confirmation-current.html',
+                renderReportPath:
+                  'confirmation/closeout-confirmation-current.render-report.json',
+                closeoutConfirmationPageHash,
+                deliveryCloseoutReportHash,
+                acceptedAt,
+                acceptedBy,
+              },
               attempts: [
                 {
-                  closeoutAttemptId: 'closeout-attempt-current',
+                  eventType: 'closeout_check_recorded',
+                  closeoutAttemptId,
                   decision: 'pass',
                   blockingReasons: [],
                 },
               ],
             },
+            closeoutAcceptance: {
+              status: 'user_accepted_closeout',
+              confirmedAt: acceptedAt,
+              confirmedBy: acceptedBy,
+              closeoutAttemptId,
+              closeoutConfirmationPageHash,
+              deliveryCloseoutReportHash,
+              renderReportPath:
+                'confirmation/closeout-confirmation-current.render-report.json',
+            },
+            closeoutAcceptanceHistory: [
+              {
+                eventType: 'closeout_acceptance_confirmed',
+                recordId: record.recordId,
+                requirementSetId: record.requirementSetId,
+                sourceDocumentHash: record.sourceDocumentHash,
+                implementationConfirmationHash: record.implementationConfirmationHash,
+                confirmedAt: acceptedAt,
+                confirmedBy: acceptedBy,
+                closeoutAttemptId,
+                closeoutConfirmationPageHash,
+                deliveryCloseoutReportHash,
+                renderReportPath:
+                  'confirmation/closeout-confirmation-current.render-report.json',
+                htmlPath: 'confirmation/closeout-confirmation-current.html',
+                machineCloseoutEventType: 'record_closed',
+                beforeRecordHash: `sha256:${'a'.repeat(64)}`,
+                afterRecordHash: `sha256:${'b'.repeat(64)}`,
+              },
+            ],
           },
           null,
           2

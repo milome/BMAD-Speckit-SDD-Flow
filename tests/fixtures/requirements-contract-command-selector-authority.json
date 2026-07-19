@@ -1,7 +1,7 @@
 {
   "schemaVersion": "requirements-contract-command-selector-authority/v1",
-  "sourceContractPath": "docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md",
-  "sourceContractSha256": "sha256:d6f39af7a0995a16496913b2e224445a2a440e5ecf285e54f66b1fdaa46652c4",
+  "sourceContractPath": "docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md",
+  "sourceContractSha256": "sha256:38d6301646351efb04dff330ac05b3bf5daa667ef31f1630f0b68031cddda90a",
   "sourceCommandRowsSha256": "sha256:5f600f9ad53a54c7a17040fed4abcc4add5b97b51524c129eb889698c034df2c",
   "commandCount": 28,
   "selectorCount": 274,

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bmad-speckit.local/schemas/requirements-contract-amend05-safe-write-receipt-manifest.schema.json",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-safe-write-receipt-manifest.schema.json",
   "title": "Requirements Contract AMEND-05 Safe Write Receipt Manifest",
   "type": "object",
   "additionalProperties": true,
   "required": ["schemaVersion", "finalizationDeclarationHash", "decision"],
   "properties": {
     "schemaVersion": {
-      "const": "requirements-contract-amend05-safe-write-receipt-manifest/v1"
+      "const": "requirements-contract-safe-write-receipt-manifest/v1"
     },
     "finalizationDeclarationHash": {
       "type": "string",

@@ -1,40 +1,50 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildMainAgentDispatchInstruction } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   createExecutionPacket,
   type ExecutionPacket,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
-  cleanupRequirementWorkspace,
-  materializeRequirementFixture,
-  writeCompiledImplementPacket,
-} from '../helpers/requirement-fixture-runtime';
+  requirementsContractPromptTransactionPublishCommand,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher';
+import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
+import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
+import { materializePromptPublicationFixture } from './helpers/prompt-transaction-publication-fixture';
 
 function readJson<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
 }
 
 describe('Main Agent audit review dispatch profile contract', () => {
-  it('builds a real audit dispatch packet from current compiled prompt evidence', () => {
-    const fixture = materializeRequirementFixture({
-      currentMentalModel: 'execution_closure',
-      sixModelResults: {
-        requirement_confirmation: { status: 'pass' },
-        architecture_confirmation: { status: 'pass' },
-        implementation_readiness: { status: 'pass' },
-        execution_closure: { status: 'pass' },
-      },
-    });
+  it('builds a real audit dispatch packet from current compiled prompt evidence', async () => {
+    const fixture = materializePromptPublicationFixture();
     try {
-      writeCompiledImplementPacket({ root: fixture.root, fixture, packetId: 'implement-current' });
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      prepareAuditDispatchRuntime(fixture);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(fixture.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(fixture, {
+          extraPacket: {
+            packetId: fixture.identity.implementationAttemptId,
+          },
+        }),
+      }).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
 
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        requirementSetId: fixture.requirementSetId,
-        runId: fixture.runId,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
         flow: 'standalone_tasks',
         stage: 'implement',
         host: 'codex',
@@ -59,11 +69,11 @@ describe('Main Agent audit review dispatch profile contract', () => {
         packet.compiledPromptRef?.modelPacketPath
       );
       expect(packet.auditExecutionProfile?.currentAttemptBinding).toMatchObject({
-        recordId: fixture.recordId,
-        requirementSetId: fixture.requirementSetId,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
         attemptId: 'audit-current',
-        sourceDocumentHash: fixture.sourceDocumentHash,
-        implementationConfirmationHash: fixture.implementationConfirmationHash,
+        sourceDocumentHash: fixture.identity.sourceDocumentHash,
+        implementationConfirmationHash: fixture.identity.implementationConfirmationHash,
         modelPacketHash: packet.compiledPromptRef?.modelPacketHash,
         currentAttemptHash: packet.auditTriadExecutionPlanRef?.currentAttemptHash,
         currentEvidenceHash: packet.auditTriadExecutionPlanRef?.currentEvidenceHash,
@@ -78,7 +88,7 @@ describe('Main Agent audit review dispatch profile contract', () => {
         '_bmad-output',
         'runtime',
         'requirement-records',
-        fixture.recordId,
+        fixture.authority.recordId,
         'audit-review',
         'audit-current',
         'audit-execution-profile-packet.json'
@@ -88,7 +98,7 @@ describe('Main Agent audit review dispatch profile contract', () => {
         '_bmad-output',
         'runtime',
         'requirement-records',
-        fixture.recordId,
+        fixture.authority.recordId,
         'audit-triad',
         'audit-current',
         'audit-triad-execution-plan.json'
@@ -217,7 +227,7 @@ describe('Main Agent audit review dispatch profile contract', () => {
         })
       ).toThrow('auditTriadExecutionPlanRef profileHash must match auditExecutionProfile');
     } finally {
-      cleanupRequirementWorkspace(fixture.root);
+      fixture.cleanup();
     }
   });
 });

@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-production-bypass-evidence-materializer-report.schema.json",
+  "title": "Requirements Contract Production Bypass Evidence Materializer Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "transactionId",
+    "implementationAttemptId",
+    "contractHash",
+    "sourceHash",
+    "semanticModelHash",
+    "inputRefs",
+    "aggregateRefs",
+    "issueCount",
+    "issues",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-production-bypass-evidence-materializer-report/v1"
+    },
+    "producer": {
+      "const": "requirements-contract-production-bypass-evidence-materializer"
+    },
+    "action": {
+      "const": "requirements-contract-production-bypass-evidence-materialize"
+    },
+    "transactionId": {
+      "$ref": "#/$defs/id"
+    },
+    "implementationAttemptId": {
+      "$ref": "#/$defs/id"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "inputRefs": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/inputRef"
+      }
+    },
+    "aggregateRefs": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/aggregateRef"
+      }
+    },
+    "issueCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/issue"
+      }
+    },
+    "decision": {
+      "enum": ["PASS", "BLOCK"]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "PASS"
+          }
+        },
+        "required": ["decision"]
+      },
+      "then": {
+        "properties": {
+          "aggregateRefs": {
+            "minItems": 8,
+            "maxItems": 8
+          },
+          "issueCount": {
+            "const": 0
+          },
+          "issues": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "issueCount": {
+            "minimum": 1
+          },
+          "issues": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableHash": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sourceEvidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash",
+        "readbackHash",
+        "readbackVerified",
+        "producer",
+        "action",
+        "transactionId",
+        "implementationAttemptId",
+        "decision"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "readbackVerified": {
+          "const": true
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transactionId": {
+          "$ref": "#/$defs/id"
+        },
+        "implementationAttemptId": {
+          "$ref": "#/$defs/id"
+        },
+        "decision": {
+          "const": "PASS"
+        }
+      }
+    },
+    "inputRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "path",
+        "status",
+        "hash",
+        "readbackHash",
+        "readbackVerified",
+        "observedDecision"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "status": {
+          "enum": ["accepted", "missing", "invalid"]
+        },
+        "hash": {
+          "$ref": "#/$defs/nullableHash"
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/nullableHash"
+        },
+        "readbackVerified": {
+          "type": "boolean"
+        },
+        "observedDecision": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "aggregateRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "aggregateFile",
+        "path",
+        "hash",
+        "readbackHash",
+        "readbackVerified",
+        "producer",
+        "action",
+        "transactionId",
+        "implementationAttemptId",
+        "decision",
+        "sourceEvidenceRef"
+      ],
+      "properties": {
+        "aggregateFile": {
+          "enum": [
+            "checkpoint-semantic-validation-receipts.json",
+            "checkpoint-progress-consistency-report.json",
+            "source-prd-lint-state-transition-report.json",
+            "runtime-status-authority-report.json",
+            "command-execution-receipt-bundle.json",
+            "evidence-artifact-readback-report.json",
+            "current-dispatch-pointer-receipt.json",
+            "critical-auditor-independence-report.json"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "readbackVerified": {
+          "const": true
+        },
+        "producer": {
+          "const": "requirements-contract-production-bypass-evidence-materializer"
+        },
+        "action": {
+          "const": "requirements-contract-production-bypass-evidence-materialize"
+        },
+        "transactionId": {
+          "$ref": "#/$defs/id"
+        },
+        "implementationAttemptId": {
+          "$ref": "#/$defs/id"
+        },
+        "decision": {
+          "const": "PASS"
+        },
+        "sourceEvidenceRef": {
+          "$ref": "#/$defs/sourceEvidenceRef"
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aggregateFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourcePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected": {
+          "type": ["string", "number", "boolean", "null"]
+        },
+        "actual": {
+          "type": ["string", "number", "boolean", "null"]
+        }
+      }
+    }
+  }
+}

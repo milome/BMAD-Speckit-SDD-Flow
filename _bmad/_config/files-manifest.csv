@@ -185,7 +185,7 @@ type,name,module,path,hash
 "md","instructions","bmm","bmm/workflows/document-project/instructions.md","57762fb89b42df577da1188bc881cf3a8d75a1bcc60bce9e1ab2b8bcfdf29a66"
 "md","instructions","bmm","bmm/workflows/qa/automate/instructions.md","3f3505f847f943b2f4a0699017c16e15fa3782f51090a0332304d7248e020e0c"
 "md","prd-purpose","bmm","bmm/workflows/2-plan-workflows/create-prd/data/prd-purpose.md","49c4641b91504bb14e3887029b70beacaff83a2de200ced4f8cb11c1356ecaee"
-"md","prd-template","bmm","bmm/workflows/2-plan-workflows/create-prd/templates/prd-template.md","7ccccab9c06a626b7a228783b0b9b6e4172e9ec0b10d47bbfab56958c898f837"
+"md","prd-template","bmm","bmm/workflows/2-plan-workflows/create-prd/templates/prd-template.md","ff3e1581b3382498a170cde3394978bdea3e5ea1831177c5ee76b38bbbe9e1af"
 "md","product-brief.template","bmm","bmm/workflows/1-analysis/create-product-brief/product-brief.template.md","ae0f58b14455efd75a0d97ba68596a3f0b58f350cd1a0ee5b1af69540f949781"
 "md","project-context-template","bmm","bmm/data/project-context-template.md","facd60b71649247146700b1dc7d709fa0ae09487f7cf2b5ff8f5ce1b3a8427e8"
 "md","project-context-template","bmm","bmm/workflows/generate-project-context/project-context-template.md","54e351394ceceb0ac4b5b8135bb6295cf2c37f739c7fd11bb895ca16d79824a5"

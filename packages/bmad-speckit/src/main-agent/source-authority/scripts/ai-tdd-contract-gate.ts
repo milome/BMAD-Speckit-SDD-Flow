@@ -17,6 +17,11 @@ import {
   type JsonObject,
 } from './target-artifact-realization-gate';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
+import {
+  readRequirementsContractForRequirementRecord,
+  type RequirementsContractLogicalReadInput,
+  type RequirementsContractReadResult,
+} from './requirements-contract-read-facade';
 
 const cjsRequire = createRequire(__filename);
 
@@ -46,6 +51,7 @@ function loadContractExecutionManifestBuilder(): {
     confirmation: JsonObject;
     manifest: JsonObject;
     record?: JsonObject;
+    sourceFormatVersion?: 'v1' | 'v2';
     sourcePath?: string;
     recordPath?: string;
     attemptId?: string;
@@ -162,6 +168,24 @@ const INVALID_RED_FAILURE_CLASSES = new Set([
   'unbound_oracle',
 ]);
 
+export function readAiTddContract(
+  input: Omit<RequirementsContractLogicalReadInput, 'consumerId'> & { traceId?: string }
+): RequirementsContractReadResult {
+  return readRequirementsContractForRequirementRecord({
+    ...input,
+    consumerId: 'ai-tdd-contract-gate',
+    mode: input.mode,
+    requiredProjectionRoles: [
+      'target_bindings',
+      'task_graph',
+      'red_contracts',
+      'oracle_registry',
+      'acceptance_manifest',
+      'evidence_requirements',
+    ],
+  });
+}
+
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -202,6 +226,91 @@ function strings(value: unknown): string[] {
 
 function nested(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
+}
+
+function isActiveV2RequirementRecord(record: JsonObject): boolean {
+  return (
+    text(record.schemaVersion) === 'requirement-record/v1' &&
+    Boolean(text(record.requirementSetId)) &&
+    Boolean(text(record.activeBundleRevision)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.semanticModelHash)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.traceGraphHash))
+  );
+}
+
+function canonicalAiTddSource(input: {
+  sourcePath: string;
+  record: JsonObject;
+  read: RequirementsContractReadResult;
+}): { sourcePath: string; confirmation: JsonObject } {
+  const semantic = nested(input.read.logicalModel);
+  const trace = nested(input.read.traceGraph);
+  const target = nested(input.read.projections.target_bindings);
+  const tasks = nested(input.read.projections.task_graph);
+  const red = nested(input.read.projections.red_contracts);
+  const acceptance = nested(input.read.projections.acceptance_manifest);
+  const evidence = nested(input.read.projections.evidence_requirements);
+  return {
+    sourcePath: input.sourcePath,
+    confirmation: {
+      ...semantic,
+      status: text(input.record.status) || 'user_confirmed',
+      sourceDocumentHash: text(input.record.sourceDocumentHash),
+      implementationConfirmationHash: text(input.record.implementationConfirmationHash),
+      requirements: objects(semantic.requirements),
+      traceRows: objects(trace.traceRows),
+      requiredCommands: objects(acceptance.requiredCommands ?? tasks.requiredCommands),
+      acceptance: objects(acceptance.acceptance),
+      acceptanceTests: objects(acceptance.acceptanceTests),
+      e2eSuites: objects(acceptance.e2eSuites),
+      evidence: objects(evidence.evidence ?? evidence.rows),
+      negativeControls: objects(red.negativeControls),
+      targetModificationPaths: objects(target.targetModificationPaths),
+      artifactAutomationPlan: objects(target.artifactAutomationPlan),
+    },
+  };
+}
+
+function blockedAiTddReadReport(input: {
+  sourcePath: string;
+  recordPath: string;
+  mode: AiTddMode;
+  attemptId: string;
+  evaluatedAt: string;
+  evaluatedBy: string;
+  read: RequirementsContractReadResult;
+}): JsonObject {
+  const blockingReasons = [
+    'requirements_contract_read_facade_blocked',
+    ...input.read.issues.map((issue) => `${issue.code}:${issue.message}`),
+  ];
+  return {
+    reportType: 'ai_tdd_contract_gate_report',
+    generatedAt: input.evaluatedAt,
+    generatedBy: input.evaluatedBy,
+    mode: input.mode,
+    sourcePath: normalizePath(input.sourcePath),
+    recordPath: normalizePath(path.resolve(input.recordPath)),
+    currentAttemptId: input.attemptId,
+    decision: 'blocked',
+    blockingReasons,
+    contractExecutionManifest: {},
+    redGreenMatrix: [],
+    missingTestPlan: { decision: 'blocked' },
+    acceptanceE2eTestPlan: { decision: 'blocked', tests: [], e2eSuites: [] },
+    contractCompletenessReport: { ready: false, blockingReasons },
+    targetArtifactPlan: { decision: 'blocked' },
+    negativeControlPlan: { decision: 'blocked' },
+    preImplementationReadinessReport: { ready: false, blockingReasons },
+    closeoutReadinessReport: { ready: false, blockingReasons },
+    subReports: [],
+    mutationPolicy: {
+      writesPass: false,
+      closesTrace: false,
+      writesRecordClosed: false,
+      modifiesSourceTraceRows: false,
+    },
+  };
 }
 
 function unique(values: string[]): string[] {
@@ -1497,6 +1606,7 @@ function buildManifest(input: {
   recordPath: string;
   attemptId: string;
 }): JsonObject {
+  const activeV2 = isActiveV2RequirementRecord(input.record);
   const confirmation = applyReadinessAutoRemediationOverlay(input.confirmation, input.record);
   const acceptance = acceptanceRows(confirmation);
   const redProofs = redProofRows({ confirmation: input.confirmation, record: input.record });
@@ -1505,7 +1615,7 @@ function buildManifest(input: {
   const errorCoverage = errorCaseCoverage(confirmation, acceptance);
   const commandTargets = commandTargetCollection(confirmation);
   const traceClosures = traceClosureAssertions(confirmation);
-  const currentTargetMapManifest = currentTargetMapSection(confirmation);
+  const currentTargetMapManifest = activeV2 ? null : currentTargetMapSection(confirmation);
   const canonicalSurfaces = canonicalSurfaceReconciliation(
     confirmation,
     targetArtifacts as unknown as JsonObject[]
@@ -1529,6 +1639,26 @@ function buildManifest(input: {
     traceRows: objects(confirmation.traceRows),
     evidenceRows: objects(confirmation.evidence),
   });
+  const closeoutGateSections = [
+    commandTargets,
+    traceClosures,
+    ...(currentTargetMapManifest ? [currentTargetMapManifest] : []),
+    targetModificationCoverage,
+    canonicalSurfaces,
+    legacyControls,
+    closeoutProofPlan,
+    evidenceTrust,
+  ];
+  const requiredManifestSections = [
+    'commandTargetCollection',
+    'traceClosureAssertions',
+    ...(currentTargetMapManifest ? ['currentTargetMap'] : []),
+    'targetModificationPathCoverage',
+    'canonicalSurfaceReconciliation',
+    'legacyDenial',
+    'closeoutProof',
+    'evidenceTrustStates',
+  ];
   const rawManifest = {
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
@@ -1551,7 +1681,7 @@ function buildManifest(input: {
       commandRefs: commandRefs(row),
       artifactRefs: strings(row.artifactRefs),
       canonicalSurfaceRefs: strings(row.canonicalSurfaceRefs),
-      currentTargetMapRefs: strings(row.currentTargetMapRefs),
+      ...(activeV2 ? {} : { currentTargetMapRefs: strings(row.currentTargetMapRefs) }),
       targetModificationPaths: strings(row.targetModificationPaths),
       acceptanceRefs: strings(row.acceptanceRefs),
       status: text(row.status),
@@ -1575,35 +1705,17 @@ function buildManifest(input: {
     errorCaseCoverage: errorCoverage,
     commandTargetCollection: commandTargets,
     traceClosureAssertions: traceClosures,
-    currentTargetMap: currentTargetMapManifest,
+    ...(currentTargetMapManifest ? { currentTargetMap: currentTargetMapManifest } : {}),
     targetModificationPathCoverage: targetModificationCoverage,
     canonicalSurfaceReconciliation: canonicalSurfaces,
     legacyDenial: legacyControls,
     closeoutProof: closeoutProofPlan,
     evidenceTrustStates: evidenceTrust,
     closeoutGates: {
-      decision: [
-        commandTargets,
-        traceClosures,
-        currentTargetMapManifest,
-        targetModificationCoverage,
-        canonicalSurfaces,
-        legacyControls,
-        closeoutProofPlan,
-        evidenceTrust,
-      ].every((section) => section.ready === true)
+      decision: closeoutGateSections.every((section) => section.ready === true)
         ? 'pass'
         : 'blocked',
-      requiredManifestSections: [
-        'commandTargetCollection',
-        'traceClosureAssertions',
-        'currentTargetMap',
-        'targetModificationPathCoverage',
-        'canonicalSurfaceReconciliation',
-        'legacyDenial',
-        'closeoutProof',
-        'evidenceTrustStates',
-      ],
+      requiredManifestSections,
     },
   };
   const { buildDerivedContractExecutionManifest } = loadContractExecutionManifestBuilder();
@@ -1611,6 +1723,7 @@ function buildManifest(input: {
     confirmation,
     manifest: rawManifest,
     record: input.record,
+    sourceFormatVersion: activeV2 ? 'v2' : 'v1',
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
     attemptId: input.attemptId,
@@ -1696,7 +1809,9 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   const manifestSections = [
     ['commandTargetCollection', nested(manifest.commandTargetCollection)],
     ['traceClosureAssertions', nested(manifest.traceClosureAssertions)],
-    ['currentTargetMap', nested(manifest.currentTargetMap)],
+    ...(Object.prototype.hasOwnProperty.call(manifest, 'currentTargetMap')
+      ? ([['currentTargetMap', nested(manifest.currentTargetMap)]] as const)
+      : []),
     ['targetModificationPathCoverage', nested(manifest.targetModificationPathCoverage)],
     ['canonicalSurfaceReconciliation', nested(manifest.canonicalSurfaceReconciliation)],
     ['legacyDenial', nested(manifest.legacyDenial)],
@@ -2124,9 +2239,7 @@ function preImplementationState(
       ? 'invalid_red'
       : controlledProof?.state;
   const state =
-    missingTestPlan || missingFiles.length > 0
-      ? 'missing_test'
-      : (proofState ?? 'missing_plan');
+    missingTestPlan || missingFiles.length > 0 ? 'missing_test' : (proofState ?? 'missing_plan');
   const reasons =
     state === 'expected_red'
       ? controlledProof && !controlledProof.oracle
@@ -2744,7 +2857,38 @@ export function evaluateAiTddContractGate(input: {
     const evaluatedAt = input.evaluatedAt ?? new Date().toISOString();
     const evaluatedBy = input.evaluatedBy ?? 'agent';
     const attemptId = currentAttempt(input.record, input.attemptId);
-    const source = readImplementationConfirmation(input.sourcePath);
+    const semanticRead = isActiveV2RequirementRecord(input.record)
+      ? readAiTddContract({
+          projectRoot: activeProjectRoot,
+          mode:
+            input.mode === 'closeout'
+              ? 'closeout'
+              : input.mode === 'pre-implementation'
+                ? 'draft'
+                : 'execution',
+          requirementSetId: text(input.record.requirementSetId),
+          expectedSemanticModelHash: text(input.record.semanticModelHash),
+          expectedTraceGraphHash: text(input.record.traceGraphHash),
+        })
+      : null;
+    if (semanticRead && !semanticRead.ok) {
+      return blockedAiTddReadReport({
+        sourcePath: input.sourcePath,
+        recordPath: input.recordPath,
+        mode: input.mode,
+        attemptId,
+        evaluatedAt,
+        evaluatedBy,
+        read: semanticRead,
+      });
+    }
+    const source = semanticRead
+      ? canonicalAiTddSource({
+          sourcePath: input.sourcePath,
+          record: input.record,
+          read: semanticRead,
+        })
+      : readImplementationConfirmation(input.sourcePath);
     const manifest = buildManifest({
       sourcePath: source.sourcePath,
       confirmation: source.confirmation,

@@ -21,7 +21,7 @@
       "const": "docs/plans/evidence/loop-engineering-remediation/implementation-evidence.json"
     },
     "safeWriteManifestReceipt": {
-      "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json"
+      "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json"
     },
     "evd15Receipt": {
       "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/G15-final-gates.receipt.json"

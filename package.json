@@ -177,6 +177,7 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "bmad-speckit": "2.1.11",
+    "bmad-speckit-sdd-flow": "file:",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-jsdoc": "^62.7.1",

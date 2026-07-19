@@ -73,6 +73,34 @@ describe('requirements contract stage five-star architecture wave gate', () => {
             consumerJourneyEvidenceRefs: ref('consumer'),
           };
         });
+        const writeBinding = (name: string, content: string) => {
+          const target = path.join(root, phaseRoot, name);
+          mkdirSync(path.dirname(target), { recursive: true });
+          writeFileSync(target, content, 'utf8');
+          return {
+            path: `${phaseRoot}/${name}`,
+            hash: sha256(content),
+          };
+        };
+        const judgeRuntimeBindings = complete
+          ? {
+              schemaVersion: 'requirements-contract-stage-judge-runtime-bindings/v1',
+              judgeAuditUnitSetRef: {
+                ...writeBinding('judge-audit-unit-set.json', '{"schemaVersion":"fixture"}\n'),
+                schemaVersion: 'requirements-contract-judge-audit-unit-set/v1',
+              },
+              rubricRef: writeBinding('rubric.json', '{}\n'),
+              systemPromptRef: writeBinding('system-prompt.txt', 'fixture\n'),
+              sourceRef: writeBinding('source.md', '# Source\n'),
+              traceRef: writeBinding('trace.json', '{}\n'),
+              redRef: writeBinding('red.json', '{}\n'),
+              baseEvidenceRef: writeBinding('base-evidence.json', '{}\n'),
+              authorizedChallengeDerivationProtocolRef: writeBinding(
+                'challenge-protocol.json',
+                '{}\n'
+              ),
+            }
+          : undefined;
         writeJson(root, `${phaseRoot}/audit-context.json`, {
           schemaVersion: 'requirements-contract-stage-audit-context/v1',
           phase,
@@ -85,6 +113,7 @@ describe('requirements contract stage five-star architecture wave gate', () => {
           semanticModelHashes: { semantic: sha256('semantic') },
           consumerIdentityHash: sha256('consumer'),
           stageEvidence,
+          ...(judgeRuntimeBindings ? { judgeRuntimeBindings } : {}),
         });
         const result = await requirementsContractStageFiveStarAuditCommand({
           cwd: root,
@@ -125,9 +154,17 @@ describe('requirements contract stage five-star architecture wave gate', () => {
           expect(JSON.parse(readFileSync(candidateReceiptPath, 'utf8')).decision).toBe(
             'provisional_pass_candidate'
           );
-          expect(
-            existsSync(path.join(root, `${phaseRoot}/cmd34/candidate-revocation.receipt.json`))
-          ).toBe(true);
+          const candidateRevocationReceiptPath = path.join(
+            root,
+            `${phaseRoot}/cmd34/candidate-revocation.receipt.json`
+          );
+          expect(existsSync(candidateRevocationReceiptPath)).toBe(true);
+          expect(JSON.parse(readFileSync(candidateRevocationReceiptPath, 'utf8'))).toMatchObject({
+            schemaVersion: 'requirements-contract-stage-candidate-revocation-receipt/v1',
+            passAuthority: false,
+            reason: 'mandatory_pre_candidate_revocation',
+            decision: 'revoked_candidate',
+          });
         } else {
           expect(result).toMatchObject({
             decision: 'preterminal_pass_candidate',

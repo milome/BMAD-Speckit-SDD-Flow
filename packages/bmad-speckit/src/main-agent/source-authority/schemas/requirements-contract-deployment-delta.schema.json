@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-deployment-delta.schema.json",
+  "title": "Requirements Contract Deployment Delta",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "baselineModelId",
+    "baselineModelHash",
+    "targetModelId",
+    "targetModelHash",
+    "applicability",
+    "diagramRequired",
+    "nodeDeltas",
+    "connectionDeltas",
+    "proofRefs",
+    "deltaHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-deployment-delta/v1"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baselineModelId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baselineModelHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "targetModelId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetModelHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "applicability": {
+      "enum": ["required", "not_applicable"]
+    },
+    "diagramRequired": {
+      "type": "boolean"
+    },
+    "nodeDeltas": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/delta"
+      }
+    },
+    "connectionDeltas": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/delta"
+      }
+    },
+    "proofRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "deltaHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  },
+  "$defs": {
+    "delta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changeType",
+        "beforeHash",
+        "afterHash",
+        "proofRefs"
+      ],
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "changeType": {
+          "enum": ["added", "removed", "modified"]
+        },
+        "beforeHash": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "afterHash": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "proofRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["nodeId"],
+          "not": {
+            "required": ["connectionId"]
+          }
+        },
+        {
+          "required": ["connectionId"],
+          "not": {
+            "required": ["nodeId"]
+          }
+        }
+      ]
+    }
+  }
+}

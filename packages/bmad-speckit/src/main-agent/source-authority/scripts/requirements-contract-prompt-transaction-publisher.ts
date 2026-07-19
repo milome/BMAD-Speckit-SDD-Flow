@@ -996,6 +996,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
       createdAt,
     };
     pointerPublication = publishCurrentDispatchPointer({
+      authorityRoot: authority.cwd,
       targetPath: authority.paths.currentDispatchPointer,
       expectedPreimageHash: currentDispatchPointerPreimageHash,
       pointer,

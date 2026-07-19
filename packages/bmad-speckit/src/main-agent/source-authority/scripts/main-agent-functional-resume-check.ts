@@ -3,6 +3,11 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
+import {
+  readRequirementsContractForRequirementRecord,
+  type RequirementsContractLogicalReadInput,
+  type RequirementsContractReadResult,
+} from './requirements-contract-read-facade';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
@@ -78,6 +83,17 @@ const OPEN_FAILURE_STATUSES = new Set(['open', 'in_progress', 'blocked']);
 const NON_TERMINAL_CLOSURE_STATUSES = new Set(['open', 'fail', 'blocked']);
 const POST_FULL_LINK_COVERAGE_PHASE = 'post-full-link coverage matrix';
 
+export function readFunctionalResumeContract(
+  input: Omit<RequirementsContractLogicalReadInput, 'consumerId' | 'mode'> & { traceId?: string }
+): RequirementsContractReadResult {
+  return readRequirementsContractForRequirementRecord({
+    ...input,
+    consumerId: 'main-agent-functional-resume-check',
+    mode: 'execution',
+    requiredProjectionRoles: ['evidence_requirements'],
+  });
+}
+
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -118,6 +134,35 @@ function asObject(value: unknown): JsonObject | undefined {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as JsonObject)
     : undefined;
+}
+
+function isActiveV2RequirementRecord(record: JsonObject): boolean {
+  return (
+    text(record.schemaVersion) === 'requirement-record/v1' &&
+    Boolean(text(record.requirementSetId)) &&
+    Boolean(text(record.activeBundleRevision)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.semanticModelHash)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.traceGraphHash))
+  );
+}
+
+function registryInputFromSemanticRead(read: RequirementsContractReadResult): {
+  confirmation?: JsonObject;
+  registry?: JsonObject;
+  sourcePath?: string;
+} {
+  if (!read.ok) return {};
+  const projection = asObject(read.projections.evidence_requirements);
+  const registry = asObject(projection?.functionalResumeFailureCaseRegistry);
+  return {
+    confirmation: {
+      functionalResumeFailureCaseRegistry: registry,
+      governanceEventTypeRegistry: projection?.governanceEventTypeRegistry,
+      governanceEventTypeRegistryPolicy: projection?.governanceEventTypeRegistryPolicy,
+    },
+    registry,
+    sourcePath: 'requirements-contract-read-facade#/projections/evidence_requirements',
+  };
 }
 
 function hasOwn(value: unknown, key: string): boolean {
@@ -1267,7 +1312,17 @@ export function mainFunctionalResumeCheck(argv: string[]): number {
   if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
   const recordPath = path.resolve(args.requirementRecord);
   const record = readJson(recordPath);
-  const registryInput = readRegistryFromArgs(args);
+  const semanticRead = isActiveV2RequirementRecord(record)
+    ? readFunctionalResumeContract({
+        projectRoot: process.cwd(),
+        requirementSetId: text(record.requirementSetId),
+        expectedSemanticModelHash: text(record.semanticModelHash),
+        expectedTraceGraphHash: text(record.traceGraphHash),
+      })
+    : null;
+  const registryInput = semanticRead
+    ? registryInputFromSemanticRead(semanticRead)
+    : readRegistryFromArgs(args);
   const registryCoverage = validateFunctionalResumeFailureCaseRegistry(registryInput);
   const generatedAt = args.generatedAt ?? new Date().toISOString();
   const generatedBy = args.generatedBy ?? 'agent';
@@ -1276,6 +1331,20 @@ export function mainFunctionalResumeCheck(argv: string[]): number {
   fs.mkdirSync(outDir, { recursive: true });
 
   const checks = [
+    ...(semanticRead
+      ? [
+          {
+            id: 'requirements-contract-read-facade',
+            decision: semanticRead.ok ? ('pass' as const) : ('blocked' as const),
+            summary: semanticRead.ok
+              ? 'Canonical requirements contract resolved through the Read Facade'
+              : 'Canonical requirements contract Read Facade blocked functional resume',
+            details: {
+              issues: semanticRead.issues.map((issue) => `${issue.code}:${issue.message}`),
+            },
+          },
+        ]
+      : []),
     checkHashes(record, args),
     checkArchitecture(record),
     checkControlledSources(record),

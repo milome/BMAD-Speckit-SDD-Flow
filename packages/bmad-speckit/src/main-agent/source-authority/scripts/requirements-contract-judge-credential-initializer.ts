@@ -96,10 +96,10 @@ export async function requirementsContractJudgeCredentialsInitCommand(
       schemaVersion:
         credentialConfig.schemaVersion ?? 'requirements-contract-judge-credentials/v1',
       credentialRevision,
-      credentials: {
+      providers: {
         [credentialRef]: {
           authenticationType: provider.authentication.type,
-          value: `placeholder-${randomUUID()}`,
+          apiKey: `placeholder-${randomUUID()}`,
         },
       },
     };
@@ -114,8 +114,12 @@ export async function requirementsContractJudgeCredentialsInitCommand(
   } else {
     const existing = yaml.load(fs.readFileSync(credentialPath, 'utf8')) as JsonRecord;
     credentialRevision = Number(existing.credentialRevision ?? 1);
-    const value = existing.credentials?.[provider.credentialRef]?.value;
-    if (typeof value !== 'string' || value.length === 0) {
+    const selected = existing.providers?.[provider.credentialRef];
+    if (
+      selected?.authenticationType !== provider.authentication.type ||
+      typeof selected?.apiKey !== 'string' ||
+      selected.apiKey.length === 0
+    ) {
       throw new Error('judge_credential_existing_value_invalid');
     }
     applyOwnerOnlyPermissions(credentialPath);

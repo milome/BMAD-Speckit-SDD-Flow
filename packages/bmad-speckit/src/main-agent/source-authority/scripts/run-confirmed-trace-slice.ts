@@ -1,14 +1,56 @@
 /* eslint-disable no-console */
+import {
+  readRequirementsContractForRequirementRecord,
+  type RequirementsContractLogicalReadInput,
+  type RequirementsContractReadResult,
+} from './requirements-contract-read-facade';
+
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const yaml = require('js-yaml');
 
-const DEFAULT_SOURCE =
-  'docs/requirements/2026-05-24-main-agent-six-mental-model-control-plane-completion.md';
 const DEFAULT_RECORD =
   '_bmad-output/runtime/requirement-records/REQ-MAIN-AGENT-SIX-MENTAL-MODEL-CONTROL-PLANE/requirement-record.json';
+
+interface ConfirmedTraceSliceReadResult extends RequirementsContractReadResult {
+  traceRow?: Record<string, unknown>;
+  requiredCommands?: Array<Record<string, unknown>>;
+}
+
+export function readConfirmedTraceSliceContract(
+  input: Omit<RequirementsContractLogicalReadInput, 'consumerId' | 'mode'> & { traceId: string }
+): ConfirmedTraceSliceReadResult {
+  const result = readRequirementsContractForRequirementRecord({
+    ...input,
+    consumerId: 'run-confirmed-trace-slice',
+    mode: 'execution',
+    requiredProjectionRoles: ['acceptance_manifest'],
+  });
+  if (!result.ok) return result;
+  const traceRow = objects(result.traceGraph?.traceRows).find(
+    (candidate) => text(candidate.id) === text(input.traceId)
+  );
+  if (!traceRow) {
+    return {
+      ...result,
+      ok: false,
+      decision: 'block',
+      issues: [
+        {
+          code: 'canonical_projection_missing',
+          path: `#/traceGraph/traceRows/${text(input.traceId)}`,
+          message: 'requested trace row is unavailable in the canonical Trace Graph',
+        },
+      ],
+    };
+  }
+  return {
+    ...result,
+    traceRow,
+    requiredCommands: objects(result.projections.acceptance_manifest?.requiredCommands),
+  };
+}
 
 function parseArgs(argv) {
   const args = {};
@@ -42,6 +84,16 @@ function objects(value) {
     : [];
 }
 
+function isActiveV2RequirementRecord(record) {
+  return (
+    text(record.schemaVersion) === 'requirement-record/v1' &&
+    Boolean(text(record.requirementSetId)) &&
+    Boolean(text(record.activeBundleRevision)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.semanticModelHash)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.traceGraphHash))
+  );
+}
+
 function normalizePath(value) {
   return value.replace(/\\/gu, '/');
 }
@@ -68,25 +120,6 @@ function sha256File(file) {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
 }
 
-function extractImplementationConfirmation(sourceText) {
-  const fence = sourceText.match(/```yaml\s*\n([\s\S]*?)\n```/u);
-  if (!fence) throw new Error('missing yaml fenced implementationConfirmation block');
-  const parsed = yaml.load(fence[1]);
-  const confirmation = parsed && parsed.implementationConfirmation;
-  if (!confirmation || typeof confirmation !== 'object' || Array.isArray(confirmation)) {
-    throw new Error('implementationConfirmation block is not a YAML object');
-  }
-  return confirmation;
-}
-
-function commandMap(confirmation) {
-  return new Map(objects(confirmation.requiredCommands).map((command) => [text(command.id || command.commandId), command]));
-}
-
-function traceMap(confirmation) {
-  return new Map(objects(confirmation.traceRows).map((traceRow) => [text(traceRow.id), traceRow]));
-}
-
 function compactOutput(value, maxLength = 5000) {
   const normalized = value
     .replace(/\r\n/gu, '\n')
@@ -94,7 +127,9 @@ function compactOutput(value, maxLength = 5000) {
     .map((line) => line.trimEnd())
     .filter(Boolean)
     .join(' | ');
-  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)} ...<truncated>` : normalized;
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength)} ...<truncated>`
+    : normalized;
 }
 
 function runCommand(commandId, command, outputFile, runId, closeoutAttemptId) {
@@ -165,9 +200,18 @@ function buildPacket(input) {
   ];
   const taskRefs = strings(input.traceRow.taskRefs);
   const evidenceRefs = strings(input.traceRow.evidenceRefs);
-  const completionPacketPath = path.join(input.evidenceDir, `${input.traceId.toLowerCase()}-completion-evidence-packet.json`);
-  const receiptPath = path.join(input.evidenceDir, `${input.traceId.toLowerCase()}-command-receipt.json`);
-  const diffSummaryPath = path.join(input.evidenceDir, `${input.traceId.toLowerCase()}-diff-summary.md`);
+  const completionPacketPath = path.join(
+    input.evidenceDir,
+    `${input.traceId.toLowerCase()}-completion-evidence-packet.json`
+  );
+  const receiptPath = path.join(
+    input.evidenceDir,
+    `${input.traceId.toLowerCase()}-command-receipt.json`
+  );
+  const diffSummaryPath = path.join(
+    input.evidenceDir,
+    `${input.traceId.toLowerCase()}-diff-summary.md`
+  );
   const commandReceipt = {
     schemaVersion: 'confirmed-trace-command-receipt/v1',
     recordId: input.record.recordId,
@@ -228,7 +272,9 @@ function buildPacket(input) {
       outputSummary: run.outputSummary,
     })),
     e2eEvidence: commandArtifacts,
-    auditEvidence: input.commandRuns.filter((run) => run.commandId.startsWith('CMD-CONTRACT')).map((run) => run.commandId),
+    auditEvidence: input.commandRuns
+      .filter((run) => run.commandId.startsWith('CMD-CONTRACT'))
+      .map((run) => run.commandId),
     residualRisks: [],
     scopeChanges: [],
   };
@@ -304,7 +350,9 @@ function buildPacket(input) {
         },
         traceRows: [input.traceId],
         evidenceRefs,
-        artifactRefs: allArtifactRefs.filter((artifact) => strings(artifact.relatedRequirementIds).includes(run.commandId)),
+        artifactRefs: allArtifactRefs.filter((artifact) =>
+          strings(artifact.relatedRequirementIds).includes(run.commandId)
+        ),
       })),
       historicalRunRefs: input.commandRuns.map((run) => ({
         commandId: run.commandId,
@@ -351,7 +399,9 @@ function runIngest(packetPath, recordPath, recordedBy) {
     windowsHide: true,
     maxBuffer: 32 * 1024 * 1024,
   });
-  const commandText = command.map((value) => (/\s/u.test(value) ? JSON.stringify(value) : value)).join(' ');
+  const commandText = command
+    .map((value) => (/\s/u.test(value) ? JSON.stringify(value) : value))
+    .join(' ');
   return {
     command: commandText,
     exitCode: typeof result.status === 'number' ? result.status : result.error ? 2 : 0,
@@ -364,33 +414,57 @@ function runIngest(packetPath, recordPath, recordedBy) {
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: bmad-speckit main-agent run-confirmed-trace-slice --trace TRACE-001 [--record <json>] [--source <md>] [--json]');
+    console.log(
+      'Usage: bmad-speckit main-agent run-confirmed-trace-slice --trace TRACE-001 [--record <json>] [--source <md>] [--json]'
+    );
     return 0;
   }
   const traceId = text(args.trace);
   if (!/^TRACE-\d{3}$/u.test(traceId)) throw new Error('--trace TRACE-### is required');
-  const sourcePath = path.resolve(args.source || DEFAULT_SOURCE);
   const recordPath = path.resolve(args.record || DEFAULT_RECORD);
   const record = readJson(recordPath);
-  const confirmation = extractImplementationConfirmation(fs.readFileSync(sourcePath, 'utf8'));
-  if (text(confirmation.status) !== 'user_confirmed') {
-    throw new Error(`implementationConfirmation not user_confirmed: ${text(confirmation.status)}`);
+  let sourceDocumentHash;
+  let implementationConfirmationHash;
+  let traceRow;
+  let commands;
+  if (!isActiveV2RequirementRecord(record)) {
+    throw new Error(
+      'run-confirmed-trace-slice requires an active V2 Requirement Record with semantic and Trace Graph hashes'
+    );
   }
-  const sourceDocumentHash = text(confirmation.sourceDocumentHash);
-  const implementationConfirmationHash = text(confirmation.implementationConfirmationHash);
-  if (sourceDocumentHash !== text(record.sourceDocumentHash)) throw new Error('sourceDocumentHash mismatch');
-  if (implementationConfirmationHash !== text(record.implementationConfirmationHash)) {
-    throw new Error('implementationConfirmationHash mismatch');
+  const semanticRead = readConfirmedTraceSliceContract({
+    projectRoot: process.cwd(),
+    requirementSetId: text(record.requirementSetId),
+    expectedSemanticModelHash: text(record.semanticModelHash),
+    expectedTraceGraphHash: text(record.traceGraphHash),
+    traceId,
+  });
+  if (!semanticRead.ok) {
+    throw new Error(
+      `requirements contract read facade blocked: ${semanticRead.issues
+        .map((issue) => `${issue.code}:${issue.message}`)
+        .join('|')}`
+    );
   }
-  const traceRow = traceMap(confirmation).get(traceId);
+  if (!semanticRead.traceRow || !semanticRead.requiredCommands) {
+    throw new Error('requirements contract read facade omitted trace execution projections');
+  }
+  sourceDocumentHash = text(record.sourceDocumentHash);
+  implementationConfirmationHash = text(record.implementationConfirmationHash);
+  traceRow = semanticRead.traceRow;
+  commands = new Map(
+    semanticRead.requiredCommands.map((command) => [text(command.id || command.commandId), command])
+  );
   if (!traceRow) throw new Error(`missing trace row: ${traceId}`);
-  const commands = commandMap(confirmation);
   const commandIds = [
     ...strings(traceRow.contractValidationCommandRefs),
     ...strings(traceRow.deliveryEvidenceCommandRefs),
   ];
   if (commandIds.length === 0) throw new Error(`trace has no required commands: ${traceId}`);
-  const timestamp = new Date().toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z');
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:]/gu, '')
+    .replace(/\.\d{3}Z$/u, 'Z');
   const runId = args.runId || `run-${traceId}-${timestamp}`;
   const closeoutAttemptId = args.attemptId || `attempt-${traceId}-${timestamp}`;
   const evidenceDir = normalizePath(
@@ -412,7 +486,13 @@ function main(argv) {
     if (!command) throw new Error(`missing required command declaration: ${commandId}`);
     const commandText = text(command.command);
     if (!commandText) throw new Error(`missing command text: ${commandId}`);
-    const run = runCommand(commandId, commandText, path.join(evidenceDir, `${commandId}.output.txt`), runId, closeoutAttemptId);
+    const run = runCommand(
+      commandId,
+      commandText,
+      path.join(evidenceDir, `${commandId}.output.txt`),
+      runId,
+      closeoutAttemptId
+    );
     commandRuns.push(run);
     if (run.exitCode !== 0) {
       const failure = {
@@ -422,7 +502,9 @@ function main(argv) {
         outputPath: run.outputPath,
         exitCode: run.exitCode,
       };
-      process.stdout.write(args.json ? `${JSON.stringify(failure, null, 2)}\n` : `${traceId} failed at ${commandId}\n`);
+      process.stdout.write(
+        args.json ? `${JSON.stringify(failure, null, 2)}\n` : `${traceId} failed at ${commandId}\n`
+      );
       return run.exitCode || 1;
     }
   }
@@ -437,7 +519,10 @@ function main(argv) {
     implementationConfirmationHash,
     commandRuns,
   });
-  const packetPath = path.join(evidenceDir, `${traceId.toLowerCase()}-implementation-evidence-packet.json`);
+  const packetPath = path.join(
+    evidenceDir,
+    `${traceId.toLowerCase()}-implementation-evidence-packet.json`
+  );
   writeJson(packetPath, packet);
   const ingest = runIngest(packetPath, recordPath, args.recordedBy || 'codex');
   const ingestReceiptPath = path.join(evidenceDir, `${traceId.toLowerCase()}-ingest-receipt.json`);
@@ -454,13 +539,28 @@ function main(argv) {
     ingestStdout: compactOutput(ingest.stdout),
     ingestStderr: compactOutput(ingest.stderr),
   };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `${traceId} ${output.ok ? 'closed' : 'ingest_failed'}\n`);
+  process.stdout.write(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `${traceId} ${output.ok ? 'closed' : 'ingest_failed'}\n`
+  );
   return ingest.exitCode;
 }
 
-try {
-  process.exitCode = main(process.argv.slice(2));
-} catch (error) {
-  console.error(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
-  process.exitCode = 2;
+if (
+  require.main === module &&
+  /(^|[\\/])run-confirmed-trace-slice(\.[cm]?js|\.ts)?$/iu.test(process.argv[1] ?? '')
+) {
+  try {
+    process.exitCode = main(process.argv.slice(2));
+  } catch (error) {
+    console.error(
+      JSON.stringify(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
+    );
+    process.exitCode = 2;
+  }
 }

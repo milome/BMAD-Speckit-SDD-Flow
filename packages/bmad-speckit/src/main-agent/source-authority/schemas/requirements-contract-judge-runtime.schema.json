@@ -14,7 +14,7 @@
   "properties": {
     "schemaVersion": { "const": "requirements-contract-judge-runtime/v1" },
     "enabled": { "const": true },
-    "activeProviderRef": { "const": "local-sonnet-judge" },
+    "activeProviderRef": { "type": "string", "minLength": 1 },
     "selectionPolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -47,18 +47,16 @@
       ],
       "properties": {
         "source": { "const": "config_file" },
-        "path": {
-          "const": "_bmad-output/config/private/judge-provider.credentials.yaml"
-        },
+        "path": { "type": "string", "minLength": 1 },
         "schemaVersion": { "const": "requirements-contract-judge-credentials/v1" },
-        "allowedRoot": { "const": "_bmad-output/config/private" },
+        "allowedRoot": { "type": "string", "minLength": 1 },
         "environmentFallbackAllowed": { "const": false }
       }
     },
     "providers": {
       "type": "object",
       "minProperties": 1,
-      "required": ["local-sonnet-judge"],
+      "propertyNames": { "type": "string", "minLength": 1 },
       "additionalProperties": { "$ref": "#/$defs/provider" }
     }
   },

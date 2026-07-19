@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "requirements-contract-lint-profile-registry/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-lint-profile-registry.ts",
+    "hash": "sha256:2ae7c18ad1e369ab6e00605e52fff9cdd85cad7394db071c49f02d8ca0ebd6dc"
+  },
+  "registryHash": "sha256:bdf0f5fefdfaae1914ecff7cf559973f8e983d9dad8c798fecfb34f40e146224",
+  "profiles": [
+    {
+      "profile": "draft",
+      "policy": {
+        "allowBlockingUnresolved": true,
+        "requireZeroSyntheticFields": true,
+        "requireValidAuthority": true,
+        "requireCompleteRenderCoverage": true
+      }
+    },
+    {
+      "profile": "confirmation-ready",
+      "policy": {
+        "allowBlockingUnresolved": false,
+        "requireZeroSyntheticFields": true,
+        "requireValidAuthority": true,
+        "requireCompleteRenderCoverage": true
+      }
+    }
+  ],
+  "immutableCoreRuleRefs": [
+    "allowBlockingUnresolved",
+    "requireZeroSyntheticFields",
+    "requireValidAuthority",
+    "requireCompleteRenderCoverage"
+  ],
+  "additiveProfileRuleRefs": [
+    "all_core_rules_required",
+    "core_profiles_immutable",
+    "additive_profiles_must_not_weaken_core",
+    "additive_profiles_must_not_duplicate_core"
+  ],
+  "applicabilityRules": {
+    "profileSelection": "explicit_registered_profile_required",
+    "unknownProfile": "block",
+    "additiveProfiles": "allowed_only_without_core_weakening_or_duplication"
+  },
+  "authority": "none"
+}

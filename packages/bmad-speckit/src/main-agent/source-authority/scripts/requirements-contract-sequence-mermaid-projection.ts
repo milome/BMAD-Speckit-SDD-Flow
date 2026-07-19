@@ -7,12 +7,15 @@ import {
   validateDiagramSet,
   validateSequenceContract,
 } from './requirements-contract-sequence-model';
+import { REQUIREMENTS_CONTRACT_DIAGRAM_POLICY } from './requirements-contract-project-profile';
 import { sha256Text } from './requirements-contract-semantic-resolver';
 
-const FONT_SIZE_PX = 14;
-const PARTICIPANT_GAP_PX = 24;
-const MESSAGE_ROW_HEIGHT_PX = 28;
-const SCALE = 1;
+const {
+  minFontPx: FONT_SIZE_PX,
+  minParticipantGapPx: PARTICIPANT_GAP_PX,
+  minMessageRowHeightPx: MESSAGE_ROW_HEIGHT_PX,
+  scale: SCALE,
+} = REQUIREMENTS_CONTRACT_DIAGRAM_POLICY.readability;
 
 function renderDiagram(input: {
   contract: RequirementsContractSequenceContract;

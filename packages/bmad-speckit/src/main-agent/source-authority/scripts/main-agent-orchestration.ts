@@ -76,6 +76,7 @@ import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import {
   buildCriticalAuditorJudgeRuntimeBinding,
+  criticalAuditorIndependentProviderRunHash,
   type CriticalAuditorJudgeRuntimeBinding,
   type CriticalAuditorIndependentProviderEvidence,
   type CriticalAuditorIndependentProviderExpectation,
@@ -126,7 +127,11 @@ import {
   validateRegisteredSourceRootInventory,
 } from './requirements-contract-source-root-registry';
 import { evaluateRequirementsContractRenderRoundTrip } from './requirements-contract-render-roundtrip-gate';
-import { renderCanonicalRequirementSourcePrd } from './requirements-contract-prd-render-write-seam';
+import {
+  assertProductionPrdOutputPolicyCurrent,
+  renderProductionCanonicalRequirementSourcePrd,
+  acquireProductionOutputPolicyLock,
+} from './requirements-contract-prd-render-write-seam';
 import {
   createCheckpointSemanticValidationReceipt,
   deriveCheckpointProgressState,
@@ -158,6 +163,8 @@ import {
   writeRuntimeBlocker,
 } from './host-runtime-mode';
 import {
+  hasCurrentCloseoutAcceptanceRequest,
+  hasCurrentControlledCloseoutAcceptance,
   resolveSixModelRuntimeDecision,
   writeSixModelRuntimeDecision,
   writeSplitBrainBlocker,
@@ -678,6 +685,56 @@ function readRequirementRecordFromRuntimeContext(
   if (!recordPath || !fs.existsSync(recordPath)) return null;
   try {
     const parsed = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function readActiveRequirementRecordForDispatch(
+  projectRoot: string,
+  runtimeContext: Partial<RuntimeContextFile> | null
+): Record<string, unknown> | null {
+  const runtimeRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  if (runtimeRecord) return runtimeRecord;
+  const indexPath = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'index.json'
+  );
+  if (!fs.existsSync(indexPath)) return null;
+  try {
+    const index = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as Record<string, unknown>;
+    const active =
+      index.active && typeof index.active === 'object' && !Array.isArray(index.active)
+        ? (index.active as Record<string, unknown>)
+        : null;
+    const records = Array.isArray(index.records)
+      ? index.records.filter(
+          (item): item is Record<string, unknown> =>
+            Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+        )
+      : [];
+    const activeRecordId = normalizeText(active?.recordId);
+    const activeRequirementSetId = normalizeText(active?.requirementSetId);
+    const selected =
+      records.find(
+        (record) =>
+          (activeRecordId && normalizeText(record.recordId) === activeRecordId) ||
+          (activeRequirementSetId &&
+            normalizeText(record.requirementSetId) === activeRequirementSetId)
+      ) ?? active;
+    const recordPath = normalizeText(
+      selected?.recordPath || selected?.path || selected?.controlRecordPath
+    );
+    if (!recordPath) return null;
+    const parsed = JSON.parse(
+      fs.readFileSync(path.resolve(projectRoot, recordPath), 'utf8')
+    ) as unknown;
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : null;
@@ -1420,43 +1477,86 @@ function readJsonObject(filePath: string): Record<string, unknown> | null {
   }
 }
 
-function latestCurrentCompiledPromptRef(input: {
+function currentCompiledPromptRefFromDispatchPointer(input: {
   projectRoot: string;
-  sessionId: string;
   record: Record<string, unknown> | null;
 }): ExecutionPacket['compiledPromptRef'] {
-  if (!input.record) return null;
-  const packetDir = path.join(
-    input.projectRoot,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    safeSegment(input.sessionId),
-    'prompts',
-    'prompt-packets'
-  );
-  if (!fs.existsSync(packetDir)) return null;
-  const sourceHash = normalizeText(input.record.sourceDocumentHash);
-  const confirmationHash = normalizeText(input.record.implementationConfirmationHash);
-  const candidates = fs
-    .readdirSync(packetDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-    .map((entry) => {
-      const filePath = path.join(packetDir, entry.name);
-      return { filePath, packet: readJsonObject(filePath), stat: fs.statSync(filePath) };
-    })
-    .filter(({ packet }) => {
-      const ref = packet?.compiledPromptRef as Record<string, unknown> | undefined;
-      return (
-        normalizeText(packet?.taskType) === 'implement' &&
-        normalizeText(packet?.authorityMode) === 'compiled_implementation_confirmation' &&
-        normalizeText(ref?.sourceDocumentHash) === sourceHash &&
-        normalizeText(ref?.implementationConfirmationHash) === confirmationHash &&
-        normalizeText(ref?.modelPacketHash) !== ''
-      );
-    })
-    .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs);
-  return (candidates[0]?.packet?.compiledPromptRef as ExecutionPacket['compiledPromptRef']) ?? null;
+  if (!input.record) {
+    throw new Error('current_dispatch_pointer_expected_identity_missing:requirementRecord');
+  }
+  const expected = {
+    requirementSetId: normalizeText(input.record.requirementSetId),
+    implementationAttemptId:
+      normalizeText(input.record.currentAttemptId) ||
+      normalizeText(input.record.implementationAttemptId),
+    transactionId: normalizeText(input.record.transactionId),
+  };
+  for (const field of ['requirementSetId', 'implementationAttemptId', 'transactionId'] as const) {
+    if (!expected[field]) {
+      throw new Error(`current_dispatch_pointer_expected_identity_missing:${field}`);
+    }
+  }
+  return resolveCurrentCompiledPromptRefFromDispatchPointer({
+    authorityRoot: input.projectRoot,
+    pointerPath: path.join(
+      input.projectRoot,
+      'docs',
+      'plans',
+      'evidence',
+      'loop-engineering-remediation',
+      'current-dispatch-pointer-receipt.json'
+    ),
+    expected,
+  });
+}
+
+function auditPendingPacketBindingMismatch(
+  packet: RecommendationPacket | ExecutionPacket | ResumePacket | null,
+  currentRef: NonNullable<ExecutionPacket['compiledPromptRef']>
+): string | null {
+  if (
+    !packet ||
+    packetTaskType(packet) !== 'audit' ||
+    !('authorityMode' in packet) ||
+    packet.authorityMode !== 'compiled_implementation_confirmation' ||
+    !packet.compiledPromptRef
+  ) {
+    return 'compiledPromptRef';
+  }
+  const packetRef = packet.compiledPromptRef;
+  const fields: Array<{
+    key: keyof CompiledPromptRef;
+    label: string;
+    path?: boolean;
+  }> = [
+    { key: 'modelPacketPath', label: 'modelPacketPath', path: true },
+    { key: 'modelPacketHash', label: 'modelPacketHash' },
+    { key: 'humanPromptPath', label: 'humanPromptPath', path: true },
+    { key: 'humanPromptHash', label: 'humanPromptHash' },
+    { key: 'auditReceiptPath', label: 'auditReceiptPath', path: true },
+    { key: 'auditReceiptHash', label: 'auditReceiptHash' },
+    { key: 'goalExecutionPath', label: 'goalExecutionPath', path: true },
+    { key: 'goalExecutionHash', label: 'goalExecutionHash' },
+    { key: 'sourceDocumentHash', label: 'sourceDocumentHash' },
+    {
+      key: 'implementationConfirmationHash',
+      label: 'implementationConfirmationHash',
+    },
+  ];
+  const normalizePath = (value: unknown) => {
+    const resolved = path.resolve(String(value));
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  };
+  for (const field of fields) {
+    const actual = packetRef[field.key] ?? null;
+    const expected = currentRef[field.key] ?? null;
+    const matches =
+      field.path && actual !== null && expected !== null
+        ? normalizePath(actual) === normalizePath(expected)
+        : actual === expected;
+    if (!matches) return field.label;
+  }
+  return null;
 }
 
 function auditArtifactsDir(projectRoot: string, recordId: string, attemptId: string): string {
@@ -1897,6 +1997,138 @@ interface CriticalAuditorRoundResult {
   priorFindingsDisposition?: Record<string, unknown>[];
   falsePositiveProofs?: Record<string, unknown>[];
   rationale?: string;
+}
+
+interface CriticalAuditorExternalAdapterResult {
+  schemaVersion: 'critical-auditor-external-adapter-result/v1';
+  providerRun: Record<string, unknown>;
+  response: Record<string, unknown>;
+}
+
+interface CriticalAuditorProtectedFileState {
+  exists: boolean;
+  hash: string | null;
+}
+
+const CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS = [
+  'providerId',
+  'model',
+  'transport',
+  'apiStyle',
+  'configuredBaseUrlHash',
+  'independenceClass',
+  'providerRegistryHash',
+  'providerConfigurationHash',
+] as const;
+
+const CRITICAL_AUDITOR_CREDENTIAL_KEY_PATTERN =
+  /api.?key|authorization|secret|access.?token|refresh.?token|credential.?value|raw.?credential/iu;
+
+function criticalAuditorContainsCredentialMaterial(
+  value: unknown,
+  seen = new Set<object>()
+): boolean {
+  if (!value || typeof value !== 'object') return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.some((item) => criticalAuditorContainsCredentialMaterial(item, seen));
+  }
+  return Object.entries(value as Record<string, unknown>).some(
+    ([key, item]) =>
+      CRITICAL_AUDITOR_CREDENTIAL_KEY_PATTERN.test(key) ||
+      criticalAuditorContainsCredentialMaterial(item, seen)
+  );
+}
+
+function snapshotCriticalAuditorProtectedFiles(
+  filePaths: string[]
+): Map<string, CriticalAuditorProtectedFileState> {
+  return new Map(
+    [...new Set(filePaths.map((filePath) => path.resolve(filePath)))].map((filePath) => [
+      filePath,
+      {
+        exists: fs.existsSync(filePath),
+        hash: fs.existsSync(filePath) ? sha256File(filePath) : null,
+      },
+    ])
+  );
+}
+
+function changedCriticalAuditorProtectedFiles(
+  before: Map<string, CriticalAuditorProtectedFileState>
+): string[] {
+  const changed: string[] = [];
+  for (const [filePath, state] of before.entries()) {
+    const exists = fs.existsSync(filePath);
+    const hash = exists ? sha256File(filePath) : null;
+    if (exists !== state.exists || hash !== state.hash) changed.push(filePath);
+  }
+  return changed;
+}
+
+function criticalAuditorExternalAdapterRoundResult(input: {
+  result: unknown;
+  expected: CriticalAuditorIndependentProviderExpectation;
+}): CriticalAuditorRoundResult {
+  const envelope = recordObject(input.result) as Partial<CriticalAuditorExternalAdapterResult>;
+  if (normalizeText(envelope.schemaVersion) !== 'critical-auditor-external-adapter-result/v1') {
+    throw new Error('critical_auditor_external_adapter_result_schema_invalid');
+  }
+  if (criticalAuditorContainsCredentialMaterial(envelope)) {
+    throw new Error('critical_auditor_credential_material_forbidden');
+  }
+  const providerRun = recordObject(envelope.providerRun);
+  const allowedProviderRunFields = new Set([
+    ...CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS,
+    'capabilityReceiptHash',
+    'selectionReceiptHash',
+    'providerRunId',
+  ]);
+  if (Object.keys(providerRun).some((field) => !allowedProviderRunFields.has(field))) {
+    throw new Error('critical_auditor_external_adapter_provider_run_schema_invalid');
+  }
+  for (const field of CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS) {
+    if (normalizeText(providerRun[field]) !== normalizeText(input.expected[field])) {
+      throw new Error(`critical_auditor_external_adapter_${field}_mismatch`);
+    }
+  }
+  for (const field of ['capabilityReceiptHash', 'selectionReceiptHash'] as const) {
+    if (
+      input.expected[field] !== undefined &&
+      normalizeText(providerRun[field]) !== normalizeText(input.expected[field])
+    ) {
+      throw new Error(`critical_auditor_external_adapter_${field}_mismatch`);
+    }
+  }
+  const providerRunId = normalizeText(providerRun.providerRunId);
+  if (!providerRunId) {
+    throw new Error('critical_auditor_provider_run_id_missing');
+  }
+  const response = recordObject(envelope.response);
+  if (Object.hasOwn(response, 'independentProviderEvidence')) {
+    throw new Error('critical_auditor_external_adapter_self_authored_evidence_forbidden');
+  }
+  const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
+    ...input.expected,
+    providerRunId,
+    responseHash: sha256Json(response),
+  };
+  const independentProviderEvidence: CriticalAuditorIndependentProviderEvidence = {
+    ...evidenceWithoutRunHash,
+    runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+  };
+  const providerValidation = validateCriticalAuditorIndependentProviderEvidence({
+    expected: input.expected,
+    evidence: independentProviderEvidence,
+  });
+  if (!providerValidation.ok) {
+    throw new Error(providerValidation.issueCodes[0] ?? 'critical_auditor_provider_run_invalid');
+  }
+  return {
+    ...(response as unknown as CriticalAuditorRoundResult),
+    independentProviderEvidence,
+  };
 }
 
 export interface MainAgentPreConfirmationDrilldownResult extends PreConfirmationDrilldownLaneState {
@@ -2458,6 +2690,25 @@ function parseCriticalAuditorProviderMode(value: unknown): CriticalAuditorProvid
   );
 }
 
+function parseCriticalAuditorExternalAdapterCommand(value: unknown): string[] {
+  const encoded = normalizeText(value);
+  if (!encoded) throw new Error('critical_auditor_external_adapter_missing');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(encoded);
+  } catch {
+    throw new Error('critical_auditor_external_adapter_command_invalid');
+  }
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length === 0 ||
+    parsed.some((item) => typeof item !== 'string' || !item.trim())
+  ) {
+    throw new Error('critical_auditor_external_adapter_command_invalid');
+  }
+  return parsed.map((item) => item.trim());
+}
+
 function criticalAuditorNamespaceVersion(recordId: string, sourceHash: string): string {
   return `critical-auditor-namespace/${sha256Json({ recordId, sourceHash }).slice(
     'sha256:'.length,
@@ -2551,10 +2802,17 @@ function sourceTextDeclaresRequirementsContractSourcePrd(sourceText: string): bo
 }
 
 export function resolveCurrentCompiledPromptRefFromDispatchPointer(input: {
+  authorityRoot: string;
   pointerPath: string;
   expected: CurrentDispatchPointerExpectedIdentity;
 }): CompiledPromptRef {
-  const { pointer } = resolveCurrentDispatchPointer(input);
+  const { pointer, modelPacket } = resolveCurrentDispatchPointer(input);
+  const implementationConfirmationHash = normalizeText(modelPacket.implementationConfirmationHash);
+  if (!implementationConfirmationHash) {
+    throw new Error(
+      'current_dispatch_pointer_model_packet_mismatch:implementationConfirmationHash'
+    );
+  }
   return {
     modelPacketPath: pointer.modelPacketRef.path,
     modelPacketHash: pointer.modelPacketRef.hash,
@@ -2562,9 +2820,10 @@ export function resolveCurrentCompiledPromptRefFromDispatchPointer(input: {
     humanPromptHash: pointer.humanPromptRef.hash,
     auditReceiptPath: pointer.auditReceiptRef.path,
     auditReceiptHash: pointer.auditReceiptRef.hash,
-    goalExecutionPath: pointer.goalExecutionRef.path,
-    goalExecutionHash: pointer.goalExecutionRef.hash,
+    goalExecutionPath: pointer.goalExecutionRef?.path ?? null,
+    goalExecutionHash: pointer.goalExecutionRef?.hash ?? null,
     sourceDocumentHash: pointer.sourceDocumentHash,
+    implementationConfirmationHash,
   };
 }
 
@@ -3421,9 +3680,7 @@ function extractInlineMustRequirements(
         id: normalizeMustRef(row.id, index),
         text: normalizeText(row.text),
         textZh: normalizeText(row.textZh) || undefined,
-        source: groundedSource
-          ? sourceAuthority
-          : ('inline_implementation_confirmation' as const),
+        source: groundedSource ? sourceAuthority : ('inline_implementation_confirmation' as const),
         sourceLine: groundedSource ? startLine : null,
         ...(groundedSource
           ? {
@@ -3477,10 +3734,7 @@ function locateInlineRequirementSourceRows(
   const fieldPattern = new RegExp(`^\\s*${fieldName}\\s*:`, 'u');
   const fieldLinePattern = new RegExp(`^(\\s*)${fieldName}\\s*:\\s*(.*?)\\s*$`, 'u');
   const fieldIndex = extraction.lines.findIndex(
-    (line, index) =>
-      index > extraction.start &&
-      index < extraction.end &&
-      fieldPattern.test(line)
+    (line, index) => index > extraction.start && index < extraction.end && fieldPattern.test(line)
   );
   if (fieldIndex < 0) {
     return requirementIds.map(() => null);
@@ -3549,9 +3803,7 @@ function locateInlineRequirementSourceRows(
     });
     locationsById.set(id, locations);
   });
-  return requirementIds.map(
-    (requirementId) => locationsById.get(requirementId)?.shift() ?? null
-  );
+  return requirementIds.map((requirementId) => locationsById.get(requirementId)?.shift() ?? null);
 }
 
 function extractInlineImplementationConfirmationBoundaryBlocks(input: {
@@ -3625,16 +3877,14 @@ function extractInlineImplementationConfirmationBoundaryBlocks(input: {
       const effectiveSourceSpan = hasEmbeddedSourceProvenance
         ? { startLine: embeddedStartLine, endLine: embeddedEndLine }
         : location.sourceSpan;
-      const rawText = input.extraction!.lines
-        .slice(location.sourceSpan.startLine - 1, location.sourceSpan.endLine)
+      const rawText = input
+        .extraction!.lines.slice(location.sourceSpan.startLine - 1, location.sourceSpan.endLine)
         .join('\n');
       const normalizedText = normalizeText(value.text);
       return [
         {
           blockId: `INLINE-${definition.fieldName.toUpperCase()}-${requirementOrdinal(index)}`,
-          sourcePath: hasEmbeddedSourceProvenance
-            ? normalizeText(value.sourcePath)
-            : sourcePath,
+          sourcePath: hasEmbeddedSourceProvenance ? normalizeText(value.sourcePath) : sourcePath,
           sourceDocumentHash: hasEmbeddedSourceProvenance
             ? normalizeText(value.sourceDocumentHash)
             : sourceDocumentHash,
@@ -3647,9 +3897,7 @@ function extractInlineImplementationConfirmationBoundaryBlocks(input: {
           normalizedText,
           requirementSignal: [
             'inline_implementation_confirmation',
-            definition.fieldName === 'notDone'
-              ? 'negative_requirement'
-              : 'out_of_scope_boundary',
+            definition.fieldName === 'notDone' ? 'negative_requirement' : 'out_of_scope_boundary',
           ],
           domainTerms: sourceBlockDomainTerms(`${definition.heading} ${normalizedText}`),
           decision: 'mapped_to_non_goal' as const,
@@ -4511,18 +4759,18 @@ function buildValidationAuthority(input: {
     .filter(([, count]) => count > 1)
     .map(([sourceCommandId]) => sourceCommandId);
   const explicit: ValidationCommandCandidate[] = input.explicitCommands.map((command) => ({
-      command,
-      sourceSpan: null,
-      sourceDocumentHash,
-      source: 'explicit_option',
-      sourceMustRefs: [],
-      sourceTraceRefs: [],
-      sourceAcceptanceRefs: [],
-      sourcePathRefs: [],
-      sourceOracle: '',
-      responsibilityMapping: '',
-      sourceTargetFiles: [],
-    }));
+    command,
+    sourceSpan: null,
+    sourceDocumentHash,
+    source: 'explicit_option',
+    sourceMustRefs: [],
+    sourceTraceRefs: [],
+    sourceAcceptanceRefs: [],
+    sourcePathRefs: [],
+    sourceOracle: '',
+    responsibilityMapping: '',
+    sourceTargetFiles: [],
+  }));
   const sourceDerived: ValidationCommandCandidate[] = sourceCommands.map((command) => ({
     ...command,
     source: 'source_document',
@@ -4615,9 +4863,9 @@ function buildValidationAuthority(input: {
           ? 'Provided by --required-command and linked to target authority.'
           : sourceDeclaredContractValidationAuthority
             ? 'Source contract-validation row declares a project-local command bound to its Source target file.'
-          : sourceDeclaredTestAuthority
-            ? 'Source CMD row declares an executable project-local validation-only test target.'
-            : 'Source document declares an executable validation command linked to target authority.',
+            : sourceDeclaredTestAuthority
+              ? 'Source CMD row declares an executable project-local validation-only test target.'
+              : 'Source document declares an executable validation command linked to target authority.',
       blocksSourceMutationWhenMissing: true,
       ...(candidate.sourceCommandId ? { sourceCommandId: candidate.sourceCommandId } : {}),
       ...(candidate.sourceCommandType ? { sourceCommandType: candidate.sourceCommandType } : {}),
@@ -4962,15 +5210,8 @@ function buildControlledMustCandidatesFromPlainSource(
 }
 
 function mustRequirementsFromControlledCandidates(
-  requirementSetId: string,
   candidates: ControlledMustCandidate[]
 ): SourceMustRequirement[] {
-  const stablePrefix = sanitizeRequirementIdSegment(requirementSetId)
-    .replace(/[^A-Z0-9]+/giu, '-')
-    .replace(/^-|-$/gu, '')
-    .toUpperCase()
-    .slice(0, 24)
-    .replace(/^-|-$/gu, '');
   return candidates
     .filter(
       (candidate) =>
@@ -4980,10 +5221,7 @@ function mustRequirementsFromControlledCandidates(
     .map((candidate, index) => ({
       id: candidate.projectedMustId
         ? normalizeMustRef(candidate.projectedMustId, index)
-        : normalizeMustRef(
-            `MUST-${stablePrefix ? `${stablePrefix}-` : ''}${requirementOrdinal(index)}`,
-            index
-          ),
+        : `MUST-FR-${requirementOrdinal(index)}`,
       text: candidate.normalizedRequirement,
       source: 'controlled_plain_source_candidate' as const,
       sourceLine: candidate.sourceSpan.startLine,
@@ -5001,9 +5239,7 @@ function groundSourceMustRequirements(
   blocks: StructuredSourceBlock[]
 ): SourceMustRequirement[] {
   return mustRequirements.map((requirement) => {
-    const mustSourceId = requirement.id.match(
-      /^MUST-((?:FR|NFR)-\d{1,3})$/iu
-    )?.[1]?.toUpperCase();
+    const mustSourceId = requirement.id.match(/^MUST-((?:FR|NFR)-\d{1,3})$/iu)?.[1]?.toUpperCase();
     if (
       !mustSourceId &&
       requirement.sourcePath &&
@@ -5029,14 +5265,9 @@ function groundSourceMustRequirements(
           )
         : undefined) ??
       blocks.find(
-        (block) =>
-          normalizeText(block.normalizedText) === normalizeText(requirement.text)
+        (block) => normalizeText(block.normalizedText) === normalizeText(requirement.text)
       ) ??
-      blocks.find(
-        (block) =>
-          !mustSourceId &&
-          block.rawText.includes(requirement.id)
-      );
+      blocks.find((block) => !mustSourceId && block.rawText.includes(requirement.id));
     if (!sourceBlock) return requirement;
     if (mustSourceId) {
       return {
@@ -5193,9 +5424,7 @@ function buildOutOfScopeRows(input: {
       block.normalizedText,
     ].join('\u0000');
   const explicitlyProjectedSourceIdentities = new Set(
-    candidateBlocks
-      .filter((block) => Boolean(sourceProjectionId(block, 'OUT')))
-      .map(sourceIdentity)
+    candidateBlocks.filter((block) => Boolean(sourceProjectionId(block, 'OUT'))).map(sourceIdentity)
   );
   let generatedOrdinal = 1;
   const nextGeneratedId = (): string => {
@@ -7677,7 +7906,9 @@ function buildSourceInteractionRootLineageWitnesses(input: {
         sections.some((section) => headingPathContainsExactSection(block.headingPath, section))
     )
     .map((block) => {
-      const sourceRootId = normalizeText(tableContextRowValue(block.tableContext, ['ID'])).toUpperCase();
+      const sourceRootId = normalizeText(
+        tableContextRowValue(block.tableContext, ['ID'])
+      ).toUpperCase();
       if (!sourceRootId) {
         throw new Error('Sequence Source Root lineage witness is missing an explicit stable ID');
       }
@@ -7708,9 +7939,7 @@ function planProductionSemanticSourceRootLineageWitnesses(input: {
     sourcePath,
     sourceText: input.sourceText,
   });
-  const registeredRootIds = new Set(
-    registeredWitnesses.map((witness) => witness.sourceRootId)
-  );
+  const registeredRootIds = new Set(registeredWitnesses.map((witness) => witness.sourceRootId));
   const witnesses: EntryLineageSourceRoot[] = [...registeredWitnesses];
   const appendUnregisteredWitness = (witness: EntryLineageSourceRoot): void => {
     if (!registeredRootIds.has(witness.sourceRootId)) witnesses.push(witness);
@@ -7797,12 +8026,8 @@ function assertProductionSemanticSourceRootCandidateLineageParity(input: {
   const candidates = input.candidates.filter(
     (candidate) => candidate.proposedAuthorityClass !== 'invocation_bound'
   );
-  const witnessById = new Map(
-    input.witnesses.map((witness) => [witness.sourceRootId, witness])
-  );
-  const candidateById = new Map(
-    candidates.map((candidate) => [candidate.sourceRootId, candidate])
-  );
+  const witnessById = new Map(input.witnesses.map((witness) => [witness.sourceRootId, witness]));
+  const candidateById = new Map(candidates.map((candidate) => [candidate.sourceRootId, candidate]));
   if (
     witnessById.size !== input.witnesses.length ||
     candidateById.size !== candidates.length ||
@@ -8104,12 +8329,12 @@ function planProductionSemanticSourceRootCandidates(input: {
     });
   }
   for (const interactionRoot of buildSourceInteractionRoots({
-      sourcePath,
-      sourceText: sourceAuthoritySnapshot.sourceContent,
-      blocks: input.structuredBlocks,
-      mustRequirements: input.mustRequirements,
-      negativeRequirementIds: sourceNegativeRows.map((row) => normalizeText(row.id)),
-    })) {
+    sourcePath,
+    sourceText: sourceAuthoritySnapshot.sourceContent,
+    blocks: input.structuredBlocks,
+    mustRequirements: input.mustRequirements,
+    negativeRequirementIds: sourceNegativeRows.map((row) => normalizeText(row.id)),
+  })) {
     appendUnregisteredRoot(interactionRoot);
   }
   const inventoryValidation = validateRegisteredSourceRootInventory({
@@ -10354,7 +10579,6 @@ function materializePreserveExistingPacketProjectionMetadataResync(input: {
   sourceText: string;
   confirmation: Record<string, unknown>;
   sourceDocumentHash: string;
-  semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
 }):
@@ -10758,9 +10982,7 @@ function runSkillLocalCurrentSourcePromotionRefresh(input: {
   }
 
   const sourceDocumentHash = normalizeText(prepare.json.semanticSourceHash);
-  const implementationConfirmationHash = normalizeText(
-    prepare.json.implementationConfirmationHash
-  );
+  const implementationConfirmationHash = normalizeText(prepare.json.implementationConfirmationHash);
   if (!sourceDocumentHash || !implementationConfirmationHash) {
     return {
       ok: false,
@@ -11356,9 +11578,7 @@ function checkpointReceiptMatchesCurrentBinding(
     return false;
   }
   if (input.receipt.sourceDocumentHash !== input.sourceDocumentHash) return false;
-  if (
-    input.receipt.implementationConfirmationHash !== input.implementationConfirmationHash
-  ) {
+  if (input.receipt.implementationConfirmationHash !== input.implementationConfirmationHash) {
     return false;
   }
   if (
@@ -11413,10 +11633,7 @@ function isCurrentDeferredCriticalAuditorCheckpointReceipt(
   );
 }
 
-function removeCheckpointReceiptsAfter(
-  paths: PreConfirmationPaths,
-  checkpointIndex: number
-): void {
+function removeCheckpointReceiptsAfter(paths: PreConfirmationPaths, checkpointIndex: number): void {
   for (const checkpoint of AUTHORING_REPAIR_CHECKPOINTS.slice(checkpointIndex + 1)) {
     const receiptPath = checkpointReceiptPath(paths, checkpoint);
     if (fs.existsSync(receiptPath)) {
@@ -11948,9 +12165,7 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
         new Map(
           [...mustGateIssues, ...globalGateIssues, ...checkpointIssues]
             .filter((issue) =>
-              CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(
-                normalizeText(issue.code)
-              )
+              CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(issue.code))
             )
             .map((issue) => [
               `${normalizeText(issue.code)}\n${asStringArray(issue.refs).join('\n')}`,
@@ -13085,10 +13300,7 @@ function buildPreserveExistingAuthoringArtifacts(input: {
     input.sourcePath,
     input.sourceText
   );
-  const groundedMustRequirements = groundSourceMustRequirements(
-    mustRequirements,
-    structuredBlocks
-  );
+  const groundedMustRequirements = groundSourceMustRequirements(mustRequirements, structuredBlocks);
   const sourceTargetRecords = extractTargetAuthorityFromSource({
     root: input.root,
     sourceText: input.sourceText,
@@ -13189,7 +13401,9 @@ function buildPreserveExistingAuthoringArtifacts(input: {
     paths: input.paths,
   });
   if (roundTripReport.decision !== 'pass') {
-    throw new Error('Preserve-existing semantic round-trip did not conserve the Source Root inventory');
+    throw new Error(
+      'Preserve-existing semantic round-trip did not conserve the Source Root inventory'
+    );
   }
   const preserveExistingCandidates: ControlledMustCandidate[] = mustRequirements.map(
     (requirement, index) => {
@@ -13300,7 +13514,6 @@ function buildSemanticKernel(input: {
   sourcePath: string;
   recordId: string;
   sourceDocumentHash: string;
-  semanticModelHash: string;
   implementationConfirmationHash: string;
   createdAt: string;
   mustRequirements: SourceMustRequirement[];
@@ -14813,10 +15026,7 @@ function semanticProjectionOwnershipText(row: Record<string, unknown>): string {
   ]).join(' ');
 }
 
-function semanticProjectionOwnershipScore(
-  projectionText: string,
-  requirementText: string
-): number {
+function semanticProjectionOwnershipScore(projectionText: string, requirementText: string): number {
   const projectionTokens = new Set(semanticBusinessTokens(projectionText));
   return semanticBusinessTokens(requirementText).reduce((score, token) => {
     if (projectionTokens.has(token)) return score + token.length;
@@ -16938,7 +17148,9 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
   };
   for (const [field, value] of Object.entries(required)) {
     if (!value) {
-      issueCodes.push(`critical_auditor_${field.replace(/[A-Z]/gu, (char) => `_${char.toLowerCase()}`)}_missing`);
+      issueCodes.push(
+        `critical_auditor_${field.replace(/[A-Z]/gu, (char) => `_${char.toLowerCase()}`)}_missing`
+      );
     }
   }
   if (issueCodes.length > 0) {
@@ -16948,7 +17160,18 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
     expectation: {
       transactionId: normalizeText(request.transactionId) || undefined,
       auditAttemptId: normalizeText(request.auditAttemptId) || undefined,
-      ...(required as CriticalAuditorJudgeRuntimeBinding),
+      providerId: required.providerId,
+      model: required.model,
+      transport: required.transport,
+      apiStyle: required.apiStyle,
+      configuredBaseUrlHash: required.configuredBaseUrlHash,
+      independenceClass: required.independenceClass,
+      providerRegistryHash: required.providerRegistryHash,
+      providerConfigurationHash: required.providerConfigurationHash,
+      requestHash: required.requestHash,
+      sourceDocumentHash: required.sourceDocumentHash,
+      semanticModelHash: required.semanticModelHash,
+      projectionSetHash: required.projectionSetHash,
     },
     issueCodes: [],
   };
@@ -17963,9 +18186,7 @@ function pendingFinalCriticalAuditorDraftText(input: {
 }): string | null {
   const finalDraftSource = path.join(input.transaction.stagingDir, 'final-draft-source.md');
   const request = readJsonIfExists(criticalAuditorRequestPath(input.transaction, 1));
-  const kernel = recordObject(
-    readJsonIfExists(input.transaction.semanticKernel)?.semanticKernel
-  );
+  const kernel = recordObject(readJsonIfExists(input.transaction.semanticKernel)?.semanticKernel);
   const packet = recordObject(
     readJsonIfExists(input.transaction.mustDecompositionPacket)?.must_decomposition_packet
   );
@@ -17989,8 +18210,9 @@ function pendingFinalCriticalAuditorDraftText(input: {
     extraction.blockText,
     extraction.confirmation
   );
-  const implementationConfirmationHash =
-    implementationConfirmationHashForPreConfirmation(extraction.confirmation);
+  const implementationConfirmationHash = implementationConfirmationHashForPreConfirmation(
+    extraction.confirmation
+  );
   const semanticModelHash = normalizeText(kernel.kernelHash);
   const projectionSetHash = criticalAuditorProjectionSetHash(packet);
   const auditInputHash = sha256Json({
@@ -19749,8 +19971,7 @@ export function runMainAgentAuthoringRepair(
       paths,
       roundIndex,
     });
-    const providerExpectation =
-      criticalAuditorIndependentProviderExpectationFromRequest(request);
+    const providerExpectation = criticalAuditorIndependentProviderExpectationFromRequest(request);
     const validation = providerExpectation.expectation
       ? validateCriticalAuditorResponse({
           responsePath,
@@ -19981,11 +20202,11 @@ export function runMainAgentAuthoringRepair(
       const gapFix = materializeCriticalAuditorGapFix({
         root,
         sourcePath,
-          paths,
-          recordId: identity.recordId,
-          requirementSetId: identity.requirementSetId,
-          implementationAttemptId,
-          confirmation: extraction.confirmation,
+        paths,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        implementationAttemptId,
+        confirmation: extraction.confirmation,
         previousSourceDocumentHash: sourceDocumentHash,
         response: validation.response,
         createdAt,
@@ -20808,8 +21029,7 @@ function validateCheckpointPersistenceEvidence(input: {
   }
   if (
     normalizeText(evidence.sourceDocumentHash) !== input.sourceDocumentHash ||
-    normalizeText(evidence.implementationConfirmationHash) !==
-      input.implementationConfirmationHash
+    normalizeText(evidence.implementationConfirmationHash) !== input.implementationConfirmationHash
   ) {
     addIssue('source or implementationConfirmation hash mismatch');
   }
@@ -20859,9 +21079,7 @@ function validateCheckpointPersistenceEvidence(input: {
     completedIds.length !== expectedCompletedIds.length ||
     expectedCompletedIds.some((checkpointId, index) => completedIds[index] !== checkpointId)
   ) {
-    addIssue(
-      `completedCheckpointIds must exactly equal ${expectedCompletedIds.join(', ')}`
-    );
+    addIssue(`completedCheckpointIds must exactly equal ${expectedCompletedIds.join(', ')}`);
   }
   for (const checkpoint of AUTHORING_REPAIR_CHECKPOINTS) {
     const receiptPath = checkpointReceiptPath(input.paths, checkpoint);
@@ -20911,10 +21129,7 @@ function validateCheckpointPersistenceEvidence(input: {
       draftSourcePath: input.sourcePath,
       paths: input.paths,
     };
-    if (
-      deferredCriticalAuditorOnly &&
-      checkpoint.id === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT.id
-    ) {
+    if (deferredCriticalAuditorOnly && checkpoint.id === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT.id) {
       if (!isCurrentDeferredCriticalAuditorCheckpointReceipt(currentReceiptInput)) {
         addIssue(`checkpoint receipt is not a current deferred Auditor block ${checkpoint.id}`);
       }
@@ -20927,9 +21142,7 @@ function validateCheckpointPersistenceEvidence(input: {
       }
       continue;
     }
-    if (
-      !isCurrentCheckpointReceipt(currentReceiptInput)
-    ) {
+    if (!isCurrentCheckpointReceipt(currentReceiptInput)) {
       addIssue(`checkpoint receipt stale or invalid ${checkpoint.id}`);
     }
   }
@@ -21290,7 +21503,9 @@ function runSourcePrdSemanticRoundTrip(input: {
   const parsedRootIds = new Set<string>();
   const sourceRootCandidates = parsedSourceRootCandidates.map((candidate) => {
     if (parsedRootIds.has(candidate.sourceRootId)) {
-      throw new Error(`Source PRD round-trip produced duplicate Source Root ${candidate.sourceRootId}`);
+      throw new Error(
+        `Source PRD round-trip produced duplicate Source Root ${candidate.sourceRootId}`
+      );
     }
     parsedRootIds.add(candidate.sourceRootId);
     const baselineRoot = baselineRootById.get(candidate.sourceRootId);
@@ -21328,8 +21543,7 @@ function runSourcePrdSemanticRoundTrip(input: {
     if (candidateSemanticSource && baselineSemanticSource) {
       const { sourceSpan: _candidateSourceSpan, ...candidateStableSource } =
         candidateSemanticSource;
-      const { sourceSpan: _baselineSourceSpan, ...baselineStableSource } =
-        baselineSemanticSource;
+      const { sourceSpan: _baselineSourceSpan, ...baselineStableSource } = baselineSemanticSource;
       if (stableStringify(candidateStableSource) !== stableStringify(baselineStableSource)) {
         throw new Error(
           `Source PRD round-trip changed semantic source provenance ${candidate.sourceRootId}`
@@ -21583,12 +21797,22 @@ export function runMainAgentPreConfirmationDrilldown(
   const criticalAuditorProviderMode = parseCriticalAuditorProviderMode(
     options.criticalAuditorProviderMode
   );
+  let criticalAuditorExternalAdapterCommand: string[] | null = null;
   if (criticalAuditorProviderMode === 'external_adapter') {
-    const command = normalizeText(options.criticalAuditorExternalAdapterCommand);
-    if (!command) {
+    try {
+      criticalAuditorExternalAdapterCommand = parseCriticalAuditorExternalAdapterCommand(
+        options.criticalAuditorExternalAdapterCommand
+      );
+    } catch (error) {
+      const issueCode =
+        error instanceof Error && error.message === 'critical_auditor_external_adapter_missing'
+          ? error.message
+          : 'critical_auditor_external_adapter_command_invalid';
       const issue = preConfirmationIssue(
-        'critical_auditor_external_adapter_missing',
-        'external_adapter Critical Auditor provider mode requires an explicit adapter command.',
+        issueCode,
+        issueCode === 'critical_auditor_external_adapter_missing'
+          ? 'external_adapter Critical Auditor provider mode requires an explicit adapter command.'
+          : 'external_adapter Critical Auditor command must be a JSON argv array of non-empty strings.',
         ['criticalAuditorExternalAdapterCommand'],
         'critical_auditor'
       );
@@ -21601,7 +21825,7 @@ export function runMainAgentPreConfirmationDrilldown(
         substate: 'blocked_by_render_gate',
         issues: [issue],
         criticalAuditorProviderMode,
-        blockingStage: 'critical_auditor_external_adapter_missing',
+        blockingStage: issueCode,
         sourceMutationPerformed: false,
         entrySource,
         sourcePrdInstanceLint: preStagingSourcePrdLint,
@@ -21638,10 +21862,7 @@ export function runMainAgentPreConfirmationDrilldown(
         })
       : [];
   if (mustRequirements.length === 0) {
-    mustRequirements = mustRequirementsFromControlledCandidates(
-      identity.requirementSetId,
-      controlledCandidates
-    );
+    mustRequirements = mustRequirementsFromControlledCandidates(controlledCandidates);
   }
   mustRequirements = groundSourceMustRequirements(mustRequirements, structuredBlocks);
   const hasForbiddenLineBasedMustRequirements =
@@ -22339,10 +22560,7 @@ export function runMainAgentPreConfirmationDrilldown(
       scaleRoutingDecision: normalizeText(initialScaleAssessment.routingDecision?.decision) || null,
       sourcePrdEntrySource: entrySource,
       sourcePrdInstanceLint: sessionDraftLint,
-      sourcePrdInstanceLintReportPath: toRootRelativePath(
-        root,
-        paths.sourcePrdInstanceLintReport
-      ),
+      sourcePrdInstanceLintReportPath: toRootRelativePath(root, paths.sourcePrdInstanceLintReport),
       nextRequiredAction: 'continue_staging_repair_without_ready_claim',
     });
     return buildPreConfirmationResult({
@@ -22356,8 +22574,7 @@ export function runMainAgentPreConfirmationDrilldown(
       confirmationLanguage: language,
       entrySource,
       sourcePrdInstanceLint: sessionDraftLint,
-      blockingStage:
-        initialIssues[0]?.source ?? 'source_prd_instance_lint_failed',
+      blockingStage: initialIssues[0]?.source ?? 'source_prd_instance_lint_failed',
       sourceMutationPerformed: false,
       allowedArtifacts: ['advisory', 'staging', 'source-prd-instance-lint-report'],
       forbiddenArtifacts: ['promotion-receipt', 'source mutation', 'confirmation render'],
@@ -22413,15 +22630,19 @@ export function runMainAgentPreConfirmationDrilldown(
       packetHash,
     }) ?? materializeImplementationConfirmationText(sourceText, draftConfirmation);
   let materializedDraftText = preRendererDraftText;
+  let productionSourcePrdRender: ReturnType<
+    typeof renderProductionCanonicalRequirementSourcePrd
+  > | null = null;
   if (entryMode === 'intake_to_new_source') {
     try {
       if (!entryIntakeAuthority || !productionSemanticPipeline) {
-        throw new Error('Canonical Source PRD rendering requires current intake and semantic proof');
+        throw new Error(
+          'Canonical Source PRD rendering requires current intake and semantic proof'
+        );
       }
       const intakeReceipt = recordObject(entryIntakeAuthority.intakeReceipt);
       const intentLineageLedger = readJsonIfExists(paths.intentLineageLedger);
-      const semanticConservationManifest =
-        productionSemanticPipeline.semanticConservationManifest;
+      const semanticConservationManifest = productionSemanticPipeline.semanticConservationManifest;
       const proofRefs = {
         intakeReceipt: {
           path: toRootRelativePath(root, paths.intakeReceipt),
@@ -22447,7 +22668,8 @@ export function runMainAgentPreConfirmationDrilldown(
           upstreamProofs: proofRefs,
         }
       );
-      const rendered = renderCanonicalRequirementSourcePrd({
+      const rendered = renderProductionCanonicalRequirementSourcePrd({
+        projectRoot: root,
         recordId: identity.recordId,
         requirementSetId: identity.requirementSetId,
         title:
@@ -22460,6 +22682,7 @@ export function runMainAgentPreConfirmationDrilldown(
         proofRefs,
         sourceText: sourceWithProofBindings,
       });
+      productionSourcePrdRender = rendered;
       materializedDraftText = rendered.content;
       const renderReceiptPreimage = {
         schemaVersion: 'requirements-contract-canonical-source-prd-render-receipt/v1',
@@ -22474,15 +22697,13 @@ export function runMainAgentPreConfirmationDrilldown(
         targetSourcePath: toRootRelativePath(root, sourcePath),
         stagedDraftPath: toRootRelativePath(root, stagingTransaction.draftSource),
         renderedContentHash: rendered.renderedContentHash,
+        outputPolicyBinding: rendered.outputPolicyBinding,
         createdAt,
       };
-      writeJsonUtf8(
-        path.join(paths.authoringDir, 'canonical-source-prd-render-receipt.json'),
-        {
-          ...renderReceiptPreimage,
-          receiptHash: sha256Json(renderReceiptPreimage),
-        }
-      );
+      writeJsonUtf8(path.join(paths.authoringDir, 'canonical-source-prd-render-receipt.json'), {
+        ...renderReceiptPreimage,
+        receiptHash: sha256Json(renderReceiptPreimage),
+      });
     } catch (error) {
       const issue = preConfirmationIssue(
         'canonical_source_prd_render_failed',
@@ -22514,6 +22735,13 @@ export function runMainAgentPreConfirmationDrilldown(
     : null;
   const stagingDraftRefreshed = stagedDraftText !== materializedDraftText;
   if (stagingDraftRefreshed) {
+    if (productionSourcePrdRender) {
+      assertProductionPrdOutputPolicyCurrent({
+        projectRoot: root,
+        rendered: productionSourcePrdRender,
+        candidateContent: materializedDraftText,
+      });
+    }
     fs.writeFileSync(stagingTransaction.draftSource, materializedDraftText, 'utf8');
   }
   fs.copyFileSync(stagingTransaction.draftSource, paths.draftSourcePreview);
@@ -22852,6 +23080,90 @@ export function runMainAgentPreConfirmationDrilldown(
           };
         })()
       : undefined;
+  const externalAdapterProvider =
+    criticalAuditorProviderMode === 'external_adapter' && criticalAuditorExternalAdapterCommand
+      ? (round: CriticalAuditorRoundInput): CriticalAuditorRoundResult => {
+          const requestPath = criticalAuditorRequestPath(stagingTransaction, round.roundIndex);
+          const responsePath = criticalAuditorResponsePath(stagingTransaction, round.roundIndex);
+          const receiptPath = criticalAuditorReceiptPath(stagingTransaction, round.roundIndex);
+          const protectedFiles = snapshotCriticalAuditorProtectedFiles([
+            sourcePath,
+            paths.recordPath,
+            paths.indexPath,
+            paths.draftSourcePreview,
+            paths.semanticKernel,
+            paths.mustDecompositionPacket,
+            paths.sourceMutationDecision,
+            stagingTransaction.draftSource,
+            stagingTransaction.semanticKernel,
+            stagingTransaction.mustDecompositionPacket,
+            stagingTransaction.sourcePromotionDecision,
+            requestPath,
+            responsePath,
+            receiptPath,
+            path.join(
+              paths.authoringDir,
+              `critical-auditor-receipt-round-${round.roundIndex}.json`
+            ),
+          ]);
+          const [command, ...baseArgs] = criticalAuditorExternalAdapterCommand;
+          const environment = Object.fromEntries(
+            Object.entries(process.env).filter(([key]) => !/^(?:BMAD_)?JUDGE_/iu.test(key))
+          );
+          const execution = spawnSync(
+            command,
+            [
+              ...baseArgs,
+              '--project-root',
+              root,
+              '--config',
+              path.join('_bmad', '_config', 'governance-remediation.yaml'),
+              '--request',
+              requestPath,
+              '--round',
+              String(round.roundIndex),
+              '--json',
+            ],
+            {
+              cwd: root,
+              encoding: 'utf8',
+              env: environment,
+              shell: false,
+              timeout: 120_000,
+              maxBuffer: 5 * 1024 * 1024,
+              windowsHide: true,
+            }
+          );
+          const changedFiles = changedCriticalAuditorProtectedFiles(protectedFiles);
+          if (changedFiles.length > 0) {
+            throw new Error(
+              `subagent_write_boundary_violation:${changedFiles
+                .map((filePath) => toRootRelativePath(root, filePath))
+                .join(',')}`
+            );
+          }
+          if (execution.error) {
+            throw new Error(`critical_auditor_external_adapter_failed:${execution.error.message}`);
+          }
+          if (execution.status !== 0) {
+            throw new Error(
+              `critical_auditor_external_adapter_failed:${execution.status ?? 'unknown'}:${
+                execution.stderr || execution.stdout
+              }`
+            );
+          }
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(execution.stdout.trim());
+          } catch {
+            throw new Error('critical_auditor_external_adapter_result_json_invalid');
+          }
+          return criticalAuditorExternalAdapterRoundResult({
+            result: parsed,
+            expected: round.independentProviderExpectation,
+          });
+        }
+      : undefined;
   const criticalAuditorLoop = runCriticalAuditorReceiptLoop({
     root,
     sourcePath: paths.draftSourcePreview,
@@ -22868,7 +23180,7 @@ export function runMainAgentPreConfirmationDrilldown(
     mustPacketCount: mustRequirements.length,
     packet: previewPacket,
     createdAt,
-    roundProvider: options.criticalAuditorRound ?? fileBackedProvider,
+    roundProvider: options.criticalAuditorRound ?? fileBackedProvider ?? externalAdapterProvider,
     maxRounds: options.maxCriticalAuditorRounds,
   });
   const criticalAuditorIssues = [...criticalAuditorLoop.issues];
@@ -23308,7 +23620,7 @@ export function runMainAgentPreConfirmationDrilldown(
     mustPacketCount: mustRequirements.length,
     packet: finalPacket,
     createdAt,
-    roundProvider: options.criticalAuditorRound ?? fileBackedProvider,
+    roundProvider: options.criticalAuditorRound ?? fileBackedProvider ?? externalAdapterProvider,
     maxRounds: options.maxCriticalAuditorRounds,
   });
   if (
@@ -23886,8 +24198,7 @@ export function runMainAgentPreConfirmationDrilldown(
   const routingIssues = [...postMaterializationScaleAssessment.issues];
   routingIssues.push(...checkpointEvidenceIssues);
   checkpointEvidenceSatisfied =
-    checkpointEvidenceIssues.length === 0 &&
-    fs.existsSync(paths.checkpointPersistenceEvidence);
+    checkpointEvidenceIssues.length === 0 && fs.existsSync(paths.checkpointPersistenceEvidence);
   if (
     ['checkpoint_required', 'checkpoint_required_with_amendment'].includes(routingDecisionText) &&
     !checkpointEvidenceSatisfied
@@ -24116,92 +24427,192 @@ export function runMainAgentPreConfirmationDrilldown(
     createdAt,
   });
 
-  const promotion = promoteImplementationConfirmationDraftWithReceipt({
-    root,
-    sourcePath,
-    paths,
-    draftPath: finalDraftSource,
-  });
-  if (!promotion.ok) {
-    writeSourcePromotionBlockDecision({
-      transaction: stagingTransaction,
-      blockingStage: 'requirements_contract_promotion_failed',
-      currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
-      createdAt,
-    });
-    return buildPreConfirmationResult({
+  let productionOutputPolicyLockRelease: (() => void) | null = null;
+  if (productionSourcePrdRender) {
+    try {
+      productionOutputPolicyLockRelease = acquireProductionOutputPolicyLock(root);
+    } catch (error) {
+      const issue = preConfirmationIssue(
+        'production_output_policy_lock_unavailable',
+        error instanceof Error ? error.message : String(error),
+        [
+          toRootRelativePath(
+            root,
+            path.join(
+              root,
+              '_bmad',
+              'shared',
+              'requirements-contract',
+              '.requirements-contract-consumer-registry.activation.lock'
+            )
+          ),
+        ],
+        'source_mutation_gate'
+      );
+      writeSourcePromotionBlockDecision({
+        transaction: stagingTransaction,
+        blockingStage: 'production_output_policy_lock_unavailable',
+        currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+        createdAt,
+      });
+      return buildPreConfirmationResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'blocked_by_render_gate',
+        issues: [issue],
+        sourceDocumentHash: sourceHashBefore,
+        implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+        blockingStage: 'production_output_policy_lock_unavailable',
+        sourceMutationPerformed: false,
+        stagingTransaction,
+      });
+    }
+  }
+  try {
+    if (productionSourcePrdRender) {
+      assertProductionPrdOutputPolicyCurrent({
+        projectRoot: root,
+        rendered: productionSourcePrdRender,
+        candidateContent: fs.readFileSync(finalDraftSource, 'utf8'),
+      });
+    }
+    const promotion = promoteImplementationConfirmationDraftWithReceipt({
       root,
       sourcePath,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
       paths,
-      substate: 'blocked_by_render_gate',
-      issues: promotion.issues,
-      mustGateReport,
-      globalGateReport,
-      sourceDocumentHash: sourceHashBefore,
-      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
-      finalStandards: finalStandardsFromReports({
-        packet: finalPacket,
+      draftPath: finalDraftSource,
+    });
+    if (!promotion.ok) {
+      writeSourcePromotionBlockDecision({
+        transaction: stagingTransaction,
+        blockingStage: 'requirements_contract_promotion_failed',
+        currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
+        createdAt,
+      });
+      return buildPreConfirmationResult({
+        root,
+        sourcePath,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        paths,
+        substate: 'blocked_by_render_gate',
+        issues: promotion.issues,
         mustGateReport,
         globalGateReport,
-        renderReport: null,
-        missingSurfaceProbe: null,
-        requirementRecord: null,
-      }),
-    });
-  }
-
-  const rollbackPromotionReadback = (reasonCode: string) =>
-    rollbackPromotedSourceAfterReadbackFailure({
-      root,
-      sourcePath,
-      sourceExistedBeforePromotion:
-        entryMode === 'existing_source' || targetSourceExistedBeforeAuthoring,
-      expectedOriginalHash:
-        entryMode === 'intake_to_new_source' ? targetSourceRawHashAtStart : promotionPreRawHash,
-      promotionReceipt: promotion.receipt,
-      paths,
-      reasonCode,
-      createdAt,
-    });
-
-  try {
-    if (!productionSemanticPipeline || !entryIntakeAuthority) {
-      throw new Error('Promotion readback requires the baseline conserved Semantic IR');
+        sourceDocumentHash: sourceHashBefore,
+        implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+        finalStandards: finalStandardsFromReports({
+          packet: finalPacket,
+          mustGateReport,
+          globalGateReport,
+          renderReport: null,
+          missingSurfaceProbe: null,
+          requirementRecord: null,
+        }),
+      });
     }
-    const promotionReadbackRoundTripReport = runSourcePrdSemanticRoundTrip({
-      root,
-      parsedSourcePath: sourcePath,
-      authoritySourcePath: semanticInputPath,
-      sourceText: fs.readFileSync(sourcePath, 'utf8'),
-      reportPath: paths.promotionReadbackRoundTripReport,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      packetHash,
-      explicitTargetPaths,
-      explicitRequiredCommands,
-      invocationAuthority: invocationEntryAuthority,
-      baseline: productionSemanticPipeline,
-      paths,
-    });
-    if (promotionReadbackRoundTripReport.decision !== 'pass') {
+
+    const rollbackPromotionReadback = (reasonCode: string) =>
+      rollbackPromotedSourceAfterReadbackFailure({
+        root,
+        sourcePath,
+        sourceExistedBeforePromotion:
+          entryMode === 'existing_source' || targetSourceExistedBeforeAuthoring,
+        expectedOriginalHash:
+          entryMode === 'intake_to_new_source' ? targetSourceRawHashAtStart : promotionPreRawHash,
+        promotionReceipt: promotion.receipt,
+        paths,
+        reasonCode,
+        createdAt,
+      });
+
+    try {
+      if (!productionSemanticPipeline || !entryIntakeAuthority) {
+        throw new Error('Promotion readback requires the baseline conserved Semantic IR');
+      }
+      const promotionReadbackRoundTripReport = runSourcePrdSemanticRoundTrip({
+        root,
+        parsedSourcePath: sourcePath,
+        authoritySourcePath: semanticInputPath,
+        sourceText: fs.readFileSync(sourcePath, 'utf8'),
+        reportPath: paths.promotionReadbackRoundTripReport,
+        recordId: identity.recordId,
+        requirementSetId: identity.requirementSetId,
+        packetHash,
+        explicitTargetPaths,
+        explicitRequiredCommands,
+        invocationAuthority: invocationEntryAuthority,
+        baseline: productionSemanticPipeline,
+        paths,
+      });
+      if (promotionReadbackRoundTripReport.decision !== 'pass') {
+        const issue = preConfirmationIssue(
+          'promotion_readback_semantic_conservation_failed',
+          'Promoted Source PRD readback does not conserve the baseline Source Root and Semantic IR inventory.',
+          uniqueNonEmpty([
+            ...promotionReadbackRoundTripReport.missingRootIds,
+            ...promotionReadbackRoundTripReport.extraRootIds,
+            ...promotionReadbackRoundTripReport.payloadMismatchIds,
+            ...promotionReadbackRoundTripReport.authorityMismatchIds,
+            ...promotionReadbackRoundTripReport.applicabilityMismatchIds,
+            toRootRelativePath(root, paths.promotionReadbackRoundTripReport),
+          ]),
+          'requirements_contract_render_roundtrip_gate'
+        );
+        const rollback = rollbackPromotionReadback(
+          'promotion_readback_semantic_conservation_failed'
+        );
+        writeSourcePromotionBlockDecision({
+          transaction: stagingTransaction,
+          blockingStage: 'promotion_readback_semantic_conservation_failed',
+          currentSourceHash: fs.existsSync(sourcePath)
+            ? safeCurrentSourceDocumentHash(sourcePath)
+            : 'absent',
+          createdAt,
+        });
+        const issues = rollback.ok
+          ? [issue]
+          : [
+              issue,
+              preConfirmationIssue(
+                'promotion_readback_rollback_failed',
+                normalizeText(rollback.receipt.rollbackError) ||
+                  'Promotion readback rollback failed.',
+                [toRootRelativePath(root, paths.promotionReadbackRollbackReceipt)],
+                'requirements_contract_render_roundtrip_gate'
+              ),
+            ];
+        return buildPreConfirmationResult({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          paths,
+          substate: 'blocked_by_semantic_gap',
+          issues,
+          sourceDocumentHash: safeCurrentSourceDocumentHash(sourcePath),
+          implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+          blockingStage: 'promotion_readback_semantic_conservation_failed',
+          sourceMutationPerformed: false,
+          stagingTransaction,
+        });
+      }
+    } catch (error) {
       const issue = preConfirmationIssue(
         'promotion_readback_semantic_conservation_failed',
-        'Promoted Source PRD readback does not conserve the baseline Source Root and Semantic IR inventory.',
-        uniqueNonEmpty([
-          ...promotionReadbackRoundTripReport.missingRootIds,
-          ...promotionReadbackRoundTripReport.extraRootIds,
-          ...promotionReadbackRoundTripReport.payloadMismatchIds,
-          ...promotionReadbackRoundTripReport.authorityMismatchIds,
-          ...promotionReadbackRoundTripReport.applicabilityMismatchIds,
+        error instanceof Error ? error.message : String(error),
+        [
+          toRootRelativePath(root, sourcePath),
+          toRootRelativePath(root, paths.semanticIr),
+          toRootRelativePath(root, paths.semanticConservationManifest),
           toRootRelativePath(root, paths.promotionReadbackRoundTripReport),
-        ]),
+        ],
         'requirements_contract_render_roundtrip_gate'
       );
-      const rollback = rollbackPromotionReadback(
-        'promotion_readback_semantic_conservation_failed'
-      );
+      const rollback = rollbackPromotionReadback('promotion_readback_semantic_conservation_failed');
       writeSourcePromotionBlockDecision({
         transaction: stagingTransaction,
         blockingStage: 'promotion_readback_semantic_conservation_failed',
@@ -24237,52 +24648,65 @@ export function runMainAgentPreConfirmationDrilldown(
         stagingTransaction,
       });
     }
-  } catch (error) {
-    const issue = preConfirmationIssue(
-      'promotion_readback_semantic_conservation_failed',
-      error instanceof Error ? error.message : String(error),
-      [
-        toRootRelativePath(root, sourcePath),
-        toRootRelativePath(root, paths.semanticIr),
-        toRootRelativePath(root, paths.semanticConservationManifest),
-        toRootRelativePath(root, paths.promotionReadbackRoundTripReport),
-      ],
-      'requirements_contract_render_roundtrip_gate'
-    );
-    const rollback = rollbackPromotionReadback('promotion_readback_semantic_conservation_failed');
-    writeSourcePromotionBlockDecision({
-      transaction: stagingTransaction,
-      blockingStage: 'promotion_readback_semantic_conservation_failed',
-      currentSourceHash: fs.existsSync(sourcePath)
-        ? safeCurrentSourceDocumentHash(sourcePath)
-        : 'absent',
-      createdAt,
-    });
-    const issues = rollback.ok
-      ? [issue]
-      : [
-          issue,
-          preConfirmationIssue(
-            'promotion_readback_rollback_failed',
-            normalizeText(rollback.receipt.rollbackError) || 'Promotion readback rollback failed.',
-            [toRootRelativePath(root, paths.promotionReadbackRollbackReceipt)],
-            'requirements_contract_render_roundtrip_gate'
-          ),
-        ];
-    return buildPreConfirmationResult({
-      root,
-      sourcePath,
-      recordId: identity.recordId,
-      requirementSetId: identity.requirementSetId,
-      paths,
-      substate: 'blocked_by_semantic_gap',
-      issues,
-      sourceDocumentHash: safeCurrentSourceDocumentHash(sourcePath),
-      implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
-      blockingStage: 'promotion_readback_semantic_conservation_failed',
-      sourceMutationPerformed: false,
-      stagingTransaction,
-    });
+
+    if (productionSourcePrdRender) {
+      try {
+        assertProductionPrdOutputPolicyCurrent({
+          projectRoot: root,
+          rendered: productionSourcePrdRender,
+          candidateContent: fs.readFileSync(sourcePath, 'utf8'),
+        });
+      } catch (error) {
+        const issue = preConfirmationIssue(
+          'production_output_selector_changed_after_promotion',
+          error instanceof Error ? error.message : String(error),
+          [
+            toRootRelativePath(root, sourcePath),
+            productionSourcePrdRender.outputPolicyBinding?.registryPath ?? '',
+          ],
+          'source_mutation_gate'
+        );
+        const rollback = rollbackPromotionReadback(
+          'production_output_selector_changed_after_promotion'
+        );
+        writeSourcePromotionBlockDecision({
+          transaction: stagingTransaction,
+          blockingStage: 'production_output_selector_changed_after_promotion',
+          currentSourceHash: fs.existsSync(sourcePath)
+            ? safeCurrentSourceDocumentHash(sourcePath)
+            : 'absent',
+          createdAt,
+        });
+        const issues = rollback.ok
+          ? [issue]
+          : [
+              issue,
+              preConfirmationIssue(
+                'promotion_readback_rollback_failed',
+                normalizeText(rollback.receipt.rollbackError) ||
+                  'Promotion readback rollback failed.',
+                [toRootRelativePath(root, paths.promotionReadbackRollbackReceipt)],
+                'source_mutation_gate'
+              ),
+            ];
+        return buildPreConfirmationResult({
+          root,
+          sourcePath,
+          recordId: identity.recordId,
+          requirementSetId: identity.requirementSetId,
+          paths,
+          substate: 'blocked_by_render_gate',
+          issues,
+          sourceDocumentHash: safeCurrentSourceDocumentHash(sourcePath),
+          implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
+          blockingStage: 'production_output_selector_changed_after_promotion',
+          sourceMutationPerformed: false,
+          stagingTransaction,
+        });
+      }
+    }
+  } finally {
+    productionOutputPolicyLockRelease?.();
   }
 
   const finalMaterialized = readMaterializedConfirmation(sourcePath);
@@ -24693,7 +25117,8 @@ function readinessDiagnostics(input: {
         repairAction: 'none',
         automaticRepairAvailable: false,
         nextCommand: null,
-        message: 'Closeout pass is terminal; no pending packet is expected.',
+        message:
+          'Controlled user closeout acceptance is terminal; no pending packet is expected.',
       })
     );
     if (activationStatus === 'audit_required' || metadataStatus !== 'current') {
@@ -25003,14 +25428,7 @@ function latestGateChecks(records: unknown): Record<string, unknown>[] {
 }
 
 function isRequirementRecordClosed(record: Record<string, unknown> | null): boolean {
-  if (!record) {
-    return false;
-  }
-  const closeout =
-    record.closeout && typeof record.closeout === 'object' && !Array.isArray(record.closeout)
-      ? (record.closeout as Record<string, unknown>)
-      : null;
-  return normalizeText(closeout?.decision) === 'pass';
+  return Boolean(record && hasCurrentControlledCloseoutAcceptance(record));
 }
 
 function architectureConfirmationRequiredForRecord(
@@ -25235,6 +25653,23 @@ function deriveNextActionFromRequirementRecord(input: {
     }
     blockingReasonRefs.push({ sourceType: 'model_result', id: 'audit_review' });
     return { nextAction: 'dispatch_review', ready: true, blockingReasonRefs };
+  } else if (currentMentalModel === 'delivery_confirmation') {
+    if (
+      normalizeText(input.record?.status) === 'awaiting_user_acceptance' &&
+      input.record &&
+      hasCurrentCloseoutAcceptanceRequest(input.record, 'awaiting_user_acceptance')
+    ) {
+      return {
+        nextAction: 'await_user_acceptance',
+        ready: false,
+        blockingReasonRefs,
+      };
+    }
+    blockingReasonRefs.push({
+      sourceType: 'closeout_acceptance',
+      id: 'controlled_user_acceptance_required',
+    });
+    return { nextAction: 'run_closeout', ready: true, blockingReasonRefs };
   } else if (currentMentalModel) {
     blockingReasonRefs.push({ sourceType: 'model_result', id: currentMentalModel });
     return { nextAction: 'await_user', ready: false, blockingReasonRefs };
@@ -25862,20 +26297,44 @@ export function ensureMainAgentDispatchPacket(
   const runtimeContext = loadRuntimeContextForMainAgent(input);
   const resolvedInput = runtimeContext ? { ...input, runtimeContext } : input;
   const currentSurface = resolveMainAgentOrchestrationSurface(resolvedInput);
-  if (
+  const taskType = taskTypeFromNextAction(currentSurface.mainAgentNextAction);
+  const auditDispatchRequested =
+    taskType === 'audit' ||
+    (taskType === null && normalizeText(input.preferredPacketId).startsWith('audit-'));
+  if (auditDispatchRequested && input.projectRoot) {
+    currentCompiledPromptRefFromDispatchPointer({
+      projectRoot: input.projectRoot,
+      record: readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext),
+    });
+  }
+  const reusablePendingPacket =
     currentSurface.pendingPacketStatus !== 'none' &&
     currentSurface.pendingPacketStatus !== 'missing_packet_file' &&
     currentSurface.pendingPacketStatus !== 'completed' &&
     currentSurface.pendingPacketStatus !== 'invalidated' &&
-    pendingPacketMatchesNextAction(currentSurface)
-  ) {
-    return currentSurface;
+    pendingPacketMatchesNextAction(currentSurface);
+  if (reusablePendingPacket) {
+    if (taskType !== 'audit') {
+      return currentSurface;
+    }
+    if (!input.projectRoot) {
+      return currentSurface;
+    }
+    const currentRef = currentCompiledPromptRefFromDispatchPointer({
+      projectRoot: input.projectRoot,
+      record: readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext),
+    });
+    if (
+      currentRef &&
+      auditPendingPacketBindingMismatch(currentSurface.pendingPacket, currentRef) === null
+    ) {
+      return currentSurface;
+    }
   }
   if (!input.projectRoot) {
     return currentSurface;
   }
 
-  const taskType = taskTypeFromNextAction(currentSurface.mainAgentNextAction);
   if (!taskType) {
     return currentSurface;
   }
@@ -25934,10 +26393,9 @@ export function ensureMainAgentDispatchPacket(
   const activeRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
   const inheritedCompiledPromptRef =
     taskType === 'audit'
-      ? latestCurrentCompiledPromptRef({
+      ? currentCompiledPromptRefFromDispatchPointer({
           projectRoot: input.projectRoot,
-          sessionId,
-          record: activeRecord,
+          record: readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext),
         })
       : null;
   const auditExecution =
@@ -26008,7 +26466,7 @@ export function ensureMainAgentDispatchPacket(
         })
       : null;
   const packet =
-    currentSurface.orchestrationState?.originalExecutionPacketId != null
+    taskType !== 'audit' && currentSurface.orchestrationState?.originalExecutionPacketId != null
       ? createResumePacket({
           packetId,
           parentSessionId: sessionId,
@@ -26206,6 +26664,22 @@ export function buildMainAgentDispatchInstruction(
   }
   if (!pendingPacketDispatchable(surface.pendingPacket)) {
     return null;
+  }
+  if (taskType === 'audit') {
+    if (!input.projectRoot) {
+      throw new Error('current_dispatch_pointer_expected_identity_missing:authorityRoot');
+    }
+    const runtimeContext = loadRuntimeContextForMainAgent(input);
+    const currentRef = currentCompiledPromptRefFromDispatchPointer({
+      projectRoot: input.projectRoot,
+      record: readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext),
+    });
+    const mismatch = currentRef
+      ? auditPendingPacketBindingMismatch(surface.pendingPacket, currentRef)
+      : 'compiledPromptRef';
+    if (mismatch) {
+      throw new Error(`audit_pending_packet_current_dispatch_pointer_mismatch:${mismatch}`);
+    }
   }
 
   const host = resolveMainAgentHost(input.projectRoot, input.host, surface);
@@ -27753,10 +28227,7 @@ export function importNativeGoalTaskReport(input: {
   ) {
     validationErrors.push('sourceDocumentHash_mismatch');
   }
-  const modelPacketRead = readModelPacketForCompiledRef(
-    input.projectRoot,
-    compiledPromptRef
-  );
+  const modelPacketRead = readModelPacketForCompiledRef(input.projectRoot, compiledPromptRef);
   validationErrors.push(...modelPacketRead.issueCodes);
   const modelPacket = modelPacketRead.modelPacket;
   const allowedWriteScope =
@@ -29824,29 +30295,25 @@ export function runMainAgentAutomaticLoop(input: {
       mainAgentStageSummary: finalSurface.mainAgentStageSummary,
     };
   }
+  const instructionPacket = instruction.packet;
   const executionPacket =
-    'compiledPromptRef' in instruction.packet &&
-    instruction.packet.compiledPromptRef
-      ? (instruction.packet as ExecutionPacket)
+    instructionPacket &&
+    'compiledPromptRef' in instructionPacket &&
+    instructionPacket.compiledPromptRef
+      ? (instructionPacket as ExecutionPacket)
       : null;
-  const externalTaskReportRequiresCommandReceipts = Boolean(
-    normalizeText(args.taskReportPath)
-  );
+  const externalTaskReportRequiresCommandReceipts = Boolean(normalizeText(args.taskReportPath));
   if (executionPacket?.compiledPromptRef || externalTaskReportRequiresCommandReceipts) {
     const modelPacketRead = readModelPacketForCompiledRef(
       input.projectRoot,
       executionPacket?.compiledPromptRef
     );
-    const commandReceiptValidation =
-      validateModelPacketCommandExecutionReceipts({
-        projectRoot: input.projectRoot,
-        modelPacket: modelPacketRead.modelPacket,
-        requireCommandDescriptors: externalTaskReportRequiresCommandReceipts,
-      });
-    const receiptIssues = [
-      ...modelPacketRead.issueCodes,
-      ...commandReceiptValidation.issueCodes,
-    ];
+    const commandReceiptValidation = validateModelPacketCommandExecutionReceipts({
+      projectRoot: input.projectRoot,
+      modelPacket: modelPacketRead.modelPacket,
+      requireCommandDescriptors: externalTaskReportRequiresCommandReceipts,
+    });
+    const receiptIssues = [...modelPacketRead.issueCodes, ...commandReceiptValidation.issueCodes];
     if (receiptIssues.length > 0) {
       taskReport = {
         ...taskReport,

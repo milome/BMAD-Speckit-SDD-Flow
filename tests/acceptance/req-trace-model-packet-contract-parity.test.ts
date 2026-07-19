@@ -80,7 +80,7 @@ describe('req-trace model packet contract parity', () => {
         ...packet,
         contractExecutionManifest: {
           ...packet.contractExecutionManifest,
-          amend05Bindings: { safeWriteTargetRefs: [] },
+          safeWriteBindings: { safeWriteTargetRefs: [] },
         },
       }),
     ],

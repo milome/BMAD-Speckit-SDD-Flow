@@ -275,11 +275,20 @@ function writePromotionReceiptForDraft(input: {
 function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: string): void {
   const request = readJson<any>(requestPath);
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
+  const mustRefs = Array.isArray(request.mustRefs)
+    ? request.mustRefs.filter((ref: unknown) => typeof ref === 'string' && ref.trim())
+    : [];
+  if (mustRefs.length === 0) {
+    throw new Error('critical auditor request does not contain MUST refs');
+  }
+  if (projectionRefs.length === 0) {
+    throw new Error('critical auditor request does not contain projection refs');
+  }
   const actionBase = {
     sourceSpan: { startLine: 142, endLine: 149 },
     sourceText: '15m/30m/45m/D 默认隐藏，1m 是主时间轴且不属于叠加周期。',
     reason: 'Critical Auditor found a missing multi-timeframe business projection.',
-    mustRefs: request.mustRefs?.length ? [request.mustRefs[0]] : ['MUST-001'],
+    mustRefs: [mustRefs[0]],
     requirementIds: ['FR-3', 'DEFAULT-HIDDEN-PERIODS', 'NON-GOAL-1M'],
   };
   const response = {
@@ -287,9 +296,13 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
     requestHash: request.requestHash,
     recordId: request.recordId,
     roundIndex: request.roundIndex,
+    transactionId: request.transactionId,
+    namespaceVersion: request.namespaceVersion,
     sourceDocumentHash: request.sourceDocumentHash,
+    semanticModelHash: request.semanticModelHash,
     implementationConfirmationHash: request.implementationConfirmationHash,
     packetHash: request.packetHash,
+    projectionSetHash: request.projectionSetHash,
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups: request.packetProjectionSummary?.projectionGroups ?? [],
@@ -299,7 +312,7 @@ function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: st
       PROJECTION_QUALITY_RULE_CODES,
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
-    reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
+    reviewedProjectionRefs: [projectionRefs[0]],
     priorFindingsDisposition: [
       {
         findingRef: 'ROUND-1-MULTI-TIMEFRAME-GAP',

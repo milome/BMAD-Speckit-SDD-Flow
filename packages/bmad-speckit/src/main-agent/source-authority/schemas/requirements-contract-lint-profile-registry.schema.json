@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-lint-profile-registry/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "owner", "registryHash", "profiles", "immutableCoreRuleRefs", "additiveProfileRuleRefs", "applicabilityRules", "authority"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-lint-profile-registry/v1"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "registryHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "profiles": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/draftProfile"
+        },
+        {
+          "$ref": "#/$defs/confirmationReadyProfile"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "immutableCoreRuleRefs": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "allowBlockingUnresolved" },
+        { "const": "requireZeroSyntheticFields" },
+        { "const": "requireValidAuthority" },
+        { "const": "requireCompleteRenderCoverage" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "additiveProfileRuleRefs": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "all_core_rules_required" },
+        { "const": "core_profiles_immutable" },
+        { "const": "additive_profiles_must_not_weaken_core" },
+        { "const": "additive_profiles_must_not_duplicate_core" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "applicabilityRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profileSelection", "unknownProfile", "additiveProfiles"],
+      "properties": {
+        "profileSelection": {
+          "const": "explicit_registered_profile_required"
+        },
+        "unknownProfile": {
+          "const": "block"
+        },
+        "additiveProfiles": {
+          "const": "allowed_only_without_core_weakening_or_duplication"
+        }
+      }
+    },
+    "authority": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "draftProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "policy"],
+      "properties": {
+        "profile": { "const": "draft" },
+        "policy": {
+          "allOf": [
+            { "$ref": "#/$defs/policy" },
+            {
+              "properties": {
+                "allowBlockingUnresolved": { "const": true }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "confirmationReadyProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "policy"],
+      "properties": {
+        "profile": { "const": "confirmation-ready" },
+        "policy": {
+          "allOf": [
+            { "$ref": "#/$defs/policy" },
+            {
+              "properties": {
+                "allowBlockingUnresolved": { "const": false }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowBlockingUnresolved", "requireZeroSyntheticFields", "requireValidAuthority", "requireCompleteRenderCoverage"],
+      "properties": {
+        "allowBlockingUnresolved": { "type": "boolean" },
+        "requireZeroSyntheticFields": { "const": true },
+        "requireValidAuthority": { "const": true },
+        "requireCompleteRenderCoverage": { "const": true }
+      }
+    }
+  }
+}

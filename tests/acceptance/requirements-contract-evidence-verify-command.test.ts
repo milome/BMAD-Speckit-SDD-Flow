@@ -4,17 +4,20 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractEvidenceVerifyCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-evidence-verify';
+import { deriveRequirementsContractFrozenUniverseFromText } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-frozen-universe';
 
 const sha256 = (value: string) =>
   `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 
 const CONTRACT_PATH =
+  'docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md';
+const ARTIFACT_FIELD_CONTRACT_PATH =
   'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
 const COMPLETION_SCHEMA_PATH =
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-completion-evidence.schema.json';
 
 function frozenArtifactFields(): string[] {
-  const lines = readFileSync(CONTRACT_PATH, 'utf8').split(/\r?\n/u);
+  const lines = readFileSync(ARTIFACT_FIELD_CONTRACT_PATH, 'utf8').split(/\r?\n/u);
   const artifactRow = lines.find((line) => line.startsWith('| ARTIFACT-01 |'));
   if (!artifactRow) throw new Error('artifact_01_contract_row_missing');
   const tableFields = [...(artifactRow.split('|')[4] ?? '').matchAll(/`([^`]+)`/gu)].map(
@@ -26,19 +29,19 @@ function frozenArtifactFields(): string[] {
   return [...new Set([...tableFields, ...overlayFields])];
 }
 
-function ids(prefix: string, start: number, end: number, width: number) {
-  return Array.from(
-    { length: end - start + 1 },
-    (_, index) => `${prefix}${String(start + index).padStart(width, '0')}`
-  );
-}
-
 function writeJson(root: string, relativePath: string, value: unknown) {
   const target = path.join(root, relativePath);
   const serialized = `${JSON.stringify(value)}\n`;
   mkdirSync(path.dirname(target), { recursive: true });
   writeFileSync(target, serialized, 'utf8');
   return { path: relativePath, hash: sha256(serialized), decision: 'PASS' };
+}
+
+function writeText(root: string, relativePath: string, value: string) {
+  const target = path.join(root, relativePath);
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, value, 'utf8');
+  return { path: relativePath, hash: sha256(value), decision: 'PASS' };
 }
 
 function addFrozenFields(root: string, bundle: Record<string, unknown>) {
@@ -77,14 +80,17 @@ function addFrozenFields(root: string, bundle: Record<string, unknown>) {
 
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'requirements-evidence-verify-'));
-  const artifactIndex = ids('ARTIFACT-', 2, 54, 2).map((artifactId) => ({
+  const contractText = readFileSync(CONTRACT_PATH, 'utf8');
+  const universe = deriveRequirementsContractFrozenUniverseFromText(contractText);
+  const contractRef = writeText(root, CONTRACT_PATH, contractText);
+  const artifactIndex = universe.artifactIndexIds.map((artifactId) => ({
     artifactId,
     ...writeJson(root, `artifacts/${artifactId}.json`, {
       schemaVersion: 'requirements-contract-test-artifact/v1',
       decision: 'PASS',
     }),
   }));
-  const evidenceIndex = ids('EVD-', 0, 16, 2).map((evidenceId) => ({
+  const evidenceIndex = universe.evidenceIds.map((evidenceId) => ({
     evidenceId,
     ...writeJson(root, `evidence/${evidenceId}.json`, {
       schemaVersion: 'requirements-contract-test-evidence/v1',
@@ -100,18 +106,18 @@ function fixture() {
     preCandidateAuditAttemptId: `AUD-${randomUUID()}`,
     finalAuditAttemptId: `AUD-${randomUUID()}`,
     evidenceBundleId: `EVIDENCE-${randomUUID()}`,
-    contractHash: sha256('contract'),
+    contractHash: contractRef.hash,
     sourcePlanHash: sha256('source'),
-    sourceAmendmentHashes: ids('AMEND-', 1, 10, 2).map((id) => sha256(id)),
+    sourceAmendmentHashes: universe.sourceAmendmentHashes,
     aggregateAmendmentHash: sha256('aggregate'),
     semanticModelHash: sha256('semantic'),
     sequenceContractHash: sha256('sequence'),
     closureReportHash: sha256('closure'),
     coverage: {
-      storyIds: ids('S', 1, 183, 3),
-      acceptanceIds: ids('AC-', 1, 219, 2),
-      traceIds: ids('TR-', 1, 219, 2),
-      commandIds: ids('CMD-', 1, 36, 2),
+      storyIds: universe.sourceIds,
+      acceptanceIds: universe.acceptanceIds,
+      traceIds: universe.traceIds,
+      commandIds: universe.commandIds,
     },
     criticalMetrics: {
       missingArtifactCount: 0,
@@ -122,6 +128,21 @@ function fixture() {
     evidenceIndex,
     artifactIndex,
   };
+  const promotionReadbackRef = writeJson(
+    root,
+    'bindings/contract-promotion-readback-receipt.json',
+    {
+      schemaVersion: 'contract-promotion-readback-receipt/v1',
+      amendmentId: universe.sourceAmendments.at(-1)?.amendmentId,
+      decision: 'pass',
+      targetPath: CONTRACT_PATH,
+      expectedHash: contractRef.hash,
+      observedHash: contractRef.hash,
+      readbackVerified: true,
+    }
+  );
+  bundle.contractPromotionReadbackReceiptPath = promotionReadbackRef.path;
+  bundle.contractPromotionReadbackReceiptHash = promotionReadbackRef.hash;
   addFrozenFields(root, bundle);
   writeJson(root, 'implementation-evidence.json', bundle);
   return { root, bundle };
@@ -146,10 +167,10 @@ describe('requirements contract evidence verify command', () => {
         json: false,
       });
       expect(receipt.decision).toBe('pass');
-      expect(receipt.verifiedArtifactCount).toBe(53);
+      expect(receipt.verifiedArtifactCount).toBe(55);
       expect(receipt.verifiedEvidenceCount).toBe(17);
-      expect(receipt.coveredStoryCount).toBe(183);
-      expect(receipt.coveredAcceptanceCount).toBe(219);
+      expect(receipt.coveredStoryCount).toBe(188);
+      expect(receipt.coveredAcceptanceCount).toBe(226);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

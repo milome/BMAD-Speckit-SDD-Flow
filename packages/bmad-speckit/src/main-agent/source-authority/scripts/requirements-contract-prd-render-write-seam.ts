@@ -1,10 +1,8 @@
-import { mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES } from '../rules/requirements-contract-source-prd-rules';
-import {
-  sha256,
-  writeGovernedText,
-} from './requirements-contract-governed-write';
+import { sha256, writeGovernedText } from './requirements-contract-governed-write';
+import { extractRequirementsContractImplementationConfirmation } from './requirements-contract-implementation-confirmation-codec';
 
 type ArtifactRole = 'product_prd' | 'requirement_source_prd';
 type RendererId = 'registered_product_prd_renderer' | 'canonical_source_prd_renderer';
@@ -16,6 +14,7 @@ export interface RegisteredPrdRender {
   requirementSetId: string | null;
   content: string;
   renderedContentHash: string;
+  outputPolicyBinding?: RequirementsContractPrdOutputPolicyBinding;
 }
 
 interface RenderSection {
@@ -28,14 +27,41 @@ interface ProofRef {
   hash: string;
 }
 
+export interface RequirementsContractPrdOutputPolicy {
+  shadowOutputEnabled: boolean;
+  v1OutputEnabled: boolean;
+  productionReadModelVersion: 'v1' | 'v2';
+}
+
+export interface RequirementsContractPrdOutputPolicyBinding {
+  registryPath: string;
+  registryExists: boolean;
+  registryHash: string | null;
+  outputPolicy: RequirementsContractPrdOutputPolicy | null;
+}
+
 const registeredRenders = new WeakSet<object>();
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const PRODUCT_PRD_FORBIDDEN_CONTENT = [
+  { label: 'implementationConfirmation', pattern: /implementationConfirmation/iu },
+  { label: 'Compact Trace', pattern: /compact\s+trace/iu },
+  { label: 'Evidence', pattern: /\bevidence\b/iu },
+  { label: 'Acceptance matrix', pattern: /acceptance\s+matrix/iu },
+  { label: 'Target map', pattern: /target\s+map/iu },
+  { label: 'Bundle', pattern: /\bbundle\b/iu },
+  { label: 'confirmation-ready', pattern: /confirmation[-\s]ready/iu },
+  { label: 'Source PRD authority', pattern: /source\s+prd\s+authority/iu },
+] as const;
 const CANONICAL_SOURCE_TEMPLATE_PATH = path.resolve(
   __dirname,
   '..',
   'templates',
   'requirements-contract-source-prd-template.md'
 );
+const CONSUMER_REGISTRY_RELATIVE_PATH =
+  '_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json';
+const PRODUCTION_OUTPUT_POLICY_LOCK_RELATIVE_PATH =
+  '_bmad/shared/requirements-contract/.requirements-contract-consumer-registry.activation.lock';
 const SOURCE_AUTHORITY_SECTIONS = new Set([
   'Product Context',
   'Success Criteria',
@@ -66,11 +92,16 @@ function nonEmpty(value: string, label: string): string {
 function sectionsMarkdown(sections: RenderSection[]): string {
   if (sections.length === 0) throw new Error('PRD renderer requires at least one section');
   return sections
-    .map((section) => `## ${nonEmpty(section.heading, 'section heading')}\n\n${nonEmpty(section.body, 'section body')}`)
+    .map(
+      (section) =>
+        `## ${nonEmpty(section.heading, 'section heading')}\n\n${nonEmpty(section.body, 'section body')}`
+    )
     .join('\n\n');
 }
 
-function sealRender(input: Omit<RegisteredPrdRender, 'schemaVersion' | 'renderedContentHash'>): RegisteredPrdRender {
+function sealRender(
+  input: Omit<RegisteredPrdRender, 'schemaVersion' | 'renderedContentHash'>
+): RegisteredPrdRender {
   const rendered: RegisteredPrdRender = Object.freeze({
     schemaVersion: 'requirements-contract-registered-prd-render/v1',
     ...input,
@@ -122,6 +153,93 @@ function splitImplementationConfirmation(sourceText: string): {
       lines.slice(start).join('\n'),
       'implementationConfirmation'
     ),
+  };
+}
+
+function enforcePostCutoverOutputPolicy(input: {
+  outputPolicy?: RequirementsContractPrdOutputPolicy;
+  implementationConfirmation: string;
+}): void {
+  if (input.outputPolicy?.productionReadModelVersion !== 'v2') return;
+  if (
+    input.outputPolicy.shadowOutputEnabled !== false ||
+    input.outputPolicy.v1OutputEnabled !== false
+  ) {
+    throw new Error('V2 activation requires Shadow and V1 output to be disabled');
+  }
+  const confirmation = extractRequirementsContractImplementationConfirmation(
+    input.implementationConfirmation
+  ).value as unknown as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(confirmation, 'currentTargetMap')) {
+    throw new Error('V2 activation forbids currentTargetMap Source PRD output');
+  }
+  if (confirmation.contractSchemaVersion === 1) {
+    throw new Error('V2 activation forbids V1 contract schema Source PRD output');
+  }
+}
+
+function readProductionOutputPolicyBinding(
+  projectRoot: string
+): RequirementsContractPrdOutputPolicyBinding {
+  const registryPath = path.resolve(projectRoot, CONSUMER_REGISTRY_RELATIVE_PATH);
+  if (!existsSync(registryPath)) {
+    return {
+      registryPath: CONSUMER_REGISTRY_RELATIVE_PATH,
+      registryExists: false,
+      registryHash: null,
+      outputPolicy: null,
+    };
+  }
+  const registryBytes = readFileSync(registryPath);
+  const parsed: unknown = JSON.parse(registryBytes.toString('utf8'));
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Consumer Registry root must be an object');
+  }
+  const registry = parsed as Record<string, unknown>;
+  const selector =
+    registry.activation &&
+    typeof registry.activation === 'object' &&
+    !Array.isArray(registry.activation)
+      ? (registry.activation as Record<string, unknown>)
+      : registry;
+  const selectorKeys = [
+    'shadowOutputEnabled',
+    'v1OutputEnabled',
+    'productionReadModelVersion',
+  ] as const;
+  const activationAuthorityPresent =
+    'activation' in registry ||
+    'activationReceiptId' in registry ||
+    'activationReceiptId' in selector ||
+    selectorKeys.some((key) => key in selector);
+  if (!activationAuthorityPresent) {
+    return {
+      registryPath: CONSUMER_REGISTRY_RELATIVE_PATH,
+      registryExists: true,
+      registryHash: sha256(registryBytes),
+      outputPolicy: null,
+    };
+  }
+  if (
+    ![
+      'requirements-contract-consumer-registry/v1',
+      'requirements-contract-consumer-registry/v2',
+    ].includes(String(registry.schemaVersion)) ||
+    typeof selector.shadowOutputEnabled !== 'boolean' ||
+    typeof selector.v1OutputEnabled !== 'boolean' ||
+    !['v1', 'v2'].includes(String(selector.productionReadModelVersion))
+  ) {
+    throw new Error('Consumer Registry production output selector is invalid');
+  }
+  return {
+    registryPath: CONSUMER_REGISTRY_RELATIVE_PATH,
+    registryExists: true,
+    registryHash: sha256(registryBytes),
+    outputPolicy: {
+      shadowOutputEnabled: selector.shadowOutputEnabled,
+      v1OutputEnabled: selector.v1OutputEnabled,
+      productionReadModelVersion: selector.productionReadModelVersion as 'v1' | 'v2',
+    },
   };
 }
 
@@ -189,8 +307,11 @@ export function renderProductPrd(input: {
   sections: RenderSection[];
 }): RegisteredPrdRender {
   const content = `# ${nonEmpty(input.title, 'title')}\n\n${sectionsMarkdown(input.sections)}\n`;
-  if (/implementationConfirmation/iu.test(content)) {
-    throw new Error('Product PRD renderer forbids implementationConfirmation');
+  const forbiddenContent = PRODUCT_PRD_FORBIDDEN_CONTENT.find(({ pattern }) =>
+    pattern.test(content)
+  );
+  if (forbiddenContent) {
+    throw new Error(`Product PRD renderer forbids ${forbiddenContent.label}`);
   }
   return sealRender({
     artifactRole: 'product_prd',
@@ -214,6 +335,8 @@ export function renderCanonicalRequirementSourcePrd(input: {
     semanticConservationManifest: ProofRef;
   };
   sourceText: string;
+  outputPolicy?: RequirementsContractPrdOutputPolicy;
+  outputPolicyBinding?: RequirementsContractPrdOutputPolicyBinding;
 }): RegisteredPrdRender {
   if (!HASH_PATTERN.test(input.semanticModelHash)) {
     throw new Error('Canonical Source PRD semanticModelHash must be SHA256');
@@ -235,28 +358,37 @@ export function renderCanonicalRequirementSourcePrd(input: {
     semanticConservationManifest: conservation,
   };
   const splitSource = splitImplementationConfirmation(input.sourceText);
+  enforcePostCutoverOutputPolicy({
+    outputPolicy: input.outputPolicy,
+    implementationConfirmation: splitSource.implementationConfirmation,
+  });
   const authoredSections = sourceSections(splitSource.sourceBody);
   for (const section of SOURCE_AUTHORITY_SECTIONS) {
     if (!authoredSections.get(section)?.trim()) {
-      throw new Error(`Canonical Source PRD renderer requires source-authorized section: ${section}`);
+      throw new Error(
+        `Canonical Source PRD renderer requires source-authorized section: ${section}`
+      );
     }
   }
   const templateSections = canonicalTemplateSections();
   const orderedHeadings = [
-    ...REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES.requiredHeadings.slice(1).map((heading) =>
-      heading.replace(/^##\s+/u, '')
-    ),
+    ...REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES.requiredHeadings
+      .slice(1)
+      .map((heading) => heading.replace(/^##\s+/u, '')),
   ];
   const createdDate = nonEmpty(input.createdAt, 'createdAt').slice(0, 10);
   const staticSections = new Map<string, string>([
-    ['Source Metadata', renderedSourceMetadata({
-      recordId,
-      requirementSetId,
-      entrySource: input.entrySource,
-      semanticModelHash: input.semanticModelHash,
-      sourceAuthorityHash: input.sourceAuthorityHash,
-      proofRefs,
-    })],
+    [
+      'Source Metadata',
+      renderedSourceMetadata({
+        recordId,
+        requirementSetId,
+        entrySource: input.entrySource,
+        semanticModelHash: input.semanticModelHash,
+        sourceAuthorityHash: input.sourceAuthorityHash,
+        proofRefs,
+      }),
+    ],
     [
       'Revision History',
       [
@@ -315,12 +447,76 @@ export function renderCanonicalRequirementSourcePrd(input: {
     rendererId: 'canonical_source_prd_renderer',
     requirementSetId,
     content,
+    ...(input.outputPolicyBinding ? { outputPolicyBinding: input.outputPolicyBinding } : {}),
   });
+}
+
+export function renderProductionCanonicalRequirementSourcePrd(
+  input: Omit<Parameters<typeof renderCanonicalRequirementSourcePrd>[0], 'outputPolicy'> & {
+    projectRoot: string;
+  }
+): RegisteredPrdRender {
+  const { projectRoot, ...renderInput } = input;
+  const outputPolicyBinding = readProductionOutputPolicyBinding(projectRoot);
+  return renderCanonicalRequirementSourcePrd({
+    ...renderInput,
+    outputPolicy: outputPolicyBinding.outputPolicy ?? undefined,
+    outputPolicyBinding,
+  });
+}
+
+export function assertProductionPrdOutputPolicyCurrent(input: {
+  projectRoot: string;
+  rendered: RegisteredPrdRender;
+  candidateContent?: string;
+}): void {
+  const expected = input.rendered.outputPolicyBinding;
+  if (!expected) {
+    throw new Error('Production PRD render is missing its output policy binding');
+  }
+  const current = readProductionOutputPolicyBinding(input.projectRoot);
+  if (
+    current.registryExists !== expected.registryExists ||
+    current.registryHash !== expected.registryHash
+  ) {
+    throw new Error('Production output selector changed after rendering');
+  }
+  if (input.candidateContent && expected.outputPolicy) {
+    enforcePostCutoverOutputPolicy({
+      outputPolicy: expected.outputPolicy,
+      implementationConfirmation: splitImplementationConfirmation(input.candidateContent)
+        .implementationConfirmation,
+    });
+  }
+}
+
+export function acquireProductionOutputPolicyLock(projectRoot: string): () => void {
+  const lockPath = path.resolve(projectRoot, PRODUCTION_OUTPUT_POLICY_LOCK_RELATIVE_PATH);
+  mkdirSync(path.dirname(lockPath), { recursive: true });
+  try {
+    mkdirSync(lockPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error('Production output policy lock is already held');
+    }
+    throw error;
+  }
+  return () => rmSync(lockPath, { recursive: true, force: false });
+}
+
+export function withProductionOutputPolicyLock<T>(projectRoot: string, action: () => T): T {
+  const release = acquireProductionOutputPolicyLock(projectRoot);
+  try {
+    return action();
+  } finally {
+    release();
+  }
 }
 
 export function writeRegisteredPrdRender(input: {
   rendered: RegisteredPrdRender;
   targetPath: string;
+  projectRoot?: string;
 }) {
   if (!registeredRenders.has(input.rendered)) {
     throw new Error('Safe Writer requires registered renderer output');
@@ -336,6 +532,57 @@ export function writeRegisteredPrdRender(input: {
     throw new Error('Safe Writer rejected mismatched registered renderer output');
   }
   const targetPath = path.resolve(nonEmpty(input.targetPath, 'targetPath'));
-  mkdirSync(path.dirname(targetPath), { recursive: true });
-  return writeGovernedText(targetPath, input.rendered.content);
+  const policyBound = Boolean(input.rendered.outputPolicyBinding);
+  if (policyBound && !input.projectRoot) {
+    throw new Error('Policy-bound registered renderer output requires projectRoot');
+  }
+  const write = () => {
+    const targetExisted = existsSync(targetPath);
+    const previousTarget = targetExisted ? readFileSync(targetPath) : null;
+    const receiptPath = `${targetPath}.safe-write-receipt.json`;
+    const receiptExisted = existsSync(receiptPath);
+    const previousReceipt = receiptExisted ? readFileSync(receiptPath) : null;
+    try {
+      const result = writeGovernedText(targetPath, input.rendered.content);
+      if (policyBound) {
+        assertProductionPrdOutputPolicyCurrent({
+          projectRoot: input.projectRoot as string,
+          rendered: input.rendered,
+          candidateContent: readFileSync(targetPath, 'utf8'),
+        });
+        if (sha256(readFileSync(targetPath)) !== input.rendered.renderedContentHash) {
+          throw new Error('Safe Writer readback hash does not match registered renderer output');
+        }
+      }
+      return result;
+    } catch (error) {
+      if (targetExisted) {
+        writeFileSync(targetPath, previousTarget as Buffer);
+      } else if (existsSync(targetPath)) {
+        unlinkSync(targetPath);
+      }
+      if (receiptExisted) {
+        writeFileSync(receiptPath, previousReceipt as Buffer);
+      } else if (existsSync(receiptPath)) {
+        unlinkSync(receiptPath);
+      }
+      throw error;
+    }
+  };
+  if (!policyBound) {
+    mkdirSync(path.dirname(targetPath), { recursive: true });
+    return write();
+  }
+  const release = acquireProductionOutputPolicyLock(input.projectRoot as string);
+  try {
+    assertProductionPrdOutputPolicyCurrent({
+      projectRoot: input.projectRoot as string,
+      rendered: input.rendered,
+      candidateContent: input.rendered.content,
+    });
+    mkdirSync(path.dirname(targetPath), { recursive: true });
+    return write();
+  } finally {
+    release();
+  }
 }

@@ -30,12 +30,9 @@ const MANIFEST_RELATIVE_PATH = path.join(
   'requirements-contract',
   'requirements-contract-package-runtime-action-binding-manifest.json'
 );
-const SCHEMA_ROOT =
-  'packages/bmad-speckit/src/main-agent/source-authority/schemas';
-const SCRIPT_ROOT =
-  'packages/bmad-speckit/src/main-agent/source-authority/scripts';
-const DIST_SCRIPT_ROOT =
-  'packages/bmad-speckit/dist/main-agent/source-authority/scripts';
+const SCHEMA_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/schemas';
+const SCRIPT_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/scripts';
+const DIST_SCRIPT_ROOT = 'packages/bmad-speckit/dist/main-agent/source-authority/scripts';
 const FROZEN_ACTION_IDS = [
   'requirements-contract-six-model-projection-parity-verify',
   'requirements-contract-prompt-transaction-publish',
@@ -52,6 +49,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-evidence-verify',
   'requirements-contract-bundle-publish',
   'requirements-contract-production-activate',
+  'requirements-contract-production-bypass-evidence-materialize',
   'requirements-contract-production-bypass-verify',
   'requirements-contract-judge-provider-smoke',
   'requirements-contract-stage-five-star-audit',
@@ -59,7 +57,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-consumer-cli-capability-observe',
 ].sort();
 const ACTION_UNIVERSE_HASH =
-  'sha256:8adf1492096c0b29ba43ba7295b5c11c1ef88d9375ab77b3de5b167a3e0e54a6';
+  'sha256:5f9c8757b63f10a6c17578a9ee5fcf122479d63267852ae1d83a95b13ffe8c4c';
 
 const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
   {
@@ -73,25 +71,19 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-finalization-safe-write-receipt.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-finalization-safe-writer.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-finalization-safe-writer.test.ts'],
   },
   {
     actionId: 'requirements-contract-bundle-publish',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-bundle-publish.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-bundle-publish.js`,
     gateSymbol: 'requirementsContractBundlePublishCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-bundle-publish-input.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-bundle-publish-input.schema.json`],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-runtime-bundle-manifest.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-bundle-publication-receipt.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-bundle-publish-command.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-bundle-publish-command.test.ts'],
   },
   {
     actionId: 'requirements-contract-six-model-projection-parity-verify',
@@ -104,9 +96,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-six-model-projection-parity-report.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-six-model-consumer-migration.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-six-model-consumer-migration.test.ts'],
   },
   {
     actionId: 'requirements-contract-terminal-command-supervisor',
@@ -141,12 +131,8 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-consumer-cli-capability.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-consumer-cli-capability.js`,
     gateSymbol: 'requirementsContractConsumerCliCapabilityObserveCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-consumer-project-profile.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-consumer-cli-capability.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-consumer-project-profile.schema.json`],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-consumer-cli-capability.schema.json`],
     behaviorTests: [
       'tests/acceptance/requirements-contract-prompt-transaction-production-publication.test.ts',
     ],
@@ -156,30 +142,18 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-changed-path-manifest.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-changed-path-manifest.js`,
     gateSymbol: 'requirementsContractChangedPathManifestCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-changed-path-manifest-input.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-changed-path-manifest.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-changed-path-manifest.test.ts',
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-changed-path-manifest-input.schema.json`],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-changed-path-manifest.schema.json`],
+    behaviorTests: ['tests/acceptance/requirements-contract-changed-path-manifest.test.ts'],
   },
   {
     actionId: 'requirements-contract-candidate-package',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-candidate-package.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-candidate-package.js`,
     gateSymbol: 'requirementsContractCandidatePackageCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-candidate-package-input.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-candidate-package-receipt.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-candidate-package-provenance.test.ts',
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-candidate-package-input.schema.json`],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-candidate-package-receipt.schema.json`],
+    behaviorTests: ['tests/acceptance/requirements-contract-candidate-package-provenance.test.ts'],
   },
   {
     actionId: 'requirements-contract-detached-test-rerun',
@@ -190,27 +164,17 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-detached-test-rerun-input.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-changed-path-manifest.schema.json`,
     ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-detached-test-rerun.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-detached-test-rerun.test.ts',
-    ],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-detached-test-rerun.schema.json`],
+    behaviorTests: ['tests/acceptance/requirements-contract-detached-test-rerun.test.ts'],
   },
   {
     actionId: 'requirements-contract-eval',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-evaluation.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-evaluation.js`,
     gateSymbol: 'requirementsContractEvalCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-evaluation-input.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-evaluation-report.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-eval-command.test.ts',
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-evaluation-input.schema.json`],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-evaluation-report.schema.json`],
+    behaviorTests: ['tests/acceptance/requirements-contract-eval-command.test.ts'],
   },
   {
     actionId: 'requirements-contract-evidence-verify',
@@ -224,9 +188,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-evidence-verification-receipt.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-evidence-verify-command.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-evidence-verify-command.test.ts'],
   },
   {
     actionId: 'requirements-contract-judge-credentials-init',
@@ -239,26 +201,20 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-judge-credential-initialization-receipt.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-judge-credential-initializer.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-judge-credential-initializer.test.ts'],
   },
   {
     actionId: 'requirements-contract-judge-provider-smoke',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-judge-provider-smoke.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-provider-smoke.js`,
     gateSymbol: 'requirementsContractJudgeProviderSmokeCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-judge-provider-smoke-input.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-judge-provider-smoke-input.schema.json`],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-judge-capability-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-selection-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-runtime-security-parity.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-judge-provider-smoke.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-judge-provider-smoke.test.ts'],
   },
   {
     actionId: 'requirements-contract-prompt-transaction-publish',
@@ -308,6 +264,21 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
   },
   {
+    actionId: 'requirements-contract-production-bypass-evidence-materialize',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-bypass-evidence-materializer.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-bypass-evidence-materializer.js`,
+    gateSymbol: 'requirementsContractProductionBypassEvidenceMaterializeCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-production-bypass-evidence-materializer-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-production-bypass-evidence-materializer-report.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-production-bypass-evidence-materializer.test.ts',
+    ],
+  },
+  {
     actionId: 'requirements-contract-production-bypass-verify',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-bypass-verifier.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-bypass-verifier.js`,
@@ -328,9 +299,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-activate.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-activate.js`,
     gateSymbol: 'requirementsContractProductionActivateCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-production-activate-input.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-production-activate-input.schema.json`],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-production-activation-plan.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-production-activation-receipt.schema.json`,
@@ -346,12 +315,8 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-recovery-bootstrap.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-recovery-bootstrap.js`,
     gateSymbol: 'requirementsContractRecoveryBootstrapCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-controlled-command-receipt.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-recovery-lineage-receipt.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-controlled-command-receipt.schema.json`],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-recovery-lineage-receipt.schema.json`],
     behaviorTests: ['tests/acceptance/requirements-contract-recovery-bootstrap.test.ts'],
   },
   {
@@ -363,14 +328,49 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-reverse-audit-input.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-capability-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-selection-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-runtime.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-credentials.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-provider-registry.schema.json`,
     ],
     outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-normalized-judge-response.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-response.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-challenge-tests.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-test-source-audit.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-reverse-audit.test.ts',
+    behaviorTests: ['tests/acceptance/requirements-contract-reverse-audit.test.ts'],
+    runtimeRefs: [
+      {
+        role: 'judge-credential-resolver',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-resolver.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver.js',
+      },
+      {
+        role: 'judge-provider-registry',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-provider-registry.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.js',
+      },
+      {
+        role: 'openai-compatible-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-openai-compatible-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.js',
+      },
+      {
+        role: 'anthropic-compatible-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-anthropic-compatible-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js',
+      },
+      {
+        role: 'judge-provider-registry-projection',
+        repositoryPath:
+          'packages/bmad-speckit/dist/main-agent/source-authority/_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
+        packagePath:
+          'dist/main-agent/source-authority/_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
+      },
     ],
   },
   {
@@ -388,7 +388,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-stage-gap-ledger.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-stage-final-gate-report.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-stage-five-star-candidate-receipt.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-stage-five-star-candidate-revocation-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-stage-candidate-revocation-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-stage-downstream-invalidation-set.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-stage-five-star-audit-command-receipt.schema.json`,
     ],
@@ -416,9 +416,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-real-consumer-journey.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-real-consumer-journey.js`,
     gateSymbol: 'requirementsContractRealConsumerJourneyCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-real-consumer-journey-input.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-real-consumer-journey-input.schema.json`],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-candidate-package-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-real-consumer-pre-confirmation-snapshot.schema.json`,
@@ -471,11 +469,7 @@ function repositoryFileRef(root: string, relativePath: string): FileRef {
 function registeredActionIds(root: string): string[] {
   const cliPath = path.join(root, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
   const cliSource = fs.readFileSync(cliPath, 'utf8');
-  return [
-    ...cliSource.matchAll(
-      /\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu
-    ),
-  ]
+  return [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
     .map((match) => match.groups?.actionId ?? '')
     .filter(Boolean)
     .sort();
@@ -516,15 +510,9 @@ export function buildPackageRuntimeActionBindingManifest(root: string): JsonReco
         sourceSymbol: spec.gateSymbol,
         distSymbol: spec.gateSymbol,
       },
-      inputSchemaRefs: spec.inputSchemas.map((schemaPath) =>
-        repositoryFileRef(root, schemaPath)
-      ),
-      outputSchemaRefs: spec.outputSchemas.map((schemaPath) =>
-        repositoryFileRef(root, schemaPath)
-      ),
-      behaviorTestRefs: spec.behaviorTests.map((testPath) =>
-        repositoryFileRef(root, testPath)
-      ),
+      inputSchemaRefs: spec.inputSchemas.map((schemaPath) => repositoryFileRef(root, schemaPath)),
+      outputSchemaRefs: spec.outputSchemas.map((schemaPath) => repositoryFileRef(root, schemaPath)),
+      behaviorTestRefs: spec.behaviorTests.map((testPath) => repositoryFileRef(root, testPath)),
       packageDistRef: { path: packagePath, hash: distHandlerRef.hash },
       installedSurfaceRefs: [{ path: packagePath, hash: distHandlerRef.hash }],
       runtimeRefs: (spec.runtimeRefs ?? []).map((runtimeRef) => ({
@@ -551,11 +539,8 @@ export function buildPackageRuntimeActionBindingManifest(root: string): JsonReco
     actionUniverseHash: ACTION_UNIVERSE_HASH,
     actions,
     packageRuntimeRoutingOnlyActionCount: actions.filter((action) => action.routingOnly).length,
-    installedPackageActionBehaviorMismatchCount: actions.filter(
-      (action) =>
-        action.installedSurfaceRefs.some(
-          (ref) => ref.hash !== action.packageDistRef.hash
-        )
+    installedPackageActionBehaviorMismatchCount: actions.filter((action) =>
+      action.installedSurfaceRefs.some((ref) => ref.hash !== action.packageDistRef.hash)
     ).length,
     packageActionSemanticBindingCoverage:
       actions.length === 0 ? 0 : completeActionCount / actions.length,
@@ -573,9 +558,7 @@ export function publishPackageRuntimeActionBindingManifest(root: string): {
     SCHEMA_ROOT,
     'requirements-contract-package-runtime-action-binding-manifest.schema.json'
   );
-  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
-    readJson(schemaPath)
-  );
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(readJson(schemaPath));
   if (!validate(manifest)) {
     throw new Error(
       `package_runtime_action_binding_manifest_schema_invalid:${JSON.stringify(validate.errors ?? [])}`
@@ -661,16 +644,15 @@ export function resolvePromptPublicationRuntimeBindings(
     'schemas',
     'requirements-contract-package-runtime-action-binding-manifest.schema.json'
   );
-  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
-    readJson(schemaPath)
-  );
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(readJson(schemaPath));
   const manifest = readJson(manifestPath);
   if (!validate(manifest)) {
-    throw new Error(`package_runtime_action_binding_manifest_schema_invalid:${JSON.stringify(validate.errors ?? [])}`);
+    throw new Error(
+      `package_runtime_action_binding_manifest_schema_invalid:${JSON.stringify(validate.errors ?? [])}`
+    );
   }
   const matches = manifest.actions.filter(
-    (entry: JsonRecord) =>
-      entry.actionId === 'requirements-contract-prompt-transaction-publish'
+    (entry: JsonRecord) => entry.actionId === 'requirements-contract-prompt-transaction-publish'
   );
   if (matches.length !== 1) throw new Error('prompt_publication_action_binding_not_unique');
   const binding = matches[0];
@@ -690,11 +672,7 @@ export function resolvePromptPublicationRuntimeBindings(
     installedPackageRoot,
     'installed-stage-registry'
   );
-  const installedRunnerRef = installedRuntimeRef(
-    binding,
-    installedPackageRoot,
-    'installed-runner'
-  );
+  const installedRunnerRef = installedRuntimeRef(binding, installedPackageRoot, 'installed-runner');
   const capabilityProbeArgv = [
     process.execPath,
     installedCliRef.path,

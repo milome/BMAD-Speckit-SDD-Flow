@@ -31,11 +31,11 @@
       "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/blocked"
     },
     "artifactRole": {
-      "enum": ["AMEND05-SAFE-WRITE-MANIFEST", "EVD-15", "ARTIFACT-01"]
+      "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
     },
     "validationProfile": {
       "enum": [
-        "amend05-safe-write-manifest",
+        "safe-write-receipt-manifest",
         "goal-task-evidence",
         "implementation-evidence-bundle"
       ]

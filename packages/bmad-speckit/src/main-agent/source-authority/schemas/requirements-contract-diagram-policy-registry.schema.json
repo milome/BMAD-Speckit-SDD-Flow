@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-diagram-policy-registry/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "owner",
+    "sequenceFirst",
+    "views",
+    "readability",
+    "decomposition",
+    "syntheticFallbackAllowed"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-diagram-policy-registry/v1"
+    },
+    "owner": {
+      "$ref": "#/$defs/sourceRef"
+    },
+    "sequenceFirst": {
+      "const": true
+    },
+    "views": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "view",
+          "consumerProductPolicy"
+        ],
+        "properties": {
+          "view": {
+            "enum": [
+              "primary_business_sequence",
+              "failure_compensation_sequence",
+              "state_lifecycle",
+              "deployment_delta",
+              "data_security_flow",
+              "scope_boundary",
+              "governance_flow"
+            ]
+          },
+          "consumerProductPolicy": {
+            "enum": [
+              "required_when_critical_interaction",
+              "required_when_failure_or_compensation_semantics",
+              "required_when_authorized_state_transition",
+              "required_when_deployment_semantics_change",
+              "required_when_data_or_security_semantics_change",
+              "table_unless_decision_receipt",
+              "forbidden"
+            ]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "primary_business_sequence"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "failure_compensation_sequence"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "state_lifecycle"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "deployment_delta"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "data_security_flow"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "scope_boundary"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "view": {
+                "const": "governance_flow"
+              }
+            },
+            "required": [
+              "view"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "readability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minFontPx",
+        "minParticipantGapPx",
+        "minMessageRowHeightPx",
+        "scale"
+      ],
+      "properties": {
+        "minFontPx": {
+          "const": 14
+        },
+        "minParticipantGapPx": {
+          "const": 24
+        },
+        "minMessageRowHeightPx": {
+          "const": 28
+        },
+        "scale": {
+          "const": 1
+        }
+      }
+    },
+    "decomposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxParticipants",
+        "maxMessages",
+        "maxControlBlocks"
+      ],
+      "properties": {
+        "maxParticipants": {
+          "const": 8
+        },
+        "maxMessages": {
+          "const": 25
+        },
+        "maxControlBlocks": {
+          "const": 5
+        }
+      }
+    },
+    "syntheticFallbackAllowed": {
+      "const": false
+    }
+  },
+  "$defs": {
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

@@ -30,16 +30,16 @@ export interface RequirementsContractTerminalCommandSupervisorOptions {
 const BASE = 'docs/plans/evidence/loop-engineering-remediation';
 const TARGETS = [
   {
-    artifactRole: 'AMEND05-SAFE-WRITE-MANIFEST',
-    targetPath: `${BASE}/amend05-safe-write-receipt-manifest.json`,
-    receiptPath: `${BASE}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+    artifactRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
+    targetPath: `${BASE}/safe-write-receipt-manifest.json`,
+    receiptPath: `${BASE}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
     predecessorRole: 'not_applicable',
   },
   {
     artifactRole: 'EVD-15',
     targetPath: `${BASE}/G15-final-gates.json`,
     receiptPath: `${BASE}/finalization-receipts/G15-final-gates.receipt.json`,
-    predecessorRole: 'AMEND05-SAFE-WRITE-MANIFEST',
+    predecessorRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
   },
   {
     artifactRole: 'ARTIFACT-01',

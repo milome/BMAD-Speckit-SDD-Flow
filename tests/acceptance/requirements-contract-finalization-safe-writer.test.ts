@@ -1,12 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -37,7 +30,9 @@ function completionBundle(implementationAttemptId: string) {
     evidenceBundleId: `EVIDENCE-${randomUUID()}`,
     contractHash: hash,
     sourcePlanHash: hash,
-    sourceAmendmentHashes: Array.from({ length: 10 }, () => hash),
+    sourceAmendmentHashes: Array.from({ length: 10 }, (_, index) =>
+      sha256(`fixture-amendment-${index + 1}`)
+    ),
     aggregateAmendmentHash: hash,
     semanticModelHash: hash,
     sequenceContractHash: hash,
@@ -98,14 +93,14 @@ describe('requirements contract finalization safe writer', () => {
       });
       const roles = [
         {
-          artifactRole: 'AMEND05-SAFE-WRITE-MANIFEST',
-          validationProfile: 'amend05-safe-write-manifest',
-          draft: `${staging}/amend05-safe-write-receipt-manifest.json`,
-          target: `${base}/amend05-safe-write-receipt-manifest.json`,
-          receipt: `${base}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+          artifactRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
+          validationProfile: 'safe-write-receipt-manifest',
+          draft: `${staging}/safe-write-receipt-manifest.json`,
+          target: `${base}/safe-write-receipt-manifest.json`,
+          receipt: `${base}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
           predecessor: 'not_applicable',
           value: {
-            schemaVersion: 'requirements-contract-amend05-safe-write-receipt-manifest/v1',
+            schemaVersion: 'requirements-contract-safe-write-receipt-manifest/v1',
             finalizationDeclarationHash: declarationHash,
             decision: 'PASS',
           },
@@ -116,7 +111,7 @@ describe('requirements contract finalization safe writer', () => {
           draft: `${staging}/G15-final-gates.json`,
           target: `${base}/G15-final-gates.json`,
           receipt: `${base}/finalization-receipts/G15-final-gates.receipt.json`,
-          predecessor: `${base}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+          predecessor: `${base}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
           value: {
             schemaVersion: 'requirements-contract-goal-task-evidence/v1',
             finalizationDeclarationHash: declarationHash,
@@ -134,6 +129,11 @@ describe('requirements contract finalization safe writer', () => {
         },
       ] as const;
       for (const [index, role] of roles.entries()) {
+        const previousTargetBytes =
+          index === 1 ? `${JSON.stringify({ schemaVersion: 'previous-target/v1' })}\n` : null;
+        if (previousTargetBytes) {
+          writeFileSync(path.join(root, role.target), previousTargetBytes, 'utf8');
+        }
         writeJson(root, role.draft, role.value);
         const receipt = await requirementsContractFinalizationSafeWriteCommand({
           cwd: root,
@@ -154,6 +154,28 @@ describe('requirements contract finalization safe writer', () => {
         expect(existsSync(path.join(root, role.target))).toBe(true);
         expect(existsSync(path.join(root, role.draft))).toBe(false);
         expect(existsSync(path.join(root, staging))).toBe(index < roles.length - 1);
+        if (previousTargetBytes) {
+          expect(receipt.target).toMatchObject({
+            targetExistedBefore: true,
+            previousHash: sha256(previousTargetBytes),
+            backupApplicability: 'required',
+            backupHash: sha256(previousTargetBytes),
+            nonexistenceProofHash: null,
+          });
+          expect(receipt.target.backupPath).toEqual(expect.any(String));
+          expect(readFileSync(path.join(root, receipt.target.backupPath), 'utf8')).toBe(
+            previousTargetBytes
+          );
+        } else {
+          expect(receipt.target).toMatchObject({
+            targetExistedBefore: false,
+            previousHash: null,
+            backupApplicability: 'not_applicable',
+            backupPath: null,
+            backupHash: null,
+            nonexistenceProofHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+          });
+        }
       }
       const finalReceipt = JSON.parse(readFileSync(path.join(root, roles[2].receipt), 'utf8'));
       expect(finalReceipt.predecessor.receipt.path).toBe(roles[2].predecessor);
@@ -171,11 +193,11 @@ describe('requirements contract finalization safe writer', () => {
     const staging = `${base}/.finalization-staging/${implementationAttemptId}`;
     const declarationHash = sha256('retry-finalization-declaration');
     const first = {
-      artifactRole: 'AMEND05-SAFE-WRITE-MANIFEST',
-      validationProfile: 'amend05-safe-write-manifest',
-      draft: `${staging}/amend05-safe-write-receipt-manifest.json`,
-      target: `${base}/amend05-safe-write-receipt-manifest.json`,
-      receipt: `${base}/finalization-receipts/amend05-safe-write-receipt-manifest.receipt.json`,
+      artifactRole: 'SAFE-WRITE-RECEIPT-MANIFEST',
+      validationProfile: 'safe-write-receipt-manifest',
+      draft: `${staging}/safe-write-receipt-manifest.json`,
+      target: `${base}/safe-write-receipt-manifest.json`,
+      receipt: `${base}/finalization-receipts/safe-write-receipt-manifest.receipt.json`,
       predecessor: 'not_applicable',
     };
     const second = {
@@ -214,7 +236,7 @@ describe('requirements contract finalization safe writer', () => {
         semanticModelHash: sha256('semantic'),
       });
       writeJson(root, first.draft, {
-        schemaVersion: 'requirements-contract-amend05-safe-write-receipt-manifest/v1',
+        schemaVersion: 'requirements-contract-safe-write-receipt-manifest/v1',
         finalizationDeclarationHash: declarationHash,
         decision: 'PASS',
       });

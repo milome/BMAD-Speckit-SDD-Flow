@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-provider-registry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "owner",
+    "sourceConfig",
+    "activeProviderRef",
+    "providers",
+    "registryHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-judge-provider-registry/v1"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "const": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts"
+        },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "sourceConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "const": "_bmad/_config/governance-remediation.yaml"
+        },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "activeProviderRef": {
+      "const": "local-sonnet-judge"
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/providerBinding" },
+      "contains": {
+        "type": "object",
+        "required": ["providerRef", "provider", "adapterRef"],
+        "properties": {
+          "providerRef": { "const": "local-sonnet-judge" },
+          "adapterRef": { "const": "OpenAICompatibleJudgeAdapter" },
+          "provider": {
+            "type": "object",
+            "required": ["transport", "apiStyle", "model", "endpoint"],
+            "properties": {
+              "transport": { "const": "openai-compatible" },
+              "apiStyle": { "const": "chat_completions" },
+              "model": { "const": "claude-sonnet-5" },
+              "endpoint": {
+                "type": "object",
+                "required": ["baseUrl"],
+                "properties": {
+                  "baseUrl": { "const": "http://localhost:3010" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "registryHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "providerBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerRef", "provider", "adapterRef"],
+      "properties": {
+        "providerRef": { "type": "string", "minLength": 1 },
+        "adapterRef": {
+          "enum": ["OpenAICompatibleJudgeAdapter", "AnthropicCompatibleJudgeAdapter"]
+        },
+        "provider": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "transport",
+            "apiStyle",
+            "model",
+            "credentialRef",
+            "endpoint",
+            "authentication",
+            "auditPolicy",
+            "requestPolicy"
+          ],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "transport": {
+              "enum": ["openai-compatible", "anthropic-compatible"]
+            },
+            "apiStyle": {
+              "enum": ["chat_completions", "messages"]
+            },
+            "model": { "type": "string", "minLength": 1 },
+            "credentialRef": { "type": "string", "minLength": 1 },
+            "endpoint": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "baseUrl",
+                "resolutionMode",
+                "routingOwnership",
+                "upstreamVersioning",
+                "explicitOperationPath"
+              ],
+              "properties": {
+                "baseUrl": { "type": "string", "format": "uri" },
+                "resolutionMode": { "const": "transport_managed" },
+                "routingOwnership": { "const": "transport_adapter" },
+                "upstreamVersioning": { "const": "gateway_managed" },
+                "explicitOperationPath": { "type": "null" }
+              }
+            },
+            "authentication": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "sensitivity", "arbitraryNonEmptyValueAllowed"],
+              "properties": {
+                "type": { "enum": ["bearer", "api_key"] },
+                "sensitivity": { "enum": ["placeholder", "secret"] },
+                "arbitraryNonEmptyValueAllowed": { "type": "boolean" }
+              }
+            },
+            "auditPolicy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "independenceClass",
+                "blindReview",
+                "allowPassAuthority",
+                "toolsAllowed",
+                "implementationWritesAllowed"
+              ],
+              "properties": {
+                "independenceClass": { "type": "string", "minLength": 1 },
+                "blindReview": { "const": true },
+                "allowPassAuthority": { "const": false },
+                "toolsAllowed": { "const": false },
+                "implementationWritesAllowed": { "const": false }
+              }
+            },
+            "requestPolicy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["timeoutMs", "maximumAttempts", "structuredResponseRequired"],
+              "properties": {
+                "timeoutMs": { "type": "integer", "minimum": 1 },
+                "maximumAttempts": { "const": 1 },
+                "structuredResponseRequired": { "const": true }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

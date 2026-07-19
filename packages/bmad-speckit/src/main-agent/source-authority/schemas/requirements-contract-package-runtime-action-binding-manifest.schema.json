@@ -17,12 +17,12 @@
       "const": "requirements-contract-package-runtime-action-binding-manifest/v2"
     },
     "actionUniverseHash": {
-      "const": "sha256:8adf1492096c0b29ba43ba7295b5c11c1ef88d9375ab77b3de5b167a3e0e54a6"
+      "const": "sha256:5f9c8757b63f10a6c17578a9ee5fcf122479d63267852ae1d83a95b13ffe8c4c"
     },
     "actions": {
       "type": "array",
-      "minItems": 20,
-      "maxItems": 20,
+      "minItems": 21,
+      "maxItems": 21,
       "uniqueItems": true,
       "items": {
         "type": "object",
@@ -54,6 +54,7 @@
               "requirements-contract-judge-credentials-init",
               "requirements-contract-judge-provider-smoke",
               "requirements-contract-production-activate",
+              "requirements-contract-production-bypass-evidence-materialize",
               "requirements-contract-production-bypass-verify",
               "requirements-contract-prompt-transaction-publish",
               "requirements-contract-real-consumer-journey",

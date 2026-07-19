@@ -587,6 +587,7 @@ describe('requirements contract prompt transaction production publication', () =
 
     expect(() =>
       pointerModule.publishCurrentDispatchPointer({
+        authorityRoot: value.root,
         targetPath,
         expectedPreimageHash: frozenPreimageHash,
         pointer: {

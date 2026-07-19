@@ -196,6 +196,12 @@ describe.runIf(
       redHash: HASH,
       baseEvidenceHash: HASH,
       auditUniverseHash: HASH,
+      judgeAuditUnitSetRef: {
+        path: 'audit/AUD-001/judge-audit-unit-set.json',
+        hash: HASH,
+        schemaVersion: 'requirements-contract-judge-audit-unit-set/v1',
+      },
+      judgeAuditUnitSetHash: HASH,
       baseJudgeInputBundleHash: HASH,
       authorizedChallengeDerivationProtocolHash: HASH,
       decision: 'frozen',

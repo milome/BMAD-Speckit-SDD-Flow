@@ -34,6 +34,12 @@ function runJson(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): any {
   return JSON.parse(run(cmd, cwd, env));
 }
 
+function installRootPackageToConsumer(target: string): void {
+  const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
+  run(`npm install --ignore-scripts --save-dev "file:${pkgPath}"`, target);
+  run('npm rebuild bmad-speckit-sdd-flow --foreground-scripts', target);
+}
+
 function writeLargeDocChunk(
   target: string,
   chunkId: string,
@@ -114,7 +120,7 @@ describe('install to consumer ->CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('npm install ->postinstall deploys ->bmad-speckit check passes', () => {
+  it('npm install followed by postinstall rebuild deploys ->bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-npm-'));
     try {
       writeFileSync(
@@ -122,8 +128,7 @@ describe('install to consumer ->CLI acceptance', () => {
         JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
         'utf8'
       );
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
@@ -295,8 +300,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
 
       const canonicalTemplate = join(target, '_bmad', 'speckit', 'templates', 'tasks-template.md');
       const mirroredTemplate = join(target, '.specify', 'templates', 'tasks-template.md');
@@ -339,8 +343,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       run('npx bmad-speckit-init --agent claude-code', target);
 
       expect(existsSync(join(target, '.claude', 'hooks', 'session-start.cjs'))).toBe(true);
@@ -392,8 +395,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       run('npx bmad-speckit-init --agent claude-code', target);
 
       const canonical = join(target, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md');
@@ -420,8 +422,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
 
       const manifestPath = join(
         target,
@@ -460,8 +461,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       run('npx bmad-speckit-init --agent codex', target);
 
       expect(existsSync(join(target, '.codex', 'commands', 'bmad-help.md'))).toBe(true);
@@ -597,8 +597,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
 
       const hooksJson = readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8');
       expect(hooksJson).toContain('runtime-dashboard-session-start.cjs');

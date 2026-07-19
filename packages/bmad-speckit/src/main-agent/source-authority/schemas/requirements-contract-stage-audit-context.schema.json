@@ -27,6 +27,7 @@
     "sourceHashes": { "$ref": "#/$defs/hashMap" },
     "semanticModelHashes": { "$ref": "#/$defs/hashMap" },
     "consumerIdentityHash": { "$ref": "#/$defs/hash" },
+    "judgeRuntimeBindings": { "$ref": "#/$defs/judgeRuntimeBindings" },
     "stageEvidence": {
       "type": "array",
       "minItems": 11,
@@ -34,6 +35,22 @@
       "items": { "$ref": "#/$defs/stageEvidence" }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "phase": { "const": "architecture" }
+        },
+        "required": ["phase"]
+      },
+      "then": {
+        "not": { "required": ["judgeRuntimeBindings"] }
+      },
+      "else": {
+        "required": ["judgeRuntimeBindings"]
+      }
+    }
+  ],
   "$defs": {
     "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "hashMap": {
@@ -45,6 +62,53 @@
       "type": "array",
       "items": { "type": "string", "minLength": 1 },
       "uniqueItems": true
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "judgeAuditUnitSetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "schemaVersion"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "schemaVersion": { "const": "requirements-contract-judge-audit-unit-set/v1" }
+      }
+    },
+    "judgeRuntimeBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "judgeAuditUnitSetRef",
+        "rubricRef",
+        "systemPromptRef",
+        "sourceRef",
+        "traceRef",
+        "redRef",
+        "baseEvidenceRef",
+        "authorizedChallengeDerivationProtocolRef"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-stage-judge-runtime-bindings/v1"
+        },
+        "judgeAuditUnitSetRef": { "$ref": "#/$defs/judgeAuditUnitSetRef" },
+        "rubricRef": { "$ref": "#/$defs/artifactRef" },
+        "systemPromptRef": { "$ref": "#/$defs/artifactRef" },
+        "sourceRef": { "$ref": "#/$defs/artifactRef" },
+        "traceRef": { "$ref": "#/$defs/artifactRef" },
+        "redRef": { "$ref": "#/$defs/artifactRef" },
+        "baseEvidenceRef": { "$ref": "#/$defs/artifactRef" },
+        "authorizedChallengeDerivationProtocolRef": { "$ref": "#/$defs/artifactRef" }
+      }
     },
     "stageEvidence": {
       "type": "object",

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-project-profile-manifest/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "owner",
+    "projectKinds",
+    "classificationAuthorityKinds",
+    "diagramPolicyRegistry",
+    "components"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-project-profile-manifest/v1"
+    },
+    "owner": {
+      "$ref": "#/$defs/sourceRef"
+    },
+    "projectKinds": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "consumer_product" },
+        { "const": "governance_framework" },
+        { "const": "hybrid" }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "classificationAuthorityKinds": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "install_manifest" },
+        { "const": "registered_architecture_record" },
+        { "const": "decision_receipt" }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "diagramPolicyRegistry": {
+      "$ref": "#/$defs/sourceRef"
+    },
+    "components": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "hash"],
+        "properties": {
+          "role": {
+            "enum": [
+              "project_profile_schema",
+              "project_profile_resolver",
+              "diagram_applicability_schema",
+              "diagram_applicability_planner",
+              "sequence_contract_schema",
+              "sequence_compiler",
+              "diagram_set_schema",
+              "diagram_set_planner",
+              "mermaid_projection",
+              "sequence_trace_compiler",
+              "deployment_model_schema",
+              "deployment_delta_schema",
+              "deployment_model",
+              "deployment_delta",
+              "observed_sequence_producer",
+              "validation_facade"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

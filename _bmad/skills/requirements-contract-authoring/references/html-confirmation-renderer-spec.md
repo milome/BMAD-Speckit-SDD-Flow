@@ -1,5 +1,15 @@
 # HTML Confirmation Renderer Spec
 
+```text
+assetKind: reference
+authority: none
+```
+
+This document is non-authoritative renderer documentation. It must not be parsed
+as the Implementation Confirmation machine schema or used to invent missing
+requirement semantics. The machine boundary is
+`requirements-contract-implementation-confirmation-codec.ts`.
+
 Use this reference when implementing or invoking `<skill-dir>/scripts/render-requirements-confirmation-html.ts`.
 
 The renderer is a generic read-only confirmation view generator. It reads an implementation source document and its inline `implementationConfirmation`; it renders HTML plus machine-readable summaries. It must not create, infer, rewrite, merge, shrink, confirm, or mutate requirements.

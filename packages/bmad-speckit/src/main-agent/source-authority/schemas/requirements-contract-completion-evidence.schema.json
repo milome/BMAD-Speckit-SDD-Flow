@@ -33,8 +33,8 @@
     "productionArgvHash", "normalizedContractPackageManifestHash", "compactTraceMatrixParityHash",
     "businessBehaviorDeltaHash", "implementationImpactMapHash", "readFacadeParityHash",
     "normalizedContractScaleReportHash", "normalizedContractActivationReceiptHash",
-    "amend05SafeWriteTargetRegistryHash", "receiptCompleteExactTargetSetHash",
-    "amend05SafeWriteReceiptManifestHash", "terminalFinalizationTargetSetDeclarationHash",
+    "safeWriteTargetRegistryHash", "receiptCompleteExactTargetSetHash",
+    "safeWriteReceiptManifestHash", "terminalFinalizationTargetSetDeclarationHash",
     "amend06Authority", "amend06SourceHash", "amend06SourceBytes", "amend06SourceLines",
     "amend06PreviousAggregateSourceAmendmentHash", "amend07Authority", "amend07SourceHash",
     "amend07SourceBytes", "amend07SourceLines", "amend07PreviousAggregateSourceAmendmentHash",
@@ -78,8 +78,8 @@
     "sourcePlanHash": { "$ref": "#/$defs/sha256" },
     "sourceAmendmentHashes": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 1,
+      "uniqueItems": true,
       "items": { "$ref": "#/$defs/sha256" }
     },
     "aggregateAmendmentHash": { "$ref": "#/$defs/sha256" },
@@ -113,14 +113,12 @@
     },
     "evidenceIndex": {
       "type": "array",
-      "minItems": 17,
-      "maxItems": 17,
+      "minItems": 1,
       "items": { "$ref": "#/$defs/evidenceRef" }
     },
     "artifactIndex": {
       "type": "array",
-      "minItems": 53,
-      "maxItems": 53,
+      "minItems": 1,
       "items": { "$ref": "#/$defs/artifactRef" }
     }
   },
