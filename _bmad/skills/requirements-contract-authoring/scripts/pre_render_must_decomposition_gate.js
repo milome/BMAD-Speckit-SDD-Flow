@@ -18,8 +18,7 @@ const {
 } = require('../../../shared/contract-execution-manifest/build-contract-execution-manifest');
 
 const SOURCE_ROW_GROUPS = [
-  { sourceKey: 'atomicImplementationTaskList', projectionKey: 'mustAtomicTasks' },
-  { sourceKey: 'mustExecutionDecompositionMatrix', projectionKey: 'mustExecutionDecompositionMatrix' },
+  { sourceKey: 'implementationTasks', projectionKey: 'mustAtomicTasks' },
   { sourceKey: 'evidence', projectionKey: 'mustEvidenceProjection' },
   { sourceKey: 'traceRows', projectionKey: 'mustTraceProjection' },
   { sourceKey: 'acceptanceTests', projectionKey: 'mustAcceptanceProjection' },
@@ -165,6 +164,10 @@ function rowId(row, fallback = '') {
 }
 
 function sourceRowsForKey(confirmation, key) {
+  if (key === 'implementationTasks' || key === 'atomicImplementationTaskList') {
+    const canonicalTasks = asArray(confirmation.implementationTasks);
+    return canonicalTasks.length ? canonicalTasks : asArray(confirmation.atomicImplementationTaskList);
+  }
   if (key === 'currentTargetMap') {
     const map = confirmation.currentTargetMap ?? {};
     return [
@@ -218,6 +221,23 @@ function isProjectionBacked(row, packetHash) {
   }
   if (row.derivedFromProjectionRef || row.derivedFromProjectionId) return true;
   return false;
+}
+
+function packetProjectionBacksSourceRow(projections, sourceKey, row, index) {
+  const rowIdentifier = rowId(row, String(index));
+  const sourceKeys =
+    sourceKey === 'implementationTasks'
+      ? ['implementationTasks', 'atomicImplementationTaskList']
+      : [sourceKey];
+  return sourceKeys.some((key) =>
+    projections.some((projection) =>
+      projectionMaterializedTargets(projection).some((target) => {
+        const parsed = parseMaterializedTarget(target);
+        if (!parsed || parsed.sourceKey !== key) return false;
+        return !parsed.id || parsed.id === rowIdentifier || String(row?.path ?? '') === parsed.id;
+      })
+    )
+  );
 }
 
 function allPacketProjectionRows(packet) {
@@ -389,6 +409,7 @@ function collectContractExecutionManifestIssues(confirmation) {
 function buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet }) {
   return hashObject({
     sourceDocumentHash,
+    semanticModelHash: packet?.semanticModelHash ?? kernel?.semanticModelHash ?? null,
     implementationConfirmationHash,
     semanticKernelHash: kernel?.kernelHash ?? null,
     packetHash: packet?.packetHash ?? null,
@@ -472,8 +493,11 @@ function buildReconciliationReport({
   }
 
   for (const group of SOURCE_ROW_GROUPS) {
-    for (const row of sourceRowsForKey(confirmation, group.sourceKey)) {
-      if (!isProjectionBacked(row, packetHash)) {
+    for (const [index, row] of sourceRowsForKey(confirmation, group.sourceKey).entries()) {
+      if (
+        !isProjectionBacked(row, packetHash) &&
+        !packetProjectionBacksSourceRow(projections, group.sourceKey, row, index)
+      ) {
         issues.push(
           issue(
             'source_row_independently_invented',

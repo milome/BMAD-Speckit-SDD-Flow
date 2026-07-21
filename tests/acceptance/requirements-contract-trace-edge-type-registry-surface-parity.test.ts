@@ -7,14 +7,14 @@ import {
   createRequirementsContractTraceEdgeTypeRegistryProjection,
   REQUIREMENTS_CONTRACT_TRACE_EDGE_TYPE_REGISTRY_OWNER_PATH,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-trace-edge-type-registry';
+import { REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry';
 
 const ROOT = process.cwd();
-const RELATIVE_PROJECTION_PATH = path.join(
-  'shared',
-  'requirements-contract',
-  'requirements-contract-trace-edge-type-registry.json'
+const PROJECTION_FILE_NAME = 'requirements-contract-trace-edge-type-registry.json';
+const SURFACE_PATHS = REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS.map((surfaceRoot) =>
+  path.resolve(ROOT, surfaceRoot, PROJECTION_FILE_NAME)
 );
-const CANONICAL_PATH = path.join(ROOT, '_bmad', RELATIVE_PROJECTION_PATH);
+const CANONICAL_PATH = SURFACE_PATHS[0]!;
 const SCHEMA_PATH = path.join(
   ROOT,
   'packages',
@@ -25,23 +25,6 @@ const SCHEMA_PATH = path.join(
   'schemas',
   'requirements-contract-trace-edge-type-registry.schema.json'
 );
-const SURFACE_PATHS = [
-  CANONICAL_PATH,
-  path.join(ROOT, '.codex', RELATIVE_PROJECTION_PATH),
-  path.join(ROOT, '.cursor', RELATIVE_PROJECTION_PATH),
-  path.join(ROOT, '.claude', RELATIVE_PROJECTION_PATH),
-  path.join(ROOT, 'packages', 'bmad-speckit', '_bmad', RELATIVE_PROJECTION_PATH),
-  path.join(
-    ROOT,
-    'packages',
-    'bmad-speckit',
-    'dist',
-    'main-agent',
-    'source-authority',
-    '_bmad',
-    RELATIVE_PROJECTION_PATH
-  ),
-];
 
 function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
@@ -74,15 +57,13 @@ describe('requirements contract trace edge-type registry surface parity', () => 
     );
   });
 
-  it('keeps root, package, host, and dist projections byte-identical', () => {
+  it('keeps canonical host and package projections byte-identical', () => {
     expect(existsSync(CANONICAL_PATH)).toBe(true);
     if (!existsSync(CANONICAL_PATH)) return;
 
     const canonicalHash = fileHash(CANONICAL_PATH);
     for (const surfacePath of SURFACE_PATHS) {
-      expect(existsSync(surfacePath), `registry surface is missing: ${surfacePath}`).toBe(
-        true
-      );
+      expect(existsSync(surfacePath), `registry surface is missing: ${surfacePath}`).toBe(true);
       if (existsSync(surfacePath)) expect(fileHash(surfacePath)).toBe(canonicalHash);
     }
   });

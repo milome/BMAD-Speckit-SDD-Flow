@@ -39,6 +39,13 @@ const REQ_TRACE_PROMPT = path.join(
   'scripts',
   'generate_prompt.py'
 );
+const GOAL_CONTRACT_PROFILE = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'goal-contract-profile.json'
+);
 const requireForRenderer = createRequire(import.meta.url);
 const {
   extractImplementationConfirmation,
@@ -405,7 +412,7 @@ implementationConfirmation:
   controlledIngestWriterRegistry:
     - writerId: requirements-confirmation-ingest
       scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
-      scriptContentHash: "sha256:fixture-confirmation-ingest"
+      scriptContentHash: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       ownerModel: requirements_contract
       allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
       allowedPaths:
@@ -419,8 +426,8 @@ implementationConfirmation:
       receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"
       beforeAfterHashRequired: true
       canModifyWriterRegistry: false
-      registryHash: "sha256:fixture-writer-registry"
-      architectureConfirmationHash: "sha256:fixture-architecture"
+      registryHash: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      architectureConfirmationHash: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
   functionalResumeFailureCaseRegistry:
     status: frozen_in_P0
     p0ExecutableSubsetRequired: true
@@ -493,6 +500,22 @@ function runPython(script: string, args: string[]) {
 
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
+}
+
+function directReqTraceEntry(): string {
+  const profile = JSON.parse(fs.readFileSync(GOAL_CONTRACT_PROFILE, 'utf8')) as {
+    entryProfiles?: Record<string, Record<string, unknown>>;
+  };
+  const matches = Object.entries(profile.entryProfiles ?? {}).filter(
+    ([, entry]) =>
+      entry.compilerRoute === 'shared_requirement_trace_compiler' &&
+      entry.dualViewPolicy === 'forbidden' &&
+      entry.sourceAuthority === 'confirmed_implementation_confirmation_and_requirement_record'
+  );
+  if (matches.length !== 1) {
+    throw new Error(`direct_req_trace_entry_resolution_failed:${matches.length}`);
+  }
+  return matches[0][0];
 }
 
 function writeValidDrilldownGateReport(source: string): string {
@@ -719,7 +742,9 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     const output = JSON.parse(result.stdout);
     expect(output.action).toBe('confirm-scope');
     expect(output.ok).toBe(true);
-    expect(output.delegatedEntry).toContain('confirm-requirements-scope.js');
+    expect(output.delegatedEntry).toContain(
+      'requirements-contract-confirmation-acceptance.js'
+    );
     const record = JSON.parse(
       fs.readFileSync(
         path.join(
@@ -744,6 +769,26 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     expect(record.controlStore.eventLogPath).toMatch(
       /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
     );
+    expect(record.controlledIngestWriterRegistryRequired).toBe(true);
+    expect(record.controlledIngestWriterRegistry).toEqual([
+      {
+        writerId: 'requirements-confirmation-ingest',
+        eventTypes: ['confirmation_recorded', 'artifact_index_recorded'],
+        writerHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      },
+    ]);
+    expect(record.controlledIngestWriterRegistryHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    const controlEventPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/events/control-events.jsonl'
+    );
+    const controlEvent = JSON.parse(fs.readFileSync(controlEventPath, 'utf8').trim());
+    expect(controlEvent).toMatchObject({
+      eventType: 'confirmation_recorded',
+      writerId: 'requirements-confirmation-ingest',
+      writerRegistryHash: record.controlledIngestWriterRegistryHash,
+      writerHash: record.controlledIngestWriterRegistry[0].writerHash,
+    });
   });
 
   it('uses the highest-level package confirm-scope entry without requiring the main-agent alias', () => {
@@ -903,7 +948,13 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
 
   it('blocks req-trace prompt before ingest and allows it after controlled confirmation ingest with control store authority', () => {
     const source = writeSource();
-    const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
+    const entry = directReqTraceEntry();
+    const blockedPrompt = runPython(REQ_TRACE_PROMPT, [
+      '--entry',
+      entry,
+      '--source-document',
+      source,
+    ]);
     expect(blockedPrompt.status).toBe(3);
     expect(blockedPrompt.stdout).toContain('BLOCK: EXECUTION_READY_AUTHORITY_MISSING');
     expect(blockedPrompt.stdout).toContain('execution_ready_authority_missing');
@@ -936,6 +987,8 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     expect(ingest.status).toBe(0);
 
     const allowedPrompt = runPython(REQ_TRACE_PROMPT, [
+      '--entry',
+      entry,
       '--source-document',
       source,
       '--requirement-record',

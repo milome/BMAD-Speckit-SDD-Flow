@@ -8,6 +8,7 @@ import {
   resolveRequirementsContractSafeWriteTargetSet,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-safe-write-target-registry';
 import { requirementsContractFinalizationSafeWriteCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-finalization-safe-writer';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const BASE = 'docs/plans/evidence/loop-engineering-remediation';
 const sha256 = (value: string) =>
@@ -45,6 +46,12 @@ function createFixture(root: string) {
     sourcePath: 'source.md',
     sourceDocumentHash: sha256('source'),
     implementationConfirmationHash: sha256('confirmation'),
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: requirementSetId,
+      sourcePath: 'source.md',
+      sourceDocumentHash: sha256('source'),
+      implementationConfirmationHash: sha256('confirmation'),
+    }),
     semanticModelHash: sha256('semantic'),
   });
   const first: Role = {

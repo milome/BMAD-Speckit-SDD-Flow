@@ -329,7 +329,11 @@ describe('Judge runtime installed parity', () => {
             run(
               process.execPath,
               [path.join(installedRoot, 'bin', 'bmad-speckit-init.js'), '--agent', agent],
-              { cwd: consumerRoot, timeout: 180_000 }
+              {
+                cwd: consumerRoot,
+                timeout: 180_000,
+                env: { INIT_CWD: consumerRoot },
+              }
             ),
             `installed ${agent} initialization failed`
           );
@@ -343,22 +347,35 @@ describe('Judge runtime installed parity', () => {
           path.join(consumerRoot, '.claude', REGISTRY_PROJECTION),
           path.join(consumerRoot, '.codex', REGISTRY_PROJECTION),
           path.join(installedRoot, '_bmad', REGISTRY_PROJECTION),
-          path.join(
-            installedRoot,
-            'dist',
-            'main-agent',
-            'source-authority',
-            '_bmad',
-            REGISTRY_PROJECTION
-          ),
         ];
+        const registrySurfaceState = Object.fromEntries(
+          registrySurfaces.map((surface) => [surface, existsSync(surface)])
+        );
         for (const surface of registrySurfaces) {
-          assert.equal(existsSync(surface), true, `registry surface missing: ${surface}`);
+          assert.equal(
+            existsSync(surface),
+            true,
+            `registry surface missing: ${surface}\n${JSON.stringify(registrySurfaceState, null, 2)}`
+          );
         }
         const canonicalRegistryHash = sha256(registrySurfaces[0]);
         for (const surface of registrySurfaces) {
           assert.equal(sha256(surface), canonicalRegistryHash);
         }
+        assert.equal(
+          existsSync(
+            path.join(
+              installedRoot,
+              'dist',
+              'main-agent',
+              'source-authority',
+              '_bmad',
+              REGISTRY_PROJECTION
+            )
+          ),
+          false,
+          'installed runtime must not contain a redundant source-authority _bmad mirror'
+        );
 
         const credentialPath = path.join(
           consumerRoot,

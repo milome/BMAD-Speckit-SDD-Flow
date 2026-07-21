@@ -1,14 +1,11 @@
 import Ajv2020, { type AnySchema } from 'ajv/dist/2020.js';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   implementationConfirmationHashFor,
   type ImplementationConfirmation,
 } from './requirements-contract-implementation-confirmation-codec';
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
-const SCHEMA_FILE = 'requirements-contract-implementation-confirmation.schema.json';
+const IMPLEMENTATION_CONFIRMATION_SCHEMA = require('../schemas/requirements-contract-implementation-confirmation.schema.json') as AnySchema;
 
 export const CONFIRMATION_PROJECTION_RECEIPT_HASH_FIELDS = [
   'sourceDocumentHash',
@@ -80,20 +77,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
-function schemaPath(): string {
-  return path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '..',
-    'schemas',
-    SCHEMA_FILE
-  );
-}
-
 function structuralDecision(value: unknown): ValidationDecision {
-  const schema = JSON.parse(readFileSync(schemaPath(), 'utf8')) as AnySchema;
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajv.addFormat('date-time', (candidate: string) => !Number.isNaN(Date.parse(candidate)));
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile(IMPLEMENTATION_CONFIRMATION_SCHEMA);
   const valid = validate(value);
   return {
     decision: valid ? 'pass' : 'block',

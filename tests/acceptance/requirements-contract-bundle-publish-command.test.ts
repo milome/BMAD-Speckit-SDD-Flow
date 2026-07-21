@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractBundlePublishCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-bundle-publish';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const MEMBERS = [
   ['semantic-ir.json', 'requirement-contract-model/v2'],
@@ -52,6 +53,12 @@ describe('requirements contract Bundle publish command', () => {
           sourcePath,
           sourceDocumentHash: `sha256:${'1'.repeat(64)}`,
           implementationConfirmationHash: `sha256:${'2'.repeat(64)}`,
+          confirmationHistory: createRecordedConfirmationHistory({
+            recordId: requirementSetId,
+            sourcePath,
+            sourceDocumentHash: `sha256:${'1'.repeat(64)}`,
+            implementationConfirmationHash: `sha256:${'2'.repeat(64)}`,
+          }),
           semanticModelHash: `sha256:${'3'.repeat(64)}`,
           recordRevision: 0,
           activeBundleRevision: null,

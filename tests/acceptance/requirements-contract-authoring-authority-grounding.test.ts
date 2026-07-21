@@ -248,6 +248,107 @@ describe('requirements contract authoring authority grounding', () => {
     }
   });
 
+  it('keeps ID-bearing FR and NFR rows as MUST candidates while projecting embedded authority', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-id-bearing-authority-');
+    try {
+      const source = writeText(
+        root,
+        'docs/requirements/id-bearing-authority.md',
+        [
+          '# ID-bearing Authority Grounding',
+          '',
+          '## Functional Requirements',
+          '',
+          '| ID | Requirement | Target path | Command |',
+          '| --- | --- | --- | --- |',
+          '| FR-001 | The profile widget MUST load the selected profile. | `src/widget/profile.ts` | npm run test:widget-profile |',
+          '',
+          '## Non Functional Requirements',
+          '',
+          '| ID | Requirement | Target path | Command |',
+          '| --- | --- | --- | --- |',
+          '| NFR-001 | The profile widget MUST refresh without blocking the live session. | `src/widget/refresh.ts` | npm run test:widget-refresh |',
+          '',
+        ].join('\n')
+      );
+
+      runAuthoring(root, source, 'REQ-ID-BEARING-AUTHORITY');
+      const paths = artifacts(
+        root,
+        'REQ-ID-BEARING-AUTHORITY',
+        'REQ-ID-BEARING-AUTHORITY-SET'
+      );
+      const coverageEntries = readJson<{ entries: Array<Record<string, unknown>> }>(
+        paths.requirementCoverageLedger
+      ).entries;
+      const candidates = readJson<{ candidates: Array<Record<string, unknown>> }>(
+        paths.controlledMustCandidates
+      ).candidates;
+      const targetAuthority = readJson<{ accepted: Array<Record<string, unknown>> }>(
+        paths.targetAuthorityReport
+      ).accepted;
+      const validationAuthority = readJson<{ accepted: Array<Record<string, unknown>> }>(
+        paths.validationAuthorityReport
+      ).accepted;
+
+      expect(
+        coverageEntries
+          .filter((entry) => /(?:FR-001|NFR-001)/u.test(JSON.stringify(entry.tableContext ?? {})))
+          .map((entry) => ({
+            decision: entry.decision,
+            requirementSignal: entry.requirementSignal,
+          }))
+      ).toEqual([
+        {
+          decision: 'mapped_to_must',
+          requirementSignal: expect.arrayContaining([
+            'source_requirement_id',
+            'target_path',
+            'validation_command',
+          ]),
+        },
+        {
+          decision: 'mapped_to_must',
+          requirementSignal: expect.arrayContaining([
+            'source_requirement_id',
+            'target_path',
+            'validation_command',
+          ]),
+        },
+      ]);
+      expect(
+        candidates.map((candidate) => ({
+          sourceRequirementId: candidate.sourceRequirementId,
+          projectedMustId: candidate.projectedMustId,
+        }))
+      ).toEqual([
+        { sourceRequirementId: 'FR-001', projectedMustId: 'MUST-FR-001' },
+        { sourceRequirementId: 'NFR-001', projectedMustId: 'MUST-NFR-001' },
+      ]);
+      expect(targetAuthority.map((record) => record.path)).toEqual([
+        'src/widget/profile.ts',
+        'src/widget/refresh.ts',
+      ]);
+      expect(
+        validationAuthority.map((record) => ({
+          command: record.command,
+          sourceMustRefs: record.sourceMustRefs,
+        }))
+      ).toEqual([
+        {
+          command: 'npm run test:widget-profile',
+          sourceMustRefs: ['MUST-FR-001'],
+        },
+        {
+          command: 'npm run test:widget-refresh',
+          sourceMustRefs: ['MUST-NFR-001'],
+        },
+      ]);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('keeps source NEG rows independent from source OUT rows', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-neg-out-authority-');
     try {

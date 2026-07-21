@@ -78,6 +78,7 @@ const CONTRACT_ACTION_IDS = [
   'requirements-contract-finalization-safe-write',
   'requirements-contract-terminal-command-supervisor',
   'requirements-contract-judge-credentials-init',
+  'requirements-contract-critical-auditor-judge-adapter',
   'requirements-contract-eval',
   'requirements-contract-candidate-package',
   'requirements-contract-changed-path-manifest',
@@ -151,12 +152,12 @@ describe('requirements contract package runtime action binding', () => {
     if (!manifest) return;
 
     const actionIds = manifest.actions.map((action) => action.actionId).sort();
-    expect(actionIds, 'manifest action universe must equal the frozen 21-action set').toEqual(
+    expect(actionIds, 'manifest action universe must equal the frozen action set').toEqual(
       FROZEN_ACTION_IDS
     );
     expect(
       registeredRuntimeActionIds(),
-      'CLI action universe must equal the frozen 21-action set'
+      'CLI action universe must equal the frozen action set'
     ).toEqual(FROZEN_ACTION_IDS);
     expect(manifest.actionUniverseHash).toBe(actionUniverseHash(FROZEN_ACTION_IDS));
     expect(new Set(actionIds).size).toBe(actionIds.length);

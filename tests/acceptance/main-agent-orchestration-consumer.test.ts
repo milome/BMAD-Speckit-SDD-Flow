@@ -49,7 +49,12 @@ import type { ImplementationEntryGate } from '../../packages/bmad-speckit/src/ma
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
-import { materializePromptPublicationFixture } from './helpers/prompt-transaction-publication-fixture';
+import {
+  materializePromptPublicationFixture,
+  setPromptPublicationReadiness,
+} from './helpers/prompt-transaction-publication-fixture';
+import { publishImplementationPromptFixture } from './helpers/prompt-transaction-implementation-publication-fixture';
+import { dispatchPlanAction } from '../../packages/bmad-speckit/src/main-agent/actions/dispatch-plan';
 
 const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'status',
@@ -125,104 +130,6 @@ function writeJsonFixture(filePath: string, value: unknown): void {
   writeTextFixture(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function writeFakeReqTraceSkill(root: string): void {
-  const scriptPath = path.join(
-    root,
-    '_bmad',
-    'skills',
-    'req-trace-matrix-prompt-generator',
-    'scripts',
-    'generate_prompt.js'
-  );
-  writeTextFixture(
-    scriptPath,
-    [
-      '#!/usr/bin/env node',
-      "const crypto = require('node:crypto');",
-      "const fs = require('node:fs');",
-      "const path = require('node:path');",
-      'function arg(name) { const index = process.argv.indexOf(name); return index === -1 ? null : process.argv[index + 1]; }',
-      "function shaFile(filePath) { return 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'); }",
-      'const compilerIdentity = { path: __filename, hash: shaFile(__filename) };',
-      "const outDir = arg('--out-dir');",
-      "const recordPath = arg('--requirement-record');",
-      "const sourcePath = arg('--source-document');",
-      "const profilePath = arg('--execution-discipline-profile-ref');",
-      "if (!outDir || !recordPath || !sourcePath || !profilePath) { console.log('BLOCK: missing compiler args'); process.exit(3); }",
-      "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
-      "const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));",
-      'fs.mkdirSync(outDir, { recursive: true });',
-      "const modelPacketPath = path.join(outDir, 'model_packet.json');",
-      "const humanPromptPath = path.join(outDir, 'human_prompt.txt');",
-      "const goalExecutionPath = path.join(outDir, 'goal_execution.md');",
-      "const auditReceiptPath = path.join(outDir, 'audit_receipt.json');",
-      "fs.writeFileSync(modelPacketPath, JSON.stringify({ entryScenario: 'main_agent_compile', entryExplicit: true, compilerIdentity, artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile }, null, 2) + '\\n', 'utf8');",
-      "fs.writeFileSync(humanPromptPath, ['Execution Discipline Profile', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, 'compiled worker body', ''].join('\\n'), 'utf8');",
-      "fs.writeFileSync(goalExecutionPath, ['# Goal Execution', `profileId: ${profile.profileId}`, `profileHash: ${profile.profileHash}`, ''].join('\\n'), 'utf8');",
-      "fs.writeFileSync(auditReceiptPath, JSON.stringify({ entryScenario: 'main_agent_compile', entryExplicit: true, compilerIdentity, decision: 'pass', goalCommand: { mode: 'native_goal_document_ref', documentHash: shaFile(goalExecutionPath) }, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } }, null, 2) + '\\n', 'utf8');",
-      'process.exit(0);',
-      '',
-    ].join('\n')
-  );
-}
-
-function materializeConfirmedSourceFixture(
-  root: string,
-  recordPath: string,
-  sourcePathRelative: string
-): Record<string, unknown> {
-  const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
-  const sourcePath = path.join(root, sourcePathRelative);
-  writeTextFixture(sourcePath, `# Fixture source for ${String(record.requirementSetId)}\n`);
-  record.sourcePath = sourcePathRelative;
-  record.artifactPath = sourcePathRelative;
-  record.confirmationHistory = [
-    {
-      eventType: 'confirmation_recorded',
-      recordId: record.recordId,
-      requirementSetId: record.requirementSetId,
-      confirmedAt: '2026-05-26T00:00:00.000Z',
-      confirmedBy: 'test-fixture',
-      sourcePath: sourcePathRelative,
-      sourceDocumentHash: record.sourceDocumentHash,
-      implementationConfirmationHash: record.implementationConfirmationHash,
-      confirmationPageHash: record.confirmationPageHash,
-      confirmationText: 'confirmed minimal requirement record fixture',
-      renderReportPath: `_bmad-output/runtime/requirement-records/${String(record.requirementSetId)}/confirmation/confirmation-render-report.json`,
-      htmlPath: `_bmad-output/runtime/requirement-records/${String(record.requirementSetId)}/confirmation/confirmation.html`,
-    },
-  ];
-  const runtimePolicySnapshotRef =
-    record.runtimePolicySnapshotRef && typeof record.runtimePolicySnapshotRef === 'object'
-      ? (record.runtimePolicySnapshotRef as Record<string, unknown>)
-      : {};
-  const runtimePolicySnapshotPath = String(runtimePolicySnapshotRef.path ?? '');
-  const runtimePolicySnapshotFullPath = runtimePolicySnapshotPath
-    ? path.join(root, runtimePolicySnapshotPath)
-    : null;
-  const runtimePolicySnapshotHash =
-    runtimePolicySnapshotFullPath && existsSync(runtimePolicySnapshotFullPath)
-      ? sha256Text(readFileSync(runtimePolicySnapshotFullPath, 'utf8'))
-      : sha256Text('runtime-policy-snapshot-fixture');
-  record.runtimePolicySnapshotRef = {
-    artifactType: 'runtime_policy_snapshot',
-    sourceOfTruthRole: 'projection',
-    path:
-      runtimePolicySnapshotPath ||
-      `_bmad-output/runtime/requirement-records/${String(record.requirementSetId)}/recovery/runtime-policy-snapshot.json`,
-    hash: runtimePolicySnapshotHash,
-    contentHash: runtimePolicySnapshotHash,
-    producer: 'tests/acceptance/main-agent-orchestration-consumer',
-    purpose: 'Materialized runtime policy snapshot for orchestration fixture',
-    relatedRequirementIds: [String(record.requirementSetId)],
-    status: 'active',
-    inputVersion: 'runtime-policy-snapshot/v1',
-    outputVersion: 'runtime-policy-snapshot/v1',
-  };
-  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
-  return record;
-}
-
 function removeTempRoot(root: string): void {
   rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 }
@@ -245,15 +152,6 @@ function attachVerifiedSixModelAuthority(
   record.sixModelResults = sixModelAuthority.sixModelResults;
   record.runtimeStatusDecisionReceipts = sixModelAuthority.runtimeStatusDecisionReceipts;
   record.artifactIndex = sixModelAuthority.artifactIndex;
-}
-
-function copyCriticalAuditorConfig(root: string): void {
-  for (const relativePath of [
-    path.join('_bmad', '_config', 'audit-item-mapping.yaml'),
-    path.join('_bmad', '_config', 'code-reviewer-config.yaml'),
-  ]) {
-    writeTextFixture(path.join(root, relativePath), readFileSync(relativePath, 'utf8'));
-  }
 }
 
 function writeConfirmedReadinessRecord(root: string): string {
@@ -742,21 +640,24 @@ describe('main-agent orchestration consumer', () => {
 
       const surface = resolveMainAgentOrchestrationSurface({
         projectRoot: root,
-        host: 'codex',
+        flow: 'standalone_tasks',
+        stage: 'specify',
       });
+      expect(surface.mainAgentStageSummary).not.toBeNull();
+      const stageSummary = surface.mainAgentStageSummary!;
 
       expect(surface.source).toBe('no_active_requirement');
       expect(surface.mainAgentReady).toBe(false);
       expect(surface.mainAgentCanContinue).toBe(false);
       expect(surface.continueDecision).toBe('blocked');
       expect(surface.mainAgentNextAction).toBe('contract_authoring_required');
-      expect(surface.mainAgentStageSummary.currentMentalModelStatus).toBe('no_active_requirement');
-      expect(surface.mainAgentStageSummary.blockingReasons).toEqual([
+      expect(stageSummary.currentMentalModelStatus).toBe('no_active_requirement');
+      expect(stageSummary.blockingReasons).toEqual([
         'no_active_requirement',
         'contract_authoring_required',
       ]);
-      expect(surface.mainAgentStageSummary.nextAction).toBe('contract_authoring_required');
-      expect(surface.mainAgentStageSummary.nextAction).not.toBe(
+      expect(stageSummary.nextAction).toBe('contract_authoring_required');
+      expect(stageSummary.nextAction).not.toBe(
         'run_implementation_readiness_gate'
       );
       expect(surface.diagnostics[0]).toMatchObject({
@@ -765,7 +666,7 @@ describe('main-agent orchestration consumer', () => {
         automaticRepairAvailable: false,
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -935,42 +836,35 @@ describe('main-agent orchestration consumer', () => {
         baselineSource: 'requirement_metadata',
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   }, 40000);
 
-  it('dispatches implementation and does not project review before execution closure pass', async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-auto-baseline-'));
+  it('dispatches implementation from published readiness authority without projecting review early', async () => {
+    const { fixture } = await publishImplementationPromptFixture();
     try {
-      writeFakeReqTraceSkill(root);
-      const recordPath = writeConfirmedReadinessRecord(root);
-      const dataPath = path.join(root, '_bmad-output', 'scoring');
-      const gateCode = mainImplementationReadinessGate([
-        '--requirement-record',
-        recordPath,
-        '--evaluated-at',
-        '2026-05-20T00:00:01.000Z',
-        '--json',
-      ]);
-      expect(gateCode).toBe(0);
+      const recordPath = fixture.paths.recordPath;
       const before = resolveMainAgentOrchestrationSurface({
-        projectRoot: root,
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
         flow: 'standalone_tasks',
         stage: 'implement',
       });
       expect(before.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
       );
-      expect(before.drift).toMatchObject({
-        effectiveVerdict: 'approved',
-        baselineSource: 'requirement_metadata',
-      });
+      expect(before.sixModelRuntimeDecision?.currentModelStatus).toBe('pass');
+      expect(before.mainAgentNextAction).toBe('dispatch_implement');
+      expect(before.mainAgentReady).toBe(true);
 
       const result = await runMainAgentAutomaticLoopAsync({
-        projectRoot: root,
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
         flow: 'standalone_tasks',
         stage: 'implement',
-        args: { dataPath },
         executor: ({ instruction }) => ({
           packetId: instruction.packetId,
           status: 'done',
@@ -982,41 +876,46 @@ describe('main-agent orchestration consumer', () => {
           ],
         }),
       });
-      expect(result.status).toBe('completed');
-      expect(result.dispatchInstruction?.nextAction).toBe('dispatch_implement');
-      expect(result.finalSurface.mainAgentNextAction).toBe('run_execution_closure_gate');
+      expect(result.status).toBe('blocked');
+      expect(
+        result.dispatchInstruction,
+        JSON.stringify(
+          {
+            steps: result.steps,
+            taskReport: result.taskReport,
+            finalNextAction: result.finalSurface.mainAgentNextAction,
+          },
+          null,
+          2
+        )
+      ).not.toBeNull();
+      expect(result.dispatchInstruction!.nextAction).toBe('dispatch_implement');
+      expect(result.taskReport?.status).toBe('blocked');
+      expect(result.taskReport?.driftFlags).toContain(
+        'required-command-receipt-validation-failed'
+      );
+      expect(result.finalSurface.mainAgentNextAction).not.toBe('dispatch_review');
       expect(result.finalSurface.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
       );
       expect(result.finalSurface.diagnostics.some((item) => item.nextCommand)).toBe(false);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.readinessBaselineMetadata).toMatchObject({
-        status: 'current',
-      });
-      expect(record).not.toHaveProperty('readinessBaselineActivation');
+      expect(record.sixModelResults.implementation_readiness.status).toBe('pass');
+      expect(record.sixModelResults.execution_closure.status).not.toBe('pass');
     } finally {
-      removeTempRoot(root);
+      fixture.cleanup();
     }
   }, 40000);
 
-  it('auto-activates readiness baseline through unified ingress high-level entry', async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-readiness-unified-baseline-'));
+  it('consumes published readiness authority through unified ingress high-level entry', async () => {
+    const { fixture } = await publishImplementationPromptFixture();
     try {
-      writeFakeReqTraceSkill(root);
-      const recordPath = writeConfirmedReadinessRecord(root);
-      const gateCode = mainImplementationReadinessGate([
-        '--requirement-record',
-        recordPath,
-        '--evaluated-at',
-        '2026-05-20T00:00:01.000Z',
-        '--json',
-      ]);
-      expect(gateCode).toBe(0);
+      const recordPath = fixture.paths.recordPath;
 
       const receipt = await runUnifiedIngressAsync({
-        projectRoot: root,
-        recordId: 'REQ-readiness-e2e',
-        requirementSetId: 'REQSET-readiness-e2e',
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
         hostKind: 'cursor',
         flow: 'standalone_tasks',
         stage: 'implement',
@@ -1024,14 +923,14 @@ describe('main-agent orchestration consumer', () => {
       });
 
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
-      expect(receipt.runLoop.status).toBe('completed');
-      expect(receipt.runLoop.finalNextAction).toBe('run_execution_closure_gate');
+      expect(receipt.runLoop.status).toBe('blocked');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('invalidated');
+      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.readinessBaselineMetadata).toMatchObject({
-        status: 'current',
-      });
+      expect(record.sixModelResults.implementation_readiness.status).toBe('pass');
+      expect(record.sixModelResults.execution_closure.status).not.toBe('pass');
     } finally {
-      removeTempRoot(root);
+      fixture.cleanup();
     }
   }, 40000);
 
@@ -1126,7 +1025,7 @@ describe('main-agent orchestration consumer', () => {
         'completed_no_dispatch'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -1243,7 +1142,7 @@ describe('main-agent orchestration consumer', () => {
       expect(policy.mainAgentNextAction).toBe('dispatch_implement');
       expect(policy.mainAgentReady).toBe(true);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -1384,7 +1283,7 @@ describe('main-agent orchestration consumer', () => {
         id: 'missing_current_hash_compiledPromptRef',
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -1512,44 +1411,16 @@ describe('main-agent orchestration consumer', () => {
         id: 'missing_current_hash_compiledPromptRef',
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
-  it('ignores unrelated completed global orchestration state for an explicit requirement-set dispatch plan', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-explicit-record-dispatch-'));
+  it('ignores unrelated completed global orchestration state for an explicit requirement-set dispatch plan', async () => {
+    const { fixture } = await publishImplementationPromptFixture();
     try {
-      const recordPath = writeMinimalRequirementRecordContext(root, {
-        flow: 'standalone_tasks',
-        stage: 'implement',
-        runId: 'req-trace-packet-compiler',
-        artifactPath: 'tests/fixtures/requirements/req-trace-packet-compiler.md',
-        implementationEntryGate: {
-          gateName: 'implementation-readiness',
-          requestedFlow: 'standalone_tasks',
-          recommendedFlow: 'standalone_tasks',
-          decision: 'pass',
-          readinessStatus: 'ready_clean',
-          blockerCodes: [],
-          blockerSummary: [],
-          rerouteRequired: false,
-          rerouteReason: null,
-          evidenceSources: {
-            readinessReportPath: null,
-            remediationArtifactPath: null,
-            executionRecordPath: null,
-            authoritativeAuditReportPath: null,
-          },
-          semanticFingerprint: 'req-trace-packet-compiler',
-          evaluatedAt: '2026-05-26T00:00:00.000Z',
-        },
-      });
-      writeFakeReqTraceSkill(root);
-      const record = materializeConfirmedSourceFixture(
-        root,
-        recordPath,
-        'tests/fixtures/requirements/req-trace-packet-compiler.md'
-      );
+      const root = fixture.root;
+      const recordPath = fixture.paths.recordPath;
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const staleSessionId = 'story-story-1-eval-system-scoring-core';
       const stalePacket: RecommendationPacket = {
         packetId: 'audit-stale-completed',
@@ -1630,43 +1501,16 @@ describe('main-agent orchestration consumer', () => {
         `${record.requirementSetId}/prompts/prompt-packets/implement-`
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      fixture.cleanup();
     }
   });
 
-  it('does not reuse blocked invalidated implementation state to dispatch review for an explicit requirement-set', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-blocked-state-recovery-'));
+  it('does not reuse blocked invalidated implementation state to dispatch review for an explicit requirement-set', async () => {
+    const { fixture } = await publishImplementationPromptFixture();
     try {
-      const recordPath = writeMinimalRequirementRecordContext(root, {
-        flow: 'standalone_tasks',
-        stage: 'implement',
-        runId: 'blocked-implementation-recovery',
-        implementationEntryGate: {
-          gateName: 'implementation-readiness',
-          requestedFlow: 'standalone_tasks',
-          recommendedFlow: 'standalone_tasks',
-          decision: 'pass',
-          readinessStatus: 'ready_clean',
-          blockerCodes: [],
-          blockerSummary: [],
-          rerouteRequired: false,
-          rerouteReason: null,
-          evidenceSources: {
-            readinessReportPath: null,
-            remediationArtifactPath: null,
-            executionRecordPath: null,
-            authoritativeAuditReportPath: null,
-          },
-          semanticFingerprint: 'blocked-implementation-recovery',
-          evaluatedAt: '2026-05-26T00:00:00.000Z',
-        },
-      });
-      writeFakeReqTraceSkill(root);
-      const record = materializeConfirmedSourceFixture(
-        root,
-        recordPath,
-        'tests/fixtures/requirements/blocked-implementation-recovery.md'
-      );
+      const root = fixture.root;
+      const recordPath = fixture.paths.recordPath;
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const packet: RecommendationPacket = {
         packetId: 'implement-blocked',
         parentSessionId: String(record.requirementSetId),
@@ -1725,7 +1569,7 @@ describe('main-agent orchestration consumer', () => {
       expect(instruction?.taskType).toBe('implement');
       expect(instruction?.packetId).toMatch(/^implement-/u);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      fixture.cleanup();
     }
   });
 
@@ -1740,6 +1584,7 @@ describe('main-agent orchestration consumer', () => {
         'loop-engineering-remediation',
         'current-dispatch-pointer-receipt.json'
       );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
       prepareAuditDispatchRuntime(fixture);
       const record = JSON.parse(readFileSync(fixture.paths.recordPath, 'utf8'));
       record.taskBindings = [
@@ -1750,7 +1595,11 @@ describe('main-agent orchestration consumer', () => {
         },
       ];
       writeJsonFixture(fixture.paths.recordPath, record);
-      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const publisherOutput: string[] = [];
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        publisherOutput.push(String(chunk));
+        return true;
+      });
       const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
         extraPacket: {
           packetId: fixture.identity.implementationAttemptId,
@@ -1760,7 +1609,7 @@ describe('main-agent orchestration consumer', () => {
         fixture.options,
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
-      expect(publishCode).toBe(0);
+      expect(publishCode, publisherOutput.join('')).toBe(0);
 
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: fixture.root,
@@ -1784,51 +1633,12 @@ describe('main-agent orchestration consumer', () => {
     }
   });
 
-  it('does not reuse ready audit packet after a blocked implement report for an explicit requirement-set', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-blocked-ready-audit-recovery-'));
+  it('does not reuse ready audit packet after a blocked implement report for an explicit requirement-set', async () => {
+    const { fixture } = await publishImplementationPromptFixture();
     try {
-      const recordPath = writeMinimalRequirementRecordContext(root, {
-        flow: 'standalone_tasks',
-        stage: 'implement',
-        runId: 'blocked-ready-audit-recovery',
-        implementationEntryGate: {
-          gateName: 'implementation-readiness',
-          requestedFlow: 'standalone_tasks',
-          recommendedFlow: 'standalone_tasks',
-          decision: 'pass',
-          readinessStatus: 'ready_clean',
-          blockerCodes: [],
-          blockerSummary: [],
-          rerouteRequired: false,
-          rerouteReason: null,
-          evidenceSources: {
-            readinessReportPath: null,
-            remediationArtifactPath: null,
-            executionRecordPath: null,
-            authoritativeAuditReportPath: null,
-          },
-          semanticFingerprint: 'blocked-ready-audit-recovery',
-          evaluatedAt: '2026-05-26T00:00:00.000Z',
-        },
-      });
-      writeFakeReqTraceSkill(root);
-      const record = materializeConfirmedSourceFixture(
-        root,
-        recordPath,
-        'tests/fixtures/requirements/blocked-ready-audit-recovery.md'
-      );
-      record.currentMentalModel = 'implementation_readiness';
-      attachVerifiedSixModelAuthority(record, {
-        implementation_readiness: {
-          status: 'pass',
-          blockingReasons: [],
-        },
-        execution_closure: {
-          status: 'not_established',
-          blockingReasons: ['execution_closure_not_established'],
-        },
-      });
-      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      const root = fixture.root;
+      const recordPath = fixture.paths.recordPath;
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
       const auditPacket: ExecutionPacket = {
         packetId: 'audit-stale-ready',
         parentSessionId: String(record.requirementSetId),
@@ -1910,7 +1720,72 @@ describe('main-agent orchestration consumer', () => {
       expect(instruction?.taskType).toBe('implement');
       expect(instruction?.packetId).toMatch(/^implement-/u);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      fixture.cleanup();
+    }
+  });
+
+  it('consumes canonical dispatch artifacts through the stable package runtime', async () => {
+    const { fixture } = await publishImplementationPromptFixture();
+    try {
+      const record = JSON.parse(readFileSync(fixture.paths.recordPath, 'utf8'));
+
+      const result = dispatchPlanAction(
+        {
+          action: 'dispatch-plan',
+          cwd: fixture.root,
+          args: {
+            recordId: fixture.authority.recordId,
+            requirementSetId: fixture.identity.requirementSetId,
+            host: 'codex',
+          },
+          rawArgv: ['dispatch-plan'],
+          rootArgv: ['--action', 'dispatch-plan'],
+          json: true,
+        },
+        {
+          active: {
+            recordId: record.recordId,
+            requirementSetId: record.requirementSetId,
+            flow: record.flow,
+            stage: record.stage,
+          },
+          activeRecord: record,
+        }
+      );
+
+      expect(result).toMatchObject({
+        status: 'dispatch_ready',
+        exitCode: 0,
+        dispatchInstruction: {
+          taskType: 'implement',
+          packetId: expect.any(String),
+          packetPath: expect.any(String),
+        },
+      });
+      const instruction = result.dispatchInstruction;
+      expect(instruction).not.toBeNull();
+      if (!instruction) {
+        throw new Error('stable package dispatch instruction missing');
+      }
+      expect(existsSync(instruction.packetPath)).toBe(true);
+      const packet = JSON.parse(readFileSync(instruction.packetPath, 'utf8')) as ExecutionPacket;
+      expect(packet.compilerBlock).toBeNull();
+      expect(packet.compiledPromptRef).toMatchObject({
+        modelPacketPath: expect.any(String),
+        humanPromptPath: expect.any(String),
+        auditReceiptPath: expect.any(String),
+        goalExecutionPath: expect.any(String),
+      });
+      expect(
+        [
+          packet.compiledPromptRef!.modelPacketPath,
+          packet.compiledPromptRef!.humanPromptPath,
+          packet.compiledPromptRef!.auditReceiptPath,
+          packet.compiledPromptRef!.goalExecutionPath,
+        ].every((artifactPath) => existsSync(String(artifactPath)))
+      ).toBe(true);
+    } finally {
+      fixture.cleanup();
     }
   });
 
@@ -2001,7 +1876,7 @@ describe('main-agent orchestration consumer', () => {
         }).pendingPacketStatus
       ).toBe('invalidated');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2066,7 +1941,7 @@ describe('main-agent orchestration consumer', () => {
         }).pendingPacketStatus
       ).toBe('dispatched');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2112,7 +1987,7 @@ describe('main-agent orchestration consumer', () => {
       expect(surface.mainAgentReady).toBe(false);
       expect(surface.latestGate?.decision).toBe('reroute');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2282,7 +2157,7 @@ describe('main-agent orchestration consumer', () => {
       ]);
       expect(dispatchExit).toBe(1);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2354,7 +2229,7 @@ describe('main-agent orchestration consumer', () => {
       expect(surface.mainAgentNextAction).toBe('await_user');
       expect(surface.mainAgentReady).toBe(false);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2429,7 +2304,7 @@ describe('main-agent orchestration consumer', () => {
       });
       expect(after.pendingPacketStatus).toBe('none');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2499,7 +2374,7 @@ describe('main-agent orchestration consumer', () => {
       expect(loop.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
       expect(loop.taskReport?.evidence).toContain('bridge-post-audit-remediation');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 
@@ -2634,7 +2509,7 @@ describe('main-agent orchestration consumer', () => {
       expect(policy.mainAgentOrchestration.drift?.driftSignals).toEqual(['smoke_task_chain']);
       expect(policy.helpRouting.mainAgentOrchestration.drift?.effectiveVerdict).toBe('blocked');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTempRoot(root);
     }
   });
 });

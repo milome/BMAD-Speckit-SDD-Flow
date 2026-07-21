@@ -1,10 +1,18 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { implementationReadinessGateAction } from '../../packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate';
 import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const ARCH_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
@@ -640,6 +648,72 @@ function aiTddRecord(
 }
 
 describe('requirement-scoped implementation readiness gate', () => {
+  it('returns the canonical readiness decision and receipt through the stable package action', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'stable-readiness-authority-'));
+    try {
+      const record = baseRecord(root);
+      const recordPath = writeRecord(root, record);
+      const evaluatedAt = new Date().toISOString();
+      const evaluatedBy = path.basename(root);
+      const rawArgv = [
+        'implementation-readiness-gate',
+        '--requirement-record',
+        recordPath,
+        '--source',
+        String(record.sourcePath),
+        '--implementation-run-kind',
+        'first-implementation',
+        '--evaluated-at',
+        evaluatedAt,
+        '--evaluated-by',
+        evaluatedBy,
+        '--json',
+      ];
+      const result = implementationReadinessGateAction({
+        action: 'implementation-readiness-gate',
+        cwd: root,
+        args: {
+          requirementRecord: recordPath,
+          source: record.sourcePath,
+          implementationRunKind: 'first-implementation',
+          evaluatedAt,
+          evaluatedBy,
+          json: 'true',
+        },
+        rawArgv,
+        rootArgv: ['--action', ...rawArgv],
+        json: true,
+      });
+
+      expect(result.result?.blockingReasons).toEqual([]);
+      expect(result.errors).toEqual([]);
+      expect(result).toMatchObject({
+        exitCode: 0,
+        status: 'implementation_readiness_pass',
+        result: {
+          ok: true,
+          decision: 'pass',
+          receiptPath: expect.any(String),
+          decisionReceiptRef: expect.any(String),
+          decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        },
+      });
+      expect(existsSync(path.resolve(result.result.receiptPath))).toBe(true);
+
+      const updated = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(updated.sixModelResults.implementation_readiness).toMatchObject({
+        status: 'pass',
+        decisionReceiptRef: result.result.decisionReceiptRef,
+        decisionReceiptHash: result.result.decisionReceiptHash,
+      });
+      expect(
+        existsSync(path.resolve(path.dirname(recordPath), result.result.decisionReceiptRef))
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('passes only from explicit confirmation history and active architecture confirmation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-pass-'));
     try {
@@ -684,6 +758,17 @@ describe('requirement-scoped implementation readiness gate', () => {
           implementationAttemptId: 'readiness-attempt-001',
           receiptHash: record.sixModelResults.implementation_readiness.decisionReceiptHash,
         },
+      });
+      const decisionReceiptPath = path.resolve(
+        path.dirname(recordPath),
+        record.sixModelResults.implementation_readiness.decisionReceiptRef
+      );
+      expect(existsSync(decisionReceiptPath)).toBe(true);
+      expect(JSON.parse(readFileSync(decisionReceiptPath, 'utf8'))).toMatchObject({
+        modelId: 'implementation_readiness',
+        implementationAttemptId:
+          record.sixModelResults.implementation_readiness.currentAttemptId,
+        receiptHash: record.sixModelResults.implementation_readiness.decisionReceiptHash,
       });
       expect(record.readinessBaselineMetadata).toMatchObject({
         status: 'current',
@@ -804,19 +889,16 @@ describe('requirement-scoped implementation readiness gate', () => {
         ...baseRecord(root),
         confirmationHistory: [],
       });
-      const code = mainImplementationReadinessGate([
-        '--requirement-record',
-        recordPath,
-        '--evaluated-at',
-        '2026-05-19T00:00:01.000Z',
-      ]);
-      expect(code).toBe(1);
-      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.gateChecks.at(-1)).toMatchObject({
-        gate: 'Implementation Readiness Gate',
-        decision: 'blocked',
-      });
-      expect(record.gateChecks.at(-1).blockingReasons).toContain('confirmation_history_missing');
+      const before = readFileSync(recordPath, 'utf8');
+      expect(() =>
+        mainImplementationReadinessGate([
+          '--requirement-record',
+          recordPath,
+          '--evaluated-at',
+          '2026-05-19T00:00:01.000Z',
+        ])
+      ).toThrow('control_store_migration_required:confirmation_lineage_missing');
+      expect(readFileSync(recordPath, 'utf8')).toBe(before);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

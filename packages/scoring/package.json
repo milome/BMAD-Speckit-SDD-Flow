@@ -76,6 +76,10 @@
     "./scores/format-table": {
       "require": "./dist/scores/format-table.js",
       "types": "./dist/scores/format-table.d.ts"
+    },
+    "./*": {
+      "require": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     }
   },
   "scripts": {

@@ -7,14 +7,14 @@ import {
   createRequirementsContractSafeWriteTargetRegistryProjection,
   REQUIREMENTS_CONTRACT_SAFE_WRITE_TARGET_REGISTRY_OWNER_PATH,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-safe-write-target-registry';
+import { REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry';
 
 const ROOT = process.cwd();
-const RELATIVE_PROJECTION_PATH = path.join(
-  'shared',
-  'requirements-contract',
-  'requirements-contract-safe-write-target-registry.json'
+const PROJECTION_FILE_NAME = 'requirements-contract-safe-write-target-registry.json';
+const SURFACE_PATHS = REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS.map((surfaceRoot) =>
+  path.resolve(ROOT, surfaceRoot, PROJECTION_FILE_NAME)
 );
-const CANONICAL_PATH = path.join(ROOT, '_bmad', RELATIVE_PROJECTION_PATH);
+const CANONICAL_PATH = SURFACE_PATHS[0]!;
 const SCHEMA_PATH = path.join(
   ROOT,
   'packages',
@@ -25,23 +25,6 @@ const SCHEMA_PATH = path.join(
   'schemas',
   'requirements-contract-safe-write-target-registry.schema.json'
 );
-const SURFACE_PATHS = [
-  CANONICAL_PATH,
-  path.join(ROOT, '.codex', RELATIVE_PROJECTION_PATH),
-  path.join(ROOT, '.cursor', RELATIVE_PROJECTION_PATH),
-  path.join(ROOT, '.claude', RELATIVE_PROJECTION_PATH),
-  path.join(ROOT, 'packages', 'bmad-speckit', '_bmad', RELATIVE_PROJECTION_PATH),
-  path.join(
-    ROOT,
-    'packages',
-    'bmad-speckit',
-    'dist',
-    'main-agent',
-    'source-authority',
-    '_bmad',
-    RELATIVE_PROJECTION_PATH
-  ),
-];
 
 function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
@@ -50,16 +33,9 @@ function fileHash(filePath: string): string {
 describe('requirements contract safe-write target registry surface parity', () => {
   it('exports one source owner and deterministic projection factory', () => {
     expect(REQUIREMENTS_CONTRACT_SAFE_WRITE_TARGET_REGISTRY_OWNER_PATH).toBeDefined();
-    expect(createRequirementsContractSafeWriteTargetRegistryProjection).toBeTypeOf(
-      'function'
-    );
+    expect(createRequirementsContractSafeWriteTargetRegistryProjection).toBeTypeOf('function');
     expect(
-      existsSync(
-        path.resolve(
-          ROOT,
-          REQUIREMENTS_CONTRACT_SAFE_WRITE_TARGET_REGISTRY_OWNER_PATH
-        )
-      )
+      existsSync(path.resolve(ROOT, REQUIREMENTS_CONTRACT_SAFE_WRITE_TARGET_REGISTRY_OWNER_PATH))
     ).toBe(true);
   });
 
@@ -69,10 +45,7 @@ describe('requirements contract safe-write target registry surface parity', () =
     if (!existsSync(CANONICAL_PATH) || !existsSync(SCHEMA_PATH)) return;
 
     const ownerHash = fileHash(
-      path.resolve(
-        ROOT,
-        REQUIREMENTS_CONTRACT_SAFE_WRITE_TARGET_REGISTRY_OWNER_PATH
-      )
+      path.resolve(ROOT, REQUIREMENTS_CONTRACT_SAFE_WRITE_TARGET_REGISTRY_OWNER_PATH)
     );
     const projection = JSON.parse(readFileSync(CANONICAL_PATH, 'utf8'));
     const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8'));
@@ -85,15 +58,13 @@ describe('requirements contract safe-write target registry surface parity', () =
     );
   });
 
-  it('keeps root, package, host, and dist projections byte-identical', () => {
+  it('keeps canonical host and package projections byte-identical', () => {
     expect(existsSync(CANONICAL_PATH)).toBe(true);
     if (!existsSync(CANONICAL_PATH)) return;
 
     const canonicalHash = fileHash(CANONICAL_PATH);
     for (const surfacePath of SURFACE_PATHS) {
-      expect(existsSync(surfacePath), `registry surface is missing: ${surfacePath}`).toBe(
-        true
-      );
+      expect(existsSync(surfacePath), `registry surface is missing: ${surfacePath}`).toBe(true);
       if (existsSync(surfacePath)) expect(fileHash(surfacePath)).toBe(canonicalHash);
     }
   });

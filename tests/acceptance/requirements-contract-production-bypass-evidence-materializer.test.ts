@@ -72,22 +72,6 @@ function readJson(target: string): Record<string, any> {
   return JSON.parse(readFileSync(target, 'utf8')) as Record<string, any>;
 }
 
-function identityBinding(fixture: {
-  transactionId: string;
-  implementationAttemptId: string;
-  contractHash: string;
-  sourceHash: string;
-  semanticModelHash: string;
-}) {
-  return {
-    transactionId: fixture.transactionId,
-    implementationAttemptId: fixture.implementationAttemptId,
-    contractHash: fixture.contractHash,
-    sourceHash: fixture.sourceHash,
-    semanticModelHash: fixture.semanticModelHash,
-  };
-}
-
 function writeProductionEvidence(
   root = mkdtempSync(path.join(tmpdir(), 'production-materializer-'))
 ) {

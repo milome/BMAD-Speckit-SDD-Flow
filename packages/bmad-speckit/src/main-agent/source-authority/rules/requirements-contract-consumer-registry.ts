@@ -116,6 +116,241 @@ interface ConsumerDefinition {
   legacyReadEligibility?: 'not_applicable' | 'registered_inventory_only';
 }
 
+const SIX_MODEL_DISCOVERY_ROOTS = [
+  'scripts',
+  'src',
+  'bin',
+  '_bmad/shared',
+  'packages',
+  'packages/bmad-speckit/src',
+  'packages/bmad-speckit/dist',
+  '_bmad/skills',
+  '.codex/skills',
+  '.cursor/skills',
+  '.claude/skills',
+  '.cursor/hooks',
+  '.claude/hooks',
+  'packages/runtime-emit/dist',
+] as const;
+
+const SIX_MODEL_SOURCE_PATTERN =
+  /\bsixModelResults\b|\bresolveVerifiedSixModel(?:Status|Panorama)\b|\bcreateRuntimeStatusProjectionUpdate\b|\bruntimeStatusProjectionArtifactWrites\b/u;
+const DIRECT_SIX_MODEL_PROJECTION_ACCESS_PATTERN =
+  /(?:\?\.|\.)\s*sixModelResults\b|\[\s*['"]sixModelResults['"]\s*\]/u;
+const VERIFIED_SIX_MODEL_FACADE_PATTERN = /\bresolveVerifiedSixModel(?:Status|Panorama)\b/u;
+
+export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_ROLES = [
+  'verified_status_reader',
+  'status_facade',
+  'authority_core',
+  'projection_reader',
+  'projection_writer',
+  'projection_reducer',
+  'runtime_bridge',
+  'panorama_renderer',
+  'field_guard',
+  'verification_harness',
+  'generated_runtime_bundle',
+] as const;
+
+export type SixModelConsumerRole = (typeof REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_ROLES)[number];
+
+export const REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES = [
+  'verified_status_reader',
+  'status_facade',
+  'projection_reader',
+  'projection_reducer',
+  'runtime_bridge',
+  'panorama_renderer',
+  'field_guard',
+  'verification_harness',
+  'generated_runtime_bundle',
+] as const satisfies readonly SixModelConsumerRole[];
+
+export const REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES = [
+  'projection_writer',
+  'projection_reducer',
+  'runtime_bridge',
+  'generated_runtime_bundle',
+] as const satisfies readonly SixModelConsumerRole[];
+
+interface SixModelConsumerDefinition {
+  consumerId: string;
+  canonicalPath: string;
+  roles: readonly SixModelConsumerRole[];
+  verifiedFacadeRequired?: boolean;
+}
+
+export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixModelConsumerDefinition[] =
+  [
+    {
+      consumerId: 'six-model-prompt-generator',
+      canonicalPath: '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
+      roles: ['verified_status_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-confirmation-event-ingest',
+      canonicalPath:
+        '_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js',
+      roles: ['projection_reader', 'projection_writer'],
+    },
+    {
+      consumerId: 'six-model-generated-runtime-bundle',
+      canonicalPath: 'generated-host-runtime-bundle',
+      roles: ['generated_runtime_bundle'],
+    },
+    {
+      consumerId: 'six-model-main-runtime-guard',
+      canonicalPath: 'packages/bmad-speckit/src/main-agent/runtime/supervised-worker-runtime.ts',
+      roles: ['field_guard'],
+    },
+    {
+      consumerId: 'six-model-dispatch-plan',
+      canonicalPath: 'packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts',
+      roles: ['verified_status_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-runtime-policy-bridge',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy.ts',
+      roles: ['projection_writer', 'runtime_bridge'],
+    },
+    {
+      consumerId: 'six-model-architecture-ingest',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation.ts',
+      roles: ['verified_status_reader', 'projection_reader', 'projection_writer'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-confirmation-initializer',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/initialize-six-model-requirement-confirmation.ts',
+      roles: ['projection_reader', 'projection_writer'],
+    },
+    {
+      consumerId: 'six-model-audit-review',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate.ts',
+      roles: ['verified_status_reader', 'projection_writer'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-delivery-closeout',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts',
+      roles: ['verified_status_reader', 'projection_writer'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-execution-closure',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate.ts',
+      roles: ['projection_writer'],
+    },
+    {
+      consumerId: 'six-model-implementation-readiness',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
+      roles: ['projection_writer'],
+    },
+    {
+      consumerId: 'six-model-main-orchestration',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+      roles: ['verified_status_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-control-store',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts',
+      roles: ['projection_reader', 'projection_writer', 'projection_reducer'],
+    },
+    {
+      consumerId: 'six-model-confirmation-acceptance',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-acceptance.ts',
+      roles: ['projection_writer'],
+    },
+    {
+      consumerId: 'six-model-runtime-status-authority-core',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.cjs',
+      roles: ['authority_core'],
+    },
+    {
+      consumerId: 'six-model-runtime-status-authority-declaration',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.d.cts',
+      roles: ['status_facade'],
+    },
+    {
+      consumerId: 'six-model-runtime-status-projection-reducer',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt.ts',
+      roles: ['projection_reader', 'projection_writer', 'projection_reducer'],
+    },
+    {
+      consumerId: 'six-model-prompt-transaction-authority',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-authority.ts',
+      roles: ['verified_status_reader', 'projection_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-projection-parity-case-runner',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-case-runner.ts',
+      roles: ['verification_harness'],
+    },
+    {
+      consumerId: 'six-model-required-command-resolution',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      roles: ['verified_status_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-runtime-decision',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision.ts',
+      roles: ['verified_status_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-source-authority-runtime-guard',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/supervised-worker-runtime.ts',
+      roles: ['field_guard'],
+    },
+    {
+      consumerId: 'six-model-target-artifact-guard',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts',
+      roles: ['field_guard'],
+    },
+    {
+      consumerId: 'six-model-verified-status-facade',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/verified-six-model-status-facade.ts',
+      roles: ['status_facade'],
+    },
+    {
+      consumerId: 'six-model-ai-tdd-runtime-decision',
+      canonicalPath: 'packages/bmad-speckit/src/runtime/ai-tdd/runtime-decision.ts',
+      roles: ['verified_status_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-bmads-renderer',
+      canonicalPath: 'packages/bmad-speckit/src/runtime/bmads-renderer.ts',
+      roles: ['panorama_renderer'],
+    },
+  ] as const;
+
 const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
   {
     consumerId: 'canonical-markdown-parser',
@@ -233,6 +468,13 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
     path: '_bmad/skills/requirements-contract-authoring/scripts/generate-architecture-confirmation-artifact.ts',
     inputRole: 'canonical_architecture_interaction',
     supportedModes: ['confirmation-ready'],
+  },
+  {
+    consumerId: 'critical-auditor-judge-adapter',
+    fileName: 'requirements-contract-critical-auditor-judge-adapter.ts',
+    inputRole: 'critical_auditor_round_request',
+    supportedModes: ['confirmation-ready', 'execution', 'closeout'],
+    validatorRef: 'requirements-contract-critical-auditor-external-adapter-result.schema.json',
   },
   {
     consumerId: 'requirements-contract-reverse-audit',
@@ -424,6 +666,233 @@ function filesBelow(root: string): string[] {
     } else result.push(candidate);
   }
   return result;
+}
+
+function sourceCanonicalPath(root: string, candidate: string): string {
+  if (candidate.endsWith('.cjs') || candidate.endsWith('.mjs') || candidate.endsWith('.d.cts')) {
+    return candidate;
+  }
+  const typescriptCandidate = candidate.replace(/\.js$/u, '.ts');
+  return existsSync(path.resolve(root, typescriptCandidate)) ? typescriptCandidate : candidate;
+}
+
+function canonicalSixModelConsumerPath(root: string, relativePath: string): string {
+  const normalizedPath = normalize(relativePath);
+  if (
+    /^(?:\.cursor|\.claude)\/hooks\/.+\.cjs$/u.test(normalizedPath) ||
+    /^packages\/runtime-emit\/dist\/.+\.cjs$/u.test(normalizedPath) ||
+    /^packages\/bmad-speckit\/dist\/main-agent\/source-authority\/packages\/runtime-emit\/dist\/.+\.cjs$/u.test(
+      normalizedPath
+    )
+  ) {
+    return 'generated-host-runtime-bundle';
+  }
+
+  const mappings: readonly [string, (remainder: string) => string][] = [
+    ['packages/bmad-speckit/_bmad/skills/', (remainder) => `_bmad/skills/${remainder}`],
+    [
+      'packages/bmad-speckit/dist/main-agent/source-authority/scripts/',
+      (remainder) =>
+        sourceCanonicalPath(
+          root,
+          `packages/bmad-speckit/src/main-agent/source-authority/scripts/${remainder}`
+        ),
+    ],
+    [
+      'packages/bmad-speckit/dist/main-agent/source-authority/',
+      (remainder) =>
+        sourceCanonicalPath(
+          root,
+          `packages/bmad-speckit/src/main-agent/source-authority/${remainder}`
+        ),
+    ],
+    [
+      'packages/bmad-speckit/dist/main-agent/actions/',
+      (remainder) =>
+        sourceCanonicalPath(root, `packages/bmad-speckit/src/main-agent/actions/${remainder}`),
+    ],
+    [
+      'packages/bmad-speckit/dist/main-agent/runtime/',
+      (remainder) =>
+        sourceCanonicalPath(root, `packages/bmad-speckit/src/main-agent/runtime/${remainder}`),
+    ],
+    [
+      'packages/bmad-speckit/dist/runtime/',
+      (remainder) => sourceCanonicalPath(root, `packages/bmad-speckit/src/runtime/${remainder}`),
+    ],
+    ['.codex/skills/', (remainder) => `_bmad/skills/${remainder}`],
+    ['.cursor/skills/', (remainder) => `_bmad/skills/${remainder}`],
+    ['.claude/skills/', (remainder) => `_bmad/skills/${remainder}`],
+  ];
+  for (const [prefix, map] of mappings) {
+    if (normalizedPath.startsWith(prefix)) {
+      return normalize(map(normalizedPath.slice(prefix.length)));
+    }
+  }
+  return normalize(sourceCanonicalPath(root, normalizedPath));
+}
+
+function sixModelSurface(relativePath: string): string {
+  if (relativePath.startsWith('packages/bmad-speckit/src/')) return 'source';
+  if (relativePath.startsWith('packages/bmad-speckit/dist/')) return 'package-dist';
+  if (relativePath.startsWith('.codex/')) return 'codex';
+  if (relativePath.startsWith('.cursor/')) return 'cursor';
+  if (relativePath.startsWith('.claude/')) return 'claude';
+  if (relativePath.startsWith('_bmad/skills/')) return 'source-skill';
+  if (relativePath.startsWith('packages/runtime-emit/dist/')) return 'host-runtime-dist';
+  return 'repository';
+}
+
+export interface RequirementsContractSixModelConsumerInventoryEntry {
+  path: string;
+  canonicalPath: string;
+  consumerId: string;
+  roles: SixModelConsumerRole[];
+  surface: string;
+  pathHash: string;
+  verifiedFacadePresent: boolean;
+  directProjectionAccess: boolean;
+}
+
+export interface RequirementsContractSixModelConsumerInventory {
+  schemaVersion: 'requirements-contract-six-model-consumer-inventory/v1';
+  discoveryRoots: string[];
+  discoveredPaths: string[];
+  registeredPaths: string[];
+  missingConsumerPaths: string[];
+  directAuthorityReadPaths: string[];
+  unregisteredConsumerCount: number;
+  directAuthorityReadCount: number;
+  entries: RequirementsContractSixModelConsumerInventoryEntry[];
+}
+
+export class RequirementsContractSixModelScopeAmendmentError extends Error {
+  readonly code = 'scope_amendment_required';
+  readonly discoveredConsumerPaths: string[];
+  readonly missingConsumerPaths: string[];
+  readonly directAuthorityReadPaths: string[];
+  readonly unregisteredConsumerCount: number;
+  readonly directAuthorityReadCount: number;
+
+  constructor(input: {
+    discoveredConsumerPaths: string[];
+    missingConsumerPaths: string[];
+    directAuthorityReadPaths: string[];
+  }) {
+    const blockers = [
+      ...input.missingConsumerPaths.map((entry) => `unregistered:${entry}`),
+      ...input.directAuthorityReadPaths.map((entry) => `direct_authority_read:${entry}`),
+    ];
+    super(`scope_amendment_required:${blockers.join(',')}`);
+    this.name = 'RequirementsContractSixModelScopeAmendmentError';
+    this.discoveredConsumerPaths = [...input.discoveredConsumerPaths];
+    this.missingConsumerPaths = [...input.missingConsumerPaths];
+    this.directAuthorityReadPaths = [...input.directAuthorityReadPaths];
+    this.unregisteredConsumerCount = input.missingConsumerPaths.length;
+    this.directAuthorityReadCount = input.directAuthorityReadPaths.length;
+  }
+}
+
+export function createRequirementsContractSixModelConsumerInventory(
+  root = process.cwd()
+): RequirementsContractSixModelConsumerInventory {
+  const definitions = new Map(
+    REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS.map((definition) => [
+      definition.canonicalPath,
+      definition,
+    ])
+  );
+  const discovered = new Map<
+    string,
+    {
+      path: string;
+      source: string;
+      canonicalPath: string;
+      definition: SixModelConsumerDefinition | undefined;
+    }
+  >();
+
+  for (const discoveryRoot of SIX_MODEL_DISCOVERY_ROOTS) {
+    for (const filePath of filesBelow(path.resolve(root, discoveryRoot))) {
+      const relativePath = normalize(path.relative(root, filePath));
+      if (
+        relativePath === REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH ||
+        /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(relativePath) ||
+        !/\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$/u.test(relativePath)
+      ) {
+        continue;
+      }
+      const source = readFileSync(filePath, 'utf8');
+      if (!SIX_MODEL_SOURCE_PATTERN.test(source)) continue;
+      const canonicalPath = canonicalSixModelConsumerPath(root, relativePath);
+      if (canonicalPath === REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH) {
+        continue;
+      }
+      discovered.set(relativePath, {
+        path: relativePath,
+        source,
+        canonicalPath,
+        definition: definitions.get(canonicalPath),
+      });
+    }
+  }
+
+  const discoveredPaths = [...discovered.keys()].sort();
+  const missingConsumerPaths = [...discovered.values()]
+    .filter((entry) => !entry.definition)
+    .map((entry) => entry.path)
+    .sort();
+  const directAuthorityReadPaths = [...discovered.values()]
+    .filter((entry) => {
+      if (!entry.definition?.verifiedFacadeRequired) return false;
+      const verifiedFacadePresent = VERIFIED_SIX_MODEL_FACADE_PATTERN.test(entry.source);
+      const directProjectionAccess = DIRECT_SIX_MODEL_PROJECTION_ACCESS_PATTERN.test(entry.source);
+      const roles = entry.definition.roles;
+      const projectionAccessAllowed =
+        roles.includes('projection_reader') ||
+        roles.includes('projection_writer') ||
+        roles.includes('projection_reducer') ||
+        roles.includes('authority_core') ||
+        roles.includes('verification_harness');
+      return !verifiedFacadePresent || (directProjectionAccess && !projectionAccessAllowed);
+    })
+    .map((entry) => entry.path)
+    .sort();
+  if (missingConsumerPaths.length > 0 || directAuthorityReadPaths.length > 0) {
+    throw new RequirementsContractSixModelScopeAmendmentError({
+      discoveredConsumerPaths: discoveredPaths,
+      missingConsumerPaths,
+      directAuthorityReadPaths,
+    });
+  }
+
+  const entries = discoveredPaths.map(
+    (discoveredPath): RequirementsContractSixModelConsumerInventoryEntry => {
+      const entry = discovered.get(discoveredPath)!;
+      const definition = entry.definition!;
+      return {
+        path: entry.path,
+        canonicalPath: entry.canonicalPath,
+        consumerId: definition.consumerId,
+        roles: [...definition.roles],
+        surface: sixModelSurface(entry.path),
+        pathHash: fileHash(root, entry.path),
+        verifiedFacadePresent: VERIFIED_SIX_MODEL_FACADE_PATTERN.test(entry.source),
+        directProjectionAccess: DIRECT_SIX_MODEL_PROJECTION_ACCESS_PATTERN.test(entry.source),
+      };
+    }
+  );
+  return {
+    schemaVersion: 'requirements-contract-six-model-consumer-inventory/v1',
+    discoveryRoots: [...SIX_MODEL_DISCOVERY_ROOTS],
+    discoveredPaths,
+    registeredPaths: entries.map((entry) => entry.path),
+    missingConsumerPaths: [],
+    directAuthorityReadPaths: [],
+    unregisteredConsumerCount: 0,
+    directAuthorityReadCount: 0,
+    entries,
+  };
 }
 
 function isSemanticReaderSource(source: string): boolean {

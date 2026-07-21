@@ -103,6 +103,32 @@ function persistValidatedArtifact<T>(
   return readback as T;
 }
 
+function reusableCapturedAuthorityArtifact<T extends object>(
+  filePath: string,
+  candidate: T,
+  validate: (value: unknown) => boolean
+): T | null {
+  let existing: unknown;
+  try {
+    existing = readJson(filePath);
+  } catch {
+    return null;
+  }
+  if (!validate(existing) || !existing || typeof existing !== 'object' || Array.isArray(existing)) {
+    return null;
+  }
+  const withoutCaptureIdentity = (value: object): Record<string, unknown> => {
+    const { capturedAt: _capturedAt, receiptHash: _receiptHash, ...identity } =
+      value as Record<string, unknown>;
+    return identity;
+  };
+  const existingRecord = existing as object;
+  return sha256Stable(withoutCaptureIdentity(existingRecord)) ===
+    sha256Stable(withoutCaptureIdentity(candidate))
+    ? (existing as T)
+    : null;
+}
+
 export function readCanonicalUtf8Source(sourcePath: string): CanonicalUtf8SourceSnapshot {
   const resolved = realpathSync.native(path.resolve(sourcePath));
   if (!statSync(resolved).isFile()) throw new Error('Session entry source must be a regular file');
@@ -237,12 +263,18 @@ export function materializeFileEntryIntake(input: {
     sourceContent: input.source.sourceText,
     capturedAt: nonEmpty(input.capturedAt, 'capturedAt'),
   });
-  const intakeReceipt = persistValidatedArtifact(
-    input.intakeReceiptPath,
-    receipt,
-    validateRequirementsContractFileIntakeReceipt,
-    sha256Stable(receipt)
-  );
+  const intakeReceipt =
+    reusableCapturedAuthorityArtifact(
+      input.intakeReceiptPath,
+      receipt,
+      validateRequirementsContractFileIntakeReceipt
+    ) ??
+    persistValidatedArtifact(
+      input.intakeReceiptPath,
+      receipt,
+      validateRequirementsContractFileIntakeReceipt,
+      sha256Stable(receipt)
+    );
   return {
     source: input.source,
     intakeReceiptPath: normalizedRelativePath(input.projectRoot, input.intakeReceiptPath),
@@ -270,12 +302,18 @@ export function materializeInvocationEntryAuthority(input: {
     requiredCommands: input.requiredCommands,
     capturedAt: input.capturedAt,
   });
-  const persisted = persistValidatedArtifact(
-    input.receiptPath,
-    receipt,
-    validateRequirementsContractInvocationAuthorityReceipt,
-    sha256Stable(receipt)
-  );
+  const persisted =
+    reusableCapturedAuthorityArtifact(
+      input.receiptPath,
+      receipt,
+      validateRequirementsContractInvocationAuthorityReceipt
+    ) ??
+    persistValidatedArtifact(
+      input.receiptPath,
+      receipt,
+      validateRequirementsContractInvocationAuthorityReceipt,
+      sha256Stable(receipt)
+    );
   return {
     source: readCanonicalUtf8Source(input.receiptPath),
     receiptPath: normalizedRelativePath(input.projectRoot, input.receiptPath),

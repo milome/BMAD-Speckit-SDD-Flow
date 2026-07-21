@@ -1191,6 +1191,31 @@ program
   );
 
 program
+  .command('requirements-contract-critical-auditor-judge-adapter')
+  .description('Run one Critical Auditor round through the configured independent Judge')
+  .requiredOption('--project-root <path>', 'Project root containing Judge configuration')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--request <path>', 'Critical Auditor round request')
+  .requiredOption('--round <number>', 'Critical Auditor round number')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-critical-auditor-judge-adapter',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js',
+        'requirementsContractCriticalAuditorJudgeAdapterCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        config: opts.config,
+        request: opts.request,
+        round: Number(opts.round),
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
   .command('requirements-contract-judge-credentials-init')
   .description('Initialize the configured placeholder Judge credential')
   .requiredOption('--config <path>', 'Public Judge runtime configuration')

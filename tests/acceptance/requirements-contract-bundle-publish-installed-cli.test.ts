@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { expect, it } from 'vitest';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const PACKAGE_ROOT = path.resolve('packages/bmad-speckit');
 const NPM_CLI =
@@ -102,6 +103,12 @@ it(
         sourcePath,
         sourceDocumentHash: `sha256:${'1'.repeat(64)}`,
         implementationConfirmationHash: `sha256:${'2'.repeat(64)}`,
+        confirmationHistory: createRecordedConfirmationHistory({
+          recordId: requirementSetId,
+          sourcePath,
+          sourceDocumentHash: `sha256:${'1'.repeat(64)}`,
+          implementationConfirmationHash: `sha256:${'2'.repeat(64)}`,
+        }),
         semanticModelHash: `sha256:${'3'.repeat(64)}`,
         recordRevision: 0,
         activeBundleRevision: null,

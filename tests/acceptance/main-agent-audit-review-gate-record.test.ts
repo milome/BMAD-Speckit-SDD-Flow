@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -11,7 +11,9 @@ import { mainAuditReviewGate } from '../../packages/bmad-speckit/src/main-agent/
 import {
   createRuntimeStatusProjectionUpdate,
   runtimeStatusProjectionRecordPatch,
+  validateRuntimeStatusDecisionReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
+import { sha256Text } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,
@@ -29,6 +31,10 @@ function establishExecutionClosureAuthority(
   compiled: ReturnType<typeof writeCompiledImplementPacket>
 ): void {
   const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8')) as Record<string, unknown>;
+  const sixModelResults = record.sixModelResults as Record<
+    string,
+    Record<string, unknown>
+  >;
   const update = createRuntimeStatusProjectionUpdate({
     recordId: fixture.recordId,
     requirementSetId: fixture.requirementSetId,
@@ -68,7 +74,7 @@ function establishExecutionClosureAuthority(
       'execution-closure.json'
     ),
     projection: {
-      ...(record.sixModelResults as Record<string, unknown>).execution_closure,
+      ...sixModelResults.execution_closure,
       status: 'pass',
     },
   });
@@ -187,16 +193,202 @@ describe('main agent audit review gate', () => {
         fromModel: 'execution_closure',
         toModel: 'audit_review',
       });
+      const reportPath = path.join(
+        path.dirname(fixture.recordPath),
+        'audit-triad',
+        fixture.runId,
+        'audit-review-report.json'
+      );
+      const receiptRef = record.runtimeStatusDecisionReceipts.find(
+        (entry: { receipt?: { modelId?: string } }) =>
+          entry.receipt?.modelId === 'audit_review'
+      );
+      expect(receiptRef).toBeTruthy();
+      const runtimeReceiptPath = path.resolve(
+        path.dirname(fixture.recordPath),
+        receiptRef.path
+      );
+      expect(existsSync(reportPath)).toBe(true);
+      expect(existsSync(runtimeReceiptPath)).toBe(true);
+      const runtimeReceipt = JSON.parse(readFileSync(runtimeReceiptPath, 'utf8'));
+      expect(validateRuntimeStatusDecisionReceipt(runtimeReceipt)).toBe(true);
+      expect(runtimeReceipt).toMatchObject({
+        modelId: 'audit_review',
+        implementationAttemptId: fixture.runId,
+        stageInputs: [
+          {
+            role: 'audit_triad_execution_plan',
+            path: planPath.replace(/\\/gu, '/'),
+            hash: sha256Text(readFileSync(planPath, 'utf8')),
+          },
+        ],
+        deterministicGateOutputs: [
+          {
+            role: 'audit_review_report',
+            path: reportPath.replace(/\\/gu, '/'),
+            hash: sha256Text(readFileSync(reportPath, 'utf8')),
+          },
+        ],
+      });
+      expect(record.artifactIndex).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            artifactType: 'runtime_status_decision_receipt',
+            path: receiptRef.path,
+            contentHash: runtimeReceipt.receiptHash,
+          }),
+          expect.objectContaining({
+            artifactType: 'runtime_status_stage_input',
+            path: planPath.replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(planPath, 'utf8')),
+          }),
+          expect.objectContaining({
+            artifactType: 'runtime_status_deterministic_gate_output',
+            path: reportPath.replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(reportPath, 'utf8')),
+          }),
+        ])
+      );
       const runtimeDecision = resolveSixModelRuntimeDecision({
         record,
         attemptId: fixture.runId,
       });
       expect(
-        runtimeDecision.blockingReasons,
+        runtimeDecision.blockingReasonRefs,
         JSON.stringify(runtimeDecision, null, 2)
       ).toEqual([]);
       expect(runtimeDecision.currentModelStatus).toBe('pass');
       expect(runtimeDecision.nextAction).toBe('run_closeout');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('fails closed when the audit report path aliases the execution plan input', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const plan = createAuditTriadExecutionPlan({
+        projectRoot: fixture.root,
+        recordId: fixture.recordId,
+        stage: 'implement',
+        callPoint: 'audit_review',
+        attemptId: fixture.runId,
+        sourceDocumentHash: fixture.sourceDocumentHash,
+        implementationConfirmationHash: fixture.implementationConfirmationHash,
+        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+      });
+      const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
+      const roundsPath = path.join(
+        path.dirname(planPath),
+        'rounds.json'
+      );
+      writeJson(roundsPath, [
+        cleanRound(plan, 'r1'),
+        cleanRound(plan, 'r2'),
+        cleanRound(plan, 'r3'),
+      ]);
+      const recordBefore = readFileSync(fixture.recordPath, 'utf8');
+      const planBefore = readFileSync(planPath, 'utf8');
+
+      expect(() =>
+        mainAuditReviewGate([
+          '--requirement-record',
+          fixture.recordPath,
+          '--attempt-id',
+          fixture.runId,
+          '--plan',
+          planPath,
+          '--rounds',
+          roundsPath,
+          '--report-path',
+          planPath,
+          '--evaluated-at',
+          '2026-05-30T12:00:00.000Z',
+        ])
+      ).toThrow('audit_review_artifact_path_conflict');
+
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(recordBefore);
+      expect(readFileSync(planPath, 'utf8')).toBe(planBefore);
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('fails closed when the execution plan changes before the control commit', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const plan = createAuditTriadExecutionPlan({
+        projectRoot: fixture.root,
+        recordId: fixture.recordId,
+        stage: 'implement',
+        callPoint: 'audit_review',
+        attemptId: fixture.runId,
+        sourceDocumentHash: fixture.sourceDocumentHash,
+        implementationConfirmationHash: fixture.implementationConfirmationHash,
+        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+      });
+      const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
+      const roundsPath = path.join(path.dirname(planPath), 'rounds.json');
+      const reportPath = path.join(path.dirname(planPath), 'audit-review-report.json');
+      writeJson(roundsPath, [
+        cleanRound(plan, 'r1'),
+        cleanRound(plan, 'r2'),
+        cleanRound(plan, 'r3'),
+      ]);
+      const recordBefore = readFileSync(fixture.recordPath, 'utf8');
+
+      expect(() =>
+        mainAuditReviewGate(
+          [
+            '--requirement-record',
+            fixture.recordPath,
+            '--attempt-id',
+            fixture.runId,
+            '--plan',
+            planPath,
+            '--rounds',
+            roundsPath,
+            '--report-path',
+            reportPath,
+            '--evaluated-at',
+            '2026-05-30T12:00:00.000Z',
+          ],
+          {
+            beforeControlCommit: () =>
+              writeJson(planPath, {
+                ...plan,
+                currentEvidenceHash: `sha256:${'9'.repeat(64)}`,
+              }),
+          }
+        )
+      ).toThrow('audit_review_input_changed:plan');
+
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(recordBefore);
+      expect(existsSync(reportPath)).toBe(false);
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
 import { createRequirementsContractNormalizedTraceGraph } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-trace-graph';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 function sha256(value: Buffer | string): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -136,6 +137,13 @@ function materializeFixture() {
         status: 'user_confirmed',
         sourceDocumentHash,
         implementationConfirmationHash,
+        confirmationHistory: createRecordedConfirmationHistory({
+          recordId: authority.recordId,
+          requirementSetId: authority.requirementSetId,
+          sourcePath: 'source.md',
+          sourceDocumentHash,
+          implementationConfirmationHash,
+        }),
         transactionId: authority.transactionId,
         currentAttemptId: authority.implementationAttemptId,
         semanticModelHash,

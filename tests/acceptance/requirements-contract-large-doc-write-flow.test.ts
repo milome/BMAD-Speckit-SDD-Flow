@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { createRequire } from 'node:module';
+import * as yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
@@ -648,6 +649,63 @@ describe('requirements-contract large document write flow', () => {
     expect(second.result.status).toBe(0);
     expect(second.json.changed).toBe(false);
     expect(second.json.sha256).toBe(first.json.sha256);
+  });
+
+  it('preserves folded YAML scalar semantics when continuation text contains colon-space', () => {
+    const source = {
+      implementationConfirmation: {
+        currentTargetMap: {
+          currentSummary: [
+            {
+              detail:
+                'Current product limitations and existing behavior: source-defined current product behavior. Structured defaults: source-defined defaults: source-defined default entries.',
+            },
+          ],
+        },
+      },
+    };
+    const raw = yaml.dump(source, { lineWidth: 120, noRefs: true, sortKeys: false });
+    expect(raw).toContain('detail: >-');
+
+    const first = normalizeMarkdown(raw);
+    expect(yaml.load(first.content)).toEqual(yaml.load(raw));
+    expect(first.content).not.toContain(
+      'defaults: "source-defined defaults: source-defined default entries."'
+    );
+
+    const second = normalizeMarkdown(first.content);
+    expect(second.content).toBe(first.content);
+    expect(second.yamlScalarQuotes).toBe(0);
+  });
+
+  it('preserves multiline quoted YAML scalar semantics when continuation text contains colon-space', () => {
+    const raw = [
+      'implementationConfirmation:',
+      '  currentTargetMap:',
+      "    detail: 'Current product behavior and limitations. Structured",
+      "      defaults: source-defined defaults: source-defined default entries.'",
+      '    status: draft',
+      '',
+    ].join('\n');
+    expect(yaml.load(raw)).toMatchObject({
+      implementationConfirmation: {
+        currentTargetMap: {
+          detail:
+            'Current product behavior and limitations. Structured defaults: source-defined defaults: source-defined default entries.',
+          status: 'draft',
+        },
+      },
+    });
+
+    const first = normalizeMarkdown(raw);
+    expect(yaml.load(first.content)).toEqual(yaml.load(raw));
+    expect(first.content).not.toContain(
+      'defaults: "source-defined defaults: source-defined default entries.\'"'
+    );
+
+    const second = normalizeMarkdown(first.content);
+    expect(second.content).toBe(first.content);
+    expect(second.yamlScalarQuotes).toBe(0);
   });
 
   it('generates a manifest and fails missing implementationConfirmation or unbalanced fences', () => {

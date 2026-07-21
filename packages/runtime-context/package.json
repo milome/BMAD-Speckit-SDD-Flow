@@ -24,6 +24,10 @@
     "./sync-from-sprint-cli": {
       "require": "./dist/sync-from-sprint-cli.js",
       "types": "./dist/sync-from-sprint-cli.d.ts"
+    },
+    "./*": {
+      "require": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     }
   },
   "scripts": {

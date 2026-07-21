@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractFinalizationSafeWriteCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-finalization-safe-writer';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const BASE = 'docs/plans/evidence/loop-engineering-remediation';
 const sha256 = (value: string) =>
@@ -47,6 +48,12 @@ function createFirstRoleFixture(root: string) {
     sourcePath: 'source.md',
     sourceDocumentHash: sha256('source'),
     implementationConfirmationHash: sha256('confirmation'),
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: requirementSetId,
+      sourcePath: 'source.md',
+      sourceDocumentHash: sha256('source'),
+      implementationConfirmationHash: sha256('confirmation'),
+    }),
     semanticModelHash: sha256('semantic'),
   });
   const options = {

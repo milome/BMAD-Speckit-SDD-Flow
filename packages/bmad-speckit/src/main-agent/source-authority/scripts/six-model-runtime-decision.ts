@@ -71,6 +71,15 @@ function object(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function objects(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+      )
+    : [];
+}
+
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
@@ -95,12 +104,140 @@ export function decisionMatrixDir(
   );
 }
 
-function isTerminalCloseout(record: Record<string, unknown>): boolean {
+const SHA256 = /^sha256:[a-f0-9]{64}$/u;
+
+function closeoutAcceptanceRequest(
+  record: Record<string, unknown>
+): Record<string, unknown> | null {
   const closeout = object(record.closeout);
+  return object(closeout?.acceptanceRequest);
+}
+
+export function hasCurrentCloseoutAcceptanceRequest(
+  record: Record<string, unknown>,
+  expectedStatus?: 'awaiting_user_acceptance' | 'user_accepted_closeout'
+): boolean {
+  const closeout = object(record.closeout);
+  const request = closeoutAcceptanceRequest(record);
+  const closeoutAttemptId = text(closeout?.currentAttemptId);
+  const requestStatus = text(request?.status);
+  if (!closeout || !request || !closeoutAttemptId || text(closeout.decision) !== 'pass') {
+    return false;
+  }
+  if (expectedStatus && requestStatus !== expectedStatus) return false;
+  if (
+    requestStatus !== 'awaiting_user_acceptance' &&
+    requestStatus !== 'user_accepted_closeout'
+  ) {
+    return false;
+  }
   return (
-    text(record.status) === 'closed' ||
-    text(record.lastEventType) === 'record_closed' ||
-    text(closeout?.decision) === 'pass'
+    text(request.closeoutAttemptId) === closeoutAttemptId &&
+    Boolean(text(request.htmlPath)) &&
+    Boolean(text(request.renderReportPath)) &&
+    SHA256.test(text(request.closeoutConfirmationPageHash)) &&
+    SHA256.test(text(request.deliveryCloseoutReportHash))
+  );
+}
+
+function eventTimestamp(value: Record<string, unknown>): number | null {
+  for (const field of [
+    'recordedAt',
+    'evaluatedAt',
+    'completedAt',
+    'confirmedAt',
+    'acceptedAt',
+    'publishedAt',
+    'createdAt',
+    'updatedAt',
+  ]) {
+    const timestamp = Date.parse(text(value[field]));
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return null;
+}
+
+function hasPostAcceptanceActivity(
+  record: Record<string, unknown>,
+  acceptedAt: string
+): boolean {
+  const acceptedTimestamp = Date.parse(acceptedAt);
+  if (!Number.isFinite(acceptedTimestamp)) return true;
+  const closeout = object(record.closeout);
+  const activityCollections = [
+    record.requirementConfirmationHistory,
+    record.reconfirmationHistory,
+    record.architectureConfirmations,
+    record.architectureConfirmationStateChecks,
+    record.executionIterations,
+    record.taskReports,
+    record.auditReviewHistory,
+    record.auditAttempts,
+    record.deliveryConfirmationHistory,
+    record.gateChecks,
+    record.contractChecks,
+    closeout?.attempts,
+  ];
+  return activityCollections.some((collection) =>
+    objects(collection).some((entry) => {
+      const timestamp = eventTimestamp(entry);
+      return timestamp !== null && timestamp > acceptedTimestamp;
+    })
+  );
+}
+
+export function hasCurrentControlledCloseoutAcceptance(
+  record: Record<string, unknown>
+): boolean {
+  const closeout = object(record.closeout);
+  const request = closeoutAcceptanceRequest(record);
+  const acceptance = object(record.closeoutAcceptance);
+  const closeoutAttemptId = text(closeout?.currentAttemptId);
+  const acceptedAt = text(request?.acceptedAt);
+  const acceptedBy = text(request?.acceptedBy);
+  if (
+    text(record.status) !== 'closed' ||
+    text(record.lastEventType) !== 'record_closed' ||
+    !closeoutAttemptId ||
+    text(record.currentAttemptId) !== closeoutAttemptId ||
+    !hasCurrentCloseoutAcceptanceRequest(record, 'user_accepted_closeout') ||
+    !request ||
+    !acceptance ||
+    !acceptedAt ||
+    !acceptedBy
+  ) {
+    return false;
+  }
+  if (
+    text(acceptance.status) !== 'user_accepted_closeout' ||
+    text(acceptance.closeoutAttemptId) !== closeoutAttemptId ||
+    text(acceptance.confirmedAt) !== acceptedAt ||
+    text(acceptance.confirmedBy) !== acceptedBy ||
+    text(acceptance.closeoutConfirmationPageHash) !==
+      text(request.closeoutConfirmationPageHash) ||
+    text(acceptance.deliveryCloseoutReportHash) !== text(request.deliveryCloseoutReportHash) ||
+    text(acceptance.renderReportPath) !== text(request.renderReportPath)
+  ) {
+    return false;
+  }
+  const matchingHistory = objects(record.closeoutAcceptanceHistory).some(
+    (entry) =>
+      text(entry.eventType) === 'closeout_acceptance_confirmed' &&
+      text(entry.machineCloseoutEventType) === 'record_closed' &&
+      text(entry.closeoutAttemptId) === closeoutAttemptId &&
+      text(entry.confirmedAt) === acceptedAt &&
+      text(entry.confirmedBy) === acceptedBy &&
+      text(entry.closeoutConfirmationPageHash) ===
+        text(request.closeoutConfirmationPageHash) &&
+      text(entry.deliveryCloseoutReportHash) === text(request.deliveryCloseoutReportHash) &&
+      text(entry.renderReportPath) === text(request.renderReportPath) &&
+      text(entry.htmlPath) === text(request.htmlPath) &&
+      SHA256.test(text(entry.beforeRecordHash)) &&
+      SHA256.test(text(entry.afterRecordHash))
+  );
+  return (
+    matchingHistory &&
+    !hasPostAcceptanceActivity(record, acceptedAt)
   );
 }
 
@@ -220,10 +357,18 @@ export function resolveSixModelRuntimeDecision(input: {
     ready = false;
     transitionMode = 'blocked';
     reasonRefs.push(...buildOpenReconfirmationBlockingReasonRefs(record));
-  } else if (isTerminalCloseout(record)) {
+  } else if (hasCurrentControlledCloseoutAcceptance(record)) {
     nextAction = 'record_closed';
     ready = true;
     transitionMode = 'auto_after_controlled_ingest';
+  } else if (text(record.status) === 'closed') {
+    nextAction = 'run_closeout';
+    ready = false;
+    transitionMode = 'blocked';
+    reasonRefs.push({
+      sourceType: 'closeout_acceptance',
+      id: 'terminal_closeout_stale_or_invalid',
+    });
   } else if (text(record.status) === 'awaiting_user_acceptance') {
     nextAction = 'await_user_acceptance';
     ready = false;
@@ -312,13 +457,15 @@ export function resolveSixModelRuntimeDecision(input: {
       nextAction = 'await_user_acceptance';
       ready = false;
       transitionMode = 'requires_user_or_gate';
-    } else if (currentModelStatus === 'pass' && hasCurrentPass('audit_review')) {
-      nextAction = 'record_closed';
-      ready = true;
-      transitionMode = 'auto_after_controlled_ingest';
     } else {
       nextAction = 'run_closeout';
       ready = true;
+      if (currentModelStatus === 'pass') {
+        reasonRefs.push({
+          sourceType: 'closeout_acceptance',
+          id: 'controlled_user_acceptance_required',
+        });
+      }
     }
   } else {
     nextAction = 'run_pre_confirmation_drilldown';

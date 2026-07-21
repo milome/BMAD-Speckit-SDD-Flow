@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
 
 export type JsonObject = Record<string, unknown>;
 
@@ -17,8 +18,6 @@ export const REQUIREMENT_RECORD_SCHEMA_OWNER_PATH =
 export const REQUIREMENT_RECORD_SCHEMA_SURFACE_PATHS = [
   REQUIREMENT_RECORD_SCHEMA_OWNER_PATH,
   'packages/bmad-speckit/_bmad/_schemas/requirement-record.schema.json',
-  'packages/bmad-speckit/dist/_bmad/_schemas/requirement-record.schema.json',
-  'packages/bmad-speckit/dist/main-agent/source-authority/_bmad/_schemas/requirement-record.schema.json',
 ] as const;
 
 function readJson(file: string): JsonObject {
@@ -31,21 +30,9 @@ function readJson(file: string): JsonObject {
 
 export function resolveRequirementRecordSchemaPath(): string {
   const candidates = [
-    path.resolve(__dirname, '..', '_bmad', '_schemas', 'requirement-record.schema.json'),
+    resolvePackageOwnedBmadPath('_schemas', 'requirement-record.schema.json'),
     ...REQUIREMENT_RECORD_SCHEMA_SURFACE_PATHS.map((surfacePath) =>
       path.resolve(process.cwd(), surfacePath)
-    ),
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '..',
-      '..',
-      '..',
-      '_bmad',
-      '_schemas',
-      'requirement-record.schema.json'
     ),
   ];
   const resolved = candidates.find((candidate) => fs.existsSync(candidate));

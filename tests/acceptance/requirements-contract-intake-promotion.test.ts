@@ -6,6 +6,7 @@ import {
   cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
+  installJudgeRuntimeConfig,
   issueCodes,
   readImplementationConfirmation,
   readJson,
@@ -13,7 +14,7 @@ import {
   runIntakeAuthoring,
   sha256File,
   sourcePromotionDecisionPath,
-  writeMinimalConsumerRequirement,
+  writeLintReadyMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
 function installPostPromotionSemanticDriftOverride(root: string): void {
@@ -64,8 +65,9 @@ function installPostPromotionSemanticDriftOverride(root: string): void {
 describe('requirements contract intake promotion', () => {
   it('creates target only after auditor convergence and authoring-draft promotion', () => {
     const root = createTempRoot('requirements-contract-intake-promotion-');
+    installJudgeRuntimeConfig(root);
     try {
-      const { sourcePath: intake, authoringOptions } = writeMinimalConsumerRequirement(
+      const { sourcePath: intake, authoringOptions } = writeLintReadyMinimalConsumerRequirement(
         root,
         '_bmad-output/runtime/requirement-records/REQ-INTAKE-PROMOTE/authoring/intake/intake-source.md',
         createMinimalConsumerRequirementDescriptor('REQ-INTAKE-PROMOTE')
@@ -127,8 +129,9 @@ describe('requirements contract intake promotion', () => {
 
   it('stops when intake target is created before promotion', () => {
     const root = createTempRoot('requirements-contract-intake-race-');
+    installJudgeRuntimeConfig(root);
     try {
-      const { sourcePath: intake, authoringOptions } = writeMinimalConsumerRequirement(
+      const { sourcePath: intake, authoringOptions } = writeLintReadyMinimalConsumerRequirement(
         root,
         '_bmad-output/runtime/requirement-records/REQ-INTAKE-RACE/authoring/intake/intake-source.md',
         createMinimalConsumerRequirementDescriptor('REQ-INTAKE-RACE')
@@ -177,9 +180,10 @@ describe('requirements contract intake promotion', () => {
 
   it('rolls back a newly created target when promoted readback changes semantic authority', () => {
     const root = createTempRoot('requirements-contract-intake-readback-drift-');
+    installJudgeRuntimeConfig(root);
     try {
       installPostPromotionSemanticDriftOverride(root);
-      const { sourcePath: intake, authoringOptions } = writeMinimalConsumerRequirement(
+      const { sourcePath: intake, authoringOptions } = writeLintReadyMinimalConsumerRequirement(
         root,
         '_bmad-output/runtime/requirement-records/REQ-INTAKE-READBACK-DRIFT/authoring/intake/intake-source.md',
         createMinimalConsumerRequirementDescriptor('REQ-INTAKE-READBACK-DRIFT')
@@ -209,15 +213,18 @@ describe('requirements contract intake promotion', () => {
 
       expect(issueCodes(result)).toContain('promotion_readback_semantic_conservation_failed');
       expect(result.blockingStage).toBe('promotion_readback_semantic_conservation_failed');
-      expect(existsSync(paths.promotionReadbackRoundTripReport)).toBe(true);
       expect(
-        readJson<Record<string, unknown>>(paths.promotionReadbackRoundTripReport).decision
-      ).toBe('block');
+        result.blockingIssues?.find(
+          (issue) => issue.code === 'promotion_readback_semantic_conservation_failed'
+        )?.message
+      ).toContain('semantic source provenance');
+      expect(existsSync(paths.promotionReadbackRoundTripReport)).toBe(false);
       expect(existsSync(target)).toBe(false);
       expect(existsSync(paths.promotionReceipt)).toBe(false);
       expect(readJson<Record<string, unknown>>(rollbackReceiptPath)).toMatchObject({
         schemaVersion: 'requirements-contract-promotion-readback-rollback-receipt/v1',
         decision: 'rolled_back',
+        promotionReadbackReportHash: null,
         targetExistedBeforePromotion: false,
         targetExistsAfterRollback: false,
         successPromotionReceiptRetained: false,
@@ -229,9 +236,10 @@ describe('requirements contract intake promotion', () => {
 
   it('restores an existing target and replaces the allow decision when promoted readback drifts', () => {
     const root = createTempRoot('requirements-contract-existing-readback-drift-');
+    installJudgeRuntimeConfig(root);
     try {
       installPostPromotionSemanticDriftOverride(root);
-      const { sourcePath: intake, authoringOptions } = writeMinimalConsumerRequirement(
+      const { sourcePath: intake, authoringOptions } = writeLintReadyMinimalConsumerRequirement(
         root,
         '_bmad-output/runtime/requirement-records/REQ-EXISTING-READBACK-DRIFT/authoring/intake/intake-source.md',
         createMinimalConsumerRequirementDescriptor('REQ-EXISTING-READBACK-DRIFT')

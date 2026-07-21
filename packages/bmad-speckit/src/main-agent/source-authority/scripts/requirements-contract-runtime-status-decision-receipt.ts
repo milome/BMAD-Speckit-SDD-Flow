@@ -1,4 +1,8 @@
 import authorityCore from './requirements-contract-runtime-status-authority-core.cjs';
+import {
+  type ControlArtifactWrite,
+  sha256Text,
+} from './requirement-record-control-store';
 
 export const REQUIREMENTS_CONTRACT_SIX_MODEL_IDS = authorityCore.SIX_MODEL_IDS;
 
@@ -48,6 +52,20 @@ export interface RuntimeStatusProjectionUpdate {
   } | null;
   authorityEstablished: boolean;
   missingAuthorityBindings: string[];
+}
+
+export function runtimeStatusProjectionArtifactWrites(
+  update: RuntimeStatusProjectionUpdate
+): ControlArtifactWrite[] {
+  if (!update.receiptRef) return [];
+  const content = `${JSON.stringify(update.receiptRef.receipt, null, 2)}\n`;
+  return [
+    {
+      path: update.receiptRef.path,
+      content,
+      contentHash: sha256Text(content),
+    },
+  ];
 }
 
 function normalizeRuntimeStatusPath(value: string): string {
@@ -227,7 +245,31 @@ export function runtimeStatusProjectionRecordPatch(input: {
         })),
       ]
     : [];
-  const nextArtifactPaths = new Set(nextArtifacts.map((entry) => entry.path));
+  const canonicalNextArtifacts = [
+    ...nextArtifacts
+      .reduce((byPath, entry) => {
+        const artifactPath = String(entry.path ?? '');
+        const current = byPath.get(artifactPath);
+        if (!current || entry.sourceOfTruthRole === 'control') {
+          byPath.set(artifactPath, entry);
+        }
+        return byPath;
+      }, new Map<string, Record<string, unknown>>())
+      .values(),
+  ];
+  const replacementPaths = new Set<string>();
+  const replacementArtifacts = canonicalNextArtifacts.filter((entry) => {
+    const artifactPath = String(entry.path ?? '');
+    const matches = artifacts.filter((artifact) => String(artifact.path ?? '') === artifactPath);
+    const canReuseExisting =
+      matches.length === 1 &&
+      String(matches[0].contentHash ?? '') === String(entry.contentHash ?? '') &&
+      (entry.sourceOfTruthRole !== 'control' || matches[0].sourceOfTruthRole === 'control');
+    if (!canReuseExisting) {
+      replacementPaths.add(artifactPath);
+    }
+    return !canReuseExisting;
+  });
   return {
     sixModelResults: {
       ...objectValue(input.record.sixModelResults),
@@ -237,8 +279,8 @@ export function runtimeStatusProjectionRecordPatch(input: {
     ...(receipt
       ? {
           artifactIndex: [
-            ...artifacts.filter((entry) => !nextArtifactPaths.has(String(entry.path ?? ''))),
-            ...nextArtifacts,
+            ...artifacts.filter((entry) => !replacementPaths.has(String(entry.path ?? ''))),
+            ...replacementArtifacts,
           ],
         }
       : {}),

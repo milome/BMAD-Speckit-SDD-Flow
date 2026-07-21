@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
@@ -255,6 +256,16 @@ describe('requirements contract six-model runtime status authority', () => {
           implementationAttemptId: requirementRecord.currentAttemptId,
           receiptHash: updated.sixModelResults.requirement_confirmation.decisionReceiptHash,
         },
+      });
+      const decisionReceiptPath = path.resolve(
+        path.dirname(fixture.recordPath),
+        updated.sixModelResults.requirement_confirmation.decisionReceiptRef
+      );
+      expect(fs.existsSync(decisionReceiptPath)).toBe(true);
+      expect(JSON.parse(fs.readFileSync(decisionReceiptPath, 'utf8'))).toMatchObject({
+        modelId: 'requirement_confirmation',
+        implementationAttemptId: requirementRecord.currentAttemptId,
+        receiptHash: updated.sixModelResults.requirement_confirmation.decisionReceiptHash,
       });
       for (const modelId of [
         'architecture_confirmation',

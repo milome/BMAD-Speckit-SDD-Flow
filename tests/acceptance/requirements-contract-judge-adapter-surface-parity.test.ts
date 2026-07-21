@@ -6,6 +6,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { afterEach, describe, expect, it } from 'vitest';
+import { REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry';
 
 type JsonRecord = Record<string, unknown>;
 type RequestBuilder = (input: JsonRecord) => unknown | Promise<unknown>;
@@ -28,32 +29,14 @@ const DIST_CREDENTIAL_RESOLVER = SOURCE_CREDENTIAL_RESOLVER.replace(
   `${path.sep}src${path.sep}main-agent${path.sep}`,
   `${path.sep}dist${path.sep}main-agent${path.sep}`
 ).replace(/\.ts$/u, '.js');
-const REGISTRY_PROJECTION_RELATIVE = path.join(
-  'shared',
-  'requirements-contract',
-  'requirements-contract-judge-provider-registry.json'
-);
+const REGISTRY_FILE_NAME = 'requirements-contract-judge-provider-registry.json';
 const NORMALIZED_RESPONSE_SCHEMA = path.resolve(
   ROOT,
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json'
 );
-const REGISTRY_SURFACES = [
-  path.join(ROOT, '_bmad', REGISTRY_PROJECTION_RELATIVE),
-  path.join(ROOT, '.codex', REGISTRY_PROJECTION_RELATIVE),
-  path.join(ROOT, '.cursor', REGISTRY_PROJECTION_RELATIVE),
-  path.join(ROOT, '.claude', REGISTRY_PROJECTION_RELATIVE),
-  path.join(ROOT, 'packages', 'bmad-speckit', '_bmad', REGISTRY_PROJECTION_RELATIVE),
-  path.join(
-    ROOT,
-    'packages',
-    'bmad-speckit',
-    'dist',
-    'main-agent',
-    'source-authority',
-    '_bmad',
-    REGISTRY_PROJECTION_RELATIVE
-  ),
-];
+const REGISTRY_SURFACES = REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS.map((surfaceRoot) =>
+  path.resolve(ROOT, surfaceRoot, REGISTRY_FILE_NAME)
+);
 
 function provider(
   transport: 'openai-compatible' | 'anthropic-compatible',
@@ -430,7 +413,7 @@ describe('requirements contract Judge adapter surface parity', () => {
     ).rejects.toThrow(/judge_adapter_returned_model_mismatch/u);
   });
 
-  it('keeps the Provider/Adapter registry byte-identical across root, hosts, package, and dist', () => {
+  it('keeps the Provider/Adapter registry byte-identical across canonical surfaces', () => {
     expect(existsSync(REGISTRY_SURFACES[0])).toBe(true);
     if (!existsSync(REGISTRY_SURFACES[0])) return;
     const canonicalHash = fileHash(REGISTRY_SURFACES[0]);

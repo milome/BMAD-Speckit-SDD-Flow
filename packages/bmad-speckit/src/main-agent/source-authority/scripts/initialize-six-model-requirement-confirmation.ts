@@ -1,9 +1,16 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  readJson,
+  sha256Json,
+  sha256Text,
+} from './requirement-record-control-store';
 import {
   createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
 } from './requirements-contract-runtime-status-decision-receipt';
 
@@ -162,6 +169,65 @@ function updateIndex(input: {
   return indexPath;
 }
 
+function initializationProjection(record: JsonObject, recordedAt: string): {
+  sixModelResults: JsonObject;
+  runtimeStatus: ReturnType<typeof createRuntimeStatusProjectionUpdate>;
+} {
+  const sixModelResults = {
+    ...object(record.sixModelResults),
+  };
+  for (const model of MODELS) {
+    sixModelResults[model] = modelResult(
+      record,
+      model,
+      model === 'requirement_confirmation' ? 'pass' : 'not_established',
+      recordedAt
+    );
+  }
+  const confirmationHistory = Array.isArray(record.confirmationHistory)
+    ? record.confirmationHistory
+    : [];
+  const latestConfirmation = object(confirmationHistory.at(-1));
+  const attemptId = text(record.currentAttemptId) || text(record.runId);
+  return {
+    sixModelResults,
+    runtimeStatus: createRuntimeStatusProjectionUpdate({
+      recordId: text(record.recordId),
+      requirementSetId: text(record.requirementSetId) || text(record.recordId),
+      modelId: 'requirement_confirmation',
+      implementationAttemptId: attemptId,
+      sourceDocumentHash: text(record.sourceDocumentHash),
+      implementationConfirmationHash: text(record.implementationConfirmationHash),
+      semanticModelHash: text(record.semanticModelHash),
+      stageInputs: [
+        {
+          role: 'requirement_source',
+          path: text(record.sourcePath),
+          hash: text(record.sourceDocumentHash),
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: 'requirement_confirmation_page',
+          path: text(latestConfirmation.htmlPath),
+          hash: text(record.confirmationPageHash),
+        },
+      ],
+      blockerRefs: [],
+      evidenceRefs: [
+        text(latestConfirmation.renderReportPath),
+        text(latestConfirmation.htmlPath),
+      ].filter(Boolean),
+      authorityClass: 'controlled_confirmation',
+      decision: 'pass',
+      effectiveStatus: 'pass',
+      createdAt: recordedAt,
+      receiptPath: `runtime/status-decisions/${attemptId}/requirement_confirmation.json`,
+      projection: object(sixModelResults.requirement_confirmation),
+    }),
+  };
+}
+
 export function main(argv: string[]): number {
   const args = parseArgs(argv);
   const root = path.resolve(text(args.cwd) || process.cwd());
@@ -169,78 +235,32 @@ export function main(argv: string[]): number {
   if (!requirementRecordArg) throw new Error('missing --requirement-record');
   const recordPath = path.resolve(requirementRecordArg);
   const recordedAt = text(args.recordedAt) || new Date().toISOString();
+  const beforeRecord = canonicalizeRequirementRecord(readJson(recordPath));
+  const initialization = initializationProjection(beforeRecord, recordedAt);
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'main-agent-six-model-initializer',
     eventType: 'requirement_confirmation_result_recorded',
     recordedAt,
+    expectedBeforeRecordHash: sha256Json(beforeRecord),
     payload: {
       model: 'requirement_confirmation',
       status: 'pass',
       recordedAt,
       sourceRefs: [{ sourceType: 'confirmation_event', id: 'confirmation_recorded' }],
     },
+    artifactWrites: runtimeStatusProjectionArtifactWrites(initialization.runtimeStatus),
     reduce: (record) => {
-      const sixModelResults = {
-        ...object(record.sixModelResults),
-      };
-      for (const model of MODELS) {
-        sixModelResults[model] = modelResult(
-          record,
-          model,
-          model === 'requirement_confirmation' ? 'pass' : 'not_established',
-          recordedAt
-        );
-      }
-      const confirmationHistory = Array.isArray(record.confirmationHistory)
-        ? record.confirmationHistory
-        : [];
-      const latestConfirmation = object(confirmationHistory.at(-1));
-      const attemptId = text(record.currentAttemptId) || text(record.runId);
       const baseline = {
         ...record,
-        sixModelResults,
+        sixModelResults: initialization.sixModelResults,
       };
-      const runtimeStatus = createRuntimeStatusProjectionUpdate({
-        recordId: text(record.recordId),
-        requirementSetId: text(record.requirementSetId) || text(record.recordId),
-        modelId: 'requirement_confirmation',
-        implementationAttemptId: attemptId,
-        sourceDocumentHash: text(record.sourceDocumentHash),
-        implementationConfirmationHash: text(record.implementationConfirmationHash),
-        semanticModelHash: text(record.semanticModelHash),
-        stageInputs: [
-          {
-            role: 'requirement_source',
-            path: text(record.sourcePath),
-            hash: text(record.sourceDocumentHash),
-          },
-        ],
-        deterministicGateOutputs: [
-          {
-            role: 'requirement_confirmation_page',
-            path: text(latestConfirmation.htmlPath),
-            hash: text(record.confirmationPageHash),
-          },
-        ],
-        blockerRefs: [],
-        evidenceRefs: [
-          text(latestConfirmation.renderReportPath),
-          text(latestConfirmation.htmlPath),
-        ].filter(Boolean),
-        authorityClass: 'controlled_confirmation',
-        decision: 'pass',
-        effectiveStatus: 'pass',
-        createdAt: recordedAt,
-        receiptPath: `runtime/status-decisions/${attemptId}/requirement_confirmation.json`,
-        projection: object(sixModelResults.requirement_confirmation),
-      });
       return {
         ...baseline,
         ...runtimeStatusProjectionRecordPatch({
           record: baseline,
           modelId: 'requirement_confirmation',
-          update: runtimeStatus,
+          update: initialization.runtimeStatus,
         }),
         flow: text(record.flow) || text(record.entryFlow) || 'standalone_tasks',
         stage: 'requirement_confirmation',

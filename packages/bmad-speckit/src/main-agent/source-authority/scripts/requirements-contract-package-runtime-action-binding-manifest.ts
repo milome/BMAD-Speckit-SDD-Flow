@@ -41,6 +41,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-finalization-safe-write',
   'requirements-contract-terminal-command-supervisor',
   'requirements-contract-judge-credentials-init',
+  'requirements-contract-critical-auditor-judge-adapter',
   'requirements-contract-eval',
   'requirements-contract-candidate-package',
   'requirements-contract-changed-path-manifest',
@@ -57,7 +58,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-consumer-cli-capability-observe',
 ].sort();
 const ACTION_UNIVERSE_HASH =
-  'sha256:5f9c8757b63f10a6c17578a9ee5fcf122479d63267852ae1d83a95b13ffe8c4c';
+  'sha256:7352905dfb095f1fee1e6ff0a78968a6f7619f117182c356d88878d855493cc1';
 
 const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
   {
@@ -191,6 +192,51 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     behaviorTests: ['tests/acceptance/requirements-contract-evidence-verify-command.test.ts'],
   },
   {
+    actionId: 'requirements-contract-critical-auditor-judge-adapter',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-critical-auditor-judge-adapter.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-critical-auditor-judge-adapter.js`,
+    gateSymbol: 'requirementsContractCriticalAuditorJudgeAdapterCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-adapter-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-runtime.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-credentials.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-normalized-judge-response.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-assessment.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-external-adapter-result.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-critical-auditor-judge-adapter.test.ts',
+    ],
+    runtimeRefs: [
+      {
+        role: 'judge-credential-resolver',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-resolver.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver.js',
+      },
+      {
+        role: 'judge-provider-registry',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-provider-registry.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.js',
+      },
+      {
+        role: 'openai-compatible-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-openai-compatible-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.js',
+      },
+      {
+        role: 'anthropic-compatible-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-anthropic-compatible-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js',
+      },
+    ],
+  },
+  {
     actionId: 'requirements-contract-judge-credentials-init',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-judge-credential-initializer.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-initializer.js`,
@@ -243,9 +289,9 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       {
         role: 'installed-generator',
         repositoryPath:
-          'packages/bmad-speckit/dist/main-agent/source-authority/_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
+          'packages/bmad-speckit/_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
         packagePath:
-          'dist/main-agent/source-authority/_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
+          '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
       },
       {
         role: 'installed-stage-registry',
@@ -367,9 +413,9 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       {
         role: 'judge-provider-registry-projection',
         repositoryPath:
-          'packages/bmad-speckit/dist/main-agent/source-authority/_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
+          'packages/bmad-speckit/_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
         packagePath:
-          'dist/main-agent/source-authority/_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
+          '_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
       },
     ],
   },
@@ -571,16 +617,6 @@ export function publishPackageRuntimeActionBindingManifest(root: string): {
     path.join('.cursor', MANIFEST_RELATIVE_PATH),
     path.join('.claude', MANIFEST_RELATIVE_PATH),
     path.join('packages', 'bmad-speckit', '_bmad', MANIFEST_RELATIVE_PATH),
-    path.join('packages', 'bmad-speckit', 'dist', '_bmad', MANIFEST_RELATIVE_PATH),
-    path.join(
-      'packages',
-      'bmad-speckit',
-      'dist',
-      'main-agent',
-      'source-authority',
-      '_bmad',
-      MANIFEST_RELATIVE_PATH
-    ),
   ];
   const targets = relativeTargets.map((relativePath) => {
     const target = path.join(root, relativePath);

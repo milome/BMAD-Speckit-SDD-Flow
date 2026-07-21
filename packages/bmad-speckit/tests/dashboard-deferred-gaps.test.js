@@ -6,6 +6,9 @@ const path = require('node:path');
 
 const { dashboardCommand } = require('../src/commands/dashboard');
 const { deferredGapAuditCommand } = require('../src/commands/deferred-gap-audit');
+const {
+  resolveDeferredGapGovernancePath,
+} = require('../src/utils/deferred-gap-governance-loader');
 
 function writeReport(root, filename, gapLines) {
   const reportDir = path.join(root, '_bmad-output', 'planning-artifacts', 'feature-gap');
@@ -42,7 +45,13 @@ describe('dashboard deferred gaps', () => {
 
     assert.doesNotMatch(dashboardSource, /scripts\/deferred-gap-governance\.cjs/);
     assert.doesNotMatch(auditSource, /scripts\/deferred-gap-governance\.cjs/);
-    assert.match(loaderSource, /_bmad[\\/]+runtime[\\/]+hooks[\\/]+deferred-gap-governance\.cjs/);
+    assert.match(loaderSource, /resolvePackageOwnedBmadPath/);
+    const resolvedHook = resolveDeferredGapGovernancePath();
+    assert.match(
+      resolvedHook,
+      /_bmad[\\/]+runtime[\\/]+hooks[\\/]+deferred-gap-governance\.cjs/
+    );
+    assert.equal(fs.existsSync(resolvedHook), true);
   });
 
   it('appends deferred gap table to dashboard markdown output', () => {

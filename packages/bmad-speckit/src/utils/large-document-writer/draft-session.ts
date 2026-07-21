@@ -1,8 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const sourceSuffix = __filename.endsWith('.ts') ? '.ts' : '';
-const { block } = require(`./errors${sourceSuffix}`);
-const { normalizePath, writeJsonReceipt } = require(`./receipts${sourceSuffix}`);
+const { block } = require('./errors');
+const { normalizePath, writeJsonReceipt } = require('./receipts');
 
 function now() {
   return new Date().toISOString();

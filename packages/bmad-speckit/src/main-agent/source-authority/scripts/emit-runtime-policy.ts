@@ -385,11 +385,6 @@ function ensureRegistryBackedRequirementRecordBridge(
       implementationConfirmationHash,
     ].join('\n')
   );
-  const architectureConfirmationHash = sha256Text(
-    ['runtime-registry-bridge-architecture', sourceDocumentHash, context.flow, context.stage].join(
-      '\n'
-    )
-  );
   const sixModelProjection = deriveBridgeSixModelProjection({
     context,
     gate,

@@ -7,9 +7,19 @@ import {
   type AuditTriadExecutionPlan,
   type AuditTriadRoundReceipt,
 } from './audit-triad-orchestrator';
-import { appendControlEventAndReplay } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  sha256Json,
+  sha256Text,
+} from './requirement-record-control-store';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
-import { createRuntimeStatusProjectionUpdate } from './requirements-contract-runtime-status-decision-receipt';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
+  runtimeStatusProjectionRecordPatch,
+  type RuntimeStatusProjectionUpdate,
+} from './requirements-contract-runtime-status-decision-receipt';
 import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 
@@ -29,6 +39,10 @@ interface ParsedArgs {
   evaluatedAt?: string;
   json?: boolean;
   help?: boolean;
+}
+
+interface MainAuditReviewGateDeps {
+  beforeControlCommit?: () => void;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -85,6 +99,21 @@ function readJson(file: string): JsonObject {
   return parsed as JsonObject;
 }
 
+function readJsonSnapshot(file: string): {
+  value: JsonObject;
+  contentHash: string;
+} {
+  const content = fs.readFileSync(file);
+  const parsed = JSON.parse(content.toString('utf8')) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`JSON object expected: ${file}`);
+  }
+  return {
+    value: parsed as JsonObject,
+    contentHash: `sha256:${crypto.createHash('sha256').update(content).digest('hex')}`,
+  };
+}
+
 function readJsonArray(file: string): JsonObject[] {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
   if (Array.isArray(parsed)) return parsed as JsonObject[];
@@ -94,6 +123,36 @@ function readJsonArray(file: string): JsonObject[] {
 
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
+}
+
+function physicalPathIdentity(value: string): string {
+  let existing = path.resolve(value);
+  const missingSegments: string[] = [];
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) return path.resolve(value);
+    missingSegments.unshift(path.basename(existing));
+    existing = parent;
+  }
+  return path.resolve(fs.realpathSync.native(existing), ...missingSegments);
+}
+
+function assertUniqueAuditPaths(
+  entries: Array<{ role: string; path: string }>
+): void {
+  const seen = new Map<string, string>();
+  for (const entry of entries.filter((item) => text(item.path))) {
+    const identity = physicalPathIdentity(entry.path);
+    const existingRole = seen.get(identity);
+    if (existingRole) {
+      throw new Error(
+        `audit_review_artifact_path_conflict:${existingRole}:${entry.role}:${normalizePathForRecord(
+          identity
+        )}`
+      );
+    }
+    seen.set(identity, entry.role);
+  }
 }
 
 function defaultAuditTriadDir(recordPath: string, attemptId: string): string {
@@ -156,20 +215,23 @@ function currentHashes(
   };
 }
 
-function readRounds(
+function resolveRoundPaths(
   args: ParsedArgs,
   recordPath: string,
   attemptId: string
-): AuditTriadRoundReceipt[] {
-  const paths = [
+): string[] {
+  return [
     ...(args.round ?? []),
     ...(args.rounds ? [args.rounds] : []),
     ...(!args.rounds && (args.round ?? []).length === 0
       ? [defaultRoundsPath(recordPath, attemptId)]
       : []),
-  ];
+  ].map((item) => path.resolve(item));
+}
+
+function readRounds(paths: string[]): AuditTriadRoundReceipt[] {
   return paths.flatMap(
-    (item) => readJsonArray(path.resolve(item)) as unknown as AuditTriadRoundReceipt[]
+    (item) => readJsonArray(item) as unknown as AuditTriadRoundReceipt[]
   );
 }
 
@@ -266,37 +328,22 @@ function evaluate(input: {
   };
 }
 
-function updateRecord(
+function createAuditReviewRuntimeStatus(
   record: JsonObject,
   input: {
     attemptId: string;
     plan: AuditTriadExecutionPlan;
+    planPath: string;
+    planHash: string;
     decision: AuditReviewDecision;
     blockingReasons: string[];
-    checks: JsonObject[];
     reportPath: string;
     reportHash: string;
     evaluatedAt: string;
     evaluatedBy: string;
   }
-): JsonObject {
+): RuntimeStatusProjectionUpdate {
   const gateCheckId = `audit-review:${input.attemptId}`;
-  const previousSixModelResults = nested(record.sixModelResults);
-  const gateCheck = {
-    eventType: 'gate_check_recorded',
-    checkId: gateCheckId,
-    gate: 'Audit Review Gate',
-    decision: input.decision,
-    blockingReasons: input.blockingReasons,
-    checks: input.checks,
-    reportPath: normalizePathForRecord(input.reportPath),
-    sourceRefs: [
-      { sourceType: 'execution_iteration', id: input.attemptId },
-      { sourceType: 'audit_triad_execution_plan', id: input.attemptId },
-    ],
-    recordedAt: input.evaluatedAt,
-    recordedBy: input.evaluatedBy,
-  };
   const resultPayload = {
     payloadKind: 'model_result',
     model: 'audit_review',
@@ -315,7 +362,7 @@ function updateRecord(
     ],
     currentHashes: currentHashes(record, input.reportHash, input.plan),
   };
-  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+  return createRuntimeStatusProjectionUpdate({
     recordId: text(record.recordId),
     requirementSetId: text(record.requirementSetId) || text(record.recordId),
     modelId: 'audit_review',
@@ -326,8 +373,8 @@ function updateRecord(
     stageInputs: [
       {
         role: 'audit_triad_execution_plan',
-        path: normalizePathForRecord(input.reportPath),
-        hash: input.plan.currentEvidenceHash,
+        path: normalizePathForRecord(input.planPath),
+        hash: input.planHash,
       },
     ],
     deterministicGateOutputs: [
@@ -346,13 +393,37 @@ function updateRecord(
     receiptPath: `runtime/status-decisions/${input.attemptId}/audit_review.json`,
     projection: resultPayload,
   });
-  const previousRuntimeStatusDecisionReceipts = objects(
-    record.runtimeStatusDecisionReceipts
-  ).filter(
-    (entry) =>
-      runtimeStatus.receiptRef === null ||
-      text(entry.path) !== runtimeStatus.receiptRef.path
-  );
+}
+
+function updateRecord(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    decision: AuditReviewDecision;
+    blockingReasons: string[];
+    checks: JsonObject[];
+    reportPath: string;
+    evaluatedAt: string;
+    evaluatedBy: string;
+    runtimeStatus: RuntimeStatusProjectionUpdate;
+  }
+): JsonObject {
+  const gateCheckId = `audit-review:${input.attemptId}`;
+  const gateCheck = {
+    eventType: 'gate_check_recorded',
+    checkId: gateCheckId,
+    gate: 'Audit Review Gate',
+    decision: input.decision,
+    blockingReasons: input.blockingReasons,
+    checks: input.checks,
+    reportPath: normalizePathForRecord(input.reportPath),
+    sourceRefs: [
+      { sourceType: 'execution_iteration', id: input.attemptId },
+      { sourceType: 'audit_triad_execution_plan', id: input.attemptId },
+    ],
+    recordedAt: input.evaluatedAt,
+    recordedBy: input.evaluatedBy,
+  };
   const transition =
     input.decision === 'pass'
       ? {
@@ -367,13 +438,11 @@ function updateRecord(
   return {
     ...record,
     gateChecks: [...objects(record.gateChecks), gateCheck],
-    sixModelResults: {
-      ...previousSixModelResults,
-      audit_review: runtimeStatus.projection,
-    },
-    runtimeStatusDecisionReceipts: runtimeStatus.receiptRef
-      ? [...previousRuntimeStatusDecisionReceipts, runtimeStatus.receiptRef]
-      : previousRuntimeStatusDecisionReceipts,
+    ...runtimeStatusProjectionRecordPatch({
+      record,
+      modelId: 'audit_review',
+      update: input.runtimeStatus,
+    }),
     currentAttemptId: input.attemptId,
     currentMentalModel: 'audit_review',
     currentStage: 'audit_review',
@@ -387,7 +456,10 @@ function updateRecord(
   };
 }
 
-export function mainAuditReviewGate(argv: string[]): number {
+export function mainAuditReviewGate(
+  argv: string[],
+  deps: MainAuditReviewGateDeps = {}
+): number {
   const args = parseArgs(argv);
   if (args.help) {
     console.log(
@@ -402,9 +474,40 @@ export function mainAuditReviewGate(argv: string[]): number {
   const evaluatedAt = args.evaluatedAt ?? new Date().toISOString();
   const evaluatedBy = args.evaluatedBy ?? 'agent';
   const planPath = path.resolve(args.plan ?? defaultPlanPath(recordPath, attemptId));
-  const plan = readJson(planPath) as unknown as AuditTriadExecutionPlan;
-  const rounds = readRounds(args, recordPath, attemptId);
+  const roundPaths = resolveRoundPaths(args, recordPath, attemptId);
   const reportPath = path.resolve(args.reportPath ?? defaultReportPath(recordPath, attemptId));
+  const runtimeStatusReceiptPath = path.resolve(
+    path.dirname(recordPath),
+    'runtime',
+    'status-decisions',
+    attemptId,
+    'audit_review.json'
+  );
+  assertUniqueAuditPaths([
+    { role: 'requirement_record', path: recordPath },
+    ...(text(record.sourcePath)
+      ? [{ role: 'requirement_source', path: path.resolve(text(record.sourcePath)) }]
+      : []),
+    { role: 'audit_triad_execution_plan', path: planPath },
+    ...roundPaths.map((roundPath, index) => ({
+      role: `audit_triad_round_${index + 1}`,
+      path: roundPath,
+    })),
+    ...(args.repairReceipt ?? []).map((repairPath, index) => ({
+      role: `repair_receipt_${index + 1}`,
+      path: path.resolve(repairPath),
+    })),
+    ...(args.repairFeedbackDispatch ?? []).map((dispatchPath, index) => ({
+      role: `repair_feedback_dispatch_${index + 1}`,
+      path: path.resolve(dispatchPath),
+    })),
+    { role: 'audit_review_report', path: reportPath },
+    { role: 'audit_review_runtime_status_receipt', path: runtimeStatusReceiptPath },
+  ]);
+  const planSnapshot = readJsonSnapshot(planPath);
+  const plan = planSnapshot.value as unknown as AuditTriadExecutionPlan;
+  const planHash = planSnapshot.contentHash;
+  const rounds = readRounds(roundPaths);
   const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
     transition: 'audit-review',
     requirementRecordPath: recordPath,
@@ -442,7 +545,7 @@ export function mainAuditReviewGate(argv: string[]): number {
     checks: evaluation.checks,
     auditTriadExecutionPlanRef: {
       path: normalizePathForRecord(planPath),
-      contentHash: sha256File(planPath),
+      contentHash: planHash,
       stageProfileId: plan.stageProfileId,
       criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
       criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
@@ -451,9 +554,20 @@ export function mainAuditReviewGate(argv: string[]): number {
     roundCount: rounds.length,
     convergenceReceipt: evaluation.convergenceReceipt ?? null,
   };
-  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  const reportHash = sha256File(reportPath);
+  const reportText = `${JSON.stringify(report, null, 2)}\n`;
+  const reportHash = sha256Text(reportText);
+  const runtimeStatus = createAuditReviewRuntimeStatus(record, {
+    attemptId,
+    plan,
+    planPath,
+    planHash,
+    decision: evaluation.decision,
+    blockingReasons: evaluation.blockingReasons,
+    reportPath,
+    reportHash,
+    evaluatedAt,
+    evaluatedBy,
+  });
   const payload = {
     attemptId,
     planPath: normalizePathForRecord(planPath),
@@ -465,23 +579,35 @@ export function mainAuditReviewGate(argv: string[]): number {
     evaluatedAt,
     evaluatedBy,
   };
+  deps.beforeControlCommit?.();
+  if (sha256File(planPath) !== planHash) {
+    throw new Error('audit_review_input_changed:plan');
+  }
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'audit-review-gate-writer',
     eventType: 'audit_review_result_recorded',
     recordedAt: evaluatedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(record)),
     payload,
+    artifactWrites: [
+      {
+        path: reportPath,
+        content: reportText,
+        contentHash: reportHash,
+      },
+      ...runtimeStatusProjectionArtifactWrites(runtimeStatus),
+    ],
     reduce: (currentRecord) =>
       updateRecord(currentRecord, {
         attemptId,
-        plan,
         decision: evaluation.decision,
         blockingReasons: evaluation.blockingReasons,
         checks: evaluation.checks,
         reportPath,
-        reportHash,
         evaluatedAt,
         evaluatedBy,
+        runtimeStatus,
       }),
   });
   const output = {

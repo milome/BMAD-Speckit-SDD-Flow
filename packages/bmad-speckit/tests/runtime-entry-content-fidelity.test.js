@@ -4,10 +4,16 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const {
+  sha256,
+  withVerifiedModelStatus,
+} = require('./helpers/runtime-status-fixture.cjs');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const PACKAGE_CLI = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
+const FIDELITY_SOURCE_HASH = sha256('fidelity-source');
+const FIDELITY_CONFIRMATION_HASH = sha256('fidelity-confirmation');
 
 function makeRuntimeRoot() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-entry-fidelity-'));
@@ -15,28 +21,31 @@ function makeRuntimeRoot() {
   const recordsRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records');
   const recordRoot = path.join(recordsRoot, recordId);
   fs.mkdirSync(recordRoot, { recursive: true });
+  const requirementRecord = withVerifiedModelStatus(
+    {
+      recordId,
+      title: 'Runtime entry fidelity fixture',
+      status: 'user_confirmed',
+      currentMentalModel: 'architecture_confirmation',
+      sourceDocumentHash: FIDELITY_SOURCE_HASH,
+      implementationConfirmationHash: FIDELITY_CONFIRMATION_HASH,
+      confirmationHistory: [
+        {
+          eventType: 'confirmation_recorded',
+          sourceDocumentHash: FIDELITY_SOURCE_HASH,
+          implementationConfirmationHash: FIDELITY_CONFIRMATION_HASH,
+        },
+      ],
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    },
+    {
+      modelId: 'requirement_confirmation',
+      authorityClass: 'controlled_confirmation',
+    }
+  );
   fs.writeFileSync(
     path.join(recordRoot, 'requirement-record.json'),
-    `${JSON.stringify(
-      {
-        recordId,
-        title: 'Runtime entry fidelity fixture',
-        status: 'user_confirmed',
-        currentMentalModel: 'architecture_confirmation',
-        sourceDocumentHash: 'sha256:fidelity-source',
-        implementationConfirmationHash: 'sha256:fidelity-confirmation',
-        confirmationHistory: [
-          {
-            eventType: 'confirmation_recorded',
-            sourceDocumentHash: 'sha256:fidelity-source',
-            implementationConfirmationHash: 'sha256:fidelity-confirmation',
-          },
-        ],
-        updatedAt: '2026-06-01T00:00:00.000Z',
-      },
-      null,
-      2
-    )}\n`,
+    `${JSON.stringify(requirementRecord, null, 2)}\n`,
     'utf8'
   );
   fs.writeFileSync(
@@ -136,7 +145,7 @@ describe('runtime entry content fidelity contract', () => {
         'blocker summary: none',
         'next safe action: prepare_architecture_confirmation',
         'updatedAt/current: 2026-06-01T00:00:00.000Z',
-        'current attempt/hash: sha256:fidelity-source',
+        'current attempt/hash: REQ-ENTRY-FIDELITY-ATTEMPT',
       ]) {
         assert.match(records, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       }
@@ -166,7 +175,7 @@ describe('runtime entry content fidelity contract', () => {
         assert.match(panorama, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       }
       assert.equal(countMatches(panorama, /^ {2}Question: /gmu), 6);
-      assert.equal(countMatches(panorama, /^ {2}Status: /gmu), 6);
+      assert.equal(countMatches(panorama, /^ {2}Effective status: /gmu), 6);
       assert.equal(countMatches(panorama, /^ {2}Evidence source: /gmu), 6);
       assert.equal(countMatches(panorama, /^ {2}Route basis: /gmu), 6);
       assert.equal(countMatches(panorama, /^ {2}terminalEvent: /gmu), 6);

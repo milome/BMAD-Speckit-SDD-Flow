@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolvePackageMainAgentModulePath } from '../../runtime/package-bmad-root';
 import type {
   CompiledPromptRef,
   ExecutionDisciplineProfile,
@@ -58,6 +59,14 @@ function text(value: unknown): string {
 
 function sha256File(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function resolveCurrentRunnerPath(): string {
+  return resolvePackageMainAgentModulePath(
+    'source-authority',
+    'scripts',
+    'main-agent-compiled-prompt-runner'
+  );
 }
 
 function sha256Json(value: unknown): string {
@@ -367,11 +376,12 @@ export function runMainAgentCompiledPrompt(input: {
     startedAt,
     completedAt,
   };
+  const runnerPath = resolveCurrentRunnerPath();
   const invocationIdentity = {
     productionArgv,
     productionArgvHash: sha256Json(productionArgv),
     generatorRef: { path: script, hash: sha256File(script) },
-    runnerRef: { path: __filename, hash: sha256File(__filename) },
+    runnerRef: { path: runnerPath, hash: sha256File(runnerPath) },
     executionReceipt,
   };
 

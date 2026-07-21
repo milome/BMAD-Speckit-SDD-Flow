@@ -53,17 +53,7 @@ const ACTION_MANIFEST_RELATIVE_PATH = path.join(
   'requirements-contract',
   'requirements-contract-package-runtime-action-binding-manifest.json'
 );
-const DIST_SCHEMA_ROOT = path.join(
-  'dist',
-  'main-agent',
-  'source-authority',
-  'packages',
-  'bmad-speckit',
-  'src',
-  'main-agent',
-  'source-authority',
-  'schemas'
-);
+const DIST_SCHEMA_ROOT = path.join('dist', 'main-agent', 'source-authority', 'schemas');
 const LINEAGE_SCHEMA_REF =
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-recovery-lineage-receipt.schema.json';
 const FINALIZATION_SCHEMA_REF =

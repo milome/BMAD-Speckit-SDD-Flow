@@ -9,7 +9,16 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { spawnSyncMock } = vi.hoisted(() => ({
+  spawnSyncMock: vi.fn(),
+}));
+
+vi.mock('node:child_process', () => ({
+  spawnSync: spawnSyncMock,
+}));
+
 import { requirementsContractProductionActivateCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-activate';
 
 function write(root: string, relativePath: string, value: string) {
@@ -23,8 +32,6 @@ interface ControlledCommand {
   fixtureOnly: boolean;
 }
 
-const CONTRACT_PATH =
-  'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
 const LOCK_PATH =
   '_bmad/shared/requirements-contract/.requirements-contract-consumer-registry.activation.lock';
 
@@ -38,21 +45,6 @@ function activationCommands(): ControlledCommand[] {
     )
   );
   return schema.properties.controlledCommands.const;
-}
-
-function writeActivationContract(
-  root: string,
-  commands: ControlledCommand[],
-  commandText: (command: ControlledCommand, index: number) => string
-) {
-  const commandRows = commands.map(
-    (command, index) =>
-      `| ${command.commandId} | \`${commandText(
-        command,
-        index
-      )}\` | Repository root | pass | AC-01 |`
-  );
-  write(root, CONTRACT_PATH, `${commandRows.join('\n')}\n`);
 }
 
 function fixture() {
@@ -90,12 +82,6 @@ function fixture() {
   write(root, 'packages/bmad-speckit/bin/bmad-speckit.js', '#!/usr/bin/env node\n');
   const controlledCommands = activationCommands();
   const commandIds = controlledCommands.map(({ commandId }) => commandId);
-  writeActivationContract(
-    root,
-    controlledCommands,
-    ({ commandId }) =>
-      `node -e "require('fs').appendFileSync('command-order.txt','${commandId}\\n')"`
-  );
   return {
     root,
     recordPath,
@@ -105,6 +91,19 @@ function fixture() {
     controlledCommands,
     commandIds,
   };
+}
+
+function passControlledCommands(onCommand?: (index: number) => void) {
+  let index = 0;
+  spawnSyncMock.mockImplementation(() => {
+    onCommand?.(index);
+    index += 1;
+    return {
+      status: 0,
+      stdout: '',
+      stderr: '',
+    };
+  });
 }
 
 function options(value: ReturnType<typeof fixture>) {
@@ -125,6 +124,10 @@ function options(value: ReturnType<typeof fixture>) {
 }
 
 describe('requirements contract production activate command', () => {
+  beforeEach(() => {
+    spawnSyncMock.mockReset();
+  });
+
   it('does not hard-code controlled command identities in the runtime', () => {
     const source = readFileSync(
       path.resolve(
@@ -139,6 +142,7 @@ describe('requirements contract production activate command', () => {
   it('plans, tests, and atomically activates the exact registry preimage', async () => {
     const value = fixture();
     try {
+      passControlledCommands();
       const receipt = await requirementsContractProductionActivateCommand(options(value));
 
       const registry = JSON.parse(readFileSync(path.join(value.root, value.registryPath), 'utf8'));
@@ -150,9 +154,7 @@ describe('requirements contract production activate command', () => {
         productionReadModelVersion: 'v2',
         activationReceiptId: receipt.activationReceiptId,
       });
-      expect(readFileSync(path.join(value.root, 'command-order.txt'), 'utf8')).toBe(
-        `${value.commandIds.join('\n')}\n`
-      );
+      expect(spawnSyncMock).toHaveBeenCalledTimes(value.commandIds.length);
       const plan = JSON.parse(
         readFileSync(path.join(value.root, receipt.activationPlan.path), 'utf8')
       );
@@ -172,6 +174,7 @@ describe('requirements contract production activate command', () => {
   it('restores the registry preimage when a success receipt collision blocks activation', async () => {
     const value = fixture();
     try {
+      passControlledCommands();
       const registryPath = path.join(value.root, value.registryPath);
       const preimage = readFileSync(registryPath, 'utf8');
       const commandOptions = options(value);
@@ -197,14 +200,9 @@ describe('requirements contract production activate command', () => {
       const registryPath = path.join(value.root, value.registryPath);
       const preimage = readFileSync(registryPath, 'utf8');
       const commandOptions = options(value);
-      writeActivationContract(
-        value.root,
-        value.controlledCommands,
-        ({ commandId }, index) =>
-          index === 0
-            ? `node -e "require('fs').writeFileSync('${value.registryPath}','registry-drift')"`
-            : `node -e "require('fs').appendFileSync('command-order.txt','${commandId}\\n')"`
-      );
+      passControlledCommands((index) => {
+        if (index === 0) write(value.root, value.registryPath, 'registry-drift');
+      });
 
       const receipt = await requirementsContractProductionActivateCommand(commandOptions);
 
@@ -225,6 +223,7 @@ describe('requirements contract production activate command', () => {
   it('blocks without disturbing the registry or an externally held activation lock', async () => {
     const value = fixture();
     try {
+      passControlledCommands();
       const registryPath = path.join(value.root, value.registryPath);
       const preimage = readFileSync(registryPath, 'utf8');
       const commandOptions = options(value);

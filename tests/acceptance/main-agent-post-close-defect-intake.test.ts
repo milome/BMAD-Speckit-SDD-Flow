@@ -204,6 +204,12 @@ function writeClosedRecordFixture(
   fs.writeFileSync(targetPath, currentArtifactBody, 'utf8');
 
   const closeoutAttemptId = `closeout-${recordId}-20260528T000000Z`;
+  const closeoutDecision = options.closeoutDecision ?? 'pass';
+  const controlledCloseout = closeoutDecision === 'pass';
+  const acceptedAt = '2026-05-28T00:02:00.000Z';
+  const acceptedBy = 'post-close-fixture-user';
+  const closeoutConfirmationPageHash = `sha256:${'c'.repeat(64)}`;
+  const deliveryCloseoutReportHash = `sha256:${'d'.repeat(64)}`;
   const recordPath = path.join(
     root,
     '_bmad-output',
@@ -215,7 +221,15 @@ function writeClosedRecordFixture(
   const record = {
     recordId,
     requirementSetId: recordId,
-    status: 'user_confirmed',
+    status: controlledCloseout ? 'closed' : 'user_confirmed',
+    ...(controlledCloseout
+      ? {
+          currentAttemptId: closeoutAttemptId,
+          currentStage: 'delivery_confirmation',
+          lastEventType: 'record_closed',
+          lastAppliedEventId: `record_closed:${closeoutAttemptId}`,
+        }
+      : {}),
     currentMentalModel: 'delivery_confirmation',
     sourcePath: path.relative(root, sourcePath).replace(/\\/g, '/'),
     sourceDocumentHash:
@@ -225,15 +239,66 @@ function writeClosedRecordFixture(
       hashes.implementationConfirmationHash,
     closeout: {
       currentAttemptId: closeoutAttemptId,
-      decision: options.closeoutDecision ?? 'pass',
+      decision: closeoutDecision,
+      ...(controlledCloseout
+        ? {
+            acceptanceRequest: {
+              status: 'user_accepted_closeout',
+              closeoutAttemptId,
+              htmlPath: 'confirmation/closeout-confirmation-current.html',
+              renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+              closeoutConfirmationPageHash,
+              deliveryCloseoutReportHash,
+              acceptedAt,
+              acceptedBy,
+            },
+          }
+        : {}),
       attempts: [
         {
+          eventType: 'closeout_check_recorded',
           closeoutAttemptId,
-          decision: options.closeoutDecision ?? 'pass',
+          decision: closeoutDecision,
+          evaluatedAt: '2026-05-28T00:01:00.000Z',
           reportPath: `_bmad-output/runtime/requirement-records/${recordId}/delivery-closeout-report.json`,
         },
       ],
     },
+    ...(controlledCloseout
+      ? {
+          closeoutAcceptance: {
+            status: 'user_accepted_closeout',
+            confirmedAt: acceptedAt,
+            confirmedBy: acceptedBy,
+            closeoutAttemptId,
+            closeoutConfirmationPageHash,
+            deliveryCloseoutReportHash,
+            renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+          },
+          closeoutAcceptanceHistory: [
+            {
+              eventType: 'closeout_acceptance_confirmed',
+              recordId,
+              requirementSetId: recordId,
+              sourceDocumentHash:
+                options.semanticHashOverride?.sourceDocumentHash ?? hashes.sourceDocumentHash,
+              implementationConfirmationHash:
+                options.semanticHashOverride?.implementationConfirmationHash ??
+                hashes.implementationConfirmationHash,
+              confirmedAt: acceptedAt,
+              confirmedBy: acceptedBy,
+              closeoutAttemptId,
+              closeoutConfirmationPageHash,
+              deliveryCloseoutReportHash,
+              renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+              htmlPath: 'confirmation/closeout-confirmation-current.html',
+              machineCloseoutEventType: 'record_closed',
+              beforeRecordHash: `sha256:${'a'.repeat(64)}`,
+              afterRecordHash: `sha256:${'b'.repeat(64)}`,
+            },
+          ],
+        }
+      : {}),
     postCloseSignals: options.postCloseSignals ?? [],
     closeoutEvidence: {
       targetArtifacts: [
@@ -415,7 +480,17 @@ function writeGatePassFixture(): {
   fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
   fs.writeFileSync(sourcePath, sourceText, 'utf8');
   const hashes = sourceHashes(sourceText, blockText, confirmation);
-  const closeoutAttemptId = `closeout-${recordId}-20260528T000000Z`;
+  const closeoutAttemptId = `IMP-${recordId}-20260528T000000Z`;
+  const acceptedAt = '2026-05-28T00:02:00.000Z';
+  const acceptedBy = 'post-close-gate-pass-user';
+  const closeoutConfirmationPageHash = `sha256:${'c'.repeat(64)}`;
+  const deliveryCloseoutReportHash = `sha256:${'d'.repeat(64)}`;
+  const semanticModelHash = `sha256:${'e'.repeat(64)}`;
+  const packetHash = `sha256:${'f'.repeat(64)}`;
+  writeJson(path.join(root, 'package-lock.json'), {
+    lockfileVersion: 3,
+    packages: {},
+  });
   const previousHash = sha256Bytes(Buffer.from('export const value = "previous";\n', 'utf8'));
   const recordPath = path.join(
     root,
@@ -428,22 +503,87 @@ function writeGatePassFixture(): {
   writeJson(recordPath, {
     recordId,
     requirementSetId: recordId,
-    status: 'user_confirmed',
+    status: 'closed',
+    sourcePath,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId,
+        requirementSetId: recordId,
+        confirmedAt: '2026-05-28T00:00:00.000Z',
+        confirmedBy: 'post-close-defect-intake.test',
+        sourcePath,
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        confirmationPageHash: `sha256:${'b'.repeat(64)}`,
+        confirmationText: 'confirmed',
+        renderReportPath: 'confirmation/confirmation-render-report.json',
+        htmlPath: 'confirmation/confirmation.html',
+      },
+    ],
+    currentAttemptId: closeoutAttemptId,
     currentMentalModel: 'delivery_confirmation',
+    currentStage: 'delivery_confirmation',
+    lastEventType: 'record_closed',
+    lastAppliedEventId: `record_closed:${closeoutAttemptId}`,
     sourceDocumentHash: hashes.sourceDocumentHash,
     implementationConfirmationHash: hashes.implementationConfirmationHash,
+    transactionId: `TX-${recordId}`,
+    semanticModelHash,
+    packetHash,
+    architectureConfirmationRequired: false,
     globalContractTraceabilityPolicy,
     traceStatusPolicy,
     closeout: {
       currentAttemptId: closeoutAttemptId,
       decision: 'pass',
+      acceptanceRequest: {
+        status: 'user_accepted_closeout',
+        closeoutAttemptId,
+        htmlPath: 'confirmation/closeout-confirmation-current.html',
+        renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+        closeoutConfirmationPageHash,
+        deliveryCloseoutReportHash,
+        acceptedAt,
+        acceptedBy,
+      },
       attempts: [
         {
+          eventType: 'closeout_check_recorded',
           closeoutAttemptId,
           decision: 'pass',
+          evaluatedAt: '2026-05-28T00:01:00.000Z',
         },
       ],
     },
+    closeoutAcceptance: {
+      status: 'user_accepted_closeout',
+      confirmedAt: acceptedAt,
+      confirmedBy: acceptedBy,
+      closeoutAttemptId,
+      closeoutConfirmationPageHash,
+      deliveryCloseoutReportHash,
+      renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+    },
+    closeoutAcceptanceHistory: [
+      {
+        eventType: 'closeout_acceptance_confirmed',
+        recordId,
+        requirementSetId: recordId,
+        sourceDocumentHash: hashes.sourceDocumentHash,
+        implementationConfirmationHash: hashes.implementationConfirmationHash,
+        confirmedAt: acceptedAt,
+        confirmedBy: acceptedBy,
+        closeoutAttemptId,
+        closeoutConfirmationPageHash,
+        deliveryCloseoutReportHash,
+        renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
+        htmlPath: 'confirmation/closeout-confirmation-current.html',
+        machineCloseoutEventType: 'record_closed',
+        beforeRecordHash: `sha256:${'a'.repeat(64)}`,
+        afterRecordHash: `sha256:${'b'.repeat(64)}`,
+      },
+    ],
     closeoutEvidence: {
       targetArtifacts: [
         {
@@ -595,6 +735,7 @@ describe('main-agent post-close defect intake', () => {
       '--json',
     ]);
 
+    expect(result.stderr).toBe('');
     expect(result.code).toBe(0);
     expect(result.parsed).toMatchObject({
       classification: 'no_post_close_action_required',
@@ -802,6 +943,7 @@ describe('main-agent post-close defect intake', () => {
       '--json',
     ]);
 
+    expect(result.stderr).toBe('');
     expect(result.code).toBe(0);
     expect(result.parsed).toMatchObject({
       classification: 'post_close_revalidation_required',
@@ -820,6 +962,7 @@ describe('main-agent post-close defect intake', () => {
     expect(String(commandGate?.carrierRecordPath)).toContain(
       'post-close/post-close-revalidation-run-gate-pass/revalidation-carrier-control-record.json'
     );
+    expect(String(commandGate?.stderr)).toBe('');
     expect(String(commandGate?.stdout)).toContain('"ok": true');
     expect(String(commandGate?.stdout)).toContain(String(commandGate?.carrierRecordPath));
     expect(fs.readFileSync(recordPath, 'utf8')).toBe(beforeRecord);

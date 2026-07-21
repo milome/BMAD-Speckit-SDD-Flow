@@ -3,6 +3,32 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { writePassingSourcePrdLintReport } from '../../helpers/source-prd-lint-fixture';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
+  runtimeStatusProjectionRecordPatch,
+  type RuntimeStatusBinding,
+} from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
+import {
+  canonicalJson,
+} from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
+
+type PromptPublicationRecord = Record<string, unknown> & {
+  recordId: unknown;
+  requirementSetId: unknown;
+  currentAttemptId: unknown;
+  sourceDocumentHash: unknown;
+  implementationConfirmationHash: unknown;
+  semanticModelHash: unknown;
+  sourceAmendmentHashes: unknown;
+  sixModelResults: {
+    implementation_readiness: Record<string, unknown>;
+  };
+};
+
+type RuntimeStatusReceiptFixture = Record<string, unknown> & {
+  stageInputs: RuntimeStatusBinding[];
+};
 
 export function sha256(value: Buffer | string): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -280,6 +306,116 @@ implementationConfirmation:
     path.join(evidenceRoot, 'architecture-confirmation.receipt.json'),
     receipt('architecture', architecturePage)
   );
+  const readinessReport = writeJson(
+    path.join(recordRoot, 'readiness', 'implementation-readiness-report.json'),
+    {
+      schemaVersion: 'implementation-readiness-report/v1',
+      recordId: authority.recordId,
+      requirementSetId,
+      implementationAttemptId,
+      decision: 'pass',
+      evaluatedAt: authority.clock.completedAt,
+    }
+  );
+  const currentRecord = JSON.parse(
+    fs.readFileSync(recordPath, 'utf8')
+  ) as Record<string, unknown>;
+  const readinessStatus = createRuntimeStatusProjectionUpdate({
+    recordId: authority.recordId,
+    requirementSetId,
+    modelId: 'implementation_readiness',
+    implementationAttemptId,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    semanticModelHash,
+    stageInputs: [
+      {
+        role: 'requirements_confirmation_receipt',
+        path: requirementsConfirmationReceipt,
+        hash: fileHash(requirementsConfirmationReceipt),
+      },
+      {
+        role: 'architecture_confirmation_receipt',
+        path: architectureConfirmationReceipt,
+        hash: fileHash(architectureConfirmationReceipt),
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'implementation_readiness_report',
+        path: readinessReport,
+        hash: fileHash(readinessReport),
+      },
+    ],
+    blockerRefs: [],
+    evidenceRefs: [
+      requirementsConfirmationReceipt,
+      architectureConfirmationReceipt,
+      readinessReport,
+    ],
+    authorityClass: 'deterministic_gate',
+    decision: 'pass',
+    effectiveStatus: 'pass',
+    createdAt: authority.clock.completedAt,
+    receiptPath: path.join(
+      recordRoot,
+      'runtime',
+      'status-decisions',
+      implementationAttemptId,
+      'implementation_readiness.json'
+    ),
+    projection: {
+      payloadKind: 'model_result',
+      model: 'implementation_readiness',
+      recordId: authority.recordId,
+      requirementSetId,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      semanticModelHash,
+      status: 'pass',
+      resultRecordedAt: authority.clock.completedAt,
+      resultRecordedBy: 'prompt-transaction-publication-fixture',
+      blockingReasons: [],
+      sourceRefs: [
+        { sourceType: 'readiness_report', id: readinessReport },
+      ],
+      currentHashes: {
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        architectureConfirmationHash: fileHash(architectureConfirmationReceipt),
+      },
+    },
+  });
+  if (!readinessStatus.receiptRef) {
+    throw new Error('prompt_publication_fixture_readiness_receipt_missing');
+  }
+  for (const artifactWrite of runtimeStatusProjectionArtifactWrites(readinessStatus)) {
+    writeText(artifactWrite.path, artifactWrite.content);
+  }
+  writeJson(recordPath, {
+    ...currentRecord,
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationRunId: authority.architectureAuditAttemptId,
+      currentArchitectureConfirmationHash: fileHash(architecturePage),
+      currentArchitectureConfirmationPath: architecturePage,
+      staleInputs: {
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        currentArtifactHash: fileHash(architecturePage),
+      },
+    },
+    ...runtimeStatusProjectionRecordPatch({
+      record: currentRecord,
+      modelId: 'implementation_readiness',
+      update: readinessStatus,
+    }),
+  });
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
+  });
+  const implementationReadinessReceipt = readinessStatus.receiptRef.path;
   const consumerRoot = path.join(root, 'consumer');
   const consumerMarker = writeJson(path.join(consumerRoot, 'bmad-speckit-consumer-project.json'), {
     schemaVersion: 'bmad-speckit-consumer-project/v1',
@@ -298,9 +434,6 @@ implementationConfirmation:
   const installedGeneratorPath = writeText(
     path.join(
       installedPackageRoot,
-      'dist',
-      'main-agent',
-      'source-authority',
       '_bmad',
       'skills',
       'req-trace-matrix-prompt-generator',
@@ -480,6 +613,10 @@ implementationConfirmation:
       path: architectureConfirmationReceipt,
       hash: fileHash(architectureConfirmationReceipt),
     },
+    implementationReadinessReceiptRef: {
+      path: implementationReadinessReceipt,
+      hash: fileHash(implementationReadinessReceipt),
+    },
     consumerMarkerRef: { path: consumerMarker, hash: fileHash(consumerMarker) },
     consumerProjectProfileRef: {
       path: consumerProjectProfile,
@@ -512,6 +649,8 @@ implementationConfirmation:
       evidenceRoot,
       requirementsPage,
       architecturePage,
+      implementationReadinessReceipt,
+      readinessReport,
       consumerMarker,
       consumerProjectProfile,
       actionBindingManifest,
@@ -547,6 +686,163 @@ implementationConfirmation:
       json: true,
     },
   };
+}
+
+export function setPromptPublicationReadiness(
+  fixture: ReturnType<typeof materializePromptPublicationFixture>,
+  override: {
+    decision?: 'pass' | 'block' | 'stale';
+    implementationAttemptId?: string;
+    sourceDocumentHash?: string;
+    semanticModelHash?: string;
+  }
+): void {
+  const record = JSON.parse(
+    fs.readFileSync(fixture.paths.recordPath, 'utf8')
+  ) as PromptPublicationRecord;
+  const currentReceipt = JSON.parse(
+    fs.readFileSync(fixture.paths.implementationReadinessReceipt, 'utf8')
+  ) as RuntimeStatusReceiptFixture;
+  const decision = override.decision ?? 'pass';
+  const effectiveStatus =
+    decision === 'pass' ? 'pass' : decision === 'stale' ? 'stale' : 'blocked';
+  const implementationAttemptId =
+    override.implementationAttemptId ?? fixture.identity.implementationAttemptId;
+  const sourceDocumentHash =
+    override.sourceDocumentHash ?? fixture.identity.sourceDocumentHash;
+  const semanticModelHash = override.semanticModelHash ?? fixture.identity.semanticModelHash;
+  const blockingReasons =
+    decision === 'pass' ? [] : [`implementation_readiness_${effectiveStatus}`];
+  const readinessReport = JSON.parse(
+    fs.readFileSync(fixture.paths.readinessReport, 'utf8')
+  ) as Record<string, unknown>;
+  writeJson(fixture.paths.readinessReport, {
+    ...readinessReport,
+    implementationAttemptId,
+    decision,
+    blockingReasons,
+  });
+  const readinessStatus = createRuntimeStatusProjectionUpdate({
+    recordId: String(record.recordId),
+    requirementSetId: String(record.requirementSetId),
+    modelId: 'implementation_readiness',
+    implementationAttemptId,
+    sourceDocumentHash,
+    implementationConfirmationHash: fixture.identity.implementationConfirmationHash,
+    semanticModelHash,
+    stageInputs: currentReceipt.stageInputs.map((binding) =>
+      path.resolve(binding.path) === path.resolve(fixture.options.architectureConfirmationReceipt)
+        ? {
+            ...binding,
+            hash: fileHash(fixture.options.architectureConfirmationReceipt),
+          }
+        : binding
+    ),
+    deterministicGateOutputs: [
+      {
+        role: 'implementation_readiness_report',
+        path: fixture.paths.readinessReport,
+        hash: fileHash(fixture.paths.readinessReport),
+      },
+    ],
+    blockerRefs: blockingReasons,
+    evidenceRefs: [
+      fixture.paths.implementationReadinessReceipt,
+      fixture.paths.readinessReport,
+    ],
+    authorityClass: 'deterministic_gate',
+    decision,
+    effectiveStatus,
+    createdAt: new Date().toISOString(),
+    receiptPath: fixture.paths.implementationReadinessReceipt,
+    projection: record.sixModelResults.implementation_readiness,
+  });
+  if (!readinessStatus.receiptRef) {
+    throw new Error('prompt_publication_fixture_readiness_override_receipt_missing');
+  }
+  for (const artifactWrite of runtimeStatusProjectionArtifactWrites(readinessStatus)) {
+    writeText(artifactWrite.path, artifactWrite.content);
+  }
+  writeJson(fixture.paths.recordPath, {
+    ...record,
+    ...runtimeStatusProjectionRecordPatch({
+      record,
+      modelId: 'implementation_readiness',
+      update: readinessStatus,
+    }),
+    currentAttemptId: record.currentAttemptId,
+  });
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: fixture.paths.recordPath,
+    sourcePath: fixture.paths.sourcePath,
+  });
+  const attempt = JSON.parse(fs.readFileSync(fixture.paths.attemptContext, 'utf8'));
+  attempt.implementationReadinessReceiptRef.hash = fileHash(
+    fixture.paths.implementationReadinessReceipt
+  );
+  writeJson(fixture.paths.attemptContext, attempt);
+}
+
+export function setPromptPublicationArchitectureNotRequired(
+  fixture: ReturnType<typeof materializePromptPublicationFixture>
+): void {
+  const record = JSON.parse(
+    fs.readFileSync(fixture.paths.recordPath, 'utf8')
+  ) as PromptPublicationRecord;
+  const requirementSnapshot = {
+    recordId: record.recordId,
+    requirementSetId: record.requirementSetId,
+    implementationAttemptId: record.currentAttemptId,
+    sourceDocumentHash: record.sourceDocumentHash,
+    implementationConfirmationHash: record.implementationConfirmationHash,
+    semanticModelHash: record.semanticModelHash,
+    sourceAmendmentHashes: record.sourceAmendmentHashes,
+  };
+  const policyVersion = `architecture-applicability/${fixture.authority.bootstrapId}`;
+  const impactHashes = {
+    targetPathsHash: sha256(`${fixture.identity.contractHash}:target-paths`),
+    deploymentImpactHash: sha256(`${fixture.identity.contractHash}:deployment-impact`),
+    consumerImpactHash: sha256(`${fixture.identity.contractHash}:consumer-impact`),
+    governanceImpactHash: sha256(`${fixture.identity.contractHash}:governance-impact`),
+  };
+  writeJson(fixture.options.architectureConfirmationReceipt, {
+    schemaVersion: 'requirements-contract-architecture-applicability-receipt/v1',
+    decision: 'architecture_not_required',
+    transactionId: fixture.identity.transactionId,
+    requirementSetId: fixture.identity.requirementSetId,
+    implementationAttemptId: fixture.identity.implementationAttemptId,
+    requirementSnapshotHash: sha256(canonicalJson(requirementSnapshot)),
+    sourceDocumentHash: fixture.identity.sourceDocumentHash,
+    implementationConfirmationHash: fixture.identity.implementationConfirmationHash,
+    semanticModelHash: fixture.identity.semanticModelHash,
+    policyVersion,
+    policyHash: sha256(canonicalJson({ policyVersion, ...impactHashes })),
+    ...impactHashes,
+    reasonCode: 'no_architecture_impact',
+    decidedBy: fixture.authority.bootstrapId,
+    decidedAt: fixture.authority.clock.completedAt,
+    invalidationInputs: [
+      'sourceDocumentHash',
+      'implementationConfirmationHash',
+      'semanticModelHash',
+      'targetPathsHash',
+      'deploymentImpactHash',
+      'consumerImpactHash',
+      'governanceImpactHash',
+    ],
+  });
+  const attempt = JSON.parse(fs.readFileSync(fixture.paths.attemptContext, 'utf8'));
+  attempt.architectureConfirmationReceiptRef.hash = fileHash(
+    fixture.options.architectureConfirmationReceipt
+  );
+  attempt.architectureApplicabilityInputs = {
+    requirementSnapshotHash: sha256(canonicalJson(requirementSnapshot)),
+    policyVersion,
+    policyHash: sha256(canonicalJson({ policyVersion, ...impactHashes })),
+    ...impactHashes,
+  };
+  writeJson(fixture.paths.attemptContext, attempt);
+  setPromptPublicationReadiness(fixture, { decision: 'pass' });
 }
 
 export function setPromptPublicationGoalAvailability(

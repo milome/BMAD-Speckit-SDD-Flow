@@ -4,6 +4,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  createRequirementsContractSixModelConsumerInventory,
+  REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES,
+  REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES,
+  type RequirementsContractSixModelConsumerInventoryEntry,
+  type SixModelConsumerRole,
+} from '../rules/requirements-contract-consumer-registry';
+import {
   canonicalSixModelParityJson,
   produceRequirementsContractSixModelProjectionParityObservation,
   SIX_MODEL_PARITY_AUTHORITY_SCHEMA_VERSION,
@@ -78,8 +85,7 @@ export interface BuildRequirementsContractSixModelProjectionParityEvidenceResult
 const CONTRACT_RELATIVE_PATH =
   'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
 const EVIDENCE_RELATIVE_PATH = 'docs/plans/evidence/loop-engineering-remediation';
-const RUNTIME_STATUS_SCHEMA =
-  'requirements-contract-runtime-status-decision-receipt.schema.json';
+const RUNTIME_STATUS_SCHEMA = 'requirements-contract-runtime-status-decision-receipt.schema.json';
 const MAX_BUFFER = 64 * 1024 * 1024;
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const ID_PATTERNS = {
@@ -89,9 +95,7 @@ const ID_PATTERNS = {
 };
 
 function object(value: unknown): JsonRecord {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as JsonRecord)
-    : {};
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
 }
 
 function text(value: unknown): string {
@@ -151,7 +155,11 @@ function writeBytesAtomic(target: string, bytes: Buffer, replace = false): strin
 }
 
 function writeJsonAtomic(target: string, value: unknown, replace = false): string {
-  return writeBytesAtomic(target, Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8'), replace);
+  return writeBytesAtomic(
+    target,
+    Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8'),
+    replace
+  );
 }
 
 function relativePath(root: string, target: string): string {
@@ -278,9 +286,7 @@ function deriveCommandBinding(input: {
   const traceRefs = lines
     .filter(
       (line) =>
-        /^\| TR-\d+ \|/u.test(line) &&
-        line.includes('| CMD-31 |') &&
-        line.includes('ARTIFACT-45')
+        /^\| TR-\d+ \|/u.test(line) && line.includes('| CMD-31 |') && line.includes('ARTIFACT-45')
     )
     .map((line) => commandCells(line)[0]);
   if (acceptanceRefs.length === 0 || traceRefs.length === 0) {
@@ -420,18 +426,15 @@ function snapshotSurface(
     'requirements-contract-runtime-status-authority-core.cjs'
   );
   const runtimeSchemaTarget = path.join(surfaceRoot, 'schemas', RUNTIME_STATUS_SCHEMA);
-  writeBytesAtomic(runtimeCoreTarget, fs.readFileSync(requireFile(files.runtimeCorePath, `${surface} runtime core`)));
+  writeBytesAtomic(
+    runtimeCoreTarget,
+    fs.readFileSync(requireFile(files.runtimeCorePath, `${surface} runtime core`))
+  );
   writeBytesAtomic(
     runtimeSchemaTarget,
     fs.readFileSync(requireFile(files.runtimeSchemaPath, `${surface} runtime schema`))
   );
-  const artifactPath = copySnapshot(
-    evidenceRoot,
-    surfaceRoot,
-    'artifact',
-    0,
-    files.artifactPath
-  );
+  const artifactPath = copySnapshot(evidenceRoot, surfaceRoot, 'artifact', 0, files.artifactPath);
   const readerPaths = [
     relativePath(evidenceRoot, runtimeCoreTarget),
     ...files.readerPaths.map((entry, index) =>
@@ -477,14 +480,11 @@ function packageMaterialization(repositoryRoot: string): {
   const extractedRoot = path.join(temporaryRoot, 'extracted', 'package');
   fs.mkdirSync(packRoot, { recursive: true });
   fs.mkdirSync(consumerRoot, { recursive: true });
-  writeJsonAtomic(
-    path.join(consumerRoot, 'package.json'),
-    {
-      name: 'six-model-parity-installed-observer',
-      version: '1.0.0',
-      private: true,
-    }
-  );
+  writeJsonAtomic(path.join(consumerRoot, 'package.json'), {
+    name: 'six-model-parity-installed-observer',
+    version: '1.0.0',
+    private: true,
+  });
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const pack = runProcess(
     npmCommand,
@@ -542,6 +542,34 @@ function packageMaterialization(repositoryRoot: string): {
   };
 }
 
+function inventoryPaths(input: {
+  entries: RequirementsContractSixModelConsumerInventoryEntry[];
+  repositoryRoot: string;
+  roles: readonly SixModelConsumerRole[];
+  surfaces: readonly string[];
+}): string[] {
+  const roles = new Set<SixModelConsumerRole>(input.roles);
+  const surfaces = new Set(input.surfaces);
+  return input.entries
+    .filter((entry) => surfaces.has(entry.surface) && entry.roles.some((role) => roles.has(role)))
+    .map((entry) => path.resolve(input.repositoryRoot, entry.path))
+    .sort();
+}
+
+function remapInventoryPaths(paths: string[], sourceRoot: string, targetRoot: string): string[] {
+  return paths.map((entry) => {
+    const relative = path.relative(sourceRoot, entry);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error(`six-model inventory path escapes source root: ${entry}`);
+    }
+    return path.join(targetRoot, relative);
+  });
+}
+
+function mergeInventoryPaths(...groups: string[][]): string[] {
+  return [...new Set(groups.flat())].sort();
+}
+
 export function resolveSixModelProjectionParitySurfaceFileSets(input: {
   repositoryRoot: string;
   packageRoot: string;
@@ -551,14 +579,6 @@ export function resolveSixModelProjectionParitySurfaceFileSets(input: {
 }): Record<ParitySurface, SourceFileSet> {
   const sourceRoot = path.join(input.packageRoot, 'src');
   const distRoot = path.join(input.packageRoot, 'dist');
-  const generatedRoot = path.join(
-    distRoot,
-    'main-agent',
-    'source-authority',
-    'packages',
-    'bmad-speckit',
-    'src'
-  );
   const installedDist = path.join(input.installedRoot, 'dist');
   const packedDist = path.join(input.extractedRoot, 'dist');
   const script = (...segments: string[]) =>
@@ -566,101 +586,121 @@ export function resolveSixModelProjectionParitySurfaceFileSets(input: {
   const schema = (...segments: string[]) =>
     path.join('main-agent', 'source-authority', 'schemas', ...segments);
   const coreName = 'requirements-contract-runtime-status-authority-core.cjs';
-  const facadeSource = 'verified-six-model-status-facade.ts';
-  const facadeDist = 'verified-six-model-status-facade.js';
-  const writerSource = 'requirements-contract-runtime-status-decision-receipt.ts';
-  const writerDist = 'requirements-contract-runtime-status-decision-receipt.js';
   const rendererSource = path.join('runtime', 'bmads-renderer.ts');
   const rendererDist = path.join('runtime', 'bmads-renderer.js');
   const distCore = path.join(distRoot, script(coreName));
   const distSchema = path.join(distRoot, schema(RUNTIME_STATUS_SCHEMA));
-  const distFacade = path.join(distRoot, script(facadeDist));
-  const distWriter = path.join(distRoot, script(writerDist));
   const distRenderer = path.join(distRoot, rendererDist);
   const hostFiles = {
     codex: path.join(input.repositoryRoot, '.codex', 'commands', 'bmads.md'),
     cursor: path.join(input.repositoryRoot, '.cursor', 'commands', 'bmads.md'),
     claude: path.join(input.repositoryRoot, '.claude', 'commands', 'bmads.md'),
   };
+  const inventory = createRequirementsContractSixModelConsumerInventory(input.repositoryRoot);
+  const rolePaths = (surfaces: readonly string[], roles: readonly SixModelConsumerRole[]) =>
+    inventoryPaths({
+      entries: inventory.entries,
+      repositoryRoot: input.repositoryRoot,
+      roles,
+      surfaces,
+    });
+  const sourceReaders = rolePaths(
+    ['source', 'source-skill', 'repository'],
+    REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES
+  );
+  const sourceWriters = rolePaths(
+    ['source', 'source-skill', 'repository'],
+    REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES
+  );
+  const packageDistReaders = rolePaths(
+    ['package-dist'],
+    REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES
+  );
+  const packageDistWriters = rolePaths(
+    ['package-dist'],
+    REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES
+  );
   return {
     source: {
       artifactPath: path.join(sourceRoot, rendererSource),
       runtimeCorePath: path.join(sourceRoot, script(coreName)),
       runtimeSchemaPath: path.join(sourceRoot, schema(RUNTIME_STATUS_SCHEMA)),
-      readerPaths: [
-        path.join(sourceRoot, script(facadeSource)),
-        path.join(sourceRoot, rendererSource),
-      ],
-      writerPaths: [path.join(sourceRoot, script(writerSource))],
+      readerPaths: sourceReaders,
+      writerPaths: sourceWriters,
     },
     'package-dist': {
       artifactPath: distRenderer,
       runtimeCorePath: distCore,
       runtimeSchemaPath: distSchema,
-      readerPaths: [distFacade, distRenderer],
-      writerPaths: [distWriter],
+      readerPaths: packageDistReaders,
+      writerPaths: packageDistWriters,
     },
     codex: {
       artifactPath: hostFiles.codex,
       runtimeCorePath: distCore,
       runtimeSchemaPath: distSchema,
-      readerPaths: [hostFiles.codex, distFacade, distRenderer],
-      writerPaths: [distWriter],
+      readerPaths: mergeInventoryPaths(
+        rolePaths(['codex'], REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES),
+        packageDistReaders
+      ),
+      writerPaths: mergeInventoryPaths(
+        rolePaths(['codex'], REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES),
+        packageDistWriters
+      ),
     },
     cursor: {
       artifactPath: hostFiles.cursor,
       runtimeCorePath: distCore,
       runtimeSchemaPath: distSchema,
-      readerPaths: [hostFiles.cursor, distFacade, distRenderer],
-      writerPaths: [distWriter],
+      readerPaths: mergeInventoryPaths(
+        rolePaths(['cursor'], REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES),
+        packageDistReaders
+      ),
+      writerPaths: mergeInventoryPaths(
+        rolePaths(['cursor'], REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES),
+        packageDistWriters
+      ),
     },
     claude: {
       artifactPath: hostFiles.claude,
       runtimeCorePath: distCore,
       runtimeSchemaPath: distSchema,
-      readerPaths: [hostFiles.claude, distFacade, distRenderer],
-      writerPaths: [distWriter],
+      readerPaths: mergeInventoryPaths(
+        rolePaths(['claude'], REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES),
+        packageDistReaders
+      ),
+      writerPaths: mergeInventoryPaths(
+        rolePaths(['claude'], REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES),
+        packageDistWriters
+      ),
     },
     installed: {
       artifactPath: path.join(input.installedRoot, 'package.json'),
       runtimeCorePath: path.join(installedDist, script(coreName)),
       runtimeSchemaPath: path.join(installedDist, schema(RUNTIME_STATUS_SCHEMA)),
-      readerPaths: [
-        path.join(installedDist, script(facadeDist)),
-        path.join(installedDist, rendererDist),
-      ],
-      writerPaths: [path.join(installedDist, script(writerDist))],
+      readerPaths: remapInventoryPaths(packageDistReaders, distRoot, installedDist),
+      writerPaths: remapInventoryPaths(packageDistWriters, distRoot, installedDist),
     },
     'generated-dist': {
-      artifactPath: path.join(generatedRoot, rendererDist),
-      runtimeCorePath: path.join(generatedRoot, script(coreName)),
-      runtimeSchemaPath: path.join(generatedRoot, schema(RUNTIME_STATUS_SCHEMA)),
-      readerPaths: [
-        path.join(generatedRoot, script(facadeSource)),
-        path.join(generatedRoot, rendererDist),
-      ],
-      writerPaths: [path.join(generatedRoot, script(writerSource))],
+      artifactPath: distRenderer,
+      runtimeCorePath: distCore,
+      runtimeSchemaPath: distSchema,
+      readerPaths: packageDistReaders,
+      writerPaths: packageDistWriters,
     },
     'packed-package': {
       artifactPath: input.tarball,
       runtimeCorePath: path.join(packedDist, script(coreName)),
       runtimeSchemaPath: path.join(packedDist, schema(RUNTIME_STATUS_SCHEMA)),
-      readerPaths: [
-        path.join(packedDist, script(facadeDist)),
-        path.join(packedDist, rendererDist),
-      ],
-      writerPaths: [path.join(packedDist, script(writerDist))],
+      readerPaths: remapInventoryPaths(packageDistReaders, distRoot, packedDist),
+      writerPaths: remapInventoryPaths(packageDistWriters, distRoot, packedDist),
     },
     'root-host': {
       artifactPath: path.join(input.repositoryRoot, 'bin', 'bmad-speckit.js'),
       runtimeCorePath: distCore,
       runtimeSchemaPath: distSchema,
-      readerPaths: [
-        path.join(input.repositoryRoot, 'bin', 'bmad-speckit.js'),
-        distFacade,
-        distRenderer,
-      ],
-      writerPaths: [distWriter],
+      readerPaths: packageDistReaders,
+      writerPaths: packageDistWriters,
     },
   };
 }
@@ -844,9 +884,13 @@ export function buildRequirementsContractSixModelProjectionParityEvidence(
     explicitPath: options.attemptContextPath,
   });
   const inputSnapshot = currentInputSnapshot(repositoryRoot, contractHash);
-  const runToken = `${new Date().toISOString().replace(/[^0-9]/gu, '').slice(0, 14)}-${sixModelParityHash(
-    canonicalSixModelParityJson(inputSnapshot)
-  ).slice('sha256:'.length, 'sha256:'.length + 16)}`;
+  const runToken = `${new Date()
+    .toISOString()
+    .replace(/[^0-9]/gu, '')
+    .slice(0, 14)}-${sixModelParityHash(canonicalSixModelParityJson(inputSnapshot)).slice(
+    'sha256:'.length,
+    'sha256:'.length + 16
+  )}`;
   const runId = `six-model-parity-${runToken}`;
   const runRoot = path.join(evidenceRoot, 'six-model-parity-runs', runId);
   fs.mkdirSync(path.dirname(runRoot), { recursive: true });

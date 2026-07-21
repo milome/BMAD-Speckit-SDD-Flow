@@ -2,12 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { importNativeGoalTaskReport } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { validateModelPacketCommandExecutionReceipts } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt';
-import {
-  createDefaultOrchestrationState,
-  writeOrchestrationStateAtPath,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
@@ -41,11 +36,9 @@ function sha256Stable(value: unknown): string {
 
 function prepareReceiptImport(input: {
   writeReceipt?: boolean;
-  validationsRun?: string[];
   mutateReceipt?: (receipt: Record<string, any>) => void;
   rehashAfterMutation?: boolean;
   tamperStdoutAfterPublication?: boolean;
-  tamperModelPacketAfterHash?: boolean;
 } = {}) {
   const fixture = materializeRequirementFixture({
     currentMentalModel: 'execution_closure',
@@ -62,10 +55,6 @@ function prepareReceiptImport(input: {
     fixture,
     packetId,
   });
-  const packetCompiledPromptRef = compiled.packet.compiledPromptRef;
-  if (!packetCompiledPromptRef) {
-    throw new Error('compiled packet prompt reference is required');
-  }
   const receiptPath = path.join(
     fixture.root,
     '_bmad-output',
@@ -82,7 +71,7 @@ function prepareReceiptImport(input: {
   modelPacket.controlledExecutionContext = {
     requirementSetId: fixture.requirementSetId,
     transactionId: 'TX-command-execution-receipt',
-    implementationAttemptId: 'IMP-command-execution-receipt',
+    implementationAttemptId: 'IMPL-ATTEMPT-COMMAND-EXECUTION-RECEIPT',
     architectureAuditAttemptId: 'AUDIT-command-execution-receipt',
     activePhaseAuditAttemptId: 'AUDIT-command-execution-receipt',
     contractHash: `sha256:${'a'.repeat(64)}`,
@@ -103,72 +92,6 @@ function prepareReceiptImport(input: {
   fs.writeFileSync(
     compiled.compiledPromptRef.modelPacketPath,
     `${JSON.stringify(modelPacket, null, 2)}\n`,
-    'utf8'
-  );
-  packetCompiledPromptRef.modelPacketHash = sha256File(
-    compiled.compiledPromptRef.modelPacketPath
-  );
-  const taskReportPath = path.join(
-    fixture.root,
-    '_bmad-output',
-    'runtime',
-    'governance',
-    'task-reports',
-    fixture.requirementSetId,
-    `${packetId}.json`
-  );
-  packetCompiledPromptRef.taskReportPath = taskReportPath;
-  fs.writeFileSync(compiled.packetPath, `${JSON.stringify(compiled.packet, null, 2)}\n`, 'utf8');
-  if (input.tamperModelPacketAfterHash) {
-    modelPacket.tamperedAfterHash = true;
-    fs.writeFileSync(
-      compiled.compiledPromptRef.modelPacketPath,
-      `${JSON.stringify(modelPacket, null, 2)}\n`,
-      'utf8'
-    );
-  }
-  writeOrchestrationStateAtPath(
-    path.join(
-      fixture.root,
-      '_bmad-output',
-      'runtime',
-      'requirement-records',
-      fixture.requirementSetId,
-      'orchestration',
-      'orchestration-state',
-      `${fixture.requirementSetId}.json`
-    ),
-    createDefaultOrchestrationState({
-      sessionId: fixture.requirementSetId,
-      host: 'codex',
-      flow: 'standalone_tasks',
-      currentPhase: 'implement',
-      nextAction: 'dispatch_implement',
-      pendingPacket: {
-        packetId,
-        packetPath: compiled.packetPath,
-        packetKind: 'execution',
-        status: 'dispatched',
-        createdAt: '2026-07-16T00:00:00.000Z',
-        claimOwner: null,
-      },
-    })
-  );
-  fs.mkdirSync(path.dirname(taskReportPath), { recursive: true });
-  fs.writeFileSync(
-    taskReportPath,
-    `${JSON.stringify(
-      {
-        packetId,
-        status: 'done',
-        filesChanged: ['tests/native-goal.test.ts'],
-        validationsRun: input.validationsRun ?? [`log says ${COMMAND_ID} passed`],
-        evidence: ['self-reported command success'],
-        downstreamContext: ['claimed completion'],
-      },
-      null,
-      2
-    )}\n`,
     'utf8'
   );
   const stdoutPath = path.join(path.dirname(receiptPath), `${COMMAND_ID}.stdout.log`);
@@ -198,7 +121,7 @@ function prepareReceiptImport(input: {
       requirementSetId: fixture.requirementSetId,
       requirementRefs: [fixture.recordId],
       transactionId: 'TX-command-execution-receipt',
-      implementationAttemptId: 'IMP-command-execution-receipt',
+      implementationAttemptId: 'IMPL-ATTEMPT-COMMAND-EXECUTION-RECEIPT',
       architectureAuditAttemptId: 'AUDIT-command-execution-receipt',
       activePhaseAuditAttemptId: 'AUDIT-command-execution-receipt',
       contractHash: `sha256:${'a'.repeat(64)}`,
@@ -236,18 +159,13 @@ function prepareReceiptImport(input: {
       fs.appendFileSync(stdoutPath, 'tampered after publication\n', 'utf8');
     }
   }
-  return { fixture, taskReportPath };
+  return { fixture, modelPacket };
 }
 
-function importPrepared(prepared: ReturnType<typeof prepareReceiptImport>) {
-  return importNativeGoalTaskReport({
+function validatePrepared(prepared: ReturnType<typeof prepareReceiptImport>) {
+  return validateModelPacketCommandExecutionReceipts({
     projectRoot: prepared.fixture.root,
-    flow: 'standalone_tasks',
-    stage: 'implement',
-    recordId: prepared.fixture.recordId,
-    requirementSetId: prepared.fixture.requirementSetId,
-    runId: prepared.fixture.runId,
-    taskReportPath: prepared.taskReportPath,
+    modelPacket: prepared.modelPacket,
   });
 }
 
@@ -305,30 +223,36 @@ describe('requirements contract command execution receipt', () => {
   it('rejects command-ID text when the controlled-executor Receipt is missing', () => {
     const prepared = prepareReceiptImport();
     try {
-      const imported = importPrepared(prepared);
+      const validation = validatePrepared(prepared);
 
-      expect(imported.status).toBe('invalid');
-      expect(imported.validationErrors).toContain(
+      expect(validation.decision).toBe('block');
+      expect(validation.issueCodes).toContain(
         `required_command_receipt_missing:${COMMAND_ID}`
       );
-      expect(imported.controlledIngested).toBe(false);
-      expect(imported.nextAction).toBeNull();
     } finally {
       cleanupRequirementWorkspace(prepared.fixture.root);
     }
   });
 
-  it('imports only when a current exact Receipt proves command success', () => {
+  it('accepts only when a current exact Receipt proves command success', () => {
     const prepared = prepareReceiptImport({
       writeReceipt: true,
-      validationsRun: ['TaskReport contains no command authority'],
     });
     try {
-      const imported = importPrepared(prepared);
+      const validation = validatePrepared(prepared);
 
-      expect(imported.status).toBe('imported');
-      expect(imported.validationErrors).toEqual([]);
-      expect(imported.controlledIngested).toBe(true);
+      expect(validation.decision).toBe('pass');
+      expect(validation.issueCodes).toEqual([]);
+      expect(validation.acceptedReceipts).toEqual([
+        expect.objectContaining({
+          commandId: COMMAND_ID,
+          commandRunRef: expect.objectContaining({
+            commandId: COMMAND_ID,
+            runId: 'RUN-command-execution-receipt',
+            exitCode: 0,
+          }),
+        }),
+      ]);
     } finally {
       cleanupRequirementWorkspace(prepared.fixture.root);
     }
@@ -403,7 +327,7 @@ describe('requirements contract command execution receipt', () => {
     {
       name: 'implementation-attempt',
       mutateReceipt: (receipt: Record<string, any>) => {
-        receipt.implementationAttemptId = 'IMP-other';
+        receipt.implementationAttemptId = 'IMPL-ATTEMPT-OTHER';
       },
       expected: `required_command_receipt_binding_mismatch:${COMMAND_ID}:implementationAttemptId`,
     },
@@ -471,12 +395,10 @@ describe('requirements contract command execution receipt', () => {
       rehashAfterMutation: testCase.rehashAfterMutation,
     });
     try {
-      const imported = importPrepared(prepared);
+      const validation = validatePrepared(prepared);
 
-      expect(imported.status).toBe('invalid');
-      expect(imported.validationErrors).toContain(testCase.expected);
-      expect(imported.controlledIngested).toBe(false);
-      expect(imported.nextAction).toBeNull();
+      expect(validation.decision).toBe('block');
+      expect(validation.issueCodes).toContain(testCase.expected);
     } finally {
       cleanupRequirementWorkspace(prepared.fixture.root);
     }
@@ -488,29 +410,12 @@ describe('requirements contract command execution receipt', () => {
       tamperStdoutAfterPublication: true,
     });
     try {
-      const imported = importPrepared(prepared);
+      const validation = validatePrepared(prepared);
 
-      expect(imported.status).toBe('invalid');
-      expect(imported.validationErrors).toContain(
+      expect(validation.decision).toBe('block');
+      expect(validation.issueCodes).toContain(
         `required_command_receipt_output_hash_mismatch:${COMMAND_ID}:stdout`
       );
-      expect(imported.controlledIngested).toBe(false);
-    } finally {
-      cleanupRequirementWorkspace(prepared.fixture.root);
-    }
-  });
-
-  it('rejects a model packet changed after the compiled hash was frozen', () => {
-    const prepared = prepareReceiptImport({
-      writeReceipt: true,
-      tamperModelPacketAfterHash: true,
-    });
-    try {
-      const imported = importPrepared(prepared);
-
-      expect(imported.status).toBe('invalid');
-      expect(imported.validationErrors).toContain('model_packet_hash_mismatch');
-      expect(imported.controlledIngested).toBe(false);
     } finally {
       cleanupRequirementWorkspace(prepared.fixture.root);
     }

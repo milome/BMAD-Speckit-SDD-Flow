@@ -4,7 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('./load-js-yaml');
-const { requireLargeDocumentWriter } = require('./resolve-bmad-runtime');
+const {
+  requireBmadSpeckit,
+  requireLargeDocumentWriter,
+} = require('./resolve-bmad-runtime');
 const {
   classifyConfirmationDrift,
   STALE_BOOKKEEPING_REPAIR_REQUIRED,
@@ -72,6 +75,14 @@ function requireContractExecutionManifestBuilder() {
 }
 
 const { buildDerivedContractExecutionManifest } = requireContractExecutionManifestBuilder();
+
+function requireVerifiedSixModelStatusFacade() {
+  return requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.cjs'
+  );
+}
+
+const { resolveVerifiedSixModelStatus } = requireVerifiedSixModelStatusFacade();
 
 class BlockedInput extends Error {
   constructor(code, message) {
@@ -1207,13 +1218,6 @@ function latestArchitectureConfirmationEvent(record) {
     .at(-1);
 }
 
-function architectureModelResult(record) {
-  const results = record?.sixModelResults;
-  if (!results || typeof results !== 'object' || Array.isArray(results)) return {};
-  const result = results.architecture_confirmation;
-  return result && typeof result === 'object' && !Array.isArray(result) ? result : {};
-}
-
 function architectureConfirmationActiveForCurrentHashes(record, sourceHash, confirmationHash) {
   const state = record?.architectureConfirmationState;
   if (!state || typeof state !== 'object' || Array.isArray(state)) return false;
@@ -1232,22 +1236,14 @@ function architectureConfirmationActiveForCurrentHashes(record, sourceHash, conf
   if (event.implementationConfirmationHash !== confirmationHash) return false;
   if (event.architectureConfirmationArtifactHash !== currentHash) return false;
 
-  const modelResult = architectureModelResult(record);
-  if (modelResult.status && modelResult.status !== 'pass') return false;
-  const modelHashes = modelResult.currentHashes && typeof modelResult.currentHashes === 'object' && !Array.isArray(modelResult.currentHashes)
-    ? modelResult.currentHashes
-    : {};
-  if (modelHashes.sourceDocumentHash && modelHashes.sourceDocumentHash !== sourceHash) return false;
-  if (modelHashes.implementationConfirmationHash && modelHashes.implementationConfirmationHash !== confirmationHash) {
-    return false;
-  }
-  if (
-    modelHashes.architectureConfirmationArtifactHash &&
-    modelHashes.architectureConfirmationArtifactHash !== currentHash
-  ) {
-    return false;
-  }
-  return true;
+  const verifiedStatus = resolveVerifiedSixModelStatus({
+    record,
+    modelId: 'architecture_confirmation',
+    currentImplementationAttemptId: String(
+      record?.currentAttemptId ?? record?.implementationAttemptId ?? ''
+    ).trim(),
+  });
+  return verifiedStatus.effectiveStatus === 'pass';
 }
 
 function requirementClosureFor(confirmation, id) {

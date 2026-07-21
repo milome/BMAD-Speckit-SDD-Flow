@@ -70,7 +70,6 @@ waves:
           - packages/bmad-speckit/src/main-agent/actions/inspect.ts
           - packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts
           - packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts
-          - packages/bmad-speckit/src/main-agent/actions/run-loop.ts
           - packages/bmad-speckit/src/main-agent/compiled/main-agent-orchestration.cjs
         publicCommandsBeforeMigration:
           - bmad-speckit main-agent-orchestration
@@ -112,13 +111,11 @@ waves:
           - packages/bmad-speckit/src/main-agent/actions/inspect.ts
           - packages/bmad-speckit/src/main-agent/actions/confirm-scope.ts
           - packages/bmad-speckit/src/main-agent/actions/dispatch-plan.ts
-          - packages/bmad-speckit/src/main-agent/actions/run-loop.ts
           - packages/bmad-speckit/dist/main-agent/index.js
           - packages/bmad-speckit/dist/main-agent/runtime.js
           - packages/bmad-speckit/dist/main-agent/actions/inspect.js
           - packages/bmad-speckit/dist/main-agent/actions/confirm-scope.js
           - packages/bmad-speckit/dist/main-agent/actions/dispatch-plan.js
-          - packages/bmad-speckit/dist/main-agent/actions/run-loop.js
           - repo-governance/script-migrations/main-agent-source-authority-wave-2/evidence.json
           - repo-governance/script-migrations/main-agent-source-authority-wave-2/summary.md
         publicCommandsBeforeMigration:

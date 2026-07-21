@@ -85,6 +85,51 @@ describe('six-model receipt to projection transaction', () => {
     });
   });
 
+  it('reuses an existing canonical artifact when a downstream model binds the same path and hash', () => {
+    const readinessUpdate = createRuntimeStatusProjectionUpdate(input());
+    const readinessRecord = runtimeStatusProjectionRecordPatch({
+      record: { sixModelResults: {}, runtimeStatusDecisionReceipts: [], artifactIndex: [] },
+      modelId: 'implementation_readiness',
+      update: readinessUpdate,
+    });
+    const readinessReceipt = readinessUpdate.receiptRef!.receipt;
+    const closureUpdate = createRuntimeStatusProjectionUpdate({
+      ...input(),
+      modelId: 'execution_closure',
+      receiptPath: 'evidence/status/execution-closure.json',
+      stageInputs: [
+        {
+          role: 'implementation_readiness_receipt',
+          path: readinessUpdate.receiptRef!.path,
+          hash: readinessReceipt.receiptHash,
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: 'task_report',
+          path: 'evidence/task-report.json',
+          hash: hash('6'),
+        },
+      ],
+    });
+
+    const closureRecord = runtimeStatusProjectionRecordPatch({
+      record: readinessRecord,
+      modelId: 'execution_closure',
+      update: closureUpdate,
+    });
+    const readinessArtifacts = closureRecord.artifactIndex.filter(
+      (entry: Record<string, unknown>) => entry.path === readinessUpdate.receiptRef!.path
+    );
+
+    expect(readinessArtifacts).toHaveLength(1);
+    expect(readinessArtifacts[0]).toMatchObject({
+      artifactType: 'runtime_status_decision_receipt',
+      sourceOfTruthRole: 'control',
+      contentHash: readinessReceipt.receiptHash,
+    });
+  });
+
   it('canonicalizes Windows binding paths before receipt and artifact publication', () => {
     const windowsInput = {
       ...input(),

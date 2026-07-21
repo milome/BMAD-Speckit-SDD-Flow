@@ -163,31 +163,6 @@ function renameWithRetry(source: string, target: string, maxAttempts = 20): void
   }
 }
 
-function safeReplaceJson(filePath: string, value: unknown) {
-  if (!existsSync(filePath)) throw new Error(`replace target is absent: ${filePath}`);
-  const backupPath = `${filePath}.backup-${process.pid}-${Date.now()}`;
-  const draft = `${filePath}.tmp-${process.pid}-${Date.now()}`;
-  const originalHash = fileHash(filePath);
-  copyFileSync(filePath, backupPath);
-  writeUtf8(draft, value);
-  const tempHash = fileHash(draft);
-  renameSync(draft, filePath);
-  const finalHash = fileHash(filePath);
-  if (finalHash !== tempHash) throw new Error('safe replacement hash mismatch');
-  return {
-    schemaVersion: 'requirements-contract-recovery-safe-write/v1',
-    targetPath: filePath,
-    mode: 'replace',
-    tempPath: draft,
-    tempHash,
-    backupPath,
-    originalHash,
-    backupHash: fileHash(backupPath),
-    finalHash,
-    writtenAt: new Date().toISOString(),
-  };
-}
-
 function consumerFileIndex(
   root: string
 ): Array<{ mode: string; blob: string; path: string }> {

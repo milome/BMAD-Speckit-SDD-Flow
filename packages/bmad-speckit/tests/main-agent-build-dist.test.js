@@ -21,6 +21,10 @@ const RENDER_ROUNDTRIP_GATE_SCRIPT =
   'source-authority/scripts/requirements-contract-render-roundtrip-gate.js';
 const TYPE_SCRIPT_FAMILY_SOURCE_RE = /\.(?:ts|tsx|cts|mts)$/u;
 const TYPE_SCRIPT_DECLARATION_SOURCE_RE = /\.d\.(?:ts|cts|mts)$/u;
+const SOURCE_AUTHORITY_TYPE_ONLY_FILES = new Set([
+  'scripts/governance-hook-types.ts',
+  'scripts/i18n/field-meta-types.ts',
+]);
 const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
   'runtime/host-runtime-mode.ts',
   'runtime/supervised-worker-runtime.ts',
@@ -52,7 +56,7 @@ const EXPECTED_DIST_FILES = [
   'runtime/parallel-mission-control.js',
   'actions/inspect.js',
   'actions/chaos-scenarios.js',
-  'actions/compiled-prompt-runner.js',
+  'actions/prompt-transaction-publish.js',
   'actions/confirm-scope.js',
   'actions/delivery-closeout-gate.js',
   'actions/delivery-evidence-run.js',
@@ -60,7 +64,6 @@ const EXPECTED_DIST_FILES = [
   'actions/dual-host-pr-orchestrator.js',
   'actions/full-orchestration.js',
   'actions/implementation-readiness-gate.js',
-  'actions/run-loop.js',
   'actions/native-goal-invoker.js',
   'actions/release-gate.js',
   'actions/quality-gate.js',
@@ -79,42 +82,40 @@ const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
   {
     file: 'source-authority/scripts/critical-auditor-profile.js',
     forbidden: '../../../../../../_bmad/shared/critical-auditor-profile',
-    required: '../_bmad/shared/critical-auditor-profile',
-    runtimeTarget:
-      'source-authority/_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
+    required: '../../../../_bmad/shared/critical-auditor-profile',
+    runtimeTarget: '_bmad/shared/critical-auditor-profile/load-critical-auditor-profile.js',
+    runtimeTargetBase: 'package',
   },
   {
     file: 'source-authority/scripts/query-validate.js',
     forbidden: '../packages/scoring/query',
-    required: '../packages/scoring/dist/query',
-    runtimeTarget: 'source-authority/packages/scoring/dist/query/index.js',
+    required: '@bmad-speckit/scoring/query',
+    runtimeTarget: 'node_modules/@bmad-speckit/scoring/dist/query/index.js',
+    runtimeTargetBase: 'repo',
   },
   {
     file: 'source-authority/scripts/bmad-help-routing-state.js',
     forbidden: '../packages/runtime-context/src/context',
-    required: '../packages/runtime-context/dist/context',
-    runtimeTarget: 'source-authority/packages/runtime-context/dist/context.js',
+    required: '@bmad-speckit/runtime-context/context',
+    runtimeTarget: 'node_modules/@bmad-speckit/runtime-context/dist/context.js',
+    runtimeTargetBase: 'repo',
   },
   {
     file: 'source-authority/scripts/ralph-method/schema.js',
     forbidden: '../../packages/ralph-method/src/schema',
-    required: '../../packages/ralph-method/dist/schema',
-    runtimeTarget: 'source-authority/packages/ralph-method/dist/schema.js',
+    required: '@bmad-speckit/ralph-method/schema',
+    runtimeTarget: 'node_modules/@bmad-speckit/ralph-method/dist/schema.js',
+    runtimeTargetBase: 'repo',
   },
 ];
 const EXPECTED_SOURCE_AUTHORITY_ASSETS = [
-  '.specify/templates/agent-file-template.md',
-  'packages/bmad-speckit/src/main-agent/source-authority/templates/requirements-contract-source-prd-template.md',
-  'packages/bmad-speckit/src/main-agent/source-authority/templates/requirements-contract-source-prd-template.schema.json',
-  '_bmad-output/runtime/requirement-records/index.json',
-  '_bmad-output/runtime/requirement-records/REQ-CI-GOVERNANCE-MAPPING-FIXTURE/requirement-record.json',
+  'templates/requirements-contract-source-prd-template.md',
+  'templates/requirements-contract-source-prd-template.schema.json',
 ];
-const GENERATED_SOURCE_AUTHORITY_ASSETS = EXPECTED_SOURCE_AUTHORITY_ASSETS.filter((relativePath) =>
-  relativePath.startsWith('_bmad-output/')
-);
 
 function runtimeTargetBasePath(base) {
   if (base === 'package') return PACKAGE_ROOT;
+  if (base === 'repo') return REPO_ROOT;
   if (base === 'packageDist') return PACKAGE_DIST_ROOT;
   if (base === undefined || base === 'dist') return DIST_ROOT;
   throw new Error(`unknown runtimeTargetBase: ${base}`);
@@ -146,11 +147,13 @@ function collectSourceAuthorityTypeScriptFiles(dir, base = dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (['tests', 'packages', '_bmad', '_bmad-output'].includes(entry.name)) continue;
       collected.push(...collectSourceAuthorityTypeScriptFiles(fullPath, base));
       continue;
     }
     if (!entry.isFile() || !isTypeScriptRuntimeSourcePath(entry.name)) continue;
-    collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
+    const relativePath = path.relative(base, fullPath).replace(/\\/g, '/');
+    if (!SOURCE_AUTHORITY_TYPE_ONLY_FILES.has(relativePath)) collected.push(relativePath);
   }
   return collected.sort();
 }
@@ -344,8 +347,6 @@ describe('main-agent dist build', () => {
       path.join(REPO_ROOT, '.cursor', actionBindingManifestRelativePath),
       path.join(REPO_ROOT, '.claude', actionBindingManifestRelativePath),
       path.join(PACKAGE_ROOT, '_bmad', actionBindingManifestRelativePath),
-      path.join(PACKAGE_DIST_ROOT, '_bmad', actionBindingManifestRelativePath),
-      path.join(DIST_ROOT, 'source-authority', '_bmad', actionBindingManifestRelativePath),
     ];
     for (const manifestPath of actionBindingManifestPaths) {
       assert.equal(fs.existsSync(manifestPath), true, `missing ${manifestPath}`);
@@ -369,6 +370,7 @@ describe('main-agent dist build', () => {
         'requirements-contract-candidate-package',
         'requirements-contract-changed-path-manifest',
         'requirements-contract-consumer-cli-capability-observe',
+        'requirements-contract-critical-auditor-judge-adapter',
         'requirements-contract-detached-test-rerun',
         'requirements-contract-eval',
         'requirements-contract-evidence-verify',
@@ -438,8 +440,8 @@ describe('main-agent dist build', () => {
       );
       assert.equal(
         fs.existsSync(sourceAuthorityDistFile),
-        true,
-        `package TS source was not compiled inside source-authority dist mirror: ${relativePath}`
+        false,
+        `package TS source must not be mirrored inside source-authority dist: ${relativePath}`
       );
       const distSource = fs.readFileSync(distFile, 'utf8');
       assert.doesNotMatch(distSource, /\b(?:tsx|ts-node)\b/i);
@@ -619,11 +621,6 @@ describe('main-agent dist build', () => {
     const sourcePrdTemplateSchema = path.join(
       DIST_ROOT,
       'source-authority',
-      'packages',
-      'bmad-speckit',
-      'src',
-      'main-agent',
-      'source-authority',
       'templates',
       'requirements-contract-source-prd-template.schema.json'
     );
@@ -651,40 +648,21 @@ describe('main-agent dist build', () => {
     assert.match(instanceLintSource, /requirements-contract-source-prd-rules/u);
 
     const sourceAuthorityDistRoot = path.join(DIST_ROOT, 'source-authority');
-    const sourceAuthorityPackageJsonFiles = collectPackageJsonFiles(sourceAuthorityDistRoot);
-    assert.ok(
-      sourceAuthorityPackageJsonFiles.length > 0,
-      'source-authority package manifest inventory must not be empty'
+    assert.deepEqual(
+      collectPackageJsonFiles(sourceAuthorityDistRoot),
+      [],
+      'source-authority dist must not contain workspace package manifests'
     );
-    for (const relativePath of sourceAuthorityPackageJsonFiles) {
-      const manifestText = fs.readFileSync(
-        path.join(sourceAuthorityDistRoot, relativePath),
-        'utf8'
-      );
-      const manifest = JSON.parse(manifestText);
-      assert.equal(manifest.scripts, undefined, `${relativePath} must not expose package scripts`);
-      assert.equal(manifest.bin, undefined, `${relativePath} must not expose package bins`);
-      assert.equal(
-        manifest.devDependencies,
-        undefined,
-        `${relativePath} must not expose dev dependencies`
-      );
-      assert.equal(manifest.dependencies?.tsx, undefined, `${relativePath} must not depend on tsx`);
-      assert.equal(
-        manifest.dependencies?.['ts-node'],
-        undefined,
-        `${relativePath} must not depend on ts-node`
-      );
-      assert.doesNotMatch(
-        manifestText,
-        /\b(?:tsx|ts-node)\b/i,
-        `${relativePath} must not contain runtime fallback tokens`
-      );
-    }
 
     for (const relativePath of EXPECTED_SOURCE_AUTHORITY_ASSETS) {
       const distAsset = path.join(DIST_ROOT, 'source-authority', relativePath);
-      const repoAsset = path.join(REPO_ROOT, relativePath);
+      const repoAsset = path.join(
+        PACKAGE_ROOT,
+        'src',
+        'main-agent',
+        'source-authority',
+        relativePath
+      );
       assert.equal(
         fs.existsSync(distAsset),
         true,
@@ -709,18 +687,13 @@ describe('main-agent dist build', () => {
       );
       assert.equal(
         fs.existsSync(packageDistAsset),
-        true,
-        `missing package dist runtime asset ${relativePath}`
+        false,
+        `package runtime asset must not be duplicated under dist: ${relativePath}`
       );
       assert.equal(
         fs.readFileSync(packageAsset, 'utf8'),
         fs.readFileSync(repoAsset, 'utf8'),
         `package runtime asset drifted from canonical source: ${relativePath}`
-      );
-      assert.equal(
-        fs.readFileSync(packageDistAsset, 'utf8'),
-        fs.readFileSync(repoAsset, 'utf8'),
-        `package dist runtime asset drifted from canonical source: ${relativePath}`
       );
     }
 
@@ -731,26 +704,17 @@ describe('main-agent dist build', () => {
     assert.equal(profile.schemaVersion, 'critical-auditor-profile/v1');
   });
 
-  it('auto-provisions source-authority governance fixture for clean dist builds', () => {
-    withTemporarilyMovedFiles(GENERATED_SOURCE_AUTHORITY_ASSETS, () => {
-      execFileSync(process.execPath, [BUILD_SCRIPT], {
-        cwd: PACKAGE_ROOT,
-        encoding: 'utf8',
-        stdio: 'pipe',
-      });
-
-      for (const relativePath of GENERATED_SOURCE_AUTHORITY_ASSETS) {
-        const repoAsset = path.join(REPO_ROOT, relativePath);
-        const distAsset = path.join(DIST_ROOT, 'source-authority', relativePath);
-        assert.equal(fs.existsSync(repoAsset), true, `build did not generate ${relativePath}`);
-        assert.equal(fs.existsSync(distAsset), true, `dist missing generated ${relativePath}`);
-        assert.equal(
-          fs.readFileSync(distAsset, 'utf8'),
-          fs.readFileSync(repoAsset, 'utf8'),
-          `dist generated fixture drifted from build input: ${relativePath}`
-        );
-      }
+  it('does not mirror generated consumer fixtures into source-authority dist', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: PACKAGE_ROOT,
+      encoding: 'utf8',
+      stdio: 'pipe',
     });
+
+    assert.equal(
+      fs.existsSync(path.join(DIST_ROOT, 'source-authority', '_bmad-output')),
+      false
+    );
   });
 
   it('builds package _bmad mirror before source-authority import rewriting', () => {

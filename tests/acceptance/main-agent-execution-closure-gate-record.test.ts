@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -290,6 +297,16 @@ describe('main agent execution closure gate', () => {
           implementationAttemptId: 'attempt-001',
           receiptHash: record.sixModelResults.execution_closure.decisionReceiptHash,
         },
+      });
+      const decisionReceiptPath = path.resolve(
+        path.dirname(recordPath),
+        record.sixModelResults.execution_closure.decisionReceiptRef
+      );
+      expect(existsSync(decisionReceiptPath)).toBe(true);
+      expect(JSON.parse(readFileSync(decisionReceiptPath, 'utf8'))).toMatchObject({
+        modelId: 'execution_closure',
+        implementationAttemptId: record.sixModelResults.execution_closure.currentAttemptId,
+        receiptHash: record.sixModelResults.execution_closure.decisionReceiptHash,
       });
       expect(record.mentalModelTransitions.at(-1)).toMatchObject({
         fromModel: 'implementation_readiness',

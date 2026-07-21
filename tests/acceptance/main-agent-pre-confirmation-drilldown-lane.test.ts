@@ -1207,6 +1207,14 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(readFileSync(source, 'utf8')).not.toBe(beforeSourceText);
       expect(result.nextMentalModel).toBeNull();
       expect(result.deliveryReadiness.ready).toBe(false);
+      expect(result.blockingIssues.map((issue: any) => issue.code)).not.toEqual(
+        expect.arrayContaining([
+          'sourceDocumentHash_changed',
+          'implementationConfirmationHash_changed',
+          'reconfirmation_request_missing',
+          'reconfirmation_missing_diff_summary',
+        ])
+      );
       expect(existsSync(paths.promotionReceipt)).toBe(true);
       expect(result.finalStandards).toMatchObject({
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
@@ -2364,6 +2372,13 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         [1, 2, 3, 4],
       ]);
       expect(mustGate.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
+      expect(confirmation.closeoutReadinessPreview.blockingConditions).toEqual(
+        expect.arrayContaining([
+          'controlled_ingest_required',
+          'current_attempt_evidence_required',
+          'user_confirmation_required',
+        ])
+      );
 
       const mustRows = confirmation.must as Array<{ id: string; text: string }>;
       const mustTexts = mustRows.map((row) => row.text);

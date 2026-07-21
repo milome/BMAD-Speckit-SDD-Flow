@@ -46,6 +46,11 @@ function baseManifest() {
       requirements: { path: 'docs/evidence/requirements.receipt.json', hash: HASH },
       architecture: { path: 'docs/evidence/architecture.receipt.json', hash: HASH },
     },
+    architectureAuthorityDecision: 'pass',
+    implementationReadinessReceiptRef: {
+      path: 'docs/evidence/implementation-readiness.receipt.json',
+      hash: HASH,
+    },
     confirmationPageRefs: {
       requirements: { path: 'docs/evidence/requirements.html', hash: HASH },
       architecture: { path: 'docs/evidence/architecture.html', hash: HASH },

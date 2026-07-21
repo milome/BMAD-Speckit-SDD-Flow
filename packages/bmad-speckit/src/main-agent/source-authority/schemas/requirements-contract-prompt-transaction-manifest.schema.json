@@ -19,7 +19,9 @@
     "sourceRef",
     "stageRegistryRef",
     "installedStageRegistryRef",
+    "architectureAuthorityDecision",
     "confirmationReceiptRefs",
+    "implementationReadinessReceiptRef",
     "confirmationPageRefs",
     "consumerRef",
     "universeHashes",
@@ -89,6 +91,9 @@
     "installedStageRegistryRef": {
       "$ref": "#/$defs/fileRef"
     },
+    "architectureAuthorityDecision": {
+      "enum": ["pass", "architecture_not_required"]
+    },
     "confirmationReceiptRefs": {
       "type": "object",
       "additionalProperties": false,
@@ -102,13 +107,21 @@
         }
       }
     },
+    "implementationReadinessReceiptRef": {
+      "$ref": "#/$defs/fileRef"
+    },
     "confirmationPageRefs": {
       "type": "object",
       "additionalProperties": false,
       "required": ["requirements", "architecture"],
       "properties": {
         "requirements": { "$ref": "#/$defs/fileRef" },
-        "architecture": { "$ref": "#/$defs/fileRef" }
+        "architecture": {
+          "oneOf": [
+            { "$ref": "#/$defs/fileRef" },
+            { "type": "null" }
+          ]
+        }
       }
     },
     "consumerRef": {

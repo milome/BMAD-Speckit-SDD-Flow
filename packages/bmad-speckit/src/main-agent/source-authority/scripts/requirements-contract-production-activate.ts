@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv from 'ajv';
 import Ajv2020 from 'ajv/dist/2020.js';
+import { createRequirementsContractSixModelConsumerInventory } from '../rules/requirements-contract-consumer-registry';
 import { canonicalJson, fileHash, sha256, slash } from './requirements-contract-governed-write';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
@@ -337,6 +338,7 @@ export async function requirementsContractProductionActivateCommand(
   if (slash(options.registry) !== REGISTRY_PATH) {
     throw new Error('production_activate_registry_path_mismatch');
   }
+  const sixModelConsumerInventory = createRequirementsContractSixModelConsumerInventory(root);
   const recordPath = resolveWithin(root, options.requirementRecord);
   const registryPath = resolveWithin(root, options.registry);
   const successReceiptPath = resolveWithin(root, options.successReceipt);
@@ -379,6 +381,7 @@ export async function requirementsContractProductionActivateCommand(
     v1OutputEnabled: false,
     productionReadModelVersion: 'v2',
     activationReceiptId,
+    sixModelConsumerInventory,
   };
   const targetRegistryText = `${JSON.stringify(targetRegistry, null, 2)}\n`;
   const targetRegistryHash = sha256(targetRegistryText);

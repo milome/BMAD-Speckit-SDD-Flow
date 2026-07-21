@@ -6,6 +6,8 @@ import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { requiredCommandExecutionDescriptorsFromModelPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { expandSixModelAuthority } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -208,9 +210,14 @@ function writeRequirementRecord(
   overrides: Partial<{
     sourceDocumentHash: string;
     implementationConfirmationHash: string;
+    requirementSetId: string;
+    currentAttemptId: string;
+    semanticModelHash: string;
     architectureConfirmationState: Record<string, unknown>;
     architectureConfirmations: Array<Record<string, unknown>>;
     sixModelResults: Record<string, unknown>;
+    runtimeStatusDecisionReceipts: Array<Record<string, unknown>>;
+    artifactIndex: Array<Record<string, unknown>>;
     currentMentalModel: string;
     currentStage: string;
     stage: string;
@@ -305,8 +312,32 @@ function architectureConfirmationRecordOverrides(sourcePath: string): Record<str
   const architectureHash =
     'sha256:4444444444444444444444444444444444444444444444444444444444444444';
   const resolvedRecipeHash =
-    'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+    resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash;
+  const implementationAttemptId = `IMPL-${hashes.sourceDocumentHash.slice(-12).toUpperCase()}`;
+  const semanticModelHash = sha256(
+    stableStringify({
+      sourceDocumentHash: hashes.sourceDocumentHash,
+      implementationConfirmationHash: hashes.implementationConfirmationHash,
+    })
+  );
+  const sixModelAuthority = expandSixModelAuthority({
+    rawResults: {
+      architecture_confirmation: {
+        status: 'pass',
+        blockingReasons: [],
+      },
+    },
+    recordId: 'REQ-TRACE-001',
+    requirementSetId: 'REQ-TRACE-001',
+    implementationAttemptId,
+    sourceDocumentHash: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    semanticModelHash,
+  });
   return {
+    requirementSetId: 'REQ-TRACE-001',
+    currentAttemptId: implementationAttemptId,
+    semanticModelHash,
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: 'arch-run-001',
@@ -341,21 +372,9 @@ function architectureConfirmationRecordOverrides(sourcePath: string): Record<str
         confirmedBy: 'test-user',
       },
     ],
-    sixModelResults: {
-      architecture_confirmation: {
-        payloadKind: 'model_result',
-        model: 'architecture_confirmation',
-        status: 'pass',
-        sourceDocumentHash: hashes.sourceDocumentHash,
-        implementationConfirmationHash: hashes.implementationConfirmationHash,
-        currentHashes: {
-          sourceDocumentHash: hashes.sourceDocumentHash,
-          implementationConfirmationHash: hashes.implementationConfirmationHash,
-          architectureConfirmationArtifactHash: architectureHash,
-          resolvedRecipeHash,
-        },
-      },
-    },
+    sixModelResults: sixModelAuthority.sixModelResults,
+    runtimeStatusDecisionReceipts: sixModelAuthority.runtimeStatusDecisionReceipts,
+    artifactIndex: sixModelAuthority.artifactIndex,
     currentMentalModel: 'implementation_readiness',
     currentStage: 'implementation_readiness',
     stage: 'implementation_readiness',

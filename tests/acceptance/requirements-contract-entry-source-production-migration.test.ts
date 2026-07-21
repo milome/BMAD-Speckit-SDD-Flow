@@ -322,7 +322,7 @@ describe('requirement entry-source production migration', () => {
         sequenceModelHashBefore: expect.stringMatching(/^sha256:/u),
         sequenceModelHashAfter: expect.stringMatching(/^sha256:/u),
       });
-      expect(receipts.length).toBeGreaterThanOrEqual(5);
+      expect(receipts).toHaveLength(manifest.sourceRoots.length);
       expect(receipts.every(validateSemanticResolutionReceipt)).toBe(true);
       expect(validateRequirementsContractSemanticConservationManifest(manifest)).toBe(true);
       expect(manifest.semanticModelHash).toBe(semanticIr.semanticModelHash);

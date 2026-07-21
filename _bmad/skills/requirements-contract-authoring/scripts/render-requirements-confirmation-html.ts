@@ -607,22 +607,46 @@ function defaultRequirementRecordPath(recordId) {
   return path.resolve('_bmad-output', 'runtime', 'requirement-records', recordId, 'requirement-record.json');
 }
 
+const REQUIREMENT_RECORD_SNAPSHOT_IDENTITY_FIELDS = [
+  'recordId',
+  'requirementSetId',
+  'sourceDocumentHash',
+  'implementationConfirmationHash',
+  'semanticModelHash',
+  'projectionSetHash',
+];
+
+function assertRequirementRecordSnapshotIdentity(authorityRecord, snapshotRecord) {
+  for (const field of REQUIREMENT_RECORD_SNAPSHOT_IDENTITY_FIELDS) {
+    const authorityValue = String(authorityRecord?.[field] ?? '').trim();
+    const snapshotValue = String(snapshotRecord?.[field] ?? '').trim();
+    if (authorityValue !== snapshotValue) {
+      throw new Error(`requirement_record_snapshot_identity_mismatch:${field}`);
+    }
+  }
+}
+
 function readRequirementRecord(args, recordId) {
-  const requestedPath = args.requirementRecord
+  const authorityPath = args.requirementRecord
     ? path.resolve(args.requirementRecord)
     : defaultRequirementRecordPath(recordId);
+  const snapshotPath = args.requirementRecordSnapshot
+    ? path.resolve(args.requirementRecordSnapshot)
+    : authorityPath;
   if (!recordId || recordId === 'unrecorded') {
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: false,
       record: null,
       loadError: null,
       source: args.requirementRecord ? 'explicit' : 'default',
     };
   }
-  if (!fs.existsSync(requestedPath)) {
+  if (!fs.existsSync(snapshotPath)) {
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: false,
       record: null,
       loadError: null,
@@ -630,16 +654,29 @@ function readRequirementRecord(args, recordId) {
     };
   }
   try {
+    const record = readDataFile(snapshotPath);
+    if (args.requirementRecordSnapshot) {
+      const authorityRecord = readDataFile(authorityPath);
+      assertRequirementRecordSnapshotIdentity(authorityRecord, record);
+    }
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: true,
-      record: readDataFile(requestedPath),
+      record,
       loadError: null,
       source: args.requirementRecord ? 'explicit' : 'default',
     };
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith('requirement_record_snapshot_identity_mismatch:')
+    ) {
+      throw error;
+    }
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: false,
       record: null,
       loadError: error instanceof Error ? error.message : String(error),
@@ -984,7 +1021,11 @@ function normalizeGovernanceEventTypeRegistry(confirmation) {
   const schemaIssues = [];
   const eventTypes = new Map();
   const rows = asArray(confirmation?.governanceEventTypeRegistry);
-  const policy = normalizeGovernanceEventTypeRegistryPolicy(confirmation, schemaIssues);
+  const governanceEventsApply = applicabilityDomainApplies(confirmation, 'governanceEvents');
+  const policy =
+    governanceEventsApply || rows.length > 0
+      ? normalizeGovernanceEventTypeRegistryPolicy(confirmation, schemaIssues)
+      : null;
   rows.forEach((row, index) => {
     const eventType = String(row?.eventType ?? '').trim();
     if (!eventType) {
@@ -8815,6 +8856,7 @@ if (require.main === module) {
 module.exports = {
   main,
   parseArgs,
+  readRequirementRecord,
   extractImplementationConfirmation,
   extractMermaidBlocks,
   buildCoverage,

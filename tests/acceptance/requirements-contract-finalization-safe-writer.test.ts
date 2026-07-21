@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractFinalizationSafeWriteCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-finalization-safe-writer';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const sha256 = (value: string) =>
   `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -89,6 +90,12 @@ describe('requirements contract finalization safe writer', () => {
         sourcePath: path.join(root, 'source.md'),
         sourceDocumentHash: sha256('source'),
         implementationConfirmationHash: sha256('confirmation'),
+        confirmationHistory: createRecordedConfirmationHistory({
+          recordId: requirementSetId,
+          sourcePath: path.join(root, 'source.md'),
+          sourceDocumentHash: sha256('source'),
+          implementationConfirmationHash: sha256('confirmation'),
+        }),
         semanticModelHash: sha256('semantic'),
       });
       const roles = [
@@ -233,6 +240,12 @@ describe('requirements contract finalization safe writer', () => {
         sourcePath: path.join(root, 'source.md'),
         sourceDocumentHash: sha256('source'),
         implementationConfirmationHash: sha256('confirmation'),
+        confirmationHistory: createRecordedConfirmationHistory({
+          recordId: requirementSetId,
+          sourcePath: path.join(root, 'source.md'),
+          sourceDocumentHash: sha256('source'),
+          implementationConfirmationHash: sha256('confirmation'),
+        }),
         semanticModelHash: sha256('semantic'),
       });
       writeJson(root, first.draft, {

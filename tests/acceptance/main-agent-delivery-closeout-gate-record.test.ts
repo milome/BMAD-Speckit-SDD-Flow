@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -1103,7 +1110,17 @@ function withVerifiedCloseoutPrerequisites(
     const existingModel = (
       (record.sixModelResults as Record<string, unknown> | undefined)?.[modelId] ?? {}
     ) as Record<string, unknown>;
-    const effectiveStatus = recordText(existingModel, 'status') || 'not_established';
+    const recordedStatus = recordText(existingModel, 'status');
+    const effectiveStatus =
+      (
+        [
+          'pass',
+          'blocked',
+          'stale',
+          'awaiting_user_acceptance',
+          'not_established',
+        ] as const
+      ).find((status) => status === recordedStatus) ?? 'not_established';
     const passed = effectiveStatus === 'pass';
     const update = createRuntimeStatusProjectionUpdate({
       recordId: recordText(record, 'recordId'),
@@ -1233,6 +1250,16 @@ describe('requirement-scoped delivery closeout gate', () => {
           implementationAttemptId: CLOSEOUT_FIXTURE_IDS.defaultAttemptId,
           receiptHash: record.sixModelResults.delivery_confirmation.decisionReceiptHash,
         },
+      });
+      const decisionReceiptPath = path.resolve(
+        path.dirname(recordPath),
+        record.sixModelResults.delivery_confirmation.decisionReceiptRef
+      );
+      expect(existsSync(decisionReceiptPath)).toBe(true);
+      expect(JSON.parse(readFileSync(decisionReceiptPath, 'utf8'))).toMatchObject({
+        modelId: 'delivery_confirmation',
+        implementationAttemptId: record.sixModelResults.delivery_confirmation.currentAttemptId,
+        receiptHash: record.sixModelResults.delivery_confirmation.decisionReceiptHash,
       });
       expect(record.runtimeStatusDecisionReceipts.at(-1).receipt.blockerRefs).toEqual([
         ...new Set(record.runtimeStatusDecisionReceipts.at(-1).receipt.blockerRefs),

@@ -15,7 +15,6 @@ const SHARED_REQUIREMENTS_CONTRACT_SURFACE_ROOTS = [
   '.cursor/shared/requirements-contract',
   '.claude/shared/requirements-contract',
   'packages/bmad-speckit/_bmad/shared/requirements-contract',
-  'packages/bmad-speckit/dist/main-agent/source-authority/_bmad/shared/requirements-contract',
 ] as const;
 
 const PROJECTION_ASSETS = [

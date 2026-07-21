@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  createRequirementsContractSixModelConsumerInventory,
+  REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES,
+  REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry';
 import { runRequirementsContractSixModelProjectionParityCase } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-case-runner';
 import { resolveSixModelProjectionParitySurfaceFileSets } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-evidence-builder';
 import {
@@ -319,9 +324,10 @@ describe('verified six-model status facade', () => {
     }
   });
 
-  it('resolves generated-dist parity readers and writers from the emitted mixed runtime tree', () => {
+  it('resolves generated-dist parity readers and writers from the dynamic consumer inventory', () => {
     const repositoryRoot = path.resolve('.');
     const packageRoot = path.join(repositoryRoot, 'packages', 'bmad-speckit');
+    const inventory = createRequirementsContractSixModelConsumerInventory(repositoryRoot);
     const generatedDist = resolveSixModelProjectionParitySurfaceFileSets({
       repositoryRoot,
       packageRoot,
@@ -329,48 +335,22 @@ describe('verified six-model status facade', () => {
       extractedRoot: path.join(repositoryRoot, '.unused-extracted-root'),
       tarball: path.join(repositoryRoot, '.unused-package.tgz'),
     })['generated-dist'];
+    const generatedEntries = inventory.entries.filter(
+      (entry) => entry.surface === 'package-dist'
+    );
+    const readerRoles = new Set(REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES);
+    const writerRoles = new Set(REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES);
+    const expectedReaders = generatedEntries
+      .filter((entry) => entry.roles.some((role) => readerRoles.has(role)))
+      .map((entry) => path.resolve(repositoryRoot, entry.path));
+    const expectedWriters = generatedEntries
+      .filter((entry) => entry.roles.some((role) => writerRoles.has(role)))
+      .map((entry) => path.resolve(repositoryRoot, entry.path));
 
-    expect(generatedDist.readerPaths).toEqual([
-      path.join(
-        packageRoot,
-        'dist',
-        'main-agent',
-        'source-authority',
-        'packages',
-        'bmad-speckit',
-        'src',
-        'main-agent',
-        'source-authority',
-        'scripts',
-        'verified-six-model-status-facade.ts'
-      ),
-      path.join(
-        packageRoot,
-        'dist',
-        'main-agent',
-        'source-authority',
-        'packages',
-        'bmad-speckit',
-        'src',
-        'runtime',
-        'bmads-renderer.js'
-      ),
-    ]);
-    expect(generatedDist.writerPaths).toEqual([
-      path.join(
-        packageRoot,
-        'dist',
-        'main-agent',
-        'source-authority',
-        'packages',
-        'bmad-speckit',
-        'src',
-        'main-agent',
-        'source-authority',
-        'scripts',
-        'requirements-contract-runtime-status-decision-receipt.ts'
-      ),
-    ]);
+    expect(expectedReaders.length).toBeGreaterThan(2);
+    expect(expectedWriters.length).toBeGreaterThan(1);
+    expect(generatedDist.readerPaths).toEqual(expectedReaders);
+    expect(generatedDist.writerPaths).toEqual(expectedWriters);
   });
 
   it('blocks canonical verification with an explicit reason when evidence generation fails', async () => {
@@ -396,9 +376,8 @@ describe('verified six-model status facade', () => {
     const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'six-model-parity-verifier-'));
     const out = path.join(temporaryRoot, 'report.json');
     try {
-      const { requirementsContractSixModelProjectionParityVerifyCommand } = await import(
-        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier'
-      );
+      const { requirementsContractSixModelProjectionParityVerifyCommand } =
+        await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier');
       const exitCode = requirementsContractSixModelProjectionParityVerifyCommand({
         evidenceRoot: path.resolve('docs/plans/evidence/loop-engineering-remediation'),
         out,

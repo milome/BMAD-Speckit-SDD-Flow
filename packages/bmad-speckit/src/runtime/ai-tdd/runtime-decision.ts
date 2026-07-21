@@ -213,42 +213,6 @@ function text(value) {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : '';
 }
 
-function hasMatchingControlledConfirmation(record) {
-  const sourceDocumentHash = text(record?.sourceDocumentHash);
-  const implementationConfirmationHash = text(record?.implementationConfirmationHash);
-  if (!sourceDocumentHash || !implementationConfirmationHash) return false;
-
-  return asArray(record?.confirmationHistory).some(
-    (event) =>
-      event &&
-      typeof event === 'object' &&
-      !Array.isArray(event) &&
-      text(event.eventType) === 'confirmation_recorded' &&
-      text(event.sourceDocumentHash) === sourceDocumentHash &&
-      text(event.implementationConfirmationHash) === implementationConfirmationHash
-  );
-}
-
-function hasMatchingControlledArchitectureConfirmation(record) {
-  const state =
-    record?.architectureConfirmationState &&
-    typeof record.architectureConfirmationState === 'object' &&
-    !Array.isArray(record.architectureConfirmationState)
-      ? record.architectureConfirmationState
-      : null;
-  const currentHash = text(state?.currentArchitectureConfirmationHash);
-  if (text(state?.status) !== 'active' || !currentHash) return false;
-
-  return asArray(record?.architectureConfirmations).some(
-    (event) =>
-      event &&
-      typeof event === 'object' &&
-      !Array.isArray(event) &&
-      text(event.eventType) === 'architecture_confirmation_recorded' &&
-      text(event.architectureConfirmationArtifactHash) === currentHash
-  );
-}
-
 function numericTimestamp(value) {
   const parsed = Date.parse(text(value));
   return Number.isFinite(parsed) ? parsed : 0;
@@ -711,10 +675,6 @@ function deliveryInfo(record) {
       latest.missingAcceptanceRequest === true ||
       (awaiting && Object.keys(acceptanceRequest).length === 0 && !record.awaitingUserAcceptance),
   };
-}
-
-function deliveryAwaitingAcceptance(record) {
-  return deliveryInfo(record).awaiting;
 }
 
 function safetyReason(

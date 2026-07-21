@@ -246,6 +246,7 @@ export function writeNativeGoalInvocationReceipt(input: {
   command?: string;
   args?: string[];
   taskReportPath?: string;
+  taskReportHash?: string | null;
   nativeGoalCommandPrepared?: boolean;
   nativeGoalCommandUsed?: boolean;
   stdoutRef: string;
@@ -253,6 +254,14 @@ export function writeNativeGoalInvocationReceipt(input: {
   exitCode: number;
   startedAt?: string;
   endedAt?: string;
+  sourceDocumentHash?: string;
+  implementationConfirmationHash?: string;
+  modelPacketHash?: string;
+  auditReceiptHash?: string;
+  transactionManifestPath?: string;
+  transactionManifestHash?: string;
+  currentDispatchPointerPath?: string;
+  currentDispatchPointerHash?: string;
 }): { receipt: Record<string, unknown>; path: string } {
   const receipt = {
     schemaVersion: 'native-goal-invocation-receipt/v1',
@@ -266,16 +275,27 @@ export function writeNativeGoalInvocationReceipt(input: {
     command: input.command ?? 'not_available',
     args: input.args ?? [],
     taskReportPath: input.taskReportPath ?? 'not_available',
+    taskReportHash: input.taskReportHash ?? null,
     nativeGoalCommandPrepared: input.nativeGoalCommandPrepared !== false,
     nativeGoalCommandUsed: input.nativeGoalCommandUsed !== false,
     startedAt: input.startedAt ?? new Date().toISOString(),
     endedAt: input.endedAt ?? new Date().toISOString(),
     exitCode: input.exitCode,
     stdoutRef: input.stdoutRef,
+    stdoutHash: fs.existsSync(input.stdoutRef) ? sha256File(input.stdoutRef) : 'missing',
     stderrRef: input.stderrRef,
+    stderrHash: fs.existsSync(input.stderrRef) ? sha256File(input.stderrRef) : 'missing',
     packetId: input.packetId,
     attemptId: input.attemptId,
     recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash ?? 'not_available',
+    implementationConfirmationHash: input.implementationConfirmationHash ?? 'not_available',
+    modelPacketHash: input.modelPacketHash ?? 'not_available',
+    auditReceiptHash: input.auditReceiptHash ?? 'not_available',
+    transactionManifestPath: input.transactionManifestPath ?? 'not_available',
+    transactionManifestHash: input.transactionManifestHash ?? 'not_available',
+    currentDispatchPointerPath: input.currentDispatchPointerPath ?? 'not_available',
+    currentDispatchPointerHash: input.currentDispatchPointerHash ?? 'not_available',
   };
   const filePath = path.join(
     runtimeModeDir(input.projectRoot, input.recordId, input.attemptId),

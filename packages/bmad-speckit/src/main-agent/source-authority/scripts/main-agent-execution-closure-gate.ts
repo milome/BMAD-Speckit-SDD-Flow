@@ -3,11 +3,18 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { buildPerMustClosureEvidenceIndex } from './per-must-closure-evidence-index';
-import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  sha256Json,
+  sha256Text,
+} from './requirement-record-control-store';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
 import {
   createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
+  type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 
@@ -409,38 +416,19 @@ function evaluate(input: {
   };
 }
 
-function updateRecord(
+function createExecutionClosureRuntimeStatus(
   record: JsonObject,
   input: {
     attemptId: string;
     decision: ExecutionClosureDecision;
     blockingReasons: string[];
-    checks: JsonObject[];
     reportPath: string;
     reportHash: string;
     evaluatedAt: string;
     evaluatedBy: string;
   }
-): JsonObject {
+): RuntimeStatusProjectionUpdate {
   const gateCheckId = `execution-closure:${input.attemptId}`;
-  const gateCheck = {
-    eventType: 'gate_check_recorded',
-    checkId: gateCheckId,
-    gate: 'Execution Closure Gate',
-    decision: input.decision,
-    blockingReasons: input.blockingReasons,
-    checks: input.checks,
-    reportPath: normalizePathForRecord(input.reportPath),
-    sourceRefs: [
-      { sourceType: 'execution_iteration', id: input.attemptId },
-      {
-        sourceType: 'per_must_closure_evidence_index',
-        id: normalizePathForRecord(input.reportPath),
-      },
-    ],
-    recordedAt: input.evaluatedAt,
-    recordedBy: input.evaluatedBy,
-  };
   const resultPayload = {
     payloadKind: 'model_result',
     model: 'execution_closure',
@@ -462,7 +450,7 @@ function updateRecord(
       executionClosureReportHash: input.reportHash,
     },
   };
-  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+  return createRuntimeStatusProjectionUpdate({
     recordId: text(record.recordId),
     requirementSetId: text(record.requirementSetId) || text(record.recordId),
     modelId: 'execution_closure',
@@ -493,6 +481,41 @@ function updateRecord(
     receiptPath: `runtime/status-decisions/${input.attemptId}/execution_closure.json`,
     projection: resultPayload,
   });
+}
+
+function updateRecord(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    decision: ExecutionClosureDecision;
+    blockingReasons: string[];
+    checks: JsonObject[];
+    reportPath: string;
+    reportHash: string;
+    evaluatedAt: string;
+    evaluatedBy: string;
+    runtimeStatus: RuntimeStatusProjectionUpdate;
+  }
+): JsonObject {
+  const gateCheckId = `execution-closure:${input.attemptId}`;
+  const gateCheck = {
+    eventType: 'gate_check_recorded',
+    checkId: gateCheckId,
+    gate: 'Execution Closure Gate',
+    decision: input.decision,
+    blockingReasons: input.blockingReasons,
+    checks: input.checks,
+    reportPath: normalizePathForRecord(input.reportPath),
+    sourceRefs: [
+      { sourceType: 'execution_iteration', id: input.attemptId },
+      {
+        sourceType: 'per_must_closure_evidence_index',
+        id: normalizePathForRecord(input.reportPath),
+      },
+    ],
+    recordedAt: input.evaluatedAt,
+    recordedBy: input.evaluatedBy,
+  };
   const transition =
     input.decision === 'pass'
       ? {
@@ -510,7 +533,7 @@ function updateRecord(
     ...runtimeStatusProjectionRecordPatch({
       record,
       modelId: 'execution_closure',
-      update: runtimeStatus,
+      update: input.runtimeStatus,
     }),
     currentMentalModel: 'execution_closure',
     currentStage: 'execution_closure',
@@ -587,11 +610,22 @@ export function mainExecutionClosureGate(argv: string[]): number {
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   const reportHash = sha256File(reportPath);
+  const closureInput = {
+    attemptId,
+    decision: evaluation.decision,
+    blockingReasons: evaluation.blockingReasons,
+    reportPath,
+    reportHash,
+    evaluatedAt,
+    evaluatedBy,
+  };
+  const runtimeStatus = createExecutionClosureRuntimeStatus(record, closureInput);
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'execution-closure-gate-writer',
     eventType: 'execution_closure_result_recorded',
     recordedAt: evaluatedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(record)),
     payload: {
       attemptId,
       decision: evaluation.decision,
@@ -603,16 +637,12 @@ export function mainExecutionClosureGate(argv: string[]): number {
       evaluatedBy,
       recordHashBeforeClosure: sha256Text(JSON.stringify(record)),
     },
+    artifactWrites: runtimeStatusProjectionArtifactWrites(runtimeStatus),
     reduce: (currentRecord) =>
       updateRecord(currentRecord, {
-        attemptId,
-        decision: evaluation.decision,
-        blockingReasons: evaluation.blockingReasons,
+        ...closureInput,
         checks: evaluation.checks,
-        reportPath,
-        reportHash,
-        evaluatedAt,
-        evaluatedBy,
+        runtimeStatus,
       }),
   });
   const output = {

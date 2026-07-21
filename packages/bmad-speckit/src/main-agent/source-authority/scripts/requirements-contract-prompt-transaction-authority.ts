@@ -4,7 +4,13 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import type { OrchestrationFlow } from './orchestration-dispatch-contract';
 import { REQUIREMENTS_CONTRACT_DISPATCH_HOST_REGISTRY } from './requirements-contract-stage-registry';
-import { fileHash, slash } from './requirements-contract-governed-write';
+import {
+  canonicalJson,
+  fileHash,
+  sha256,
+  slash,
+} from './requirements-contract-governed-write';
+import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 
 // Runtime schemas validate these records before authority resolution consumes them.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,6 +36,7 @@ export interface PromptTransactionPublishOptions {
 
 export interface PromptPublicationAuthority {
   cwd: string;
+  architectureAuthorityDecision: 'pass' | 'architecture_not_required';
   identity: {
     contractHash: string;
     transactionId: string;
@@ -63,6 +70,7 @@ export interface PromptPublicationAuthority {
     stageRegistry: string;
     requirementsConfirmationReceipt: string;
     architectureConfirmationReceipt: string;
+    implementationReadinessReceipt: string;
     consumerRoot: string;
     consumerMarker: string;
     consumerProfile: string;
@@ -75,8 +83,9 @@ export interface PromptPublicationAuthority {
     stageRegistry: { path: string; hash: string };
     requirementsConfirmationReceipt: { path: string; hash: string };
     architectureConfirmationReceipt: { path: string; hash: string };
+    implementationReadinessReceipt: { path: string; hash: string };
     requirementsConfirmationPage: { path: string; hash: string };
-    architectureConfirmationPage: { path: string; hash: string };
+    architectureConfirmationPage: { path: string; hash: string } | null;
     consumerMarker: { path: string; hash: string };
     consumerProfile: { path: string; hash: string };
     packageRuntimeActionBindingManifest: { path: string; hash: string };
@@ -199,6 +208,109 @@ function assertReceiptIdentity(
     throw new Error(`${kind}_confirmation_receipt_identity_mismatch`);
   }
   return fileRef(cwd, receipt.pageRef, `${kind}_confirmation_page`);
+}
+
+function requirementSnapshotHash(
+  record: JsonRecord,
+  identity: PromptPublicationAuthority['identity']
+): string {
+  return sha256(
+    canonicalJson({
+      recordId: text(record.recordId),
+      requirementSetId: identity.requirementSetId,
+      implementationAttemptId: identity.implementationAttemptId,
+      sourceDocumentHash: identity.sourceDocumentHash,
+      implementationConfirmationHash: identity.implementationConfirmationHash,
+      semanticModelHash: identity.semanticModelHash,
+      sourceAmendmentHashes: identity.sourceAmendmentHashes,
+    })
+  );
+}
+
+function assertCurrentArchitectureState(
+  record: JsonRecord,
+  identity: PromptPublicationAuthority['identity']
+): void {
+  const state = object(record.architectureConfirmationState);
+  if (text(state.status) !== 'active') {
+    throw new Error('architecture_confirmation_not_active');
+  }
+  assertHash(
+    state.currentArchitectureConfirmationHash,
+    'architecture_confirmation_current_artifact_hash'
+  );
+  const staleInputs = object(state.staleInputs);
+  if (text(staleInputs.sourceDocumentHash) !== identity.sourceDocumentHash) {
+    throw new Error('architecture_confirmation_source_hash_not_current');
+  }
+  if (
+    text(staleInputs.implementationConfirmationHash) !==
+    identity.implementationConfirmationHash
+  ) {
+    throw new Error('architecture_confirmation_implementation_hash_not_current');
+  }
+}
+
+function assertArchitectureAuthorityReceipt(input: {
+  receipt: JsonRecord;
+  identity: PromptPublicationAuthority['identity'];
+  record: JsonRecord;
+  context: JsonRecord;
+  cwd: string;
+}): {
+  decision: 'pass' | 'architecture_not_required';
+  pageRef: { path: string; hash: string } | null;
+} {
+  if (input.receipt.schemaVersion === 'requirements-contract-confirmation-receipt/v1') {
+    const pageRef = assertReceiptIdentity(
+      input.receipt,
+      'architecture',
+      input.identity,
+      input.cwd
+    );
+    assertCurrentArchitectureState(input.record, input.identity);
+    return {
+      decision: 'pass',
+      pageRef,
+    };
+  }
+  assertSchema(
+    'requirements-contract-architecture-applicability-receipt.schema.json',
+    input.receipt,
+    'architecture_applicability_receipt'
+  );
+  const expectedSnapshotHash = requirementSnapshotHash(input.record, input.identity);
+  const applicabilityInputs = object(input.context.architectureApplicabilityInputs);
+  const boundFields = [
+    'requirementSnapshotHash',
+    'policyVersion',
+    'policyHash',
+    'targetPathsHash',
+    'deploymentImpactHash',
+    'consumerImpactHash',
+    'governanceImpactHash',
+  ];
+  if (
+    input.receipt.transactionId !== input.identity.transactionId ||
+    input.receipt.requirementSetId !== input.identity.requirementSetId ||
+    input.receipt.implementationAttemptId !== input.identity.implementationAttemptId ||
+    input.receipt.requirementSnapshotHash !== expectedSnapshotHash ||
+    input.receipt.sourceDocumentHash !== input.identity.sourceDocumentHash ||
+    input.receipt.implementationConfirmationHash !==
+      input.identity.implementationConfirmationHash ||
+    input.receipt.semanticModelHash !== input.identity.semanticModelHash
+  ) {
+    throw new Error('architecture_applicability_receipt_identity_mismatch');
+  }
+  for (const field of boundFields) {
+    if (!applicabilityInputs[field] || applicabilityInputs[field] !== input.receipt[field]) {
+      throw new Error(`architecture_applicability_receipt_${field}_mismatch`);
+    }
+  }
+  return {
+    decision: 'architecture_not_required',
+    pageRef: null,
+  };
 }
 
 function assertContained(root: string, target: string, label: string): void {
@@ -342,12 +454,51 @@ export function resolvePromptPublicationAuthority(
     identity,
     cwd
   );
-  const architecturePageRef = assertReceiptIdentity(
-    readJson(architectureReceiptPath),
-    'architecture',
+  const architectureAuthority = assertArchitectureAuthorityReceipt({
+    receipt: readJson(architectureReceiptPath),
     identity,
-    cwd
+    record,
+    context,
+    cwd,
+  });
+  if (!context.implementationReadinessReceiptRef) {
+    throw new Error('attempt_context_implementationReadinessReceiptRef_missing');
+  }
+  const readinessRef = fileRef(
+    cwd,
+    context.implementationReadinessReceiptRef,
+    'attempt_implementation_readiness_receipt'
   );
+  const readinessProjection = object(object(record.sixModelResults).implementation_readiness);
+  const readinessReceiptPath = text(readinessProjection.decisionReceiptRef);
+  if (!readinessReceiptPath) {
+    throw new Error('implementation_readiness_projection_receipt_ref_missing');
+  }
+  const resolvedReadinessReceiptPath = path.isAbsolute(readinessReceiptPath)
+    ? readinessReceiptPath
+    : path.resolve(path.dirname(recordPath), readinessReceiptPath);
+  if (!samePath(readinessRef.path, resolvedReadinessReceiptPath)) {
+    throw new Error('implementation_readiness_receipt_path_mismatch');
+  }
+  const verifiedReadiness = resolveVerifiedSixModelStatus({
+    record,
+    modelId: 'implementation_readiness',
+    currentImplementationAttemptId: identity.implementationAttemptId,
+    decisionReceipts: [
+      {
+        path: readinessReceiptPath,
+        receipt: readJson(readinessRef.path),
+      },
+    ],
+  });
+  if (
+    verifiedReadiness.effectiveStatus !== 'pass' ||
+    verifiedReadiness.projectionIntegrity !== 'valid'
+  ) {
+    throw new Error(
+      `implementation_readiness_not_verified_pass:${verifiedReadiness.blockerRefs.join(',')}`
+    );
+  }
 
   const consumerRoot = path.resolve(cwd, options.consumerRoot);
   if (!fs.statSync(consumerRoot).isDirectory()) throw new Error('consumer_root_not_directory');
@@ -422,6 +573,7 @@ export function resolvePromptPublicationAuthority(
 
   return {
     cwd,
+    architectureAuthorityDecision: architectureAuthority.decision,
     identity,
     controlledExecutionContext,
     flow: (text(record.flow) || text(record.entryFlow) || 'standalone_tasks') as OrchestrationFlow,
@@ -435,6 +587,7 @@ export function resolvePromptPublicationAuthority(
       stageRegistry: stageRegistryPath,
       requirementsConfirmationReceipt: requirementsReceiptPath,
       architectureConfirmationReceipt: architectureReceiptPath,
+      implementationReadinessReceipt: readinessRef.path,
       consumerRoot,
       consumerMarker: markerPath,
       consumerProfile: profilePath,
@@ -447,8 +600,9 @@ export function resolvePromptPublicationAuthority(
       stageRegistry: { path: slash(stageRegistryPath), hash: fileHash(stageRegistryPath) },
       requirementsConfirmationReceipt: requirementsRef,
       architectureConfirmationReceipt: architectureRef,
+      implementationReadinessReceipt: readinessRef,
       requirementsConfirmationPage: requirementsPageRef,
-      architectureConfirmationPage: architecturePageRef,
+      architectureConfirmationPage: architectureAuthority.pageRef,
       consumerMarker: markerRef,
       consumerProfile: profileRef,
       packageRuntimeActionBindingManifest: actionBindingManifestRef,

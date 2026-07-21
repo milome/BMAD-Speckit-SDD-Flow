@@ -1,11 +1,9 @@
 const fs = require('node:fs');
-const path = require('node:path');
+const { resolvePackageOwnedBmadPath } = require('../main-agent/runtime/package-bmad-root');
 
 function resolveDeferredGapGovernancePath() {
   const candidates = [
-    path.resolve(__dirname, '..', '..', '_bmad', 'runtime', 'hooks', 'deferred-gap-governance.cjs'),
-    path.resolve(__dirname, '..', '..', '..', '..', '_bmad', 'runtime', 'hooks', 'deferred-gap-governance.cjs'),
-    path.resolve(process.cwd(), '_bmad', 'runtime', 'hooks', 'deferred-gap-governance.cjs'),
+    resolvePackageOwnedBmadPath('runtime', 'hooks', 'deferred-gap-governance.cjs'),
   ];
 
   for (const candidate of candidates) {
@@ -15,7 +13,7 @@ function resolveDeferredGapGovernancePath() {
   }
 
   throw new Error(
-    'deferred-gap-governance loader: cannot resolve _bmad/runtime/hooks/deferred-gap-governance.cjs from package-local or consumer project paths'
+    'deferred-gap-governance loader: installed package _bmad owner is missing runtime hook'
   );
 }
 

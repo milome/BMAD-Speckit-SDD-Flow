@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  importNativeGoalTaskReport,
+  runMainAgentAutomaticLoop,
+  type NativeGoalControlledExecutor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { validateModelPacketCommandExecutionReceipts } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt';
 import {
   createDefaultOrchestrationState,
   writeOrchestrationStateAtPath,
@@ -14,6 +16,10 @@ import {
   materializeRequirementFixture,
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
+import {
+  executeRequiredCommandsForPublishedFixture,
+  publishImplementationPromptFixture,
+} from './helpers/prompt-transaction-implementation-publication-fixture';
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
@@ -29,7 +35,8 @@ function sha256Stable(value: unknown): string {
   return `sha256:${createHash('sha256').update(stableStringify(value), 'utf8').digest('hex')}`;
 }
 
-function prepareTaskReportImport() {
+function prepareTaskReportImport(options: { includeControlledCommandReceipt?: boolean } = {}) {
+  const includeControlledCommandReceipt = options.includeControlledCommandReceipt ?? true;
   const fixture = materializeRequirementFixture({
     currentMentalModel: 'execution_closure',
     sixModelResults: {
@@ -68,25 +75,38 @@ function prepareTaskReportImport() {
   const controlledExecutionContext = {
     requirementSetId: fixture.requirementSetId,
     transactionId: 'TX-task-report-claim',
-    implementationAttemptId: 'IMP-task-report-claim',
+    implementationAttemptId: 'IMPL-ATTEMPT-TASK-REPORT-CLAIM',
     architectureAuditAttemptId: 'AUDIT-task-report-claim',
     activePhaseAuditAttemptId: 'AUDIT-task-report-claim',
     contractHash: `sha256:${'a'.repeat(64)}`,
     inputSnapshotHash: `sha256:${'b'.repeat(64)}`,
   };
-  modelPacket.controlledExecutionContext = controlledExecutionContext;
-  modelPacket.requiredCommands = [
-    {
-      id: commandId,
-      command: commandText,
-      argv: commandArgv,
-      cwd: fixture.root,
-      receiptPath,
-      requirementRefs: [fixture.recordId],
-      acceptanceRefs: ['AC-149'],
-      traceRefs: ['TR-149'],
-    },
-  ];
+  if (includeControlledCommandReceipt) {
+    modelPacket.controlledExecutionContext = controlledExecutionContext;
+    modelPacket.requiredCommands = [
+      {
+        id: commandId,
+        command: commandText,
+        argv: commandArgv,
+        cwd: fixture.root,
+        receiptPath,
+        requirementRefs: [fixture.recordId],
+        acceptanceRefs: ['AC-149'],
+        traceRefs: ['TR-149'],
+      },
+    ];
+  } else {
+    delete modelPacket.controlledExecutionContext;
+    modelPacket.requiredCommands = [];
+    if (
+      modelPacket.executionHandoff &&
+      typeof modelPacket.executionHandoff === 'object' &&
+      !Array.isArray(modelPacket.executionHandoff)
+    ) {
+      modelPacket.executionHandoff.requiredValidationCommands = [];
+      modelPacket.executionHandoff.requiredValidationCommandRefs = [];
+    }
+  }
   fs.writeFileSync(
     compiled.compiledPromptRef.modelPacketPath,
     `${JSON.stringify(modelPacket, null, 2)}\n`,
@@ -123,13 +143,9 @@ function prepareTaskReportImport() {
     exitCode: 0,
     signal: null,
     stdoutPath,
-    stdoutHash: `sha256:${createHash('sha256')
-      .update(fs.readFileSync(stdoutPath))
-      .digest('hex')}`,
+    stdoutHash: `sha256:${createHash('sha256').update(fs.readFileSync(stdoutPath)).digest('hex')}`,
     stderrPath,
-    stderrHash: `sha256:${createHash('sha256')
-      .update(fs.readFileSync(stderrPath))
-      .digest('hex')}`,
+    stderrHash: `sha256:${createHash('sha256').update(fs.readFileSync(stderrPath)).digest('hex')}`,
     acceptanceRefs: ['AC-149'],
     traceRefs: ['TR-149'],
     publication: {
@@ -143,15 +159,17 @@ function prepareTaskReportImport() {
     },
     decision: 'pass' as const,
   };
-  fs.writeFileSync(
-    receiptPath,
-    `${JSON.stringify(
-      { ...receiptPayload, receiptHash: sha256Stable(receiptPayload) },
-      null,
-      2
-    )}\n`,
-    'utf8'
-  );
+  if (includeControlledCommandReceipt) {
+    fs.writeFileSync(
+      receiptPath,
+      `${JSON.stringify(
+        { ...receiptPayload, receiptHash: sha256Stable(receiptPayload) },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+  }
   const taskReportPath = path.join(
     fixture.root,
     '_bmad-output',
@@ -216,30 +234,78 @@ function prepareTaskReportImport() {
     )}\n`,
     'utf8'
   );
-  return { fixture, packetId, taskReportPath };
+  return { fixture, packetId, taskReportPath, modelPacket };
 }
 
 describe('requirements contract TaskReport untrusted claim', () => {
-  it('does not synthesize closure, accepted evidence, command success, or PASS authority', () => {
-    const prepared = prepareTaskReportImport();
+  it('rejects a model packet with no controlled command bundle', () => {
+    const prepared = prepareTaskReportImport({ includeControlledCommandReceipt: false });
     try {
-      const before = JSON.parse(fs.readFileSync(prepared.fixture.recordPath, 'utf8'));
-      const imported = importNativeGoalTaskReport({
+      const validation = validateModelPacketCommandExecutionReceipts({
         projectRoot: prepared.fixture.root,
+        modelPacket: prepared.modelPacket,
+      });
+
+      expect(validation.decision).toBe('block');
+      expect(validation.issueCodes).toContain('required_command_descriptor_missing');
+    } finally {
+      cleanupRequirementWorkspace(prepared.fixture.root);
+    }
+  });
+
+  it('does not synthesize closure, accepted evidence, command success, or PASS authority', async () => {
+    const { fixture, pointer, goalCommandText } = await publishImplementationPromptFixture();
+    try {
+      const before = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      const executor: NativeGoalControlledExecutor = (request) => {
+        expect(request.commandText).toBe(goalCommandText);
+        executeRequiredCommandsForPublishedFixture({ fixture, pointer });
+        fs.mkdirSync(path.dirname(request.taskReportPath), { recursive: true });
+        fs.writeFileSync(
+          request.taskReportPath,
+          `${JSON.stringify(
+            {
+              packetId: request.packetId,
+              status: 'done',
+              filesChanged: [],
+              validationsRun: ['claimed command success'],
+              evidence: [
+                'claimed command success',
+                'claimed requirement closure',
+                'claimed accepted evidence',
+                'claimed gate PASS',
+              ],
+              downstreamContext: ['claimed completion'],
+            },
+            null,
+            2
+          )}\n`,
+          'utf8'
+        );
+        return {
+          exitCode: 0,
+          stdout: 'controlled native goal completed',
+          stderr: '',
+        };
+      };
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
         flow: 'standalone_tasks',
         stage: 'implement',
-        recordId: prepared.fixture.recordId,
-        requirementSetId: prepared.fixture.requirementSetId,
-        runId: prepared.fixture.runId,
-        taskReportPath: prepared.taskReportPath,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        host: 'codex',
+        nativeGoalExecutor: executor,
       });
-      const after = JSON.parse(fs.readFileSync(prepared.fixture.recordPath, 'utf8'));
+      const after = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      const packetId = result.dispatchInstruction!.packetId;
 
-      expect(imported.status).toBe('imported');
+      expect(result.status).toBe('completed');
       expect(after.executionIterations).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            executionIterationId: prepared.packetId,
+            executionIterationId: packetId,
             status: 'done',
             authorityClass: 'untrusted_claim',
             commandSuccessEligible: false,
@@ -252,21 +318,23 @@ describe('requirements contract TaskReport untrusted claim', () => {
         ])
       );
       expect(after.requirementClosures ?? []).toEqual(before.requirementClosures ?? []);
-      expect(
-        (after.artifactIndex ?? []).filter(
-          (artifact: Record<string, unknown>) => artifact.sourceOfTruthRole === 'evidence'
-        )
-      ).toEqual(
-        (before.artifactIndex ?? []).filter(
-          (artifact: Record<string, unknown>) => artifact.sourceOfTruthRole === 'evidence'
-        )
-      );
+      const evidenceArtifactIdentities = (record: Record<string, unknown>) =>
+        ((record.artifactIndex as Array<Record<string, unknown>> | undefined) ?? [])
+          .filter((artifact) => artifact.sourceOfTruthRole === 'evidence')
+          .map((artifact) => ({
+            artifactType: artifact.artifactType,
+            path: artifact.path,
+            hash: artifact.contentHash ?? artifact.hash,
+            sourceOfTruthRole: artifact.sourceOfTruthRole,
+            status: artifact.status,
+          }));
+      expect(evidenceArtifactIdentities(after)).toEqual(evidenceArtifactIdentities(before));
       expect(after.deliveryEvidence ?? null).toEqual(before.deliveryEvidence ?? null);
       expect(after.gateChecks ?? []).toEqual(before.gateChecks ?? []);
       expect(after.sixModelResults).toEqual(before.sixModelResults);
       expect(after.status).toBe(before.status);
     } finally {
-      cleanupRequirementWorkspace(prepared.fixture.root);
+      fixture.cleanup();
     }
   });
 });

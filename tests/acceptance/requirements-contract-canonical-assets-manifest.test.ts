@@ -126,6 +126,21 @@ const REQUIRED_DSA16_ASSETS = [
     'schema',
   ],
   [
+    'critical_auditor_judge_adapter_input_schema',
+    'schemas/requirements-contract-critical-auditor-judge-adapter-input.schema.json',
+    'schema',
+  ],
+  [
+    'critical_auditor_judge_assessment_schema',
+    'schemas/requirements-contract-critical-auditor-judge-assessment.schema.json',
+    'schema',
+  ],
+  [
+    'critical_auditor_external_adapter_result_schema',
+    'schemas/requirements-contract-critical-auditor-external-adapter-result.schema.json',
+    'schema',
+  ],
+  [
     'judge_provider_registry_projection',
     '_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
     'registry',
@@ -165,6 +180,11 @@ const REQUIRED_DSA16_ASSETS = [
     'judge_runtime_bindings_resolver',
     'scripts/requirements-contract-judge-runtime-bindings.ts',
     'resolver',
+  ],
+  [
+    'critical_auditor_judge_adapter',
+    'scripts/requirements-contract-critical-auditor-judge-adapter.ts',
+    'adapter',
   ],
   ['reverse_audit_validator', 'scripts/requirements-contract-reverse-audit.ts', 'validator'],
 ] as const;
@@ -250,11 +270,7 @@ const REQUIRED_AMEND13_ASSETS = [
     '_bmad/shared/goal-contract/goal-execution-contract-template.md',
     'template',
   ],
-  [
-    'goal_contract_profile',
-    '_bmad/shared/goal-contract/goal-contract-profile.json',
-    'profile',
-  ],
+  ['goal_contract_profile', '_bmad/shared/goal-contract/goal-contract-profile.json', 'profile'],
   [
     'goal_contract_renderer',
     '_bmad/shared/goal-contract/scripts/render-goal-contract.js',
@@ -320,11 +336,8 @@ describe('requirements contract canonical assets manifest', () => {
     );
     expect(new Set(manifest.assets.map((asset) => asset.role)).size).toBe(manifest.assets.length);
     expect(
-      new Set(
-        manifest.assets.map(
-          (asset) => `${asset.path}#${asset.symbolRef ?? '<whole-file>'}`
-        )
-      ).size
+      new Set(manifest.assets.map((asset) => `${asset.path}#${asset.symbolRef ?? '<whole-file>'}`))
+        .size
     ).toBe(manifest.assets.length);
     expect(manifest.authority).toBe('none');
 
@@ -380,8 +393,7 @@ describe('requirements contract canonical assets manifest', () => {
 
     const sharedPathAssets = manifest.assets.filter(
       (asset) =>
-        asset.path ===
-        `${SOURCE_AUTHORITY_ROOT}scripts/requirements-contract-terminal-closeout.ts`
+        asset.path === `${SOURCE_AUTHORITY_ROOT}scripts/requirements-contract-terminal-closeout.ts`
     );
     expect(sharedPathAssets.map((asset) => asset.symbolRef).sort()).toEqual([
       'projectRequirementsContractTerminalCloseout',

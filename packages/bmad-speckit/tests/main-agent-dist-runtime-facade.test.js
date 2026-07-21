@@ -60,7 +60,7 @@ describe('main-agent dist runtime facade', () => {
         'release-gate',
         'quality-gate',
         'delivery-truth-gate',
-        'compiled-prompt-runner',
+        'requirements-contract-prompt-transaction-publish',
         'implementation-readiness-gate',
         'unified-ingress',
         'delivery-closeout-gate',

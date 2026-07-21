@@ -58,6 +58,25 @@ function writeScaleSource(): { sourcePath: string; sourceText: string; payload: 
     '  confirmedBy: null',
     '  sourceDocumentHash: null',
     '  implementationConfirmationHash: null',
+    '  controlledIngestWriterRegistry:',
+    '    - writerId: requirements-confirmation-ingest',
+    '      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"',
+    `      scriptContentHash: "sha256:${'a'.repeat(64)}"`,
+    '      ownerModel: requirements_contract',
+    '      allowedWriteApis: [appendControlEvent, atomicWriteRequirementRecord, appendArtifactIndex]',
+    '      allowedPaths:',
+    '        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json"',
+    '        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl"',
+    '        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl"',
+    '        - "_bmad-output/runtime/requirement-records/artifact-index.jsonl"',
+    '      allowedEventTypes: [confirmation_recorded, artifact_index_recorded]',
+    '      payloadContractRefs: [confirmation_recorded, artifact_index_recorded]',
+    '      writesControlFields: [confirmationHistory, artifactIndex]',
+    '      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"',
+    '      beforeAfterHashRequired: true',
+    '      canModifyWriterRegistry: false',
+    `      registryHash: "sha256:${'b'.repeat(64)}"`,
+    `      architectureConfirmationHash: "sha256:${'c'.repeat(64)}"`,
   ];
   while (lines.length < CORPUS.sourceSpan.startLine - 2) {
     lines.push(`  # scale-prefix-${String(lines.length + 1).padStart(6, '0')}`);
@@ -99,7 +118,12 @@ describe('requirements confirmation ingest scale corpus', () => {
         extracted.value
       );
       const implementationConfirmationHash = implementationConfirmationHashFor(extracted.value);
-      const confirmationPageHash = `sha256:${'f'.repeat(64)}`;
+      const htmlPath = path.join(tempDir, 'confirmation.html');
+      const htmlText =
+        '<!doctype html><html lang="zh-CN"><title>Scale confirmation</title></html>\n';
+      const actualHtmlFileHash =
+        `sha256:${createHash('sha256').update(htmlText, 'utf8').digest('hex')}`;
+      const confirmationPageHash = actualHtmlFileHash;
       const reportPath = path.join(tempDir, 'confirmation-render-report.json');
       const confirmationTextPath = path.join(tempDir, 'confirmation.txt');
       const confirmInstruction = [
@@ -117,11 +141,13 @@ describe('requirements confirmation ingest scale corpus', () => {
           sourceDocumentHash,
           implementationConfirmationHash,
           confirmationPageHash,
+          actualHtmlFileHash,
           confirmInstruction,
-          artifactRef: { path: path.join(tempDir, 'confirmation.html') },
+          artifactRef: { path: htmlPath, actualFileHash: actualHtmlFileHash },
         })}\n`,
         'utf8'
       );
+      fs.writeFileSync(htmlPath, htmlText, 'utf8');
       fs.writeFileSync(confirmationTextPath, confirmInstruction, 'utf8');
 
       const result = spawnSync(

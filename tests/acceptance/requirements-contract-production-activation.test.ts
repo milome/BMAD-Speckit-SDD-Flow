@@ -13,6 +13,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
+import { REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry';
 
 const mocks = vi.hoisted(() => ({
   spawnSync: vi.fn((_command: string, _options: { cwd: string }) => ({
@@ -64,9 +65,25 @@ function fixture() {
   write(root, 'src/candidate.ts', 'export const candidate = true;\n');
   write(root, 'config/candidate.json', '{"enabled":true}\n');
   write(root, 'packages/bmad-speckit/bin/bmad-speckit.js', '#!/usr/bin/env node\n');
+  const registeredStatusFacade = REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS.find(
+    (definition) =>
+      definition.roles.includes('status_facade') && definition.canonicalPath.endsWith('.ts')
+  );
+  if (!registeredStatusFacade) {
+    throw new Error('registered status facade fixture is unavailable');
+  }
+  write(
+    root,
+    registeredStatusFacade.canonicalPath,
+    'export const facadeBinding = resolveVerifiedSixModelStatus;\n'
+  );
   mkdirSync(path.dirname(path.join(root, CONTRACT)), { recursive: true });
   copyFileSync(path.resolve(CONTRACT), path.join(root, CONTRACT));
-  return { root, record };
+  return {
+    root,
+    record,
+    registeredStatusFacadePath: registeredStatusFacade.canonicalPath,
+  };
 }
 
 function files(root: string, current = root): string[] {
@@ -124,9 +141,48 @@ it('tests complete candidate code and exact ARTIFACT-12 bytes inside the plan-bo
   expect(`sha256:${createHash('sha256').update(snapshotRegistry).digest('hex')}`).toBe(
     plan.registry.targetArtifact12Hash
   );
+  const activatedRegistry = JSON.parse(snapshotRegistry.toString('utf8'));
+  expect(activatedRegistry.sixModelConsumerInventory).toMatchObject({
+    schemaVersion: 'requirements-contract-six-model-consumer-inventory/v1',
+    missingConsumerPaths: [],
+    directAuthorityReadPaths: [],
+    unregisteredConsumerCount: 0,
+    directAuthorityReadCount: 0,
+  });
+  expect(activatedRegistry.sixModelConsumerInventory.entries).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        path: value.registeredStatusFacadePath,
+        canonicalPath: value.registeredStatusFacadePath,
+        pathHash: `sha256:${createHash('sha256')
+          .update(readFileSync(path.join(value.root, value.registeredStatusFacadePath)))
+          .digest('hex')}`,
+      }),
+    ])
+  );
   const snapshotFiles = files(snapshot);
   expect(snapshotFiles.some((file) => file.startsWith('docs/plans/evidence/'))).toBe(false);
   expect(snapshotFiles.some((file) => file.endsWith('.safe-write-receipt.json'))).toBe(false);
+});
+
+it('blocks before planning when dynamic discovery finds an unregistered six-model consumer', async () => {
+  const value = fixture();
+  const registryPath = path.join(value.root, REGISTRY);
+  const registryPreimage = readFileSync(registryPath);
+  const unregisteredConsumerPath = `packages/runtime-${randomUUID()}/src/status-reader.ts`;
+  write(
+    value.root,
+    unregisteredConsumerPath,
+    'export const readStatus = (record) => record.sixModelResults;\n'
+  );
+
+  await expect(activate(value)).rejects.toMatchObject({
+    code: 'scope_amendment_required',
+    missingConsumerPaths: [unregisteredConsumerPath],
+    unregisteredConsumerCount: 1,
+  });
+  expect(readFileSync(registryPath).equals(registryPreimage)).toBe(true);
+  expect(mocks.spawnSync).not.toHaveBeenCalled();
 });
 
 it('blocks when a passing nested command changes the tested snapshot ARTIFACT-12 bytes', async () => {

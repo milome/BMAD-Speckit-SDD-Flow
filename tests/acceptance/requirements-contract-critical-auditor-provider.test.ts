@@ -135,6 +135,28 @@ describe('requirements contract Critical Auditor provider modes', () => {
     }
   });
 
+  it('binds Critical Auditor semanticModelHash to the production semantic manifest', () => {
+    const root = createTempRoot('requirements-contract-critical-auditor-semantic-binding-');
+    try {
+      const recordId = 'REQ-CRITICAL-AUDITOR-SEMANTIC-BINDING';
+      const fixture = createRequestForResponseFile(root, recordId);
+      const artifactPaths = artifacts(root, recordId, `${recordId}-SET`);
+      const manifest = readJson<Record<string, any>>(
+        artifactPaths.semanticConservationManifest
+      );
+      const kernel = readJson<{ semanticKernel: Record<string, any> }>(
+        path.join(artifactPaths.authoring, 'semantic-kernel.json')
+      ).semanticKernel;
+
+      expect(kernel.semanticModelHash).toBe(manifest.semanticModelHash);
+      expect(fixture.packet.semanticModelHash).toBe(manifest.semanticModelHash);
+      expect(fixture.request.semanticModelHash).toBe(manifest.semanticModelHash);
+      expect(fixture.request.semanticModelHash).not.toBe(kernel.kernelHash);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('no-new-gap response writer fails closed on malformed gate counts and out-of-scope requests', () => {
     const root = createTempRoot('requirements-contract-critical-auditor-writer-fail-closed-');
     try {
@@ -677,8 +699,16 @@ describe('requirements contract Critical Auditor provider modes', () => {
       const final = runFreshRound();
       expect(final.blockingStage).toBeNull();
       expect(issueCodes(final)).not.toContain('critical_auditor_response_request_hash_mismatch');
+      const promotionDecision = readJson<Record<string, unknown>>(
+        sourcePromotionDecisionPath(root, recordId)
+      ).finalDecision;
       expect(
-        readJson<Record<string, unknown>>(sourcePromotionDecisionPath(root, recordId)).finalDecision
+        promotionDecision,
+        JSON.stringify({
+          blockingStage: final.blockingStage,
+          issueCodes: issueCodes(final),
+          promotionDecision,
+        })
       ).toBe('allow_source_promotion');
       expect(existsSync(artifacts(root, recordId, `${recordId}-SET`).promotionReceipt)).toBe(true);
 
@@ -827,7 +857,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
     }
   });
 
-  it('external_adapter requires an explicit adapter command before writing staging artifacts', () => {
+  it('external_adapter defaults to the package-controlled Judge action without explicit argv', () => {
     const root = createTempRoot('requirements-contract-external-adapter-');
     try {
       const recordId = 'REQ-EXTERNAL-ADAPTER';
@@ -838,10 +868,12 @@ describe('requirements contract Critical Auditor provider modes', () => {
       const result = runAuthoring(root, source, recordId, {
         ...materialization.authoringOptions,
         criticalAuditorProviderMode: 'external_adapter',
+        skipDrilldownArtifacts: true,
       });
 
-      expect(issueCodes(result)).toContain('critical_auditor_external_adapter_missing');
-      expect(result.blockingStage).toBe('critical_auditor_external_adapter_missing');
+      expect(issueCodes(result)).not.toContain('critical_auditor_external_adapter_missing');
+      expect(issueCodes(result)).toContain('pre_confirmation_drilldown_core_surfaces_missing');
+      expect(result.blockingStage).toBe('pre_confirmation_drilldown_core_surfaces_missing');
       expect(result.sourceMutationPerformed).toBe(false);
       expectSourceHashUnchanged(source, beforeHash);
     } finally {

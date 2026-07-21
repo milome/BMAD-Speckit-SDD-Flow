@@ -80,7 +80,9 @@ describe('requirements contract source PRD template', () => {
     expect(sourceTemplate).toContain(
       'does not replace `_bmad/skills/requirements-contract-authoring/references/contract-template.md`'
     );
-    expect(sourceTemplate).toContain('starter template for an authoritative implementation source document');
+    expect(sourceTemplate).toContain(
+      'starter template for an authoritative implementation source document'
+    );
     expect(sourceTemplate).toContain('## Source-to-Contract Projection Map');
     expect(sourceTemplate).not.toMatch(/^implementationConfirmation:\s*$/mu);
     expect(sourceTemplate).not.toContain('schemaVersion: requirements-contract-source/v1');
@@ -146,7 +148,9 @@ describe('requirements contract source PRD template', () => {
     );
     for (const field of rules.canonicalContractFields) {
       expect(internalContractTemplate, `canonical contract field ${field}`).toContain(`${field}:`);
-      expect(sourceTemplate, `source projection map field ${field}`).toContain(`finalField: ${field}`);
+      expect(sourceTemplate, `source projection map field ${field}`).toContain(
+        `finalField: ${field}`
+      );
     }
     expect(rules.sourceProjectionRequiredFields).toEqual(rules.canonicalContractFields);
   });
@@ -184,8 +188,18 @@ describe('requirements contract source PRD template', () => {
     const expectedColumnsBySection: Record<string, string[]> = {
       'Functional Requirements': ['Per-MUST oracle', 'Assertion source', 'Responsibility mapping'],
       'Acceptance Evidence': ['Oracle', 'Assertion source', 'Responsibility mapping'],
-      'Test And Verification Paths': ['Per-MUST oracle', 'Assertion source', 'Responsibility mapping', 'Target files'],
-      'Trace Matrix Source': ['Acceptance refs', 'Per-MUST oracle', 'Per-MUST closure assertion', 'Responsibility mapping'],
+      'Test And Verification Paths': [
+        'Per-MUST oracle',
+        'Assertion source',
+        'Responsibility mapping',
+        'Target files',
+      ],
+      'Trace Matrix Source': [
+        'Acceptance refs',
+        'Per-MUST oracle',
+        'Per-MUST closure assertion',
+        'Responsibility mapping',
+      ],
       'Implementation Path Map': ['Per-MUST oracle', 'Assertion source', 'Responsibility mapping'],
       'Current Target Map': ['Per-MUST oracle', 'Assertion source', 'Responsibility mapping'],
     };
@@ -291,8 +305,10 @@ describe('requirements contract source PRD template', () => {
       'Out Of Scope',
     ]);
     expect(
-      ((schema.properties as any)['x-templateRules'].properties.allowedRequirementBearingSections as any)
-        .minItems
+      (
+        (schema.properties as any)['x-templateRules'].properties
+          .allowedRequirementBearingSections as any
+      ).minItems
     ).toBe(4);
     expect(rules.projectionSupportingSections).toEqual(
       expect.arrayContaining([
@@ -336,9 +352,12 @@ describe('requirements contract source PRD template', () => {
       'utf8'
     );
 
-    expect(buildScript).toContain('allowedSourceAuthorityTemplateJsonAsset');
     expect(buildScript).toContain('runSourceAuthorityTemplateLint();');
     expect(buildScript).toContain('lint-requirements-contract-source-template.ts');
-    expect(buildScript).toContain("relativePath.startsWith('source-authority/templates/')");
+    expect(buildScript).toContain("'requirements-contract-source-prd-template.md'");
+    expect(buildScript).toContain("'requirements-contract-source-prd-template.schema.json'");
+    expect(buildScript).toContain(
+      "target: path.join(distRoot, 'source-authority', 'templates', name)"
+    );
   });
 });

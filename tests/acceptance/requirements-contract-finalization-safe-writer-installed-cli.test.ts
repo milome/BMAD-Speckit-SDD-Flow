@@ -13,6 +13,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it } from 'vitest';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const BASE = 'docs/plans/evidence/loop-engineering-remediation';
 const PACKAGE_ROOT = path.resolve('packages/bmad-speckit');
@@ -72,6 +73,12 @@ function createFixture(root: string) {
     sourcePath: 'source.md',
     sourceDocumentHash: sha256('source'),
     implementationConfirmationHash: sha256('confirmation'),
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: requirementSetId,
+      sourcePath: 'source.md',
+      sourceDocumentHash: sha256('source'),
+      implementationConfirmationHash: sha256('confirmation'),
+    }),
     semanticModelHash: sha256('semantic'),
   });
   const draftBytes = writeJson(root, draft, {

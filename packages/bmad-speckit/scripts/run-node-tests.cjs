@@ -50,7 +50,12 @@ function applyFilters(testFiles, filters, cwd) {
 
 const filters = process.argv.slice(2).filter((arg) => String(arg).trim() !== '');
 const stateMutatingTestNames = new Set([
+  'ai-tdd-projection-manifest.test.js',
+  'bmad-help-bmads-fusion-contract.test.js',
+  'bmads-six-model-installed-parity.test.js',
+  'judge-runtime-installed-parity.test.js',
   'main-agent-build-dist.test.js',
+  'main-agent-dist-no-redundant-assets.test.js',
   'main-agent-full-orchestration-no-regression.test.js',
   'pack-bmad-mirror.test.js',
 ]);

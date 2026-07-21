@@ -69,7 +69,7 @@ function runCursorPartyModeSubagentStart(root: string, gateProfileId: string): v
       CLAUDE_PROJECT_DIR: root,
     },
   });
-  expect(result.status).toBe(0);
+  expect(result.status, `${result.stderr}\n${result.stdout}`).toBe(0);
 }
 
 function runCursorPartyModeSubagentStartWithTask(root: string, task: string): void {
@@ -87,7 +87,7 @@ function runCursorPartyModeSubagentStartWithTask(root: string, task: string): vo
       CLAUDE_PROJECT_DIR: root,
     },
   });
-  expect(result.status).toBe(0);
+  expect(result.status, `${result.stderr}\n${result.stdout}`).toBe(0);
 }
 
 function buildValidCursorFullRunMessage(totalRounds: number, gateProfileId: string): string {

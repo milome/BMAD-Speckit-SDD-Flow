@@ -5,6 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fileHash,
   materializePromptPublicationFixture,
+  setPromptPublicationArchitectureNotRequired,
+  setPromptPublicationReadiness,
+  sha256,
   writeJson,
   writeText,
 } from './helpers/prompt-transaction-publication-fixture';
@@ -231,6 +234,14 @@ describe('requirements contract prompt transaction production publication', () =
       ],
       autoCommitDefault: false,
     });
+    expect(
+      path
+        .relative(value.paths.installedPackageRoot, value.paths.installedGeneratorPath)
+        .replace(/\\/gu, '/')
+    ).toBe('_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js');
+    expect(evidence.resolvedGeneratorPath).not.toContain(
+      '/dist/main-agent/source-authority/_bmad/'
+    );
     expect(evidence.capabilityObservationRef.path).not.toContain('/model_packet.json');
     expect(evidence.capabilityObservationRef.path).not.toContain('/transaction-manifest.json');
     expect(evidence.capabilityObservationRef.path).not.toContain('/audit_receipt.json');
@@ -354,6 +365,188 @@ describe('requirements contract prompt transaction production publication', () =
     expect(runner).not.toHaveBeenCalled();
     expect(fs.existsSync(value.options.currentDispatchPointer)).toBe(false);
     expect(fs.existsSync(value.options.evidenceOut)).toBe(false);
+  });
+
+  it('rejects a missing implementation readiness PASS receipt before invoking the runner', async () => {
+    const value = fixture();
+    const module = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher'
+    );
+    const attempt = JSON.parse(fs.readFileSync(value.paths.attemptContext, 'utf8'));
+    delete attempt.implementationReadinessReceiptRef;
+    writeJson(value.paths.attemptContext, attempt);
+    const runner = compiledPromptRunnerFor(value);
+
+    expect(
+      await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: runner,
+      })
+    ).toBe(1);
+    expect(runner).not.toHaveBeenCalled();
+    expect(fs.existsSync(value.options.currentDispatchPointer)).toBe(false);
+    expect(fs.existsSync(value.options.evidenceOut)).toBe(false);
+  });
+
+  it('rejects blocked, stale, and differently scoped readiness evidence before the runner', async () => {
+    const module = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher'
+    );
+    const cases = [
+      (value: ReturnType<typeof fixture>) =>
+        setPromptPublicationReadiness(value, { decision: 'block' }),
+      (value: ReturnType<typeof fixture>) =>
+        setPromptPublicationReadiness(value, {
+          decision: 'pass',
+          implementationAttemptId: `${value.identity.implementationAttemptId}-STALE`,
+        }),
+      (value: ReturnType<typeof fixture>) =>
+        setPromptPublicationReadiness(value, {
+          decision: 'pass',
+          sourceDocumentHash: sha256(`${value.identity.sourceDocumentHash}:different-scope`),
+        }),
+      (value: ReturnType<typeof fixture>) =>
+        setPromptPublicationReadiness(value, {
+          decision: 'pass',
+          semanticModelHash: sha256(`${value.identity.semanticModelHash}:different-scope`),
+        }),
+    ];
+
+    for (const mutate of cases) {
+      const value = fixture();
+      mutate(value);
+      const runner = compiledPromptRunnerFor(value);
+      expect(
+        await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+          runCompiledPrompt: runner,
+        })
+      ).toBe(1);
+      expect(runner).not.toHaveBeenCalled();
+      expect(fs.existsSync(value.options.currentDispatchPointer)).toBe(false);
+      expect(fs.existsSync(value.options.evidenceOut)).toBe(false);
+    }
+  });
+
+  it('publishes current architecture_not_required authority without a fake architecture page', async () => {
+    const value = fixture();
+    setPromptPublicationArchitectureNotRequired(value);
+    const module = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher'
+    );
+    const runner = compiledPromptRunnerFor(value);
+
+    expect(
+      await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: runner,
+      })
+    ).toBe(0);
+    expect(runner).toHaveBeenCalledOnce();
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(value.paths.outDir, 'transaction-manifest.json'), 'utf8')
+    );
+    expect(manifest.architectureAuthorityDecision).toBe('architecture_not_required');
+    expect(manifest.confirmationPageRefs.architecture).toBeNull();
+    const pointer = JSON.parse(
+      fs.readFileSync(value.options.currentDispatchPointer, 'utf8')
+    );
+    expect(pointer.architectureAuthorityDecision).toBe('architecture_not_required');
+    expect(pointer.confirmationPageRefs.architecture).toBeNull();
+  });
+
+  it.each([
+    {
+      state: 'missing',
+      mutate: (record: Record<string, any>) => {
+        delete record.architectureConfirmationState;
+      },
+    },
+    {
+      state: 'inactive',
+      mutate: (record: Record<string, any>) => {
+        record.architectureConfirmationState.status = 'stale';
+      },
+    },
+    {
+      state: 'missing_current_hash',
+      mutate: (record: Record<string, any>) => {
+        delete record.architectureConfirmationState.currentArchitectureConfirmationHash;
+      },
+    },
+    {
+      state: 'stale_source_binding',
+      mutate: (record: Record<string, any>) => {
+        const currentValue = String(
+          record.architectureConfirmationState.staleInputs.sourceDocumentHash
+        );
+        record.architectureConfirmationState.staleInputs.sourceDocumentHash = sha256(
+          `${currentValue}:mismatch`
+        );
+      },
+    },
+    {
+      state: 'stale_implementation_binding',
+      mutate: (record: Record<string, any>) => {
+        const currentValue = String(
+          record.architectureConfirmationState.staleInputs.implementationConfirmationHash
+        );
+        record.architectureConfirmationState.staleInputs.implementationConfirmationHash = sha256(
+          `${currentValue}:mismatch`
+        );
+      },
+    },
+  ])(
+    'rejects required architecture when the RequirementRecord state is $state',
+    async ({ mutate }) => {
+      const value = fixture();
+      const record = JSON.parse(fs.readFileSync(value.paths.recordPath, 'utf8'));
+      mutate(record);
+      writeJson(value.paths.recordPath, record);
+      const module = await import(
+        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher'
+      );
+      const runner = compiledPromptRunnerFor(value);
+
+      expect(
+        await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+          runCompiledPrompt: runner,
+        })
+      ).toBe(1);
+      expect(runner).not.toHaveBeenCalled();
+      expect(fs.existsSync(value.options.currentDispatchPointer)).toBe(false);
+      expect(fs.existsSync(value.options.evidenceOut)).toBe(false);
+    }
+  );
+
+  it('rejects mismatched architecture_not_required applicability bindings', async () => {
+    const module = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher'
+    );
+    const fields = [
+      'requirementSnapshotHash',
+      'policyHash',
+      'targetPathsHash',
+      'deploymentImpactHash',
+      'consumerImpactHash',
+      'governanceImpactHash',
+    ] as const;
+
+    for (const field of fields) {
+      const value = fixture();
+      setPromptPublicationArchitectureNotRequired(value);
+      const attempt = JSON.parse(fs.readFileSync(value.paths.attemptContext, 'utf8'));
+      const currentValue = String(attempt.architectureApplicabilityInputs[field]);
+      attempt.architectureApplicabilityInputs[field] = sha256(`${currentValue}:mismatch`);
+      writeJson(value.paths.attemptContext, attempt);
+      const runner = compiledPromptRunnerFor(value);
+
+      expect(
+        await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+          runCompiledPrompt: runner,
+        })
+      ).toBe(1);
+      expect(runner).not.toHaveBeenCalled();
+      expect(fs.existsSync(value.options.currentDispatchPointer)).toBe(false);
+      expect(fs.existsSync(value.options.evidenceOut)).toBe(false);
+    }
   });
 
   it('rejects stale confirmation hashes and Stage Five-Star matrix input edges', async () => {

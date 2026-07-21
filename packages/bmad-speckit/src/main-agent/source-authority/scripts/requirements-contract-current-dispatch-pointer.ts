@@ -206,8 +206,13 @@ function assertPointerReferences(
     ['stageRegistryRef', pointer.stageRegistryRef],
     ['confirmationReceiptRefs.requirements', pointer.confirmationReceiptRefs?.requirements],
     ['confirmationReceiptRefs.architecture', pointer.confirmationReceiptRefs?.architecture],
+    ['implementationReadinessReceiptRef', pointer.implementationReadinessReceiptRef],
     ['confirmationPageRefs.requirements', pointer.confirmationPageRefs?.requirements],
-    ['confirmationPageRefs.architecture', pointer.confirmationPageRefs?.architecture],
+    ...(pointer.confirmationPageRefs?.architecture
+      ? ([
+          ['confirmationPageRefs.architecture', pointer.confirmationPageRefs.architecture],
+        ] as Array<[string, JsonRecord]>)
+      : []),
     ['transactionManifestRef', pointer.transactionManifestRef],
     ['modelPacketRef', pointer.modelPacketRef],
     ['auditReceiptRef', pointer.auditReceiptRef],
@@ -479,6 +484,24 @@ function assertModelPacketBindings(input: {
       throw new Error(`current_dispatch_pointer_model_packet_mismatch:${field}`);
     }
   }
+  const executionHandoff = modelPacket.executionHandoff as JsonRecord;
+  if (executionHandoff.packetId !== pointer.packetId) {
+    throw new Error('current_dispatch_pointer_model_packet_mismatch:executionHandoff.packetId');
+  }
+  const expectedTaskReportPath = path.join(
+    authorityRootRealPath,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'task-reports',
+    String(pointer.requirementSetId),
+    `${String(pointer.implementationAttemptId)}.json`
+  );
+  if (!sameFilePath(executionHandoff.taskReportPath, expectedTaskReportPath)) {
+    throw new Error(
+      'current_dispatch_pointer_model_packet_mismatch:executionHandoff.taskReportPath'
+    );
+  }
   if (!sameFilePath(promptTransaction.manifestPath, pointer.transactionManifestRef.path)) {
     throw new Error('current_dispatch_pointer_model_packet_manifest_path_mismatch');
   }
@@ -562,6 +585,11 @@ function assertPayloadBindings(input: {
     ['sourceHash', transactionManifest.sourceHash, pointer.sourceDocumentHash],
     ['semanticModelHash', transactionManifest.semanticModelHash, pointer.semanticModelHash],
     ['dispatchInputSetHash', transactionManifest.dispatchInputSetHash, pointer.dispatchInputSetHash],
+    [
+      'architectureAuthorityDecision',
+      transactionManifest.architectureAuthorityDecision,
+      pointer.architectureAuthorityDecision,
+    ],
     ['createdAt', transactionManifest.createdAt, pointer.createdAt],
     ['transactionStatus', transactionManifest.transactionStatus, 'pass'],
     ['executionDisposition', transactionManifest.executionDisposition, 'executable'],
@@ -585,6 +613,11 @@ function assertPayloadBindings(input: {
       'confirmationReceiptRefs',
       transactionManifest.confirmationReceiptRefs,
       pointer.confirmationReceiptRefs,
+    ],
+    [
+      'implementationReadinessReceiptRef',
+      transactionManifest.implementationReadinessReceiptRef,
+      pointer.implementationReadinessReceiptRef,
     ],
     [
       'confirmationPageRefs',
@@ -672,13 +705,21 @@ function assertPayloadBindings(input: {
       transactionManifest.confirmationReceiptRefs.architecture,
     ],
     [
+      'transactionManifest.implementationReadinessReceiptRef',
+      transactionManifest.implementationReadinessReceiptRef,
+    ],
+    [
       'transactionManifest.confirmationPageRefs.requirements',
       transactionManifest.confirmationPageRefs.requirements,
     ],
-    [
-      'transactionManifest.confirmationPageRefs.architecture',
-      transactionManifest.confirmationPageRefs.architecture,
-    ],
+    ...(transactionManifest.confirmationPageRefs.architecture
+      ? ([
+          [
+            'transactionManifest.confirmationPageRefs.architecture',
+            transactionManifest.confirmationPageRefs.architecture,
+          ],
+        ] as Array<[string, JsonRecord]>)
+      : []),
     [
       'transactionManifest.capabilityObservationRef',
       transactionManifest.capabilityObservationRef,

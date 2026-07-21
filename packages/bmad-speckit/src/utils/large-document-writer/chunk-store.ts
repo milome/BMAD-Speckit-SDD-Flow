@@ -1,11 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const sourceSuffix = __filename.endsWith('.ts') ? '.ts' : '';
-const { block } = require(`./errors${sourceSuffix}`);
-const { readManifest, sessionPaths, updateManifest } = require(
-  `./draft-session${sourceSuffix}`
-);
-const { sha256Text, writeJsonReceipt } = require(`./receipts${sourceSuffix}`);
+const { block } = require('./errors');
+const { readManifest, sessionPaths, updateManifest } = require('./draft-session');
+const { sha256Text, writeJsonReceipt } = require('./receipts');
 
 function markerRegex(chunkId, sectionId) {
   const escapedChunk = chunkId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

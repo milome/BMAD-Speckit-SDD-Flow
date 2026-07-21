@@ -525,7 +525,8 @@ function templateToRegExp(value: string, record: JsonObject, attemptId: string):
 function resolveDeclaredPath(
   value: string,
   record: JsonObject,
-  attemptId: string
+  attemptId: string,
+  projectRoot = process.cwd()
 ): { displayPath: string; absolutePath?: string; pattern?: RegExp } {
   const pathValue = filePathPrefix(value);
   const replaced = replaceKnownPlaceholders(pathValue, record, attemptId);
@@ -540,7 +541,7 @@ function resolveDeclaredPath(
   }
   return {
     displayPath: normalizePath(replaced),
-    absolutePath: path.isAbsolute(replaced) ? replaced : path.resolve(replaced),
+    absolutePath: path.isAbsolute(replaced) ? replaced : path.resolve(projectRoot, replaced),
     pattern,
   };
 }
@@ -888,7 +889,13 @@ function artifactLinkedIds(entry: JsonObject): string[] {
 
 function artifactSemanticMatches(item: JsonObject, target: TargetItem): boolean {
   const expectedRole = target.expectedSourceOfTruthRole;
-  if (!expectedRole || GENERIC_SEMANTIC_MATCH_ROLES.has(expectedRole)) return false;
+  if (!expectedRole) return false;
+  if (
+    GENERIC_SEMANTIC_MATCH_ROLES.has(expectedRole) &&
+    text(item.artifactType) !== 'target_file_readback_snapshot'
+  ) {
+    return false;
+  }
   if (text(item.sourceOfTruthRole) !== expectedRole) return false;
 
   const linked = artifactLinkedIds(item);
@@ -914,14 +921,162 @@ function artifactIndexEntry(
     (item) =>
       artifactPathMatches(item, declared) || (target ? artifactAliasMatches(item, target) : false)
   );
-  const matches =
-    directMatches.length > 0 || !target
-      ? directMatches
-      : artifactIndex.filter((item) => artifactSemanticMatches(item, target));
+  const semanticMatches = target
+    ? artifactIndex.filter((item) => artifactSemanticMatches(item, target))
+    : [];
+  const allMatches = [...new Set([...directMatches, ...semanticMatches])];
+  const expectedRole = target?.expectedSourceOfTruthRole;
+  const roleMatches = expectedRole
+    ? allMatches.filter(
+        (item) =>
+          normalizedExpectedSourceOfTruthRole(text(item.sourceOfTruthRole)) ===
+          normalizedExpectedSourceOfTruthRole(expectedRole)
+      )
+    : [];
+  const matches = roleMatches.length > 0 ? roleMatches : allMatches;
   const boundMatches = matches.filter((item) =>
     artifactBoundToAttempt(record, item, attemptId, events)
   );
   return boundMatches.at(-1) ?? matches.at(-1);
+}
+
+function projectRootForRecordPath(recordPath: string): string {
+  const resolved = path.resolve(recordPath);
+  const marker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = resolved.lastIndexOf(marker);
+  return markerIndex > 0 ? resolved.slice(0, markerIndex) : process.cwd();
+}
+
+function validateTargetFileEvidenceSnapshot(input: {
+  entry: JsonObject;
+  target: TargetItem;
+  record: JsonObject;
+  recordPath: string;
+  attemptId: string;
+  concreteFile?: string;
+}): { targetHash: string; issues: GateIssue[] } {
+  const issues: GateIssue[] = [];
+  const entryPath = text(input.entry.path);
+  const snapshotPath = path.isAbsolute(entryPath)
+    ? path.resolve(entryPath)
+    : path.resolve(projectRootForRecordPath(input.recordPath), entryPath);
+  const invalid = (code: string, message: string): void => {
+    issues.push(issue(code, message, [input.target.id]));
+  };
+  if (!fs.existsSync(snapshotPath) || !fs.statSync(snapshotPath).isFile()) {
+    invalid(
+      'target_artifact_evidence_snapshot_missing',
+      `${input.target.pathOrField} target evidence snapshot is missing`
+    );
+    return { targetHash: '', issues };
+  }
+  const entryHash = text(input.entry.contentHash ?? input.entry.hash);
+  if (!SHA256_RE.test(entryHash) || sha256File(snapshotPath) !== entryHash) {
+    invalid(
+      'target_artifact_evidence_snapshot_hash_mismatch',
+      `${input.target.pathOrField} target evidence snapshot hash is stale`
+    );
+  }
+  let snapshot: JsonObject;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(snapshotPath, 'utf8')) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error();
+    snapshot = parsed as JsonObject;
+  } catch {
+    invalid(
+      'target_artifact_evidence_snapshot_invalid',
+      `${input.target.pathOrField} target evidence snapshot is not valid JSON`
+    );
+    return { targetHash: '', issues };
+  }
+  if (
+    text(snapshot.schemaVersion) !==
+    'requirements-contract-target-file-evidence-snapshot/v1'
+  ) {
+    invalid(
+      'target_artifact_evidence_snapshot_schema_invalid',
+      `${input.target.pathOrField} target evidence snapshot schema is invalid`
+    );
+  }
+  const targetHash = text(snapshot.targetHash);
+  const normalizedConcreteFile = input.concreteFile
+    ? normalizePath(path.resolve(input.concreteFile))
+    : '';
+  if (
+    !normalizedConcreteFile ||
+    normalizePath(path.resolve(text(snapshot.targetPath))) !== normalizedConcreteFile
+  ) {
+    invalid(
+      'target_artifact_evidence_snapshot_path_mismatch',
+      `${input.target.pathOrField} target evidence snapshot binds another target`
+    );
+  }
+  if (!SHA256_RE.test(targetHash)) {
+    invalid(
+      'target_artifact_evidence_snapshot_target_hash_invalid',
+      `${input.target.pathOrField} target evidence snapshot target hash is invalid`
+    );
+  }
+  if (text(snapshot.targetArtifactId) !== input.target.id) {
+    invalid(
+      'target_artifact_evidence_snapshot_id_mismatch',
+      `${input.target.pathOrField} target evidence snapshot artifact ID is stale`
+    );
+  }
+  if (
+    input.target.expectedSourceOfTruthRole &&
+    normalizedExpectedSourceOfTruthRole(text(snapshot.targetSourceOfTruthRole)) !==
+      normalizedExpectedSourceOfTruthRole(input.target.expectedSourceOfTruthRole)
+  ) {
+    invalid(
+      'target_artifact_evidence_snapshot_role_mismatch',
+      `${input.target.pathOrField} target evidence snapshot role is stale`
+    );
+  }
+  for (const [field, expected, actual] of [
+    ['requirement_set_id', text(input.record.requirementSetId), text(snapshot.requirementSetId)],
+    ['transaction_id', text(input.record.transactionId), text(snapshot.transactionId)],
+    [
+      'implementation_attempt_id',
+      text(input.record.currentAttemptId) || text(input.record.implementationAttemptId),
+      text(snapshot.implementationAttemptId),
+    ],
+    ['closeout_attempt_id', input.attemptId, text(snapshot.closeoutAttemptId)],
+    [
+      'source_document_hash',
+      text(input.record.sourceDocumentHash),
+      text(snapshot.sourceDocumentHash),
+    ],
+    ['semantic_model_hash', text(input.record.semanticModelHash), text(snapshot.semanticModelHash)],
+    ['packet_hash', text(input.record.packetHash), text(snapshot.packetHash)],
+  ]) {
+    if (!expected || actual !== expected) {
+      invalid(
+        `target_artifact_evidence_snapshot_${field}_mismatch`,
+        `${input.target.pathOrField} target evidence snapshot ${field} is stale`
+      );
+    }
+  }
+  if (
+    input.target.traceRefs.some((ref) => !strings(snapshot.traceRows).includes(ref)) ||
+    input.target.evidenceRefs.some((ref) => !strings(snapshot.evidenceRefs).includes(ref))
+  ) {
+    invalid(
+      'target_artifact_evidence_snapshot_trace_binding_missing',
+      `${input.target.pathOrField} target evidence snapshot is missing TRACE/EVD bindings`
+    );
+  }
+  if (
+    input.concreteFile &&
+    fs.existsSync(input.concreteFile) &&
+    Number(snapshot.targetSizeBytes) !== fs.statSync(input.concreteFile).size
+  ) {
+    invalid(
+      'target_artifact_evidence_snapshot_size_mismatch',
+      `${input.target.pathOrField} target evidence snapshot size is stale`
+    );
+  }
+  return { targetHash, issues };
 }
 
 function artifactIdentityMatches(
@@ -1121,7 +1276,12 @@ function validateFileTarget(input: {
   if (SUCCESS_PATH_OPTIONAL_SURFACES.has(input.target.pathOrField)) {
     return [];
   }
-  const declared = resolveDeclaredPath(input.target.pathOrField, input.record, input.attemptId);
+  const declared = resolveDeclaredPath(
+    input.target.pathOrField,
+    input.record,
+    input.attemptId,
+    projectRootForRecordPath(input.recordPath)
+  );
   const concreteFile = declared.absolutePath;
   const exists = concreteFile ? fs.existsSync(concreteFile) : false;
   if (POST_CLOSEOUT_SURFACES.has(input.target.pathOrField)) {
@@ -1169,7 +1329,19 @@ function validateFileTarget(input: {
     );
     return issues;
   }
-  const hash = text(entry.contentHash ?? entry.hash);
+  const targetSnapshot =
+    text(entry.artifactType) === 'target_file_readback_snapshot'
+      ? validateTargetFileEvidenceSnapshot({
+          entry,
+          target: input.target,
+          record: input.record,
+          recordPath: input.recordPath,
+          attemptId: input.attemptId,
+          concreteFile,
+        })
+      : null;
+  if (targetSnapshot) issues.push(...targetSnapshot.issues);
+  const hash = targetSnapshot?.targetHash || text(entry.contentHash ?? entry.hash);
   if (!hash)
     issues.push(
       issue(

@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const ROOT = process.cwd();
 const PREPARE = path.join(
@@ -119,11 +120,26 @@ function writeConfirmedFixture() {
     record,
     `${JSON.stringify(
       {
+        schemaVersion: 'requirement-record/v1',
         recordId: 'REQ-PREPARE',
         requirementSetId: 'REQ-PREPARE',
         status: 'user_confirmed',
+        sourcePath: source,
         sourceDocumentHash: report.sourceDocumentHash,
         implementationConfirmationHash: report.implementationConfirmationHash,
+        confirmationPageHash: report.confirmationPageHash,
+        latestConfirmationProjectionHash: report.confirmationPageHash,
+        confirmationHistory: createRecordedConfirmationHistory({
+          recordId: 'REQ-PREPARE',
+          sourcePath: source,
+          sourceDocumentHash: report.sourceDocumentHash,
+          implementationConfirmationHash: report.implementationConfirmationHash,
+          confirmationPageHash: report.confirmationPageHash,
+          confirmedAt: '2026-05-20T00:00:00.000Z',
+          confirmedBy: 'tester',
+          renderReportPath: path.join(tempDir, 'confirmation-render-report.json'),
+          htmlPath: htmlOut,
+        }),
         architectureConfirmationState: {
           status: 'active',
           currentArchitectureConfirmationRunId: 'old-arch',

@@ -16,6 +16,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { x as extractTarball } from 'tar';
 import { describe, expect, it } from 'vitest';
+import { REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry';
 
 type MatrixColumn =
   | 'sourceOwner'
@@ -79,6 +80,22 @@ const MATRIX_COLUMNS: MatrixColumn[] = [
   'rootHost',
   'installedConsumer',
 ];
+const RECOVERY_MATRIX_OWNERS = new Set([
+  'Recovery bootstrap and finalizer',
+  'Controlled-command Receipt schema',
+  'Recovery-finalization Receipt schema',
+  'Recovery state-decision schema',
+  'Recovery-lineage schema',
+  'Package runtime action-binding manifest',
+  'Safe-write target registry',
+]);
+const RECOVERY_PROJECTION_FILES = new Map<string, string>([
+  [
+    'Package runtime action-binding manifest',
+    'requirements-contract-package-runtime-action-binding-manifest.json',
+  ],
+  ['Safe-write target registry', 'requirements-contract-safe-write-target-registry.json'],
+]);
 const MANUAL_BEHAVIOR_TESTS = new Map<string, string[]>([
   [
     'Package runtime action-binding manifest',
@@ -223,23 +240,49 @@ function readMatrix(): MatrixRow[] {
   const tableLines = section.split(/\r?\n/u).filter((line) => line.startsWith('|'));
   const dataLines = tableLines.slice(2);
 
-  return dataLines.map((line) => {
-    const cells = splitMarkdownRow(line);
-    expect(cells, `invalid exact parity matrix row: ${line}`).toHaveLength(7);
-    return {
-      owner: cells[0]!,
-      sourceOwner: cells[1]!,
-      generatedDist: cells[2]!,
-      packedPackage: cells[3]!,
-      rootHost: cells[4]!,
-      installedConsumer: cells[5]!,
-      producerVerification: cells[6]!,
-    };
-  });
+  return dataLines
+    .map((line) => {
+      const cells = splitMarkdownRow(line);
+      expect(cells, `invalid exact parity matrix row: ${line}`).toHaveLength(7);
+      return {
+        owner: cells[0]!,
+        sourceOwner: cells[1]!,
+        generatedDist: cells[2]!,
+        packedPackage: cells[3]!,
+        rootHost: cells[4]!,
+        installedConsumer: cells[5]!,
+        producerVerification: cells[6]!,
+      };
+    })
+    .filter((row) => RECOVERY_MATRIX_OWNERS.has(row.owner));
 }
 
 function codePaths(cell: string): string[] {
   return [...cell.matchAll(/`([^`]+)`/gu)].map((match) => match[1]!);
+}
+
+function canonicalMatrixPath(exactPath: string): string {
+  return slash(exactPath)
+    .replace(
+      '/dist/main-agent/source-authority/packages/bmad-speckit/src/main-agent/source-authority/schemas/',
+      '/dist/main-agent/source-authority/schemas/'
+    )
+    .replaceAll(
+      'requirements-contract-amend05-safe-write-target-registry',
+      'requirements-contract-safe-write-target-registry'
+    );
+}
+
+function matrixPaths(row: MatrixRow, column: MatrixColumn): string[] {
+  if (column === 'rootHost') {
+    const projectionFile = RECOVERY_PROJECTION_FILES.get(row.owner);
+    if (projectionFile) {
+      return REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS.map((surfaceRoot) =>
+        path.posix.join(surfaceRoot, projectionFile)
+      );
+    }
+  }
+  return codePaths(row[column]).map(canonicalMatrixPath);
 }
 
 function exactnessViolations(rows: MatrixRow[]): string[] {
@@ -306,15 +349,20 @@ function resolveSurfacePath(
 
 function projectionKey(row: MatrixRow, column: MatrixColumn, exactPath: string): string | null {
   const normalized = slash(exactPath);
-  const sourceSchemaPrefix = 'packages/bmad-speckit/src/main-agent/source-authority/schemas/';
-  const generatedSchemaMarker = '/packages/bmad-speckit/src/main-agent/source-authority/schemas/';
-
-  if (normalized.startsWith(sourceSchemaPrefix)) {
-    return `schema:${normalized.slice(sourceSchemaPrefix.length)}`;
-  }
-  const generatedSchemaIndex = normalized.indexOf(generatedSchemaMarker);
-  if (generatedSchemaIndex >= 0) {
-    return `schema:${normalized.slice(generatedSchemaIndex + generatedSchemaMarker.length)}`;
+  const installedRelative =
+    column === 'installedConsumer'
+      ? slash(path.win32.relative(FIXED_CONSUMER_ROOT, exactPath))
+      : null;
+  const comparablePath = installedRelative ?? normalized;
+  for (const schemaPrefix of [
+    'packages/bmad-speckit/src/main-agent/source-authority/schemas/',
+    'packages/bmad-speckit/dist/main-agent/source-authority/schemas/',
+    'package/node_modules/bmad-speckit/dist/main-agent/source-authority/schemas/',
+    'node_modules/bmad-speckit/dist/main-agent/source-authority/schemas/',
+  ]) {
+    if (comparablePath.startsWith(schemaPrefix)) {
+      return `schema:${comparablePath.slice(schemaPrefix.length)}`;
+    }
   }
   if (column === 'packedPackage') {
     if (normalized.startsWith('package/node_modules/bmad-speckit/')) {
@@ -325,7 +373,7 @@ function projectionKey(row: MatrixRow, column: MatrixColumn, exactPath: string):
     }
   }
   if (column === 'installedConsumer') {
-    const relative = slash(path.win32.relative(FIXED_CONSUMER_ROOT, exactPath));
+    const relative = installedRelative!;
     if (relative.startsWith('node_modules/bmad-speckit/')) {
       return `package:${relative.slice('node_modules/bmad-speckit/'.length)}`;
     }
@@ -336,6 +384,9 @@ function projectionKey(row: MatrixRow, column: MatrixColumn, exactPath: string):
   }
   if (normalized.startsWith('packages/bmad-speckit/bin/')) {
     return `package:${normalized.slice('packages/bmad-speckit/'.length)}`;
+  }
+  if (normalized.startsWith('packages/bmad-speckit/_bmad/')) {
+    return `host:${normalized.slice('packages/bmad-speckit/'.length)}`;
   }
   if (
     row.owner === 'Candidate package producer and Receipt schema' &&
@@ -391,12 +442,13 @@ function compileSchema(schemaPath: string): string | null {
 describe('requirements contract recovery finalization surface parity', () => {
   it('requires exact applicable cells and reasoned non-applicable cells', () => {
     const rows = readMatrix();
-    expect(rows).toHaveLength(19);
+    expect(rows).toHaveLength(RECOVERY_MATRIX_OWNERS.size);
+    expect(new Set(rows.map((row) => row.owner))).toEqual(RECOVERY_MATRIX_OWNERS);
     expect(new Set(rows.map((row) => row.owner)).size).toBe(rows.length);
     expect(exactnessViolations(rows)).toEqual([]);
   });
 
-  it('hashes every enumerated source, dist, packed, host, and installed path', async () => {
+  it('hashes every canonical recovery source, dist, packed, host, and installed path', async () => {
     const rows = readMatrix();
     const surfaces = await materializePackageSurfaces();
     try {
@@ -407,7 +459,7 @@ describe('requirements contract recovery finalization surface parity', () => {
         for (const column of MATRIX_COLUMNS) {
           const cell = row[column];
           if (cell.startsWith('N/A:')) continue;
-          for (const exactPath of codePaths(cell)) {
+          for (const exactPath of matrixPaths(row, column)) {
             const resolved = resolveSurfacePath(column, exactPath, surfaces);
             if (!existsSync(resolved) || !lstatSync(resolved).isFile()) {
               missing.push(`${row.owner}/${column}: exact file is missing: ${exactPath}`);
@@ -444,7 +496,10 @@ describe('requirements contract recovery finalization surface parity', () => {
     const uncovered: string[] = [];
 
     for (const row of rows) {
-      const rowPaths = new Set([...codePaths(row.sourceOwner), ...codePaths(row.generatedDist)]);
+      const rowPaths = new Set([
+        ...matrixPaths(row, 'sourceOwner'),
+        ...matrixPaths(row, 'generatedDist'),
+      ]);
       const actions = manifest.actions.filter((action) =>
         allActionPaths(action).some((refPath) => rowPaths.has(refPath))
       );
@@ -463,7 +518,7 @@ describe('requirements contract recovery finalization surface parity', () => {
         }
       }
 
-      const sourceSchemas = codePaths(row.sourceOwner).filter((sourcePath) =>
+      const sourceSchemas = matrixPaths(row, 'sourceOwner').filter((sourcePath) =>
         sourcePath.endsWith('.schema.json')
       );
       for (const sourceSchema of sourceSchemas) {

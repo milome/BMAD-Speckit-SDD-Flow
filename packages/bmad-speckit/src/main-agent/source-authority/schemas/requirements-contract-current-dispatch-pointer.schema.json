@@ -22,7 +22,9 @@
     "semanticModelHash",
     "stageRegistryRef",
     "installedStageRegistryRef",
+    "architectureAuthorityDecision",
     "confirmationReceiptRefs",
+    "implementationReadinessReceiptRef",
     "confirmationPageRefs",
     "consumerRef",
     "universeHashes",
@@ -71,8 +73,12 @@
     "semanticModelHash": { "$ref": "#/$defs/hash" },
     "stageRegistryRef": { "$ref": "#/$defs/fileRef" },
     "installedStageRegistryRef": { "$ref": "#/$defs/fileRef" },
+    "architectureAuthorityDecision": {
+      "enum": ["pass", "architecture_not_required"]
+    },
     "confirmationReceiptRefs": { "$ref": "#/$defs/confirmationRefs" },
-    "confirmationPageRefs": { "$ref": "#/$defs/confirmationRefs" },
+    "implementationReadinessReceiptRef": { "$ref": "#/$defs/fileRef" },
+    "confirmationPageRefs": { "$ref": "#/$defs/confirmationPageRefs" },
     "consumerRef": {
       "type": "object",
       "additionalProperties": false,
@@ -146,6 +152,20 @@
       "properties": {
         "requirements": { "$ref": "#/$defs/fileRef" },
         "architecture": { "$ref": "#/$defs/fileRef" }
+      }
+    },
+    "confirmationPageRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "architecture"],
+      "properties": {
+        "requirements": { "$ref": "#/$defs/fileRef" },
+        "architecture": {
+          "oneOf": [
+            { "$ref": "#/$defs/fileRef" },
+            { "type": "null" }
+          ]
+        }
       }
     },
     "readbackRef": {

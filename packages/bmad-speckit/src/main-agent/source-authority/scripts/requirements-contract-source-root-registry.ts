@@ -134,7 +134,7 @@ function tableCell(block: RequirementsContractSourceBlock, aliases: readonly str
 }
 
 function sourceIdentifier(block: RequirementsContractSourceBlock): string {
-  return tableCell(block, ['ID', 'Requirement ID', 'Req ID']).toUpperCase();
+  return tableCell(block, ['ID', 'Requirement ID', 'Req ID', 'FR ID', 'NFR ID']).toUpperCase();
 }
 
 function sourceSection(block: RequirementsContractSourceBlock): string {

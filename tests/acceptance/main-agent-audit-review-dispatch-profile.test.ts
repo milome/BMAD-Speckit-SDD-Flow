@@ -30,7 +30,11 @@ describe('Main Agent audit review dispatch profile contract', () => {
         'current-dispatch-pointer-receipt.json'
       );
       prepareAuditDispatchRuntime(fixture);
-      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      let publishOutput = '';
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        publishOutput += String(chunk);
+        return true;
+      });
       const publishCode = await requirementsContractPromptTransactionPublishCommand(fixture.options, {
         runCompiledPrompt: compiledPromptRunnerFor(fixture, {
           extraPacket: {
@@ -38,7 +42,7 @@ describe('Main Agent audit review dispatch profile contract', () => {
           },
         }),
       }).finally(() => stdout.mockRestore());
-      expect(publishCode).toBe(0);
+      expect(publishCode, publishOutput).toBe(0);
 
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: fixture.root,

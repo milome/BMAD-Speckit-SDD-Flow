@@ -199,11 +199,6 @@ function sha256ExistingPath(absolutePath: string): string {
   return sha256File(absolutePath);
 }
 
-function appendJsonl(file: string, value: JsonObject): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
-}
-
 function containsForbiddenField(value: unknown, field: string): boolean {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some((item) => containsForbiddenField(item, field));
@@ -364,9 +359,16 @@ function validateCommands(packet: JsonObject, record: JsonObject, projectRoot: s
     const declaration = requiredCommands.find(
       (requiredCommand) => text(requiredCommand.commandId) === commandId
     );
-    if (!declaration) mismatches.push(`command_declaration_missing:${commandId}`);
-    else if (normalizeCommandText(declaration.command) !== normalizeCommandText(command)) {
+    const deliveryEvidenceRequired = run.deliveryEvidenceRequired !== false;
+    if (deliveryEvidenceRequired && !declaration) {
+      mismatches.push(`command_declaration_missing:${commandId}`);
+    } else if (
+      deliveryEvidenceRequired &&
+      normalizeCommandText(declaration?.command) !== normalizeCommandText(command)
+    ) {
       mismatches.push(`command_declared_text_mismatch:${commandId}`);
+    } else if (!deliveryEvidenceRequired && declaration) {
+      mismatches.push(`non_delivery_command_declared_as_required:${commandId}`);
     }
     if (!text(run.cwd)) mismatches.push(`command_cwd_missing:${commandId}`);
     if (!text(executorIdentity.class) || !text(executorIdentity.id)) {
@@ -1532,6 +1534,14 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
     text(packet.recordId) || text(record.recordId),
     text(packet.requirementSetId) || text(record.requirementSetId)
   );
+  const artifactIndexEntries = [
+    packetArtifact,
+    ...artifactEvents(
+      packet,
+      text(packet.recordId) || text(record.recordId),
+      text(packet.requirementSetId) || text(record.requirementSetId)
+    ),
+  ];
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'implementation-evidence-ingest',
@@ -1544,6 +1554,16 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
       recordedBy,
       evidencePath: normalizePathForRecord(evidencePath),
     },
+    artifactIndexUpdates: [
+      {
+        path: artifactIndex,
+        entries: artifactIndexEntries,
+      },
+      {
+        path: globalArtifactIndex,
+        entries: artifactIndexEntries,
+      },
+    ],
     reduce: (currentRecord) =>
       updateRecord(
         currentRecord,
@@ -1553,17 +1573,6 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
         normalizePathForRecord(evidencePath)
       ),
   });
-  for (const artifact of [
-    packetArtifact,
-    ...artifactEvents(
-      packet,
-      text(packet.recordId) || text(record.recordId),
-      text(packet.requirementSetId) || text(record.requirementSetId)
-    ),
-  ]) {
-    appendJsonl(artifactIndex, artifact);
-    appendJsonl(globalArtifactIndex, artifact);
-  }
   const result = {
     ok: true,
     requirementRecordPath: normalizePathForRecord(recordPath),

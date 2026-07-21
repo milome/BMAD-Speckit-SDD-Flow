@@ -23,6 +23,8 @@ export interface ControlEventEnvelope {
   beforeRecordHash: string;
   afterRecordHash: string;
   payloadHash: string;
+  writerRegistryHash?: string;
+  writerHash?: string;
   payload: JsonObject;
 }
 
@@ -32,6 +34,20 @@ export interface ControlCommitResult {
   eventLogPath: string;
   beforeRecordHash: string;
   afterRecordHash: string;
+  artifactIndexPaths: string[];
+  artifactPaths: string[];
+}
+
+export interface ControlArtifactIndexUpdate {
+  path: string;
+  entries: JsonObject[];
+}
+
+export interface ControlArtifactWrite {
+  path: string;
+  content: string;
+  contentHash: string;
+  expectedBeforeHash?: string;
 }
 
 export interface AppendInput {
@@ -41,9 +57,29 @@ export interface AppendInput {
   eventId?: string;
   payload: JsonObject;
   reduce: RequirementRecordReducer;
+  bootstrapRecord?: JsonObject;
+  expectedBeforeRecordHash?: string;
+  artifactIndexUpdates?: ControlArtifactIndexUpdate[];
+  artifactWrites?: ControlArtifactWrite[];
   recordedAt?: string;
   payloadSchemaVersion?: string;
   skipSchemaGate?: boolean;
+  bootstrapConfirmation?: boolean;
+}
+
+export type ControlCommitBoundary =
+  | 'after_stage'
+  | 'before_event_log'
+  | 'before_record'
+  | 'before_receipt'
+  | 'before_commit_boundary'
+  | 'after_transaction_promotion'
+  | 'after_commit_boundary';
+
+export interface ControlStoreCommitDeps {
+  beforeBoundary?: (boundary: ControlCommitBoundary) => void;
+  beforeArtifactIndex?: (targetPath: string, index: number) => void;
+  beforeArtifactWrite?: (targetPath: string, index: number) => void;
 }
 
 const ZERO_HASH = 'sha256:0000000000000000000000000000000000000000000000000000000000000000';
@@ -110,6 +146,49 @@ export function writeJsonAtomic(file: string, value: unknown): void {
   fs.renameSync(temp, file);
 }
 
+function writeTextAtomic(file: string, value: string): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(temp, value, 'utf8');
+  fs.renameSync(temp, file);
+}
+
+function removeDirectory(directory: string): void {
+  fs.rmSync(directory, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 20,
+  });
+}
+
+interface PreparedArtifactIndexUpdate {
+  targetPath: string;
+  stagedRelativePath: string;
+  previousRelativePath: string;
+  previousText: string | null;
+  nextText: string;
+}
+
+interface PreparedArtifactWrite {
+  targetPath: string;
+  stagedRelativePath: string;
+  previousRelativePath: string;
+  previousText: string | null;
+  nextText: string;
+  contentHash: string;
+}
+
+interface ArtifactIndexLock {
+  targetPath: string;
+  lockPath: string;
+}
+
+interface ControlWriterAuthorization {
+  writerRegistryHash: string;
+  writerHash: string;
+}
+
 export function eventLogPathForRecord(recordPath: string): string {
   return path.join(path.dirname(recordPath), 'events', 'control-events.jsonl');
 }
@@ -118,16 +197,884 @@ export function receiptPathForEvent(recordPath: string, eventId: string): string
   return path.join(path.dirname(recordPath), 'events', 'receipts', `${eventId}.json`);
 }
 
-function appendJsonl(file: string, value: unknown): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
-}
-
 function readEventLog(file: string): ControlEventEnvelope[] {
   if (!fs.existsSync(file)) return [];
   const content = fs.readFileSync(file, 'utf8').trim();
   if (!content) return [];
   return content.split(/\r?\n/u).map((line) => JSON.parse(line) as ControlEventEnvelope);
+}
+
+function controlStoreRoot(recordPath: string): string {
+  return path.join(path.dirname(recordPath), 'events', 'control-store');
+}
+
+function acquireControlStoreLock(
+  recordPath: string,
+  transactionId: string,
+  writerId: string,
+  eventType: string,
+  artifactIndexTargets: string[],
+  artifactWriteTargets: string[]
+): string {
+  const lockPath = path.join(controlStoreRoot(recordPath), '.lock');
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  let handle: number;
+  try {
+    handle = fs.openSync(lockPath, 'wx');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error('control_store_lock_held');
+    }
+    throw error;
+  }
+  try {
+    fs.writeFileSync(
+      handle,
+      `${JSON.stringify(
+        {
+          schemaVersion: 'requirement-record-control-lock/v1',
+          transactionId,
+          writerId,
+          eventType,
+          artifactIndexTargets: artifactIndexTargets.map(normalizePathForRecord),
+          artifactWriteTargets: artifactWriteTargets.map(normalizePathForRecord),
+          processId: process.pid,
+          acquiredAt: new Date().toISOString(),
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+    fs.fsyncSync(handle);
+  } finally {
+    fs.closeSync(handle);
+  }
+  return lockPath;
+}
+
+function controlStoreLockOwnedBy(lockPath: string, transactionId: string): boolean {
+  if (!fs.existsSync(lockPath)) return false;
+  try {
+    return text(readJson(lockPath).transactionId) === transactionId;
+  } catch {
+    return false;
+  }
+}
+
+function assertControlStoreLockOwnership(
+  lockPath: string,
+  transactionId: string
+): void {
+  if (!controlStoreLockOwnedBy(lockPath, transactionId)) {
+    throw new Error('control_store_lock_ownership_lost');
+  }
+}
+
+function releaseControlStoreLock(lockPath: string, transactionId: string): void {
+  if (controlStoreLockOwnedBy(lockPath, transactionId)) {
+    fs.rmSync(lockPath, { force: true });
+  }
+}
+
+function pathWithin(root: string, candidate: string): boolean {
+  const relative = path.relative(path.resolve(root), path.resolve(candidate));
+  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+function pathAtOrWithin(root: string, candidate: string): boolean {
+  const relative = path.relative(path.resolve(root), path.resolve(candidate));
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function physicalPath(value: string): string {
+  let existing = path.resolve(value);
+  const missingSegments: string[] = [];
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) {
+      throw new Error('control_store_artifact_write_target_invalid');
+    }
+    missingSegments.unshift(path.basename(existing));
+    existing = parent;
+  }
+  return path.resolve(fs.realpathSync.native(existing), ...missingSegments);
+}
+
+function artifactIndexTargetPath(recordPath: string, value: string): string {
+  const targetPath = path.resolve(value);
+  const recordRoot = path.dirname(recordPath);
+  const requirementRecordsRoot = path.dirname(recordRoot);
+  const localArtifactIndex = path.join(recordRoot, 'artifact-index.jsonl');
+  const globalArtifactIndex = path.join(requirementRecordsRoot, 'artifact-index.jsonl');
+  if (targetPath !== localArtifactIndex && targetPath !== globalArtifactIndex) {
+    throw new Error('control_store_artifact_index_target_invalid');
+  }
+  return targetPath;
+}
+
+function artifactIndexTargetPaths(
+  recordPath: string,
+  updates: ControlArtifactIndexUpdate[]
+): string[] {
+  return [
+    ...new Set(updates.map((update) => artifactIndexTargetPath(recordPath, update.path))),
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+interface ControlArtifactAuthorityContext {
+  record: JsonObject;
+  payload: JsonObject;
+}
+
+function authorityArtifactBindingMap(
+  context: ControlArtifactAuthorityContext
+): Map<string, string> {
+  const history = objects(context.record.confirmationHistory);
+  const latestConfirmation = history.at(-1) ?? {};
+  const expectedPaths = new Map<string, string>([
+    ['source_document', text(context.record.sourcePath)],
+    ['confirmation_html', text(latestConfirmation.htmlPath)],
+    ['confirmation_render_report', text(latestConfirmation.renderReportPath)],
+  ]);
+  const bindings = new Map<string, string>();
+  for (const binding of objects(context.payload.authorityArtifactBindings)) {
+    const role = text(binding.role);
+    const expectedPath = expectedPaths.get(role);
+    const bindingPath = text(binding.path);
+    const contentHash = text(binding.contentHash);
+    if (
+      !expectedPath ||
+      !bindingPath ||
+      path.resolve(bindingPath) !== path.resolve(expectedPath) ||
+      !isSha256(contentHash)
+    ) {
+      throw new Error('control_store_authority_artifact_binding_invalid');
+    }
+    const targetPath = path.resolve(bindingPath);
+    if (bindings.has(targetPath)) {
+      throw new Error('control_store_authority_artifact_binding_duplicate');
+    }
+    bindings.set(targetPath, contentHash);
+  }
+  return bindings;
+}
+
+function controlArtifactTargetPath(
+  recordPath: string,
+  value: string,
+  contentHash?: string,
+  authorityContext?: ControlArtifactAuthorityContext
+): string {
+  const recordRoot = path.dirname(recordPath);
+  const targetPath = path.resolve(
+    path.isAbsolute(value) ? value : path.join(recordRoot, value)
+  );
+  const eventRoot = path.join(recordRoot, 'events');
+  const localArtifactIndex = path.join(recordRoot, 'artifact-index.jsonl');
+  const physicalRecordRoot = physicalPath(recordRoot);
+  const physicalTargetPath = physicalPath(targetPath);
+  if (text(value) && pathWithin(recordRoot, targetPath)) {
+    if (
+      targetPath !== path.resolve(recordPath) &&
+      targetPath !== path.resolve(localArtifactIndex) &&
+      targetPath !== path.resolve(eventRoot) &&
+      !pathWithin(eventRoot, targetPath) &&
+      pathAtOrWithin(physicalRecordRoot, physicalTargetPath) &&
+      physicalTargetPath !== physicalPath(recordPath) &&
+      physicalTargetPath !== physicalPath(localArtifactIndex) &&
+      !pathAtOrWithin(physicalPath(eventRoot), physicalTargetPath)
+    ) {
+      return targetPath;
+    }
+  } else if (authorityContext) {
+    const bindingHash = authorityArtifactBindingMap(authorityContext).get(targetPath);
+    if (bindingHash && bindingHash === text(contentHash)) return targetPath;
+  }
+  throw new Error('control_store_artifact_write_target_invalid');
+}
+
+function controlArtifactWriteTargets(
+  recordPath: string,
+  writes: ControlArtifactWrite[],
+  authorityContext?: ControlArtifactAuthorityContext
+): string[] {
+  const targets = declaredControlArtifactWriteTargets(recordPath, writes).map(
+    (targetPath, index) =>
+      controlArtifactTargetPath(
+        recordPath,
+        targetPath,
+        writes[index].contentHash,
+        authorityContext
+      )
+  );
+  if (new Set(targets).size !== targets.length) {
+    throw new Error('control_store_artifact_write_target_duplicate');
+  }
+  return targets;
+}
+
+function declaredControlArtifactWriteTargets(
+  recordPath: string,
+  writes: ControlArtifactWrite[]
+): string[] {
+  const targets = writes.map((write) => {
+    if (
+      typeof write.content !== 'string' ||
+      !isSha256(text(write.contentHash)) ||
+      text(write.contentHash) !== sha256Text(write.content)
+    ) {
+      throw new Error('control_store_artifact_write_hash_mismatch');
+    }
+    return path.resolve(
+      path.isAbsolute(write.path) ? write.path : path.join(path.dirname(recordPath), write.path)
+    );
+  });
+  if (new Set(targets).size !== targets.length) {
+    throw new Error('control_store_artifact_write_target_duplicate');
+  }
+  return targets;
+}
+
+function artifactIndexLockPath(targetPath: string): string {
+  return `${targetPath}.control-store.lock`;
+}
+
+function artifactIndexLocksForTargets(targetPaths: string[]): ArtifactIndexLock[] {
+  return targetPaths.map((targetPath) => ({
+    targetPath,
+    lockPath: artifactIndexLockPath(targetPath),
+  }));
+}
+
+function artifactIndexLockOwnedBy(lock: ArtifactIndexLock, transactionId: string): boolean {
+  if (!fs.existsSync(lock.lockPath)) return false;
+  try {
+    const current = readJson(lock.lockPath);
+    return (
+      text(current.transactionId) === transactionId &&
+      path.resolve(text(current.targetPath)) === path.resolve(lock.targetPath)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function assertArtifactIndexLockOwnership(
+  locks: ArtifactIndexLock[],
+  transactionId: string
+): void {
+  for (const lock of locks) {
+    if (!artifactIndexLockOwnedBy(lock, transactionId)) {
+      throw new Error(
+        `control_store_artifact_index_lock_ownership_lost:${normalizePathForRecord(
+          lock.targetPath
+        )}`
+      );
+    }
+  }
+}
+
+function releaseArtifactIndexLocks(locks: ArtifactIndexLock[], transactionId: string): void {
+  for (const lock of [...locks].reverse()) {
+    if (artifactIndexLockOwnedBy(lock, transactionId)) {
+      fs.rmSync(lock.lockPath, { force: true });
+    }
+  }
+}
+
+function acquireArtifactIndexLocks(input: {
+  recordPath: string;
+  transactionId: string;
+  writerId: string;
+  eventType: string;
+  targetPaths: string[];
+}): ArtifactIndexLock[] {
+  const acquired: ArtifactIndexLock[] = [];
+  try {
+    for (const lock of artifactIndexLocksForTargets(input.targetPaths)) {
+      fs.mkdirSync(path.dirname(lock.lockPath), { recursive: true });
+      let handle: number;
+      try {
+        handle = fs.openSync(lock.lockPath, 'wx');
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        let existing: JsonObject;
+        try {
+          existing = readJson(lock.lockPath);
+        } catch {
+          throw new Error(
+            `control_store_artifact_index_lock_invalid:${normalizePathForRecord(
+              lock.targetPath
+            )}`
+          );
+        }
+        const ownerRecordPath = text(existing.recordPath);
+        if (!processIsAlive(Number(existing.processId))) {
+          throw new Error(
+            `control_store_artifact_index_lock_recovery_required:${normalizePathForRecord(
+              ownerRecordPath || lock.targetPath
+            )}`
+          );
+        }
+        throw new Error(
+          `control_store_artifact_index_lock_held:${normalizePathForRecord(lock.targetPath)}`
+        );
+      }
+      try {
+        fs.writeFileSync(
+          handle,
+          `${JSON.stringify(
+            {
+              schemaVersion: 'requirement-record-artifact-index-lock/v1',
+              transactionId: input.transactionId,
+              writerId: input.writerId,
+              eventType: input.eventType,
+              recordPath: normalizePathForRecord(input.recordPath),
+              targetPath: normalizePathForRecord(lock.targetPath),
+              processId: process.pid,
+              acquiredAt: new Date().toISOString(),
+            },
+            null,
+            2
+          )}\n`,
+          'utf8'
+        );
+        fs.fsyncSync(handle);
+      } finally {
+        fs.closeSync(handle);
+      }
+      acquired.push(lock);
+    }
+    return acquired;
+  } catch (error) {
+    releaseArtifactIndexLocks(acquired, input.transactionId);
+    throw error;
+  }
+}
+
+function appendJsonlText(previousText: string | null, entries: JsonObject[]): string {
+  const prefix = previousText
+    ? previousText.endsWith('\n')
+      ? previousText
+      : `${previousText}\n`
+    : '';
+  const appended = entries.map((entry) => JSON.stringify(entry)).join('\n');
+  return appended ? `${prefix}${appended}\n` : prefix;
+}
+
+function prepareArtifactIndexUpdates(
+  recordPath: string,
+  updates: ControlArtifactIndexUpdate[]
+): PreparedArtifactIndexUpdate[] {
+  const merged = new Map<string, JsonObject[]>();
+  for (const update of updates) {
+    const targetPath = artifactIndexTargetPath(recordPath, update.path);
+    merged.set(targetPath, [...(merged.get(targetPath) ?? []), ...update.entries]);
+  }
+  return [...merged.entries()].map(([targetPath, entries], index) => {
+    const previousText = fs.existsSync(targetPath)
+      ? fs.readFileSync(targetPath, 'utf8')
+      : null;
+    return {
+      targetPath,
+      stagedRelativePath: `artifact-indexes/${index}.jsonl`,
+      previousRelativePath: `previous/artifact-indexes/${index}.jsonl`,
+      previousText,
+      nextText: appendJsonlText(previousText, entries),
+    };
+  });
+}
+
+function prepareArtifactWrites(
+  recordPath: string,
+  writes: ControlArtifactWrite[],
+  authorityContext?: ControlArtifactAuthorityContext
+): PreparedArtifactWrite[] {
+  const targets = controlArtifactWriteTargets(recordPath, writes, authorityContext);
+  return writes.map((write, index) => {
+    const targetPath = targets[index];
+    if (fs.existsSync(targetPath) && !fs.statSync(targetPath).isFile()) {
+      throw new Error('control_store_artifact_write_target_not_file');
+    }
+    const previousText = fs.existsSync(targetPath)
+      ? fs.readFileSync(targetPath, 'utf8')
+      : null;
+    if (
+      text(write.expectedBeforeHash) &&
+      text(write.expectedBeforeHash) !==
+        (previousText === null ? ZERO_HASH : sha256Text(previousText))
+    ) {
+      throw new Error('control_store_compare_and_swap_failed:artifact_changed_before_lock');
+    }
+    return {
+      targetPath,
+      stagedRelativePath: `artifacts/${index}.txt`,
+      previousRelativePath: `previous/artifacts/${index}.txt`,
+      previousText,
+      nextText: write.content,
+      contentHash: text(write.contentHash),
+    };
+  });
+}
+
+function processIsAlive(processId: number): boolean {
+  if (!Number.isInteger(processId) || processId <= 0) return true;
+  if (processId === process.pid) return true;
+  if (processId > 1_000_000_000) return false;
+  try {
+    process.kill(processId, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== 'ESRCH';
+  }
+}
+
+function transactionTargetPaths(
+  manifest: JsonObject,
+  recordPath: string
+): { eventLogPath: string; receiptPath: string } {
+  const targets = nested(manifest.targets);
+  const eventLogPath = path.resolve(text(targets.eventLogPath));
+  const targetRecordPath = path.resolve(text(targets.recordPath));
+  const receiptPath = path.resolve(text(targets.receiptPath));
+  if (
+    targetRecordPath !== path.resolve(recordPath) ||
+    !pathWithin(path.dirname(recordPath), eventLogPath) ||
+    !pathWithin(path.dirname(recordPath), receiptPath)
+  ) {
+    throw new Error('control_store_transaction_target_invalid');
+  }
+  return { eventLogPath, receiptPath };
+}
+
+function transactionArtifactIndexes(
+  transactionDir: string,
+  manifest: JsonObject,
+  recordPath: string
+): Array<{
+  targetPath: string;
+  stagedPath: string;
+  previousPath: string;
+  previousExists: boolean;
+}> {
+  return objects(manifest.artifactIndexes).map((entry) => {
+    const targetPath = artifactIndexTargetPath(recordPath, text(entry.targetPath));
+    const stagedPath = path.resolve(transactionDir, text(entry.stagedRelativePath));
+    const previousPath = path.resolve(transactionDir, text(entry.previousRelativePath));
+    if (
+      !pathWithin(transactionDir, stagedPath) ||
+      !pathWithin(transactionDir, previousPath) ||
+      !fs.existsSync(stagedPath) ||
+      text(entry.stagedHash) !== sha256Text(fs.readFileSync(stagedPath, 'utf8'))
+    ) {
+      throw new Error('control_store_artifact_index_snapshot_invalid');
+    }
+    if (
+      entry.previousExists === true &&
+      (!fs.existsSync(previousPath) ||
+        text(entry.previousHash) !== sha256Text(fs.readFileSync(previousPath, 'utf8')))
+    ) {
+      throw new Error('control_store_artifact_index_previous_snapshot_invalid');
+    }
+    return {
+      targetPath,
+      stagedPath,
+      previousPath,
+      previousExists: entry.previousExists === true,
+    };
+  });
+}
+
+function transactionArtifactWrites(
+  transactionDir: string,
+  manifest: JsonObject,
+  recordPath: string
+): Array<{
+  targetPath: string;
+  stagedPath: string;
+  previousPath: string;
+  previousExists: boolean;
+}> {
+  const event = readEventLog(path.join(transactionDir, 'control-events.jsonl')).at(-1);
+  if (!event) throw new Error('control_store_authority_artifact_event_missing');
+  const authorityContext: ControlArtifactAuthorityContext = {
+    record: readJson(path.join(transactionDir, 'requirement-record.json')),
+    payload: event.payload,
+  };
+  return objects(manifest.artifactWrites).map((entry) => {
+    const targetPath = controlArtifactTargetPath(
+      recordPath,
+      text(entry.targetPath),
+      text(entry.contentHash),
+      authorityContext
+    );
+    const stagedPath = path.resolve(transactionDir, text(entry.stagedRelativePath));
+    const previousPath = path.resolve(transactionDir, text(entry.previousRelativePath));
+    if (
+      !pathWithin(transactionDir, stagedPath) ||
+      !pathWithin(transactionDir, previousPath) ||
+      !fs.existsSync(stagedPath) ||
+      text(entry.contentHash) !== sha256Text(fs.readFileSync(stagedPath, 'utf8'))
+    ) {
+      throw new Error('control_store_artifact_write_snapshot_invalid');
+    }
+    if (
+      entry.previousExists === true &&
+      (!fs.existsSync(previousPath) ||
+        text(entry.previousHash) !== sha256Text(fs.readFileSync(previousPath, 'utf8')))
+    ) {
+      throw new Error('control_store_artifact_write_previous_snapshot_invalid');
+    }
+    return {
+      targetPath,
+      stagedPath,
+      previousPath,
+      previousExists: entry.previousExists === true,
+    };
+  });
+}
+
+function transactionDirectory(
+  controlRoot: string,
+  transactionPath: string
+): string {
+  const candidate = path.resolve(transactionPath);
+  if (!pathWithin(path.join(controlRoot, 'transactions'), candidate)) {
+    throw new Error('control_store_commit_marker_path_invalid');
+  }
+  return candidate;
+}
+
+function readTransactionManifest(transactionDir: string): JsonObject {
+  const manifestPath = path.join(transactionDir, 'transaction-manifest.json');
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error('control_store_transaction_manifest_missing');
+  }
+  return readJson(manifestPath);
+}
+
+function assertTransactionSnapshot(
+  transactionDir: string,
+  manifest: JsonObject,
+  recordPath: string
+): { eventLogPath: string; receiptPath: string } {
+  const stagedHashes = nested(manifest.stagedHashes);
+  const files = {
+    eventLog: path.join(transactionDir, 'control-events.jsonl'),
+    record: path.join(transactionDir, 'requirement-record.json'),
+    receipt: path.join(transactionDir, 'commit-receipt.json'),
+  };
+  for (const [key, file] of Object.entries(files)) {
+    if (
+      !fs.existsSync(file) ||
+      text(stagedHashes[`${key}Hash`]) !== sha256Text(fs.readFileSync(file, 'utf8'))
+    ) {
+      throw new Error(`control_store_transaction_snapshot_invalid:${key}`);
+    }
+  }
+  const events = readEventLog(files.eventLog);
+  const record = readJson(files.record);
+  const receipt = readJson(files.receipt);
+  const eventHash = text(manifest.eventHash);
+  if (
+    text(events.at(-1)?.eventHash) !== eventHash ||
+    text(record.lastAppliedEventHash) !== eventHash ||
+    text(record.eventChainHead) !== eventHash ||
+    text(receipt.eventHash) !== eventHash ||
+    text(events.at(-1)?.afterRecordHash) !== text(manifest.afterRecordHash)
+  ) {
+    throw new Error('control_store_transaction_snapshot_semantic_mismatch');
+  }
+  transactionArtifactIndexes(transactionDir, manifest, recordPath);
+  transactionArtifactWrites(transactionDir, manifest, recordPath);
+  return transactionTargetPaths(manifest, recordPath);
+}
+
+function materializeTransactionSnapshot(
+  transactionDir: string,
+  manifest: JsonObject,
+  recordPath: string
+): void {
+  const targets = assertTransactionSnapshot(transactionDir, manifest, recordPath);
+  writeTextAtomic(
+    targets.eventLogPath,
+    fs.readFileSync(path.join(transactionDir, 'control-events.jsonl'), 'utf8')
+  );
+  writeTextAtomic(
+    recordPath,
+    fs.readFileSync(path.join(transactionDir, 'requirement-record.json'), 'utf8')
+  );
+  writeTextAtomic(
+    targets.receiptPath,
+    fs.readFileSync(path.join(transactionDir, 'commit-receipt.json'), 'utf8')
+  );
+  for (const artifactIndex of transactionArtifactIndexes(
+    transactionDir,
+    manifest,
+    recordPath
+  )) {
+    writeTextAtomic(
+      artifactIndex.targetPath,
+      fs.readFileSync(artifactIndex.stagedPath, 'utf8')
+    );
+  }
+  for (const artifactWrite of transactionArtifactWrites(
+    transactionDir,
+    manifest,
+    recordPath
+  )) {
+    writeTextAtomic(
+      artifactWrite.targetPath,
+      fs.readFileSync(artifactWrite.stagedPath, 'utf8')
+    );
+  }
+}
+
+function restorePreviousTransactionSnapshot(
+  transactionDir: string,
+  manifest: JsonObject,
+  recordPath: string
+): void {
+  const previous = nested(manifest.previous);
+  const previousDir = path.join(transactionDir, 'previous');
+  const previousRecordPath = path.join(previousDir, 'requirement-record.json');
+  const targets = transactionTargetPaths(manifest, recordPath);
+  if (previous.recordExists === true) {
+    if (
+      !fs.existsSync(previousRecordPath) ||
+      text(previous.recordHash) !==
+        sha256Text(fs.readFileSync(previousRecordPath, 'utf8'))
+    ) {
+      throw new Error('control_store_previous_snapshot_invalid:record');
+    }
+  } else if (fs.existsSync(previousRecordPath)) {
+    throw new Error('control_store_previous_snapshot_invalid:unexpected_record');
+  }
+  const previousEventLogPath = path.join(previousDir, 'control-events.jsonl');
+  if (
+    previous.eventLogExists === true &&
+    (!fs.existsSync(previousEventLogPath) ||
+      text(previous.eventLogHash) !==
+        sha256Text(fs.readFileSync(previousEventLogPath, 'utf8')))
+  ) {
+    throw new Error('control_store_previous_snapshot_invalid:event_log');
+  }
+  const previousReceiptPath = path.join(previousDir, 'commit-receipt.json');
+  if (
+    previous.receiptExists === true &&
+    (!fs.existsSync(previousReceiptPath) ||
+      text(previous.receiptHash) !==
+        sha256Text(fs.readFileSync(previousReceiptPath, 'utf8')))
+  ) {
+    throw new Error('control_store_previous_snapshot_invalid:receipt');
+  }
+  transactionArtifactIndexes(transactionDir, manifest, recordPath);
+  transactionArtifactWrites(transactionDir, manifest, recordPath);
+  if (previous.recordExists === true) {
+    writeTextAtomic(recordPath, fs.readFileSync(previousRecordPath, 'utf8'));
+  } else if (fs.existsSync(recordPath)) {
+    fs.rmSync(recordPath, { force: true });
+  }
+  if (previous.eventLogExists === true && fs.existsSync(previousEventLogPath)) {
+    writeTextAtomic(targets.eventLogPath, fs.readFileSync(previousEventLogPath, 'utf8'));
+  } else if (fs.existsSync(targets.eventLogPath)) {
+    fs.rmSync(targets.eventLogPath, { force: true });
+  }
+  if (previous.receiptExists === true && fs.existsSync(previousReceiptPath)) {
+    writeTextAtomic(targets.receiptPath, fs.readFileSync(previousReceiptPath, 'utf8'));
+  } else if (fs.existsSync(targets.receiptPath)) {
+    fs.rmSync(targets.receiptPath, { force: true });
+  }
+  for (const artifactIndex of transactionArtifactIndexes(
+    transactionDir,
+    manifest,
+    recordPath
+  )) {
+    if (artifactIndex.previousExists) {
+      writeTextAtomic(
+        artifactIndex.targetPath,
+        fs.readFileSync(artifactIndex.previousPath, 'utf8')
+      );
+    } else if (fs.existsSync(artifactIndex.targetPath)) {
+      fs.rmSync(artifactIndex.targetPath, { force: true });
+    }
+  }
+  for (const artifactWrite of transactionArtifactWrites(
+    transactionDir,
+    manifest,
+    recordPath
+  )) {
+    if (artifactWrite.previousExists) {
+      writeTextAtomic(
+        artifactWrite.targetPath,
+        fs.readFileSync(artifactWrite.previousPath, 'utf8')
+      );
+    } else if (fs.existsSync(artifactWrite.targetPath)) {
+      fs.rmSync(artifactWrite.targetPath, { force: true });
+    }
+  }
+}
+
+function recoverControlStore(recordPath: string): void {
+  const controlRoot = controlStoreRoot(recordPath);
+  const transactionsRoot = path.join(controlRoot, 'transactions');
+  const lockPath = path.join(controlRoot, '.lock');
+  let lock: JsonObject | undefined;
+  if (fs.existsSync(lockPath)) {
+    try {
+      lock = readJson(lockPath);
+    } catch {
+      return;
+    }
+    if (processIsAlive(Number(lock.processId))) return;
+  }
+  const staleTransactionId = text(lock?.transactionId);
+  if (!lock || !staleTransactionId) return;
+  const declaredTargetPaths = strings(lock.artifactIndexTargets).map((targetPath) =>
+    artifactIndexTargetPath(recordPath, targetPath)
+  );
+  const declaredArtifactWritePaths = strings(lock.artifactWriteTargets).map((targetPath) =>
+    path.resolve(targetPath)
+  );
+  const declaredArtifactIndexLocks = artifactIndexLocksForTargets(declaredTargetPaths);
+  const staleTransactionDir = path.join(transactionsRoot, staleTransactionId);
+  const staleStagingDir = path.join(transactionsRoot, `.staging-${staleTransactionId}`);
+  const markerPath = path.join(controlRoot, 'current-commit.json');
+  const marker = fs.existsSync(markerPath) ? readJson(markerPath) : undefined;
+  const markerMatchesStaleTransaction =
+    marker && text(marker.transactionId) === staleTransactionId;
+  const recoveryDir = markerMatchesStaleTransaction
+    ? transactionDirectory(controlRoot, text(marker.committedTransactionPath))
+    : fs.existsSync(staleTransactionDir)
+      ? staleTransactionDir
+      : fs.existsSync(staleStagingDir)
+        ? staleStagingDir
+        : '';
+
+  if (recoveryDir) {
+    const manifest = readTransactionManifest(recoveryDir);
+    const manifestTargetPaths = objects(manifest.artifactIndexes).map((entry) =>
+      artifactIndexTargetPath(recordPath, text(entry.targetPath))
+    );
+    const manifestArtifactWritePaths = transactionArtifactWrites(
+      recoveryDir,
+      manifest,
+      recordPath
+    ).map((entry) => entry.targetPath);
+    if (
+      JSON.stringify([...declaredTargetPaths].sort()) !==
+        JSON.stringify([...manifestTargetPaths].sort()) ||
+      JSON.stringify([...declaredArtifactWritePaths].sort()) !==
+        JSON.stringify([...manifestArtifactWritePaths].sort())
+    ) {
+      throw new Error('control_store_artifact_target_manifest_mismatch');
+    }
+    assertArtifactIndexLockOwnership(declaredArtifactIndexLocks, staleTransactionId);
+    if (markerMatchesStaleTransaction) {
+      if (
+        text(marker.eventHash) !== text(manifest.eventHash) ||
+        text(marker.afterRecordHash) !== text(manifest.afterRecordHash)
+      ) {
+        throw new Error('control_store_commit_marker_invalid');
+      }
+      materializeTransactionSnapshot(recoveryDir, manifest, recordPath);
+    } else {
+      restorePreviousTransactionSnapshot(recoveryDir, manifest, recordPath);
+      fs.rmSync(recoveryDir, { recursive: true, force: true });
+    }
+    assertArtifactIndexLockOwnership(declaredArtifactIndexLocks, staleTransactionId);
+  }
+  releaseArtifactIndexLocks(declaredArtifactIndexLocks, staleTransactionId);
+  releaseControlStoreLock(lockPath, staleTransactionId);
+}
+
+function assertControlStoreLockAvailable(recordPath: string): void {
+  const lockPath = path.join(controlStoreRoot(recordPath), '.lock');
+  if (fs.existsSync(lockPath)) throw new Error('control_store_lock_held');
+}
+
+function assertCommitInputRecord(record: JsonObject, allowBootstrap = false): void {
+  if (!text(record.status)) {
+    throw new Error('control_store_migration_required:confirmation_lineage_missing');
+  }
+  if (
+    objects(record.confirmationHistory).length === 0 &&
+    !(allowBootstrap && text(record.status) === 'draft')
+  ) {
+    throw new Error('control_store_migration_required:confirmation_lineage_missing');
+  }
+}
+
+function commitInputRecord(
+  recordPath: string,
+  input: AppendInput
+): { record: JsonObject; exists: boolean } {
+  if (fs.existsSync(recordPath)) {
+    return { record: readJson(recordPath), exists: true };
+  }
+  if (input.bootstrapConfirmation === true && input.bootstrapRecord) {
+    return { record: input.bootstrapRecord, exists: false };
+  }
+  throw new Error('control_store_bootstrap_record_missing');
+}
+
+function isSha256(value: string): boolean {
+  return /^sha256:[a-f0-9]{64}$/u.test(value);
+}
+
+function assertControlWriterAuthorization(
+  record: JsonObject,
+  eventType: string,
+  writerId: string
+): ControlWriterAuthorization | undefined {
+  const writers = objects(record.controlledIngestWriterRegistry);
+  const registryHash = text(record.controlledIngestWriterRegistryHash);
+  const registryRequired = record.controlledIngestWriterRegistryRequired === true;
+  if (!registryRequired && writers.length === 0 && !registryHash) return undefined;
+  if (!registryRequired || writers.length === 0 || !isSha256(registryHash)) {
+    throw new Error('control_store_writer_registry_missing');
+  }
+  const expectedRegistryHash = sha256Json({
+    schemaVersion: 'controlled-ingest-writer-registry/v1',
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    writers,
+  });
+  if (registryHash !== expectedRegistryHash) {
+    throw new Error('control_store_writer_registry_hash_mismatch');
+  }
+  const matchingWriters = writers.filter((writer) => text(writer.writerId) === writerId);
+  if (matchingWriters.length !== 1) {
+    throw new Error(`control_store_writer_not_authorized:${writerId}`);
+  }
+  const writer = matchingWriters[0];
+  const writerHash = text(writer.writerHash);
+  if (!isSha256(writerHash)) {
+    throw new Error(`control_store_writer_hash_invalid:${writerId}`);
+  }
+  if (!strings(writer.eventTypes).includes(eventType)) {
+    throw new Error(`control_store_writer_event_not_authorized:${writerId}:${eventType}`);
+  }
+  return {
+    writerRegistryHash: registryHash,
+    writerHash,
+  };
+}
+
+function assertControlWriterRegistryImmutable(
+  beforeRecord: JsonObject,
+  afterRecord: JsonObject
+): void {
+  for (const field of [
+    'controlledIngestWriterRegistryRequired',
+    'controlledIngestWriterRegistry',
+    'controlledIngestWriterRegistryHash',
+  ]) {
+    if (sha256Json(beforeRecord[field] ?? null) !== sha256Json(afterRecord[field] ?? null)) {
+      throw new Error(`control_store_writer_registry_mutation_forbidden:${field}`);
+    }
+  }
 }
 
 function normalizePathForRecord(value: string): string {
@@ -859,12 +1806,16 @@ function normalizeMentalModel(value: unknown): string | undefined {
   return undefined;
 }
 
+function latestConfirmationTimestamp(record: JsonObject): string {
+  return text(objects(record.confirmationHistory).at(-1)?.confirmedAt);
+}
+
 function normalizeModelResult(result: JsonObject, record: JsonObject, model: string): JsonObject {
   const recordedAt =
     text(result.resultRecordedAt) ||
     text(result.recordedAt) ||
     text(record.updatedAt) ||
-    new Date().toISOString();
+    latestConfirmationTimestamp(record);
   const status = text(result.status);
   return {
     payloadKind: 'model_result',
@@ -1011,11 +1962,16 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'sourceDocumentHash',
     'implementationConfirmationHash',
     'semanticModelHash',
+    'transactionId',
+    'packetHash',
     'currentAttemptId',
     'confirmationPageHash',
     'latestConfirmationProjectionHash',
     'confirmationProjectionHistory',
     'confirmationHistory',
+    'controlledIngestWriterRegistryRequired',
+    'controlledIngestWriterRegistry',
+    'controlledIngestWriterRegistryHash',
     'architectureConfirmationState',
     'architectureConfirmations',
     'architectureConfirmationStateChecks',
@@ -1075,13 +2031,19 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   }
   out.recordId = recordId;
   out.requirementSetId = requirementSetId;
-  out.status = text(out.status) || 'user_confirmed';
+  out.status = text(out.status) || 'blocked';
   out.sourcePath = text(out.sourcePath) || 'docs/design/unknown.md';
   out.sourceDocumentHash = text(out.sourceDocumentHash);
   out.implementationConfirmationHash = text(out.implementationConfirmationHash);
   const semanticModelHash = text(out.semanticModelHash);
   if (semanticModelHash) out.semanticModelHash = semanticModelHash;
   else delete out.semanticModelHash;
+  const transactionId = text(out.transactionId);
+  if (transactionId) out.transactionId = transactionId;
+  else delete out.transactionId;
+  const packetHash = text(out.packetHash);
+  if (packetHash) out.packetHash = packetHash;
+  else delete out.packetHash;
   const currentAttemptId = text(out.currentAttemptId) || text(out.runId);
   if (currentAttemptId) out.currentAttemptId = currentAttemptId;
   else delete out.currentAttemptId;
@@ -1136,27 +2098,8 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     delete out.architectureConfirmationState;
   }
   const confirmationHistory = objects(out.confirmationHistory);
-  out.confirmationHistory =
-    confirmationHistory.length > 0
-      ? confirmationHistory
-      : [
-          {
-            eventType: 'confirmation_recorded',
-            recordId,
-            requirementSetId,
-            confirmedAt: text(out.updatedAt) || '2026-01-01T00:00:00.000Z',
-            confirmedBy: 'canonical-reducer',
-            sourcePath: text(out.sourcePath),
-            sourceDocumentHash: text(out.sourceDocumentHash),
-            implementationConfirmationHash: text(out.implementationConfirmationHash),
-            confirmationPageHash:
-              text(out.confirmationPageHash) ||
-              'sha256:0000000000000000000000000000000000000000000000000000000000000000',
-            confirmationText: 'canonicalized historical confirmation baseline',
-            renderReportPath: `_bmad-output/runtime/requirement-records/${recordId}/confirmation/confirmation-render-report.json`,
-            htmlPath: `_bmad-output/runtime/requirement-records/${recordId}/confirmation/confirmation.html`,
-          },
-        ];
+  out.confirmationHistory = confirmationHistory;
+  if (confirmationHistory.length === 0) out.status = 'blocked';
   out.architectureConfirmations = objects(out.architectureConfirmations).map((event) => ({
     ...event,
     eventType: 'architecture_confirmation_recorded',
@@ -1224,13 +2167,40 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   );
   if (readinessBaselineMetadata) out.readinessBaselineMetadata = readinessBaselineMetadata;
   else delete out.readinessBaselineMetadata;
-  if (!text(out.updatedAt)) out.updatedAt = new Date().toISOString();
+  const updatedAt = text(out.updatedAt) || latestConfirmationTimestamp(out);
+  if (updatedAt) out.updatedAt = updatedAt;
+  else delete out.updatedAt;
   if (!text(out.lastEventType)) out.lastEventType = 'canonical_record_reduced';
   return withoutUndefined(out) as JsonObject;
 }
 
 function latestEventHash(events: ControlEventEnvelope[]): string {
   return text(events.at(-1)?.eventHash) || ZERO_HASH;
+}
+
+function assertEventWriterOwnership(
+  events: ControlEventEnvelope[],
+  eventType: string,
+  writerId: string
+): void {
+  if (!text(eventType) || !text(writerId)) {
+    throw new Error('control_store_event_writer_ownership_missing');
+  }
+  const owners = new Set(
+    events
+      .filter((event) => event.eventType === eventType)
+      .map((event) => text(event.writerId))
+      .filter(Boolean)
+  );
+  if (owners.size > 1) {
+    throw new Error(`control_store_event_writer_history_conflict:${eventType}`);
+  }
+  const currentOwner = [...owners][0];
+  if (currentOwner && currentOwner !== writerId) {
+    throw new Error(
+      `control_store_event_writer_ownership_mismatch:${eventType}:${currentOwner}:${writerId}`
+    );
+  }
 }
 
 function createEvent(input: {
@@ -1244,6 +2214,7 @@ function createEvent(input: {
   beforeRecordHash: string;
   afterRecordHash: string;
   payloadSchemaVersion: string;
+  writerAuthorization?: ControlWriterAuthorization;
 }): ControlEventEnvelope {
   const payloadHash = sha256Json(input.payload);
   const eventId =
@@ -1262,6 +2233,12 @@ function createEvent(input: {
     beforeRecordHash: input.beforeRecordHash,
     afterRecordHash: input.afterRecordHash,
     payloadHash,
+    ...(input.writerAuthorization
+      ? {
+          writerRegistryHash: input.writerAuthorization.writerRegistryHash,
+          writerHash: input.writerAuthorization.writerHash,
+        }
+      : {}),
     payload: input.payload,
   } satisfies Omit<ControlEventEnvelope, 'eventHash'>;
   return {
@@ -1270,78 +2247,447 @@ function createEvent(input: {
   };
 }
 
-export function appendControlEventAndReplay(input: AppendInput): ControlCommitResult {
+export function appendControlEventAndReplay(
+  input: AppendInput,
+  deps: ControlStoreCommitDeps = {}
+): ControlCommitResult {
   const recordPath = path.resolve(input.recordPath);
-  const currentRecord = readJson(recordPath);
-  const beforeRecord = canonicalizeRequirementRecord(currentRecord);
-  const beforeRecordHash = sha256Json(beforeRecord);
-  const reducedRecord = canonicalizeRequirementRecord(input.reduce(beforeRecord, input.payload));
-  const recordedAt = input.recordedAt ?? new Date().toISOString();
-  const eventLogPath = eventLogPathForRecord(recordPath);
-  const existingEvents = readEventLog(eventLogPath);
-  const event = createEvent({
-    eventId: input.eventId,
-    eventType: input.eventType,
-    writerId: input.writerId,
-    record: beforeRecord,
-    payload: input.payload,
-    recordedAt,
-    previousEventHash: latestEventHash(existingEvents),
-    beforeRecordHash,
-    afterRecordHash: sha256Json(reducedRecord),
-    payloadSchemaVersion: input.payloadSchemaVersion ?? `${input.eventType}/v1`,
-  });
-  const nextRecord = {
-    ...reducedRecord,
-    schemaVersion: text(reducedRecord.schemaVersion) || 'requirement-record/v1',
-    recordHash: event.afterRecordHash,
-    lastAppliedEventId: event.eventId,
-    lastAppliedEventHash: event.eventHash,
-    eventChainHead: event.eventHash,
-    eventCount: existingEvents.length + 1,
-    controlStore: {
-      schemaVersion: 'control-store/v1',
-      eventLogPath: normalizePathForRecord(eventLogPath),
-      lastEventId: event.eventId,
-      lastEventHash: event.eventHash,
-      reducer: 'canonical-requirement-record-reducer/v1',
-      atomicCommitter: 'requirement-record-control-store/v1',
-    },
-  };
-  const validation = validateRequirementRecordSchemaObject(nextRecord);
-  if (!input.skipSchemaGate && !validation.ok) {
-    throw new Error(
-      `live requirement-record schema gate failed: ${validation.errorCount} errors: ${JSON.stringify(
-        validation.errors.slice(0, 5)
-      )}`
-    );
-  }
-  appendJsonl(eventLogPath, event);
-  writeJsonAtomic(recordPath, nextRecord);
-  const receipt = {
-    receiptType: 'control_event_committed',
-    eventId: event.eventId,
-    eventHash: event.eventHash,
-    eventType: event.eventType,
-    writerId: input.writerId,
-    recordId: event.recordId,
-    requirementSetId: event.requirementSetId,
-    eventLogPath: normalizePathForRecord(eventLogPath),
-    beforeRecordHash,
-    afterRecordHash: event.afterRecordHash,
-    schemaGate: { ok: validation.ok, errorCount: validation.errorCount },
-    committedAt: recordedAt,
-  };
-  const receiptPath = receiptPathForEvent(
+  recoverControlStore(recordPath);
+  assertControlStoreLockAvailable(recordPath);
+  const preLock = commitInputRecord(recordPath, input);
+  const preLockRecord = preLock.record;
+  assertCommitInputRecord(preLockRecord, input.bootstrapConfirmation === true);
+  const preLockStateHash = sha256Json(preLockRecord);
+  const artifactIndexTargets = artifactIndexTargetPaths(
     recordPath,
-    event.eventId.replace(/[^a-z0-9_.-]/giu, '_')
+    input.artifactIndexUpdates ?? []
   );
-  writeJsonAtomic(receiptPath, receipt);
-  return {
-    event,
-    receiptPath,
-    eventLogPath,
-    beforeRecordHash,
-    afterRecordHash: event.afterRecordHash,
+  const artifactWriteTargets = declaredControlArtifactWriteTargets(
+    recordPath,
+    input.artifactWrites ?? []
+  );
+  const transactionId = `CTRL-${sha256Json({
+    recordPath: normalizePathForRecord(recordPath),
+    writerId: input.writerId,
+    eventType: input.eventType,
+    eventId: input.eventId ?? null,
+    payload: input.payload,
+    artifactIndexUpdates: (input.artifactIndexUpdates ?? []).map((update) => ({
+      path: normalizePathForRecord(path.resolve(update.path)),
+      entries: update.entries,
+    })),
+    artifactWrites: (input.artifactWrites ?? []).map((write, index) => ({
+      path: normalizePathForRecord(artifactWriteTargets[index]),
+      contentHash: text(write.contentHash),
+    })),
+    preLockStateHash,
+  }).slice(7, 31)}`;
+  const lockPath = acquireControlStoreLock(
+    recordPath,
+    transactionId,
+    input.writerId,
+    input.eventType,
+    artifactIndexTargets,
+    artifactWriteTargets
+  );
+  let artifactIndexLocks: ArtifactIndexLock[] = [];
+  let stagingDir = '';
+  let boundaryCommitted = false;
+  const reachBoundary = (boundary: ControlCommitBoundary): void => {
+    assertControlStoreLockOwnership(lockPath, transactionId);
+    assertArtifactIndexLockOwnership(artifactIndexLocks, transactionId);
+    deps.beforeBoundary?.(boundary);
+    assertControlStoreLockOwnership(lockPath, transactionId);
+    assertArtifactIndexLockOwnership(artifactIndexLocks, transactionId);
   };
+  try {
+    artifactIndexLocks = acquireArtifactIndexLocks({
+      recordPath,
+      transactionId,
+      writerId: input.writerId,
+      eventType: input.eventType,
+      targetPaths: artifactIndexTargets,
+    });
+    const current = commitInputRecord(recordPath, input);
+    const currentRecord = current.record;
+    assertCommitInputRecord(currentRecord, input.bootstrapConfirmation === true);
+    if (current.exists !== preLock.exists || sha256Json(currentRecord) !== preLockStateHash) {
+      throw new Error('control_store_compare_and_swap_failed:record_changed_before_lock');
+    }
+    const beforeRecord = canonicalizeRequirementRecord(currentRecord);
+    const beforeRecordHash = sha256Json(beforeRecord);
+    if (
+      input.expectedBeforeRecordHash &&
+      input.expectedBeforeRecordHash !== beforeRecordHash
+    ) {
+      throw new Error('control_store_compare_and_swap_failed:before_record_hash_mismatch');
+    }
+    const recordedAt = input.recordedAt ?? new Date().toISOString();
+    const eventLogPath = eventLogPathForRecord(recordPath);
+    const existingEvents = readEventLog(eventLogPath);
+    const writerAuthorization = assertControlWriterAuthorization(
+      beforeRecord,
+      input.eventType,
+      input.writerId
+    );
+    assertEventWriterOwnership(existingEvents, input.eventType, input.writerId);
+    const reducedRecord = canonicalizeRequirementRecord(
+      input.reduce(beforeRecord, input.payload)
+    );
+    const authorityContext: ControlArtifactAuthorityContext = {
+      record: reducedRecord,
+      payload: input.payload,
+    };
+    const validatedArtifactWriteTargets = controlArtifactWriteTargets(
+      recordPath,
+      input.artifactWrites ?? [],
+      authorityContext
+    );
+    if (
+      JSON.stringify(validatedArtifactWriteTargets) !== JSON.stringify(artifactWriteTargets)
+    ) {
+      throw new Error('control_store_artifact_write_target_changed_after_validation');
+    }
+    assertControlWriterRegistryImmutable(beforeRecord, reducedRecord);
+    const event = createEvent({
+      eventId: input.eventId,
+      eventType: input.eventType,
+      writerId: input.writerId,
+      record: beforeRecord,
+      payload: input.payload,
+      recordedAt,
+      previousEventHash: latestEventHash(existingEvents),
+      beforeRecordHash,
+      afterRecordHash: sha256Json(reducedRecord),
+      payloadSchemaVersion: input.payloadSchemaVersion ?? `${input.eventType}/v1`,
+      writerAuthorization,
+    });
+    if (
+      existingEvents.some((entry) => entry.eventId === event.eventId) ||
+      fs.existsSync(
+        receiptPathForEvent(
+          recordPath,
+          event.eventId.replace(/[^a-z0-9_.-]/giu, '_')
+        )
+      )
+    ) {
+      throw new Error(`control_store_duplicate_event:${event.eventId}`);
+    }
+    const nextRecord = {
+      ...reducedRecord,
+      schemaVersion: text(reducedRecord.schemaVersion) || 'requirement-record/v1',
+      recordHash: event.afterRecordHash,
+      lastAppliedEventId: event.eventId,
+      lastAppliedEventHash: event.eventHash,
+      eventChainHead: event.eventHash,
+      eventCount: existingEvents.length + 1,
+      controlStore: {
+        schemaVersion: 'control-store/v1',
+        eventLogPath: normalizePathForRecord(eventLogPath),
+        lastEventId: event.eventId,
+        lastEventHash: event.eventHash,
+        reducer: 'canonical-requirement-record-reducer/v1',
+        atomicCommitter: 'requirement-record-control-store/v1',
+      },
+    };
+    const validation = validateRequirementRecordSchemaObject(nextRecord);
+    if (!input.skipSchemaGate && !validation.ok) {
+      throw new Error(
+        `live requirement-record schema gate failed: ${validation.errorCount} errors: ${JSON.stringify(
+          validation.errors.slice(0, 5)
+        )}`
+      );
+    }
+    const receiptPath = receiptPathForEvent(
+      recordPath,
+      event.eventId.replace(/[^a-z0-9_.-]/giu, '_')
+    );
+    const artifactIndexUpdates = prepareArtifactIndexUpdates(
+      recordPath,
+      input.artifactIndexUpdates ?? []
+    );
+    const artifactWrites = prepareArtifactWrites(
+      recordPath,
+      input.artifactWrites ?? [],
+      authorityContext
+    );
+    const receipt = {
+      receiptType: 'control_event_committed',
+      transactionId,
+      eventId: event.eventId,
+      eventHash: event.eventHash,
+      eventType: event.eventType,
+      writerId: input.writerId,
+      ...(writerAuthorization
+        ? {
+            writerRegistryHash: writerAuthorization.writerRegistryHash,
+            writerHash: writerAuthorization.writerHash,
+          }
+        : {}),
+      recordId: event.recordId,
+      requirementSetId: event.requirementSetId,
+      eventLogPath: normalizePathForRecord(eventLogPath),
+      beforeRecordHash,
+      afterRecordHash: event.afterRecordHash,
+      artifactIndexPaths: artifactIndexUpdates.map((update) =>
+        normalizePathForRecord(update.targetPath)
+      ),
+      artifactPaths: artifactWrites.map((write) =>
+        normalizePathForRecord(write.targetPath)
+      ),
+      schemaGate: { ok: validation.ok, errorCount: validation.errorCount },
+      committedAt: recordedAt,
+    };
+    const controlRoot = controlStoreRoot(recordPath);
+    const transactionsRoot = path.join(controlRoot, 'transactions');
+    stagingDir = path.join(transactionsRoot, `.staging-${transactionId}`);
+    const committedDir = path.join(transactionsRoot, transactionId);
+    if (fs.existsSync(stagingDir) || fs.existsSync(committedDir)) {
+      throw new Error(`control_store_transaction_collision:${transactionId}`);
+    }
+    fs.mkdirSync(stagingDir, { recursive: true });
+    const eventLogText = `${[
+      ...existingEvents.map((entry) => JSON.stringify(entry)),
+      JSON.stringify(event),
+    ].join('\n')}\n`;
+    const recordText = `${JSON.stringify(nextRecord, null, 2)}\n`;
+    const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
+    const previousRecord = preLock.exists ? fs.readFileSync(recordPath) : null;
+    const previousEventLog = fs.existsSync(eventLogPath)
+      ? fs.readFileSync(eventLogPath)
+      : null;
+    const previousReceipt = fs.existsSync(receiptPath)
+      ? fs.readFileSync(receiptPath)
+      : null;
+    writeTextAtomic(path.join(stagingDir, 'control-events.jsonl'), eventLogText);
+    writeTextAtomic(path.join(stagingDir, 'requirement-record.json'), recordText);
+    writeTextAtomic(path.join(stagingDir, 'commit-receipt.json'), receiptText);
+    const previousDir = path.join(stagingDir, 'previous');
+    if (previousRecord) {
+      writeTextAtomic(
+        path.join(previousDir, 'requirement-record.json'),
+        previousRecord.toString('utf8')
+      );
+    }
+    if (previousEventLog) {
+      writeTextAtomic(
+        path.join(previousDir, 'control-events.jsonl'),
+        previousEventLog.toString('utf8')
+      );
+    }
+    if (previousReceipt) {
+      writeTextAtomic(
+        path.join(previousDir, 'commit-receipt.json'),
+        previousReceipt.toString('utf8')
+      );
+    }
+    for (const artifactIndex of artifactIndexUpdates) {
+      writeTextAtomic(
+        path.join(stagingDir, artifactIndex.stagedRelativePath),
+        artifactIndex.nextText
+      );
+      if (artifactIndex.previousText !== null) {
+        writeTextAtomic(
+          path.join(stagingDir, artifactIndex.previousRelativePath),
+          artifactIndex.previousText
+        );
+      }
+    }
+    for (const artifactWrite of artifactWrites) {
+      writeTextAtomic(
+        path.join(stagingDir, artifactWrite.stagedRelativePath),
+        artifactWrite.nextText
+      );
+      if (artifactWrite.previousText !== null) {
+        writeTextAtomic(
+          path.join(stagingDir, artifactWrite.previousRelativePath),
+          artifactWrite.previousText
+        );
+      }
+    }
+    writeJsonAtomic(path.join(stagingDir, 'transaction-manifest.json'), {
+      schemaVersion: 'requirement-record-control-transaction/v1',
+      transactionId,
+      eventId: event.eventId,
+      eventHash: event.eventHash,
+      writerId: input.writerId,
+      eventType: input.eventType,
+      beforeRecordHash,
+      afterRecordHash: event.afterRecordHash,
+      targets: {
+        eventLogPath: normalizePathForRecord(eventLogPath),
+        recordPath: normalizePathForRecord(recordPath),
+        receiptPath: normalizePathForRecord(receiptPath),
+      },
+      stagedHashes: {
+        eventLogHash: sha256Text(eventLogText),
+        recordHash: sha256Text(recordText),
+        receiptHash: sha256Text(receiptText),
+      },
+      previous: {
+        recordExists: previousRecord !== null,
+        eventLogExists: previousEventLog !== null,
+        receiptExists: previousReceipt !== null,
+        recordHash: previousRecord ? sha256Text(previousRecord.toString('utf8')) : null,
+        eventLogHash: previousEventLog
+          ? sha256Text(previousEventLog.toString('utf8'))
+          : null,
+        receiptHash: previousReceipt
+          ? sha256Text(previousReceipt.toString('utf8'))
+          : null,
+      },
+      artifactIndexes: artifactIndexUpdates.map((update) => ({
+        targetPath: normalizePathForRecord(update.targetPath),
+        stagedRelativePath: update.stagedRelativePath,
+        stagedHash: sha256Text(update.nextText),
+        previousRelativePath: update.previousRelativePath,
+        previousExists: update.previousText !== null,
+        previousHash:
+          update.previousText !== null ? sha256Text(update.previousText) : null,
+      })),
+      artifactWrites: artifactWrites.map((write) => ({
+        targetPath: normalizePathForRecord(write.targetPath),
+        stagedRelativePath: write.stagedRelativePath,
+        contentHash: write.contentHash,
+        previousRelativePath: write.previousRelativePath,
+        previousExists: write.previousText !== null,
+        previousHash:
+          write.previousText !== null ? sha256Text(write.previousText) : null,
+      })),
+      preparedAt: recordedAt,
+    });
+    if (
+      readEventLog(path.join(stagingDir, 'control-events.jsonl')).at(-1)?.eventHash !==
+        event.eventHash ||
+      sha256Json(readJson(path.join(stagingDir, 'requirement-record.json'))) !==
+        sha256Json(nextRecord) ||
+      text(readJson(path.join(stagingDir, 'commit-receipt.json')).eventHash) !==
+        event.eventHash ||
+      artifactWrites.some(
+        (write) =>
+          sha256Text(
+            fs.readFileSync(path.join(stagingDir, write.stagedRelativePath), 'utf8')
+          ) !== write.contentHash
+      )
+    ) {
+      throw new Error('control_store_staging_readback_failed');
+    }
+    reachBoundary('after_stage');
+
+    const restore = (): void => {
+      if (previousRecord) {
+        writeTextAtomic(recordPath, previousRecord.toString('utf8'));
+      } else if (fs.existsSync(recordPath)) {
+        fs.rmSync(recordPath, { force: true });
+      }
+      if (previousEventLog) {
+        writeTextAtomic(eventLogPath, previousEventLog.toString('utf8'));
+      } else if (fs.existsSync(eventLogPath)) {
+        fs.rmSync(eventLogPath, { force: true });
+      }
+      if (previousReceipt) {
+        writeTextAtomic(receiptPath, previousReceipt.toString('utf8'));
+      } else if (fs.existsSync(receiptPath)) {
+        fs.rmSync(receiptPath, { force: true });
+      }
+      for (const artifactIndex of artifactIndexUpdates) {
+        if (artifactIndex.previousText !== null) {
+          writeTextAtomic(artifactIndex.targetPath, artifactIndex.previousText);
+        } else if (fs.existsSync(artifactIndex.targetPath)) {
+          fs.rmSync(artifactIndex.targetPath, { force: true });
+        }
+      }
+      for (const artifactWrite of artifactWrites) {
+        if (artifactWrite.previousText !== null) {
+          writeTextAtomic(artifactWrite.targetPath, artifactWrite.previousText);
+        } else if (fs.existsSync(artifactWrite.targetPath)) {
+          fs.rmSync(artifactWrite.targetPath, { force: true });
+        }
+      }
+    };
+    try {
+      reachBoundary('before_event_log');
+      writeTextAtomic(eventLogPath, eventLogText);
+      reachBoundary('before_record');
+      writeTextAtomic(recordPath, recordText);
+      reachBoundary('before_receipt');
+      writeTextAtomic(receiptPath, receiptText);
+      for (const [index, artifactIndex] of artifactIndexUpdates.entries()) {
+        assertControlStoreLockOwnership(lockPath, transactionId);
+        assertArtifactIndexLockOwnership(artifactIndexLocks, transactionId);
+        deps.beforeArtifactIndex?.(artifactIndex.targetPath, index);
+        assertControlStoreLockOwnership(lockPath, transactionId);
+        assertArtifactIndexLockOwnership(artifactIndexLocks, transactionId);
+        writeTextAtomic(artifactIndex.targetPath, artifactIndex.nextText);
+      }
+      for (const [index, artifactWrite] of artifactWrites.entries()) {
+        assertControlStoreLockOwnership(lockPath, transactionId);
+        assertArtifactIndexLockOwnership(artifactIndexLocks, transactionId);
+        deps.beforeArtifactWrite?.(artifactWrite.targetPath, index);
+        assertControlStoreLockOwnership(lockPath, transactionId);
+        assertArtifactIndexLockOwnership(artifactIndexLocks, transactionId);
+        writeTextAtomic(artifactWrite.targetPath, artifactWrite.nextText);
+      }
+      if (
+        readEventLog(eventLogPath).at(-1)?.eventHash !== event.eventHash ||
+        text(readJson(recordPath).lastAppliedEventHash) !== event.eventHash ||
+        text(readJson(receiptPath).eventHash) !== event.eventHash ||
+        artifactIndexUpdates.some(
+          (update) =>
+            !fs.existsSync(update.targetPath) ||
+            sha256Text(fs.readFileSync(update.targetPath, 'utf8')) !==
+              sha256Text(update.nextText)
+        ) ||
+        artifactWrites.some(
+          (write) =>
+            !fs.existsSync(write.targetPath) ||
+            sha256Text(fs.readFileSync(write.targetPath, 'utf8')) !== write.contentHash
+        )
+      ) {
+        throw new Error('control_store_promotion_readback_failed');
+      }
+      reachBoundary('before_commit_boundary');
+      fs.renameSync(stagingDir, committedDir);
+      stagingDir = '';
+      reachBoundary('after_transaction_promotion');
+      writeJsonAtomic(path.join(controlRoot, 'current-commit.json'), {
+        schemaVersion: 'requirement-record-control-commit-marker/v1',
+        transactionId,
+        eventId: event.eventId,
+        eventHash: event.eventHash,
+        afterRecordHash: event.afterRecordHash,
+        committedTransactionPath: normalizePathForRecord(committedDir),
+        committedAt: recordedAt,
+      });
+      boundaryCommitted = true;
+      reachBoundary('after_commit_boundary');
+    } catch (error) {
+      if (!boundaryCommitted) {
+        restore();
+        if (fs.existsSync(committedDir)) {
+          removeDirectory(committedDir);
+        }
+      }
+      throw error;
+    }
+    return {
+      event,
+      receiptPath,
+      eventLogPath,
+      beforeRecordHash,
+      afterRecordHash: event.afterRecordHash,
+      artifactIndexPaths: artifactIndexUpdates.map((update) =>
+        normalizePathForRecord(update.targetPath)
+      ),
+      artifactPaths: artifactWrites.map((write) =>
+        normalizePathForRecord(write.targetPath)
+      ),
+    };
+  } finally {
+    if (stagingDir && fs.existsSync(stagingDir)) {
+      removeDirectory(stagingDir);
+    }
+    releaseArtifactIndexLocks(artifactIndexLocks, transactionId);
+    releaseControlStoreLock(lockPath, transactionId);
+  }
 }

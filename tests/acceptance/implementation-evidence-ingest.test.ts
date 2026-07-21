@@ -51,7 +51,7 @@ function artifactRef(
     artifactPath,
     artifactHash: contentHash,
     artifactSchemaPath: schemaPath,
-    artifactSchemaHash: sha256(readFileSync(schemaPath)),
+    artifactSchemaHash: sha256(readFileSync(schemaPath, 'utf8')),
     producerIdentity: {
       class: 'controlled_artifact_producer',
       id: String(artifact.producer),
@@ -241,10 +241,30 @@ function writeFixture(root: string): {
         recordId: 'REQ-EVIDENCE-INGEST',
         requirementSetId: 'REQ-EVIDENCE-INGEST',
         status: 'user_confirmed',
+        sourcePath: 'docs/requirements/REQ-EVIDENCE-INGEST.md',
         sourceDocumentHash:
           'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         implementationConfirmationHash:
           'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        confirmationHistory: [
+          {
+            eventType: 'confirmation_recorded',
+            recordId: 'REQ-EVIDENCE-INGEST',
+            requirementSetId: 'REQ-EVIDENCE-INGEST',
+            confirmedAt: '2026-05-19T00:00:00.000Z',
+            confirmedBy: 'implementation-evidence-ingest.test',
+            sourcePath: 'docs/requirements/REQ-EVIDENCE-INGEST.md',
+            sourceDocumentHash:
+              'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            implementationConfirmationHash:
+              'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            confirmationPageHash:
+              'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+            confirmationText: 'confirmed',
+            renderReportPath: 'confirmation/confirmation-render-report.json',
+            htmlPath: 'confirmation/confirmation.html',
+          },
+        ],
         transactionId: FIXTURE_TRANSACTION_ID,
         currentAttemptId: FIXTURE_IMPLEMENTATION_ATTEMPT_ID,
         semanticModelHash: FIXTURE_SEMANTIC_MODEL_HASH,
@@ -311,7 +331,9 @@ function writeFixture(root: string): {
           id: `EXECUTOR-${FIXTURE_SUFFIX}`,
         },
         runtimeVersions,
-        dependencyLockHashes: [{ path: 'package-lock.json', hash: sha256(readFileSync(lockPath)) }],
+        dependencyLockHashes: [
+          { path: 'package-lock.json', hash: sha256(readFileSync(lockPath, 'utf8')) },
+        ],
         environment,
         environmentFingerprint: sha256Stable({ environment, runtimeVersions }),
         environmentCompatibilityDecision: 'pass',
@@ -327,7 +349,7 @@ function writeFixture(root: string): {
         startedAt: '2026-05-19T00:00:00.000Z',
         completedAt: '2026-05-19T00:00:05.000Z',
         outputPath: commandOutputPath,
-        outputHash: sha256(readFileSync(commandOutputPath)),
+        outputHash: sha256(readFileSync(commandOutputPath, 'utf8')),
         coveredRequirementIds: ['MUST-005'],
         outputSummary: 'implementation evidence ingest passed',
       },

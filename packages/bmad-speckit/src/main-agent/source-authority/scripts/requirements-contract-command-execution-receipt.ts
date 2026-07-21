@@ -85,6 +85,27 @@ export interface CommandExecutionReceiptValidationResult {
     commandId: string;
     receiptPath: string;
     receiptHash: string;
+    commandRunRef: {
+      commandId: string;
+      command: string;
+      normalizedCommand: string;
+      cwd: string;
+      executorIdentity: RequirementsContractCommandExecutionReceipt['executorIdentity'];
+      runtimeVersions: {
+        node: string;
+      };
+      environment: {
+        platform: string;
+        architecture: string;
+      };
+      transactionId: string;
+      implementationAttemptId: string;
+      runId: string;
+      exitCode: number;
+      startedAt: string;
+      completedAt: string;
+      coveredRequirementIds: string[];
+    };
   }>;
 }
 
@@ -100,9 +121,7 @@ function text(value: unknown): string {
 }
 
 function strings(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.map(text).filter(Boolean)
-    : [];
+  return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
 
 function records(value: unknown): JsonRecord[] {
@@ -145,9 +164,7 @@ function schemaValidator(): ValidateFunction {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   addFormats(ajv);
   receiptValidator = ajv.compile(
-    JSON.parse(
-      fs.readFileSync(path.resolve(__dirname, '..', 'schemas', SCHEMA_FILE), 'utf8')
-    )
+    JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'schemas', SCHEMA_FILE), 'utf8'))
   );
   return receiptValidator;
 }
@@ -165,10 +182,7 @@ function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
-function directOrDerivedRequirementRefs(
-  command: JsonRecord,
-  modelPacket: JsonRecord
-): string[] {
+function directOrDerivedRequirementRefs(command: JsonRecord): string[] {
   const direct = strings(command.requirementRefs);
   if (direct.length > 0) return direct;
   const perMust = records(command.perMustRows)
@@ -205,15 +219,10 @@ function descriptorFromCommand(
   const argv = strings(command.argv);
   const cwd = text(command.cwd);
   const receiptPath = text(command.receiptPath);
-  const requirementRefs = directOrDerivedRequirementRefs(command, modelPacket);
-  const acceptanceRefs = directOrDerivedAcceptanceRefs(
-    command,
-    modelPacket,
-    requirementRefs
-  );
-  const traceRefs = strings(command.traceRefs).length > 0
-    ? strings(command.traceRefs)
-    : strings(command.traceRows);
+  const requirementRefs = directOrDerivedRequirementRefs(command);
+  const acceptanceRefs = directOrDerivedAcceptanceRefs(command, modelPacket, requirementRefs);
+  const traceRefs =
+    strings(command.traceRefs).length > 0 ? strings(command.traceRefs) : strings(command.traceRows);
   const missing = [
     ...(!id ? ['id'] : []),
     ...(!commandText ? ['command'] : []),
@@ -227,9 +236,7 @@ function descriptorFromCommand(
   if (missing.length > 0) {
     return {
       descriptor: null,
-      issueCodes: missing.map(
-        (field) => `required_command_descriptor_invalid:${label}:${field}`
-      ),
+      issueCodes: missing.map((field) => `required_command_descriptor_invalid:${label}:${field}`),
     };
   }
   return {
@@ -271,14 +278,11 @@ export function requiredCommandExecutionDescriptorsFromModelPacket(
   issueCodes: string[];
 } {
   if (!modelPacket) return { descriptors: [], issueCodes: [] };
-  const { commandRows, validationRefs } =
-    requiredCommandRowsAndValidationRefs(modelPacket);
+  const { commandRows, validationRefs } = requiredCommandRowsAndValidationRefs(modelPacket);
   const descriptors: RequiredCommandExecutionDescriptor[] = [];
   const issueCodes: string[] = [];
   const commandIds = new Set(
-    commandRows
-      .map((command) => text(command.id || command.commandId))
-      .filter(Boolean)
+    commandRows.map((command) => text(command.id || command.commandId)).filter(Boolean)
   );
   const seenRefs = new Set<string>();
   for (const ref of validationRefs) {
@@ -306,18 +310,13 @@ export function requiredCommandExecutionDescriptorsFromModelPacket(
   return { descriptors, issueCodes };
 }
 
-export function requiredCommandIdsFromModelPacket(
-  modelPacket: JsonRecord | null
-): string[] {
+export function requiredCommandIdsFromModelPacket(modelPacket: JsonRecord | null): string[] {
   if (!modelPacket) return [];
-  const { commandRows, validationRefs } =
-    requiredCommandRowsAndValidationRefs(modelPacket);
+  const { commandRows, validationRefs } = requiredCommandRowsAndValidationRefs(modelPacket);
   return [
     ...new Set(
       [
-        ...commandRows.map((command) =>
-          text(command.id || command.commandId || command.command)
-        ),
+        ...commandRows.map((command) => text(command.id || command.commandId || command.command)),
         ...validationRefs,
       ].filter(Boolean)
     ),
@@ -349,10 +348,7 @@ function contextFromModelPacket(modelPacket: JsonRecord | null): {
   };
 }
 
-function bindingMismatch(
-  commandId: string,
-  field: string
-): string {
+function bindingMismatch(commandId: string, field: string): string {
   return `required_command_receipt_binding_mismatch:${commandId}:${field}`;
 }
 
@@ -397,17 +393,11 @@ function validateReceiptForDescriptor(input: {
   }
   const bindingChecks: Array<[string, boolean]> = [
     ['commandId', receipt.commandId === commandId],
-    [
-      'normalizedCommand',
-      receipt.normalizedCommand === input.descriptor.normalizedCommand,
-    ],
+    ['normalizedCommand', receipt.normalizedCommand === input.descriptor.normalizedCommand],
     ['argv', stableStringify(receipt.argv) === stableStringify(input.descriptor.argv)],
     ['cwd', normalizedPath(receipt.cwd) === normalizedPath(input.descriptor.cwd)],
     ['requirementSetId', receipt.requirementSetId === input.context.requirementSetId],
-    [
-      'requirementRefs',
-      sameStrings(receipt.requirementRefs, input.descriptor.requirementRefs),
-    ],
+    ['requirementRefs', sameStrings(receipt.requirementRefs, input.descriptor.requirementRefs)],
     ['transactionId', receipt.transactionId === input.context.transactionId],
     [
       'implementationAttemptId',
@@ -423,10 +413,7 @@ function validateReceiptForDescriptor(input: {
     ],
     ['contractHash', receipt.contractHash === input.context.contractHash],
     ['inputSnapshotHash', receipt.inputSnapshotHash === input.context.inputSnapshotHash],
-    [
-      'acceptanceRefs',
-      sameStrings(receipt.acceptanceRefs, input.descriptor.acceptanceRefs),
-    ],
+    ['acceptanceRefs', sameStrings(receipt.acceptanceRefs, input.descriptor.acceptanceRefs)],
     ['traceRefs', sameStrings(receipt.traceRefs, input.descriptor.traceRefs)],
   ];
   const failedBinding = bindingChecks.find(([, valid]) => !valid);
@@ -438,27 +425,19 @@ function validateReceiptForDescriptor(input: {
   }
   if (receipt.argvHash !== sha256Stable(receipt.argv)) {
     return {
-      issueCodes: [
-        `required_command_receipt_integrity_mismatch:${commandId}:argvHash`,
-      ],
+      issueCodes: [`required_command_receipt_integrity_mismatch:${commandId}:argvHash`],
       acceptedReceipt: null,
     };
   }
   if (normalizeCommand(receipt.command) !== receipt.normalizedCommand) {
     return {
-      issueCodes: [
-        `required_command_receipt_integrity_mismatch:${commandId}:normalizedCommand`,
-      ],
+      issueCodes: [`required_command_receipt_integrity_mismatch:${commandId}:normalizedCommand`],
       acceptedReceipt: null,
     };
   }
-  if (
-    normalizedPath(receipt.publication.targetPath) !== normalizedPath(receiptPath)
-  ) {
+  if (normalizedPath(receipt.publication.targetPath) !== normalizedPath(receiptPath)) {
     return {
-      issueCodes: [
-        `required_command_receipt_publication_invalid:${commandId}:targetPath`,
-      ],
+      issueCodes: [`required_command_receipt_publication_invalid:${commandId}:targetPath`],
       acceptedReceipt: null,
     };
   }
@@ -468,12 +447,12 @@ function validateReceiptForDescriptor(input: {
     receipt.publication.publishedAt,
     receipt.publication.readbackAt,
   ].map((value) => Date.parse(value));
-  if (timestampOrder.some(Number.isNaN) ||
-      timestampOrder.some((value, index) => index > 0 && value < timestampOrder[index - 1])) {
+  if (
+    timestampOrder.some(Number.isNaN) ||
+    timestampOrder.some((value, index) => index > 0 && value < timestampOrder[index - 1])
+  ) {
     return {
-      issueCodes: [
-        `required_command_receipt_integrity_mismatch:${commandId}:timestampOrder`,
-      ],
+      issueCodes: [`required_command_receipt_integrity_mismatch:${commandId}:timestampOrder`],
       acceptedReceipt: null,
     };
   }
@@ -486,9 +465,7 @@ function validateReceiptForDescriptor(input: {
       fileHash(streamPath) !== receipt[`${stream}Hash`]
     ) {
       return {
-        issueCodes: [
-          `required_command_receipt_output_hash_mismatch:${commandId}:${stream}`,
-        ],
+        issueCodes: [`required_command_receipt_output_hash_mismatch:${commandId}:${stream}`],
         acceptedReceipt: null,
       };
     }
@@ -505,6 +482,27 @@ function validateReceiptForDescriptor(input: {
       commandId,
       receiptPath,
       receiptHash,
+      commandRunRef: {
+        commandId: receipt.commandId,
+        command: receipt.command,
+        normalizedCommand: receipt.normalizedCommand,
+        cwd: receipt.cwd,
+        executorIdentity: receipt.executorIdentity,
+        runtimeVersions: {
+          node: receipt.hostIdentity.nodeVersion,
+        },
+        environment: {
+          platform: receipt.hostIdentity.platform,
+          architecture: receipt.hostIdentity.architecture,
+        },
+        transactionId: receipt.transactionId,
+        implementationAttemptId: receipt.implementationAttemptId,
+        runId: receipt.commandRunId,
+        exitCode: receipt.exitCode,
+        startedAt: receipt.startedAt,
+        completedAt: receipt.endedAt,
+        coveredRequirementIds: receipt.requirementRefs,
+      },
     },
   };
 }
@@ -514,12 +512,10 @@ export function validateModelPacketCommandExecutionReceipts(input: {
   modelPacket: JsonRecord | null;
   requireCommandDescriptors?: boolean;
 }): CommandExecutionReceiptValidationResult {
-  const descriptorResult = requiredCommandExecutionDescriptorsFromModelPacket(
-    input.modelPacket
-  );
+  const descriptorResult = requiredCommandExecutionDescriptorsFromModelPacket(input.modelPacket);
   const commandIds = requiredCommandIdsFromModelPacket(input.modelPacket);
   if (commandIds.length === 0) {
-    if (input.requireCommandDescriptors) {
+    if (input.requireCommandDescriptors ?? true) {
       return {
         decision: 'block',
         commandIds: [],
@@ -535,10 +531,7 @@ export function validateModelPacketCommandExecutionReceipts(input: {
     };
   }
   const contextResult = contextFromModelPacket(input.modelPacket);
-  const issueCodes = [
-    ...descriptorResult.issueCodes,
-    ...contextResult.issueCodes,
-  ];
+  const issueCodes = [...descriptorResult.issueCodes, ...contextResult.issueCodes];
   const acceptedReceipts: CommandExecutionReceiptValidationResult['acceptedReceipts'] = [];
   if (contextResult.context) {
     for (const descriptor of descriptorResult.descriptors) {

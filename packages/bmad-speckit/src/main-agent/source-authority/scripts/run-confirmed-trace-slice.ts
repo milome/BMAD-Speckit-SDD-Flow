@@ -423,10 +423,6 @@ function main(argv) {
   if (!/^TRACE-\d{3}$/u.test(traceId)) throw new Error('--trace TRACE-### is required');
   const recordPath = path.resolve(args.record || DEFAULT_RECORD);
   const record = readJson(recordPath);
-  let sourceDocumentHash;
-  let implementationConfirmationHash;
-  let traceRow;
-  let commands;
   if (!isActiveV2RequirementRecord(record)) {
     throw new Error(
       'run-confirmed-trace-slice requires an active V2 Requirement Record with semantic and Trace Graph hashes'
@@ -449,10 +445,10 @@ function main(argv) {
   if (!semanticRead.traceRow || !semanticRead.requiredCommands) {
     throw new Error('requirements contract read facade omitted trace execution projections');
   }
-  sourceDocumentHash = text(record.sourceDocumentHash);
-  implementationConfirmationHash = text(record.implementationConfirmationHash);
-  traceRow = semanticRead.traceRow;
-  commands = new Map(
+  const sourceDocumentHash = text(record.sourceDocumentHash);
+  const implementationConfirmationHash = text(record.implementationConfirmationHash);
+  const traceRow = semanticRead.traceRow;
+  const commands = new Map(
     semanticRead.requiredCommands.map((command) => [text(command.id || command.commandId), command])
   );
   if (!traceRow) throw new Error(`missing trace row: ${traceId}`);

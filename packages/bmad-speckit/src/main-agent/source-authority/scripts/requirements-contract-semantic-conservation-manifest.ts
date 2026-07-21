@@ -6,7 +6,6 @@ import { SOURCE_ROOT_CLASS_REGISTRY_HASH } from './requirements-contract-source-
 import {
   type ConservationSemanticNode,
   type ConservationSourceRoot,
-  type NodeAuthoritySource,
   type NodeToAuthorityMappingInput,
   type RootToNodeMappingInput,
   type SemanticConservationVerificationResult,

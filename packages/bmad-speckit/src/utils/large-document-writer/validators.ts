@@ -1,8 +1,7 @@
 const fs = require('node:fs');
-const sourceSuffix = __filename.endsWith('.ts') ? '.ts' : '';
-const { block } = require(`./errors${sourceSuffix}`);
-const { readManifest, sessionPaths } = require(`./draft-session${sourceSuffix}`);
-const { sha256Text, writeJsonReceipt } = require(`./receipts${sourceSuffix}`);
+const { block } = require('./errors');
+const { readManifest, sessionPaths } = require('./draft-session');
+const { sha256Text, writeJsonReceipt } = require('./receipts');
 
 function findUnbalancedFence(text) {
   const matches = text.match(/^```/gm);

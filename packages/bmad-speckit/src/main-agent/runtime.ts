@@ -11,7 +11,7 @@ const { auditorSpecAction } = require('./actions/auditor-spec');
 const { bmadRuntimeWorkerAction } = require('./actions/bmad-runtime-worker');
 const { bmadArtifactHardcutAction } = require('./actions/bmad-artifact-hardcut');
 const { chaosScenariosAction } = require('./actions/chaos-scenarios');
-const { compiledPromptRunnerAction } = require('./actions/compiled-prompt-runner');
+const { promptTransactionPublishAction } = require('./actions/prompt-transaction-publish');
 const {
   confirmScopeAction,
   confirmScopeMissingReason,
@@ -199,7 +199,7 @@ const SUPPORTED_ACTIONS = new Set([
   'release-gate',
   'quality-gate',
   'delivery-truth-gate',
-  'compiled-prompt-runner',
+  'requirements-contract-prompt-transaction-publish',
   'implementation-readiness-gate',
   'unified-ingress',
   'delivery-closeout-gate',
@@ -323,6 +323,21 @@ function emitResponse(context, response) {
   return response.exitCode;
 }
 
+function emitPackageActionResponse(context, data, defaultStatus = 'package_runtime_ready') {
+  const exitCode =
+    typeof data?.exitCode === 'number' ? data.exitCode : data?.ok === false ? 1 : 0;
+  return emitResponse(
+    context,
+    envelope(
+      context,
+      data?.status || defaultStatus,
+      exitCode,
+      data,
+      Array.isArray(data?.errors) ? data.errors : []
+    )
+  );
+}
+
 function emitLegacyResult(result) {
   if (!result.suppressStdout) writeJson(result.payload ?? result);
   return result.exitCode ?? (result.ok === false ? 1 : 0);
@@ -442,15 +457,38 @@ async function runMainAgentRuntime(context) {
     const reason = confirmScopeMissingReason(context.args);
     if (reason) return emitResponse(context, missingRuntimeState(context, reason));
     if (context.legacyOrchestration) return emitLegacyResult(legacyConfirmScopeAction(context));
-    const runtime = requireRuntimeState(context);
-    if (!runtime.ok) return emitResponse(context, runtime.response);
-    return emitResponse(context, envelope(context, 'ok', 0, confirmScopeAction(context, runtime.state)));
+    const result = confirmScopeAction(
+      context,
+      hasRuntimeState(context.cwd) ? inspectRuntimeState(context.cwd) : null
+    );
+    const exitCode = result.exitCode ?? (result.ok === false ? 1 : 0);
+    return emitResponse(
+      context,
+      envelope(
+        context,
+        result.ok === false ? 'confirmation_blocked' : 'ok',
+        exitCode,
+        result,
+        result.ok === false
+          ? [
+              {
+                code: result.mismatches?.[0] || 'confirmation_blocked',
+                message: result.error || result.mismatches?.join(', ') || 'confirmation blocked',
+              },
+            ]
+          : []
+      )
+    );
   }
 
   if (context.action === 'dispatch-plan') {
     const runtime = requireRuntimeState(context);
     if (!runtime.ok) return emitResponse(context, runtime.response);
-    return emitResponse(context, envelope(context, 'ok', 0, dispatchPlanAction(context, runtime.state)));
+    return emitPackageActionResponse(
+      context,
+      dispatchPlanAction(context, runtime.state),
+      'dispatch_blocked'
+    );
   }
 
   if (context.action === 'run-loop') {
@@ -469,17 +507,19 @@ async function runMainAgentRuntime(context) {
     return emitLegacyAction(context, deliveryTruthGateAction);
   }
 
-  if (context.action === 'compiled-prompt-runner') {
-    return emitResponse(
+  if (context.action === 'requirements-contract-prompt-transaction-publish') {
+    return emitPackageActionResponse(
       context,
-      envelope(context, 'package_runtime_ready', 0, compiledPromptRunnerAction(context))
+      await promptTransactionPublishAction(context),
+      'prompt_transaction_publication_blocked'
     );
   }
 
   if (context.action === 'implementation-readiness-gate') {
-    return emitResponse(
+    return emitPackageActionResponse(
       context,
-      envelope(context, 'package_runtime_ready', 0, implementationReadinessGateAction(context))
+      implementationReadinessGateAction(context),
+      'implementation_readiness_blocked'
     );
   }
 

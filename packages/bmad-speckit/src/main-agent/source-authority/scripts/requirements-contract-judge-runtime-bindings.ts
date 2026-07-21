@@ -12,7 +12,7 @@ import {
   slash,
 } from './requirements-contract-governed-write';
 
-type JsonRecord = Record<string, any>;
+type JsonRecord = Record<string, unknown>;
 
 export interface JudgeRuntimeBindingRef {
   path: string;

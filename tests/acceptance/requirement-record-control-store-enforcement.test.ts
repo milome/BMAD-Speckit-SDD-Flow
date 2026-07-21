@@ -23,7 +23,7 @@ describe('requirement record control store enforcement', () => {
       expect(
         source,
         `${scriptPath} must not overwrite requirement-record.json directly`
-      ).not.toMatch(/writeFileSync\s*\(\s*recordPath\b/u);
+      ).not.toMatch(/(?:writeFileSync|writeJsonAtomic)\s*\(\s*recordPath\b/u);
       expect(
         source,
         `${scriptPath} must not default control events to mentor-events.jsonl`
@@ -39,5 +39,25 @@ describe('requirement record control store enforcement', () => {
     const dataProducts = readProjectFile('packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-governed-data-products.ts');
     expect(dataProducts).toContain('mentor-events.jsonl');
     expect(dataProducts).not.toContain('appendControlEventAndReplay');
+  });
+
+  it('keeps artifact-index writes inside the same control-store transaction', () => {
+    for (const scriptPath of [
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
+    ]) {
+      const source = readProjectFile(scriptPath);
+      expect(source, `${scriptPath} must stage artifact indexes in the control transaction`).toContain(
+        'artifactIndexUpdates'
+      );
+      expect(
+        source,
+        `${scriptPath} must not append the requirement-scoped artifact index after commit`
+      ).not.toMatch(/appendJsonl\s*\(\s*artifactIndex\b/u);
+      expect(
+        source,
+        `${scriptPath} must not append the global artifact index after commit`
+      ).not.toMatch(/appendJsonl\s*\(\s*globalArtifactIndex\b/u);
+    }
   });
 });

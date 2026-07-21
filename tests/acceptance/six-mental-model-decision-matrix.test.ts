@@ -241,6 +241,48 @@ describe('Six mental model decision matrix', () => {
     }
   });
 
+  it('rejects a machine-authored delivery pass without controlled closeout acceptance', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'delivery_confirmation',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+        audit_review: { status: 'pass' },
+        delivery_confirmation: { status: 'pass' },
+      },
+    });
+    try {
+      const record = readJson<Record<string, any>>(fixture.recordPath);
+      record.status = 'user_confirmed';
+      record.currentMentalModel = 'delivery_confirmation';
+      record.currentStage = 'delivery_confirmation';
+      record.lastEventType = 'delivery_confirmation_result_recorded';
+      record.closeout = {
+        currentAttemptId: fixture.runId,
+        decision: 'pass',
+        attempts: [
+          {
+            eventType: 'closeout_check_recorded',
+            closeoutAttemptId: fixture.runId,
+            decision: 'pass',
+          },
+        ],
+      };
+
+      const matrix = resolveSixModelRuntimeDecision({
+        record,
+        attemptId: fixture.runId,
+      });
+
+      expect(matrix.nextAction).toBe('run_closeout');
+      expect(matrix.nextAction).not.toBe('record_closed');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
   it('does not treat a controlled closeout as terminal after a newer execution attempt', () => {
     const fixture = materializeRequirementFixture({
       currentMentalModel: 'delivery_confirmation',

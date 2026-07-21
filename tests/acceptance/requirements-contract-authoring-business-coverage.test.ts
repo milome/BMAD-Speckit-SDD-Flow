@@ -13,6 +13,7 @@ import {
   issueCodes,
   readJson,
   readImplementationConfirmation,
+  runAuthoringWithTestLocalization,
 } from './helpers/requirements-contract-authoring-fixture';
 import {
   runMainAgentAuthoringRepair,
@@ -1087,11 +1088,9 @@ describe('requirements contract sanitized real fixture coverage', () => {
         return true;
       }) as typeof process.stderr.write;
       try {
-        result = runMainAgentPreConfirmationDrilldown(root, {
-          source,
-          recordId,
-          requirementSetId,
+        result = runAuthoringWithTestLocalization(root, source, recordId, {
           ...execution,
+          confirmationLanguage: 'zh-CN',
           targetPath: metadata.requiredBusinessAnchors.targetPaths,
           requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
           criticalAuditorRound: cleanCriticalAuditorRound,
@@ -1101,16 +1100,36 @@ describe('requirements contract sanitized real fixture coverage', () => {
       }
 
       const paths = artifacts(root, recordId, requirementSetId);
+      const authoringBlockers = result?.blockingIssues ?? [
+        {
+          code: 'authoring_result_missing',
+          message: 'Authoring returned no result.',
+          refs: [],
+        },
+      ];
+      const authoringBlockerCodes = authoringBlockers.map((issue) => issue.code);
+      expect(
+        authoringBlockerCodes,
+        `authoring blockers must be resolved before checkpoint reads: ${JSON.stringify(authoringBlockers)}`
+      ).toEqual([]);
+      expect(result?.sourceMutationPerformed).toBe(true);
+      expect(existsSync(paths.progress)).toBe(true);
       const progress = readJson<Record<string, unknown>>(paths.progress);
       const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
       const summary = evidence.checkpointPersistenceRef as Record<string, unknown>;
       const promotion = readJson<Record<string, unknown>>(paths.promotionReceipt);
+      const promotionReadback = readJson<Record<string, unknown>>(
+        paths.promotionReadbackRoundTripReport
+      );
+      const semanticIr = readJson<{
+        nodes: Record<string, { bodyHash: string }>;
+        semanticBodies: Record<string, { source?: Record<string, unknown> }>;
+      }>(paths.semanticIr);
       const confirmation = readImplementationConfirmation(source);
       const targetAuthority = readJson<{ accepted: Array<{ path: string }> }>(
         paths.targetAuthorityReport
       );
 
-      expect(result?.sourceMutationPerformed).toBe(true);
       expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
         'critical_auditor_provider_mode_required'
       );
@@ -1168,10 +1187,21 @@ describe('requirements contract sanitized real fixture coverage', () => {
       expect((promotion.authoringPromotionGate as Record<string, unknown>).ok).toBe(true);
       expect(promotion.targetHash).toBe(sha256PrefixedText(readFileSync(source, 'utf8')));
       expect(stringify(promotion)).toContain('checkpointPersistence');
+      expect(promotionReadback).toMatchObject({
+        decision: 'pass',
+        missingRootIds: [],
+        extraRootIds: [],
+        payloadMismatchIds: [],
+        authorityMismatchIds: [],
+      });
 
       const businessRequirementIds =
         ((confirmation.requirementBoundary as any).business.requirementIds as string[]) ?? [];
-      const businessViews = (confirmation.businessViews as Array<Record<string, unknown>>) ?? [];
+      const businessViews = [
+        ...(((confirmation.sequenceViews as Array<Record<string, unknown>>) ?? [])),
+        ...(((confirmation.flowViews as Array<Record<string, unknown>>) ?? [])),
+        ...(((confirmation.edgeCaseViews as Array<Record<string, unknown>>) ?? [])),
+      ];
       const mustRows = confirmation.must as Array<{
         id: string;
         sourcePath?: string;
@@ -1186,18 +1216,20 @@ describe('requirements contract sanitized real fixture coverage', () => {
       expect(mustRows.every((row) => /^MUST-(?:FR|NFR)-[0-9]{3}$/u.test(row.id))).toBe(true);
       expect(mustRows.some((row) => /^MUST-.*-L[0-9]+-[0-9]+$/u.test(row.id))).toBe(false);
       expect(businessRequirementIds).toEqual(metadata.requiredBusinessAnchors.frIds);
-      for (const frId of metadata.requiredBusinessAnchors.frIds) {
+      for (const [index, frId] of metadata.requiredBusinessAnchors.frIds.entries()) {
+        const mustId = expectedMustIds[index];
+        const semanticBody = semanticIr.semanticBodies[semanticIr.nodes[mustId].bodyHash];
         expect(businessRequirementIds).toContain(frId);
-        expect(stringify(businessViews)).toContain(frId);
-        expect(
-          mustRows.some(
-            (row) =>
-              row.headingPath?.some((heading) => heading.includes(frId)) &&
-              row.sourcePath?.endsWith('multi-timeframe-display-settings.real.md') &&
-              (row.sourceSpan?.startLine ?? 0) > 0
-          ),
-          `${frId} must stay source-span bound after promotion`
-        ).toBe(true);
+        expect(stringify(businessViews)).toContain(mustId);
+        expect(semanticBody.source, `${frId} must stay source-span bound after promotion`).toMatchObject({
+          sourceRequirementId: frId,
+          sourcePath: expect.stringMatching(/multi-timeframe-display-settings\.real\.md$/u),
+          sourceSpan: {
+            startLine: expect.any(Number),
+            endLine: expect.any(Number),
+          },
+          headingPath: expect.arrayContaining([expect.stringContaining(frId)]),
+        });
       }
       expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(false);
       expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(false);
@@ -1208,11 +1240,11 @@ describe('requirements contract sanitized real fixture coverage', () => {
         expectTextContainsAll(confirmation.must, [period]);
         expectTextContainsAll(confirmation.evidence, [period]);
         expectTextContainsAll(confirmation.traceRows, [period]);
-        expectTextContainsAll(confirmation.acceptanceCriteria, [period]);
-        expectTextContainsAll(confirmation.e2eScenarios, [period]);
+        expectTextContainsAll(confirmation.acceptanceTests, [period]);
+        expectTextContainsAll(confirmation.e2eSuites, [period]);
       }
 
-      expect(stringify(confirmation.outOfScope)).toContain(
+      expect(stringify(confirmation.mustNot)).toContain(
         metadata.requiredBusinessAnchors.outOfScopeTimeline
       );
       expect(

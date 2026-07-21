@@ -2,10 +2,15 @@
 import { spawnSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 import { aiTddContractGateRequired, evaluateAiTddContractGate } from './ai-tdd-contract-gate';
-import { appendControlEventAndReplay } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  sha256Json,
+} from './requirement-record-control-store';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
 import {
   implementationConfirmationHash,
@@ -16,7 +21,9 @@ import { buildPerMustClosureEvidenceIndex } from './per-must-closure-evidence-in
 import { openReconfirmationRequests } from './reconfirmation-runtime';
 import {
   createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
+  type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
 import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
@@ -420,6 +427,8 @@ function renderCloseoutConfirmation(input: {
     'render-requirements-confirmation-html.ts'
   );
   const projectRoot = projectRootForRecordPath(input.recordPath);
+  const snapshotRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-closeout-render-'));
+  const snapshotPath = path.join(snapshotRoot, 'requirement-record.json');
   const renderArgs = [
     rendererPath,
     '--source',
@@ -436,6 +445,8 @@ function renderCloseoutConfirmation(input: {
     text(input.record.entryFlow) || text(input.record.flow) || 'standalone_tasks',
     '--requirement-record',
     input.recordPath,
+    '--requirement-record-snapshot',
+    snapshotPath,
     '--closeout-report',
     input.closeoutReportPath,
     '--mode',
@@ -444,7 +455,14 @@ function renderCloseoutConfirmation(input: {
     'false',
     '--json',
   ];
-  const step = spawnSync(process.execPath, renderArgs, { cwd: projectRoot, encoding: 'utf8' });
+  const step = (() => {
+    try {
+      fs.writeFileSync(snapshotPath, `${JSON.stringify(input.record, null, 2)}\n`, 'utf8');
+      return spawnSync(process.execPath, renderArgs, { cwd: projectRoot, encoding: 'utf8' });
+    } finally {
+      fs.rmSync(snapshotRoot, { recursive: true, force: true });
+    }
+  })();
   if (step.status !== 0) {
     throw new Error(
       `closeout confirmation HTML render failed (${step.status ?? 'unknown'}): ${
@@ -2568,6 +2586,106 @@ function rcaRecordsForCloseout(
   ];
 }
 
+function createDeliveryRuntimeStatus(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    decision: CloseoutDecision;
+    blockingReasons: string[];
+    reportPath: string;
+    recordPath: string;
+    closeoutAcceptanceRequest?: {
+      htmlPath: string;
+      renderReportPath: string;
+      summaryPath: string;
+      closeoutConfirmInstruction: string;
+      closeoutConfirmationPageHash: string;
+      deliveryCloseoutReportHash: string;
+      userPrompt: string;
+      ingestCommand: string;
+    };
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): RuntimeStatusProjectionUpdate {
+  const gateCheckId = `delivery-closeout:${input.attemptId}`;
+  const deliveryConfirmationStatus =
+    input.decision === 'pass' ? 'awaiting_user_acceptance' : input.decision;
+  const deliveryConfirmationResult = {
+    payloadKind: 'model_result',
+    model: 'delivery_confirmation',
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    status: deliveryConfirmationStatus,
+    resultRecordedAt: input.evaluatedAt,
+    resultRecordedBy: input.evaluatedBy,
+    blockingReasons: input.blockingReasons,
+    sourceRefs: [
+      { sourceType: 'closeout_attempt', id: input.attemptId },
+      { sourceType: 'gate_check', id: gateCheckId },
+    ],
+    currentHashes: {
+      sourceDocumentHash: text(record.sourceDocumentHash),
+      implementationConfirmationHash: text(record.implementationConfirmationHash),
+      architectureConfirmationHash: text(
+        nested(record.architectureConfirmationState).currentArchitectureConfirmationHash
+      ),
+    },
+    deliveryCloseoutReportRef: {
+      path: normalizePathForRecord(input.reportPath),
+    },
+    closeoutAcceptanceRequestRef: input.closeoutAcceptanceRequest
+      ? {
+          htmlPath: input.closeoutAcceptanceRequest.htmlPath,
+          renderReportPath: input.closeoutAcceptanceRequest.renderReportPath,
+          closeoutConfirmationPageHash:
+            input.closeoutAcceptanceRequest.closeoutConfirmationPageHash,
+          deliveryCloseoutReportHash: input.closeoutAcceptanceRequest.deliveryCloseoutReportHash,
+        }
+      : null,
+  };
+  return createRuntimeStatusProjectionUpdate({
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    modelId: 'delivery_confirmation',
+    implementationAttemptId: input.attemptId,
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    semanticModelHash: text(record.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'requirement_record',
+        path: normalizePathForRecord(input.recordPath),
+        hash: `sha256:${crypto
+          .createHash('sha256')
+          .update(JSON.stringify(record), 'utf8')
+          .digest('hex')}`,
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'delivery_closeout_report',
+        path: normalizePathForRecord(input.reportPath),
+        hash: sha256File(input.reportPath),
+      },
+    ],
+    blockerRefs: input.blockingReasons,
+    evidenceRefs: [
+      normalizePathForRecord(input.reportPath),
+      ...(input.closeoutAcceptanceRequest ? [input.closeoutAcceptanceRequest.htmlPath] : []),
+    ],
+    authorityClass: 'controlled_closeout',
+    decision: input.decision === 'pass' ? 'pass' : 'block',
+    effectiveStatus:
+      input.decision === 'pass' ? 'awaiting_user_acceptance' : 'blocked',
+    createdAt: input.evaluatedAt,
+    receiptPath: `runtime/status-decisions/${input.attemptId}/delivery_confirmation.json`,
+    projection: deliveryConfirmationResult,
+  });
+}
+
 function updateRecord(
   record: JsonObject,
   input: {
@@ -2590,6 +2708,7 @@ function updateRecord(
     evaluatedAt: string;
     evaluatedBy: string;
     allowExistingAttempt?: boolean;
+    runtimeStatus?: RuntimeStatusProjectionUpdate;
   }
 ): JsonObject {
   const closeout =
@@ -2632,81 +2751,7 @@ function updateRecord(
     input.decision === 'pass'
       ? 'delivery_confirmation_user_acceptance_requested'
       : 'delivery_confirmation_result_recorded';
-  const deliveryConfirmationStatus =
-    input.decision === 'pass' ? 'awaiting_user_acceptance' : input.decision;
-  const deliveryConfirmationResult = {
-    payloadKind: 'model_result',
-    model: 'delivery_confirmation',
-    recordId: text(record.recordId),
-    requirementSetId: text(record.requirementSetId) || text(record.recordId),
-    sourceDocumentHash: text(record.sourceDocumentHash),
-    implementationConfirmationHash: text(record.implementationConfirmationHash),
-    status: deliveryConfirmationStatus,
-    resultRecordedAt: input.evaluatedAt,
-    resultRecordedBy: input.evaluatedBy,
-    blockingReasons: input.blockingReasons,
-    sourceRefs: [
-      { sourceType: 'closeout_attempt', id: input.attemptId },
-      { sourceType: 'gate_check', id: gateCheckId },
-    ],
-    currentHashes: {
-      sourceDocumentHash: text(record.sourceDocumentHash),
-      implementationConfirmationHash: text(record.implementationConfirmationHash),
-      architectureConfirmationHash: text(
-        nested(record.architectureConfirmationState).currentArchitectureConfirmationHash
-      ),
-    },
-    deliveryCloseoutReportRef: {
-      path: normalizePathForRecord(input.reportPath),
-    },
-    closeoutAcceptanceRequestRef: input.closeoutAcceptanceRequest
-      ? {
-          htmlPath: input.closeoutAcceptanceRequest.htmlPath,
-          renderReportPath: input.closeoutAcceptanceRequest.renderReportPath,
-          closeoutConfirmationPageHash:
-            input.closeoutAcceptanceRequest.closeoutConfirmationPageHash,
-          deliveryCloseoutReportHash: input.closeoutAcceptanceRequest.deliveryCloseoutReportHash,
-        }
-      : null,
-  };
-  const runtimeStatus = createRuntimeStatusProjectionUpdate({
-    recordId: text(record.recordId),
-    requirementSetId: text(record.requirementSetId) || text(record.recordId),
-    modelId: 'delivery_confirmation',
-    implementationAttemptId: input.attemptId,
-    sourceDocumentHash: text(record.sourceDocumentHash),
-    implementationConfirmationHash: text(record.implementationConfirmationHash),
-    semanticModelHash: text(record.semanticModelHash),
-    stageInputs: [
-      {
-        role: 'requirement_record',
-        path: normalizePathForRecord(input.recordPath),
-        hash: `sha256:${crypto
-          .createHash('sha256')
-          .update(JSON.stringify(record), 'utf8')
-          .digest('hex')}`,
-      },
-    ],
-    deterministicGateOutputs: [
-      {
-        role: 'delivery_closeout_report',
-        path: normalizePathForRecord(input.reportPath),
-        hash: sha256File(input.reportPath),
-      },
-    ],
-    blockerRefs: input.blockingReasons,
-    evidenceRefs: [
-      normalizePathForRecord(input.reportPath),
-      ...(input.closeoutAcceptanceRequest ? [input.closeoutAcceptanceRequest.htmlPath] : []),
-    ],
-    authorityClass: 'controlled_closeout',
-    decision: input.decision === 'pass' ? 'pass' : 'block',
-    effectiveStatus:
-      input.decision === 'pass' ? 'awaiting_user_acceptance' : 'blocked',
-    createdAt: input.evaluatedAt,
-    receiptPath: `runtime/status-decisions/${input.attemptId}/delivery_confirmation.json`,
-    projection: deliveryConfirmationResult,
-  });
+  const runtimeStatus = input.runtimeStatus ?? createDeliveryRuntimeStatus(record, input);
   const closeoutAcceptanceRequest = input.closeoutAcceptanceRequest
     ? {
         status: 'awaiting_user_acceptance',
@@ -2870,29 +2915,24 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
       allowExistingAttempt:
         attemptExists && (!explicitAttemptId || args.allowExistingAttempt === true),
     });
-    writeJsonAtomic(recordPath, projectedRecord);
-    try {
-      const rendered = renderCloseoutConfirmation({
-        record: projectedRecord,
-        recordPath,
-        sourcePath: sourceAuthority.sourcePath!,
-        closeoutReportPath: reportPath,
-        htmlPath,
-        renderReportPath,
-      });
-      closeoutAcceptanceRequest = {
-        htmlPath: relativePathForRecord(recordPath, rendered.htmlPath),
-        renderReportPath: relativePathForRecord(recordPath, rendered.renderReportPath),
-        summaryPath: relativePathForRecord(recordPath, rendered.summaryPath),
-        closeoutConfirmInstruction: rendered.closeoutConfirmInstruction,
-        closeoutConfirmationPageHash: rendered.closeoutConfirmationPageHash,
-        deliveryCloseoutReportHash: rendered.deliveryCloseoutReportHash,
-        userPrompt: rendered.userPrompt,
-        ingestCommand: rendered.ingestCommand,
-      };
-    } finally {
-      writeJsonAtomic(recordPath, record);
-    }
+    const rendered = renderCloseoutConfirmation({
+      record: projectedRecord,
+      recordPath,
+      sourcePath: sourceAuthority.sourcePath!,
+      closeoutReportPath: reportPath,
+      htmlPath,
+      renderReportPath,
+    });
+    closeoutAcceptanceRequest = {
+      htmlPath: relativePathForRecord(recordPath, rendered.htmlPath),
+      renderReportPath: relativePathForRecord(recordPath, rendered.renderReportPath),
+      summaryPath: relativePathForRecord(recordPath, rendered.summaryPath),
+      closeoutConfirmInstruction: rendered.closeoutConfirmInstruction,
+      closeoutConfirmationPageHash: rendered.closeoutConfirmationPageHash,
+      deliveryCloseoutReportHash: rendered.deliveryCloseoutReportHash,
+      userPrompt: rendered.userPrompt,
+      ingestCommand: rendered.ingestCommand,
+    };
   }
   const closeoutPayload = {
     attemptId,
@@ -2905,6 +2945,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
     evaluatedAt,
     evaluatedBy,
   };
+  const runtimeStatus = createDeliveryRuntimeStatus(record, closeoutPayload);
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'delivery-closeout-gate-writer',
@@ -2913,12 +2954,15 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
         ? 'delivery_confirmation_user_acceptance_requested'
         : 'delivery_confirmation_result_recorded',
     recordedAt: evaluatedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(record)),
     payload: closeoutPayload,
+    artifactWrites: runtimeStatusProjectionArtifactWrites(runtimeStatus),
     reduce: (currentRecord) =>
       updateRecord(currentRecord, {
         ...closeoutPayload,
         allowExistingAttempt:
           attemptExists && (!explicitAttemptId || args.allowExistingAttempt === true),
+        runtimeStatus,
       }),
   });
   const output = {

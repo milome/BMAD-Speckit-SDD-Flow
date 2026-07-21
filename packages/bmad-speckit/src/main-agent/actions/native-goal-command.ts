@@ -67,6 +67,15 @@ function object(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function generatorAuditReceipt(receipt: Record<string, unknown>): Record<string, unknown> {
+  const generatorAudit = receipt.generatorAudit;
+  return generatorAudit &&
+    typeof generatorAudit === 'object' &&
+    !Array.isArray(generatorAudit)
+    ? (generatorAudit as Record<string, unknown>)
+    : receipt;
+}
+
 function readReceipt(filePath: string): Record<string, unknown> | null {
   try {
     return object(JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown);
@@ -100,7 +109,8 @@ export function resolveNativeGoalCommand(input: NativeGoalCommandInput): NativeG
     ]);
   }
 
-  const goalCommand = object(receipt.goalCommand);
+  const generatorReceipt = generatorAuditReceipt(receipt);
+  const goalCommand = object(generatorReceipt.goalCommand);
   if (text(goalCommand.mode) !== 'native_goal_document_ref') {
     return blocked('native_goal_command_missing', ['native-goal-command-missing'], [
       `packet ${input.packetId} audit_receipt.json goalCommand.mode is ${text(goalCommand.mode) || 'missing'}`,
@@ -130,7 +140,7 @@ export function resolveNativeGoalCommand(input: NativeGoalCommandInput): NativeG
     ]);
   }
 
-  const continuationDirective = object(receipt.continuationDirective);
+  const continuationDirective = object(generatorReceipt.continuationDirective);
   const commandText = text(goalCommand.commandText) || text(continuationDirective.directive);
   if (!commandText.startsWith('/goal ')) {
     return blocked('native_goal_command_missing', ['native-goal-command-missing'], [

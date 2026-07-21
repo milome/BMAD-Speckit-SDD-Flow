@@ -53,6 +53,10 @@ const ALWAYS_OUTPUTS = [
 ] as const;
 const GOAL_OUTPUT = 'goal_execution.md';
 const ALL_OUTPUTS = [...ALWAYS_OUTPUTS, GOAL_OUTPUT];
+const REQUIREMENT_RECORD_SNAPSHOT = path.join(
+  'authority-inputs',
+  'requirement-record.snapshot.json'
+);
 
 export interface PromptTransactionPublisherDeps {
   runCompiledPrompt?: typeof runMainAgentCompiledPrompt;
@@ -71,6 +75,10 @@ function samePath(left: string, right: string): boolean {
     return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
   };
   return normalize(left) === normalize(right);
+}
+
+function requirementRecordSnapshotPath(outDir: string): string {
+  return path.join(outDir, REQUIREMENT_RECORD_SNAPSHOT);
 }
 
 function assertSchema(schemaName: string, value: unknown, label: string): void {
@@ -440,7 +448,9 @@ function publishBlockedFromExistingManifest(
     sourceRef: existingManifest.sourceRef,
     stageRegistryRef: existingManifest.stageRegistryRef,
     installedStageRegistryRef: existingManifest.installedStageRegistryRef,
+    architectureAuthorityDecision: existingManifest.architectureAuthorityDecision,
     confirmationReceiptRefs: existingManifest.confirmationReceiptRefs,
+    implementationReadinessReceiptRef: existingManifest.implementationReadinessReceiptRef,
     confirmationPageRefs: existingManifest.confirmationPageRefs,
     consumerRef: existingManifest.consumerRef,
     universeHashes: existingManifest.universeHashes,
@@ -508,9 +518,12 @@ function invalidateExistingTransactionAfterAuthorityFailure(
   ) {
     return false;
   }
-  const requirementRecordPath = path.resolve(options.cwd, options.requirementRecord);
+  const frozenRequirementRecordPath = requirementRecordSnapshotPath(outDir);
   if (
-    !samePath(existingManifest.requirementRecordRef?.path ?? '', requirementRecordPath) ||
+    !samePath(
+      existingManifest.requirementRecordRef?.path ?? '',
+      frozenRequirementRecordPath
+    ) ||
     existingManifest.implementationAttemptId !== options.packetId ||
     !samePath(existingManifest.outputs?.transactionManifestPath ?? '', manifestPath)
   ) {
@@ -587,10 +600,12 @@ function publishBlockedTransaction(
     },
     stageRegistryRef: authority.refs.stageRegistry,
     installedStageRegistryRef: runtimeBindings.installedStageRegistryRef,
+    architectureAuthorityDecision: authority.architectureAuthorityDecision,
     confirmationReceiptRefs: {
       requirements: authority.refs.requirementsConfirmationReceipt,
       architecture: authority.refs.architectureConfirmationReceipt,
     },
+    implementationReadinessReceiptRef: authority.refs.implementationReadinessReceipt,
     confirmationPageRefs: {
       requirements: authority.refs.requirementsConfirmationPage,
       architecture: authority.refs.architectureConfirmationPage,
@@ -766,10 +781,20 @@ export async function requirementsContractPromptTransactionPublishCommand(
     const rawGoal = goalRequired
       ? fs.readFileSync(path.join(authority.paths.outDir, GOAL_OUTPUT), 'utf8')
       : null;
+    if (fileHash(authority.paths.requirementRecord) !== authority.refs.requirementRecord.hash) {
+      throw new Error('prompt_transaction_requirement_record_changed_during_compile');
+    }
+    const requirementRecordSnapshotWrite = writeGovernedJson(
+      requirementRecordSnapshotPath(authority.paths.outDir),
+      readJson(authority.paths.requirementRecord)
+    );
+    const frozenRequirementRecordRef = fileRef(
+      requirementRecordSnapshotWrite.targetRef
+    );
     const dispatchInputSetHash = sha256(
       canonicalJson({
         identity: authority.identity,
-        requirementRecordRef: authority.refs.requirementRecord,
+        requirementRecordRef: frozenRequirementRecordRef,
         attemptContextRef: authority.refs.attemptContext,
         sourceRef: {
           path: slash(authority.paths.source),
@@ -777,10 +802,12 @@ export async function requirementsContractPromptTransactionPublishCommand(
         },
         stageRegistryRef: authority.refs.stageRegistry,
         installedStageRegistryRef: runtimeBindings.installedStageRegistryRef,
+        architectureAuthorityDecision: authority.architectureAuthorityDecision,
         confirmationReceiptRefs: {
           requirements: authority.refs.requirementsConfirmationReceipt,
           architecture: authority.refs.architectureConfirmationReceipt,
         },
+        implementationReadinessReceiptRef: authority.refs.implementationReadinessReceipt,
         confirmationPageRefs: {
           requirements: authority.refs.requirementsConfirmationPage,
           architecture: authority.refs.architectureConfirmationPage,
@@ -857,7 +884,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
       semanticModelHash: authority.identity.semanticModelHash,
       contractHash: authority.identity.contractHash,
       dispatchInputSetHash,
-      requirementRecordRef: authority.refs.requirementRecord,
+      requirementRecordRef: frozenRequirementRecordRef,
       attemptContextRef: authority.refs.attemptContext,
       sourceRef: {
         path: slash(authority.paths.source),
@@ -865,10 +892,12 @@ export async function requirementsContractPromptTransactionPublishCommand(
       },
       stageRegistryRef: authority.refs.stageRegistry,
       installedStageRegistryRef: runtimeBindings.installedStageRegistryRef,
+      architectureAuthorityDecision: authority.architectureAuthorityDecision,
       confirmationReceiptRefs: {
         requirements: authority.refs.requirementsConfirmationReceipt,
         architecture: authority.refs.architectureConfirmationReceipt,
       },
+      implementationReadinessReceiptRef: authority.refs.implementationReadinessReceipt,
       confirmationPageRefs: {
         requirements: authority.refs.requirementsConfirmationPage,
         architecture: authority.refs.architectureConfirmationPage,
@@ -948,7 +977,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
       attemptSequence: authority.identity.attemptSequence,
       packetId: authority.identity.implementationAttemptId,
       dispatchInputSetHash,
-      requirementRecordRef: authority.refs.requirementRecord,
+      requirementRecordRef: frozenRequirementRecordRef,
       attemptContextRef: authority.refs.attemptContext,
       sourceRef: {
         path: slash(authority.paths.source),
@@ -959,10 +988,12 @@ export async function requirementsContractPromptTransactionPublishCommand(
       semanticModelHash: authority.identity.semanticModelHash,
       stageRegistryRef: authority.refs.stageRegistry,
       installedStageRegistryRef: runtimeBindings.installedStageRegistryRef,
+      architectureAuthorityDecision: authority.architectureAuthorityDecision,
       confirmationReceiptRefs: {
         requirements: authority.refs.requirementsConfirmationReceipt,
         architecture: authority.refs.architectureConfirmationReceipt,
       },
+      implementationReadinessReceiptRef: authority.refs.implementationReadinessReceipt,
       confirmationPageRefs: {
         requirements: authority.refs.requirementsConfirmationPage,
         architecture: authority.refs.architectureConfirmationPage,
@@ -1062,7 +1093,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
       sourceHashBinding: {
         path: slash(authority.paths.source),
         sourceDocumentHash: authority.identity.sourceDocumentHash,
-        requirementRecordRef: authority.refs.requirementRecord,
+        requirementRecordRef: frozenRequirementRecordRef,
       },
       sourceAmendmentHashBindings: authority.identity.sourceAmendmentHashes,
       atomicPromotionCases: outputWrites.map(([name, write]) => outputWriteCase(name, write)),

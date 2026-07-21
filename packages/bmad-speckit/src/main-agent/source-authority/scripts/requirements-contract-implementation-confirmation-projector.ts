@@ -166,7 +166,7 @@ export const REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS = [
   'closeoutReadinessPreview',
 ] as const;
 
-const CONDITIONAL_FIELDS = [
+export const CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS = [
   'governanceEventTypeRegistryPolicy',
   'governanceEventTypeRegistry',
   'controlledIngestWriterRegistry',
@@ -447,7 +447,7 @@ export function projectRequirementsContractImplementationConfirmation(
   const provenance = parseProvenance(inputValue.provenance, knownReceiptRefs);
   const allowedFields = new Set<string>([
     ...REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
-    ...CONDITIONAL_FIELDS,
+    ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
   ]);
   for (const fieldRef of fields.keys()) {
     if (!allowedFields.has(fieldRef)) {
@@ -472,7 +472,7 @@ export function projectRequirementsContractImplementationConfirmation(
   }
 
   const policy = conditionalFieldPolicy(fields.get('applicability'));
-  for (const fieldRef of CONDITIONAL_FIELDS) {
+  for (const fieldRef of CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS) {
     const required = policy.get(fieldRef) === true;
     if (required && !fields.has(fieldRef)) {
       projectionError(`missing_required_semantic_value:${fieldRef}`);
@@ -497,7 +497,7 @@ export function projectRequirementsContractImplementationConfirmation(
   for (const fieldRef of REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS) {
     projected[fieldRef] = clone(fields.get(fieldRef));
   }
-  for (const fieldRef of CONDITIONAL_FIELDS) {
+  for (const fieldRef of CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS) {
     if (fields.has(fieldRef)) projected[fieldRef] = clone(fields.get(fieldRef));
   }
   projected.implementationConfirmationHash = implementationConfirmationHashFor(projected);

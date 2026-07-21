@@ -4,18 +4,22 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   publishCurrentDispatchPointer,
+  resolveCurrentDispatchPointer,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-current-dispatch-pointer';
+import { runtimeModeDir } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode';
 import {
   writeGovernedJson,
   writeGovernedText,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 import {
   requirementsContractPromptTransactionPublishCommand,
+  type PromptTransactionPublisherDeps,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher';
 import {
   fileHash,
   materializePromptPublicationFixture,
   setPromptPublicationGoalAvailability,
+  setPromptPublicationReadiness,
   writeJson,
 } from './helpers/prompt-transaction-publication-fixture';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
@@ -34,25 +38,58 @@ afterEach(() => {
 
 async function publishedPointerFixture(
   configure?: (fixture: ReturnType<typeof materializePromptPublicationFixture>) => void,
-  goalMode: 'native_goal_document_ref' | 'direct_prompt' = 'native_goal_document_ref'
+  goalMode: 'native_goal_document_ref' | 'direct_prompt' = 'native_goal_document_ref',
+  packetTransform?: (
+    packet: Record<string, any>,
+    confirmation: Record<string, any>
+  ) => Record<string, any>
 ) {
   const fixture = materializePromptPublicationFixture();
   fixtures.push(fixture);
+  setPromptPublicationReadiness(fixture, { decision: 'pass' });
   configure?.(fixture);
   const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+    goalMode,
+    extraPacket: {
+      packetId: fixture.identity.implementationAttemptId,
+    },
+    packetTransform,
+  }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
   const code = await requirementsContractPromptTransactionPublishCommand(fixture.options, {
-    runCompiledPrompt: compiledPromptRunnerFor(fixture, {
-      goalMode,
-      extraPacket: {
-        packetId: fixture.identity.implementationAttemptId,
-      },
-    }),
+    runCompiledPrompt,
   }).finally(() => stdout.mockRestore());
   expect(code).toBe(0);
   const pointer = JSON.parse(
     fs.readFileSync(fixture.options.currentDispatchPointer, 'utf8')
   );
   return { fixture, pointer };
+}
+
+async function publishedImplementationPointerFixture() {
+  return publishedPointerFixture((value) => {
+    value.options.currentDispatchPointer = canonicalPointerPath(value.root);
+    prepareAuditDispatchRuntime(value);
+    const record = JSON.parse(fs.readFileSync(value.paths.recordPath, 'utf8'));
+    writeJson(value.paths.recordPath, {
+      ...record,
+      currentMentalModel: 'implementation_readiness',
+      stage: 'implement',
+      confirmationHistory: (record.confirmationHistory ?? []).map(
+        (event: Record<string, unknown>) =>
+          event.eventType === 'confirmation_recorded'
+            ? {
+                ...event,
+                confirmationText:
+                  event.confirmationText ?? `confirmed ${value.identity.requirementSetId}`,
+                renderReportPath:
+                  event.renderReportPath ?? value.options.requirementsConfirmationReceipt,
+                htmlPath: event.htmlPath ?? value.paths.requirementsPage,
+              }
+            : event
+      ),
+    });
+  });
 }
 
 function expectedIdentity(pointer: Record<string, any>) {
@@ -268,6 +305,30 @@ describe('requirements contract current dispatch pointer', () => {
     });
   });
 
+  it('fails closed when the frozen model packet omits its task report path', async () => {
+    const { fixture, pointer } = await publishedPointerFixture(
+      undefined,
+      'native_goal_document_ref',
+      (packet) => {
+        delete packet.executionHandoff.taskReportPath;
+        return packet;
+      }
+    );
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+
+    expect(() =>
+      orchestration.resolveCurrentCompiledPromptRefFromDispatchPointer({
+        authorityRoot: fixture.root,
+        pointerPath: fixture.options.currentDispatchPointer,
+        expected: expectedIdentity(pointer),
+      })
+    ).toThrow(
+      'current_dispatch_pointer_model_packet_mismatch:executionHandoff.taskReportPath'
+    );
+  });
+
   it('fails audit dispatch closed when the exact pointer is missing instead of selecting a legacy packet', async () => {
     const { fixture, pointer } = await publishedPointerFixture((value) => {
       value.options.currentDispatchPointer = canonicalPointerPath(value.root);
@@ -369,6 +430,456 @@ describe('requirements contract current dispatch pointer', () => {
     expect((surface.pendingPacket as any).compiledPromptRef.modelPacketPath).not.toBe(
       decoyModelPacketPath
     );
+  });
+
+  it('hydrates implementation dispatch from the exact published pointer without recompiling a preferred packet', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const preferredPacketId = `${pointer.implementationAttemptId}-dispatch`;
+
+    let surface: ReturnType<typeof orchestration.ensureMainAgentDispatchPacket> | null = null;
+    expect(() => {
+      surface = orchestration.ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        preferredPacketId,
+      });
+    }).not.toThrow();
+
+    expect(surface!.mainAgentNextAction).toBe('dispatch_implement');
+    expect(surface!.pendingPacket).toMatchObject({
+      packetId: preferredPacketId,
+      taskType: 'implement',
+      authorityMode: 'compiled_implementation_confirmation',
+      legacyPromptFallbackReason: null,
+      compiledPromptRef: {
+        modelPacketPath: pointer.modelPacketRef.path,
+        modelPacketHash: pointer.modelPacketRef.hash,
+        humanPromptPath: pointer.humanPromptRef.path,
+        humanPromptHash: pointer.humanPromptRef.hash,
+        auditReceiptPath: pointer.auditReceiptRef.path,
+        auditReceiptHash: pointer.auditReceiptRef.hash,
+        goalExecutionPath: pointer.goalExecutionRef.path,
+        goalExecutionHash: pointer.goalExecutionRef.hash,
+        sourceDocumentHash: pointer.sourceDocumentHash,
+        implementationConfirmationHash: fixture.identity.implementationConfirmationHash,
+      },
+    });
+    expect((surface!.pendingPacket as any).compiledPromptRef.modelPacketPath).not.toContain(
+      preferredPacketId
+    );
+  });
+
+  it('binds active-record remediation dispatch to the exact current pointer', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+    writeJson(fixture.paths.recordPath, {
+      ...record,
+      currentMentalModel: 'implementation_readiness',
+      sixModelResults: {
+        ...record.sixModelResults,
+        implementation_readiness: {
+          ...record.sixModelResults.implementation_readiness,
+          status: 'blocked',
+          blockingReasons: ['implementation_readiness_blocked'],
+        },
+      },
+    });
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const input = {
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks' as const,
+      stage: 'implement',
+      host: 'codex' as const,
+      preferredPacketId: `${pointer.implementationAttemptId}-remediation`,
+    };
+
+    const surface = orchestration.ensureMainAgentDispatchPacket(input);
+
+    expect(surface.mainAgentNextAction).toBe('dispatch_remediation');
+    expect(surface.pendingPacket).toMatchObject({
+      taskType: 'remediate',
+      authorityMode: 'compiled_implementation_confirmation',
+      legacyPromptFallbackReason: null,
+      compiledPromptRef: {
+        modelPacketPath: pointer.modelPacketRef.path,
+        modelPacketHash: pointer.modelPacketRef.hash,
+      },
+    });
+
+    fs.rmSync(fixture.options.currentDispatchPointer);
+    fs.rmSync(`${fixture.options.currentDispatchPointer}.safe-write-receipt.json`);
+    expect(() =>
+      orchestration.buildMainAgentDispatchInstruction({
+        ...input,
+        hydratePacket: false,
+      })
+    ).toThrow('current_dispatch_pointer_missing');
+  });
+
+  it('revalidates the current pointer before active-record lifecycle transitions', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const ready = orchestration.ensureMainAgentDispatchPacket({
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      host: 'codex',
+      preferredPacketId: `${pointer.implementationAttemptId}-lifecycle-guard`,
+    });
+    const sessionId = ready.sessionId!;
+    const packetId = ready.orchestrationState!.pendingPacket!.packetId;
+    fs.rmSync(fixture.options.currentDispatchPointer);
+    fs.rmSync(`${fixture.options.currentDispatchPointer}.safe-write-receipt.json`);
+
+    expect(() =>
+      orchestration.claimMainAgentPendingPacket(fixture.root, sessionId)
+    ).toThrow('current_dispatch_pointer_missing');
+    expect(() =>
+      orchestration.markMainAgentPacketDispatched(fixture.root, sessionId, packetId)
+    ).toThrow('current_dispatch_pointer_missing');
+    expect(() =>
+      orchestration.completeMainAgentPendingPacket(fixture.root, sessionId, packetId)
+    ).toThrow('current_dispatch_pointer_missing');
+  });
+
+  it('fails closed when an active lifecycle packet payload is missing or invalid', async () => {
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    for (const corruption of ['missing', 'invalid'] as const) {
+      const { fixture, pointer } = await publishedImplementationPointerFixture();
+      const ready = orchestration.ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        preferredPacketId: `${pointer.implementationAttemptId}-${corruption}-payload`,
+      });
+      const sessionId = ready.sessionId!;
+      const pending = ready.orchestrationState!.pendingPacket!;
+      if (corruption === 'missing') {
+        fs.rmSync(pending.packetPath);
+      } else {
+        fs.writeFileSync(pending.packetPath, '{invalid-json', 'utf8');
+      }
+
+      expect(() =>
+        orchestration.claimMainAgentPendingPacket(fixture.root, sessionId)
+      ).toThrow('pending_packet_payload_missing_or_invalid');
+      expect(() =>
+        orchestration.markMainAgentPacketDispatched(fixture.root, sessionId, pending.packetId)
+      ).toThrow('pending_packet_payload_missing_or_invalid');
+      expect(() =>
+        orchestration.completeMainAgentPendingPacket(fixture.root, sessionId, pending.packetId)
+      ).toThrow('pending_packet_payload_missing_or_invalid');
+    }
+  });
+
+  it('revalidates the current pointer before TaskReport completion mutates lifecycle state', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const ready = orchestration.ensureMainAgentDispatchPacket({
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      host: 'codex',
+      preferredPacketId: `${pointer.implementationAttemptId}-task-report-completion`,
+    });
+    const sessionId = ready.sessionId!;
+    const packetId = ready.orchestrationState!.pendingPacket!.packetId;
+    fs.rmSync(fixture.options.currentDispatchPointer);
+    fs.rmSync(`${fixture.options.currentDispatchPointer}.safe-write-receipt.json`);
+
+    expect(() =>
+      orchestration.ingestMainAgentTaskReport(fixture.root, sessionId, {
+        packetId,
+        status: 'done',
+        filesChanged: [],
+        validationsRun: [],
+        evidence: [],
+        downstreamContext: [],
+      }, {
+        nativeGoalProvenanceValidated: true,
+      })
+    ).toThrow('current_dispatch_pointer_missing');
+  });
+
+  it('fails closed when a compiled remediation packet loses its active record binding', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+    writeJson(fixture.paths.recordPath, {
+      ...record,
+      currentMentalModel: 'implementation_readiness',
+      sixModelResults: {
+        ...record.sixModelResults,
+        implementation_readiness: {
+          ...record.sixModelResults.implementation_readiness,
+          status: 'blocked',
+          blockingReasons: ['implementation_readiness_blocked'],
+        },
+      },
+    });
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const ready = orchestration.ensureMainAgentDispatchPacket({
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      host: 'codex',
+      preferredPacketId: `${pointer.implementationAttemptId}-missing-record`,
+    });
+    fs.rmSync(
+      path.join(
+        fixture.root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        'index.json'
+      )
+    );
+
+    expect(() =>
+      orchestration.claimMainAgentPendingPacket(fixture.root, ready.sessionId!)
+    ).toThrow('current_dispatch_pointer_expected_identity_missing:requirementRecord');
+  });
+
+  it('accepts the publisher-wrapped generator audit when validating native goal readiness', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const preferredPacketId = `${pointer.implementationAttemptId}-native-readiness`;
+
+    orchestration.ensureMainAgentDispatchPacket({
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      host: 'codex',
+      preferredPacketId,
+    });
+
+    expect(
+      fs.existsSync(
+        path.join(
+          runtimeModeDir(fixture.root, fixture.authority.recordId, preferredPacketId),
+          'runtime-blocker.json'
+        )
+      )
+    ).toBe(false);
+  });
+
+  it('routes a publisher-wrapped native goal receipt through the production run loop', async () => {
+    const { fixture } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+
+    const result = orchestration.runMainAgentAutomaticLoop({
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks',
+      stage: 'implement',
+      host: 'codex',
+    });
+
+    expect(result.steps.some((step) => step.step === 'native-goal-invocation')).toBe(true);
+    const dispatchPacketId = result.dispatchInstruction!.packetId;
+    const invocationReceipt = JSON.parse(
+      fs.readFileSync(
+        path.join(
+          runtimeModeDir(fixture.root, fixture.authority.recordId, dispatchPacketId),
+          'native-goal-invocation-receipt.json'
+        ),
+        'utf8'
+      )
+    );
+    expect(invocationReceipt.taskReportPath).toBe(fixture.options.taskReportPath);
+  });
+
+  it('keeps the current pointer valid while building the implementation dispatch instruction', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const input = {
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks' as const,
+      stage: 'implement',
+      host: 'codex' as const,
+      preferredPacketId: `${pointer.implementationAttemptId}-instruction`,
+    };
+
+    expect(orchestration.ensureMainAgentDispatchPacket(input).pendingPacketStatus).toBe(
+      'ready_for_main_agent'
+    );
+    expect(() =>
+      orchestration.buildMainAgentDispatchInstruction({
+        ...input,
+        hydratePacket: false,
+      })
+    ).not.toThrow();
+  });
+
+  it('keeps the frozen dispatch pointer valid after live requirement runtime evidence changes', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const liveRecord = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+    writeJson(fixture.paths.recordPath, {
+      ...liveRecord,
+      nativeGoalHandoff: {
+        schemaVersion: 'native-goal-handoff/v1',
+        packetId: fixture.identity.implementationAttemptId,
+        imported: true,
+        importStatus: 'task_report_done',
+      },
+      executionIterations: [
+        ...((liveRecord.executionIterations as Record<string, unknown>[] | undefined) ?? []),
+        {
+          eventType: 'execution_iteration_recorded',
+          executionIterationId: fixture.identity.implementationAttemptId,
+          authorityClass: 'untrusted_claim',
+        },
+      ],
+    });
+
+    expect(path.resolve(pointer.requirementRecordRef.path)).not.toBe(
+      path.resolve(fixture.paths.recordPath)
+    );
+    const resolved = resolveCurrentDispatchPointer({
+      authorityRoot: fixture.root,
+      pointerPath: fixture.options.currentDispatchPointer,
+      expected: expectedIdentity(pointer),
+    });
+    expect(resolved.pointer.transactionId).toBe(fixture.identity.transactionId);
+    const frozenRecord = JSON.parse(
+      fs.readFileSync(pointer.requirementRecordRef.path, 'utf8')
+    );
+    expect(frozenRecord).not.toHaveProperty('nativeGoalHandoff');
+    expect(frozenRecord).not.toHaveProperty('executionIterations');
+  });
+
+  it('replaces a reusable implementation packet whose task report binding is stale', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const input = {
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks' as const,
+      stage: 'implement',
+      host: 'codex' as const,
+      preferredPacketId: `${pointer.implementationAttemptId}-task-report-binding`,
+    };
+    const ready = orchestration.ensureMainAgentDispatchPacket(input);
+    const packetPath = ready.orchestrationState!.pendingPacket!.packetPath;
+    const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8'));
+    packet.compiledPromptRef.taskReportPath = path.join(fixture.root, 'stale-task-report.json');
+    writeJson(packetPath, packet);
+
+    const rebound = orchestration.ensureMainAgentDispatchPacket(input);
+
+    expect((rebound.pendingPacket as any).compiledPromptRef.taskReportPath).toBe(
+      fixture.options.taskReportPath
+    );
+  });
+
+  it('replaces an implementation resume packet with a pointer-bound execution packet', async () => {
+    const { fixture, pointer } = await publishedImplementationPointerFixture();
+    const orchestration = await import(
+      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration'
+    );
+    const input = {
+      projectRoot: fixture.root,
+      recordId: fixture.authority.recordId,
+      requirementSetId: fixture.identity.requirementSetId,
+      runId: fixture.identity.implementationAttemptId,
+      flow: 'standalone_tasks' as const,
+      stage: 'implement',
+      host: 'codex' as const,
+      preferredPacketId: `${pointer.implementationAttemptId}-resume`,
+    };
+    const ready = orchestration.ensureMainAgentDispatchPacket(input);
+    const statePath = ready.orchestrationStatePath!;
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    const packetPath = state.pendingPacket.packetPath;
+    writeJson(packetPath, {
+      packetId: state.pendingPacket.packetId,
+      parentSessionId: fixture.identity.requirementSetId,
+      originalExecutionPacketId: state.pendingPacket.packetId,
+      flow: 'standalone_tasks',
+      phase: 'implement',
+      role: 'implementation-worker',
+      resumeReason: 'resume the implementation packet',
+      inputArtifacts: [],
+      allowedWriteScope: ['src/**', 'tests/**'],
+      expectedDelta: 'resume implementation',
+      successCriteria: ['implementation completes'],
+      stopConditions: ['blocked'],
+    });
+    writeJson(statePath, {
+      ...state,
+      originalExecutionPacketId: state.pendingPacket.packetId,
+      pendingPacket: {
+        ...state.pendingPacket,
+        packetKind: 'resume',
+      },
+    });
+
+    const rebound = orchestration.ensureMainAgentDispatchPacket({
+      ...input,
+      preferredPacketId: `${pointer.implementationAttemptId}-resume-rebound`,
+    });
+
+    expect(rebound.orchestrationState?.pendingPacket?.packetKind).toBe('execution');
+    expect(rebound.pendingPacket).toMatchObject({
+      taskType: 'implement',
+      authorityMode: 'compiled_implementation_confirmation',
+      compiledPromptRef: {
+        modelPacketPath: pointer.modelPacketRef.path,
+        modelPacketHash: pointer.modelPacketRef.hash,
+        taskReportPath: fixture.options.taskReportPath,
+      },
+    });
   });
 
   it('does not dispatch a ready audit packet whose compiled prompt ref is stale', async () => {

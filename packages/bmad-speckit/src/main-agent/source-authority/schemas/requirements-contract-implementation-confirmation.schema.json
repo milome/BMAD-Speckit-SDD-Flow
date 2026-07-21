@@ -65,7 +65,9 @@
     },
     "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
     "contractAuthoringRequired": { "type": "boolean" },
-    "confirmationLanguage": { "enum": ["zh-CN", "en-US", "bilingual"] },
+    "confirmationLanguage": {
+      "enum": ["not_selected", "zh-CN", "en-US", "bilingual"]
+    },
     "confirmationProfile": { "const": "implementation_confirmation" },
     "requiredViewPacks": { "$ref": "#/$defs/stringRefs" },
     "optionalViewPacks": { "$ref": "#/$defs/stringRefs" },
@@ -261,10 +263,7 @@
         "required": ["applicability"]
       },
       "then": {
-        "required": [
-          "activeRequirementResolution",
-          "functionalResumeFailureCaseRegistry"
-        ]
+        "required": ["activeRequirementResolution", "functionalResumeFailureCaseRegistry"]
       }
     },
     {
@@ -353,16 +352,40 @@
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/nonEmpty" }
     },
+    "localizedFields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "sideEffectSafety": {
+      "oneOf": [
+        { "$ref": "#/$defs/nonEmpty" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "timeoutPolicy",
+            "failurePolicy",
+            "idempotencyPolicy",
+            "recoveryPolicy",
+            "assertionEvidence"
+          ],
+          "properties": {
+            "timeoutPolicy": { "$ref": "#/$defs/nonEmpty" },
+            "failurePolicy": { "$ref": "#/$defs/nonEmpty" },
+            "idempotencyPolicy": { "$ref": "#/$defs/nonEmpty" },
+            "recoveryPolicy": { "$ref": "#/$defs/nonEmpty" },
+            "assertionEvidence": { "$ref": "#/$defs/nonEmpty" }
+          }
+        }
+      ]
+    },
     "confirmationRender": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "htmlPath",
-        "summaryPath",
-        "reportPath",
-        "htmlHash",
-        "confirmationPhrase"
-      ],
+      "required": ["htmlPath", "summaryPath", "reportPath", "htmlHash", "confirmationPhrase"],
       "properties": {
         "htmlPath": { "$ref": "#/$defs/nullableNonEmpty" },
         "summaryPath": { "$ref": "#/$defs/nullableNonEmpty" },
@@ -492,12 +515,16 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
         "coveredByTraceRows": { "$ref": "#/$defs/stringRefs" },
+        "coveredByFailurePath": { "$ref": "#/$defs/stringRefs" },
         "coveredBySequenceViews": { "$ref": "#/$defs/stringRefs" },
         "upstreamRequirementIds": { "$ref": "#/$defs/stringRefs" },
         "riskLevel": { "enum": ["low", "medium", "high", "critical"] },
-        "perMustOracle": { "$ref": "#/$defs/nonEmpty" }
+        "perMustOracle": { "$ref": "#/$defs/nonEmpty" },
+        "sideEffectSafety": { "$ref": "#/$defs/sideEffectSafety" }
       }
     },
     "notDoneRow": {
@@ -507,8 +534,11 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
         "whyItBlocksCompletion": { "$ref": "#/$defs/nonEmpty" },
+        "whyItBlocksCompletionZh": { "$ref": "#/$defs/nonEmpty" },
         "negativeAssertionRequired": { "type": "boolean" },
         "coveredByFailurePath": { "$ref": "#/$defs/stringRefs" }
       }
@@ -520,7 +550,10 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "scopeBoundary": { "$ref": "#/$defs/nonEmpty" },
+        "scopeBoundaryZh": { "$ref": "#/$defs/nonEmpty" },
         "userApprovalRequiredIfChanged": { "type": "boolean" },
         "coveredByBoundaryView": { "$ref": "#/$defs/stringRefs" }
       }
@@ -532,11 +565,19 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "gate": { "$ref": "#/$defs/nonEmpty" },
         "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "oracleZh": { "$ref": "#/$defs/nonEmpty" },
         "requiredCommandRefs": { "$ref": "#/$defs/stringRefs" },
         "artifactRefs": { "$ref": "#/$defs/stringRefs" },
-        "acceptanceType": { "$ref": "#/$defs/nonEmpty" }
+        "acceptanceType": { "$ref": "#/$defs/nonEmpty" },
+        "sideEffectSafety": { "$ref": "#/$defs/sideEffectSafety" },
+        "perMustOracles": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        }
       }
     },
     "openQuestionRow": {
@@ -546,6 +587,13 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "question": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "requiredDecision": { "$ref": "#/$defs/nonEmpty" },
+        "requiredDecisionZh": { "$ref": "#/$defs/nonEmpty" },
+        "impactIfUnresolved": { "$ref": "#/$defs/nonEmpty" },
+        "impactIfUnresolvedZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "status": { "enum": ["open", "resolved"] },
         "decisionReceiptRef": { "$ref": "#/$defs/nullableNonEmpty" }
       }
@@ -557,12 +605,21 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "title": { "$ref": "#/$defs/nonEmpty" },
+        "titleZh": { "$ref": "#/$defs/nonEmpty" },
         "trigger": { "$ref": "#/$defs/nonEmpty" },
+        "triggerZh": { "$ref": "#/$defs/nonEmpty" },
         "expectedBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "expectedBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
         "forbiddenBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "forbiddenBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "blocksCompletionWhenViolated": { "type": "boolean" },
         "linkedNegIds": { "$ref": "#/$defs/stringRefs" },
         "linkedEvidenceIds": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "ownerMustRefs": { "$ref": "#/$defs/stringRefs" },
+        "viewRefs": { "$ref": "#/$defs/stringRefs" },
         "sequenceViewRefs": { "$ref": "#/$defs/stringRefs" },
         "requiredAssertions": { "$ref": "#/$defs/stringRefs" },
         "userVisibleOutcome": { "$ref": "#/$defs/nonEmpty" }
@@ -576,10 +633,17 @@
         "id": { "$ref": "#/$defs/nonEmpty" },
         "category": { "$ref": "#/$defs/nonEmpty" },
         "condition": { "$ref": "#/$defs/nonEmpty" },
+        "conditionZh": { "$ref": "#/$defs/nonEmpty" },
         "expectedBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "expectedBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
         "forbiddenBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "forbiddenBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "linkedFailurePathIds": { "$ref": "#/$defs/stringRefs" },
+        "linkedNegIds": { "$ref": "#/$defs/stringRefs" },
         "linkedEvidenceIds": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "viewRefs": { "$ref": "#/$defs/stringRefs" },
         "blocksImplementation": { "type": "boolean" }
       }
     },
@@ -607,8 +671,28 @@
         "traceRows": { "$ref": "#/$defs/stringRefs" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
         "commandRefs": { "$ref": "#/$defs/stringRefs" },
+        "sourceRequirementTexts": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "expectedPreImplementationState": {
+          "enum": [
+            "expected_red",
+            "unexpected_green",
+            "invalid_red",
+            "green",
+            "partial_green",
+            "missing_plan",
+            "missing_test",
+            "missing_artifact",
+            "stale",
+            "blocked",
+            "not_applicable"
+          ]
+        },
+        "redProofPlan": { "$ref": "#/$defs/nonEmpty" },
         "oracle": { "$ref": "#/$defs/nonEmpty" },
-        "positiveControl": { "$ref": "#/$defs/nonEmpty" },
+        "positiveControl": { "type": "boolean" },
+        "negativeControls": { "$ref": "#/$defs/stringRefs" },
         "mockOnly": { "type": "boolean" }
       }
     },
@@ -635,10 +719,29 @@
         "covers": { "$ref": "#/$defs/stringRefs" },
         "traceRows": { "$ref": "#/$defs/stringRefs" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "sourceRequirementTexts": { "$ref": "#/$defs/stringRefs" },
         "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
         "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
         "commandRefs": { "$ref": "#/$defs/stringRefs" },
+        "expectedPreImplementationState": {
+          "enum": [
+            "expected_red",
+            "unexpected_green",
+            "invalid_red",
+            "green",
+            "partial_green",
+            "missing_plan",
+            "missing_test",
+            "missing_artifact",
+            "stale",
+            "blocked",
+            "not_applicable"
+          ]
+        },
+        "redProofPlan": { "$ref": "#/$defs/nonEmpty" },
         "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "positiveControl": { "type": "boolean" },
+        "negativeControls": { "$ref": "#/$defs/stringRefs" },
         "mockOnly": { "type": "boolean" }
       }
     },
@@ -664,12 +767,22 @@
         "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
         "contractValidationCommandRefs": { "$ref": "#/$defs/stringRefs" },
         "deliveryEvidenceCommandRefs": { "$ref": "#/$defs/stringRefs" },
+        "sourceRequirementTexts": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
         "sequenceViewRefs": { "$ref": "#/$defs/stringRefs" },
         "flowViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "boundaryViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "targetModificationPathRefs": { "$ref": "#/$defs/stringRefs" },
         "artifactRefs": { "$ref": "#/$defs/stringRefs" },
         "closureAssertion": { "$ref": "#/$defs/nonEmpty" },
+        "closureAssertionZh": { "$ref": "#/$defs/nonEmpty" },
         "targetStateAssertion": { "$ref": "#/$defs/nonEmpty" },
+        "targetStateAssertionZh": { "$ref": "#/$defs/nonEmpty" },
         "acceptanceSummary": { "$ref": "#/$defs/nonEmpty" },
+        "acceptanceSummaryZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
         "status": { "enum": ["PENDING", "PASS", "BLOCKED", "STALE"] },
         "blockingReason": { "$ref": "#/$defs/nullableNonEmpty" }
       }
@@ -687,6 +800,7 @@
         "traceRows": { "$ref": "#/$defs/stringRefs" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
         "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
         "mermaid": { "$ref": "#/$defs/nonEmpty" }
       }
     },
@@ -736,7 +850,30 @@
         "traceRefs": { "$ref": "#/$defs/stringRefs" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
         "artifactRefs": { "$ref": "#/$defs/stringRefs" },
-        "requiresReconfirmationOnChange": { "type": "boolean" }
+        "requiresReconfirmationOnChange": { "type": "boolean" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "perMustProjectionRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mustRef"],
+      "properties": {
+        "mustRef": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "assertion": { "$ref": "#/$defs/nonEmpty" },
+        "responsibility": { "$ref": "#/$defs/nonEmpty" }
       }
     },
     "boundaryPartition": {
@@ -793,7 +930,18 @@
         "id": { "$ref": "#/$defs/nonEmpty" },
         "commandRef": { "$ref": "#/$defs/nonEmpty" },
         "command": { "$ref": "#/$defs/nonEmpty" },
-        "purpose": { "$ref": "#/$defs/nonEmpty" }
+        "purpose": { "$ref": "#/$defs/nonEmpty" },
+        "targetFiles": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustAssertions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
       }
     },
     "contractCheckRow": {
@@ -810,14 +958,7 @@
     "taskRow": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "title",
-        "requirementRefs",
-        "targetPaths",
-        "traceRefs",
-        "evidenceRefs"
-      ],
+      "required": ["id", "title", "requirementRefs", "targetPaths", "traceRefs", "evidenceRefs"],
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
         "title": { "$ref": "#/$defs/nonEmpty" },
@@ -928,8 +1069,24 @@
       "additionalProperties": false,
       "required": ["title", "detail"],
       "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
         "title": { "$ref": "#/$defs/nonEmpty" },
-        "detail": { "$ref": "#/$defs/nonEmpty" }
+        "detail": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustAssertions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
       }
     },
     "currentTargetMap": {
@@ -992,10 +1149,27 @@
             "additionalProperties": false,
             "required": ["dimension", "currentState", "targetState", "action"],
             "properties": {
+              "id": { "$ref": "#/$defs/nonEmpty" },
               "dimension": { "$ref": "#/$defs/nonEmpty" },
               "currentState": { "$ref": "#/$defs/nonEmpty" },
               "targetState": { "$ref": "#/$defs/nonEmpty" },
-              "action": { "$ref": "#/$defs/nonEmpty" }
+              "action": { "$ref": "#/$defs/nonEmpty" },
+              "targetFiles": { "$ref": "#/$defs/stringRefs" },
+              "traceRows": { "$ref": "#/$defs/stringRefs" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+              "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+              "perMustAssertions": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+              },
+              "perMustResponsibilities": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+              },
+              "perMustRows": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/perMustProjectionRow" }
+              }
             }
           }
         },
@@ -1006,9 +1180,17 @@
             "additionalProperties": false,
             "required": ["phase", "currentState", "targetState"],
             "properties": {
+              "id": { "$ref": "#/$defs/nonEmpty" },
               "phase": { "$ref": "#/$defs/nonEmpty" },
               "currentState": { "$ref": "#/$defs/nonEmpty" },
-              "targetState": { "$ref": "#/$defs/nonEmpty" }
+              "targetState": { "$ref": "#/$defs/nonEmpty" },
+              "traceRows": { "$ref": "#/$defs/stringRefs" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+              "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+              "perMustRows": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/perMustProjectionRow" }
+              }
             }
           }
         },
@@ -1048,7 +1230,16 @@
         "path": { "$ref": "#/$defs/nonEmpty" },
         "targetRole": { "$ref": "#/$defs/nonEmpty" },
         "traceRows": { "$ref": "#/$defs/stringRefs" },
-        "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
       }
     },
     "currentTargetCanonicalArtifact": {
@@ -1068,7 +1259,16 @@
         "functionDescription": { "$ref": "#/$defs/nonEmpty" },
         "controlPlaneRole": { "$ref": "#/$defs/nonEmpty" },
         "traceRows": { "$ref": "#/$defs/stringRefs" },
-        "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
       }
     },
     "currentTargetPathRegistry": {
@@ -1090,7 +1290,16 @@
         "sourceOfTruthRole": { "$ref": "#/$defs/nonEmpty" },
         "description": { "$ref": "#/$defs/nonEmpty" },
         "traceRows": { "$ref": "#/$defs/stringRefs" },
-        "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
       }
     },
     "currentTargetExistingArtifact": {
@@ -1112,7 +1321,16 @@
         "targetTreatment": { "$ref": "#/$defs/nonEmpty" },
         "completionProofPolicy": { "$ref": "#/$defs/nonEmpty" },
         "traceRows": { "$ref": "#/$defs/stringRefs" },
-        "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
       }
     },
     "aiTddProjection": {

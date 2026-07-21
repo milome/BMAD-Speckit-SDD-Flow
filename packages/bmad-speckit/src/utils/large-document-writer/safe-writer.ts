@@ -1,8 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const sourceSuffix = __filename.endsWith('.ts') ? '.ts' : '';
-const { block } = require(`./errors${sourceSuffix}`);
-const { sha256File, sha256Text, stableStringify } = require(`./receipts${sourceSuffix}`);
+const { block } = require('./errors');
+const { sha256File, sha256Text, stableStringify } = require('./receipts');
 
 function timestamp() {
   return new Date().toISOString();

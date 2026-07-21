@@ -9,6 +9,7 @@ import {
   requirementsContractFinalizationSafeWriteCommand,
   type RequirementsContractFinalizationSafeWriteOptions,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-finalization-safe-writer';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const BASE = 'docs/plans/evidence/loop-engineering-remediation';
 const PACKAGE_ROOT = path.resolve('packages/bmad-speckit');
@@ -56,6 +57,12 @@ function createFixture(root: string) {
     sourcePath: 'source.md',
     sourceDocumentHash: sha256('source'),
     implementationConfirmationHash: sha256('confirmation'),
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: requirementSetId,
+      sourcePath: 'source.md',
+      sourceDocumentHash: sha256('source'),
+      implementationConfirmationHash: sha256('confirmation'),
+    }),
     semanticModelHash: sha256('semantic'),
   });
   const draftBytes = writeJson(root, draft, {

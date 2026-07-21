@@ -187,16 +187,6 @@ function ensureRuntimeBootstrap(projectRoot: string): void {
   }
 }
 
-function materializeCodexAgents(projectRoot: string): void {
-  const sourceRoot = path.resolve(__dirname, '..', '_bmad', 'codex', 'agents');
-  const targetRoot = path.join(projectRoot, '.codex', 'agents');
-  if (!fs.existsSync(sourceRoot)) {
-    throw new Error(`Codex agent source missing: ${sourceRoot}`);
-  }
-  fs.mkdirSync(path.dirname(targetRoot), { recursive: true });
-  fs.cpSync(sourceRoot, targetRoot, { recursive: true });
-}
-
 function loadYamlObject(filePath: string): Record<string, unknown> {
   const raw = fs.readFileSync(filePath, 'utf8');
   const parsed = yaml.load(raw);

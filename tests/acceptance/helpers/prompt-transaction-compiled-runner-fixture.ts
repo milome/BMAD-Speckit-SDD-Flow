@@ -13,6 +13,11 @@ import {
 type PublicationFixture = ReturnType<
   typeof import('./prompt-transaction-publication-fixture').materializePromptPublicationFixture
 >;
+type CompiledPromptRunnerInput = Parameters<
+  typeof import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner').runMainAgentCompiledPrompt
+>[0];
+type CompiledPromptRunResult =
+  import('../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner').CompiledPromptRunResult;
 // Test fixtures mirror schema-driven production packets with dynamic JSON fields.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonRecord = Record<string, any>;
@@ -44,7 +49,7 @@ export function compiledPromptRunnerFor(
     runnerPath?: string;
   } = {}
 ) {
-  return vi.fn((input: JsonRecord) => {
+  return vi.fn((input: CompiledPromptRunnerInput): CompiledPromptRunResult => {
     const outDir = String(input.outDir);
     const goalMode = options.goalMode ?? 'native_goal_document_ref';
     const runnerControlledExecutionContext = {
@@ -92,6 +97,8 @@ export function compiledPromptRunnerFor(
         e2eSuites: confirmation.e2eSuites,
       },
       executionHandoff: {
+        packetId: String(input.packetId),
+        taskReportPath: value.options.taskReportPath,
         requiredValidationCommandRefs: requiredCommands.map((command) => command.id),
         stopConditions: [
           'reconfirm_required_on_semantic_gap',
@@ -163,13 +170,33 @@ export function compiledPromptRunnerFor(
       goalMode === 'native_goal_document_ref'
         ? writeText(path.join(outDir, 'goal_execution.md'), '# Goal execution\n')
         : null;
+    const goalCommandText =
+      goalPath && goalMode === 'native_goal_document_ref'
+        ? `/goal Execute ${String(input.packetId)} by following ${goalPath}; use ${packetPath} as authority.`
+        : null;
     const receiptPath = writeJson(path.join(outDir, 'audit_receipt.json'), {
       decision: 'pass',
       blockingReasons: [],
       goalCommand:
         goalMode === 'native_goal_document_ref'
-          ? { mode: goalMode, documentHash: fileHash(goalPath as string) }
+          ? {
+              mode: goalMode,
+              commandText: goalCommandText,
+              chars: Array.from(goalCommandText as string).length,
+              documentPath: goalPath,
+              documentHash: fileHash(goalPath as string),
+              taskReportPath: value.options.taskReportPath,
+              packetId: String(input.packetId),
+              nativeGoalCommandUsed: true,
+            }
           : { mode: goalMode },
+      continuationDirective:
+        goalMode === 'native_goal_document_ref'
+          ? {
+              directive: goalCommandText,
+              nativeGoalCommandUsed: true,
+            }
+          : null,
     });
     if (options.extraOutputName) {
       writeJson(path.join(outDir, options.extraOutputName), { unexpected: true });
