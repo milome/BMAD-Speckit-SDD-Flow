@@ -28,9 +28,11 @@ if (!fs.existsSync(RELEASE_GATE_RUNTIME)) {
   );
 }
 const { checkGoalContractReleaseGate } = require(RELEASE_GATE_RUNTIME);
+const {
+  syncBundledWorkspaceRuntime,
+} = require('./requirements-contract-bundled-runtime-sync');
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
 const SPECKIT_BMAD_MIRROR = path.join(SPECKIT_DIR, '_bmad');
-const SPECKIT_SCOPED_NODE_MODULES = path.join(SPECKIT_DIR, 'node_modules', '@bmad-speckit');
 const PACK_SESSION_FILE = path.join(SPECKIT_DIR, 'node_modules', '.pack-session-count.json');
 const PACK_SESSION_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.pack-session.lock');
 const SILENT = process.env.BMAD_PREPUBLISH_SILENT === '1';
@@ -363,94 +365,6 @@ function syncBmadMirror() {
   atomicSwap(staging, SPECKIT_BMAD_MIRROR);
 }
 
-/**
- * 同步 workspace scoped packages 到 packages/bmad-speckit/node_modules/@bmad-speckit
- * 使用策略：新目录构建 + 父级一次性切换
- */
-function syncBundledWorkspaceScopes() {
-  const parentDir = path.dirname(SPECKIT_SCOPED_NODE_MODULES);
-  const staging = path.join(parentDir, '@bmad-speckit.staging');
-
-  // 清理可能存在的旧 staging
-  rmWithRetry(staging);
-
-  // 新目录构建：复制所有 bundled 包到 staging
-  fs.mkdirSync(staging, { recursive: true });
-  for (const b of BUNDLED) {
-    const src = path.join(ROOT, b.relDir);
-    const pkgName = b.id.split('/')[1];
-    const dest = path.join(staging, pkgName);
-    copyDirContents(src, dest);
-  }
-
-  // 父级一次性切换
-  atomicSwap(staging, SPECKIT_SCOPED_NODE_MODULES);
-}
-
-/**
- * 同步单个 workspace 包到 bundled 位置
- * 使用策略：新目录构建 + 父级一次性切换
- * @param {string} relDir - 相对 ROOT 的目录
- * @param {string} scopedId - 包的 scoped id，如 @bmad-speckit/runtime-emit
- */
-function syncWorkspacePackageToBundled(relDir, scopedId) {
-  const pkgDir = path.join(ROOT, relDir);
-  const parts = scopedId.split('/');
-  const pkgName = parts[1];
-
-  // 目标位置在 node_modules/@bmad-speckit/ 下
-  const targetDir = path.join(SPECKIT_SCOPED_NODE_MODULES, pkgName);
-  const parentDir = path.dirname(targetDir);
-  const staging = path.join(parentDir, `${pkgName}.staging`);
-
-  const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
-  const publishFiles = pkg.files || [];
-
-  // 清理可能存在的旧 staging
-  rmWithRetry(staging);
-
-  // 新目录构建
-  fs.mkdirSync(staging, { recursive: true });
-  fs.copyFileSync(path.join(pkgDir, 'package.json'), path.join(staging, 'package.json'));
-  const readmeSrc = path.join(pkgDir, 'README.md');
-  if (fs.existsSync(readmeSrc)) {
-    fs.copyFileSync(readmeSrc, path.join(staging, 'README.md'));
-  }
-  for (const entry of publishFiles) {
-    const value = String(entry);
-    if (value.includes('*')) {
-      const matcher = new RegExp(
-        '^' + value.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$'
-      );
-      for (const name of fs.readdirSync(pkgDir)) {
-        if (!matcher.test(name)) continue;
-        const src = path.join(pkgDir, name);
-        const out = path.join(staging, name);
-        copyDirContents(src, out);
-      }
-      continue;
-    }
-
-    const src = path.join(pkgDir, value);
-    const out = path.join(staging, value);
-    if (fs.existsSync(src)) {
-      copyDirContents(src, out);
-    }
-  }
-
-  // runtime-emit 特殊处理：确保 dist 目录完整复制
-  if (scopedId === '@bmad-speckit/runtime-emit') {
-    const distDir = path.join(pkgDir, 'dist');
-    const destDist = path.join(staging, 'dist');
-    if (fs.existsSync(distDir)) {
-      copyDirContents(distDir, destDist);
-    }
-  }
-
-  // 父级一次性切换
-  atomicSwap(staging, targetDir);
-}
-
 const PREPUBLISH_SYNC_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.prepublish-sync.lock');
 
 const holdPackSessionLock = process.env.BMAD_PACK_SESSION === '1';
@@ -460,12 +374,14 @@ try {
   if (holdPackSessionLock) {
     writePackSessionCount(readPackSessionCount() + 1);
   }
-  for (const b of BUNDLED) {
-    info(`同步 ${b.id} → bmad-speckit/node_modules ...`);
-    syncWorkspacePackageToBundled(b.relDir, b.id);
-  }
-  info('同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...');
-  syncBundledWorkspaceScopes();
+  const bundledRuntimeSync = syncBundledWorkspaceRuntime({
+    repoRoot: ROOT,
+    packageRoot: SPECKIT_DIR,
+  });
+  info(
+    `同步 workspace runtime packages → packages/bmad-speckit/node_modules/@bmad-speckit ` +
+      `packages=${bundledRuntimeSync.packageCount} files=${bundledRuntimeSync.fileCount}`
+  );
   info('同步 _bmad → packages/bmad-speckit/_bmad ...');
   syncBmadMirror();
   info('同步完成。\n');

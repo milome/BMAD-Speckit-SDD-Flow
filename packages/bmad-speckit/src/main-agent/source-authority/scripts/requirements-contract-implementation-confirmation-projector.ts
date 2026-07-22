@@ -224,6 +224,14 @@ function uniqueStrings(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(nonEmpty) && new Set(value).size === value.length;
 }
 
+function validExpectedSets(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    exactKeys(value, EXPECTED_SET_KEYS) &&
+    EXPECTED_SET_KEYS.every((key) => uniqueStrings(value[key]))
+  );
+}
+
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -284,9 +292,7 @@ function parseContext(value: unknown): ConfirmationProjectionContext {
     !nonEmpty(value.auditReconciliation.auditAttemptId) ||
     !uniqueStrings(value.auditReconciliation.receiptRefs) ||
     value.auditReconciliation.receiptRefs.length === 0 ||
-    !isRecord(value.expectedSets) ||
-    !exactKeys(value.expectedSets, EXPECTED_SET_KEYS) ||
-    !EXPECTED_SET_KEYS.every((key) => uniqueStrings(value.expectedSets[key]))
+    !validExpectedSets(value.expectedSets)
   ) {
     projectionError('confirmation_projection_context_invalid');
   }

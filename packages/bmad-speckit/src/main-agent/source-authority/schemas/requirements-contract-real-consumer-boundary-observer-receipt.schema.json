@@ -10,6 +10,8 @@
     "phaseAuditAttemptId",
     "installedPackageRoot",
     "formalBoundaryRefs",
+    "installedRuntimeHash",
+    "installedRuntimeFileCount",
     "installedDependencyTreeHash",
     "substitutionCounts",
     "decision"
@@ -23,6 +25,8 @@
     "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
     "installedPackageRoot": { "type": "string", "minLength": 1 },
     "formalBoundaryRefs": { "$ref": "#/$defs/boundaries" },
+    "installedRuntimeHash": { "$ref": "#/$defs/hash" },
+    "installedRuntimeFileCount": { "type": "integer", "minimum": 1 },
     "installedDependencyTreeHash": { "$ref": "#/$defs/hash" },
     "substitutionCounts": { "$ref": "#/$defs/substitutions" },
     "decision": { "const": "PASS" }

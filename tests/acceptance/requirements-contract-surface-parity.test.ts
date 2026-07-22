@@ -1,8 +1,21 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
+import {
+  REQUIREMENTS_CONTRACT_PROJECTION_ASSETS,
+  REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS,
+  synchronizeRequirementsContractProjectionSurfaces,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 interface ProjectionRegistry {
@@ -47,6 +60,58 @@ function fileHash(filePath: string): string {
 }
 
 describe('requirements contract surface parity', () => {
+  it('materializes declared projection surfaces from canonical tracked assets', () => {
+    const materializationRoot = mkdtempSync(
+      path.join(os.tmpdir(), 'requirements-contract-projection-materialization-')
+    );
+    try {
+      for (const asset of REQUIREMENTS_CONTRACT_PROJECTION_ASSETS) {
+        const canonicalPath = path.join(
+          materializationRoot,
+          REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS[0],
+          asset.fileName
+        );
+        mkdirSync(path.dirname(canonicalPath), { recursive: true });
+        writeFileSync(
+          canonicalPath,
+          `${asset.projectionId}:${createHash('sha256')
+            .update(asset.fileName)
+            .digest('hex')}\n`,
+          'utf8'
+        );
+      }
+
+      const result =
+        synchronizeRequirementsContractProjectionSurfaces(materializationRoot);
+
+      expect(result).toEqual({
+        assetCount: REQUIREMENTS_CONTRACT_PROJECTION_ASSETS.length,
+        copiedSurfaceCount:
+          REQUIREMENTS_CONTRACT_PROJECTION_ASSETS.length *
+          (REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS.length - 1),
+      });
+      for (const asset of REQUIREMENTS_CONTRACT_PROJECTION_ASSETS) {
+        const canonicalPath = path.join(
+          materializationRoot,
+          REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS[0],
+          asset.fileName
+        );
+        const canonicalHash = fileHash(canonicalPath);
+        for (const surfaceRoot of REQUIREMENTS_CONTRACT_PROJECTION_SURFACE_ROOTS) {
+          const surfacePath = path.join(
+            materializationRoot,
+            surfaceRoot,
+            asset.fileName
+          );
+          expect(existsSync(surfacePath)).toBe(true);
+          expect(fileHash(surfacePath)).toBe(canonicalHash);
+        }
+      }
+    } finally {
+      rmSync(materializationRoot, { recursive: true, force: true });
+    }
+  });
+
   it('publishes a tracked schema-valid projection registry with one hash-bound owner', () => {
     expect(existsSync(REGISTRY_PATH), 'projection registry is missing').toBe(true);
     expect(existsSync(SCHEMA_PATH), 'projection registry schema is missing').toBe(

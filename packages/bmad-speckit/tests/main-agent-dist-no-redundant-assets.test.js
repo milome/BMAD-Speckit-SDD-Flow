@@ -60,13 +60,21 @@ test('main-agent dist does not mirror repository source trees into source-author
   assert.equal(fs.existsSync(RUNTIME_ASSET_MANIFEST), true, 'runtime asset manifest is required');
 
   const manifest = JSON.parse(fs.readFileSync(RUNTIME_ASSET_MANIFEST, 'utf8'));
-  assert.equal(manifest.schemaVersion, 'bmad-speckit-main-agent-runtime-assets/v1');
+  assert.equal(manifest.schemaVersion, 'bmad-speckit-main-agent-runtime-assets/v2');
+  assert.equal(
+    manifest.hashDomainRegistry.schemaVersion,
+    'requirements-contract-hash-domains/v2'
+  );
   assert.ok(Array.isArray(manifest.entries) && manifest.entries.length > 0);
   for (const entry of manifest.entries) {
     assert.equal(typeof entry.purpose, 'string');
     assert.equal(typeof entry.source, 'string');
     assert.equal(typeof entry.target, 'string');
     assert.equal(typeof entry.consumer, 'string');
+    assert.match(entry.sourceBytesHash, /^sha256:[a-f0-9]{64}$/u);
+    if (entry.materialization !== 'build_metadata') {
+      assert.match(entry.targetBytesHash, /^sha256:[a-f0-9]{64}$/u);
+    }
   }
 
   const declaredDistFiles = manifest.entries

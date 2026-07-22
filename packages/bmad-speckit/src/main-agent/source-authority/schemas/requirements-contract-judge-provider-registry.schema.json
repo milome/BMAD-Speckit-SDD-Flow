@@ -49,19 +49,19 @@
         "required": ["providerRef", "provider", "adapterRef"],
         "properties": {
           "providerRef": { "const": "local-sonnet-judge" },
-          "adapterRef": { "const": "OpenAICompatibleJudgeAdapter" },
+          "adapterRef": { "const": "ClaudeCodeCliJudgeAdapter" },
           "provider": {
             "type": "object",
             "required": ["transport", "apiStyle", "model", "endpoint"],
             "properties": {
-              "transport": { "const": "openai-compatible" },
-              "apiStyle": { "const": "chat_completions" },
+              "transport": { "const": "claude-code-cli" },
+              "apiStyle": { "const": "cli" },
               "model": { "const": "claude-sonnet-5" },
               "endpoint": {
                 "type": "object",
-                "required": ["baseUrl"],
+                "required": ["command"],
                 "properties": {
-                  "baseUrl": { "const": "http://localhost:3010" }
+                  "command": { "const": "claude" }
                 }
               }
             }
@@ -85,7 +85,11 @@
       "properties": {
         "providerRef": { "type": "string", "minLength": 1 },
         "adapterRef": {
-          "enum": ["OpenAICompatibleJudgeAdapter", "AnthropicCompatibleJudgeAdapter"]
+          "enum": [
+            "OpenAICompatibleJudgeAdapter",
+            "AnthropicCompatibleJudgeAdapter",
+            "ClaudeCodeCliJudgeAdapter"
+          ]
         },
         "provider": {
           "type": "object",
@@ -104,10 +108,10 @@
           "properties": {
             "enabled": { "type": "boolean" },
             "transport": {
-              "enum": ["openai-compatible", "anthropic-compatible"]
+              "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
             },
             "apiStyle": {
-              "enum": ["chat_completions", "messages"]
+              "enum": ["chat_completions", "messages", "cli"]
             },
             "model": { "type": "string", "minLength": 1 },
             "credentialRef": { "type": "string", "minLength": 1 },
@@ -115,7 +119,6 @@
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "baseUrl",
                 "resolutionMode",
                 "routingOwnership",
                 "upstreamVersioning",
@@ -123,9 +126,14 @@
               ],
               "properties": {
                 "baseUrl": { "type": "string", "format": "uri" },
-                "resolutionMode": { "const": "transport_managed" },
+                "command": { "type": "string", "minLength": 1 },
+                "resolutionMode": {
+                  "enum": ["transport_managed", "path_search"]
+                },
                 "routingOwnership": { "const": "transport_adapter" },
-                "upstreamVersioning": { "const": "gateway_managed" },
+                "upstreamVersioning": {
+                  "enum": ["gateway_managed", "cli_managed"]
+                },
                 "explicitOperationPath": { "type": "null" }
               }
             },
@@ -134,9 +142,10 @@
               "additionalProperties": false,
               "required": ["type", "sensitivity", "arbitraryNonEmptyValueAllowed"],
               "properties": {
-                "type": { "enum": ["bearer", "api_key"] },
-                "sensitivity": { "enum": ["placeholder", "secret"] },
-                "arbitraryNonEmptyValueAllowed": { "type": "boolean" }
+                "type": { "enum": ["bearer", "api_key", "claude_code_session"] },
+                "sensitivity": { "enum": ["placeholder", "secret", "host_managed"] },
+                "arbitraryNonEmptyValueAllowed": { "type": "boolean" },
+                "sessionRevision": { "type": "integer", "minimum": 1 }
               }
             },
             "auditPolicy": {
@@ -153,7 +162,12 @@
                 "independenceClass": { "type": "string", "minLength": 1 },
                 "blindReview": { "const": true },
                 "allowPassAuthority": { "const": false },
-                "toolsAllowed": { "const": false },
+                "toolsAllowed": { "type": "boolean" },
+                "allowedTools": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": { "type": "string", "minLength": 1 }
+                },
                 "implementationWritesAllowed": { "const": false }
               }
             },
@@ -164,7 +178,8 @@
               "properties": {
                 "timeoutMs": { "type": "integer", "minimum": 1 },
                 "maximumAttempts": { "const": 1 },
-                "structuredResponseRequired": { "const": true }
+                "structuredResponseRequired": { "const": true },
+                "maxBudgetUsd": { "type": "number", "exclusiveMinimum": 0 }
               }
             }
           }

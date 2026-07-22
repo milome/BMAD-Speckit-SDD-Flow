@@ -21,7 +21,7 @@ function schemaValidator() {
   );
 }
 
-it('publishes the inactive artifact-role classifier and schema boundaries', () => {
+it('publishes the production-active artifact-role classifier and schema boundaries', () => {
   expect(existsSync(classifierPath)).toBe(true);
   expect(existsSync(schemaPath)).toBe(true);
 });
@@ -39,7 +39,7 @@ describe.runIf(existsSync(classifierPath) && existsSync(schemaPath))(
       expect(result.classification).toEqual(
         expect.objectContaining({
           artifactRole: 'product_prd',
-          activationState: 'inactive_schema_boundary',
+          activationState: 'active_production_authority',
           outputPolicy: expect.objectContaining({
             authorityClass: 'product_background',
             rendererRef: 'registered_product_prd_renderer',
@@ -143,6 +143,28 @@ describe.runIf(existsSync(classifierPath) && existsSync(schemaPath))(
       );
       expect(invalid.issues).toContainEqual(
         expect.objectContaining({ code: 'artifact_role_invalid' })
+      );
+    });
+
+    it('forces Main Agent Source PRD rendering through the classifier-owned seam', () => {
+      const seam = readFileSync(
+        path.resolve(
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam.ts'
+        ),
+        'utf8'
+      );
+      const orchestration = readFileSync(
+        path.resolve(
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
+        ),
+        'utf8'
+      );
+
+      expect(seam).toContain('renderProductionClassifiedRequirementSourcePrd');
+      expect(seam).toContain('classifyRequirementsContractArtifactRole({');
+      expect(orchestration).toContain('renderProductionClassifiedRequirementSourcePrd');
+      expect(orchestration).not.toContain(
+        'renderProductionCanonicalRequirementSourcePrd({'
       );
     });
   }

@@ -17,12 +17,12 @@
       "const": "requirements-contract-package-runtime-action-binding-manifest/v2"
     },
     "actionUniverseHash": {
-      "const": "sha256:7352905dfb095f1fee1e6ff0a78968a6f7619f117182c356d88878d855493cc1"
+      "const": "sha256:8029ca35c702adb6e0d63a194dd1d0829e981afca3340c6f87db8031d852b7e7"
     },
     "actions": {
       "type": "array",
-      "minItems": 22,
-      "maxItems": 22,
+      "minItems": 25,
+      "maxItems": 25,
       "uniqueItems": true,
       "items": {
         "type": "object",
@@ -46,12 +46,15 @@
               "requirements-contract-bundle-publish",
               "requirements-contract-candidate-package",
               "requirements-contract-changed-path-manifest",
+              "requirements-contract-clean-materialization",
+              "requirements-contract-command-execution-producer",
               "requirements-contract-consumer-cli-capability-observe",
               "requirements-contract-detached-test-rerun",
               "requirements-contract-eval",
               "requirements-contract-evidence-verify",
               "requirements-contract-finalization-safe-write",
               "requirements-contract-critical-auditor-judge-adapter",
+              "requirements-contract-gap-closure-readonly-auditor-adapter",
               "requirements-contract-judge-credentials-init",
               "requirements-contract-judge-provider-smoke",
               "requirements-contract-production-activate",

@@ -62,6 +62,19 @@ If the gate reports findings, stop normal implementation. Classify affected file
 - requirements source document generation uses `requirements-contract-authoring`.
 - new root `scripts/` runtime helpers are forbidden.
 
+### Large Document Activation-First Gate
+
+When an existing target is larger than 64 KB, or the requested generated content is
+expected to exceed 8 KB or 120 lines:
+
+- Activate `large-document-writer` before detailed section planning, full-patch design, or draft generation.
+- The first substantive action after classification must initialize or resume the draft session and persist the user source or first complete semantic section.
+- Do not construct a complete replacement document or complete transform script before the first persisted, hash-verified receipt.
+- Continue in `persist-while-reasoning` mode: complete one semantic section, persist it, verify its receipt, then reason about the next section.
+- Split at semantic boundaries rather than fixed line counts; chunk size is a transport safeguard, not a reasoning limit.
+- A progress message is not a checkpoint. Only persisted content plus a verified receipt permits the next section to begin.
+- After interruption, inspect target, backup, session manifest, chunks, receipts, assembly, and promotion state before resuming from the next incomplete checkpoint.
+
 ## User Rules
 
 - Multiple Roles: 多角色视角分析和评审
@@ -146,6 +159,45 @@ If the gate reports findings, stop normal implementation. Classify affected file
 - 主 agent 只保留：编排决策、用户交互、任务协调、最终汇总
 - 可委派工作默认委派，避免主上下文膨胀
 - 多 Agent 并发、角色分工、冲突处理以 `skills/superagents/SKILL.md` 为准
+
+## Serena Agent Routing
+
+用户无需显式指定 Serena agent，由主 agent 根据任务特征自动路由。
+
+### `serena_explorer`
+
+满足以下任一条件时，主 agent 应自动启动 `serena_explorer`：
+
+- 需要跨文件调用链、symbol references、继承关系或依赖分析。
+- 需要评估 rename、删除、API 变更或重构的影响范围。
+- 功能入口、实现位置或真实执行路径不明确。
+- 普通 `rg` 和少量文件读取不足以可靠完成分析。
+
+以下任务不得启动 `serena_explorer`：
+
+- 单文件、位置明确的小范围修改。
+- 文档、配置、普通文本搜索。
+- 单纯运行测试、lint 或构建。
+- 已掌握完整调用关系且无需继续语义分析。
+
+### `serena_refactor`
+
+仅当以下条件全部满足时，主 agent 才可自动启动 `serena_refactor`：
+
+- 用户已明确要求实施代码修改，而不只是分析或评审。
+- 任务涉及跨文件 rename、symbol 删除、API 迁移或引用同步。
+- 修改范围和验收标准已经明确。
+- 已完成影响范围分析，或影响范围可以直接确认。
+
+影响范围不明确时，必须先启动 `serena_explorer`，不得直接启动 `serena_refactor`。
+
+### Serena Resource Rules
+
+- 普通 worker、reviewer、QA 和文档 agent 不得启动 Serena。
+- 不得为了简单搜索启动 Serena。
+- 默认不得同时启动多个 Serena agent。
+- 指定 `serena_explorer` 或 `serena_refactor` custom agent 时，必须使用 `fork_context = false`，不得同时传入 full-history fork 与显式 agent type。
+- 主 agent 必须在 Serena agent 成功、失败、超时或中断后关闭该 agent，不得遗留 Serena MCP 进程。
 
 ## 文件引用规范
 

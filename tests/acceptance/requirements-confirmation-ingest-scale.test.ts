@@ -13,11 +13,13 @@ import {
 const ROOT = process.cwd();
 const CORPUS = JSON.parse(
   fs.readFileSync(
-    path.resolve('tests/fixtures/requirements-contract/normalized-contract-scale-corpus.v1.json'),
+    path.resolve(
+      'tests/fixtures/requirements-contract/requirements-confirmation-ingest-scale.v1.json'
+    ),
     'utf8'
   )
-).largeConfirmation as {
-  protocol: string;
+) as {
+  schemaVersion: string;
   minUtf8Bytes: number;
   totalLines: number;
   sourceSpan: { startLine: number; endLine: number };
@@ -102,14 +104,14 @@ describe('requirements confirmation ingest scale corpus', () => {
     { timeout: 180_000 },
     () => {
       const { sourcePath, sourceText, payload } = writeScaleSource();
-      expect(CORPUS.protocol).toBe('requirements-confirmation-ingest-scale/v1');
+      expect(CORPUS.schemaVersion).toBe('requirements-confirmation-ingest-scale/v1');
       expect(sourceText.split('\n')).toHaveLength(CORPUS.totalLines);
       expect(Buffer.byteLength(sourceText, 'utf8')).toBeGreaterThanOrEqual(CORPUS.minUtf8Bytes);
       expect(sourceText.split('\n')[CORPUS.sourceSpan.startLine - 1]).toBe(payload[0]);
       expect(sourceText.split('\n')[CORPUS.replacementRange.endLine - 1]).toBe(payload.at(-1));
-      expect(
-        `sha256:${createHash('sha256').update(payload.join('\n')).digest('hex')}`
-      ).toBe(CORPUS.replacementContentSha256);
+      expect(`sha256:${createHash('sha256').update(payload.join('\n')).digest('hex')}`).toBe(
+        CORPUS.replacementContentSha256
+      );
 
       const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
       const sourceDocumentHash = sourceDocumentHashFor(
@@ -121,8 +123,7 @@ describe('requirements confirmation ingest scale corpus', () => {
       const htmlPath = path.join(tempDir, 'confirmation.html');
       const htmlText =
         '<!doctype html><html lang="zh-CN"><title>Scale confirmation</title></html>\n';
-      const actualHtmlFileHash =
-        `sha256:${createHash('sha256').update(htmlText, 'utf8').digest('hex')}`;
+      const actualHtmlFileHash = `sha256:${createHash('sha256').update(htmlText, 'utf8').digest('hex')}`;
       const confirmationPageHash = actualHtmlFileHash;
       const reportPath = path.join(tempDir, 'confirmation-render-report.json');
       const confirmationTextPath = path.join(tempDir, 'confirmation.txt');

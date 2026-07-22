@@ -1,10 +1,13 @@
 import yaml from 'js-yaml';
 import {
   isCanonicalJsonValue,
-  sha256Stable,
-  sha256Text,
   stableStringify,
 } from './requirements-contract-semantic-resolver';
+import {
+  canonicalObjectHash,
+  normalizedTextHash,
+  normalizeTextForHash,
+} from './requirements-contract-hash-domains';
 
 export type ImplementationConfirmation = Record<string, unknown>;
 
@@ -96,7 +99,7 @@ export function semanticConfirmationForHash(
 export function implementationConfirmationHashFor(
   confirmation: ImplementationConfirmation
 ): string {
-  return sha256Stable(semanticConfirmationForHash(confirmation));
+  return canonicalObjectHash(semanticConfirmationForHash(confirmation));
 }
 
 export function sourceDocumentHashFor(
@@ -107,7 +110,20 @@ export function sourceDocumentHashFor(
   const normalizedBlock = `implementationConfirmation:${stableStringify(
     semanticConfirmationForHash(confirmation)
   )}`;
-  return sha256Text(sourceText.replace(blockText, normalizedBlock));
+  const normalizedSource = normalizeTextForHash(sourceText);
+  const normalizedOriginalBlock = normalizeTextForHash(blockText);
+  const blockStart = normalizedSource.indexOf(normalizedOriginalBlock);
+  if (blockStart < 0) {
+    throw new Error('implementation_confirmation_hash_block_missing');
+  }
+  if (normalizedSource.indexOf(normalizedOriginalBlock, blockStart + 1) >= 0) {
+    throw new Error('implementation_confirmation_hash_block_ambiguous');
+  }
+  return normalizedTextHash(
+    `${normalizedSource.slice(0, blockStart)}${normalizedBlock}${normalizedSource.slice(
+      blockStart + normalizedOriginalBlock.length
+    )}`
+  );
 }
 
 export function serializeRequirementsContractImplementationConfirmation(

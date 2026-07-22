@@ -34,9 +34,9 @@ function independentProviderExpectation(): CriticalAuditorIndependentProviderExp
     auditAttemptId,
     providerId: 'local-sonnet-judge',
     model: 'claude-sonnet-5',
-    transport: 'openai-compatible',
-    apiStyle: 'chat_completions',
-    configuredBaseUrlHash: sha256Stable('http://localhost:3010'),
+    transport: 'claude-code-cli',
+    apiStyle: 'cli',
+    configuredBaseUrlHash: sha256Stable('claude'),
     independenceClass: 'different_provider_different_model',
     providerRegistryHash:
       'sha256:7777777777777777777777777777777777777777777777777777777777777777',
@@ -67,29 +67,41 @@ function judgeProviderRegistry(): Record<string, unknown> {
       runtimeFallbackAllowed: false,
       runtimeAutoDiscoveryAllowed: false,
       environmentOverrideAllowed: false,
-      cliTransportAllowed: false,
+      cliTransportAllowed: true,
       selectionReceiptRequired: true,
     },
     providers: {
       'local-sonnet-judge': {
         enabled: true,
-        transport: 'openai-compatible',
-        apiStyle: 'chat_completions',
+        transport: 'claude-code-cli',
+        apiStyle: 'cli',
         model: 'claude-sonnet-5',
-        credentialRef: 'local-sonnet-judge',
+        credentialRef: 'claude-code-session',
         endpoint: {
-          baseUrl: 'http://localhost:3010',
-          resolutionMode: 'transport_managed',
+          command: 'claude',
+          resolutionMode: 'path_search',
           routingOwnership: 'transport_adapter',
-          upstreamVersioning: 'gateway_managed',
+          upstreamVersioning: 'cli_managed',
           explicitOperationPath: null,
+        },
+        authentication: {
+          type: 'claude_code_session',
+          sensitivity: 'host_managed',
+          arbitraryNonEmptyValueAllowed: false,
+          sessionRevision: 1,
         },
         auditPolicy: {
           independenceClass: 'different_provider_different_model',
           blindReview: true,
           allowPassAuthority: false,
-          toolsAllowed: false,
+          toolsAllowed: true,
+          allowedTools: ['Read'],
           implementationWritesAllowed: false,
+        },
+        requestPolicy: {
+          timeoutMs: 300_000,
+          maximumAttempts: 1,
+          structuredResponseRequired: true,
         },
       },
     },
@@ -112,11 +124,11 @@ function judgeCapabilityReceipt(
     auditAttemptId,
     providerRef: 'local-sonnet-judge',
     publicProviderConfigurationHash: sha256Stable(provider),
-    configuredBaseUrlHash: sha256Stable('http://localhost:3010'),
-    transport: 'openai-compatible',
-    apiStyle: 'chat_completions',
-    endpointResolutionMode: 'transport_managed',
-    upstreamVersioningMode: 'gateway_managed',
+    configuredBaseUrlHash: sha256Stable('claude'),
+    transport: 'claude-code-cli',
+    apiStyle: 'cli',
+    endpointResolutionMode: 'path_search',
+    upstreamVersioningMode: 'cli_managed',
     configuredModel: 'claude-sonnet-5',
     returnedModel: 'claude-sonnet-5',
     transportSuccess: true,
@@ -143,9 +155,9 @@ function judgeSelectionReceipt(
     publicProviderConfigurationHash: sha256Stable(provider),
     capabilityReceiptHash: capability.receiptHash,
     selectedProvider: 'local-sonnet-judge',
-    configuredBaseUrlHash: sha256Stable('http://localhost:3010'),
-    transport: 'openai-compatible',
-    apiStyle: 'chat_completions',
+    configuredBaseUrlHash: sha256Stable('claude'),
+    transport: 'claude-code-cli',
+    apiStyle: 'cli',
     model: 'claude-sonnet-5',
     independenceClass: 'different_provider_different_model',
     blindReview: true,
@@ -406,8 +418,8 @@ describe('S127 Critical Auditor independence', () => {
       auditAttemptId,
       providerId: 'local-sonnet-judge',
       model: 'claude-sonnet-5',
-      transport: 'openai-compatible',
-      apiStyle: 'chat_completions',
+      transport: 'claude-code-cli',
+      apiStyle: 'cli',
       independenceClass: 'different_provider_different_model',
     });
   });
@@ -432,16 +444,33 @@ describe('S127 Critical Auditor independence', () => {
     expect(bindingResult.binding).toMatchObject({
       providerId: 'local-sonnet-judge',
       model: 'claude-sonnet-5',
-      transport: 'openai-compatible',
-      apiStyle: 'chat_completions',
+      transport: 'claude-code-cli',
+      apiStyle: 'cli',
     });
     expect(expectationResult.issueCodes).toEqual([]);
     expect(expectationResult.expectation).toMatchObject({
       providerId: 'local-sonnet-judge',
       model: 'claude-sonnet-5',
-      transport: 'openai-compatible',
-      apiStyle: 'chat_completions',
+      transport: 'claude-code-cli',
+      apiStyle: 'cli',
     });
+  });
+
+  it('accepts a positive provider-configured timeout without freezing one machine latency value', () => {
+    const config = readGovernanceRemediationConfig(projectRoot);
+    const registry = structuredClone(
+      config.judgeRuntime
+    ) as unknown as Record<string, unknown>;
+    const providerRef = String(registry.activeProviderRef ?? '');
+    const providers = registry.providers as Record<string, Record<string, unknown>>;
+    const provider = providers[providerRef];
+    const requestPolicy = provider.requestPolicy as Record<string, unknown>;
+    requestPolicy.timeoutMs = 300_000;
+
+    const result = buildCriticalAuditorJudgeRuntimeBinding(registry);
+
+    expect(result.issueCodes).not.toContain('critical_auditor_judge_timeout_mismatch');
+    expect(result.binding).not.toBeNull();
   });
 
   it.each([

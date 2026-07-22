@@ -39,7 +39,7 @@ judgeRuntime:
     runtimeFallbackAllowed: false
     runtimeAutoDiscoveryAllowed: false
     environmentOverrideAllowed: false
-    cliTransportAllowed: false
+    cliTransportAllowed: true
     selectionReceiptRequired: true
   credentialConfig:
     source: config_file
@@ -50,30 +50,34 @@ judgeRuntime:
   providers:
     local-sonnet-judge:
       enabled: true
-      transport: openai-compatible
-      apiStyle: chat_completions
+      transport: claude-code-cli
+      apiStyle: cli
       model: claude-sonnet-5
-      credentialRef: local-sonnet-judge
+      credentialRef: claude-code-session
       endpoint:
-        baseUrl: http://localhost:3010
-        resolutionMode: transport_managed
+        command: claude
+        resolutionMode: path_search
         routingOwnership: transport_adapter
-        upstreamVersioning: gateway_managed
+        upstreamVersioning: cli_managed
         explicitOperationPath: null
       authentication:
-        type: bearer
-        sensitivity: placeholder
-        arbitraryNonEmptyValueAllowed: true
+        type: claude_code_session
+        sensitivity: host_managed
+        arbitraryNonEmptyValueAllowed: false
+        sessionRevision: 1
       auditPolicy:
         independenceClass: different_provider_different_model
         blindReview: true
         allowPassAuthority: false
-        toolsAllowed: false
+        toolsAllowed: true
+        allowedTools:
+          - Read
         implementationWritesAllowed: false
       requestPolicy:
-        timeoutMs: 120000
+        timeoutMs: 300000
         maximumAttempts: 1
         structuredResponseRequired: true
+        maxBudgetUsd: 5
 provider:
   mode: openai-compatible
   id: openai-governance

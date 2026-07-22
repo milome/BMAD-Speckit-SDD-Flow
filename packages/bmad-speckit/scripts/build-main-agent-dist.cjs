@@ -17,6 +17,10 @@ const distRoot = path.join(packageDistRoot, 'main-agent');
 const repoBmadRoot = path.join(repoRoot, '_bmad');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
 const runtimeManifestPath = path.join(distRoot, 'runtime-asset-manifest.json');
+const runtimeBuildAuthorityReceiptPath = path.join(
+  distRoot,
+  'runtime-build-authority-receipt.json'
+);
 const runtimeManifestEntries = [];
 
 const compilerOptions = {
@@ -83,6 +87,46 @@ function copyFile(source, target) {
   fs.copyFileSync(source, target);
 }
 
+function repositoryBmadSourceFiles() {
+  const result = spawnSync(
+    'git',
+    [
+      'ls-files',
+      '-z',
+      '--cached',
+      '--others',
+      '--exclude-standard',
+      '--',
+      '_bmad',
+    ],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+      maxBuffer: 16 * 1024 * 1024,
+    }
+  );
+  if (result.error || result.status !== 0) return null;
+  const prefix = '_bmad/';
+  const files = [
+    ...new Set(
+      (result.stdout ?? '')
+        .split('\0')
+        .map(portable)
+        .filter((entry) => entry.startsWith(prefix))
+        .map((entry) => entry.slice(prefix.length))
+        .filter((entry) => {
+          const source = path.join(repoBmadRoot, entry);
+          return fs.existsSync(source) && fs.lstatSync(source).isFile();
+        })
+    ),
+  ].sort();
+  if (files.length === 0) {
+    throw new Error('repository _bmad source set is empty');
+  }
+  return files;
+}
+
 function ensurePackageBmadOwner() {
   if (!fs.existsSync(repoBmadRoot) || !fs.statSync(repoBmadRoot).isDirectory()) {
     throw new Error(`repository _bmad owner missing: ${repoBmadRoot}`);
@@ -91,7 +135,18 @@ function ensurePackageBmadOwner() {
     throw new Error(`refusing to replace package _bmad outside package root: ${packageBmadRoot}`);
   }
   removeTree(packageBmadRoot);
-  fs.cpSync(repoBmadRoot, packageBmadRoot, { recursive: true, force: true });
+  const sourceFiles = repositoryBmadSourceFiles();
+  if (sourceFiles === null) {
+    fs.cpSync(repoBmadRoot, packageBmadRoot, { recursive: true, force: true });
+  } else {
+    fs.mkdirSync(packageBmadRoot, { recursive: true });
+    for (const relativePath of sourceFiles) {
+      const source = path.join(repoBmadRoot, relativePath);
+      const target = path.join(packageBmadRoot, relativePath);
+      copyFile(source, target);
+      fs.chmodSync(target, fs.statSync(source).mode);
+    }
+  }
   for (const relativePath of packageBmadRequiredFiles) {
     const source = path.join(repoBmadRoot, relativePath);
     const target = path.join(packageBmadRoot, relativePath);
@@ -394,7 +449,27 @@ function refreshRequirementsContractConsumerRegistry() {
   writeRequirementsContractProjection(fileName, registry);
 }
 
+function refreshRequirementsContractArtifactRoleRegistry() {
+  const classifier = require(path.join(
+    distRoot,
+    'source-authority',
+    'scripts',
+    'requirements-contract-artifact-role-classifier.js'
+  ));
+  const ownerPath = path.resolve(
+    repoRoot,
+    classifier.REQUIREMENTS_CONTRACT_ARTIFACT_ROLE_REGISTRY_OWNER_PATH
+  );
+  writeRequirementsContractProjection(
+    'requirements-contract-artifact-role-registry.json',
+    classifier.createRequirementsContractArtifactRoleRegistryProjection(
+      `sha256:${sha256File(ownerPath)}`
+    )
+  );
+}
+
 function publishRequirementsContractDerivedRegistries() {
+  refreshRequirementsContractArtifactRoleRegistry();
   refreshRequirementsContractConsumerRegistry();
   const projectionRegistryModule = require(path.join(
     distRoot,
@@ -402,6 +477,7 @@ function publishRequirementsContractDerivedRegistries() {
     'rules',
     'requirements-contract-projection-registry.js'
   ));
+  projectionRegistryModule.synchronizeRequirementsContractProjectionSurfaces(repoRoot);
   writeRequirementsContractProjection(
     'requirements-contract-projection-registry.json',
     projectionRegistryModule.createRequirementsContractProjectionRegistry(repoRoot)
@@ -440,20 +516,73 @@ function writeRuntimeManifest() {
     purpose: 'runtime-output-manifest',
     consumer: 'dist-build-verifier',
   });
+  registerOutput({
+    source: __filename,
+    target: runtimeBuildAuthorityReceiptPath,
+    purpose: 'runtime-build-authority-receipt',
+    consumer: 'release-parity-verifier',
+  });
   runtimeManifestEntries.sort((left, right) => left.target.localeCompare(right.target));
+  const hashDomains = require(path.join(
+    distRoot,
+    'source-authority',
+    'scripts',
+    'requirements-contract-hash-domains.js'
+  ));
+  const entries = runtimeManifestEntries.map((entry) => {
+    const sourcePath = path.resolve(packageRoot, entry.source);
+    const targetPath = path.resolve(packageRoot, entry.target);
+    const sourceBytesHash = hashDomains.sourceBytesHash(fs.readFileSync(sourcePath));
+    const targetExists = fs.existsSync(targetPath) && fs.statSync(targetPath).isFile();
+    return {
+      ...entry,
+      sourceBytesHash,
+      ...(targetExists
+        ? {
+            targetBytesHash: hashDomains.sourceBytesHash(fs.readFileSync(targetPath)),
+            materialization: 'runtime_file',
+          }
+        : {
+            targetBytesHash: null,
+            materialization: 'build_metadata',
+          }),
+    };
+  });
   fs.mkdirSync(path.dirname(runtimeManifestPath), { recursive: true });
   fs.writeFileSync(
     runtimeManifestPath,
     `${JSON.stringify(
       {
-        schemaVersion: 'bmad-speckit-main-agent-runtime-assets/v1',
-        entries: runtimeManifestEntries,
+        schemaVersion: 'bmad-speckit-main-agent-runtime-assets/v2',
+        hashDomainRegistry: hashDomains.requirementsContractHashDomainRegistry(),
+        entries,
       },
       null,
       2
     )}\n`,
     'utf8'
   );
+}
+
+function writeRuntimeBuildAuthorityReceipt() {
+  const authority = require(path.join(
+    distRoot,
+    'source-authority',
+    'scripts',
+    'requirements-contract-runtime-build-authority.js'
+  ));
+  const receipt = authority.createRuntimeBuildAuthorityReceipt({
+    packageRoot,
+    runtimeAssetManifestPath: runtimeManifestPath,
+    buildScriptPath: __filename,
+    dependencyLockPath: path.join(repoRoot, 'package-lock.json'),
+  });
+  fs.writeFileSync(
+    runtimeBuildAuthorityReceiptPath,
+    `${JSON.stringify(receipt, null, 2)}\n`,
+    'utf8'
+  );
+  return receipt;
 }
 
 function assertManifestOwnsDist() {
@@ -528,8 +657,18 @@ const actionBindingManifestModule = require(path.join(
 ));
 actionBindingManifestModule.publishPackageRuntimeActionBindingManifest(repoRoot);
 publishRequirementsContractDerivedRegistries();
+const bundledRuntimeSync = require(path.join(
+  distRoot,
+  'source-authority',
+  'scripts',
+  'requirements-contract-bundled-runtime-sync.js'
+)).syncBundledWorkspaceRuntime({
+  repoRoot,
+  packageRoot,
+});
 
 writeRuntimeManifest();
+const buildAuthorityReceipt = writeRuntimeBuildAuthorityReceipt();
 const forbiddenPathHits = assertNoForbiddenDistPaths();
 assertManifestOwnsDist();
 const outputFiles = filesBelow(packageDistRoot).length;
@@ -537,7 +676,10 @@ const duplicateHashGroups = duplicateHashGroupCount();
 
 process.stdout.write(
   `built main-agent dist outputFiles=${outputFiles} manifestFiles=${runtimeManifestEntries.length} ` +
-    `forbiddenPathHits=${forbiddenPathHits} duplicateHashGroups=${duplicateHashGroups} ` +
+  `forbiddenPathHits=${forbiddenPathHits} duplicateHashGroups=${duplicateHashGroups} ` +
     `packageTs=${packageTypeScriptFiles.length} sourceAuthorityTs=${sourceAuthorityTypeScriptFiles.length} ` +
-    `staticRuntime=${staticRuntimeFiles.length} declaredAssets=${declaredAssets.length}\n`
+    `staticRuntime=${staticRuntimeFiles.length} declaredAssets=${declaredAssets.length} ` +
+    `bundledRuntimePackages=${bundledRuntimeSync.packageCount} ` +
+    `bundledRuntimeFiles=${bundledRuntimeSync.fileCount} ` +
+    `distBuildHash=${buildAuthorityReceipt.distBuildHash}\n`
 );

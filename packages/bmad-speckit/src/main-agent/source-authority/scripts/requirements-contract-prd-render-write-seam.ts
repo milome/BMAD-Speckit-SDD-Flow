@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES } from '../rules/requirements-contract-source-prd-rules';
+import { classifyRequirementsContractArtifactRole } from './requirements-contract-artifact-role-classifier';
 import { sha256, writeGovernedText } from './requirements-contract-governed-write';
 import { extractRequirementsContractImplementationConfirmation } from './requirements-contract-implementation-confirmation-codec';
 
@@ -463,6 +464,43 @@ export function renderProductionCanonicalRequirementSourcePrd(
     outputPolicy: outputPolicyBinding.outputPolicy ?? undefined,
     outputPolicyBinding,
   });
+}
+
+export function renderProductionClassifiedRequirementSourcePrd(
+  input: Parameters<typeof renderProductionCanonicalRequirementSourcePrd>[0]
+): RegisteredPrdRender {
+  const result = classifyRequirementsContractArtifactRole({
+    requestedArtifactRole: 'requirement_source_prd',
+  });
+  const classification = result.classification;
+  if (!result.ok || !classification) {
+    throw new Error(
+      `Production Source PRD artifact-role classification failed: ${JSON.stringify(
+        result.issues
+      )}`
+    );
+  }
+  const policy = classification.outputPolicy;
+  if (
+    classification.activationState !== 'active_production_authority' ||
+    classification.artifactRole !== 'requirement_source_prd' ||
+    policy.authorityClass !== 'implementation_semantic_authority' ||
+    policy.rendererRef !== 'canonical_source_prd_renderer' ||
+    policy.implementationConfirmationPolicy !== 'required' ||
+    policy.stableRequirementSetIdPolicy !== 'required' ||
+    policy.requirementRecordRegistrationPolicy !== 'required' ||
+    policy.finalImplementationAuthority !== 'source_authority'
+  ) {
+    throw new Error('Production Source PRD artifact-role policy mismatch');
+  }
+  const rendered = renderProductionCanonicalRequirementSourcePrd(input);
+  if (
+    rendered.artifactRole !== classification.artifactRole ||
+    rendered.rendererId !== policy.rendererRef
+  ) {
+    throw new Error('Production Source PRD renderer violated artifact-role classification');
+  }
+  return rendered;
 }
 
 export function assertProductionPrdOutputPolicyCurrent(input: {

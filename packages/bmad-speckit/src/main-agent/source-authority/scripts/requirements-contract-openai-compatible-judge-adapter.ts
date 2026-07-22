@@ -37,6 +37,21 @@ function hash(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }
 
+function decodeStructuredContent(content: string): unknown {
+  const normalized = content.trim();
+  try {
+    return JSON.parse(normalized);
+  } catch {
+    const fenced = /^```json[ \t]*\r?\n([\s\S]*?)\r?\n```$/iu.exec(normalized);
+    if (!fenced) throw new Error('judge_adapter_response_schema_invalid');
+    try {
+      return JSON.parse(fenced[1]);
+    } catch {
+      throw new Error('judge_adapter_response_schema_invalid');
+    }
+  }
+}
+
 function structuredDecision(value: unknown): {
   decision: 'pass' | 'block' | 'inconclusive';
   findings: JsonRecord[];
@@ -85,10 +100,11 @@ function requestBody(input: AdapterInput, provider: JsonRecord): unknown {
   if (input.body !== undefined) return input.body;
   const payload = record(input.payload, 'judge_adapter_semantic_request_invalid');
   const request = record(payload.request, 'judge_adapter_semantic_request_invalid');
+  const requestPolicy = record(provider.requestPolicy, 'judge_adapter_request_policy_invalid');
   if (typeof payload.systemPrompt !== 'string' || payload.systemPrompt.length === 0) {
     throw new Error('judge_adapter_semantic_request_invalid');
   }
-  return {
+  const body: JsonRecord = {
     model: provider.model,
     messages: [
       { role: 'system', content: payload.systemPrompt },
@@ -96,6 +112,10 @@ function requestBody(input: AdapterInput, provider: JsonRecord): unknown {
     ],
     temperature: 0,
   };
+  if (requestPolicy.structuredResponseRequired === true) {
+    body.response_format = { type: 'json_object' };
+  }
+  return body;
 }
 
 function buildRequest(input: AdapterInput): AdapterRequest {
@@ -119,8 +139,11 @@ function buildRequest(input: AdapterInput): AdapterRequest {
   else throw new Error('judge_adapter_authentication_invalid');
   const body = requestBody(input, provider);
   const requestPolicy = record(provider.requestPolicy, 'judge_adapter_request_policy_invalid');
+  const baseUrl = new URL(endpoint.baseUrl);
+  const operationUrl = new URL('/chat/completions', baseUrl);
+  operationUrl.search = baseUrl.search;
   return {
-    url: new URL('/chat/completions', endpoint.baseUrl).toString(),
+    url: operationUrl.toString(),
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -189,15 +212,16 @@ async function judge(input: AdapterInput): Promise<unknown> {
   }
   const choice = record(payload.choices[0], 'judge_adapter_response_schema_invalid');
   const message = record(choice.message, 'judge_adapter_response_schema_invalid');
+  if (
+    choice.finish_reason === 'tool_calls' ||
+    (Array.isArray(message.tool_calls) && message.tool_calls.length > 0)
+  ) {
+    throw new Error('judge_adapter_tool_calls_forbidden');
+  }
   if (typeof message.content !== 'string') {
     throw new Error('judge_adapter_response_schema_invalid');
   }
-  let decoded: unknown;
-  try {
-    decoded = JSON.parse(message.content);
-  } catch {
-    throw new Error('judge_adapter_response_schema_invalid');
-  }
+  const decoded = decodeStructuredContent(message.content);
   const normalized = structuredDecision(decoded);
   const providerRef = input.providerRef ?? provider.providerRef;
   if (typeof providerRef !== 'string' || providerRef.length === 0) {

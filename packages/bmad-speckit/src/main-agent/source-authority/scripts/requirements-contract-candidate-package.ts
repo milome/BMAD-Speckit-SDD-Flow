@@ -1,7 +1,19 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
+import {
+  distManifestHash,
+  requirementsContractHashDomainRegistry,
+  tarballBytesHash,
+} from './requirements-contract-hash-domains';
+import {
+  createPackageRuntimeIndex,
+  forbiddenPublishedSourceSnapshots,
+  packageRuntimeHashFor,
+} from './requirements-contract-package-runtime-index';
+import { assertRuntimeBuildAuthorityCurrent } from './requirements-contract-runtime-build-authority';
 import {
   canonicalJson,
   fileHash,
@@ -126,6 +138,23 @@ export async function requirementsContractCandidatePackageCommand(
   }
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as JsonRecord;
   if (manifest.name !== 'bmad-speckit') throw new Error('candidate_package_owner_invalid');
+  const runtimeAssetManifestPath = path.join(
+    distRoot,
+    'main-agent',
+    'runtime-asset-manifest.json'
+  );
+  const buildAuthorityReceiptPath = path.join(
+    distRoot,
+    'main-agent',
+    'runtime-build-authority-receipt.json'
+  );
+  const buildAuthority = assertRuntimeBuildAuthorityCurrent({
+    receipt: JSON.parse(fs.readFileSync(buildAuthorityReceiptPath, 'utf8')),
+    packageRoot,
+    runtimeAssetManifestPath,
+    buildScriptPath: path.join(packageRoot, 'scripts', 'build-main-agent-dist.cjs'),
+    dependencyLockPath: path.join(root, 'package-lock.json'),
+  });
   if (process.version !== 'v22.22.1') throw new Error('candidate_package_node_version_mismatch');
   const npmExecutable = executablePath(process.platform === 'win32' ? 'npm.cmd' : 'npm');
   const npmVersionResult = runExecutable(npmExecutable, ['--version']);
@@ -152,14 +181,52 @@ export async function requirementsContractCandidatePackageCommand(
   const packedEntries = (packed.files ?? [])
     .map((entry: JsonRecord) => `package/${slash(String(entry.path))}`)
     .sort();
+  const forbiddenPackedSourceSnapshots = forbiddenPublishedSourceSnapshots(packedEntries);
+  if (forbiddenPackedSourceSnapshots.length > 0) {
+    throw new Error(
+      `candidate_package_forbidden_source_snapshots:${forbiddenPackedSourceSnapshots.join(',')}`
+    );
+  }
   const sourceManifest = fileManifest(path.join(packageRoot, 'src'));
   const distManifest = fileManifest(distRoot);
+  const extractRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'candidate-package-readback-'));
+  let packedRuntimeHash = '';
+  let packedRuntimeFileCount = 0;
+  try {
+    const tarExecutable = executablePath(process.platform === 'win32' ? 'tar.exe' : 'tar');
+    const extract = runExecutable(
+      tarExecutable,
+      ['-xzf', tarballPath, '-C', extractRoot],
+      root
+    );
+    if (extract.status !== 0) {
+      throw new Error(`candidate_package_extract_failed:${extract.stderr ?? ''}`);
+    }
+    const extractedPackageRoot = path.join(extractRoot, 'package');
+    packedRuntimeHash = packageRuntimeHashFor(extractedPackageRoot);
+    packedRuntimeFileCount = createPackageRuntimeIndex(extractedPackageRoot).length;
+  } finally {
+    fs.rmSync(extractRoot, { recursive: true, force: true });
+  }
+  if (packedRuntimeHash !== buildAuthority.packageRuntimeHash) {
+    throw new Error('candidate_package_packed_runtime_hash_mismatch');
+  }
   const receipt = {
-    schemaVersion: 'requirements-contract-candidate-package-receipt/v1',
+    schemaVersion: 'requirements-contract-candidate-package-receipt/v2',
+    hashDomainRegistry: requirementsContractHashDomainRegistry(),
     packageManifestRef: { path: slash(path.relative(root, manifestPath)), hash: fileHash(manifestPath) },
     packageVersion: manifest.version,
     sourceManifestHash: sha256(canonicalJson(sourceManifest)),
-    generatedDistManifestHash: sha256(canonicalJson(distManifest)),
+    generatedDistManifestHash: distManifestHash(distManifest),
+    runtimeAssetManifestRef: {
+      path: slash(path.relative(root, runtimeAssetManifestPath)),
+      hash: fileHash(runtimeAssetManifestPath),
+    },
+    buildAuthorityReceiptRef: {
+      path: slash(path.relative(root, buildAuthorityReceiptPath)),
+      hash: fileHash(buildAuthorityReceiptPath),
+    },
+    distBuildHash: buildAuthority.distBuildHash,
     nodeVersion: process.version,
     nodeExecutableRef: { path: slash(process.execPath), hash: fileHash(process.execPath) },
     npmVersion,
@@ -170,8 +237,12 @@ export async function requirementsContractCandidatePackageCommand(
     canonicalTarballRef: { path: slash(tarballPath), hash: canonicalHash },
     packedEntries,
     packedEntrySetHash: sha256(canonicalJson(packedEntries)),
+    forbiddenPackedSourceSnapshotCount: forbiddenPackedSourceSnapshots.length,
+    packedRuntimeHash,
+    packedRuntimeFileCount,
     phaseIdentity: phaseIdentity(tarballPath, options.phase, options.phaseAuditAttemptId),
     publicationHash: canonicalHash,
+    tarballBytesHash: tarballBytesHash(fs.readFileSync(tarballPath)),
     readbackHash: fileHash(tarballPath),
     decision: 'pass',
   };

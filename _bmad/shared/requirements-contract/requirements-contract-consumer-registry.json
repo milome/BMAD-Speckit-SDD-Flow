@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:c35ada3c97d74e74417fbe36021e7b1f7b8523c4ac04f8ddaed6e96602fc2db2"
+    "hash": "sha256:a538c14a70516d2d1431917ed278250d10fb014335fb5faab2a89193851ecefe"
   },
-  "registryHash": "sha256:b1a6d1bb8b8dcdad85d0289dd8bfff9e51bbc3f0d8d9a7ad1b9ab3de77c05b6e",
+  "registryHash": "sha256:aead3a346b9a43c6743ed46387080f630346e93cb0ccadf9457d600b225aa298",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -58,7 +58,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:8eff51bab5f938b3238cd3a51e9403fdb7e43c82b6c69ba3bf1768bc468a58bb",
+      "pathHash": "sha256:9fc26946e031620a04af6d15ad73f1159d47174248e65f683113613f78d722e4",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -89,7 +89,7 @@
     {
       "consumerId": "artifact-role-classification",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.ts",
-      "pathHash": "sha256:e3990aeeac3c906a2c50142510185659da894a937f99047f990996a711c9d7f1",
+      "pathHash": "sha256:4c483fa93cbd52630bf9fd1ab56a8cb82d1a9c6c0e5ebb2e435dcb192d626370",
       "inputRole": "artifact_role_authority",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -519,7 +519,7 @@
     {
       "consumerId": "product-and-source-prd-renderer",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam.ts",
-      "pathHash": "sha256:47957a5bd7392d6d650e78d29a96c6a4a6fd5633ae95f9b12653b8465f117cf1",
+      "pathHash": "sha256:c83a05d467c4b7b3d0c891b64c521dff7d88af8b0a926d38f25a111827ff8a43",
       "inputRole": "validated_render_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -550,7 +550,7 @@
     {
       "consumerId": "normalized-package-renderer",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-package-renderer.ts",
-      "pathHash": "sha256:a1f0a6ceb0d430ccf0f890939fc72aaa9a6bd8e1b72417207f7ae0b9afcfa56e",
+      "pathHash": "sha256:18cdcb82fd832fdc2703613341591c54aeeecb9e1ee8109341f18f3df78b8d7e",
       "inputRole": "semantic_ir",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -613,7 +613,7 @@
     {
       "consumerId": "judge-provider-registry",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
-      "pathHash": "sha256:4e74e49c66d67d3cba9a6bbaad4021d95727457176293b573bc64888495abfe0",
+      "pathHash": "sha256:b881a0b20c2716cf2deb096b8484c9a3d22016815dc5d392d7c2ef99045e9e42",
       "inputRole": "validated_judge_runtime",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -645,7 +645,7 @@
     {
       "consumerId": "openai-compatible-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.ts",
-      "pathHash": "sha256:58bbb8c62da50876fb0d1d4d403572e6fab74d3641bf34e00ab722ff56a21706",
+      "pathHash": "sha256:f0e8ad988412972ec84db29558f5258dd356a54b42283c47ea42939adcc5573f",
       "inputRole": "judge_provider_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -679,6 +679,38 @@
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.ts",
       "pathHash": "sha256:fbb245240b389b979288a4bc25c23b62ab411c52975d5e36000ee9e2795eb834",
       "inputRole": "judge_provider_request",
+      "parserRef": "canonical_parser",
+      "schemaRef": "typed_semantic_ir_schema",
+      "validatorRef": "requirements-contract-normalized-judge-response.schema.json",
+      "projectionRef": "projection_registry",
+      "supportedModes": [
+        "execution",
+        "closeout"
+      ],
+      "readFacadeRef": "requirements-contract-read-facade",
+      "adapterRef": "requirements-contract-v2-read-adapter",
+      "sourceFormatVersion": "v2",
+      "legacyReadEligibility": "not_applicable",
+      "closeoutComposition": {
+        "packetSchema": "closeout_packet_schema",
+        "renderer": {
+          "assetId": "closeout_renderer",
+          "symbolRef": "renderRequirementsContractTerminalCloseout"
+        },
+        "readbackReceiptSchema": "closeout_readback_receipt_schema",
+        "finalResponseProjector": {
+          "assetId": "closeout_final_response_projector",
+          "symbolRef": "projectRequirementsContractTerminalCloseout"
+        }
+      },
+      "directConfirmationFieldRead": false,
+      "authority": "none"
+    },
+    {
+      "consumerId": "claude-code-cli-judge-adapter",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
+      "pathHash": "sha256:8779af02878b7ab738c961954a05b3e7c35b2d943c2ed681b75f3a836c1b7f00",
+      "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
       "validatorRef": "requirements-contract-normalized-judge-response.schema.json",
@@ -834,7 +866,7 @@
     {
       "consumerId": "requirement-record-registration",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts",
-      "pathHash": "sha256:dedb1345d4cfab99032fbf2b97ed1d1e8c67346dd94b9271a76a49bd4adc6b30",
+      "pathHash": "sha256:80ac79378344e0e92883b4a71171dcd55c93c32e33c54847f650fec5033bdea6",
       "inputRole": "validated_requirement_record",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1050,7 +1082,7 @@
     {
       "consumerId": "reverse-audit-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-reverse-audit.ts",
-      "pathHash": "sha256:788a8035d577be2d9efb3f47fd0584e4d00e3255dfe8c749e1f530aea5ea06bf",
+      "pathHash": "sha256:6029981ca90b08263434eeea1b05a87b2bc7f75cc366a9dcee35644c4e776f5c",
       "inputRole": "candidate_evidence_bundle",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1153,6 +1185,7 @@
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-bmad-consumer-orchestrator.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-bundle-publish.ts",
+      "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-evidence-artifact-readback.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-evidence-verify.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-file-intake-receipt.ts",
@@ -1191,6 +1224,7 @@
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-bmad-consumer-orchestrator.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-bundle-publish.ts",
+      "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-evidence-artifact-readback.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-evidence-verify.ts",
       "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-file-intake-receipt.ts",

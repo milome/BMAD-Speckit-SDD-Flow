@@ -31,7 +31,7 @@
         "runtimeFallbackAllowed": { "const": false },
         "runtimeAutoDiscoveryAllowed": { "const": false },
         "environmentOverrideAllowed": { "const": false },
-        "cliTransportAllowed": { "const": false },
+        "cliTransportAllowed": { "type": "boolean" },
         "selectionReceiptRequired": { "const": true }
       }
     },
@@ -78,10 +78,10 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "transport": {
-          "enum": ["openai-compatible", "anthropic-compatible"]
+          "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
         },
         "apiStyle": {
-          "enum": ["chat_completions", "messages"]
+          "enum": ["chat_completions", "messages", "cli"]
         },
         "model": { "type": "string", "minLength": 1 },
         "credentialRef": { "type": "string", "minLength": 1 },
@@ -89,7 +89,6 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "baseUrl",
             "resolutionMode",
             "routingOwnership",
             "upstreamVersioning",
@@ -97,9 +96,14 @@
           ],
           "properties": {
             "baseUrl": { "type": "string", "format": "uri" },
-            "resolutionMode": { "const": "transport_managed" },
+            "command": { "type": "string", "minLength": 1 },
+            "resolutionMode": {
+              "enum": ["transport_managed", "path_search"]
+            },
             "routingOwnership": { "const": "transport_adapter" },
-            "upstreamVersioning": { "const": "gateway_managed" },
+            "upstreamVersioning": {
+              "enum": ["gateway_managed", "cli_managed"]
+            },
             "explicitOperationPath": { "type": "null" }
           }
         },
@@ -112,9 +116,10 @@
             "arbitraryNonEmptyValueAllowed"
           ],
           "properties": {
-            "type": { "enum": ["bearer", "api_key"] },
-            "sensitivity": { "enum": ["placeholder", "secret"] },
-            "arbitraryNonEmptyValueAllowed": { "type": "boolean" }
+            "type": { "enum": ["bearer", "api_key", "claude_code_session"] },
+            "sensitivity": { "enum": ["placeholder", "secret", "host_managed"] },
+            "arbitraryNonEmptyValueAllowed": { "type": "boolean" },
+            "sessionRevision": { "type": "integer", "minimum": 1 }
           }
         },
         "auditPolicy": {
@@ -131,7 +136,12 @@
             "independenceClass": { "type": "string", "minLength": 1 },
             "blindReview": { "const": true },
             "allowPassAuthority": { "const": false },
-            "toolsAllowed": { "const": false },
+            "toolsAllowed": { "type": "boolean" },
+            "allowedTools": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
             "implementationWritesAllowed": { "const": false }
           }
         },
@@ -146,10 +156,73 @@
           "properties": {
             "timeoutMs": { "type": "integer", "minimum": 1 },
             "maximumAttempts": { "const": 1 },
-            "structuredResponseRequired": { "const": true }
+            "structuredResponseRequired": { "const": true },
+            "maxBudgetUsd": { "type": "number", "exclusiveMinimum": 0 }
           }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "transport": { "const": "claude-code-cli" } }
+          },
+          "then": {
+            "properties": {
+              "apiStyle": { "const": "cli" },
+              "endpoint": {
+                "required": ["command"],
+                "not": { "required": ["baseUrl"] },
+                "properties": {
+                  "command": { "const": "claude" },
+                  "resolutionMode": { "const": "path_search" },
+                  "upstreamVersioning": { "const": "cli_managed" }
+                }
+              },
+              "authentication": {
+                "required": ["sessionRevision"],
+                "properties": {
+                  "type": { "const": "claude_code_session" },
+                  "sensitivity": { "const": "host_managed" },
+                  "arbitraryNonEmptyValueAllowed": { "const": false }
+                }
+              },
+              "auditPolicy": {
+                "required": ["allowedTools"],
+                "properties": {
+                  "toolsAllowed": { "const": true },
+                  "allowedTools": {
+                    "const": ["Read"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "transport": {
+                "enum": ["openai-compatible", "anthropic-compatible"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "endpoint": {
+                "required": ["baseUrl"],
+                "not": { "required": ["command"] },
+                "properties": {
+                  "resolutionMode": { "const": "transport_managed" },
+                  "upstreamVersioning": { "const": "gateway_managed" }
+                }
+              },
+              "authentication": {
+                "not": { "required": ["sessionRevision"] }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

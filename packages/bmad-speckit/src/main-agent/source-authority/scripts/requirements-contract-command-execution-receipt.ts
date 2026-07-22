@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
@@ -77,6 +78,13 @@ export interface RequirementsContractCommandExecutionReceipt {
   receiptHash: string;
 }
 
+export interface RequirementsContractCommandExecutionProducerOptions {
+  cwd?: string;
+  projectRoot: string;
+  request: string;
+  json?: boolean;
+}
+
 export interface CommandExecutionReceiptValidationResult {
   decision: 'pass' | 'block';
   commandIds: string[];
@@ -110,7 +118,10 @@ export interface CommandExecutionReceiptValidationResult {
 }
 
 const SCHEMA_FILE = 'requirements-contract-command-execution-receipt.schema.json';
+const PRODUCER_INPUT_SCHEMA_FILE =
+  'requirements-contract-command-execution-producer-input.schema.json';
 let receiptValidator: ValidateFunction | null = null;
+let producerInputValidator: ValidateFunction | null = null;
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -169,6 +180,21 @@ function schemaValidator(): ValidateFunction {
   return receiptValidator;
 }
 
+function producerSchemaValidator(): ValidateFunction {
+  if (producerInputValidator) return producerInputValidator;
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  addFormats(ajv);
+  producerInputValidator = ajv.compile(
+    JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, '..', 'schemas', PRODUCER_INPUT_SCHEMA_FILE),
+        'utf8'
+      )
+    )
+  );
+  return producerInputValidator;
+}
+
 function resolveWithinRoot(projectRoot: string, candidate: string): string | null {
   const root = path.resolve(projectRoot);
   const resolved = path.isAbsolute(candidate)
@@ -180,6 +206,145 @@ function resolveWithinRoot(projectRoot: string, candidate: string): string | nul
 
 function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function renderCommand(argv: string[]): string {
+  return argv.map((argument) => JSON.stringify(argument)).join(' ');
+}
+
+function writeCreateOnly(filePath: string, content: string): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content, {
+    encoding: 'utf8',
+    flag: 'wx',
+  });
+}
+
+export async function requirementsContractCommandExecutionProducerCommand(
+  options: RequirementsContractCommandExecutionProducerOptions
+): Promise<RequirementsContractCommandExecutionReceipt> {
+  const projectRoot = path.resolve(options.projectRoot || options.cwd || process.cwd());
+  const requestPath = resolveWithinRoot(projectRoot, options.request);
+  if (!requestPath || !fs.existsSync(requestPath) || !fs.statSync(requestPath).isFile()) {
+    throw new Error('command_execution_producer_request_missing_or_outside_root');
+  }
+  const request = JSON.parse(fs.readFileSync(requestPath, 'utf8')) as unknown;
+  const validateRequest = producerSchemaValidator();
+  if (!validateRequest(request) || !isRecord(request)) {
+    throw new Error(
+      `command_execution_producer_request_schema_invalid:${JSON.stringify(
+        validateRequest.errors ?? []
+      )}`
+    );
+  }
+  const argv = strings(request.argv);
+  const commandCwd = resolveWithinRoot(projectRoot, text(request.cwd));
+  const stdoutPath = resolveWithinRoot(projectRoot, text(request.stdoutPath));
+  const stderrPath = resolveWithinRoot(projectRoot, text(request.stderrPath));
+  const receiptPath = resolveWithinRoot(projectRoot, text(request.receiptPath));
+  if (
+    !commandCwd ||
+    !fs.existsSync(commandCwd) ||
+    !fs.statSync(commandCwd).isDirectory()
+  ) {
+    throw new Error('command_execution_producer_cwd_invalid');
+  }
+  if (!stdoutPath || !stderrPath || !receiptPath) {
+    throw new Error('command_execution_producer_output_path_escape');
+  }
+  const outputPaths = [stdoutPath, stderrPath, receiptPath];
+  if (new Set(outputPaths.map(normalizedPath)).size !== outputPaths.length) {
+    throw new Error('command_execution_producer_output_path_collision');
+  }
+  if (outputPaths.some((outputPath) => fs.existsSync(outputPath))) {
+    throw new Error('command_execution_producer_output_exists');
+  }
+
+  const startedAt = new Date().toISOString();
+  const execution = spawnSync(argv[0], argv.slice(1), {
+    cwd: commandCwd,
+    encoding: 'utf8',
+    shell: false,
+    windowsHide: true,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const endedAt = new Date().toISOString();
+  const stdout = execution.stdout ?? '';
+  const stderr = `${execution.stderr ?? ''}${execution.error?.message ?? ''}`;
+  writeCreateOnly(stdoutPath, stdout);
+  writeCreateOnly(stderrPath, stderr);
+  const exitCode = execution.status ?? (execution.error ? 1 : 0);
+  const command = renderCommand(argv);
+  const publicationTimestamp = new Date().toISOString();
+  const payload = {
+    schemaVersion: 'requirements-contract-command-execution-receipt/v1' as const,
+    commandRunId: text(request.commandRunId),
+    commandId: text(request.commandId),
+    command,
+    normalizedCommand: normalizeCommand(command),
+    argv,
+    argvHash: sha256Stable(argv),
+    cwd: commandCwd,
+    executorIdentity: {
+      class: 'controlled_detached_executor' as const,
+      id: 'requirements-contract-command-execution-producer/v1',
+    },
+    hostIdentity: {
+      platform: process.platform,
+      architecture: process.arch,
+      nodeVersion: process.version,
+    },
+    requirementSetId: text(request.requirementSetId),
+    requirementRefs: strings(request.requirementRefs),
+    transactionId: text(request.transactionId),
+    implementationAttemptId: text(request.implementationAttemptId),
+    architectureAuditAttemptId: text(request.architectureAuditAttemptId),
+    activePhaseAuditAttemptId: text(request.activePhaseAuditAttemptId),
+    contractHash: text(request.contractHash),
+    inputSnapshotHash: text(request.inputSnapshotHash),
+    startedAt,
+    endedAt,
+    exitCode,
+    signal: execution.signal ?? null,
+    stdoutPath,
+    stdoutHash: fileHash(stdoutPath),
+    stderrPath,
+    stderrHash: fileHash(stderrPath),
+    acceptanceRefs: strings(request.acceptanceRefs),
+    traceRefs: strings(request.traceRefs),
+    publication: {
+      writer: 'requirements-contract-command-execution-producer/v1',
+      targetPath: receiptPath,
+      publishedAt: publicationTimestamp,
+      readbackAt: publicationTimestamp,
+      explicitUtf8: true as const,
+      createOnly: true as const,
+      readbackVerified: true as const,
+    },
+    decision: exitCode === 0 ? ('pass' as const) : ('block' as const),
+  };
+  const receipt: RequirementsContractCommandExecutionReceipt = {
+    ...payload,
+    receiptHash: sha256Stable(payload),
+  };
+  if (!schemaValidator()(receipt)) {
+    throw new Error(
+      `command_execution_producer_receipt_schema_invalid:${JSON.stringify(
+        schemaValidator().errors ?? []
+      )}`
+    );
+  }
+  writeCreateOnly(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+  const readback = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as unknown;
+  if (
+    !schemaValidator()(readback) ||
+    !isRecord(readback) ||
+    text(readback.receiptHash) !== receipt.receiptHash
+  ) {
+    throw new Error('command_execution_producer_receipt_readback_invalid');
+  }
+  if (options.json) process.stdout.write(`${JSON.stringify(receipt)}\n`);
+  return receipt;
 }
 
 function directOrDerivedRequirementRefs(command: JsonRecord): string[] {
@@ -350,6 +515,109 @@ function contextFromModelPacket(modelPacket: JsonRecord | null): {
 
 function bindingMismatch(commandId: string, field: string): string {
   return `required_command_receipt_binding_mismatch:${commandId}:${field}`;
+}
+
+export function validateRequirementsContractCommandExecutionReceiptArtifact(input: {
+  projectRoot: string;
+  receiptPath: string;
+  expectedProducer?: {
+    executorClass: RequirementsContractCommandExecutionReceipt['executorIdentity']['class'];
+    executorId: string;
+    writer: string;
+  };
+}): {
+  receipt: RequirementsContractCommandExecutionReceipt | null;
+  receiptPath: string | null;
+  receiptHash: string | null;
+  issueCodes: string[];
+} {
+  const receiptPath = resolveWithinRoot(input.projectRoot, input.receiptPath);
+  if (!receiptPath || !fs.existsSync(receiptPath) || !fs.statSync(receiptPath).isFile()) {
+    return {
+      receipt: null,
+      receiptPath,
+      receiptHash: null,
+      issueCodes: ['command_execution_receipt_missing'],
+    };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as unknown;
+  } catch {
+    return {
+      receipt: null,
+      receiptPath,
+      receiptHash: fileHash(receiptPath),
+      issueCodes: ['command_execution_receipt_schema_invalid'],
+    };
+  }
+  if (!schemaValidator()(parsed) || !isRecord(parsed)) {
+    return {
+      receipt: null,
+      receiptPath,
+      receiptHash: fileHash(receiptPath),
+      issueCodes: ['command_execution_receipt_schema_invalid'],
+    };
+  }
+  const receipt = parsed as unknown as RequirementsContractCommandExecutionReceipt;
+  const issueCodes: string[] = [];
+  const { receiptHash, ...payload } = receipt;
+  if (receiptHash !== sha256Stable(payload)) {
+    issueCodes.push('command_execution_receipt_hash_mismatch');
+  }
+  if (receipt.argvHash !== sha256Stable(receipt.argv)) {
+    issueCodes.push('command_execution_receipt_argv_hash_mismatch');
+  }
+  if (normalizeCommand(receipt.command) !== receipt.normalizedCommand) {
+    issueCodes.push('command_execution_receipt_normalized_command_mismatch');
+  }
+  if (normalizedPath(receipt.publication.targetPath) !== normalizedPath(receiptPath)) {
+    issueCodes.push('command_execution_receipt_publication_target_mismatch');
+  }
+  const timestampOrder = [
+    receipt.startedAt,
+    receipt.endedAt,
+    receipt.publication.publishedAt,
+    receipt.publication.readbackAt,
+  ].map((value) => Date.parse(value));
+  if (
+    timestampOrder.some(Number.isNaN) ||
+    timestampOrder.some((value, index) => index > 0 && value < timestampOrder[index - 1])
+  ) {
+    issueCodes.push('command_execution_receipt_timestamp_order_invalid');
+  }
+  for (const stream of ['stdout', 'stderr'] as const) {
+    const streamPath = resolveWithinRoot(input.projectRoot, receipt[`${stream}Path`]);
+    if (
+      !streamPath ||
+      !fs.existsSync(streamPath) ||
+      !fs.statSync(streamPath).isFile() ||
+      fileHash(streamPath) !== receipt[`${stream}Hash`]
+    ) {
+      issueCodes.push(`command_execution_receipt_${stream}_invalid`);
+    }
+  }
+  if (
+    (receipt.exitCode === 0 && receipt.decision !== 'pass') ||
+    (receipt.exitCode !== 0 && receipt.decision !== 'block')
+  ) {
+    issueCodes.push('command_execution_receipt_decision_mismatch');
+  }
+  if (
+    input.expectedProducer &&
+    (receipt.executorIdentity.class !== input.expectedProducer.executorClass ||
+      receipt.executorIdentity.id !== input.expectedProducer.executorId ||
+      receipt.publication.writer !== input.expectedProducer.writer ||
+      receipt.command !== renderCommand(receipt.argv))
+  ) {
+    issueCodes.push('command_execution_receipt_producer_binding_mismatch');
+  }
+  return {
+    receipt,
+    receiptPath,
+    receiptHash: fileHash(receiptPath),
+    issueCodes: [...new Set(issueCodes)],
+  };
 }
 
 function validateReceiptForDescriptor(input: {

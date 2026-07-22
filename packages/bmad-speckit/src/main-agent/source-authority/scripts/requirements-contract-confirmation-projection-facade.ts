@@ -41,7 +41,7 @@ const STAGING_ONLY_FIELDS = new Set([
   'businessViews',
   'architectureImpacts',
 ]);
-const CANONICAL_FIELDS = new Set([
+const CANONICAL_FIELDS = new Set<string>([
   ...REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
   ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
 ]);

@@ -28,7 +28,7 @@ export type ArtifactRoleAuthoritySource =
 
 export interface ArtifactRoleClassification {
   schemaVersion: 'requirements-contract-artifact-role/v1';
-  activationState: 'inactive_schema_boundary';
+  activationState: 'active_production_authority';
   artifactRole: RequirementsContractArtifactRole;
   classificationAuthority: {
     sources: ArtifactRoleAuthoritySource[];
@@ -267,7 +267,7 @@ export function classifyRequirementsContractArtifactRole(
     ok: true,
     classification: {
       schemaVersion: 'requirements-contract-artifact-role/v1',
-      activationState: 'inactive_schema_boundary',
+      activationState: 'active_production_authority',
       artifactRole: selectedRole,
       classificationAuthority: { sources },
       outputPolicy: outputPolicy(selectedRole),

@@ -30,13 +30,53 @@ describe('requirements contract real Consumer journey', () => {
         'dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-boundary-observer.js',
         'dist/main-agent/source-authority/scripts/requirements-contract-evidence-verify.js',
         'dist/main-agent/source-authority/scripts/requirements-contract-terminal-command-supervisor.js',
+        'dist/main-agent/source-authority/scripts/unprobed-runtime.js',
       ]) {
         write(installedRoot, relativePath);
       }
+      const runtimeEntries = [
+        'dist/main-agent/index.js',
+        'dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-journey.js',
+        'dist/main-agent/source-authority/scripts/requirements-contract-stage-registry.js',
+        'dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-adapter.js',
+        'dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-boundary-observer.js',
+        'dist/main-agent/source-authority/scripts/requirements-contract-evidence-verify.js',
+        'dist/main-agent/source-authority/scripts/requirements-contract-terminal-command-supervisor.js',
+        'dist/main-agent/source-authority/scripts/unprobed-runtime.js',
+      ].map((target) => ({
+        source: target,
+        target,
+        purpose: 'test-runtime',
+        consumer: 'installed-runtime-test',
+      }));
+      write(
+        installedRoot,
+        'dist/main-agent/runtime-asset-manifest.json',
+        `${JSON.stringify({
+          schemaVersion: 'bmad-speckit-main-agent-runtime-assets/v2',
+          hashDomainRegistry: {
+            schemaVersion: 'requirements-contract-hash-domains/v2',
+          },
+          entries: runtimeEntries,
+        })}\n`
+      );
       const result = runRequirementsContractRealConsumerAdapter({
         consumerRoot,
         installedPackageRoot: installedRoot,
         phaseRoot: path.join(root, 'phase'),
+        transactionId: `TX-${randomUUID()}`,
+        implementationAttemptId: `IMP-${randomUUID()}`,
+        phaseAuditAttemptId,
+      });
+      write(
+        installedRoot,
+        'dist/main-agent/source-authority/scripts/unprobed-runtime.js',
+        'module.exports = { changed: true };\n'
+      );
+      const changed = runRequirementsContractRealConsumerAdapter({
+        consumerRoot,
+        installedPackageRoot: installedRoot,
+        phaseRoot: path.join(root, 'phase-changed'),
         transactionId: `TX-${randomUUID()}`,
         implementationAttemptId: `IMP-${randomUUID()}`,
         phaseAuditAttemptId,
@@ -48,6 +88,10 @@ describe('requirements contract real Consumer journey', () => {
         phaseAuditAttemptId,
       });
       expect(result.workspaceLinkCount).toBe(0);
+      expect(result.installedRuntimeHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(result.installedRuntimeFileCount).toBeGreaterThan(runtimeEntries.length);
+      expect(result.installedDependencyTreeHash).toBe(result.installedRuntimeHash);
+      expect(changed.installedRuntimeHash).not.toBe(result.installedRuntimeHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

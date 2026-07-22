@@ -76,6 +76,23 @@ function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function normalizeTextForHash(value) {
+  const text = String(value);
+  const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  return withoutBom.replace(/\r\n?/gu, '\n').normalize('NFC');
+}
+
+function normalizeValueForHash(value) {
+  if (typeof value === 'string') return normalizeTextForHash(value);
+  if (Array.isArray(value)) return value.map((item) => normalizeValueForHash(item));
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort((left, right) => left.localeCompare(right))
+      .map((key) => [key, normalizeValueForHash(value[key])])
+  );
+}
+
 function stableStringify(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
@@ -154,12 +171,29 @@ function semanticConfirmationForHash(confirmation) {
 }
 
 function sourceDocumentHashFor(sourceText, blockText, confirmation) {
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`;
-  return sha256(sourceText.replace(blockText, normalizedBlock));
+  const normalizedBlock = `implementationConfirmation:${stableStringify(
+    normalizeValueForHash(semanticConfirmationForHash(confirmation))
+  )}`;
+  const normalizedSource = normalizeTextForHash(sourceText);
+  const normalizedOriginalBlock = normalizeTextForHash(blockText);
+  const blockStart = normalizedSource.indexOf(normalizedOriginalBlock);
+  if (blockStart < 0) {
+    throw new Error('implementation_confirmation_hash_block_missing');
+  }
+  if (normalizedSource.indexOf(normalizedOriginalBlock, blockStart + 1) >= 0) {
+    throw new Error('implementation_confirmation_hash_block_ambiguous');
+  }
+  return sha256(
+    `${normalizedSource.slice(0, blockStart)}${normalizedBlock}${normalizedSource.slice(
+      blockStart + normalizedOriginalBlock.length
+    )}`
+  );
 }
 
 function implementationConfirmationHashFor(confirmation) {
-  return sha256(stableStringify(semanticConfirmationForHash(confirmation)));
+  return sha256(
+    JSON.stringify(normalizeValueForHash(semanticConfirmationForHash(confirmation)))
+  );
 }
 
 function normalizePathForReport(filePath) {
@@ -328,7 +362,7 @@ function extractImplementationConfirmation(sourceText) {
   }
 
   const blockText = lines.slice(start, end).join('\n');
-  const parsed = yaml.load(blockText);
+  const parsed = yaml.load(blockText, { schema: yaml.JSON_SCHEMA });
   if (!parsed || typeof parsed !== 'object' || !parsed.implementationConfirmation) {
     throw new Error('implementationConfirmation block is not valid YAML');
   }

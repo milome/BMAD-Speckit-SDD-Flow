@@ -4,6 +4,7 @@ import path from 'node:path';
 import Ajv2020, { type AnySchemaObject } from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { requirementsContractTraceEdgeTypeRegistryHash } from '../rules/requirements-contract-trace-edge-type-registry';
+import { semanticModelHash as semanticModelHashForContract } from './requirements-contract-hash-domains';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 export type RequirementSourceInputKind =
@@ -1004,7 +1005,7 @@ export function validateRequirementContractModelV2(
   const { semanticModelHash: _semanticModelHash, ...modelPreimage } = candidate;
   if (
     typeof candidate.semanticModelHash === 'string' &&
-    candidate.semanticModelHash !== sha256Stable(modelPreimage)
+    candidate.semanticModelHash !== semanticModelHashForContract(modelPreimage)
   ) {
     addIssue(
       issues,
@@ -1327,6 +1328,6 @@ export function migrateRequirementContractV1ToV2(
   };
   return {
     ...preimage,
-    semanticModelHash: sha256Stable(preimage),
+    semanticModelHash: semanticModelHashForContract(preimage),
   };
 }

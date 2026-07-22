@@ -3,9 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { validateCriticalAuditorProfile } from '../../_bmad/shared/critical-auditor-profile/validate-critical-auditor-profile';
 import {
-  createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
-  type AuditTriadRoundReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
   resolveCriticalAuditorProfile,
@@ -17,6 +15,10 @@ import {
   materializeRequirementFixture,
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
+import {
+  createFixtureAuditTriadPlan,
+  createFixtureAuditTriadRound,
+} from '../helpers/audit-triad-fixture-runtime';
 
 const REQUIREMENTS_CONTRACT_DIMENSIONS = [
   'requirement_coverage_completeness',
@@ -123,46 +125,23 @@ describe('Main Agent CriticalAuditorProfile consumption', () => {
       expect(stale.blockingReasons).toContain('critical_auditor_stage_profile_hash_stale');
 
       const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
-      const plan = createAuditTriadExecutionPlan({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        stage: 'implement',
-        callPoint: 'audit_review',
+      const plan = createFixtureAuditTriadPlan({
+        fixture,
+        compiled,
         attemptId: 'audit-current',
-        sourceDocumentHash: fixture.sourceDocumentHash,
-        implementationConfirmationHash: fixture.implementationConfirmationHash,
-        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
-        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
-        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
       });
       expect(plan.stageProfileId).toBe('post_implementation_code_audit');
       expect(plan.subagents.every((agent) => agent.requiredCheckItemIds.length > 0)).toBe(true);
-      const round: AuditTriadRoundReceipt = {
-        schemaVersion: 'audit-triad-round-receipt/v1',
-        roundId: 'r1',
-        stageProfileId: plan.stageProfileId,
+      const round = createFixtureAuditTriadRound(plan, 'r1', {
         perspectiveResults: {
           product_intent: { agentId: 'a1', validGaps: [] },
           model_projection: { agentId: 'a2', validGaps: [] },
           main_agent_execution: { agentId: 'a3', validGaps: [] },
         },
-        coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
-        vetoItemResults: [],
-        validatedGapRefs: [],
-        invalidGapRefs: [],
-        sourceDocumentHash: plan.sourceDocumentHash,
-        implementationConfirmationHash: plan.implementationConfirmationHash,
-        modelPacketHash: plan.modelPacketHash,
-        auditReceiptHash: plan.auditReceiptHash,
-        goalExecutionHash: plan.goalExecutionHash,
-        criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
-        criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
         requiredCheckItemSetHash: 'sha256:stale-check-items',
-        currentAttemptHash: plan.currentAttemptHash,
-        currentEvidenceHash: plan.currentEvidenceHash,
         scoreReceiptRefs: ['score.json'],
         runAuditorHostReceiptRefs: ['host.json'],
-      };
+      });
       const decision = evaluateAuditTriadConvergence({
         plan,
         rounds: [round, { ...round, roundId: 'r2' }, { ...round, roundId: 'r3' }],

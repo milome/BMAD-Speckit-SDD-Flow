@@ -11,9 +11,6 @@
     "README.md",
     "bin/",
     "dist/",
-    "src/",
-    "tests/",
-    "test-nonempty/",
     "_bmad/",
     "node_modules/@bmad-speckit/"
   ],

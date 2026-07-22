@@ -31,6 +31,7 @@ import {
   type TrustedSourceExtraction,
   type TrustedSourceSnapshot,
 } from './requirements-contract-semantic-resolver';
+import { semanticModelHash as semanticModelHashForContract } from './requirements-contract-hash-domains';
 import {
   type RequirementsContractInvocationAuthorityReceipt,
   validateRequirementsContractInvocationAuthorityReceipt,
@@ -991,7 +992,7 @@ function buildCanonicalSemanticIr(input: {
   };
   const semanticIr = {
     ...preimage,
-    semanticModelHash: sha256Stable(canonicalModelPreimage(preimage)),
+    semanticModelHash: semanticModelHashForContract(canonicalModelPreimage(preimage)),
   };
   const validation = validateRequirementContractModelV2(semanticIr);
   if (!validation.ok) {

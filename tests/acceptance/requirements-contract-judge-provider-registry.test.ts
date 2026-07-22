@@ -159,16 +159,16 @@ describe('requirements contract Judge provider registry', () => {
       providers: [
         {
           providerRef: 'local-sonnet-judge',
-          adapterRef: 'OpenAICompatibleJudgeAdapter',
+          adapterRef: 'ClaudeCodeCliJudgeAdapter',
           provider: {
-            transport: 'openai-compatible',
-            apiStyle: 'chat_completions',
+            transport: 'claude-code-cli',
+            apiStyle: 'cli',
             model: 'claude-sonnet-5',
             endpoint: {
-              baseUrl: 'http://localhost:3010',
-              resolutionMode: 'transport_managed',
+              command: 'claude',
+              resolutionMode: 'path_search',
               routingOwnership: 'transport_adapter',
-              upstreamVersioning: 'gateway_managed',
+              upstreamVersioning: 'cli_managed',
               explicitOperationPath: null,
             },
           },
@@ -230,6 +230,10 @@ describe('requirements contract Judge provider registry', () => {
         expect.objectContaining({
           consumerId: 'anthropic-compatible-judge-adapter',
           path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.ts',
+        }),
+        expect.objectContaining({
+          consumerId: 'claude-code-cli-judge-adapter',
+          path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts',
         }),
         expect.objectContaining({
           consumerId: 'judge-provider-smoke',

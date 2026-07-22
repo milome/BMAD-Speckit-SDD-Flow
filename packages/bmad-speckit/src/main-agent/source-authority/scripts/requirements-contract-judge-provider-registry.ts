@@ -6,10 +6,21 @@ import addFormats from 'ajv-formats';
 import yaml from 'js-yaml';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 import { AnthropicCompatibleJudgeAdapter } from './requirements-contract-anthropic-compatible-judge-adapter';
+import {
+  createClaudeCodeCliJudgeAdapter,
+  type ClaudeCodeCliJudgeAdapterDependencies,
+} from './requirements-contract-claude-code-cli-judge-adapter';
 import { OpenAICompatibleJudgeAdapter } from './requirements-contract-openai-compatible-judge-adapter';
 
 type JsonRecord = Record<string, unknown>;
-type JudgeAdapter = typeof OpenAICompatibleJudgeAdapter | typeof AnthropicCompatibleJudgeAdapter;
+type JudgeAdapter =
+  | typeof OpenAICompatibleJudgeAdapter
+  | typeof AnthropicCompatibleJudgeAdapter
+  | ReturnType<typeof createClaudeCodeCliJudgeAdapter>;
+
+export interface RequirementsContractJudgeProviderRegistryDependencies {
+  claudeCodeCli?: ClaudeCodeCliJudgeAdapterDependencies;
+}
 
 const OVERRIDE_KEYS = [
   'provider',
@@ -71,7 +82,10 @@ function runtimeFrom(input: JsonRecord): JsonRecord {
   return runtime;
 }
 
-function adapterFor(provider: JsonRecord): {
+function adapterFor(
+  provider: JsonRecord,
+  dependencies: RequirementsContractJudgeProviderRegistryDependencies
+): {
   adapterRef: string;
   adapter: JudgeAdapter;
 } {
@@ -87,6 +101,12 @@ function adapterFor(provider: JsonRecord): {
       adapter: AnthropicCompatibleJudgeAdapter,
     };
   }
+  if (provider.transport === 'claude-code-cli' && provider.apiStyle === 'cli') {
+    return {
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      adapter: createClaudeCodeCliJudgeAdapter(dependencies.claudeCodeCli),
+    };
+  }
   throw new Error('judge_provider_adapter_binding_missing');
 }
 
@@ -96,7 +116,10 @@ function sha256File(root: string, relativePath: string): string {
     .digest('hex')}`;
 }
 
-export function createRequirementsContractJudgeProviderRegistry(input: JsonRecord) {
+export function createRequirementsContractJudgeProviderRegistry(
+  input: JsonRecord,
+  dependencies: RequirementsContractJudgeProviderRegistryDependencies = {}
+) {
   rejectOverrides(input);
   const runtime = runtimeFrom(input);
   const activeProviderRef = runtime.activeProviderRef;
@@ -107,7 +130,7 @@ export function createRequirementsContractJudgeProviderRegistry(input: JsonRecor
   const bindings = Object.fromEntries(
     Object.entries(providers).map(([providerRef, value]) => {
       const provider = record(value, 'judge_provider_definition_invalid');
-      const binding = adapterFor(provider);
+      const binding = adapterFor(provider, dependencies);
       return [providerRef, { providerRef, provider, ...binding }];
     })
   );

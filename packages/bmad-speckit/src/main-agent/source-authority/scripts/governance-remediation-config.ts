@@ -50,7 +50,7 @@ export interface JudgeRuntimeConfig {
     runtimeFallbackAllowed: false;
     runtimeAutoDiscoveryAllowed: false;
     environmentOverrideAllowed: false;
-    cliTransportAllowed: false;
+    cliTransportAllowed: boolean;
     selectionReceiptRequired: true;
   };
   credentialConfig: {
@@ -64,21 +64,23 @@ export interface JudgeRuntimeConfig {
     string,
     {
       enabled: boolean;
-      transport: 'openai-compatible' | 'anthropic-compatible';
-      apiStyle: 'chat_completions' | 'messages';
+      transport: 'openai-compatible' | 'anthropic-compatible' | 'claude-code-cli';
+      apiStyle: 'chat_completions' | 'messages' | 'cli';
       model: string;
       credentialRef: string;
       endpoint: {
-        baseUrl: string;
-        resolutionMode: 'transport_managed' | 'explicit';
+        baseUrl?: string;
+        command?: string;
+        resolutionMode: 'transport_managed' | 'explicit' | 'path_search';
         routingOwnership: 'transport_adapter';
-        upstreamVersioning: 'gateway_managed' | 'provider_managed';
+        upstreamVersioning: 'gateway_managed' | 'provider_managed' | 'cli_managed';
         explicitOperationPath: string | null;
       };
       authentication: {
-        type: 'bearer';
-        sensitivity: 'placeholder';
+        type: 'bearer' | 'api_key' | 'claude_code_session';
+        sensitivity: 'placeholder' | 'secret' | 'host_managed';
         arbitraryNonEmptyValueAllowed: boolean;
+        sessionRevision?: number;
       };
       auditPolicy: {
         independenceClass:
@@ -87,13 +89,15 @@ export interface JudgeRuntimeConfig {
           | 'logical_same_model_blind';
         blindReview: boolean;
         allowPassAuthority: false;
-        toolsAllowed: false;
+        toolsAllowed: boolean;
+        allowedTools?: string[];
         implementationWritesAllowed: false;
       };
       requestPolicy: {
         timeoutMs: number;
         maximumAttempts: number;
         structuredResponseRequired: boolean;
+        maxBudgetUsd?: number;
       };
     }
   >;

@@ -101,6 +101,25 @@ function readJson(file: string): any {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
+function snapshotTextFileHashes(rootDir: string): Record<string, string> {
+  if (!existsSync(rootDir)) return {};
+  const snapshot: Record<string, string> = {};
+  const visit = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const filePath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(filePath);
+        continue;
+      }
+      snapshot[path.relative(rootDir, filePath).replace(/\\/g, '/')] = sha256Text(
+        readFileSync(filePath, 'utf8')
+      );
+    }
+  };
+  visit(rootDir);
+  return snapshot;
+}
+
 function readInlineConfirmation(source: string): any {
   const text = readFileSync(source, 'utf8');
   const lines = text.replace(/\r\n/g, '\n').split('\n');
@@ -1002,6 +1021,42 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
 }
 
 describe('main-agent authoring-repair preserve-existing lane', () => {
+  it('rejects caller-provided Critical Auditor response paths before ingest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-response-injection-'));
+    try {
+      const recordId = `REQ-${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`;
+      const source = writeRichSource(root, recordId);
+      const responsePath = path.join(root, 'caller-provided-critical-auditor-response.json');
+      writeFileSync(responsePath, JSON.stringify({ transport: 'caller-controlled' }), 'utf8');
+
+      expect(() =>
+        runMainAgentAuthoringRepair(root, {
+          source,
+          recordId,
+          requirementSetId: `${recordId}-SET`,
+          mode: 'preserve-existing',
+          criticalAuditorResponse: responsePath,
+        })
+      ).toThrow('critical_auditor_response_injection_forbidden');
+
+      expect(
+        existsSync(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'requirement-records',
+            recordId,
+            'authoring',
+            'critical-auditor-receipt-round-1.json'
+          )
+        )
+      ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
   it('rebuilds stale source-state currentTargetMap rows during preserve-existing repair', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-source-state-map-'));
     try {
@@ -2250,6 +2305,77 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           (item: Record<string, unknown>) => !Object.hasOwn(item, 'id')
         )
       ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed before drafting when confirmed-scope repair lacks authoritative source refs', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-reconfirm-source-refs-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-RECONFIRM-SOURCE-REFS';
+      const source = writeRichSource(root, recordId);
+      markSourceUserConfirmed(source);
+      writePromotionReceipt(root, source, recordId, `${recordId}-SET`, {
+        statusValue: 'user_confirmed',
+        promotionStage: 'current-source-receipt-refresh',
+      });
+      const paths = authoringPaths(root, recordId);
+
+      const initial = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(initial.blockingStage).toBe('critical_auditor_round_required');
+      const sourceBeforeRepair = readFileSync(source, 'utf8');
+      const repairDraftPath = path.join(paths.dir, 'authoring-repair-draft-source.md');
+      expect(existsSync(repairDraftPath)).toBe(false);
+
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-RECONFIRM-SOURCE-REFS',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-RECONFIRM-SOURCE-REFS',
+                type: 'add_business_view',
+                sourceSpan: { startLine: 1, endLine: 1 },
+                sourceText: 'Add a business view without inventing requirement authority.',
+                targetField: 'implementationConfirmation.businessViews',
+                newValue: {
+                  id: 'BUSINESS-VIEW-RECONFIRM-SOURCE-REFS',
+                  title: 'Source-bound reconfirmation evidence',
+                  summary: 'Only authoritative source references may justify reconfirmation.',
+                },
+                reason: 'The confirmed source needs an additional business projection.',
+                mustRefs: ['UNREGISTERED-MUST-REF'],
+                requirementIds: ['UNREGISTERED-REQUIREMENT-REF'],
+              },
+            ],
+          },
+        ],
+      });
+
+      const repaired = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+        criticalAuditorResponse: paths.response(1),
+      });
+
+      expect(repaired).toMatchObject({
+        ok: false,
+        status: 'blocked',
+      });
+      expect(repaired.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'controlled_authoring_reconfirmation_source_refs_missing'
+      );
+      expect(readFileSync(source, 'utf8')).toBe(sourceBeforeRepair);
+      expect(existsSync(repairDraftPath)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -4133,6 +4259,49 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       expect(readFileSync(source, 'utf8')).toContain('status: user_confirmed');
       expect(existsSync(paths.request(1))).toBe(true);
       expect(authoringExecutableHelpers(paths.dir)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed before stale-receipt refresh artifacts when controlled MUST candidates are missing', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-empty-must-refresh-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-EMPTY-MUST-REFRESH';
+      const source = writeRichSource(root, recordId);
+      const confirmation = readInlineConfirmation(source);
+      rewriteInlineConfirmation(source, {
+        ...confirmation,
+        must: [],
+      });
+      const receiptPath = writePromotionReceipt(root, source, recordId);
+      writeSinglePassScaleArtifacts(root, source, recordId);
+      makePromotionReceiptStale(receiptPath);
+      const paths = authoringPaths(root, recordId);
+      const sourceBeforeRefresh = readFileSync(source, 'utf8');
+      const authoringSnapshotBefore = snapshotTextFileHashes(paths.dir);
+
+      const result = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        status: 'blocked',
+        blockingStage: 'semantic_kernel_required',
+        nextRequiredAction: 'author_controlled_must_candidates',
+      });
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'controlled_must_candidates_missing'
+      );
+      expect(readFileSync(source, 'utf8')).toBe(sourceBeforeRefresh);
+      expect(existsSync(paths.kernel)).toBe(false);
+      expect(existsSync(paths.packet)).toBe(false);
+      expect(existsSync(paths.request(1))).toBe(false);
+      expect(snapshotTextFileHashes(paths.dir)).toEqual(authoringSnapshotBefore);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

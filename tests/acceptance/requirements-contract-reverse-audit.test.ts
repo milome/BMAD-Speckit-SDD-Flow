@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -12,18 +19,36 @@ const REVERSE_AUDIT_SOURCE = path.resolve(
   process.cwd(),
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-reverse-audit.ts'
 );
+const CRITICAL_AUDITOR_ADAPTER_SOURCE = path.resolve(
+  process.cwd(),
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts'
+);
+const SHARED_JUDGE_INVOCATION_SOURCE = path.resolve(
+  process.cwd(),
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation.ts'
+);
 
 describe('requirements contract reverse audit', () => {
-  it('routes Judge calls through resolver, registry, and the selected Adapter only', () => {
-    const source = readFileSync(REVERSE_AUDIT_SOURCE, 'utf8');
+  it('routes Reverse Audit and Critical Auditor through one shared Judge invocation authority', () => {
+    const reverseAuditSource = readFileSync(REVERSE_AUDIT_SOURCE, 'utf8');
+    const criticalAuditorSource = readFileSync(CRITICAL_AUDITOR_ADAPTER_SOURCE, 'utf8');
 
-    expect(source).toContain('resolveRequirementsContractJudgeCredential');
-    expect(source).toContain('resolveRequirementsContractJudgeProvider');
-    expect(source).toContain('adapter.judge');
-    expect(source).not.toMatch(/\bfetch\s*\(/u);
-    expect(source).not.toContain("new URL('/chat/completions'");
-    expect(source).not.toContain('authorization:');
-    expect(source).not.toMatch(/credentials\?*\.credentials/u);
+    for (const source of [reverseAuditSource, criticalAuditorSource]) {
+      expect(source).toContain('prepareRequirementsContractJudgeInvocation');
+      expect(source).not.toContain('resolveRequirementsContractJudgeCredential');
+      expect(source).not.toContain('resolveRequirementsContractJudgeProvider');
+      expect(source).not.toContain('adapter.judge');
+      expect(source).not.toMatch(/\bfetch\s*\(/u);
+      expect(source).not.toContain("new URL('/chat/completions'");
+      expect(source).not.toContain('authorization:');
+      expect(source).not.toMatch(/credentials\?*\.credentials/u);
+    }
+    expect(existsSync(SHARED_JUDGE_INVOCATION_SOURCE)).toBe(true);
+    if (!existsSync(SHARED_JUDGE_INVOCATION_SOURCE)) return;
+    const sharedSource = readFileSync(SHARED_JUDGE_INVOCATION_SOURCE, 'utf8');
+    expect(sharedSource).toContain('resolveRequirementsContractJudgeCredential');
+    expect(sharedSource).toContain('resolveRequirementsContractJudgeProvider');
+    expect(sharedSource).toContain('adapter.judge');
   });
 
   it('runs the two-round blind protocol and publishes challenge evidence first', async () => {

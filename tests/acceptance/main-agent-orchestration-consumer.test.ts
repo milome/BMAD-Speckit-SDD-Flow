@@ -8,6 +8,7 @@ import type {
   RecommendationPacket,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
+  type AuditJudgeExecutor,
   buildMainAgentDispatchInstruction,
   claimMainAgentPendingPacket,
   completeMainAgentPendingPacket,
@@ -29,6 +30,7 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher';
 import {
   createDefaultOrchestrationState,
+  readOrchestrationState,
   writeOrchestrationState,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 import {
@@ -43,28 +45,29 @@ import {
 import { resolveBmadHelpRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-config';
 import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
 import { expandSixModelAuthority } from '../helpers/requirement-fixture-runtime';
+import {
+  createFixtureAuditAdapterCommands,
+  createFixtureAuditTriadRound,
+} from '../helpers/audit-triad-fixture-runtime';
 import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 import type { ImplementationEntryGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import {
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
 import {
   materializePromptPublicationFixture,
   setPromptPublicationReadiness,
 } from './helpers/prompt-transaction-publication-fixture';
-import { publishImplementationPromptFixture } from './helpers/prompt-transaction-implementation-publication-fixture';
+import {
+  executeRequiredCommandsForPublishedFixture,
+  publishImplementationPromptFixture,
+} from './helpers/prompt-transaction-implementation-publication-fixture';
 import { dispatchPlanAction } from '../../packages/bmad-speckit/src/main-agent/actions/dispatch-plan';
-
-const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -79,27 +82,6 @@ function stableStringify(value: unknown): string {
       (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
     )
     .join(',')}}`;
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !CONFIRMATION_BOOKKEEPING_FIELDS.has(key))
-  );
-}
-
-function implementationConfirmationHashFor(confirmation: Record<string, unknown>): string {
-  return sha256Text(stableStringify(semanticConfirmationForHash(confirmation)));
-}
-
-function sourceDocumentHashFor(
-  sourceText: string,
-  blockText: string,
-  confirmation: Record<string, unknown>
-): string {
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`;
-  return sha256Text(sourceText.replace(blockText, normalizedBlock));
 }
 
 function writePacket(
@@ -215,6 +197,7 @@ function writeConfirmedReadinessRecord(root: string): string {
     contractAuthoringRequired: true,
     confirmationLanguage: 'zh-CN',
     confirmationProfile: 'implementation_confirmation',
+    reconfirmationRequest: null,
     requiredViewPacks: ['currentTargetMap'],
     optionalViewPacks: [],
     confirmedAt: '2026-05-20T00:00:00.000Z',
@@ -628,6 +611,51 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
+  it('rejects direct Audit Judge result injection before runtime inspection', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-judge-injection-'));
+    let injectedExecutorCalled = false;
+    try {
+      expect(() =>
+        runMainAgentAutomaticLoop({
+          projectRoot: root,
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          auditJudgeExecutor: (() => {
+            injectedExecutorCalled = true;
+            return {};
+          }) as AuditJudgeExecutor,
+        })
+      ).toThrow('audit_judge_result_injection_forbidden');
+      expect(injectedExecutorCalled).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    'auditJudgeAdapterCommand',
+    'auditReadonlyAuditorAdapterCommand',
+  ] as const)(
+    'rejects production audit process command override %s before runtime inspection',
+    (argumentName) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-command-override-'));
+      try {
+        expect(() =>
+          runMainAgentAutomaticLoop({
+            projectRoot: root,
+            flow: 'standalone_tasks',
+            stage: 'implement',
+            args: {
+              [argumentName]: JSON.stringify([process.execPath, '-e', 'process.exit(0)']),
+            },
+          })
+        ).toThrow('audit_controlled_executor_command_override_forbidden');
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  );
+
   it('returns no-active-requirement surface instead of readiness when no active record exists', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-no-active-'));
     try {
@@ -865,6 +893,7 @@ describe('main-agent orchestration consumer', () => {
         runId: fixture.identity.implementationAttemptId,
         flow: 'standalone_tasks',
         stage: 'implement',
+        host: 'cursor',
         executor: ({ instruction }) => ({
           packetId: instruction.packetId,
           status: 'done',
@@ -1632,6 +1661,1225 @@ describe('main-agent orchestration consumer', () => {
       fixture.cleanup();
     }
   });
+
+  it.skip('legacy injected readonly process failure is replaced by canonical-host negative controls', async () => {
+    const fixture = materializePromptPublicationFixture();
+    try {
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
+      prepareAuditDispatchRuntime(fixture);
+      const publisherOutput: string[] = [];
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        publisherOutput.push(String(chunk));
+        return true;
+      });
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
+        },
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode, publisherOutput.join('')).toBe(0);
+
+      const loop = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        args: {
+          auditReadonlyAuditorAdapterCommand: JSON.stringify([
+            process.execPath,
+            '-e',
+            'process.exit(23)',
+          ]),
+        },
+      });
+
+      expect(loop.status).toBe('blocked');
+      expect(loop.taskReport).toBeNull();
+      expect(loop.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.readonly-auditor-request',
+          status: 'fail',
+          summary: expect.stringContaining('audit_readonly_auditor_adapter_failed:23'),
+        })
+      );
+      const packet = loop.dispatchInstruction?.packet as ExecutionPacket;
+      const planRef = packet.auditTriadExecutionPlanRef;
+      expect(planRef).not.toBeNull();
+      const requestPath = path.join(
+        path.dirname(planRef!.path),
+        'rounds',
+        'round-1',
+        'readonly-auditor-request.json'
+      );
+      expect(existsSync(requestPath)).toBe(true);
+      expect(JSON.parse(readFileSync(requestPath, 'utf8'))).toMatchObject({
+        schemaVersion: 'audit-readonly-auditor-request/v1',
+        auditEpochId: packet.auditExecutionProfile?.auditEpochId,
+        auditTargetBundleHash: packet.auditExecutionProfile?.auditTargetBundleHash,
+        semanticModelHash: packet.auditExecutionProfile?.semanticModelHash,
+        projectionSetHash: packet.auditExecutionProfile?.projectionSetHash,
+        qualityRuleSetHash: packet.auditExecutionProfile?.qualityRuleSetHash,
+        roundIndex: 1,
+      });
+      const roundDir = path.dirname(requestPath);
+      const hostReceiptPath = path.join(
+        roundDir,
+        'readonly-auditor-host-invocation-receipt.json'
+      );
+      expect(existsSync(hostReceiptPath)).toBe(true);
+      expect(JSON.parse(readFileSync(hostReceiptPath, 'utf8'))).toMatchObject({
+        schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
+        roundIndex: 1,
+        requestHash: JSON.parse(readFileSync(requestPath, 'utf8')).requestHash,
+        exitCode: 23,
+        responseProduced: false,
+        failureCode: 'audit_readonly_auditor_adapter_failed',
+        receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(existsSync(path.join(roundDir, 'readonly-auditor-response.json'))).toBe(false);
+      expect(existsSync(path.join(roundDir, 'judge-request.json'))).toBe(false);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it.runIf(process.platform === 'win32')(
+    'resolves the default readonly Auditor npm shim to its JavaScript entry on Windows',
+    async () => {
+      const fixture = materializePromptPublicationFixture();
+      const originalPath = process.env.PATH;
+      try {
+        fixture.options.currentDispatchPointer = path.join(
+          fixture.root,
+          'docs',
+          'plans',
+          'evidence',
+          'loop-engineering-remediation',
+          'current-dispatch-pointer-receipt.json'
+        );
+        setPromptPublicationReadiness(fixture, { decision: 'pass' });
+        prepareAuditDispatchRuntime(fixture);
+        const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+        const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+          extraPacket: {
+            packetId: fixture.identity.implementationAttemptId,
+          },
+        }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+        const publishCode = await requirementsContractPromptTransactionPublishCommand(
+          fixture.options,
+          { runCompiledPrompt }
+        ).finally(() => stdout.mockRestore());
+        expect(publishCode).toBe(0);
+
+        const fakeBin = path.join(fixture.root, 'readonly-auditor-codex-bin');
+        const codexEntry = path.join(
+          fakeBin,
+          'node_modules',
+          '@openai',
+          'codex',
+          'bin',
+          'codex.js'
+        );
+        mkdirSync(path.dirname(codexEntry), { recursive: true });
+        writeFileSync(path.join(fakeBin, 'codex.cmd'), '@exit /b 99\r\n', 'utf8');
+        writeFileSync(
+          codexEntry,
+          "process.stderr.write('readonly-auditor-js-entry-reached'); process.exit(17);\n",
+          'utf8'
+        );
+        process.env.PATH = `${fakeBin}${path.delimiter}${originalPath ?? ''}`;
+
+        const loop = runMainAgentAutomaticLoop({
+          projectRoot: fixture.root,
+          recordId: fixture.authority.recordId,
+          requirementSetId: fixture.identity.requirementSetId,
+          runId: fixture.identity.implementationAttemptId,
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          host: 'codex',
+        });
+
+        expect(loop.status).toBe('blocked');
+        expect(loop.taskReport).toBeNull();
+        expect(loop.steps).toContainEqual(
+          expect.objectContaining({
+            step: 'audit-controlled-executor.readonly-auditor-request',
+            status: 'fail',
+            summary: expect.stringContaining('audit_readonly_auditor_adapter_failed:17'),
+          })
+        );
+        const packet = loop.dispatchInstruction?.packet as ExecutionPacket;
+        const roundDir = path.join(
+          path.dirname(packet.auditTriadExecutionPlanRef!.path),
+          'rounds',
+          'round-1'
+        );
+        const hostReceipt = JSON.parse(
+          readFileSync(
+            path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json'),
+            'utf8'
+          )
+        );
+        expect(hostReceipt).toMatchObject({
+          schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
+          adapterKind: 'codex_exec_readonly',
+          exitCode: 17,
+          responseProduced: false,
+          failureCode: 'audit_readonly_auditor_adapter_failed',
+        });
+        expect(
+          readFileSync(path.join(roundDir, 'readonly-auditor-host.stderr.log'), 'utf8')
+        ).toBe('readonly-auditor-js-entry-reached');
+        expect(existsSync(path.join(roundDir, 'readonly-auditor-response.json'))).toBe(false);
+        expect(existsSync(path.join(roundDir, 'judge-request.json'))).toBe(false);
+      } finally {
+        process.env.PATH = originalPath;
+        fixture.cleanup();
+      }
+    }
+  );
+
+  it.runIf(process.platform === 'win32')(
+    'rejects readonly Auditor stdout when the declared response file was not produced',
+    async () => {
+      const fixture = materializePromptPublicationFixture();
+      const originalPath = process.env.PATH;
+      try {
+        fixture.options.currentDispatchPointer = path.join(
+          fixture.root,
+          'docs',
+          'plans',
+          'evidence',
+          'loop-engineering-remediation',
+          'current-dispatch-pointer-receipt.json'
+        );
+        setPromptPublicationReadiness(fixture, { decision: 'pass' });
+        prepareAuditDispatchRuntime(fixture);
+        const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+        const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+          extraPacket: {
+            packetId: fixture.identity.implementationAttemptId,
+          },
+        }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+        const publishCode = await requirementsContractPromptTransactionPublishCommand(
+          fixture.options,
+          { runCompiledPrompt }
+        ).finally(() => stdout.mockRestore());
+        expect(publishCode).toBe(0);
+
+        const fakeBin = path.join(fixture.root, 'readonly-auditor-stdout-only-bin');
+        const codexEntry = path.join(
+          fakeBin,
+          'node_modules',
+          '@openai',
+          'codex',
+          'bin',
+          'codex.js'
+        );
+        mkdirSync(path.dirname(codexEntry), { recursive: true });
+        writeFileSync(path.join(fakeBin, 'codex.cmd'), '@exit /b 99\r\n', 'utf8');
+        writeFileSync(
+          codexEntry,
+          [
+            "const fs = require('node:fs');",
+            'const request = JSON.parse(',
+            "  fs.readFileSync(process.env.BMAD_READONLY_AUDITOR_REQUEST_PATH, 'utf8')",
+            ');',
+            'const assignments = Array.isArray(request.perspectiveAssignments)',
+            '  ? request.perspectiveAssignments',
+            '  : [];',
+            'const perspectiveResults = Object.fromEntries(',
+            '  assignments.map((assignment) => [',
+            '    assignment.perspectiveId,',
+            '    { agentId: `${String(assignment.agentId)}:stdout-only`, validGaps: [] },',
+            '  ])',
+            ');',
+            'const coveredCheckItemIds = [',
+            '  ...new Set(',
+            '    assignments.flatMap((assignment) =>',
+            '      Array.isArray(assignment.requiredCheckItemIds)',
+            '        ? assignment.requiredCheckItemIds',
+            '        : []',
+            '    )',
+            '  ),',
+            '];',
+            'const requiredVetoItemIds = Array.isArray(request.requiredVetoItemIds)',
+            '  ? request.requiredVetoItemIds',
+            '  : [];',
+            'process.stdout.write(JSON.stringify({',
+            "  schemaVersion: 'audit-readonly-auditor-response/v1',",
+            '  requestHash: request.requestHash,',
+            '  auditEpochId: request.auditEpochId,',
+            '  auditTargetBundleHash: request.auditTargetBundleHash,',
+            '  roundIndex: request.roundIndex,',
+            '  perspectiveResults,',
+            '  coveredCheckItemIds,',
+            '  vetoItemResults: requiredVetoItemIds.map((itemId) => ({ itemId, passed: true })),',
+            '  validatedGapRefs: [],',
+            '  invalidGapRefs: [],',
+            '  checkedProjectionQualityRuleCodes: request.checkedProjectionQualityRuleCodes,',
+            "  rationale: 'The readonly process wrote stdout but omitted the declared response file.',",
+            '}));',
+          ].join('\n'),
+          'utf8'
+        );
+        process.env.PATH = `${fakeBin}${path.delimiter}${originalPath ?? ''}`;
+
+        const result = runMainAgentAutomaticLoop({
+          projectRoot: fixture.root,
+          recordId: fixture.authority.recordId,
+          requirementSetId: fixture.identity.requirementSetId,
+          runId: fixture.identity.implementationAttemptId,
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          host: 'codex',
+        });
+        const packet = result.dispatchInstruction?.packet as ExecutionPacket;
+        const roundDir = path.join(
+          path.dirname(packet.auditTriadExecutionPlanRef!.path),
+          'rounds',
+          'round-1'
+        );
+
+        expect(result.status).toBe('blocked');
+        expect(result.steps).toContainEqual(
+          expect.objectContaining({
+            step: 'audit-controlled-executor.readonly-auditor-request',
+            status: 'fail',
+            summary: 'audit_readonly_auditor_response_file_missing',
+          })
+        );
+        expect(existsSync(path.join(roundDir, 'readonly-auditor-response.json'))).toBe(false);
+        expect(existsSync(path.join(roundDir, 'judge-request.json'))).toBe(false);
+        expect(existsSync(path.join(roundDir, 'audit-triad-round-receipt.json'))).toBe(false);
+      } finally {
+        process.env.PATH = originalPath;
+        fixture.cleanup();
+      }
+    }
+  );
+
+  it.skip('legacy injected missing-veto response is replaced by the real-provider negative journey', async () => {
+    const fixture = materializePromptPublicationFixture();
+    try {
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
+      prepareAuditDispatchRuntime(fixture);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
+        },
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
+
+      const first = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        args: {
+          auditReadonlyAuditorAdapterCommand: JSON.stringify([
+            process.execPath,
+            '-e',
+            'process.exit(23)',
+          ]),
+        },
+      });
+      const packet = first.dispatchInstruction?.packet as ExecutionPacket;
+      const planRef = packet.auditTriadExecutionPlanRef!;
+      const roundOneDir = path.join(path.dirname(planRef.path), 'rounds', 'round-1');
+      const readonlyRequest = JSON.parse(
+        readFileSync(path.join(roundOneDir, 'readonly-auditor-request.json'), 'utf8')
+      );
+      const readonlyResponseWithoutHash = {
+        schemaVersion: 'audit-readonly-auditor-response/v1',
+        requestHash: readonlyRequest.requestHash,
+        auditEpochId: readonlyRequest.auditEpochId,
+        auditTargetBundleHash: readonlyRequest.auditTargetBundleHash,
+        roundIndex: 1,
+        perspectiveResults: {
+          product_intent: { agentId: 'readonly-product-r1', validGaps: [] },
+          model_projection: { agentId: 'readonly-model-r1', validGaps: [] },
+          main_agent_execution: { agentId: 'readonly-execution-r1', validGaps: [] },
+        },
+        coveredCheckItemIds: readonlyRequest.perspectiveAssignments[0].requiredCheckItemIds,
+        vetoItemResults: [],
+        validatedGapRefs: [],
+        invalidGapRefs: [],
+        checkedProjectionQualityRuleCodes: readonlyRequest.checkedProjectionQualityRuleCodes,
+        rationale: 'All assigned perspectives completed without a current valid gap.',
+      };
+      writeJsonFixture(path.join(roundOneDir, 'readonly-auditor-response.json'), {
+        ...readonlyResponseWithoutHash,
+        responseHash: sha256Text(stableStringify(readonlyResponseWithoutHash)),
+      });
+
+      const second = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+      });
+
+      expect(second.status).toBe('blocked');
+      expect(second.taskReport).toBeNull();
+      expect(second.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.readonly-auditor-request',
+          status: 'fail',
+          summary: expect.stringMatching(/^audit_readonly_auditor_veto_item_missing:/u),
+        })
+      );
+      const roundReceiptPath = path.join(roundOneDir, 'audit-triad-round-receipt.json');
+      expect(existsSync(path.join(roundOneDir, 'judge-request.json'))).toBe(false);
+      expect(existsSync(path.join(roundOneDir, 'judge-execution-receipt.json'))).toBe(false);
+      expect(existsSync(roundReceiptPath)).toBe(false);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('does not accept a prewritten readonly response and self-signed host receipt as host execution', async () => {
+    const fixture = materializePromptPublicationFixture();
+    const originalPath = process.env.PATH;
+    try {
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
+      prepareAuditDispatchRuntime(fixture);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
+        },
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
+
+      const loopInput = {
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks' as const,
+        stage: 'implement',
+        host: 'codex' as const,
+      };
+      const emptyPath = path.join(fixture.root, '.test-runtime', 'empty-path');
+      mkdirSync(emptyPath, { recursive: true });
+      process.env.PATH = emptyPath;
+      const first = runMainAgentAutomaticLoop(loopInput);
+      const packet = first.dispatchInstruction?.packet as ExecutionPacket;
+      const planRef = packet.auditTriadExecutionPlanRef!;
+      const roundDir = path.join(path.dirname(planRef.path), 'rounds', 'round-1');
+      const requestPath = path.join(roundDir, 'readonly-auditor-request.json');
+      const readonlyRequest = JSON.parse(readFileSync(requestPath, 'utf8'));
+      const readonlyResponseWithoutHash = {
+        schemaVersion: 'audit-readonly-auditor-response/v1',
+        requestHash: readonlyRequest.requestHash,
+        auditEpochId: readonlyRequest.auditEpochId,
+        auditTargetBundleHash: readonlyRequest.auditTargetBundleHash,
+        roundIndex: 1,
+        perspectiveResults: {
+          product_intent: { agentId: 'readonly-product-host-negative', validGaps: [] },
+          model_projection: { agentId: 'readonly-model-host-negative', validGaps: [] },
+          main_agent_execution: {
+            agentId: 'readonly-execution-host-negative',
+            validGaps: [],
+          },
+        },
+        coveredCheckItemIds: readonlyRequest.perspectiveAssignments[0].requiredCheckItemIds,
+        vetoItemResults: readonlyRequest.requiredVetoItemIds.map((itemId: string) => ({
+          itemId,
+          passed: true,
+        })),
+        validatedGapRefs: [],
+        invalidGapRefs: [],
+        checkedProjectionQualityRuleCodes: readonlyRequest.checkedProjectionQualityRuleCodes,
+        rationale: 'Negative control: response file has no producer invocation receipt.',
+      };
+      const readonlyResponse = {
+        ...readonlyResponseWithoutHash,
+        responseHash: sha256Text(stableStringify(readonlyResponseWithoutHash)),
+      };
+      writeJsonFixture(path.join(roundDir, 'readonly-auditor-response.json'), readonlyResponse);
+      const forgedHostReceiptWithoutHash = {
+        schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
+        auditEpochId: readonlyRequest.auditEpochId,
+        auditTargetBundleHash: readonlyRequest.auditTargetBundleHash,
+        roundIndex: 1,
+        requestHash: readonlyRequest.requestHash,
+        exitCode: 0,
+        responseProduced: true,
+        responseHash: readonlyResponse.responseHash,
+      };
+      writeJsonFixture(path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json'), {
+        ...forgedHostReceiptWithoutHash,
+        receiptHash: sha256Text(stableStringify(forgedHostReceiptWithoutHash)),
+      });
+
+      const second = runMainAgentAutomaticLoop(loopInput);
+
+      expect(second.status).toBe('blocked');
+      expect(second.taskReport).toBeNull();
+      expect(second.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.readonly-auditor-request',
+          status: 'fail',
+          summary: 'audit_readonly_auditor_codex_entry_not_resolvable',
+        })
+      );
+      expect(existsSync(path.join(roundDir, 'judge-request.json'))).toBe(false);
+      expect(existsSync(path.join(roundDir, 'judge-execution-receipt.json'))).toBe(false);
+      expect(existsSync(path.join(roundDir, 'audit-triad-round-receipt.json'))).toBe(false);
+    } finally {
+      process.env.PATH = originalPath;
+      fixture.cleanup();
+    }
+  });
+
+  it.skip('legacy injected Judge-gap remediation awaits the real-provider golden journey', async () => {
+    const fixture = materializePromptPublicationFixture();
+    try {
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
+      prepareAuditDispatchRuntime(fixture);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
+        },
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
+
+      const auditAdapters = createFixtureAuditAdapterCommands({
+        root: fixture.root,
+        readonlyOutcome: 'validated_gap',
+        judgeVerdict: 'new_valid_gap',
+      });
+      const loopInput = {
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks' as const,
+        stage: 'implement',
+        host: 'codex' as const,
+        args: {
+          auditReadonlyAuditorAdapterCommand:
+            auditAdapters.readonlyAuditorAdapterCommand,
+          auditJudgeAdapterCommand: auditAdapters.judgeAdapterCommand,
+        },
+      };
+      const result = runMainAgentAutomaticLoop(loopInput);
+      const packet = result.dispatchInstruction?.packet as ExecutionPacket;
+      const planRef = packet.auditTriadExecutionPlanRef!;
+      const plan = JSON.parse(readFileSync(planRef.path, 'utf8'));
+      const roundDir = path.join(path.dirname(planRef.path), 'rounds', 'round-1');
+      const readonlyRequest = JSON.parse(
+        readFileSync(path.join(roundDir, 'readonly-auditor-request.json'), 'utf8')
+      );
+      const gapRef = `gap:${readonlyRequest.requestHash}`;
+
+      const feedbackPath = path.join(roundDir, 'repair-feedback-dispatch.json');
+      expect(existsSync(feedbackPath), JSON.stringify(result.steps, null, 2)).toBe(true);
+      const feedback = JSON.parse(readFileSync(feedbackPath, 'utf8'));
+      const roundReceiptPath = path.join(roundDir, 'audit-triad-round-receipt.json');
+      const judgeReceiptPath = path.join(roundDir, 'judge-execution-receipt.json');
+      expect(result.status).toBe('blocked');
+      expect(result.taskReport, JSON.stringify(result.steps, null, 2)).toMatchObject({
+        packetId: result.dispatchInstruction?.packetId,
+        status: 'blocked',
+        evidence: expect.arrayContaining([
+          path.relative(fixture.root, feedbackPath).replace(/\\/gu, '/'),
+          path.relative(fixture.root, roundReceiptPath).replace(/\\/gu, '/'),
+        ]),
+      });
+      expect(result.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'task-report.ingest',
+          status: 'fail',
+        })
+      );
+      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_remediation');
+      expect(readOrchestrationState(fixture.root, result.dispatchInstruction!.sessionId)).toMatchObject(
+        {
+          nextAction: 'dispatch_remediation',
+          lastTaskReport: {
+            packetId: result.dispatchInstruction?.packetId,
+            status: 'blocked',
+          },
+        }
+      );
+      expect(feedback).toMatchObject({
+        schemaVersion: 'audit-repair-feedback-dispatch/v1',
+        recordId: plan.recordId,
+        attemptId: plan.attemptId,
+        auditEpochId: plan.auditEpochId,
+        auditTargetBundleHash: plan.auditTargetBundleHash,
+        semanticModelHash: plan.semanticModelHash,
+        projectionSetHash: plan.projectionSetHash,
+        qualityRuleSetHash: plan.qualityRuleSetHash,
+        roundIndex: 1,
+        validatedGapRefs: [gapRef],
+        roundReceiptRef: {
+          path: path.relative(fixture.root, roundReceiptPath).replace(/\\/gu, '/'),
+          contentHash: sha256Text(readFileSync(roundReceiptPath, 'utf8')),
+        },
+        judgeReceiptRef: {
+          path: path.relative(fixture.root, judgeReceiptPath).replace(/\\/gu, '/'),
+          contentHash: sha256Text(readFileSync(judgeReceiptPath, 'utf8')),
+        },
+        dispatchHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(
+        existsSync(path.join(path.dirname(planRef.path), 'rounds', 'round-2', 'readonly-auditor-request.json'))
+      ).toBe(false);
+      expect(existsSync(path.join(roundDir, 'main-agent-repair-receipt.json'))).toBe(false);
+
+      const remediationInstruction = buildMainAgentDispatchInstruction({
+        ...loopInput,
+        hydratePacket: true,
+      });
+      expect(remediationInstruction?.taskType).toBe('remediate');
+      const remediationPacket = JSON.parse(
+        readFileSync(remediationInstruction!.packetPath, 'utf8')
+      ) as ExecutionPacket;
+      expect(remediationPacket.inputArtifacts).toContain(feedbackPath);
+      expect(remediationPacket.auditRepairContext).toMatchObject({
+        schemaVersion: 'audit-repair-context/v1',
+        sourceAuditEpochId: plan.auditEpochId,
+        sourceAuditTargetBundleHash: plan.auditTargetBundleHash,
+        semanticModelHash: plan.semanticModelHash,
+        projectionSetHash: plan.projectionSetHash,
+        qualityRuleSetHash: plan.qualityRuleSetHash,
+        validatedGapRefs: [gapRef],
+        feedbackDispatchRef: {
+          path: feedbackPath,
+          contentHash: sha256Text(readFileSync(feedbackPath, 'utf8')),
+          dispatchHash: feedback.dispatchHash,
+        },
+      });
+
+      const pointer = JSON.parse(
+        readFileSync(fixture.options.currentDispatchPointer, 'utf8')
+      ) as Record<string, unknown>;
+      executeRequiredCommandsForPublishedFixture({ fixture, pointer });
+      const staleRepair = runMainAgentAutomaticLoop({
+        ...loopInput,
+        executor: ({ instruction }) => ({
+          packetId: instruction.packetId,
+          status: 'done',
+          filesChanged: [fixture.paths.sourcePath],
+          validationsRun: ['audit-remediation-fixture'],
+          evidence: [feedbackPath],
+          downstreamContext: ['Remediation claims completion without a fresh publication.'],
+        }),
+      });
+      expect(staleRepair.status).toBe('blocked');
+      expect(staleRepair.taskReport).toMatchObject({
+        packetId: remediationInstruction?.packetId,
+        status: 'blocked',
+        driftFlags: expect.arrayContaining(['audit-repair-fresh-authority-required']),
+      });
+      expect(existsSync(path.join(roundDir, 'main-agent-repair-receipt.json'))).toBe(false);
+
+      const freshRemediationInstruction = buildMainAgentDispatchInstruction({
+        ...loopInput,
+        hydratePacket: true,
+      });
+      expect(freshRemediationInstruction?.taskType).toBe('remediate');
+      let freshPublishResult: Promise<number> | null = null;
+      const repairPublisherOutput: string[] = [];
+      const repairStdout = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        repairPublisherOutput.push(String(chunk));
+        return true;
+      });
+      const repaired = runMainAgentAutomaticLoop({
+        ...loopInput,
+        executor: ({ instruction }) => {
+          expect(instruction.packetId).toBe(freshRemediationInstruction?.packetId);
+          const currentPointer = JSON.parse(
+            readFileSync(fixture.options.currentDispatchPointer, 'utf8')
+          ) as Record<string, unknown>;
+          const currentAttemptContext = JSON.parse(
+            readFileSync(fixture.paths.attemptContext, 'utf8')
+          ) as Record<string, unknown>;
+          writeJsonFixture(fixture.paths.attemptContext, {
+            ...currentAttemptContext,
+            attemptSequence: Number(currentPointer.attemptSequence) + 1,
+          });
+          freshPublishResult = requirementsContractPromptTransactionPublishCommand(
+            fixture.options,
+            {
+              runCompiledPrompt: compiledPromptRunnerFor(fixture, {
+                extraPacket: {
+                  packetId: fixture.identity.implementationAttemptId,
+                  repairRevision: feedback.dispatchHash,
+                },
+              }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>,
+            }
+          );
+          const freshPointer = JSON.parse(
+            readFileSync(fixture.options.currentDispatchPointer, 'utf8')
+          ) as Record<string, unknown>;
+          executeRequiredCommandsForPublishedFixture({ fixture, pointer: freshPointer });
+          const freshModelPacketRef = freshPointer.modelPacketRef as {
+            path: string;
+          };
+          return {
+            packetId: instruction.packetId,
+            status: 'done',
+            filesChanged: [path.dirname(freshModelPacketRef.path)],
+            validationsRun: ['audit-remediation-fixture', 'fresh-prompt-publication'],
+            evidence: [feedbackPath, fixture.options.currentDispatchPointer],
+            downstreamContext: ['Remediation produced a fresh governed publication.'],
+          };
+        },
+      });
+      repairStdout.mockRestore();
+      const repairPublicationRecord = JSON.parse(
+        readFileSync(fixture.paths.recordPath, 'utf8')
+      ) as Record<string, unknown>;
+      const repairPublicationContext = JSON.parse(
+        readFileSync(fixture.paths.attemptContext, 'utf8')
+      ) as Record<string, unknown>;
+      expect(
+        await freshPublishResult!,
+        JSON.stringify(
+          {
+            publisherOutput: repairPublisherOutput,
+            recordIdentity: {
+              requirementSetId: repairPublicationRecord.requirementSetId,
+              currentAttemptId: repairPublicationRecord.currentAttemptId,
+              sourceDocumentHash: repairPublicationRecord.sourceDocumentHash,
+              implementationConfirmationHash:
+                repairPublicationRecord.implementationConfirmationHash,
+              semanticModelHash: repairPublicationRecord.semanticModelHash,
+              sourceAmendmentHashes: repairPublicationRecord.sourceAmendmentHashes,
+            },
+            contextIdentity: {
+              transactionId: repairPublicationContext.transactionId,
+              requirementSetId: repairPublicationContext.requirementSetId,
+              implementationAttemptId: repairPublicationContext.implementationAttemptId,
+              attemptSequence: repairPublicationContext.attemptSequence,
+            },
+          },
+          null,
+          2
+        )
+      ).toBe(0);
+
+      const repairReceiptPath = path.join(roundDir, 'main-agent-repair-receipt.json');
+      expect(existsSync(repairReceiptPath), JSON.stringify(repaired.steps, null, 2)).toBe(true);
+      const repairReceipt = JSON.parse(readFileSync(repairReceiptPath, 'utf8'));
+      expect(repaired.status).toBe('completed');
+      expect(repaired.taskReport).toMatchObject({
+        packetId: freshRemediationInstruction?.packetId,
+        status: 'done',
+        evidence: expect.arrayContaining([
+          path.relative(fixture.root, repairReceiptPath).replace(/\\/gu, '/'),
+        ]),
+      });
+      expect(
+        repaired.finalSurface.mainAgentNextAction,
+        JSON.stringify(repaired.steps, null, 2)
+      ).toBe('dispatch_review');
+      expect(repairReceipt).toMatchObject({
+        schemaVersion: 'audit-main-agent-repair-receipt/v1',
+        recordId: plan.recordId,
+        sourceAuditEpochId: plan.auditEpochId,
+        sourceAuditTargetBundleHash: plan.auditTargetBundleHash,
+        remediationPacketId: freshRemediationInstruction?.packetId,
+        feedbackDispatchRef: {
+          path: path.relative(fixture.root, feedbackPath).replace(/\\/gu, '/'),
+          contentHash: sha256Text(readFileSync(feedbackPath, 'utf8')),
+          dispatchHash: feedback.dispatchHash,
+        },
+        changedHashFields: expect.arrayContaining(['modelPacketHash']),
+        repairedAuditTargetBundleHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(repairReceipt.repairedAuditTargetBundleHash).not.toBe(plan.auditTargetBundleHash);
+
+      const nextAuditInstruction = buildMainAgentDispatchInstruction({
+        ...loopInput,
+        hydratePacket: true,
+      });
+      expect(nextAuditInstruction?.taskType).toBe('audit');
+      const nextAuditPacket = JSON.parse(
+        readFileSync(nextAuditInstruction!.packetPath, 'utf8')
+      ) as ExecutionPacket;
+      expect(
+        readOrchestrationState(fixture.root, nextAuditInstruction!.sessionId)
+      ).toMatchObject({
+        nextAction: 'dispatch_review',
+        pendingPacket: {
+          packetId: nextAuditInstruction?.packetId,
+          packetPath: nextAuditInstruction?.packetPath,
+          status: 'ready_for_main_agent',
+        },
+      });
+      const nextAuditSurface = resolveMainAgentOrchestrationSurface(loopInput);
+      expect(
+        {
+          nextAction: nextAuditSurface.mainAgentNextAction,
+          sessionId: nextAuditSurface.sessionId,
+          statePath: nextAuditSurface.orchestrationStatePath,
+          pendingPacketId: nextAuditSurface.orchestrationState?.pendingPacket?.packetId,
+          pendingPacketStatus: nextAuditSurface.pendingPacketStatus,
+        },
+        JSON.stringify(
+          {
+            sixModelRuntimeDecision: nextAuditSurface.sixModelRuntimeDecision,
+            continueDecision: nextAuditSurface.continueDecision,
+            mainAgentCanContinue: nextAuditSurface.mainAgentCanContinue,
+            latestGate: nextAuditSurface.latestGate,
+            orchestrationState: nextAuditSurface.orchestrationState,
+            repairReceipt,
+            nextAuditPacket: {
+              packetId: nextAuditPacket.packetId,
+              auditExecutionProfile: nextAuditPacket.auditExecutionProfile,
+              auditTriadExecutionPlanRef: nextAuditPacket.auditTriadExecutionPlanRef,
+            },
+          },
+          null,
+          2
+        )
+      ).toMatchObject({
+        nextAction: 'dispatch_review',
+        sessionId: nextAuditInstruction?.sessionId,
+        pendingPacketId: nextAuditInstruction?.packetId,
+        pendingPacketStatus: 'ready_for_main_agent',
+      });
+      expect(nextAuditPacket.auditExecutionProfile?.auditEpochId).not.toBe(plan.auditEpochId);
+      expect(nextAuditPacket.auditExecutionProfile?.auditTargetBundleHash).not.toBe(
+        plan.auditTargetBundleHash
+      );
+      const nextAuditRequestPath = path.join(
+        path.dirname(nextAuditPacket.auditTriadExecutionPlanRef!.path),
+        'rounds',
+        'round-1',
+        'readonly-auditor-request.json'
+      );
+      const postRepairAdapters = createFixtureAuditAdapterCommands({
+        root: fixture.root,
+        readonlyOutcome: 'no_gap',
+        judgeVerdict: 'no_new_valid_gap',
+      });
+      const postRepairLoopInput = {
+        ...loopInput,
+        args: {
+          auditReadonlyAuditorAdapterCommand:
+            postRepairAdapters.readonlyAuditorAdapterCommand,
+          auditJudgeAdapterCommand: postRepairAdapters.judgeAdapterCommand,
+        },
+      };
+      const nextAuditStart = runMainAgentAutomaticLoop(postRepairLoopInput);
+      expect(nextAuditStart.status).toBe('blocked');
+      expect(
+        existsSync(nextAuditRequestPath),
+        JSON.stringify(nextAuditStart.steps, null, 2)
+      ).toBe(true);
+      expect(JSON.parse(readFileSync(nextAuditRequestPath, 'utf8'))).toMatchObject({
+        auditEpochId: nextAuditPacket.auditExecutionProfile?.auditEpochId,
+        priorRepairReceiptRefs: [
+          {
+            path: path.relative(fixture.root, repairReceiptPath).replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(repairReceiptPath, 'utf8')),
+          },
+        ],
+      });
+
+      const nextAuditPlanRef = nextAuditPacket.auditTriadExecutionPlanRef!;
+      const nextAuditPlan = JSON.parse(
+        readFileSync(nextAuditPlanRef.path, 'utf8')
+      ) as Record<string, any>;
+      const requiredPostRepairRounds =
+        nextAuditPlan.roundPolicy.consecutiveNoGapRoundsRequired;
+      expect(
+        existsSync(
+          path.join(
+            path.dirname(nextAuditPlanRef.path),
+            'rounds',
+            'round-2',
+            'readonly-auditor-request.json'
+          )
+        )
+      ).toBe(requiredPostRepairRounds > 1);
+      let postRepairLoop = nextAuditStart;
+      for (
+        let roundIndex = 2;
+        roundIndex <= requiredPostRepairRounds;
+        roundIndex += 1
+      ) {
+        postRepairLoop = runMainAgentAutomaticLoop(postRepairLoopInput);
+        if (roundIndex < requiredPostRepairRounds) {
+          expect(
+            existsSync(
+              path.join(
+                path.dirname(nextAuditPlanRef.path),
+                'rounds',
+                `round-${roundIndex + 1}`,
+                'readonly-auditor-request.json'
+              )
+            ),
+            JSON.stringify(
+              {
+                roundIndex,
+                status: postRepairLoop.status,
+                steps: postRepairLoop.steps,
+                taskReport: postRepairLoop.taskReport,
+                finalNextAction: postRepairLoop.finalSurface.mainAgentNextAction,
+              },
+              null,
+              2
+            )
+          ).toBe(true);
+        }
+      }
+
+      const postRepairJudgeRuns = readFileSync(
+        postRepairAdapters.judgeInvocationLogPath,
+        'utf8'
+      )
+        .trim()
+        .split(/\r?\n/u)
+        .filter(Boolean)
+        .map(Number);
+      expect(postRepairJudgeRuns).toEqual(
+        Array.from({ length: requiredPostRepairRounds }, (_, index) => index + 1)
+      );
+      expect(
+        postRepairLoop.status,
+        JSON.stringify(
+          {
+            steps: postRepairLoop.steps,
+            taskReport: postRepairLoop.taskReport,
+            finalNextAction: postRepairLoop.finalSurface.mainAgentNextAction,
+          },
+          null,
+          2
+        )
+      ).toBe('completed');
+      expect(postRepairLoop.taskReport?.status).toBe('done');
+      expect(postRepairLoop.taskReport?.evidence).toEqual(
+        expect.arrayContaining([
+          path.relative(fixture.root, repairReceiptPath).replace(/\\/gu, '/'),
+          path.relative(fixture.root, feedbackPath).replace(/\\/gu, '/'),
+        ])
+      );
+      const postRepairAuditDir = path.dirname(nextAuditPlanRef.path);
+      const postRepairReport = JSON.parse(
+        readFileSync(path.join(postRepairAuditDir, 'audit-review-report.json'), 'utf8')
+      );
+      expect(postRepairReport.repairEvidence).toMatchObject({
+        schemaVersion: 'audit-triad-repair-evidence-binding/v1',
+        repairReceiptRefs: [
+          {
+            path: path.relative(fixture.root, repairReceiptPath).replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(repairReceiptPath, 'utf8')),
+          },
+        ],
+        repairFeedbackDispatchRefs: [
+          {
+            path: path.relative(fixture.root, feedbackPath).replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(feedbackPath, 'utf8')),
+            dispatchHash: feedback.dispatchHash,
+          },
+        ],
+        evidenceSetHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      const postRepairFinalizationReceipt = JSON.parse(
+        readFileSync(path.join(postRepairAuditDir, 'audit-finalization-receipt.json'), 'utf8')
+      );
+      expect(postRepairFinalizationReceipt).toMatchObject({
+        decision: 'pass',
+        repairReceiptRefs: [
+          {
+            path: path.relative(fixture.root, repairReceiptPath).replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(repairReceiptPath, 'utf8')),
+          },
+        ],
+        repairFeedbackDispatchRefs: [
+          {
+            path: path.relative(fixture.root, feedbackPath).replace(/\\/gu, '/'),
+            contentHash: sha256Text(readFileSync(feedbackPath, 'utf8')),
+          },
+        ],
+        repairEvidence: {
+          evidenceSetHash: postRepairReport.repairEvidence.evidenceSetHash,
+        },
+      });
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it.skip('legacy injected no-gap convergence awaits the real-provider golden journey', async () => {
+    const fixture = materializePromptPublicationFixture();
+    try {
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
+      prepareAuditDispatchRuntime(fixture);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
+        },
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
+
+      const auditAdapters = createFixtureAuditAdapterCommands({
+        root: fixture.root,
+        readonlyOutcome: 'no_gap',
+        judgeVerdict: 'no_new_valid_gap',
+      });
+      const loopInput = {
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks' as const,
+        stage: 'implement',
+        host: 'codex' as const,
+        args: {
+          auditReadonlyAuditorAdapterCommand:
+            auditAdapters.readonlyAuditorAdapterCommand,
+          auditJudgeAdapterCommand: auditAdapters.judgeAdapterCommand,
+        },
+      };
+      let loop = runMainAgentAutomaticLoop(loopInput);
+      const packet = loop.dispatchInstruction?.packet as ExecutionPacket;
+      const planRef = packet.auditTriadExecutionPlanRef!;
+      const plan = JSON.parse(readFileSync(planRef.path, 'utf8'));
+      const requiredRoundCount = plan.roundPolicy.consecutiveNoGapRoundsRequired;
+
+      for (let roundIndex = 2; roundIndex <= requiredRoundCount; roundIndex += 1) {
+        loop = runMainAgentAutomaticLoop(loopInput);
+        if (roundIndex < requiredRoundCount) {
+          expect(loop.status).toBe('blocked');
+          expect(
+            existsSync(
+              path.join(
+                path.dirname(planRef.path),
+                'rounds',
+                `round-${roundIndex + 1}`,
+                'readonly-auditor-request.json'
+              )
+            )
+          ).toBe(true);
+        }
+      }
+
+      const judgeRuns = readFileSync(auditAdapters.judgeInvocationLogPath, 'utf8')
+        .trim()
+        .split(/\r?\n/u)
+        .filter(Boolean)
+        .map(Number);
+      expect(judgeRuns).toEqual(
+        Array.from({ length: requiredRoundCount }, (_, index) => index + 1)
+      );
+      expect(
+        loop.status,
+        JSON.stringify(
+          {
+            steps: loop.steps,
+            taskReport: loop.taskReport,
+            finalNextAction: loop.finalSurface.mainAgentNextAction,
+          },
+          null,
+          2
+        )
+      ).toBe('completed');
+      expect(loop.taskReport?.status).toBe('done');
+      expect(loop.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.finalize',
+          status: 'pass',
+        })
+      );
+      expect(loop.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'task-report.ingest',
+          status: 'pass',
+        })
+      );
+      expect(
+        existsSync(path.join(path.dirname(planRef.path), 'audit-review-report.json'))
+      ).toBe(true);
+      expect(
+        existsSync(
+          path.join(
+            path.dirname(fixture.paths.recordPath),
+            'runtime',
+            'status-decisions',
+            fixture.identity.implementationAttemptId,
+            'audit_review.json'
+          )
+        )
+      ).toBe(true);
+      expect(
+        existsSync(
+          path.join(
+            path.dirname(planRef.path),
+            'rounds',
+            `round-${requiredRoundCount + 1}`,
+            'readonly-auditor-request.json'
+          )
+        )
+      ).toBe(false);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('rejects prewritten round receipts without producer provenance', async () => {
+    const fixture = materializePromptPublicationFixture();
+    const originalPath = process.env.PATH;
+    try {
+      fixture.options.currentDispatchPointer = path.join(
+        fixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      setPromptPublicationReadiness(fixture, { decision: 'pass' });
+      prepareAuditDispatchRuntime(fixture);
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+        extraPacket: {
+          packetId: fixture.identity.implementationAttemptId,
+        },
+      }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        fixture.options,
+        { runCompiledPrompt }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode).toBe(0);
+
+      const loopInput = {
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks' as const,
+        stage: 'implement',
+        host: 'codex' as const,
+      };
+      const emptyPath = path.join(fixture.root, '.test-runtime', 'empty-path');
+      mkdirSync(emptyPath, { recursive: true });
+      process.env.PATH = emptyPath;
+      const initial = runMainAgentAutomaticLoop(loopInput);
+      const packet = initial.dispatchInstruction?.packet as ExecutionPacket;
+      const planRef = packet.auditTriadExecutionPlanRef!;
+      const plan = JSON.parse(readFileSync(planRef.path, 'utf8'));
+      const requiredRoundCount = plan.roundPolicy.consecutiveNoGapRoundsRequired;
+      for (let roundIndex = 1; roundIndex <= requiredRoundCount; roundIndex += 1) {
+        writeJsonFixture(
+          path.join(
+            path.dirname(planRef.path),
+            'rounds',
+            `round-${roundIndex}`,
+            'audit-triad-round-receipt.json'
+          ),
+          createFixtureAuditTriadRound(plan, `round-${roundIndex}`)
+        );
+      }
+
+      const resumed = runMainAgentAutomaticLoop(loopInput);
+
+      expect(resumed.status).toBe('blocked');
+      expect(resumed.taskReport).toBeNull();
+      expect(resumed.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.readonly-auditor-request',
+          status: 'fail',
+          summary:
+            'audit_controlled_executor_round_provenance_missing:round-1:judge_execution_receipt',
+        })
+      );
+      expect(resumed.steps).not.toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.finalize',
+        })
+      );
+      expect(resumed.steps).not.toContainEqual(
+        expect.objectContaining({
+          step: 'audit-controlled-executor.judge',
+        })
+      );
+    } finally {
+      process.env.PATH = originalPath;
+      fixture.cleanup();
+    }
+  }, 40000);
 
   it('does not reuse ready audit packet after a blocked implement report for an explicit requirement-set', async () => {
     const { fixture } = await publishImplementationPromptFixture();

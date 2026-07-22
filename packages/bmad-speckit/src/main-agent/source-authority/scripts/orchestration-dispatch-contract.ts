@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
+import type { CriticalAuditorJudgeRuntimeBinding } from './requirements-contract-critical-auditor-independence';
 
 export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
 export type OrchestrationFlow = 'story' | 'bugfix' | 'standalone_tasks';
@@ -124,6 +125,13 @@ export interface AuditExecutionProfile {
   stageProfileId: string;
   stageProfileHash: string;
   requiredCheckItemSetHash: string;
+  auditEpochId: string;
+  auditTargetBundleHash: string;
+  semanticModelHash: string;
+  projectionSetHash: string;
+  checkedProjectionQualityRuleCodes: string[];
+  qualityRuleSetHash: string;
+  independentProviderBinding: CriticalAuditorJudgeRuntimeBinding;
   perspectives: string[];
   auditScoringConvergencePolicy: AuditScoringConvergencePolicy;
   runAuditorHostArgs: {
@@ -137,7 +145,12 @@ export interface AuditExecutionProfile {
     requirementSetId: string;
     attemptId: string;
     sourceDocumentHash: string;
+    semanticModelHash: string;
     implementationConfirmationHash: string;
+    projectionSetHash: string;
+    qualityRuleSetHash: string;
+    auditEpochId: string;
+    auditTargetBundleHash: string;
     modelPacketHash?: string | null;
     currentAttemptHash: string;
     currentEvidenceHash: string;
@@ -150,6 +163,11 @@ export interface AuditTriadExecutionPlanRef {
   contentHash: string;
   attemptId: string;
   stageProfileId: string;
+  auditEpochId: string;
+  auditTargetBundleHash: string;
+  semanticModelHash: string;
+  projectionSetHash: string;
+  qualityRuleSetHash: string;
   criticalAuditorProfileHash: string;
   criticalAuditorStageProfileHash: string;
   requiredCheckItemSetHash: string;
@@ -157,6 +175,25 @@ export interface AuditTriadExecutionPlanRef {
   goalExecutionHash?: string | null;
   currentAttemptHash: string;
   currentEvidenceHash: string;
+}
+
+export interface AuditRepairContext {
+  schemaVersion: 'audit-repair-context/v1';
+  sourceAuditEpochId: string;
+  sourceAuditTargetBundleHash: string;
+  semanticModelHash: string;
+  projectionSetHash: string;
+  qualityRuleSetHash: string;
+  validatedGapRefs: string[];
+  priorRepairReceiptRefs?: Array<{
+    path: string;
+    contentHash: string;
+  }>;
+  feedbackDispatchRef: {
+    path: string;
+    contentHash: string;
+    dispatchHash: string;
+  };
 }
 
 export interface ExecutionStrategyOption {
@@ -229,6 +266,7 @@ export interface ExecutionPacket {
   sddArtifactManifestRef?: SddArtifactManifestRef | null;
   auditExecutionProfile?: AuditExecutionProfile | null;
   auditTriadExecutionPlanRef?: AuditTriadExecutionPlanRef | null;
+  auditRepairContext?: AuditRepairContext | null;
 }
 
 export interface ResumePacket {
@@ -415,6 +453,52 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
     ) {
       throw new Error('auditExecutionProfile modelPacketHash must match compiledPromptRef');
     }
+    for (const [field, value] of [
+      ['auditEpochId', input.auditExecutionProfile.auditEpochId],
+      ['auditTargetBundleHash', input.auditExecutionProfile.auditTargetBundleHash],
+      ['semanticModelHash', input.auditExecutionProfile.semanticModelHash],
+      ['projectionSetHash', input.auditExecutionProfile.projectionSetHash],
+      ['qualityRuleSetHash', input.auditExecutionProfile.qualityRuleSetHash],
+    ] as const) {
+      if (!isSha256Hash(value)) {
+        throw new Error(`auditExecutionProfile ${field} must be a canonical sha256 hash`);
+      }
+    }
+    for (const field of [
+      'auditEpochId',
+      'auditTargetBundleHash',
+      'semanticModelHash',
+      'projectionSetHash',
+      'qualityRuleSetHash',
+    ] as const) {
+      if (
+        input.auditExecutionProfile.currentAttemptBinding[field] !==
+        input.auditExecutionProfile[field]
+      ) {
+        throw new Error(`auditExecutionProfile currentAttemptBinding ${field} must match profile`);
+      }
+      if (input.auditTriadExecutionPlanRef[field] !== input.auditExecutionProfile[field]) {
+        throw new Error(`auditTriadExecutionPlanRef ${field} must match auditExecutionProfile`);
+      }
+    }
+    if (input.auditExecutionProfile.checkedProjectionQualityRuleCodes.length === 0) {
+      throw new Error('auditExecutionProfile checkedProjectionQualityRuleCodes are required');
+    }
+    for (const field of [
+      'providerId',
+      'model',
+      'transport',
+      'apiStyle',
+      'configuredBaseUrlHash',
+      'independenceClass',
+      'providerRegistryHash',
+      'providerConfigurationHash',
+    ] as const) {
+      const value = input.auditExecutionProfile.independentProviderBinding[field];
+      if (!value) {
+        throw new Error(`auditExecutionProfile independentProviderBinding ${field} is required`);
+      }
+    }
     const currentAttemptHash = input.auditExecutionProfile.currentAttemptBinding.currentAttemptHash;
     if (!currentAttemptHash || !isSha256Hash(currentAttemptHash)) {
       throw new Error('auditExecutionProfile currentAttemptHash must be a canonical sha256 hash');
@@ -489,6 +573,38 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
       );
     }
   }
+  if (input.auditRepairContext) {
+    if (input.taskType !== 'remediate') {
+      throw new Error('auditRepairContext is only valid for remediation packets');
+    }
+    for (const [field, value] of [
+      ['sourceAuditEpochId', input.auditRepairContext.sourceAuditEpochId],
+      ['sourceAuditTargetBundleHash', input.auditRepairContext.sourceAuditTargetBundleHash],
+      ['semanticModelHash', input.auditRepairContext.semanticModelHash],
+      ['projectionSetHash', input.auditRepairContext.projectionSetHash],
+      ['qualityRuleSetHash', input.auditRepairContext.qualityRuleSetHash],
+      ['contentHash', input.auditRepairContext.feedbackDispatchRef.contentHash],
+      ['dispatchHash', input.auditRepairContext.feedbackDispatchRef.dispatchHash],
+    ] as const) {
+      if (!/^sha256:[a-f0-9]{64}$/u.test(value)) {
+        throw new Error(`auditRepairContext ${field} must be a canonical sha256 hash`);
+      }
+    }
+    for (const ref of input.auditRepairContext.priorRepairReceiptRefs ?? []) {
+      if (!ref.path || !isSha256Hash(ref.contentHash)) {
+        throw new Error('auditRepairContext prior repair receipt ref is invalid');
+      }
+    }
+    if (
+      !input.auditRepairContext.feedbackDispatchRef.path ||
+      input.auditRepairContext.validatedGapRefs.length === 0
+    ) {
+      throw new Error('auditRepairContext requires feedback dispatch and validated gaps');
+    }
+    if (!input.inputArtifacts.includes(input.auditRepairContext.feedbackDispatchRef.path)) {
+      throw new Error('auditRepairContext feedback dispatch must be an input artifact');
+    }
+  }
   if (input.executionStrategy && input.executionStrategy.availability !== 'available') {
     throw new Error('executionStrategy availability must be available');
   }
@@ -529,6 +645,7 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
     sddArtifactManifestRef: input.sddArtifactManifestRef ?? null,
     auditExecutionProfile: input.auditExecutionProfile ?? null,
     auditTriadExecutionPlanRef: input.auditTriadExecutionPlanRef ?? null,
+    auditRepairContext: input.auditRepairContext ?? null,
   };
 }
 

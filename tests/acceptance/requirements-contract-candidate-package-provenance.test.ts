@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractCandidatePackageCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-candidate-package';
+import { createRuntimeBuildAuthorityReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority';
 
 function write(root: string, relativePath: string, value: string) {
   const target = path.join(root, relativePath);
@@ -31,11 +32,47 @@ describe('requirements contract candidate package provenance', () => {
         `${JSON.stringify({
           name: 'bmad-speckit',
           version: '1.2.3',
-          files: ['dist', 'src'],
+          files: ['dist', '_bmad', 'bin'],
         })}\n`
       );
-      write(root, 'packages/bmad-speckit/src/index.js', 'module.exports = 1;\n');
       write(root, 'packages/bmad-speckit/dist/index.js', 'module.exports = 1;\n');
+      write(root, 'packages/bmad-speckit/bin/bmad-speckit.js', 'module.exports = 1;\n');
+      write(root, 'packages/bmad-speckit/_bmad/runtime/owner.txt', 'package owner\n');
+      write(
+        root,
+        'packages/bmad-speckit/scripts/build-main-agent-dist.cjs',
+        'module.exports = {};\n'
+      );
+      write(root, 'package-lock.json', '{"lockfileVersion":3}\n');
+      const runtimeAssetManifestPath = path.join(
+        root,
+        'packages/bmad-speckit/dist/main-agent/runtime-asset-manifest.json'
+      );
+      write(
+        root,
+        'packages/bmad-speckit/dist/main-agent/runtime-asset-manifest.json',
+        `${JSON.stringify({
+          schemaVersion: 'bmad-speckit-main-agent-runtime-assets/v2',
+          hashDomainRegistry: {
+            schemaVersion: 'requirements-contract-hash-domains/v2',
+          },
+          entries: [],
+        })}\n`
+      );
+      const buildAuthority = createRuntimeBuildAuthorityReceipt({
+        packageRoot: path.join(root, 'packages/bmad-speckit'),
+        runtimeAssetManifestPath,
+        buildScriptPath: path.join(
+          root,
+          'packages/bmad-speckit/scripts/build-main-agent-dist.cjs'
+        ),
+        dependencyLockPath: path.join(root, 'package-lock.json'),
+      });
+      write(
+        root,
+        'packages/bmad-speckit/dist/main-agent/runtime-build-authority-receipt.json',
+        `${JSON.stringify(buildAuthority)}\n`
+      );
       const phaseRoot = path.join(
         root,
         'audit-phases',
@@ -65,7 +102,7 @@ describe('requirements contract candidate package provenance', () => {
         json: false,
       });
 
-      expect(result.schemaVersion).toBe('requirements-contract-candidate-package-receipt/v1');
+      expect(result.schemaVersion).toBe('requirements-contract-candidate-package-receipt/v2');
       expect(result.packArgv).toEqual(['npm.cmd', 'pack', '--json', '--ignore-scripts']);
       expect(result.nodeVersion).toBe('v22.22.1');
       expect(result.npmVersion).toBe('10.9.4');
@@ -76,9 +113,20 @@ describe('requirements contract candidate package provenance', () => {
         phase: 'architecture',
         phaseAuditAttemptId,
       });
-      expect(result.packedEntries).toEqual(
-        expect.arrayContaining(['package/dist/index.js', 'package/src/index.js'])
-      );
+      expect(result.packedEntries).toEqual(expect.arrayContaining([
+        'package/dist/index.js',
+        'package/dist/main-agent/runtime-asset-manifest.json',
+        'package/dist/main-agent/runtime-build-authority-receipt.json',
+        'package/_bmad/runtime/owner.txt',
+      ]));
+      expect(result.packedEntries).not.toContain('package/src/index.js');
+      expect(result.forbiddenPackedSourceSnapshotCount).toBe(0);
+      expect(result.buildAuthorityReceiptRef.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(result.distBuildHash).toBe(buildAuthority.distBuildHash);
+      expect(result.tarballBytesHash).toBe(result.publicationHash);
+      expect(result.packedRuntimeHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(result.packedRuntimeHash).toBe(buildAuthority.packageRuntimeHash);
+      expect(result.packedRuntimeFileCount).toBeGreaterThan(0);
       expect(existsSync(tarball)).toBe(true);
       expect(JSON.parse(readFileSync(receipt, 'utf8')).decision).toBe('pass');
     } finally {

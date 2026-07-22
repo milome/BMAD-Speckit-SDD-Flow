@@ -558,6 +558,13 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
     validatorRef: 'requirements-contract-normalized-judge-response.schema.json',
   },
   {
+    consumerId: 'claude-code-cli-judge-adapter',
+    fileName: 'requirements-contract-claude-code-cli-judge-adapter.ts',
+    inputRole: 'frozen_local_judge_evidence_snapshot',
+    supportedModes: ['execution', 'closeout'],
+    validatorRef: 'requirements-contract-normalized-judge-response.schema.json',
+  },
+  {
     consumerId: 'judge-provider-smoke',
     fileName: 'requirements-contract-judge-provider-smoke.ts',
     inputRole: 'audit_phase_context',

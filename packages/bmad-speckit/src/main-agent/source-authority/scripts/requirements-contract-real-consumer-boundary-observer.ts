@@ -28,6 +28,8 @@ export function observeRequirementsContractRealConsumerBoundaries(input: JsonRec
     phaseAuditAttemptId: input.phaseAuditAttemptId,
     installedPackageRoot: slash(fs.realpathSync(input.installedPackageRoot)),
     formalBoundaryRefs: observed.formalBoundaryRefs,
+    installedRuntimeHash: observed.installedRuntimeHash,
+    installedRuntimeFileCount: observed.installedRuntimeFileCount,
     installedDependencyTreeHash: observed.installedDependencyTreeHash,
     substitutionCounts: {
       fixture: 0,

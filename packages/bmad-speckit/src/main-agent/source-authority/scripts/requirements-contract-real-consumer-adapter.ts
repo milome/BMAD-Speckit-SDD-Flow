@@ -2,10 +2,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   fileHash,
-  sha256,
   slash,
   writeGovernedJson,
 } from './requirements-contract-governed-write';
+import {
+  createPackageRuntimeIndex,
+  packageRuntimeHashFor,
+} from './requirements-contract-package-runtime-index';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
 
@@ -171,18 +174,15 @@ export function runRequirementsContractRealConsumerAdapter(
       [boundaryRecord(installedRoot, registryHash, receiptByStage, input, spec)],
     ])
   );
+  const installedRuntimeIndex = createPackageRuntimeIndex(installedRoot);
+  const installedRuntimeHash = packageRuntimeHashFor(installedRoot);
   return {
     stageObservations,
     formalBoundaryRefs,
     workspaceLinkCount,
-    installedDependencyTreeHash: sha256(
-      JSON.stringify(
-        PROBES.map(([stageId, relativePath]) => ({
-          stageId,
-          path: relativePath,
-          hash: fileHash(path.join(installedRoot, relativePath)),
-        }))
-      )
-    ),
+    installedRuntimeHash,
+    installedRuntimeFileCount: installedRuntimeIndex.length,
+    installedRuntimeIndex,
+    installedDependencyTreeHash: installedRuntimeHash,
   };
 }

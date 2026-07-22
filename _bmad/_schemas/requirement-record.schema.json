@@ -90,6 +90,12 @@
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
     "semanticModelHash": { "$ref": "#/$defs/sha256" },
+    "sourceAmendmentHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/sha256" }
+    },
     "transactionId": { "$ref": "#/$defs/nonEmptyString" },
     "packetHash": { "$ref": "#/$defs/sha256" },
     "currentAttemptId": { "$ref": "#/$defs/nonEmptyString" },

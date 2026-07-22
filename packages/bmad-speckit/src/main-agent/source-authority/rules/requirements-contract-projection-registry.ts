@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+} from 'node:fs';
 import path from 'node:path';
 import { sha256Stable } from '../scripts/requirements-contract-semantic-resolver';
 
@@ -77,6 +83,48 @@ function normalize(value: string): string {
 function fileHash(root: string, relativePath: string): string {
   const resolved = path.resolve(root, relativePath);
   return `sha256:${createHash('sha256').update(readFileSync(resolved)).digest('hex')}`;
+}
+
+export function synchronizeRequirementsContractProjectionSurfaces(
+  root = process.cwd()
+): {
+  assetCount: number;
+  copiedSurfaceCount: number;
+} {
+  let copiedSurfaceCount = 0;
+  for (const asset of PROJECTION_ASSETS) {
+    const canonicalRelativePath = normalize(
+      path.posix.join(SHARED_REQUIREMENTS_CONTRACT_SURFACE_ROOTS[0], asset.fileName)
+    );
+    const canonicalPath = path.resolve(root, canonicalRelativePath);
+    if (
+      !existsSync(canonicalPath) ||
+      !statSync(canonicalPath).isFile()
+    ) {
+      throw new Error(
+        `requirements_contract_projection_canonical_asset_missing:${canonicalRelativePath}`
+      );
+    }
+    const canonicalHash = fileHash(root, canonicalRelativePath);
+    for (const surfaceRoot of SHARED_REQUIREMENTS_CONTRACT_SURFACE_ROOTS.slice(1)) {
+      const surfaceRelativePath = normalize(
+        path.posix.join(surfaceRoot, asset.fileName)
+      );
+      const surfacePath = path.resolve(root, surfaceRelativePath);
+      mkdirSync(path.dirname(surfacePath), { recursive: true });
+      copyFileSync(canonicalPath, surfacePath);
+      if (fileHash(root, surfaceRelativePath) !== canonicalHash) {
+        throw new Error(
+          `requirements_contract_projection_surface_hash_mismatch:${surfaceRelativePath}`
+        );
+      }
+      copiedSurfaceCount += 1;
+    }
+  }
+  return {
+    assetCount: PROJECTION_ASSETS.length,
+    copiedSurfaceCount,
+  };
 }
 
 function projectionEntry(

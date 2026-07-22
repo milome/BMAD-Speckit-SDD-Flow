@@ -1197,6 +1197,7 @@ program
   .requiredOption('--config <path>', 'Public Judge runtime configuration')
   .requiredOption('--request <path>', 'Critical Auditor round request')
   .requiredOption('--round <number>', 'Critical Auditor round number')
+  .requiredOption('--output-dir <path>', 'Controlled Judge invocation output directory')
   .option('--json', 'Print machine-readable JSON')
   .action((opts) =>
     runCommandPromise(
@@ -1210,6 +1211,28 @@ program
         config: opts.config,
         request: opts.request,
         round: Number(opts.round),
+        outputDir: opts.outputDir,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-gap-closure-readonly-auditor-adapter')
+  .description('Run the package-owned readonly independent gap closure auditor adapter')
+  .requiredOption('--project-root <path>', 'Project root containing the closure evidence request')
+  .requiredOption('--request <path>', 'Gap closure independent audit request')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-gap-closure-readonly-auditor-adapter',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.js',
+        'requirementsContractGapClosureReadonlyAuditorAdapterCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        request: opts.request,
         json: Boolean(opts.json),
       })
     )
@@ -1426,6 +1449,48 @@ program
         secondCommand: opts.secondCommand,
         json: Boolean(opts.json),
       }).then((receipt) => (receipt.result === 'PASS' ? 0 : 1))
+    )
+  );
+
+program
+  .command('requirements-contract-command-execution-producer')
+  .description('Execute argv through the controlled producer and publish a bound receipt')
+  .requiredOption('--project-root <path>', 'Project root containing the execution request')
+  .requiredOption('--request <path>', 'Command execution producer request')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-command-execution-producer',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js',
+        'requirementsContractCommandExecutionProducerCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        request: opts.request,
+        json: Boolean(opts.json),
+      }).then((receipt) => (receipt.decision === 'pass' ? 0 : 1))
+    )
+  );
+
+program
+  .command('requirements-contract-clean-materialization')
+  .description('Rebuild current source from a fresh root and publish parity evidence')
+  .requiredOption('--project-root <path>', 'Source project root to materialize')
+  .requiredOption('--request <path>', 'Clean materialization request')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-clean-materialization',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-clean-materialization.js',
+        'requirementsContractCleanMaterializationCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        request: opts.request,
+        json: Boolean(opts.json),
+      }).then((receipt) => (receipt.decision === 'pass' ? 0 : 1))
     )
   );
 

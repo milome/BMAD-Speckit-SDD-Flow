@@ -17,7 +17,7 @@
       "const": "requirements-contract-artifact-role/v1"
     },
     "activationState": {
-      "const": "inactive_schema_boundary"
+      "const": "active_production_authority"
     },
     "artifactRole": {
       "enum": ["product_prd", "requirement_source_prd", "discovery_envelope"]

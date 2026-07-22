@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
-  type AuditTriadRoundReceipt,
+  sha256Json,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
+import {
+  createFixtureAuditTriadPlan,
+  createFixtureAuditTriadRound,
+} from '../helpers/audit-triad-fixture-runtime';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
@@ -15,46 +18,12 @@ describe('Main Agent audit review convergence', () => {
     const fixture = materializeRequirementFixture();
     try {
       const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
-      const plan = createAuditTriadExecutionPlan({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        stage: 'implement',
-        callPoint: 'audit_review',
+      const plan = createFixtureAuditTriadPlan({
+        fixture,
+        compiled,
         attemptId: 'audit-current',
-        sourceDocumentHash: fixture.sourceDocumentHash,
-        implementationConfirmationHash: fixture.implementationConfirmationHash,
-        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
-        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
-        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
       });
-      const round = (roundId: string): AuditTriadRoundReceipt => ({
-        schemaVersion: 'audit-triad-round-receipt/v1',
-        roundId,
-        stageProfileId: plan.stageProfileId,
-        perspectiveResults: {
-          product_intent: { agentId: `product-${roundId}`, validGaps: [] },
-          model_projection: { agentId: `model-${roundId}`, validGaps: [] },
-          main_agent_execution: { agentId: `main-${roundId}`, validGaps: [] },
-        },
-        coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
-        vetoItemResults: plan.subagents[0].requiredCheckItemIds
-          .filter((id) => id.startsWith('veto_'))
-          .map((itemId) => ({ itemId, passed: true })),
-        validatedGapRefs: [],
-        invalidGapRefs: [],
-        sourceDocumentHash: plan.sourceDocumentHash,
-        implementationConfirmationHash: plan.implementationConfirmationHash,
-        modelPacketHash: plan.modelPacketHash,
-        auditReceiptHash: plan.auditReceiptHash,
-        goalExecutionHash: plan.goalExecutionHash,
-        criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
-        criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
-        requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
-        currentAttemptHash: plan.currentAttemptHash,
-        currentEvidenceHash: plan.currentEvidenceHash,
-        scoreReceiptRefs: [`score-${roundId}.json`],
-        runAuditorHostReceiptRefs: [`auditor-host-${roundId}.json`],
-      });
+      const round = (roundId: string) => createFixtureAuditTriadRound(plan, roundId);
 
       const pass = evaluateAuditTriadConvergence({
         plan,
@@ -118,6 +87,73 @@ describe('Main Agent audit review convergence', () => {
       });
       expect(staleEvidence.ok).toBe(false);
       expect(staleEvidence.blockingReasons).toContain('round_3_current_evidence_hash_mismatch');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('preserves plan hash derivation when the current audit follows a verified repair', () => {
+    const fixture = materializeRequirementFixture();
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      const priorRepairReceiptRefs = [
+        {
+          path: `${fixture.recordId}/repair-receipt.json`,
+          contentHash: sha256Json({
+            recordId: fixture.recordId,
+            requirementSetId: fixture.requirementSetId,
+            runId: fixture.runId,
+          }),
+        },
+      ];
+      const plan = createFixtureAuditTriadPlan({
+        fixture,
+        compiled,
+        attemptId: `${fixture.runId}-post-repair-audit`,
+        overrides: { priorRepairReceiptRefs },
+      });
+      const feedbackDispatchRef = {
+        path: `${fixture.recordId}/repair-feedback-dispatch.json`,
+        contentHash: sha256Json({
+          recordId: fixture.recordId,
+          role: 'repair-feedback-dispatch-content',
+        }),
+        dispatchHash: sha256Json({
+          recordId: fixture.recordId,
+          role: 'repair-feedback-dispatch-payload',
+        }),
+      };
+      const repairEvidenceWithoutHash = {
+        schemaVersion: 'audit-triad-repair-evidence-binding/v1' as const,
+        repairReceiptRefs: [
+          {
+            ...priorRepairReceiptRefs[0],
+            receiptHash: sha256Json({
+              recordId: fixture.recordId,
+              role: 'main-agent-repair-receipt',
+            }),
+            remediationPacketId: `${fixture.runId}-remediation`,
+            feedbackDispatchRef,
+          },
+        ],
+        repairFeedbackDispatchRefs: [feedbackDispatchRef],
+      };
+      const rounds = ['first', 'second', 'third'].map((suffix) =>
+        createFixtureAuditTriadRound(plan, `${plan.attemptId}-${suffix}`)
+      );
+
+      const decision = evaluateAuditTriadConvergence({
+        plan,
+        rounds,
+        repairEvidence: {
+          ...repairEvidenceWithoutHash,
+          evidenceSetHash: sha256Json(repairEvidenceWithoutHash),
+        },
+        scoreReceiptRequired: true,
+        runAuditorHostReceiptRequired: true,
+      });
+
+      expect(decision.ok, JSON.stringify(decision.blockingReasons, null, 2)).toBe(true);
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }

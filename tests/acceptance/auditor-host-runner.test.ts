@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,6 +10,10 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+
+function sha256Text(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
 
 describe('auditor host runner', () => {
   it.each([
@@ -628,6 +633,122 @@ describe('auditor host runner', () => {
       const registry = readRuntimeContextRegistry(root);
       expect(registry.latestReviewerCloseout?.closeoutApproved).toBe(false);
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes score and host-closeout receipts from the real score writer for a controlled audit round', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-controlled-round-'));
+    const originalScoringDataPath = process.env.SCORING_DATA_PATH;
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      const artifactDocPath = path.join(root, 'artifacts', 'implementation.md');
+      const reportPath = path.join(root, 'audit', 'AUDIT_current_attempt.md');
+      mkdirSync(path.dirname(artifactDocPath), { recursive: true });
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      writeFileSync(artifactDocPath, '# Production implementation\n', 'utf8');
+      const scoringBody = readFileSync(
+        path.join(
+          process.cwd(),
+          'packages',
+          'scoring',
+          'parsers',
+          '__tests__',
+          'fixtures',
+          'sample-implement-report-with-four-dimensions.md'
+        ),
+        'utf8'
+      );
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 0',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+          '',
+          scoringBody,
+        ].join('\n'),
+        'utf8'
+      );
+      process.env.SCORING_DATA_PATH = path.join(root, '_bmad-output', 'scoring');
+      const bindingSeed = sha256Text(`${root}:${readFileSync(reportPath, 'utf8')}`);
+      const controlledAuditBinding = {
+        roundId: `round-${bindingSeed.slice(-16)}`,
+        sourceDocumentHash: sha256Text(`${bindingSeed}:source`),
+        semanticModelHash: sha256Text(`${bindingSeed}:semantic`),
+        projectionSetHash: sha256Text(`${bindingSeed}:projection`),
+        currentAttemptHash: sha256Text(`${bindingSeed}:attempt`),
+        currentEvidenceHash: sha256Text(`${bindingSeed}:evidence`),
+      };
+
+      const result = await runAuditorHost({
+        projectRoot: root,
+        reportPath,
+        stage: 'implement',
+        artifactPath: artifactDocPath,
+        controlledAuditBinding,
+      });
+
+      expect(result.scoreReceiptRef).toMatchObject({
+        path: expect.any(String),
+        contentHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(result.runAuditorHostReceiptRef).toMatchObject({
+        path: expect.any(String),
+        contentHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+
+      const scoreReceiptPath = path.resolve(root, result.scoreReceiptRef!.path);
+      const hostReceiptPath = path.resolve(root, result.runAuditorHostReceiptRef!.path);
+      const scoreReceipt = JSON.parse(readFileSync(scoreReceiptPath, 'utf8'));
+      const hostReceipt = JSON.parse(readFileSync(hostReceiptPath, 'utf8'));
+      const scoreRecordPath = path.resolve(root, scoreReceipt.scoreRecordPath);
+      const scoreRecord = JSON.parse(readFileSync(scoreRecordPath, 'utf8'));
+
+      expect(scoreReceipt).toMatchObject({
+        schemaVersion: 'run-auditor-host-score-receipt/v1',
+        producerIdentity: { id: 'runAuditorHost', role: 'score_materializer' },
+        roundId: controlledAuditBinding.roundId,
+        auditReportHash: sha256Text(readFileSync(reportPath, 'utf8')),
+        sourceDocumentHash: controlledAuditBinding.sourceDocumentHash,
+        semanticModelHash: controlledAuditBinding.semanticModelHash,
+        projectionSetHash: controlledAuditBinding.projectionSetHash,
+        currentAttemptHash: controlledAuditBinding.currentAttemptHash,
+        currentEvidenceHash: controlledAuditBinding.currentEvidenceHash,
+      });
+      expect(scoreRecord).toMatchObject({
+        run_id: scoreReceipt.scoreRunId,
+        scenario: 'real_dev',
+        stage: 'implement',
+      });
+      expect(hostReceipt).toMatchObject({
+        schemaVersion: 'run-auditor-host-closeout-receipt/v1',
+        producerIdentity: { id: 'runAuditorHost', role: 'host_closeout' },
+        roundId: controlledAuditBinding.roundId,
+        scoreReceiptHash: scoreReceipt.receiptHash,
+        closeoutApproved: false,
+        sourceDocumentHash: controlledAuditBinding.sourceDocumentHash,
+        semanticModelHash: controlledAuditBinding.semanticModelHash,
+        projectionSetHash: controlledAuditBinding.projectionSetHash,
+        currentAttemptHash: controlledAuditBinding.currentAttemptHash,
+        currentEvidenceHash: controlledAuditBinding.currentEvidenceHash,
+      });
+      expect(result.closeoutEnvelope).toMatchObject({
+        resultCode: 'blocked',
+        rerunDecision: 'rerun_required',
+      });
+    } finally {
+      if (originalScoringDataPath === undefined) {
+        delete process.env.SCORING_DATA_PATH;
+      } else {
+        process.env.SCORING_DATA_PATH = originalScoringDataPath;
+      }
       rmSync(root, { recursive: true, force: true });
     }
   });

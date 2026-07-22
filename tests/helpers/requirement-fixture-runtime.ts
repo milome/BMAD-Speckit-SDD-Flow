@@ -30,6 +30,7 @@ export interface MaterializedRequirementFixture {
   fixtureId: string;
   sourcePath: string;
   sourceDocumentHash: string;
+  semanticModelHash: string;
   implementationConfirmationHash: string;
   recordPath: string;
   recordId: string;
@@ -87,6 +88,7 @@ function copyProjectConfigForRuntime(root: string): void {
   for (const relativePath of [
     path.join('_bmad', '_config', 'audit-item-mapping.yaml'),
     path.join('_bmad', '_config', 'code-reviewer-config.yaml'),
+    path.join('_bmad', '_config', 'governance-remediation.yaml'),
   ]) {
     const source = path.join(repoRoot(), relativePath);
     const target = path.join(root, relativePath);
@@ -597,6 +599,7 @@ export function materializeRequirementFixture(
     fixtureId,
     sourcePath,
     sourceDocumentHash,
+    semanticModelHash,
     implementationConfirmationHash,
     recordPath,
     recordId,

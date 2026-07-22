@@ -452,6 +452,83 @@ export function firstProjectionRef(packet: Record<string, unknown>): string {
   throw new Error('projection ref not found in packet');
 }
 
+function findingRef(value: Record<string, unknown>): string {
+  for (const key of ['findingRef', 'gapId', 'id', 'code', 'blockerCode']) {
+    const candidate = String(value[key] ?? '').trim();
+    if (candidate) {
+      return candidate;
+    }
+  }
+  return '';
+}
+
+function priorFindingsDispositionFromRequest(
+  request: Record<string, unknown>,
+  gateDryRun: Record<string, unknown>
+): Record<string, unknown>[] {
+  const dispositions = new Map<string, Record<string, unknown>>();
+  const addDisposition = (
+    value: Record<string, unknown>,
+    disposition: 'resolved' | 'unchanged' | 'rejected',
+    evidenceRef: string
+  ) => {
+    const ref = findingRef(value);
+    if (!ref || dispositions.has(ref)) {
+      return;
+    }
+    dispositions.set(ref, {
+      findingRef: ref,
+      disposition,
+      evidenceRefs: evidenceRef ? [evidenceRef] : [],
+    });
+  };
+
+  const previousReceipts = Array.isArray(request.previousReceipts)
+    ? (request.previousReceipts as Array<Record<string, unknown>>)
+    : [];
+  for (const envelope of previousReceipts) {
+    const receipt =
+      envelope.criticalAuditorReceipt &&
+      typeof envelope.criticalAuditorReceipt === 'object' &&
+      !Array.isArray(envelope.criticalAuditorReceipt)
+        ? (envelope.criticalAuditorReceipt as Record<string, unknown>)
+        : envelope;
+    const evidenceRef = String(receipt.receiptHash ?? receipt.responseHash ?? '').trim();
+    for (const key of [
+      'gapCandidates',
+      'validatedGaps',
+      'mutationPressureFindings',
+      'overBroadTaskFindings',
+      'missingProjectionFindings',
+      'invalidProofFindings',
+      'legacyBypassFindings',
+      'sourceMaterializationFindings',
+    ]) {
+      const findings = Array.isArray(receipt[key])
+        ? (receipt[key] as Array<Record<string, unknown>>)
+        : [];
+      for (const finding of findings) {
+        addDisposition(finding, 'unchanged', evidenceRef);
+      }
+    }
+    const rejectedFindings = Array.isArray(receipt.rejectedGapCandidates)
+      ? (receipt.rejectedGapCandidates as Array<Record<string, unknown>>)
+      : [];
+    for (const finding of rejectedFindings) {
+      addDisposition(finding, 'rejected', evidenceRef);
+    }
+  }
+
+  const gateEvidenceRef = String(gateDryRun.reportPath ?? '').trim();
+  const actionableBlockingIssues = Array.isArray(gateDryRun.actionableBlockingIssues)
+    ? (gateDryRun.actionableBlockingIssues as Array<Record<string, unknown>>)
+    : [];
+  for (const issue of actionableBlockingIssues) {
+    addDisposition(issue, 'unchanged', gateEvidenceRef);
+  }
+  return [...dispositions.values()];
+}
+
 export function buildValidResponseFromRequest(
   request: Record<string, unknown>,
   packet: Record<string, unknown>
@@ -498,13 +575,7 @@ export function buildValidResponseFromRequest(
     checkedProjectionQualityRuleCodes,
     reviewedMustRefs,
     reviewedProjectionRefs: [projectionRefs[0] ?? firstProjectionRef(packet)],
-    priorFindingsDisposition: [
-      {
-        findingRef: 'ROUND-1-BASELINE',
-        disposition: 'new',
-        evidenceRefs: [String(gateDryRun.reportPath ?? 'gate-dry-run')],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request, gateDryRun),
     rejectedGapCandidates: [{ id: 'REJ-1', reason: 'no new valid gap detected' }],
     falsePositiveProofs: actionableBlockingIssues.map((issue) => ({
       blockerCode: String(issue.code ?? ''),

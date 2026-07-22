@@ -3,10 +3,15 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   createAuditTriadExecutionPlan,
+  sha256Json,
   type AuditTriadExecutionPlan,
   type AuditTriadRoundReceipt,
   writeAuditTriadExecutionPlan,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
+import {
+  criticalAuditorIndependentProviderRunHash,
+  type CriticalAuditorIndependentProviderEvidence,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
 import { mainAuditReviewGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate';
 import {
   createRuntimeStatusProjectionUpdate,
@@ -24,6 +29,18 @@ import {
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function auditPlanSemanticBindings(
+  fixture: ReturnType<typeof materializeRequirementFixture>,
+  compiled: ReturnType<typeof writeCompiledImplementPacket>
+): { semanticModelHash: string; projectionSetHash: string } {
+  return {
+    semanticModelHash: fixture.semanticModelHash,
+    projectionSetHash: sha256Json({
+      modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+    }),
+  };
 }
 
 function establishExecutionClosureAuthority(
@@ -89,10 +106,29 @@ function establishExecutionClosureAuthority(
 }
 
 function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadRoundReceipt {
+  const criticalAuditorRequestHash = sha256Json({
+    auditEpochId: plan.auditEpochId,
+    roundId,
+    role: 'llm_as_judge',
+  });
+  const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
+    ...plan.independentProviderBinding,
+    transactionId: plan.auditEpochId,
+    auditAttemptId: plan.attemptId,
+    providerRunId: `provider-${roundId}`,
+    requestHash: criticalAuditorRequestHash,
+    responseHash: sha256Json({ roundId, verdict: 'no_new_valid_gap' }),
+    sourceDocumentHash: plan.sourceDocumentHash,
+    semanticModelHash: plan.semanticModelHash,
+    projectionSetHash: plan.projectionSetHash,
+  };
   return {
     schemaVersion: 'audit-triad-round-receipt/v1',
     roundId,
+    verdict: 'no_new_valid_gap',
     stageProfileId: plan.stageProfileId,
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
     perspectiveResults: {
       product_intent: { agentId: `product-${roundId}`, validGaps: [] },
       model_projection: { agentId: `model-${roundId}`, validGaps: [] },
@@ -105,7 +141,11 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
     validatedGapRefs: [],
     invalidGapRefs: [],
     sourceDocumentHash: plan.sourceDocumentHash,
+    semanticModelHash: plan.semanticModelHash,
     implementationConfirmationHash: plan.implementationConfirmationHash,
+    projectionSetHash: plan.projectionSetHash,
+    checkedProjectionQualityRuleCodes: plan.checkedProjectionQualityRuleCodes,
+    qualityRuleSetHash: plan.qualityRuleSetHash,
     modelPacketHash: plan.modelPacketHash,
     auditReceiptHash: plan.auditReceiptHash,
     goalExecutionHash: plan.goalExecutionHash,
@@ -114,8 +154,183 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
     requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
     currentAttemptHash: plan.currentAttemptHash,
     currentEvidenceHash: plan.currentEvidenceHash,
+    criticalAuditorRequestHash,
+    independentProviderEvidence: {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
     scoreReceiptRefs: [`score-${roundId}.json`],
     runAuditorHostReceiptRefs: [`auditor-host-${roundId}.json`],
+  };
+}
+
+function materializePostRepairAuditGateFixture(input: {
+  fixture: ReturnType<typeof materializeRequirementFixture>;
+  compiled: ReturnType<typeof writeCompiledImplementPacket>;
+}): {
+  plan: AuditTriadExecutionPlan;
+  planPath: string;
+  roundsPath: string;
+  repairReceiptPath: string;
+  feedbackDispatchPath: string;
+} {
+  const { fixture, compiled } = input;
+  const auditAttemptId = `${fixture.runId}-post-repair-audit`;
+  const preliminaryPlan = createAuditTriadExecutionPlan({
+    projectRoot: fixture.root,
+    recordId: fixture.recordId,
+    stage: 'implement',
+    callPoint: 'audit_review',
+    attemptId: auditAttemptId,
+    ...auditPlanSemanticBindings(fixture, compiled),
+    sourceDocumentHash: fixture.sourceDocumentHash,
+    implementationConfirmationHash: fixture.implementationConfirmationHash,
+    modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+    auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+    goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+  });
+  const sourceAuditEpochId = sha256Json({
+    recordId: fixture.recordId,
+    role: 'source-audit-epoch',
+  });
+  const sourceAuditTargetBundleHash = sha256Json({
+    recordId: fixture.recordId,
+    role: 'source-audit-target',
+  });
+  const sourceSemanticModelHash = sha256Json({
+    recordId: fixture.recordId,
+    role: 'source-semantic-model',
+  });
+  const sourceProjectionSetHash = sha256Json({
+    recordId: fixture.recordId,
+    role: 'source-projection-set',
+  });
+  const validatedGapRefs = [
+    `gap:${sha256Json({ recordId: fixture.recordId, role: 'validated-gap' })}`,
+  ];
+  const sourceRoundReceiptRef = {
+    path: `_bmad-output/runtime/requirement-records/${fixture.recordId}/audit-source/round.json`,
+    contentHash: sha256Json({ recordId: fixture.recordId, role: 'source-round' }),
+  };
+  const sourceJudgeReceiptRef = {
+    path: `_bmad-output/runtime/requirement-records/${fixture.recordId}/audit-source/judge.json`,
+    contentHash: sha256Json({ recordId: fixture.recordId, role: 'source-judge' }),
+  };
+  const evidenceDir = path.join(
+    fixture.root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    fixture.recordId,
+    'audit-repair-evidence'
+  );
+  const feedbackDispatchPath = path.join(evidenceDir, 'repair-feedback-dispatch.json');
+  const feedbackWithoutHash = {
+    schemaVersion: 'audit-repair-feedback-dispatch/v1',
+    recordId: fixture.recordId,
+    attemptId: `${fixture.runId}-source-audit`,
+    auditEpochId: sourceAuditEpochId,
+    auditTargetBundleHash: sourceAuditTargetBundleHash,
+    semanticModelHash: sourceSemanticModelHash,
+    projectionSetHash: sourceProjectionSetHash,
+    qualityRuleSetHash: preliminaryPlan.qualityRuleSetHash,
+    roundIndex: 1,
+    validatedGapRefs,
+    priorRepairReceiptRefs: [],
+    roundReceiptRef: sourceRoundReceiptRef,
+    judgeReceiptRef: sourceJudgeReceiptRef,
+  };
+  const feedbackDispatch = {
+    ...feedbackWithoutHash,
+    dispatchHash: sha256Json(feedbackWithoutHash),
+  };
+  writeJson(feedbackDispatchPath, feedbackDispatch);
+
+  const repairReceiptPath = path.join(evidenceDir, 'main-agent-repair-receipt.json');
+  const repairReceiptWithoutHash = {
+    schemaVersion: 'audit-main-agent-repair-receipt/v1',
+    recordId: fixture.recordId,
+    requirementSetId: fixture.requirementSetId,
+    sourceAuditEpochId,
+    sourceAuditTargetBundleHash,
+    remediationPacketId: `${fixture.runId}-remediation`,
+    feedbackDispatchRef: {
+      path: path.relative(fixture.root, feedbackDispatchPath).replace(/\\/gu, '/'),
+      contentHash: sha256Text(readFileSync(feedbackDispatchPath, 'utf8')),
+      dispatchHash: feedbackDispatch.dispatchHash,
+    },
+    sourceRoundReceiptRef,
+    sourceJudgeReceiptRef,
+    priorRepairReceiptRefs: [],
+    validatedGapRefs,
+    sourceSemanticModelHash,
+    sourceProjectionSetHash,
+    qualityRuleSetHash: preliminaryPlan.qualityRuleSetHash,
+    repairedSemanticModelHash: preliminaryPlan.semanticModelHash,
+    repairedProjectionSetHash: preliminaryPlan.projectionSetHash,
+    repairedModelPacketHash: preliminaryPlan.modelPacketHash,
+    repairedAuditReceiptHash: preliminaryPlan.auditReceiptHash,
+    repairedGoalExecutionHash: preliminaryPlan.goalExecutionHash,
+    repairedAuditTargetBundleHash: sha256Json({
+      sourceDocumentHash: preliminaryPlan.sourceDocumentHash,
+      semanticModelHash: preliminaryPlan.semanticModelHash,
+      implementationConfirmationHash: preliminaryPlan.implementationConfirmationHash,
+      projectionSetHash: preliminaryPlan.projectionSetHash,
+      checkedProjectionQualityRuleCodes: preliminaryPlan.checkedProjectionQualityRuleCodes,
+      qualityRuleSetHash: preliminaryPlan.qualityRuleSetHash,
+      modelPacketHash: preliminaryPlan.modelPacketHash ?? null,
+      auditReceiptHash: preliminaryPlan.auditReceiptHash ?? null,
+      goalExecutionHash: preliminaryPlan.goalExecutionHash ?? null,
+      priorRepairReceiptRefs: [],
+    }),
+    changedHashFields: ['publicationHash'],
+    executorTaskReportHash: sha256Json({
+      packetId: `${fixture.runId}-remediation`,
+      status: 'done',
+    }),
+    filesChanged: [compiled.compiledPromptRef.modelPacketPath],
+    validationsRun: ['fixture-post-repair-publication'],
+    executorEvidenceRefs: [
+      path.relative(fixture.root, feedbackDispatchPath).replace(/\\/gu, '/'),
+    ],
+  };
+  writeJson(repairReceiptPath, {
+    ...repairReceiptWithoutHash,
+    receiptHash: sha256Json(repairReceiptWithoutHash),
+  });
+  const priorRepairReceiptRefs = [
+    {
+      path: path.relative(fixture.root, repairReceiptPath).replace(/\\/gu, '/'),
+      contentHash: sha256Text(readFileSync(repairReceiptPath, 'utf8')),
+    },
+  ];
+  const plan = createAuditTriadExecutionPlan({
+    projectRoot: fixture.root,
+    recordId: fixture.recordId,
+    stage: 'implement',
+    callPoint: 'audit_review',
+    attemptId: auditAttemptId,
+    ...auditPlanSemanticBindings(fixture, compiled),
+    sourceDocumentHash: fixture.sourceDocumentHash,
+    implementationConfirmationHash: fixture.implementationConfirmationHash,
+    modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+    auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+    goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+    priorRepairReceiptRefs,
+  });
+  const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
+  const roundsPath = path.join(path.dirname(planPath), 'rounds.json');
+  writeJson(roundsPath, [
+    cleanRound(plan, `${auditAttemptId}-round-1`),
+    cleanRound(plan, `${auditAttemptId}-round-2`),
+    cleanRound(plan, `${auditAttemptId}-round-3`),
+  ]);
+  return {
+    plan,
+    planPath,
+    roundsPath,
+    repairReceiptPath,
+    feedbackDispatchPath,
   };
 }
 
@@ -139,6 +354,7 @@ describe('main agent audit review gate', () => {
         stage: 'implement',
         callPoint: 'audit_review',
         attemptId: fixture.runId,
+        ...auditPlanSemanticBindings(fixture, compiled),
         sourceDocumentHash: fixture.sourceDocumentHash,
         implementationConfirmationHash: fixture.implementationConfirmationHash,
         modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
@@ -264,6 +480,141 @@ describe('main agent audit review gate', () => {
     }
   });
 
+  it('binds verified repair receipt and feedback dispatch into post-repair convergence', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const evidence = materializePostRepairAuditGateFixture({ fixture, compiled });
+
+      const code = mainAuditReviewGate([
+        '--requirement-record',
+        fixture.recordPath,
+        '--attempt-id',
+        evidence.plan.attemptId,
+        '--plan',
+        evidence.planPath,
+        '--rounds',
+        evidence.roundsPath,
+        '--repair-receipt',
+        evidence.repairReceiptPath,
+        '--repair-feedback-dispatch',
+        evidence.feedbackDispatchPath,
+        '--evaluated-at',
+        '2026-07-21T05:00:00.000Z',
+        '--json',
+      ]);
+
+      expect(code).toBe(0);
+      const reportPath = path.join(
+        path.dirname(fixture.recordPath),
+        'audit-triad',
+        evidence.plan.attemptId,
+        'audit-review-report.json'
+      );
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      expect(report).toMatchObject({
+        decision: 'pass',
+        repairEvidence: {
+          schemaVersion: 'audit-triad-repair-evidence-binding/v1',
+          repairReceiptRefs: [
+            {
+              path: path.relative(fixture.root, evidence.repairReceiptPath).replace(/\\/gu, '/'),
+              contentHash: sha256Text(readFileSync(evidence.repairReceiptPath, 'utf8')),
+            },
+          ],
+          repairFeedbackDispatchRefs: [
+            {
+              path: path
+                .relative(fixture.root, evidence.feedbackDispatchPath)
+                .replace(/\\/gu, '/'),
+              contentHash: sha256Text(readFileSync(evidence.feedbackDispatchPath, 'utf8')),
+            },
+          ],
+          evidenceSetHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        },
+        convergenceReceipt: {
+          repairEvidence: {
+            evidenceSetHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+          },
+        },
+      });
+      expect(report.convergenceReceipt.repairEvidence.evidenceSetHash).toBe(
+        report.repairEvidence.evidenceSetHash
+      );
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('fails closed when a verified repair receipt changes before the control commit', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const evidence = materializePostRepairAuditGateFixture({ fixture, compiled });
+      const recordBefore = readFileSync(fixture.recordPath, 'utf8');
+      const reportPath = path.join(
+        path.dirname(fixture.recordPath),
+        'audit-triad',
+        evidence.plan.attemptId,
+        'audit-review-report.json'
+      );
+
+      expect(() =>
+        mainAuditReviewGate(
+          [
+            '--requirement-record',
+            fixture.recordPath,
+            '--attempt-id',
+            evidence.plan.attemptId,
+            '--plan',
+            evidence.planPath,
+            '--rounds',
+            evidence.roundsPath,
+            '--repair-receipt',
+            evidence.repairReceiptPath,
+            '--repair-feedback-dispatch',
+            evidence.feedbackDispatchPath,
+            '--evaluated-at',
+            '2026-07-21T05:01:00.000Z',
+          ],
+          {
+            beforeControlCommit: () => {
+              const receipt = JSON.parse(
+                readFileSync(evidence.repairReceiptPath, 'utf8')
+              ) as Record<string, unknown>;
+              writeJson(evidence.repairReceiptPath, {
+                ...receipt,
+                changedAfterEvaluation: true,
+              });
+            },
+          }
+        )
+      ).toThrow('audit_review_input_changed:repair_receipt_1');
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(recordBefore);
+      expect(existsSync(reportPath)).toBe(false);
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
   it('fails closed when the audit report path aliases the execution plan input', () => {
     const fixture = materializeRequirementFixture({
       currentMentalModel: 'execution_closure',
@@ -283,6 +634,7 @@ describe('main agent audit review gate', () => {
         stage: 'implement',
         callPoint: 'audit_review',
         attemptId: fixture.runId,
+        ...auditPlanSemanticBindings(fixture, compiled),
         sourceDocumentHash: fixture.sourceDocumentHash,
         implementationConfirmationHash: fixture.implementationConfirmationHash,
         modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
@@ -345,6 +697,7 @@ describe('main agent audit review gate', () => {
         stage: 'implement',
         callPoint: 'audit_review',
         attemptId: fixture.runId,
+        ...auditPlanSemanticBindings(fixture, compiled),
         sourceDocumentHash: fixture.sourceDocumentHash,
         implementationConfirmationHash: fixture.implementationConfirmationHash,
         modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
@@ -412,6 +765,7 @@ describe('main agent audit review gate', () => {
         stage: 'implement',
         callPoint: 'audit_review',
         attemptId: 'audit-current',
+        ...auditPlanSemanticBindings(fixture, compiled),
         sourceDocumentHash: fixture.sourceDocumentHash,
         implementationConfirmationHash: fixture.implementationConfirmationHash,
         modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
@@ -463,9 +817,87 @@ describe('main agent audit review gate', () => {
       expect(
         resolveSixModelRuntimeDecision({
           record,
-          attemptId: 'audit-current',
+          attemptId: String(record.currentAttemptId),
         }).nextAction
       ).toBe('dispatch_remediation');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('blocks audit_review when current rounds lack independent Critical Auditor provider evidence', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const plan = createAuditTriadExecutionPlan({
+        projectRoot: fixture.root,
+        recordId: fixture.recordId,
+        stage: 'implement',
+        callPoint: 'audit_review',
+        attemptId: fixture.runId,
+        ...auditPlanSemanticBindings(fixture, compiled),
+        sourceDocumentHash: fixture.sourceDocumentHash,
+        implementationConfirmationHash: fixture.implementationConfirmationHash,
+        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+      });
+      const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
+      const roundsPath = path.join(
+        fixture.root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        fixture.recordId,
+        'audit-triad',
+        fixture.runId,
+        'rounds.json'
+      );
+      writeJson(
+        roundsPath,
+        [cleanRound(plan, 'r1'), cleanRound(plan, 'r2'), cleanRound(plan, 'r3')].map(
+          (round) => {
+            const { independentProviderEvidence: _removed, ...withoutProviderEvidence } = round;
+            return withoutProviderEvidence;
+          }
+        )
+      );
+
+      const code = mainAuditReviewGate([
+        '--requirement-record',
+        fixture.recordPath,
+        '--attempt-id',
+        fixture.runId,
+        '--plan',
+        planPath,
+        '--rounds',
+        roundsPath,
+        '--evaluated-at',
+        '2026-07-21T09:00:00.000Z',
+        '--evaluated-by',
+        'test-agent',
+        '--json',
+      ]);
+
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      expect(record.sixModelResults.audit_review).toMatchObject({
+        status: 'blocked',
+        blockingReasons: expect.arrayContaining([
+          'round_1_independent_provider_evidence_missing',
+          'round_2_independent_provider_evidence_missing',
+          'round_3_independent_provider_evidence_missing',
+        ]),
+      });
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }
@@ -489,6 +921,7 @@ describe('main agent audit review gate', () => {
         stage: 'implement',
         callPoint: 'audit_review',
         attemptId: 'audit-current',
+        ...auditPlanSemanticBindings(fixture, compiled),
         sourceDocumentHash: fixture.sourceDocumentHash,
         implementationConfirmationHash: fixture.implementationConfirmationHash,
         modelPacketHash: compiled.compiledPromptRef.modelPacketHash,

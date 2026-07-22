@@ -1,9 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
-import {
-  canonicalJson,
-} from './requirements-contract-governed-write';
+import { canonicalJson } from './requirements-contract-governed-write';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 export const REQUIREMENTS_CONTRACT_NORMALIZED_PACKAGE_RENDERER_OWNER_PATH =
@@ -19,32 +17,117 @@ export const REQUIREMENTS_CONTRACT_NORMALIZED_PACKAGE_SCHEMA_SURFACE_PATHS = [
 
 type NormalizedPackage = {
   semanticBodies: Record<string, Record<string, unknown>>;
-  nodes: Record<string, {
-    nodeType: string;
-    bodySchemaVersion: string;
-    bodyHash: string;
-    applicability: { decision: string };
-  }>;
-  edges: Record<string, {
-    edgeType: string;
-    fromRef: string;
-    fromHash: string;
-    toRef: string;
-    toHash: string;
-    edgeHash: string;
-  }>;
+  nodes: Record<
+    string,
+    {
+      nodeType: string;
+      bodySchemaVersion: string;
+      bodyHash: string;
+      applicability: { decision: string };
+    }
+  >;
+  edges: Record<
+    string,
+    {
+      edgeType: string;
+      fromRef: string;
+      fromHash: string;
+      toRef: string;
+      toHash: string;
+      edgeHash: string;
+    }
+  >;
 };
 
 type NormalizedPackageOperationMeasureInput = {
   packageValue: unknown;
   lookupNodeIds: string[];
   outgoingNodeIds: string[];
-  sparseCriticalPathEdgeIds: string[];
-  boundedDenseCriticalPaths: string[][];
 };
 
 function nodeIndex(nodeId: string): number {
   return Number(nodeId.slice('NODE-'.length));
+}
+
+type CriticalPathProjection = {
+  sparseCriticalPathEdgeIds: string[];
+  boundedDenseCriticalPaths: string[][];
+  workUnits: number;
+};
+
+export function deriveRequirementsContractNormalizedPackageCriticalPaths(
+  packageValue: NormalizedPackage
+): CriticalPathProjection {
+  const nodeIds = Object.keys(packageValue.nodes).sort();
+  const edgeIds = Object.keys(packageValue.edges).sort();
+  const outgoing = Object.fromEntries(
+    nodeIds.map((nodeId) => [nodeId, [] as Array<{ edgeId: string; toRef: string }>])
+  );
+  const indegree = Object.fromEntries(nodeIds.map((nodeId) => [nodeId, 0]));
+
+  for (const edgeId of edgeIds) {
+    const edge = packageValue.edges[edgeId];
+    if (!(edge.fromRef in outgoing) || !(edge.toRef in indegree)) continue;
+    outgoing[edge.fromRef].push({ edgeId, toRef: edge.toRef });
+    indegree[edge.toRef] += 1;
+  }
+
+  const ready = nodeIds.filter((nodeId) => indegree[nodeId] === 0);
+  const distance = Object.fromEntries(nodeIds.map((nodeId) => [nodeId, 0]));
+  const predecessor = new Map<string, { nodeId: string; edgeId: string }>();
+  let processedNodeCount = 0;
+
+  for (let readyIndex = 0; readyIndex < ready.length; readyIndex += 1) {
+    const nodeId = ready[readyIndex];
+    processedNodeCount += 1;
+    for (const edge of outgoing[nodeId]) {
+      const candidateDistance = distance[nodeId] + 1;
+      const currentPredecessor = predecessor.get(edge.toRef);
+      if (
+        candidateDistance > distance[edge.toRef] ||
+        (candidateDistance === distance[edge.toRef] &&
+          (!currentPredecessor || edge.edgeId > currentPredecessor.edgeId))
+      ) {
+        distance[edge.toRef] = candidateDistance;
+        predecessor.set(edge.toRef, { nodeId, edgeId: edge.edgeId });
+      }
+      indegree[edge.toRef] -= 1;
+      if (indegree[edge.toRef] === 0) ready.push(edge.toRef);
+    }
+  }
+
+  const workUnits = nodeIds.length + edgeIds.length;
+  if (processedNodeCount !== nodeIds.length) {
+    const rootNodeId = nodeIds[0];
+    return {
+      sparseCriticalPathEdgeIds: [],
+      boundedDenseCriticalPaths: rootNodeId
+        ? outgoing[rootNodeId].map(({ edgeId }) => [edgeId])
+        : [],
+      workUnits,
+    };
+  }
+
+  const endNodeId = nodeIds.reduce<string | undefined>((selected, nodeId) => {
+    if (!selected || distance[nodeId] > distance[selected]) return nodeId;
+    if (distance[nodeId] === distance[selected] && nodeId < selected) return nodeId;
+    return selected;
+  }, undefined);
+  const sparseCriticalPathEdgeIds: string[] = [];
+  let cursor = endNodeId;
+  while (cursor && predecessor.has(cursor)) {
+    const step = predecessor.get(cursor);
+    if (!step) break;
+    sparseCriticalPathEdgeIds.push(step.edgeId);
+    cursor = step.nodeId;
+  }
+  sparseCriticalPathEdgeIds.reverse();
+
+  return {
+    sparseCriticalPathEdgeIds,
+    boundedDenseCriticalPaths: [],
+    workUnits,
+  };
 }
 
 export function resolveRequirementsContractNormalizedPackageSchemaPath(): string {
@@ -55,8 +138,8 @@ export function resolveRequirementsContractNormalizedPackageSchemaPath(): string
       'schemas',
       'requirements-contract-normalized-package.schema.json'
     ),
-    ...REQUIREMENTS_CONTRACT_NORMALIZED_PACKAGE_SCHEMA_SURFACE_PATHS.map(
-      (surfacePath) => path.resolve(process.cwd(), surfacePath)
+    ...REQUIREMENTS_CONTRACT_NORMALIZED_PACKAGE_SCHEMA_SURFACE_PATHS.map((surfacePath) =>
+      path.resolve(process.cwd(), surfacePath)
     ),
   ];
   const resolved = candidates.find((candidate) => {
@@ -149,6 +232,7 @@ export function measureRequirementsContractNormalizedPackageOperations(
   }
   for (const ids of Object.values(outgoingEdgeIds)) ids.sort();
   compactTraceRows.sort((left, right) => left.edgeId.localeCompare(right.edgeId));
+  const criticalPaths = deriveRequirementsContractNormalizedPackageCriticalPaths(packageValue);
 
   const canonicalBytes = Buffer.byteLength(canonicalPackage, 'utf8');
   const operationOutputHashes = {
@@ -157,8 +241,8 @@ export function measureRequirementsContractNormalizedPackageOperations(
     node_lookup: sha256Stable(lookup),
     outgoing_edge_lookup: sha256Stable(outgoingEdgeIds),
     complete_edge_compact_trace_projection: sha256Stable(compactTraceRows),
-    sparse_critical_path: sha256Stable(input.sparseCriticalPathEdgeIds),
-    bounded_dense_one_edge_critical_paths: sha256Stable(input.boundedDenseCriticalPaths),
+    sparse_critical_path: sha256Stable(criticalPaths.sparseCriticalPathEdgeIds),
+    bounded_dense_one_edge_critical_paths: sha256Stable(criticalPaths.boundedDenseCriticalPaths),
   };
   const nodeCount = nodeIds.length;
   const edgeCount = edgeIds.length;
@@ -172,8 +256,10 @@ export function measureRequirementsContractNormalizedPackageOperations(
     node_lookup: lookup.length,
     outgoing_edge_lookup: edgeCount + selectedOutgoingEdgeCount,
     complete_edge_compact_trace_projection: 2 * edgeCount,
-    sparse_critical_path: input.sparseCriticalPathEdgeIds.length,
-    bounded_dense_one_edge_critical_paths: input.boundedDenseCriticalPaths.length,
+    sparse_critical_path:
+      criticalPaths.sparseCriticalPathEdgeIds.length > 0 ? criticalPaths.workUnits : 0,
+    bounded_dense_one_edge_critical_paths:
+      criticalPaths.boundedDenseCriticalPaths.length > 0 ? criticalPaths.workUnits : 0,
   };
   return {
     nodeCount,
@@ -182,8 +268,8 @@ export function measureRequirementsContractNormalizedPackageOperations(
     canonicalBytes,
     lookup,
     outgoingEdgeIds,
-    sparseCriticalPathEdgeIds: input.sparseCriticalPathEdgeIds,
-    boundedDenseCriticalPaths: input.boundedDenseCriticalPaths,
+    sparseCriticalPathEdgeIds: criticalPaths.sparseCriticalPathEdgeIds,
+    boundedDenseCriticalPaths: criticalPaths.boundedDenseCriticalPaths,
     operationOutputHashes,
     expectedOutputSetHash: sha256Stable(operationOutputHashes),
     workUnits,
@@ -191,7 +277,8 @@ export function measureRequirementsContractNormalizedPackageOperations(
 }
 
 export function renderRequirementsContractNormalizedPackage(input: unknown) {
-  if (!validatePackage(input)) throw new Error('Normalized Contract Package schema validation failed');
+  if (!validatePackage(input))
+    throw new Error('Normalized Contract Package schema validation failed');
   const semanticBodyValues = Object.values(input.semanticBodies).map(canonicalJson);
   const semanticBodies = new Set(semanticBodyValues);
   const duplicatedSemanticBodyCount = semanticBodyValues.length - semanticBodies.size;

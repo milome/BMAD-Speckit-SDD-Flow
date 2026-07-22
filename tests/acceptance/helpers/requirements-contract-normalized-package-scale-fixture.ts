@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { sha256Stable } from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 const SEED = '0x5EEDC0DE';
@@ -5,6 +6,28 @@ const PROOF_REF = 'PROOF-SCALE-001';
 
 export function scaleNodeId(index: number): string {
   return `NODE-${String(index).padStart(6, '0')}`;
+}
+
+export type ScalePathDescriptor = {
+  prefix: string;
+  startIndex: number;
+  count: number;
+  padWidth: number;
+  suffix: string;
+  expectedHash: string;
+  firstEdgeId: string | null;
+  lastEdgeId: string | null;
+};
+
+export function expandScalePathDescriptor(descriptor: ScalePathDescriptor): string[] {
+  return Array.from({ length: descriptor.count }, (_, offset) => {
+    const index = descriptor.startIndex + offset;
+    return `${descriptor.prefix}${String(index).padStart(descriptor.padWidth, '0')}${descriptor.suffix}`;
+  });
+}
+
+export function scalePathVectorHash(value: unknown): string {
+  return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
 }
 
 function pathEdgeId(index: number): string {
@@ -48,12 +71,7 @@ export function buildScaleNodes(nodeCount: number) {
   return { semanticBodies, nodes, bodyHashes };
 }
 
-function edgeValue(
-  edgeType: string,
-  fromIndex: number,
-  toIndex: number,
-  bodyHashes: string[]
-) {
+function edgeValue(edgeType: string, fromIndex: number, toIndex: number, bodyHashes: string[]) {
   const preimage = {
     edgeType,
     fromRef: scaleNodeId(fromIndex),

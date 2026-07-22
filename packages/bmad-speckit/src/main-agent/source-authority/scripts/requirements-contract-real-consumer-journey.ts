@@ -15,6 +15,10 @@ import {
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
 
+interface RealConsumerBoundaryObserverReceipt extends JsonRecord {
+  formalBoundaryRefs: Record<string, Array<{ exactPath: string }>>;
+}
+
 export interface RequirementsContractRealConsumerJourneyOptions {
   cwd?: string;
   contract: string;
@@ -220,6 +224,12 @@ export async function requirementsContractRealConsumerJourneyCommand(
     implementationAttemptId: phaseIdentity.implementationAttemptId,
     phaseAuditAttemptId: options.phaseAuditAttemptId,
   });
+  if (candidateReceipt.packedRuntimeHash !== adapter.installedRuntimeHash) {
+    throw new Error('real_consumer_packed_installed_runtime_hash_mismatch');
+  }
+  if (candidateReceipt.packedRuntimeFileCount !== adapter.installedRuntimeFileCount) {
+    throw new Error('real_consumer_packed_installed_runtime_file_count_mismatch');
+  }
   const snapshot = {
     schemaVersion: 'requirements-contract-real-consumer-pre-confirmation-snapshot/v1',
     phase: options.phase,
@@ -228,9 +238,21 @@ export async function requirementsContractRealConsumerJourneyCommand(
     phaseAuditAttemptId: options.phaseAuditAttemptId,
     candidatePackageReceipt: ref(root, options.candidatePackageReceipt),
     stageObservations: adapter.stageObservations,
-    installedDependencyTreeHash: adapter.installedDependencyTreeHash,
+    distBuildHash: candidateReceipt.distBuildHash,
+    packedRuntimeHash: candidateReceipt.packedRuntimeHash,
+    packedRuntimeFileCount: candidateReceipt.packedRuntimeFileCount,
+    installedRuntimeHash: adapter.installedRuntimeHash,
+    installedRuntimeFileCount: adapter.installedRuntimeFileCount,
     preConfirmationEvidenceSetHash: sha256(
-      canonicalJson([candidateReceipt.publicationHash, adapter.stageObservations])
+      canonicalJson({
+        distBuildHash: candidateReceipt.distBuildHash,
+        tarballBytesHash: candidateReceipt.tarballBytesHash,
+        packedRuntimeHash: candidateReceipt.packedRuntimeHash,
+        packedRuntimeFileCount: candidateReceipt.packedRuntimeFileCount,
+        installedRuntimeHash: adapter.installedRuntimeHash,
+        installedRuntimeFileCount: adapter.installedRuntimeFileCount,
+        stageObservations: adapter.stageObservations,
+      })
     ),
     preConfirmationStageSnapshotHash: sha256(canonicalJson(adapter.stageObservations)),
     decision: 'PASS',
@@ -268,12 +290,20 @@ export async function requirementsContractRealConsumerJourneyCommand(
   if (observerRun.status !== 0) {
     throw new Error(`real_consumer_boundary_observer_failed:${observerRun.stderr ?? ''}`);
   }
-  const observerReceipt = readJson(observerReceiptPath);
+  const observerReceipt = readJson(
+    observerReceiptPath
+  ) as RealConsumerBoundaryObserverReceipt;
   validate(
     observerReceipt,
     'requirements-contract-real-consumer-boundary-observer-receipt.schema.json',
     'real_consumer_boundary_observer'
   );
+  if (
+    observerReceipt.installedRuntimeHash !== adapter.installedRuntimeHash ||
+    observerReceipt.installedRuntimeFileCount !== adapter.installedRuntimeFileCount
+  ) {
+    throw new Error('real_consumer_boundary_observer_runtime_mismatch');
+  }
   const confirmation = {
     schemaVersion: 'requirements-contract-real-consumer-confirmation-receipt/v1',
     phase: options.phase,
@@ -323,7 +353,7 @@ export async function requirementsContractRealConsumerJourneyCommand(
   ];
   const installedPaths = Object.values(observerReceipt.formalBoundaryRefs)
     .flat()
-    .map((entry: JsonRecord) => entry.exactPath);
+    .map((entry) => entry.exactPath);
   const evidence: JsonRecord = {
     schemaVersion: 'requirements-contract-real-consumer-journey-evidence/v1',
     contractHash: fileHash(resolveWithin(root, options.contract)),
@@ -341,7 +371,11 @@ export async function requirementsContractRealConsumerJourneyCommand(
     candidatePackage: {
       path: slash(path.relative(root, tarballPath)),
       hash: fileHash(tarballPath),
-      installedHash: adapter.installedDependencyTreeHash,
+      distBuildHash: candidateReceipt.distBuildHash,
+      packedRuntimeHash: candidateReceipt.packedRuntimeHash,
+      packedRuntimeFileCount: candidateReceipt.packedRuntimeFileCount,
+      installedRuntimeHash: adapter.installedRuntimeHash,
+      installedRuntimeFileCount: adapter.installedRuntimeFileCount,
       workspaceLinkCount: adapter.workspaceLinkCount,
     },
     formalBoundaryRefs: observerReceipt.formalBoundaryRefs,

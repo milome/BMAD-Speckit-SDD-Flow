@@ -74,9 +74,9 @@ const CREDENTIAL_KEY_PATTERN =
   /api.?key|authorization|secret|access.?token|refresh.?token|credential.?value|raw.?credential/iu;
 const FROZEN_PROVIDER_REF = 'local-sonnet-judge';
 const FROZEN_MODEL = 'claude-sonnet-5';
-const FROZEN_TRANSPORT = 'openai-compatible';
-const FROZEN_API_STYLE = 'chat_completions';
-const FROZEN_BASE_URL_HASH = sha256Stable('http://localhost:3010');
+const FROZEN_TRANSPORT = 'claude-code-cli';
+const FROZEN_API_STYLE = 'cli';
+const FROZEN_TRANSPORT_TARGET = 'claude';
 const FROZEN_INDEPENDENCE_CLASS = 'different_provider_different_model';
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -127,6 +127,14 @@ function compareBoolean(
   issues: string[]
 ): void {
   if (actual !== expected) issues.push(issueCode);
+}
+
+function configuredBaseUrlHash(value: unknown, issueCodes: string[]): string {
+  const configured = text(value);
+  if (configured !== FROZEN_TRANSPORT_TARGET) {
+    issueCodes.push('critical_auditor_judge_provider_base_url_mismatch');
+  }
+  return sha256Stable(configured);
 }
 
 export function criticalAuditorIndependentProviderRunHash(
@@ -182,14 +190,25 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
     ['runtimeFallbackAllowed', 'critical_auditor_judge_runtime_fallback_allowed'],
     ['runtimeAutoDiscoveryAllowed', 'critical_auditor_judge_runtime_discovery_allowed'],
     ['environmentOverrideAllowed', 'critical_auditor_judge_environment_override_allowed'],
-    ['cliTransportAllowed', 'critical_auditor_judge_cli_transport_allowed'],
   ] as const) {
     compareBoolean(selectionPolicy[field], false, issueCode, issueCodes);
   }
   compareBoolean(
+    selectionPolicy.cliTransportAllowed,
+    true,
+    'critical_auditor_judge_cli_transport_not_enabled',
+    issueCodes
+  );
+  compareBoolean(
     selectionPolicy.selectionReceiptRequired,
     true,
     'critical_auditor_judge_selection_receipt_not_required',
+    issueCodes
+  );
+  compareBoolean(
+    selectionPolicy.cliTransportAllowed,
+    true,
+    'critical_auditor_judge_cli_transport_not_enabled',
     issueCodes
   );
 
@@ -261,21 +280,16 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
   );
   compareText(
     provider.credentialRef,
-    FROZEN_PROVIDER_REF,
+    'claude-code-session',
     'critical_auditor_judge_provider_credential_ref_mismatch',
     issueCodes
   );
 
   const endpoint = isRecord(provider.endpoint) ? provider.endpoint : {};
-  compareText(
-    endpoint.baseUrl,
-    'http://localhost:3010',
-    'critical_auditor_judge_provider_base_url_mismatch',
-    issueCodes
-  );
+  const baseUrlHash = configuredBaseUrlHash(endpoint.command, issueCodes);
   compareText(
     endpoint.resolutionMode,
-    'transport_managed',
+    'path_search',
     'critical_auditor_judge_endpoint_resolution_mismatch',
     issueCodes
   );
@@ -287,7 +301,7 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
   );
   compareText(
     endpoint.upstreamVersioning,
-    'gateway_managed',
+    'cli_managed',
     'critical_auditor_judge_upstream_versioning_mismatch',
     issueCodes
   );
@@ -298,22 +312,25 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
   const authentication = isRecord(provider.authentication) ? provider.authentication : {};
   compareText(
     authentication.type,
-    'bearer',
+    'claude_code_session',
     'critical_auditor_judge_authentication_type_mismatch',
     issueCodes
   );
   compareText(
     authentication.sensitivity,
-    'placeholder',
+    'host_managed',
     'critical_auditor_judge_authentication_sensitivity_mismatch',
     issueCodes
   );
   compareBoolean(
     authentication.arbitraryNonEmptyValueAllowed,
-    true,
+    false,
     'critical_auditor_judge_placeholder_credential_policy_mismatch',
     issueCodes
   );
+  if (!Number.isInteger(Number(authentication.sessionRevision)) || Number(authentication.sessionRevision) < 1) {
+    issueCodes.push('critical_auditor_judge_session_revision_invalid');
+  }
 
   const auditPolicy = isRecord(provider.auditPolicy) ? provider.auditPolicy : {};
   compareText(
@@ -330,14 +347,26 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
   );
   for (const [field, issueCode] of [
     ['allowPassAuthority', 'critical_auditor_judge_pass_authority_forbidden'],
-    ['toolsAllowed', 'critical_auditor_judge_tools_forbidden'],
     ['implementationWritesAllowed', 'critical_auditor_judge_implementation_writes_forbidden'],
   ] as const) {
     compareBoolean(auditPolicy[field], false, issueCode, issueCodes);
   }
+  compareBoolean(
+    auditPolicy.toolsAllowed,
+    true,
+    'critical_auditor_judge_read_tools_not_enabled',
+    issueCodes
+  );
+  if (
+    !Array.isArray(auditPolicy.allowedTools) ||
+    JSON.stringify(auditPolicy.allowedTools) !== JSON.stringify(['Read'])
+  ) {
+    issueCodes.push('critical_auditor_judge_allowed_tools_mismatch');
+  }
 
   const requestPolicy = isRecord(provider.requestPolicy) ? provider.requestPolicy : {};
-  if (Number(requestPolicy.timeoutMs) !== 120000) {
+  const timeoutMs = Number(requestPolicy.timeoutMs);
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
     issueCodes.push('critical_auditor_judge_timeout_mismatch');
   }
   if (Number(requestPolicy.maximumAttempts) !== 1) {
@@ -359,7 +388,7 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
       model: FROZEN_MODEL,
       transport: FROZEN_TRANSPORT,
       apiStyle: FROZEN_API_STYLE,
-      configuredBaseUrlHash: FROZEN_BASE_URL_HASH,
+      configuredBaseUrlHash: baseUrlHash,
       independenceClass: FROZEN_INDEPENDENCE_CLASS,
       providerRegistryHash: sha256Stable(providerRegistry),
       providerConfigurationHash: sha256Stable(provider),
@@ -496,6 +525,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
     issueCodes.push('critical_auditor_judge_selected_provider_missing');
   }
   const endpoint = provider && isRecord(provider.endpoint) ? provider.endpoint : {};
+  const baseUrlHash = configuredBaseUrlHash(endpoint.command, issueCodes);
   const auditPolicy = provider && isRecord(provider.auditPolicy) ? provider.auditPolicy : {};
   if (provider) {
     compareBoolean(
@@ -523,14 +553,8 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
       issueCodes
     );
     compareText(
-      endpoint.baseUrl,
-      'http://localhost:3010',
-      'critical_auditor_judge_provider_base_url_mismatch',
-      issueCodes
-    );
-    compareText(
       endpoint.resolutionMode,
-      'transport_managed',
+      'path_search',
       'critical_auditor_judge_endpoint_resolution_mismatch',
       issueCodes
     );
@@ -542,7 +566,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
     );
     compareText(
       endpoint.upstreamVersioning,
-      'gateway_managed',
+      'cli_managed',
       'critical_auditor_judge_upstream_versioning_mismatch',
       issueCodes
     );
@@ -564,6 +588,18 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
       'critical_auditor_judge_pass_authority_forbidden',
       issueCodes
     );
+    compareBoolean(
+      auditPolicy.toolsAllowed,
+      true,
+      'critical_auditor_judge_read_tools_not_enabled',
+      issueCodes
+    );
+    if (
+      !Array.isArray(auditPolicy.allowedTools) ||
+      JSON.stringify(auditPolicy.allowedTools) !== JSON.stringify(['Read'])
+    ) {
+      issueCodes.push('critical_auditor_judge_allowed_tools_mismatch');
+    }
   }
 
   const providerRegistryHash = sha256Stable(registry);
@@ -606,7 +642,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
   );
   compareText(
     capability.configuredBaseUrlHash,
-    FROZEN_BASE_URL_HASH,
+    baseUrlHash,
     'critical_auditor_judge_capability_base_url_hash_mismatch',
     issueCodes
   );
@@ -694,7 +730,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
   );
   compareText(
     selection.configuredBaseUrlHash,
-    FROZEN_BASE_URL_HASH,
+    baseUrlHash,
     'critical_auditor_judge_selection_base_url_hash_mismatch',
     issueCodes
   );
@@ -764,7 +800,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
       model: FROZEN_MODEL,
       transport: FROZEN_TRANSPORT,
       apiStyle: FROZEN_API_STYLE,
-      configuredBaseUrlHash: FROZEN_BASE_URL_HASH,
+      configuredBaseUrlHash: baseUrlHash,
       independenceClass: FROZEN_INDEPENDENCE_CLASS,
       providerRegistryHash,
       providerConfigurationHash,

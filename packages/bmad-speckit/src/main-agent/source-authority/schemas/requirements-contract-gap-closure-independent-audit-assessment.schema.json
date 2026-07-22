@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-gap-closure-independent-audit-assessment.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "findings", "verifiedConditions", "verificationRuns", "rationale"],
+  "properties": {
+    "decision": { "enum": ["PASS", "FAIL"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["code"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "verifiedConditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "noProductionTestInjection",
+        "noHardcodedMachineIdentity",
+        "cleanMaterializationReproducible"
+      ],
+      "properties": {
+        "noProductionTestInjection": { "type": "boolean" },
+        "noHardcodedMachineIdentity": { "type": "boolean" },
+        "cleanMaterializationReproducible": { "type": "boolean" }
+      }
+    },
+    "verificationRuns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "exitCode", "stdoutHash", "stderrHash"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "exitCode": { "type": "integer" },
+          "stdoutHash": { "$ref": "#/$defs/hash" },
+          "stderrHash": { "$ref": "#/$defs/hash" }
+        }
+      }
+    },
+    "rationale": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

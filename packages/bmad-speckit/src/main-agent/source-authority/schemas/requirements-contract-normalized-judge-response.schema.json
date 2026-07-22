@@ -22,7 +22,9 @@
       "const": "requirements-contract-normalized-judge-response/v1"
     },
     "providerRef": { "const": "local-sonnet-judge" },
-    "transport": { "const": "openai-compatible" },
+    "transport": {
+      "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
+    },
     "configuredModel": { "const": "claude-sonnet-5" },
     "returnedModel": { "const": "claude-sonnet-5" },
     "decision": { "enum": ["pass", "block", "inconclusive"] },
@@ -41,12 +43,83 @@
     },
     "providerRequestId": { "type": "string", "minLength": 1 },
     "requestHash": { "$ref": "#/$defs/hash" },
-    "responseHash": { "$ref": "#/$defs/hash" }
+    "responseHash": { "$ref": "#/$defs/hash" },
+    "transportEvidence": {
+      "$ref": "#/$defs/claudeCodeCliTransportEvidence"
+    }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "transport": { "const": "claude-code-cli" }
+        }
+      },
+      "then": {
+        "required": ["transportEvidence"]
+      }
+    }
+  ],
   "$defs": {
     "hash": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "claudeCodeCliTransportEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "command",
+        "argv",
+        "cwd",
+        "executorKind",
+        "processId",
+        "requestedModel",
+        "sessionId",
+        "exitCode",
+        "stdoutPath",
+        "stdoutHash",
+        "stderrPath",
+        "stderrHash",
+        "transcriptPath",
+        "transcriptHash",
+        "snapshotManifestPath",
+        "snapshotHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-claude-code-cli-execution/v1"
+        },
+        "command": { "const": "claude" },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "cwd": { "type": "string", "minLength": 1 },
+        "executorKind": {
+          "enum": ["native_spawn", "injected_test_transport"]
+        },
+        "processId": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "requestedModel": { "const": "claude-sonnet-5" },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "exitCode": { "const": 0 },
+        "stdoutPath": { "type": "string", "minLength": 1 },
+        "stdoutHash": { "$ref": "#/$defs/hash" },
+        "stderrPath": { "type": "string", "minLength": 1 },
+        "stderrHash": { "$ref": "#/$defs/hash" },
+        "transcriptPath": { "type": "string", "minLength": 1 },
+        "transcriptHash": { "$ref": "#/$defs/hash" },
+        "snapshotManifestPath": { "type": "string", "minLength": 1 },
+        "snapshotHash": { "$ref": "#/$defs/hash" }
+      }
     }
   }
 }

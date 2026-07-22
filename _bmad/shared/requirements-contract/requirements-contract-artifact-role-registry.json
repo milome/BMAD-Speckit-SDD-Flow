@@ -2,7 +2,7 @@
   "schemaVersion": "requirements-contract-artifact-role-registry/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.ts",
-    "hash": "sha256:e3990aeeac3c906a2c50142510185659da894a937f99047f990996a711c9d7f1"
+    "hash": "sha256:4c483fa93cbd52630bf9fd1ab56a8cb82d1a9c6c0e5ebb2e435dcb192d626370"
   },
   "registryHash": "sha256:cd82fec54a6e710ef4140118be84e959e2b3757d992466d0ae8d55c95f96e1f1",
   "classificationSchemaVersion": "requirements-contract-artifact-role/v1",

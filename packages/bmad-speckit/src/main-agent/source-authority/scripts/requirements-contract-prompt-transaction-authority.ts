@@ -407,6 +407,10 @@ export function resolvePromptPublicationAuthority(
     'trace-execution',
     identity.implementationAttemptId
   );
+  const publicationOutDir =
+    identity.attemptSequence === 1
+      ? expectedOutDir
+      : `${expectedOutDir}.publication-${identity.attemptSequence}`;
   const expectedTaskReport = path.join(
     cwd,
     '_bmad-output',
@@ -581,7 +585,7 @@ export function resolvePromptPublicationAuthority(
     paths: {
       requirementRecord: recordPath,
       source: sourcePath,
-      outDir: path.resolve(expectedOutDir),
+      outDir: path.resolve(publicationOutDir),
       taskReport: path.resolve(expectedTaskReport),
       attemptContext: contextPath,
       stageRegistry: stageRegistryPath,

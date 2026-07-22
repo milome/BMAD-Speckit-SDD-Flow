@@ -20,6 +20,7 @@ export function prepareAuditDispatchRuntime(
   for (const relativePath of [
     path.join('_bmad', '_config', 'audit-item-mapping.yaml'),
     path.join('_bmad', '_config', 'code-reviewer-config.yaml'),
+    path.join('_bmad', '_config', 'governance-remediation.yaml'),
   ]) {
     const targetPath = path.join(fixture.root, relativePath);
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });

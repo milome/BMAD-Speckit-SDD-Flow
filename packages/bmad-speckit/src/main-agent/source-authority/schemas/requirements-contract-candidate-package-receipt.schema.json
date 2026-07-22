@@ -5,10 +5,14 @@
   "additionalProperties": false,
   "required": [
     "schemaVersion",
+    "hashDomainRegistry",
     "packageManifestRef",
     "packageVersion",
     "sourceManifestHash",
     "generatedDistManifestHash",
+    "runtimeAssetManifestRef",
+    "buildAuthorityReceiptRef",
+    "distBuildHash",
     "nodeVersion",
     "nodeExecutableRef",
     "npmVersion",
@@ -19,17 +23,31 @@
     "canonicalTarballRef",
     "packedEntries",
     "packedEntrySetHash",
+    "forbiddenPackedSourceSnapshotCount",
+    "packedRuntimeHash",
+    "packedRuntimeFileCount",
     "phaseIdentity",
     "publicationHash",
+    "tarballBytesHash",
     "readbackHash",
     "decision"
   ],
   "properties": {
-    "schemaVersion": { "const": "requirements-contract-candidate-package-receipt/v1" },
+    "schemaVersion": { "const": "requirements-contract-candidate-package-receipt/v2" },
+    "hashDomainRegistry": {
+      "type": "object",
+      "required": ["schemaVersion"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-hash-domains/v2" }
+      }
+    },
     "packageManifestRef": { "$ref": "#/$defs/fileRef" },
     "packageVersion": { "type": "string", "minLength": 1 },
     "sourceManifestHash": { "$ref": "#/$defs/hash" },
     "generatedDistManifestHash": { "$ref": "#/$defs/hash" },
+    "runtimeAssetManifestRef": { "$ref": "#/$defs/fileRef" },
+    "buildAuthorityReceiptRef": { "$ref": "#/$defs/fileRef" },
+    "distBuildHash": { "$ref": "#/$defs/hash" },
     "nodeVersion": { "const": "v22.22.1" },
     "nodeExecutableRef": { "$ref": "#/$defs/fileRef" },
     "npmVersion": { "const": "10.9.4" },
@@ -47,6 +65,9 @@
       "uniqueItems": true
     },
     "packedEntrySetHash": { "$ref": "#/$defs/hash" },
+    "forbiddenPackedSourceSnapshotCount": { "const": 0 },
+    "packedRuntimeHash": { "$ref": "#/$defs/hash" },
+    "packedRuntimeFileCount": { "type": "integer", "minimum": 1 },
     "phaseIdentity": {
       "type": "object",
       "additionalProperties": false,
@@ -64,6 +85,7 @@
       }
     },
     "publicationHash": { "$ref": "#/$defs/hash" },
+    "tarballBytesHash": { "$ref": "#/$defs/hash" },
     "readbackHash": { "$ref": "#/$defs/hash" },
     "decision": { "const": "pass" }
   },

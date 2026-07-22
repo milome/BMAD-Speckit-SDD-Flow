@@ -1962,6 +1962,7 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
     'sourceDocumentHash',
     'implementationConfirmationHash',
     'semanticModelHash',
+    'sourceAmendmentHashes',
     'transactionId',
     'packetHash',
     'currentAttemptId',
@@ -2038,6 +2039,9 @@ export function canonicalizeRequirementRecord(record: JsonObject): JsonObject {
   const semanticModelHash = text(out.semanticModelHash);
   if (semanticModelHash) out.semanticModelHash = semanticModelHash;
   else delete out.semanticModelHash;
+  const sourceAmendmentHashes = strings(out.sourceAmendmentHashes);
+  if (sourceAmendmentHashes.length > 0) out.sourceAmendmentHashes = sourceAmendmentHashes;
+  else delete out.sourceAmendmentHashes;
   const transactionId = text(out.transactionId);
   if (transactionId) out.transactionId = transactionId;
   else delete out.transactionId;

@@ -52,6 +52,14 @@ export interface RequirementsContractDeploymentDeltaValidationResult {
   }>;
 }
 
+type DeploymentDeltaRow = {
+  id: string;
+  changeType: 'added' | 'removed' | 'modified';
+  beforeHash: string | null;
+  afterHash: string | null;
+  proofRefs: string[];
+};
+
 function schemaPath(): string {
   const fileName = 'requirements-contract-deployment-delta.schema.json';
   const candidates = [
@@ -84,18 +92,12 @@ function proofRefs(
 function deltas<T extends { id: string; proofRefs: string[] }>(
   beforeRows: T[],
   afterRows: T[]
-): Array<{
-  id: string;
-  changeType: 'added' | 'removed' | 'modified';
-  beforeHash: string | null;
-  afterHash: string | null;
-  proofRefs: string[];
-}> {
+): DeploymentDeltaRow[] {
   const before = new Map(beforeRows.map((row) => [row.id, row]));
   const after = new Map(afterRows.map((row) => [row.id, row]));
   return [...new Set([...before.keys(), ...after.keys()])]
     .sort()
-    .flatMap((id) => {
+    .flatMap<DeploymentDeltaRow>((id) => {
       const beforeRow = before.get(id);
       const afterRow = after.get(id);
       if (!beforeRow && afterRow) {

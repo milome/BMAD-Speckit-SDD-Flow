@@ -11,7 +11,11 @@
     "phaseAuditAttemptId",
     "candidatePackageReceipt",
     "stageObservations",
-    "installedDependencyTreeHash",
+    "distBuildHash",
+    "packedRuntimeHash",
+    "packedRuntimeFileCount",
+    "installedRuntimeHash",
+    "installedRuntimeFileCount",
     "preConfirmationEvidenceSetHash",
     "preConfirmationStageSnapshotHash",
     "decision"
@@ -30,7 +34,11 @@
       "minItems": 10,
       "maxItems": 10
     },
-    "installedDependencyTreeHash": { "$ref": "#/$defs/hash" },
+    "distBuildHash": { "$ref": "#/$defs/hash" },
+    "packedRuntimeHash": { "$ref": "#/$defs/hash" },
+    "packedRuntimeFileCount": { "type": "integer", "minimum": 1 },
+    "installedRuntimeHash": { "$ref": "#/$defs/hash" },
+    "installedRuntimeFileCount": { "type": "integer", "minimum": 1 },
     "preConfirmationEvidenceSetHash": { "$ref": "#/$defs/hash" },
     "preConfirmationStageSnapshotHash": { "$ref": "#/$defs/hash" },
     "decision": { "const": "PASS" }

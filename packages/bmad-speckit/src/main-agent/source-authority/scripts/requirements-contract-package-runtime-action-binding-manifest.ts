@@ -40,8 +40,11 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-recovery-finalize',
   'requirements-contract-finalization-safe-write',
   'requirements-contract-terminal-command-supervisor',
+  'requirements-contract-command-execution-producer',
+  'requirements-contract-clean-materialization',
   'requirements-contract-judge-credentials-init',
   'requirements-contract-critical-auditor-judge-adapter',
+  'requirements-contract-gap-closure-readonly-auditor-adapter',
   'requirements-contract-eval',
   'requirements-contract-candidate-package',
   'requirements-contract-changed-path-manifest',
@@ -58,7 +61,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-consumer-cli-capability-observe',
 ].sort();
 const ACTION_UNIVERSE_HASH =
-  'sha256:7352905dfb095f1fee1e6ff0a78968a6f7619f117182c356d88878d855493cc1';
+  'sha256:8029ca35c702adb6e0d63a194dd1d0829e981afca3340c6f87db8031d852b7e7';
 
 const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
   {
@@ -124,6 +127,58 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
         repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-terminal-closeout.js`,
         packagePath:
           'dist/main-agent/source-authority/scripts/requirements-contract-terminal-closeout.js',
+      },
+    ],
+  },
+  {
+    actionId: 'requirements-contract-command-execution-producer',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-command-execution-receipt.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-command-execution-receipt.js`,
+    gateSymbol: 'requirementsContractCommandExecutionProducerCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-command-execution-producer-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-command-execution-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-command-execution-producer.test.ts',
+    ],
+  },
+  {
+    actionId: 'requirements-contract-clean-materialization',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-clean-materialization.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-clean-materialization.js`,
+    gateSymbol: 'requirementsContractCleanMaterializationCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-clean-materialization-input.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-clean-materialization-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-command-execution-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-runtime-build-authority-receipt.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-clean-materialization.test.ts',
+    ],
+    runtimeRefs: [
+      {
+        role: 'controlled-command-producer',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-command-execution-receipt.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js',
+      },
+      {
+        role: 'runtime-build-authority-validator',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-runtime-build-authority.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority.js',
+      },
+      {
+        role: 'package-runtime-index',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-package-runtime-index.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js',
       },
     ],
   },
@@ -234,6 +289,24 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
         packagePath:
           'dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js',
       },
+    ],
+  },
+  {
+    actionId: 'requirements-contract-gap-closure-readonly-auditor-adapter',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-gap-closure-readonly-auditor-adapter.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-gap-closure-readonly-auditor-adapter.js`,
+    gateSymbol: 'requirementsContractGapClosureReadonlyAuditorAdapterCommand',
+    inputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-gap-closure-readonly-auditor-adapter-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-gap-closure-independent-audit-request.schema.json`,
+    ],
+    outputSchemas: [
+      `${SCHEMA_ROOT}/requirements-contract-gap-closure-independent-audit-assessment.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-gap-closure-independent-audit-result.schema.json`,
+    ],
+    behaviorTests: [
+      'tests/acceptance/requirements-contract-gap-closure-readonly-auditor-adapter.test.ts',
+      'tests/acceptance/main-agent-gap-closure-evidence-gate.test.ts',
     ],
   },
   {

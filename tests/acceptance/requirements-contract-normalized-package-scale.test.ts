@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest';
 import {
   buildScaleEdges,
   buildScaleNodes,
+  expandScalePathDescriptor,
+  scalePathVectorHash,
   scaleNodeId,
+  type ScalePathDescriptor,
 } from './helpers/requirements-contract-normalized-package-scale-fixture';
 
 type ScaleProfile = {
@@ -17,8 +20,8 @@ type ScaleProfile = {
   expectedLookup: unknown[];
   outgoingIndices: number[];
   expectedOutgoingEdgeIds: Record<string, string[]>;
-  expectedCriticalPathEdgeIds: string[];
-  expectedBoundedDenseCriticalPaths: string[][];
+  expectedCriticalPath: ScalePathDescriptor;
+  expectedBoundedDenseCriticalPaths: ScalePathDescriptor;
   operationOutputHashes: Record<string, string>;
   expectedOutputSetHash: string;
   workUnits: Record<string, number>;
@@ -39,9 +42,7 @@ type ScaleCorpus = {
 
 const CORPUS = JSON.parse(
   readFileSync(
-    path.resolve(
-      'tests/fixtures/requirements-contract/normalized-contract-scale-corpus.v1.json'
-    ),
+    path.resolve('tests/fixtures/requirements-contract/normalized-contract-scale-corpus.v1.json'),
     'utf8'
   )
 ) as ScaleCorpus;
@@ -51,16 +52,16 @@ describe('Normalized Contract Package scale corpus', () => {
     'matches every frozen expected vector within the deterministic work-unit bound',
     { timeout: 180_000 },
     async () => {
-      const rendererModule = (await import(
-        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-package-renderer'
-      )) as Record<string, unknown>;
+      const rendererModule =
+        (await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-package-renderer')) as Record<
+          string,
+          unknown
+        >;
       const measure = rendererModule.measureRequirementsContractNormalizedPackageOperations as
         | ((input: {
             packageValue: unknown;
             lookupNodeIds: string[];
             outgoingNodeIds: string[];
-            sparseCriticalPathEdgeIds: string[];
-            boundedDenseCriticalPaths: string[][];
           }) => Record<string, unknown>)
         | undefined;
 
@@ -70,10 +71,36 @@ describe('Normalized Contract Package scale corpus', () => {
 
       for (const scaleCase of CORPUS.cases) {
         const shared = buildScaleNodes(scaleCase.nodeCount);
-        for (const profile of [
-          scaleCase.profiles.sparse,
-          scaleCase.profiles.boundedDense,
-        ]) {
+        for (const profile of [scaleCase.profiles.sparse, scaleCase.profiles.boundedDense]) {
+          const expectedCriticalPathEdgeIds = expandScalePathDescriptor(
+            profile.expectedCriticalPath
+          );
+          const expectedBoundedDenseCriticalPaths = expandScalePathDescriptor(
+            profile.expectedBoundedDenseCriticalPaths
+          ).map((edgeId) => [edgeId]);
+          expect(expectedCriticalPathEdgeIds).toHaveLength(profile.expectedCriticalPath.count);
+          expect(expectedCriticalPathEdgeIds.at(0) ?? null).toBe(
+            profile.expectedCriticalPath.firstEdgeId
+          );
+          expect(expectedCriticalPathEdgeIds.at(-1) ?? null).toBe(
+            profile.expectedCriticalPath.lastEdgeId
+          );
+          expect(scalePathVectorHash(expectedCriticalPathEdgeIds)).toBe(
+            profile.expectedCriticalPath.expectedHash
+          );
+          expect(expectedBoundedDenseCriticalPaths).toHaveLength(
+            profile.expectedBoundedDenseCriticalPaths.count
+          );
+          expect(expectedBoundedDenseCriticalPaths.at(0)?.[0] ?? null).toBe(
+            profile.expectedBoundedDenseCriticalPaths.firstEdgeId
+          );
+          expect(expectedBoundedDenseCriticalPaths.at(-1)?.[0] ?? null).toBe(
+            profile.expectedBoundedDenseCriticalPaths.lastEdgeId
+          );
+          expect(scalePathVectorHash(expectedBoundedDenseCriticalPaths)).toBe(
+            profile.expectedBoundedDenseCriticalPaths.expectedHash
+          );
+
           const packageValue = {
             semanticBodies: shared.semanticBodies,
             nodes: shared.nodes,
@@ -83,8 +110,6 @@ describe('Normalized Contract Package scale corpus', () => {
             packageValue,
             lookupNodeIds: profile.lookupIndices.map(scaleNodeId),
             outgoingNodeIds: profile.outgoingIndices.map(scaleNodeId),
-            sparseCriticalPathEdgeIds: profile.expectedCriticalPathEdgeIds,
-            boundedDenseCriticalPaths: profile.expectedBoundedDenseCriticalPaths,
           });
 
           expect(observed).toMatchObject({
@@ -94,8 +119,8 @@ describe('Normalized Contract Package scale corpus', () => {
             canonicalBytes: profile.canonicalBytes,
             lookup: profile.expectedLookup,
             outgoingEdgeIds: profile.expectedOutgoingEdgeIds,
-            sparseCriticalPathEdgeIds: profile.expectedCriticalPathEdgeIds,
-            boundedDenseCriticalPaths: profile.expectedBoundedDenseCriticalPaths,
+            sparseCriticalPathEdgeIds: expectedCriticalPathEdgeIds,
+            boundedDenseCriticalPaths: expectedBoundedDenseCriticalPaths,
             operationOutputHashes: profile.operationOutputHashes,
             expectedOutputSetHash: profile.expectedOutputSetHash,
             workUnits: profile.workUnits,

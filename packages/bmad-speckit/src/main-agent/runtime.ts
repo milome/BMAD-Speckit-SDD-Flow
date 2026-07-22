@@ -34,6 +34,7 @@ const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
+const { gapClosureEvidenceAction } = require('./actions/gap-closure-evidence');
 const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
 const { hostMatrixPrOrchestratorAction } = require('./actions/host-matrix-pr-orchestrator');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
@@ -96,6 +97,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'entryflow-traceability-check': entryflowTraceabilityCheckAction,
   'execution-closure-gate': executionClosureGateAction,
   'functional-resume-check': functionalResumeCheckAction,
+  'gap-closure-evidence': gapClosureEvidenceAction,
   'governed-data-products': governedDataProductsAction,
   'production-loop-ready-check': productionLoopReadyCheckAction,
   'runtime-policy-snapshot-check': runtimePolicySnapshotCheckAction,

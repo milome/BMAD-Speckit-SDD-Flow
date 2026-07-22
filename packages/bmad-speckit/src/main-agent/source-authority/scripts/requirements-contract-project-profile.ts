@@ -320,7 +320,9 @@ export function validateRequirementsContractProjectProfile(
   const authority = recordValue(value?.classificationAuthority);
   if (
     typeof authority?.kind === 'string' &&
-    !PROJECT_CLASSIFICATION_AUTHORITY_KINDS.has(authority.kind)
+    !PROJECT_CLASSIFICATION_AUTHORITY_KINDS.has(
+      authority.kind as RequirementsContractProjectClassificationAuthorityKind
+    )
   ) {
     addIssue(
       issues,

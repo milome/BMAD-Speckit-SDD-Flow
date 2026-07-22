@@ -13,6 +13,29 @@ const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.y
 const SRC_JS_ALLOWLIST = path.join(PACKAGE_ROOT, 'scripts', 'src-js-allowlist.json');
 const PACKAGE_DIST_ROOT = path.join(PACKAGE_ROOT, 'dist');
 const DIST_ROOT = path.join(PACKAGE_ROOT, 'dist', 'main-agent');
+const RUNTIME_ASSET_MANIFEST = path.join(DIST_ROOT, 'runtime-asset-manifest.json');
+const RUNTIME_BUILD_AUTHORITY_RECEIPT = path.join(
+  DIST_ROOT,
+  'runtime-build-authority-receipt.json'
+);
+const ARTIFACT_ROLE_OWNER = path.join(
+  PACKAGE_ROOT,
+  'src',
+  'main-agent',
+  'source-authority',
+  'scripts',
+  'requirements-contract-artifact-role-classifier.ts'
+);
+const ARTIFACT_ROLE_REGISTRY_RELATIVE_PATH = path.join(
+  'shared',
+  'requirements-contract',
+  'requirements-contract-artifact-role-registry.json'
+);
+const PROJECTION_REGISTRY_RELATIVE_PATH = path.join(
+  'shared',
+  'requirements-contract',
+  'requirements-contract-projection-registry.json'
+);
 const CHECKPOINT_SEMANTIC_VALIDATION_SCRIPT =
   'source-authority/scripts/requirements-contract-checkpoint-semantic-validation.js';
 const CHECKPOINT_SEMANTIC_VALIDATION_SCHEMA =
@@ -91,21 +114,21 @@ const EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS = [
     forbidden: '../packages/scoring/query',
     required: '@bmad-speckit/scoring/query',
     runtimeTarget: 'node_modules/@bmad-speckit/scoring/dist/query/index.js',
-    runtimeTargetBase: 'repo',
+    runtimeTargetBase: 'package',
   },
   {
     file: 'source-authority/scripts/bmad-help-routing-state.js',
     forbidden: '../packages/runtime-context/src/context',
     required: '@bmad-speckit/runtime-context/context',
     runtimeTarget: 'node_modules/@bmad-speckit/runtime-context/dist/context.js',
-    runtimeTargetBase: 'repo',
+    runtimeTargetBase: 'package',
   },
   {
     file: 'source-authority/scripts/ralph-method/schema.js',
     forbidden: '../../packages/ralph-method/src/schema',
     required: '@bmad-speckit/ralph-method/schema',
     runtimeTarget: 'node_modules/@bmad-speckit/ralph-method/dist/schema.js',
-    runtimeTargetBase: 'repo',
+    runtimeTargetBase: 'package',
   },
 ];
 const EXPECTED_SOURCE_AUTHORITY_ASSETS = [
@@ -168,6 +191,19 @@ function collectPackageJsonFiles(dir, base = dir) {
     }
     if (!entry.isFile() || entry.name !== 'package.json') continue;
     collected.push(path.relative(base, fullPath).replace(/\\/g, '/'));
+  }
+  return collected.sort();
+}
+
+function collectFiles(dir) {
+  const collected = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collected.push(...collectFiles(fullPath));
+      continue;
+    }
+    if (entry.isFile()) collected.push(fullPath);
   }
   return collected.sort();
 }
@@ -252,6 +288,15 @@ describe('main-agent dist build', () => {
     assert.equal(typeof pkg.scripts['build:main-agent-dist'], 'string');
     assert.match(pkg.scripts.prepack, /build:main-agent-dist/);
     assert.ok(pkg.files.includes('dist/'));
+    assert.ok(pkg.files.includes('_bmad/'));
+    assert.ok(pkg.files.includes('node_modules/@bmad-speckit/'));
+    assert.equal(pkg.files.includes('src/'), false, 'npm package must not publish source snapshots');
+    assert.equal(pkg.files.includes('tests/'), false, 'npm package must not publish package tests');
+    assert.equal(
+      pkg.files.includes('test-nonempty/'),
+      false,
+      'npm package must not publish test-only sentinel assets'
+    );
   });
 
   it('builds main-agent dist before release CI-equivalent tests', () => {
@@ -404,12 +449,111 @@ describe('main-agent dist build', () => {
     assert.equal(actionBindingManifest.packageActionSemanticBindingCoverage, 1);
     assert.equal(actionBindingManifest.decision, 'pass');
 
+    const requirementsContractSurfaceRoots = [
+      path.join(REPO_ROOT, '_bmad'),
+      path.join(REPO_ROOT, '.codex'),
+      path.join(REPO_ROOT, '.cursor'),
+      path.join(REPO_ROOT, '.claude'),
+      path.join(PACKAGE_ROOT, '_bmad'),
+    ];
+    const artifactRoleRegistryPaths = requirementsContractSurfaceRoots.map((surfaceRoot) =>
+      path.join(surfaceRoot, ARTIFACT_ROLE_REGISTRY_RELATIVE_PATH)
+    );
+    const artifactRoleOwnerHash = `sha256:${createHash('sha256')
+      .update(fs.readFileSync(ARTIFACT_ROLE_OWNER))
+      .digest('hex')}`;
+    const artifactRoleRegistryBytes = fs.readFileSync(artifactRoleRegistryPaths[0]);
+    const artifactRoleRegistryHash = `sha256:${createHash('sha256')
+      .update(artifactRoleRegistryBytes)
+      .digest('hex')}`;
+    const artifactRoleRegistry = JSON.parse(artifactRoleRegistryBytes.toString('utf8'));
+    assert.equal(
+      artifactRoleRegistry.owner.hash,
+      artifactRoleOwnerHash,
+      'build must refresh the artifact-role registry from its classifier owner'
+    );
+    for (const registryPath of artifactRoleRegistryPaths.slice(1)) {
+      assert.deepEqual(
+        fs.readFileSync(registryPath),
+        artifactRoleRegistryBytes,
+        `artifact-role registry surface drifted: ${registryPath}`
+      );
+    }
+    const projectionRegistry = JSON.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, '_bmad', PROJECTION_REGISTRY_RELATIVE_PATH),
+        'utf8'
+      )
+    );
+    const artifactRoleProjection = projectionRegistry.projections.find(
+      (projection) => projection.projectionId === 'artifact_role_registry'
+    );
+    assert.equal(
+      artifactRoleProjection?.canonicalHash,
+      artifactRoleRegistryHash,
+      'projection registry must hash the artifact-role registry generated in the same build'
+    );
+
     for (const relativePath of EXPECTED_DIST_FILES) {
       const distFile = path.join(DIST_ROOT, relativePath);
       assert.equal(fs.existsSync(distFile), true, `missing ${relativePath}`);
       const source = fs.readFileSync(distFile, 'utf8');
       assert.doesNotMatch(source, /scripts[\\/]main-agent-orchestration\.ts/);
       assert.doesNotMatch(source, /compiled[\\/]main-agent-orchestration\.cjs/);
+    }
+
+    assert.equal(fs.existsSync(RUNTIME_ASSET_MANIFEST), true);
+    assert.equal(fs.existsSync(RUNTIME_BUILD_AUTHORITY_RECEIPT), true);
+    const runtimeManifest = JSON.parse(fs.readFileSync(RUNTIME_ASSET_MANIFEST, 'utf8'));
+    assert.equal(runtimeManifest.schemaVersion, 'bmad-speckit-main-agent-runtime-assets/v2');
+    assert.equal(runtimeManifest.hashDomainRegistry.schemaVersion, 'requirements-contract-hash-domains/v2');
+    for (const entry of runtimeManifest.entries) {
+      assert.match(entry.sourceBytesHash, /^sha256:[a-f0-9]{64}$/u);
+      if (entry.materialization !== 'build_metadata') {
+        assert.match(entry.targetBytesHash, /^sha256:[a-f0-9]{64}$/u);
+      }
+    }
+    const buildAuthority = JSON.parse(
+      fs.readFileSync(RUNTIME_BUILD_AUTHORITY_RECEIPT, 'utf8')
+    );
+    assert.equal(buildAuthority.schemaVersion, 'bmad-speckit-runtime-build-authority/v1');
+    assert.equal(buildAuthority.hashDomainRegistry.schemaVersion, 'requirements-contract-hash-domains/v2');
+    for (const field of [
+      'sourceInputManifestHash',
+      'buildScriptHash',
+      'dependencyLockHash',
+      'runtimeAssetManifestHash',
+      'distRuntimeHash',
+      'packageRuntimeHash',
+      'distBuildHash',
+    ]) {
+      assert.match(buildAuthority[field], /^sha256:[a-f0-9]{64}$/u, `${field} is required`);
+    }
+    assert.equal(buildAuthority.decision, 'pass');
+    for (const packageId of JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'))
+      .bundleDependencies) {
+      const packageName = packageId.slice('@bmad-speckit/'.length);
+      const bundledRoot = path.join(
+        PACKAGE_ROOT,
+        'node_modules',
+        '@bmad-speckit',
+        packageName
+      );
+      assert.equal(
+        fs.existsSync(path.join(bundledRoot, 'package.json')),
+        true,
+        `bundled runtime package missing: ${packageId}`
+      );
+      assert.equal(
+        fs.existsSync(path.join(bundledRoot, 'src')),
+        false,
+        `bundled runtime package must not include source snapshots: ${packageId}`
+      );
+      assert.equal(
+        fs.existsSync(path.join(bundledRoot, 'tests')),
+        false,
+        `bundled runtime package must not include tests: ${packageId}`
+      );
     }
 
     for (const relativePath of EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES) {
@@ -736,5 +880,61 @@ describe('main-agent dist build', () => {
         'package _bmad mirror drifted from canonical runtime hook'
       );
     });
+  });
+
+  it('excludes ignored repository _bmad artifacts from the package runtime owner', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
+    const ignoredSourcePaths = execFileSync(
+      'git',
+      [
+        'ls-files',
+        '-z',
+        '--others',
+        '--ignored',
+        '--exclude-standard',
+        '--',
+        '_bmad',
+      ],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      }
+    )
+      .split('\0')
+      .filter(Boolean);
+
+    for (const ignoredSourcePath of ignoredSourcePaths) {
+      const packageRelativePath = path.relative('_bmad', ignoredSourcePath);
+      assert.equal(
+        fs.existsSync(path.join(PACKAGE_ROOT, '_bmad', packageRelativePath)),
+        false,
+        `ignored repository artifact leaked into package runtime: ${ignoredSourcePath}`
+      );
+    }
+  });
+
+  it('excludes test-only directories from bundled workspace runtime packages', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
+    const bundledRuntimeRoot = path.join(
+      PACKAGE_ROOT,
+      'node_modules',
+      '@bmad-speckit'
+    );
+    const testOnlyPaths = collectFiles(bundledRuntimeRoot)
+      .map((filePath) => path.relative(bundledRuntimeRoot, filePath).replace(/\\/g, '/'))
+      .filter((filePath) =>
+        filePath.split('/').some((segment) =>
+          ['__tests__', 'tests', 'test-nonempty'].includes(segment) ||
+          segment.startsWith('__fixtures')
+        )
+      );
+
+    assert.deepEqual(testOnlyPaths, []);
   });
 });
