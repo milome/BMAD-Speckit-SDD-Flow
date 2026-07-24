@@ -4,11 +4,33 @@ import { describe, expect, it } from 'vitest';
 const require = createRequire(import.meta.url);
 const {
   canonicalJsonBytes,
+  compareEvidenceRef,
+  compareTestIdentity,
   normalizeEvidenceRef,
   normalizeRepoPath,
+  sha256Bytes,
   stableUnique,
   validateCanonicalAudit,
 } = require('../../tools/test-portfolio-audit/canonical.cjs');
+
+function auditWithTests(tests: unknown): Record<string, unknown> {
+  return {
+    schemaVersion: 'test-portfolio-audit/v1',
+    status: 'COMPLETE',
+    tests,
+  };
+}
+
+function duplicateAudit(executionRouteRefs: unknown): Record<string, unknown> {
+  return auditWithTests([
+    {
+      testPath: 'tests/a.test.ts',
+      runnerId: 'root-vitest',
+      executionMultiplicity: 'duplicate',
+      executionRouteRefs,
+    },
+  ]);
+}
 
 describe('test portfolio canonical core', () => {
   it('normalizes Windows and POSIX repository paths to one identity', () => {
@@ -18,9 +40,7 @@ describe('test portfolio canonical core', () => {
     expect(normalizeRepoPath('D:/repo', 'tests/acceptance/a.test.ts')).toBe(
       'tests/acceptance/a.test.ts'
     );
-    expect(() => normalizeRepoPath('D:/repo', '../outside.test.ts')).toThrow(
-      'PATH_OUTSIDE_REPO'
-    );
+    expect(() => normalizeRepoPath('D:/repo', '../outside.test.ts')).toThrow('PATH_OUTSIDE_REPO');
   });
 
   it('normalizes path-bearing evidence without changing route semantics', () => {
@@ -69,5 +89,92 @@ describe('test portfolio canonical core', () => {
 
   it('returns stable unique values in canonical order', () => {
     expect(stableUnique(['b', 'a', 'a'])).toEqual(['a', 'b']);
+  });
+
+  it('orders natural evidence ties with a deterministic ordinal tie-breaker', () => {
+    expect(compareEvidenceRef('route:a1', 'route:a01')).toBeGreaterThan(0);
+    expect(compareEvidenceRef('route:a01', 'route:a1')).toBeLessThan(0);
+    expect(compareEvidenceRef('route:a2', 'route:a10')).toBeLessThan(0);
+
+    const expected = ['route:a01', 'route:a1'];
+    expect(['route:a1', 'route:a01'].sort(compareEvidenceRef)).toEqual(expected);
+    expect(['route:a01', 'route:a1'].sort(compareEvidenceRef)).toEqual(expected);
+  });
+
+  it('compares test identity fields without concatenation collisions', () => {
+    const left = { testPath: 'ab', runnerId: 'c' };
+    const right = { testPath: 'a', runnerId: 'bc' };
+
+    expect(compareTestIdentity(left, right)).toBeGreaterThan(0);
+    expect(compareTestIdentity(right, left)).toBeLessThan(0);
+    expect(
+      compareTestIdentity(
+        { testPath: 'tests/a.test.ts', runnerId: 'runner-2' },
+        { testPath: 'tests/a.test.ts', runnerId: 'runner-10' }
+      )
+    ).toBeLessThan(0);
+  });
+
+  it('requires duplicate route evidence to be normalized, non-empty, and distinct', () => {
+    expect(() => validateCanonicalAudit(duplicateAudit(['route:only', 'route:only']))).toThrow(
+      'DUPLICATE_EVIDENCE_INCOMPLETE'
+    );
+    expect(() => validateCanonicalAudit(duplicateAudit(['route:only', '   ']))).toThrow(
+      'DUPLICATE_EVIDENCE_INCOMPLETE'
+    );
+    expect(() =>
+      validateCanonicalAudit(
+        duplicateAudit(['source:.\\package.json#scripts.test', 'source:package.json#scripts.test'])
+      )
+    ).toThrow('DUPLICATE_EVIDENCE_INCOMPLETE');
+  });
+
+  it('rejects malformed audit structures with stable domain errors', () => {
+    for (const artifact of [null, [], 'invalid', new Date(0)]) {
+      expect(() => validateCanonicalAudit(artifact)).toThrow('AUDIT_ARTIFACT_INVALID');
+    }
+
+    expect(() =>
+      validateCanonicalAudit({
+        schemaVersion: 'test-portfolio-audit/v1',
+        status: 'COMPLETE',
+      })
+    ).toThrow('AUDIT_TESTS_INVALID');
+    for (const tests of [null, {}, 'invalid']) {
+      expect(() => validateCanonicalAudit(auditWithTests(tests))).toThrow('AUDIT_TESTS_INVALID');
+    }
+
+    for (const row of [null, [], 'invalid', new Date(0)]) {
+      expect(() => validateCanonicalAudit(auditWithTests([row]))).toThrow('AUDIT_TEST_ROW_INVALID');
+    }
+  });
+
+  it('rejects empty repository paths while preserving explicit root notation', () => {
+    for (const value of [undefined, null, '', '   ']) {
+      expect(() => normalizeRepoPath('D:/repo', value)).toThrow('PATH_EMPTY');
+    }
+    expect(normalizeRepoPath('D:/repo', '.')).toBe('.');
+    expect(() =>
+      validateCanonicalAudit(
+        auditWithTests([
+          {
+            testPath: '.',
+            runnerId: 'root-vitest',
+          },
+        ])
+      )
+    ).toThrow('TEST_IDENTITY_MISSING');
+  });
+
+  it('hashes canonical bytes with the known SHA-256 vector', () => {
+    expect(sha256Bytes(Buffer.from('abc', 'utf8'))).toBe(
+      'sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'
+    );
+  });
+
+  it('accepts a valid canonical audit', () => {
+    const artifact = duplicateAudit(['route:pr-full/test-ci', 'route:pr-full/test-bmad']);
+
+    expect(validateCanonicalAudit(artifact)).toBe(artifact);
   });
 });

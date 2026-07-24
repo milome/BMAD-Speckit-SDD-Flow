@@ -6,8 +6,13 @@ const CONFIDENCE = new Set(['high', 'medium', 'low']);
 const STATUS = new Set(['COMPLETE', 'INCOMPLETE', 'FAILED']);
 
 function normalizeRepoPath(repoRoot, value) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    const error = new Error('PATH_EMPTY');
+    error.code = 'PATH_EMPTY';
+    throw error;
+  }
   const root = path.resolve(repoRoot);
-  const candidate = String(value || '').replace(/\\/g, '/');
+  const candidate = String(value).replace(/\\/g, '/');
   const absolute = path.resolve(root, candidate);
   const relative = path.relative(root, absolute).replace(/\\/g, '/');
   if (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative)) {
@@ -47,32 +52,86 @@ function sha256Bytes(value) {
   return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
 }
 
+function compareOrdinal(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+function compareNatural(left, right) {
+  const leftText = String(left);
+  const rightText = String(right);
+  const leftParts = leftText.match(/\d+|\D+/g) || [];
+  const rightParts = rightText.match(/\d+|\D+/g) || [];
+  const length = Math.max(leftParts.length, rightParts.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const leftPart = leftParts[index];
+    const rightPart = rightParts[index];
+    if (leftPart === undefined) return -1;
+    if (rightPart === undefined) return 1;
+
+    const leftIsNumber = /^\d+$/.test(leftPart);
+    const rightIsNumber = /^\d+$/.test(rightPart);
+    if (leftIsNumber && rightIsNumber) {
+      const leftNumber = leftPart.replace(/^0+(?=\d)/, '');
+      const rightNumber = rightPart.replace(/^0+(?=\d)/, '');
+      if (leftNumber.length !== rightNumber.length) {
+        return leftNumber.length < rightNumber.length ? -1 : 1;
+      }
+      const numberOrder = compareOrdinal(leftNumber, rightNumber);
+      if (numberOrder !== 0) return numberOrder;
+      continue;
+    }
+
+    const partOrder = compareOrdinal(leftPart, rightPart);
+    if (partOrder !== 0) return partOrder;
+  }
+
+  return compareOrdinal(leftText, rightText);
+}
+
 function compareEvidenceRef(left, right) {
-  return String(left).localeCompare(String(right), 'en', { numeric: true });
+  return compareNatural(left, right);
 }
 
 function compareTestIdentity(left, right) {
-  return `${left.testPath}\0${left.runnerId}`.localeCompare(
-    `${right.testPath}\0${right.runnerId}`,
-    'en',
-    { numeric: true }
-  );
+  const pathOrder = compareNatural(left.testPath, right.testPath);
+  if (pathOrder !== 0) return pathOrder;
+  return compareNatural(left.runnerId, right.runnerId);
 }
 
 function stableUnique(values) {
   return [...new Set(values.map(String))].sort(compareEvidenceRef);
 }
 
+function isPlainObject(value) {
+  if (!value || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function validateCanonicalAudit(artifact) {
+  if (!isPlainObject(artifact)) throw new Error('AUDIT_ARTIFACT_INVALID');
   if (artifact.schemaVersion !== AUDIT_SCHEMA_VERSION) {
     throw new Error('AUDIT_SCHEMA_VERSION_INVALID');
   }
   if (!STATUS.has(artifact.status)) throw new Error('AUDIT_STATUS_INVALID');
-  for (const row of artifact.tests || []) {
-    if (!row.testPath || !row.runnerId) throw new Error('TEST_IDENTITY_MISSING');
+  if (!Array.isArray(artifact.tests)) throw new Error('AUDIT_TESTS_INVALID');
+  for (const row of artifact.tests) {
+    if (!isPlainObject(row)) throw new Error('AUDIT_TEST_ROW_INVALID');
+    if (
+      typeof row.testPath !== 'string' ||
+      row.testPath.trim() === '' ||
+      row.testPath === '.' ||
+      typeof row.runnerId !== 'string' ||
+      row.runnerId.trim() === ''
+    ) {
+      throw new Error('TEST_IDENTITY_MISSING');
+    }
     if (
       row.executionMultiplicity === 'duplicate' &&
-      (!Array.isArray(row.executionRouteRefs) || row.executionRouteRefs.length < 2)
+      !hasCompleteDuplicateEvidence(row.executionRouteRefs)
     ) {
       throw new Error('DUPLICATE_EVIDENCE_INCOMPLETE');
     }
@@ -81,6 +140,15 @@ function validateCanonicalAudit(artifact) {
     }
   }
   return artifact;
+}
+
+function hasCompleteDuplicateEvidence(values) {
+  if (!Array.isArray(values)) return false;
+  try {
+    return stableUnique(values.map(normalizeEvidenceRef)).length >= 2;
+  } catch {
+    return false;
+  }
 }
 
 module.exports = {
