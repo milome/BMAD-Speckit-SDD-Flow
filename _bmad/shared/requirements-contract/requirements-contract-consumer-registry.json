@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:a538c14a70516d2d1431917ed278250d10fb014335fb5faab2a89193851ecefe"
   },
-  "registryHash": "sha256:aead3a346b9a43c6743ed46387080f630346e93cb0ccadf9457d600b225aa298",
+  "registryHash": "sha256:32f818480cc1c01f7612ccdee6c9867decd8554e0930a68a6865177b4db009d7",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -58,7 +58,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:9fc26946e031620a04af6d15ad73f1159d47174248e65f683113613f78d722e4",
+      "pathHash": "sha256:bdc5b4a365a952af77c5e3200a7d1f8628f22e66f4783345b559346636bcf839",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -581,7 +581,7 @@
     {
       "consumerId": "judge-credential-resolver",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver.ts",
-      "pathHash": "sha256:f29ecd3e779fcf7c02acb37154b55903a808547f5023590a64a7a069ffb33cad",
+      "pathHash": "sha256:7ba3979a719bc85652fff35b652b17708c70026f73100e62652e3e7c3db74a57",
       "inputRole": "judge_runtime_public_configuration",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -709,7 +709,7 @@
     {
       "consumerId": "claude-code-cli-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
-      "pathHash": "sha256:8779af02878b7ab738c961954a05b3e7c35b2d943c2ed681b75f3a836c1b7f00",
+      "pathHash": "sha256:11fb904f47d556b3d3ac8d75e4850eebd45c1585df5ef307ffd56d6db6ec1c03",
       "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -741,7 +741,7 @@
     {
       "consumerId": "judge-provider-smoke",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke.ts",
-      "pathHash": "sha256:39bda29a2d078f66c40a8dcd9a88e62f4c5f6cc8c4a91593712ac5e5f46054cb",
+      "pathHash": "sha256:0e6ad4171129a9318d09f10bbe5d900fa2a352cc123c15c0f75b531f67167e72",
       "inputRole": "audit_phase_context",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

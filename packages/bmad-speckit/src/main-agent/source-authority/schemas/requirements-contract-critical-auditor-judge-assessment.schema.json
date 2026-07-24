@@ -61,8 +61,99 @@
       }
     },
     "falsePositiveProofs": { "$ref": "#/$defs/objectArray" },
+    "auditReviewScoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overallGrade",
+        "dimensionContractId",
+        "dimensionMode",
+        "expectedDimensions",
+        "dimensionScores",
+        "phaseScore",
+        "vetoTriggered",
+        "effectiveVerdict",
+        "structuredDriftSignals",
+        "evidenceRefs",
+        "rationale"
+      ],
+      "properties": {
+        "overallGrade": { "enum": ["A", "B", "C", "D"] },
+        "dimensionContractId": { "type": "string", "minLength": 1 },
+        "dimensionMode": { "type": "string", "minLength": 1 },
+        "expectedDimensions": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "dimensionScores": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["dimension", "score", "rationale"],
+            "properties": {
+              "dimension": { "type": "string", "minLength": 1 },
+              "score": { "type": "number", "minimum": 0, "maximum": 100 },
+              "rationale": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "phaseScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "vetoTriggered": { "type": "boolean" },
+        "effectiveVerdict": {
+          "enum": [
+            "approved",
+            "required_fixes",
+            "blocked",
+            "blocked_pending_rereadiness"
+          ]
+        },
+        "structuredDriftSignals": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["signal", "triggered", "evidence"],
+            "properties": {
+              "signal": {
+                "enum": [
+                  "smoke_task_chain",
+                  "closure_task_id",
+                  "journey_unlock",
+                  "gap_split_contract",
+                  "shared_path_reference"
+                ]
+              },
+              "triggered": { "type": "boolean" },
+              "evidence": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "evidenceRefs": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
     "rationale": { "type": "string", "minLength": 1 }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": { "const": "new_valid_gap" }
+        },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "validatedGaps": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/validatedGapWithRepairActions" }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "objectArray": {
       "type": "array",
@@ -73,6 +164,114 @@
       "minItems": 1,
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 }
+    },
+    "validatedGapWithRepairActions": {
+      "type": "object",
+      "required": ["id", "status", "repairActions"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "repairActions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/repairAction" }
+        }
+      }
+    },
+    "repairAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "type",
+        "sourceSpan",
+        "sourceText",
+        "targetField",
+        "newValue",
+        "reason",
+        "mustRefs",
+        "requirementIds"
+      ],
+      "properties": {
+        "actionId": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": [
+            "add_must",
+            "split_must",
+            "add_neg",
+            "add_out",
+            "add_evidence",
+            "add_trace",
+            "upsert_trace",
+            "upsert_failure_path",
+            "upsert_edge_case",
+            "add_acc",
+            "add_e2e",
+            "add_business_view",
+            "add_business_visual",
+            "replace_target_path",
+            "replace_validation_command"
+          ]
+        },
+        "sourceSpan": {
+          "type": "object",
+          "description": "A 1-based inclusive range of complete raw lines in request.sourceDocument.",
+          "additionalProperties": false,
+          "required": ["startLine", "endLine"],
+          "properties": {
+            "startLine": { "type": "integer", "minimum": 1 },
+            "endLine": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "sourceText": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The complete raw source lines selected by sourceSpan, exactly after CRLF-to-LF normalization and outer whitespace trimming. Markdown delimiters, IDs, and all table cells are required."
+        },
+        "targetField": { "type": "string", "minLength": 1 },
+        "newValue": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "mustRefs": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "requirementIds": { "$ref": "#/$defs/nonEmptyStringArray" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "split_must" }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "newValue": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["sourceMustRef", "replacements"],
+                "properties": {
+                  "sourceMustRef": { "type": "string", "minLength": 1 },
+                  "replacements": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["id", "text"],
+                      "properties": {
+                        "id": { "type": "string", "minLength": 1 },
+                        "text": { "type": "string", "minLength": 1 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

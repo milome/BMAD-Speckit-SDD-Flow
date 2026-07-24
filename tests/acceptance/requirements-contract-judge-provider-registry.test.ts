@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
 type JsonRecord = Record<string, unknown>;
@@ -27,6 +28,9 @@ const PROJECTION_REGISTRY_PATH = path.resolve(
 );
 const CONSUMER_REGISTRY_PATH = path.resolve(
   '_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json'
+);
+const MAIN_AGENT_DIST_BUILD_PATH = path.resolve(
+  'packages/bmad-speckit/scripts/build-main-agent-dist.cjs'
 );
 
 function provider(
@@ -146,6 +150,18 @@ describe('requirements contract Judge provider registry', () => {
     if (!createProjection) return;
 
     const projection = JSON.parse(readFileSync(REGISTRY_PROJECTION_PATH, 'utf8')) as JsonRecord;
+    const configuredRuntime = (
+      yaml.load(
+        readFileSync(
+          path.resolve('_bmad/_config/governance-remediation.yaml'),
+          'utf8'
+        )
+      ) as { judgeRuntime: JsonRecord }
+    ).judgeRuntime;
+    const activeProviderRef = String(configuredRuntime.activeProviderRef);
+    const configuredProvider = (
+      configuredRuntime.providers as Record<string, JsonRecord>
+    )[activeProviderRef];
     const schema = JSON.parse(readFileSync(REGISTRY_PROJECTION_SCHEMA_PATH, 'utf8'));
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     addFormats(ajv);
@@ -155,29 +171,45 @@ describe('requirements contract Judge provider registry', () => {
     expect(projection).toEqual(await createProjection(process.cwd()));
     expect(projection).toMatchObject({
       schemaVersion: 'requirements-contract-judge-provider-registry/v1',
-      activeProviderRef: 'local-sonnet-judge',
+      activeProviderRef,
       providers: [
         {
-          providerRef: 'local-sonnet-judge',
+          providerRef: activeProviderRef,
           adapterRef: 'ClaudeCodeCliJudgeAdapter',
           provider: {
-            transport: 'claude-code-cli',
-            apiStyle: 'cli',
-            model: 'claude-sonnet-5',
+            transport: configuredProvider.transport,
+            apiStyle: configuredProvider.apiStyle,
             endpoint: {
-              command: 'claude',
-              resolutionMode: 'path_search',
-              routingOwnership: 'transport_adapter',
-              upstreamVersioning: 'cli_managed',
-              explicitOperationPath: null,
+              ...(configuredProvider.endpoint as JsonRecord),
             },
           },
         },
       ],
     });
+    const projectedProvider = (
+      (projection.providers as Array<{ provider: JsonRecord }>)[0]?.provider
+    );
+    if (Object.hasOwn(configuredProvider, 'model')) {
+      expect(projectedProvider).toHaveProperty('model', configuredProvider.model);
+    } else {
+      expect(projectedProvider).not.toHaveProperty('model');
+    }
     expect(JSON.stringify(projection)).not.toMatch(
       /apiKey|authorization|\/chat\/completions|\/messages/u
     );
+  });
+
+  it('materializes the canonical Provider registry before synchronizing projection surfaces', () => {
+    const buildSource = readFileSync(MAIN_AGENT_DIST_BUILD_PATH, 'utf8');
+    const materializationCall = buildSource.indexOf(
+      'createRequirementsContractJudgeProviderRegistryProjection(repoRoot)'
+    );
+    const surfaceSynchronizationCall = buildSource.indexOf(
+      'synchronizeRequirementsContractProjectionSurfaces(repoRoot)'
+    );
+
+    expect(materializationCall).toBeGreaterThanOrEqual(0);
+    expect(surfaceSynchronizationCall).toBeGreaterThan(materializationCall);
   });
 
   it('validates configuration-only switching between registered providers', () => {
@@ -188,6 +220,39 @@ describe('requirements contract Judge provider registry', () => {
 
     expect(validate(runtime('provider-a')), JSON.stringify(validate.errors)).toBe(true);
     expect(validate(runtime('provider-b')), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('does not treat a provider ref or routing model name as registry authority', () => {
+    expect(existsSync(REGISTRY_PROJECTION_SCHEMA_PATH)).toBe(true);
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    addFormats(ajv);
+    const validate = ajv.compile(
+      JSON.parse(readFileSync(REGISTRY_PROJECTION_SCHEMA_PATH, 'utf8'))
+    );
+    const configured = runtime('provider-a');
+    const selectedProvider = configured.providers['provider-a'];
+    const projection = {
+      schemaVersion: 'requirements-contract-judge-provider-registry/v1',
+      owner: {
+        path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts',
+        hash: `sha256:${'1'.repeat(64)}`,
+      },
+      sourceConfig: {
+        path: '_bmad/_config/governance-remediation.yaml',
+        hash: `sha256:${'2'.repeat(64)}`,
+      },
+      activeProviderRef: configured.activeProviderRef,
+      providers: [
+        {
+          providerRef: configured.activeProviderRef,
+          provider: selectedProvider,
+          adapterRef: 'OpenAICompatibleJudgeAdapter',
+        },
+      ],
+      registryHash: `sha256:${'3'.repeat(64)}`,
+    };
+
+    expect(validate(projection), JSON.stringify(validate.errors)).toBe(true);
   });
 
   it('registers the Judge projection, resolver, Provider registry, Adapters, and Probe consumer', () => {

@@ -157,10 +157,7 @@ export async function requirementsContractJudgeProviderSmokeCommand(
     'judge_provider_smoke_response_invalid'
   );
   const normalizedProbe = structuredProbeResult(probe.payload);
-  if (
-    normalizedProbe.returnedModel !== provider.model ||
-    probe.originPreservationDecision !== 'pass'
-  ) {
+  if (probe.originPreservationDecision !== 'pass') {
     throw new Error('judge_provider_smoke_response_invalid');
   }
   if (JSON.stringify(credential).includes('apiKey')) {
@@ -168,6 +165,7 @@ export async function requirementsContractJudgeProviderSmokeCommand(
   }
   const publicProviderConfigHash = fileHash(configPath);
   const configuredBaseUrlHash = sha256(provider.endpoint.baseUrl);
+  const configuredModel = provider.model ?? null;
   const capability = {
     schemaVersion: 'requirements-contract-judge-capability-receipt/v1',
     transactionId: context.transactionId,
@@ -182,7 +180,7 @@ export async function requirementsContractJudgeProviderSmokeCommand(
     apiStyle: provider.apiStyle,
     endpointResolutionMode: provider.endpoint.resolutionMode,
     upstreamVersioning: provider.endpoint.upstreamVersioning,
-    configuredModel: provider.model,
+    configuredModel,
     returnedModel: normalizedProbe.returnedModel,
     transportSuccess: true,
     structuredOutputSupport: normalizedProbe.structuredOutputSupport,
@@ -206,7 +204,7 @@ export async function requirementsContractJudgeProviderSmokeCommand(
     configuredBaseUrlHash,
     transport: provider.transport,
     apiStyle: provider.apiStyle,
-    model: provider.model,
+    model: configuredModel,
     credentialRevision: credential.credentialRevision,
     independenceClass: provider.auditPolicy?.independenceClass,
     blindReview: provider.auditPolicy?.blindReview,
@@ -235,7 +233,7 @@ export async function requirementsContractJudgeProviderSmokeCommand(
     phase: options.phase,
     phaseAuditAttemptId: options.phaseAuditAttemptId,
     providerRef: providerSelection.providerRef,
-    model: provider.model,
+    model: configuredModel,
   };
   const security = {
     schemaVersion: 'requirements-contract-judge-runtime-security-parity/v1',

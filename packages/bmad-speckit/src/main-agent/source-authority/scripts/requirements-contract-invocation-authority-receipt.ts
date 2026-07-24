@@ -31,6 +31,20 @@ export interface RequirementsContractInvocationAuthorityReceipt {
   receiptHash: string;
 }
 
+export function requirementsContractInvocationAuthorityBindingHash(
+  receipt: RequirementsContractInvocationAuthorityReceipt
+): string {
+  return sha256Stable({
+    schemaVersion: receipt.schemaVersion,
+    requirementSetId: receipt.requirementSetId,
+    recordId: receipt.recordId,
+    invocationId: receipt.invocationId,
+    entrySource: receipt.entrySource,
+    sourceDocumentHash: receipt.sourceDocumentHash,
+    argumentSetHash: receipt.argumentSetHash,
+  });
+}
+
 const SCHEMA_FILE = 'requirements-contract-invocation-authority-receipt.schema.json';
 let validator: ValidateFunction | null = null;
 

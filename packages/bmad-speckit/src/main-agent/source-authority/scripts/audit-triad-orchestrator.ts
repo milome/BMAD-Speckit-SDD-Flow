@@ -64,6 +64,12 @@ export interface AuditTriadExecutionPlan {
   vetoItemIds: string[];
   priorRepairReceiptRefs: Array<{ path: string; contentHash: string }>;
   independentProviderBinding: CriticalAuditorJudgeRuntimeBinding;
+  readonlyAuditorExecution: {
+    producerMode: 'codex_exec_readonly';
+    producerCount: 1;
+    perspectiveIds: CriticalAuditorPerspectiveId[];
+    implementationWritesAllowed: false;
+  };
   subagents: AuditTriadSubagentPlan[];
   roundPolicy: { consecutiveNoGapRoundsRequired: 3 };
   repairPolicy: {
@@ -94,6 +100,7 @@ export interface AuditTriadRoundReceipt {
   stageProfileId: CriticalAuditorStageProfileId;
   auditEpochId: string;
   auditTargetBundleHash: string;
+  readonlyAuditorInvocationId: string;
   perspectiveResults: Record<
     CriticalAuditorPerspectiveId,
     { agentId: string; validGaps: string[] }
@@ -118,10 +125,13 @@ export interface AuditTriadRoundReceipt {
   currentEvidenceHash: string;
   criticalAuditorRequestHash: string;
   independentProviderEvidence?: CriticalAuditorIndependentProviderEvidence;
+  providerInvocationReceiptRef?: AuditTriadBoundReceiptRef;
   judgeExecutionReceiptRef?: AuditTriadBoundReceiptRef;
   readonlyAuditorHostInvocationReceiptRef?: AuditTriadBoundReceiptRef;
+  scoreWriterInvocationReceiptRef?: AuditTriadBoundReceiptRef;
   scoreReceiptRefs?: string[];
   runAuditorHostReceiptRefs?: string[];
+  receiptHash?: string;
 }
 
 export interface AuditTriadConvergenceDecision {
@@ -302,6 +312,16 @@ export function createAuditTriadExecutionPlan(input: {
     vetoItemIds,
     priorRepairReceiptRefs,
     independentProviderBinding: providerBinding.binding,
+    readonlyAuditorExecution: {
+      producerMode: 'codex_exec_readonly',
+      producerCount: 1,
+      perspectiveIds: [
+        'product_intent',
+        'model_projection',
+        'main_agent_execution',
+      ],
+      implementationWritesAllowed: false,
+    },
     subagents: (
       [
         'product_intent',
@@ -309,14 +329,12 @@ export function createAuditTriadExecutionPlan(input: {
         'main_agent_execution',
       ] as CriticalAuditorPerspectiveId[]
     ).map((perspectiveId) => ({
-      agentId: `${perspectiveId}-${safeSegment(input.attemptId)}`,
+      agentId: 'codex_exec_readonly',
       perspectiveId,
-      model: 'gpt-5.4',
+      model: 'codex-cli-active-model',
       reasoningEffort: 'xhigh',
       readScope: ['docs/**', 'scripts/**', 'tests/**', '_bmad-output/**'],
-      writeScope: [
-        `_bmad-output/runtime/requirement-records/${safeSegment(input.recordId)}/audit-triad/${safeSegment(input.attemptId)}/reports/**`,
-      ],
+      writeScope: [],
       forbiddenActions: ['modify_source', 'modify_runtime_state', 'modify_generated_surface'],
       reportPath: path.join(planDir, 'reports', `${perspectiveId}.json`),
       requiredCheckItemIds: validation.stageProfile!.requiredCheckItemIds,
@@ -537,6 +555,143 @@ function repairEvidenceBindingIssues(
   return Array.from(new Set(issues));
 }
 
+export function auditTriadRoundHistoryIssues(
+  rounds: AuditTriadRoundReceipt[]
+): string[] {
+  const blockers: string[] = [];
+  const seen = {
+    roundId: new Set<string>(),
+    requestHash: new Set<string>(),
+    providerRunId: new Set<string>(),
+    readonlyAuditorInvocationId: new Set<string>(),
+    providerReceiptPath: new Set<string>(),
+    providerReceiptContentHash: new Set<string>(),
+    providerReceiptHash: new Set<string>(),
+    judgeReceiptPath: new Set<string>(),
+    judgeReceiptContentHash: new Set<string>(),
+    judgeReceiptHash: new Set<string>(),
+    readonlyHostReceiptPath: new Set<string>(),
+    readonlyHostReceiptContentHash: new Set<string>(),
+    readonlyHostReceiptHash: new Set<string>(),
+    scoreWriterReceiptPath: new Set<string>(),
+    scoreWriterReceiptContentHash: new Set<string>(),
+    scoreWriterReceiptHash: new Set<string>(),
+    roundReceiptHash: new Set<string>(),
+  };
+  const register = (
+    prefix: string,
+    value: string | undefined,
+    values: Set<string>,
+    code: string
+  ): void => {
+    const normalized = value?.trim() ?? '';
+    if (!normalized) return;
+    if (values.has(normalized)) blockers.push(`${prefix}_${code}`);
+    else values.add(normalized);
+  };
+  const registerReceipt = (
+    prefix: string,
+    ref: AuditTriadBoundReceiptRef | undefined,
+    values: {
+      path: Set<string>;
+      contentHash: Set<string>;
+      receiptHash: Set<string>;
+    },
+    codes: { path: string; contentHash: string; receiptHash: string }
+  ): void => {
+    if (!ref) return;
+    register(prefix, ref.path, values.path, codes.path);
+    register(prefix, ref.contentHash, values.contentHash, codes.contentHash);
+    register(prefix, ref.receiptHash, values.receiptHash, codes.receiptHash);
+  };
+
+  for (const [index, round] of rounds.entries()) {
+    const prefix = `round_${index + 1}`;
+    register(prefix, round.roundId, seen.roundId, 'round_id_replayed');
+    register(
+      prefix,
+      round.criticalAuditorRequestHash,
+      seen.requestHash,
+      'critical_auditor_request_hash_replayed'
+    );
+    register(
+      prefix,
+      round.independentProviderEvidence?.providerRunId,
+      seen.providerRunId,
+      'provider_run_id_replayed'
+    );
+    register(
+      prefix,
+      round.readonlyAuditorInvocationId,
+      seen.readonlyAuditorInvocationId,
+      'readonly_auditor_invocation_id_replayed'
+    );
+    registerReceipt(
+      prefix,
+      round.providerInvocationReceiptRef,
+      {
+        path: seen.providerReceiptPath,
+        contentHash: seen.providerReceiptContentHash,
+        receiptHash: seen.providerReceiptHash,
+      },
+      {
+        path: 'provider_invocation_receipt_path_replayed',
+        contentHash: 'provider_invocation_receipt_hash_replayed',
+        receiptHash: 'provider_invocation_receipt_self_hash_replayed',
+      }
+    );
+    registerReceipt(
+      prefix,
+      round.judgeExecutionReceiptRef,
+      {
+        path: seen.judgeReceiptPath,
+        contentHash: seen.judgeReceiptContentHash,
+        receiptHash: seen.judgeReceiptHash,
+      },
+      {
+        path: 'judge_receipt_path_replayed',
+        contentHash: 'judge_receipt_hash_replayed',
+        receiptHash: 'judge_receipt_self_hash_replayed',
+      }
+    );
+    registerReceipt(
+      prefix,
+      round.readonlyAuditorHostInvocationReceiptRef,
+      {
+        path: seen.readonlyHostReceiptPath,
+        contentHash: seen.readonlyHostReceiptContentHash,
+        receiptHash: seen.readonlyHostReceiptHash,
+      },
+      {
+        path: 'readonly_host_receipt_path_replayed',
+        contentHash: 'readonly_host_receipt_hash_replayed',
+        receiptHash: 'readonly_host_receipt_self_hash_replayed',
+      }
+    );
+    registerReceipt(
+      prefix,
+      round.scoreWriterInvocationReceiptRef,
+      {
+        path: seen.scoreWriterReceiptPath,
+        contentHash: seen.scoreWriterReceiptContentHash,
+        receiptHash: seen.scoreWriterReceiptHash,
+      },
+      {
+        path: 'score_writer_invocation_receipt_path_replayed',
+        contentHash: 'score_writer_invocation_receipt_hash_replayed',
+        receiptHash: 'score_writer_invocation_receipt_self_hash_replayed',
+      }
+    );
+    register(
+      prefix,
+      round.receiptHash,
+      seen.roundReceiptHash,
+      'round_receipt_self_hash_replayed'
+    );
+  }
+  return Array.from(new Set(blockers));
+}
+
 export function evaluateAuditTriadConvergence(input: {
   plan: AuditTriadExecutionPlan;
   rounds: AuditTriadRoundReceipt[];
@@ -548,12 +703,14 @@ export function evaluateAuditTriadConvergence(input: {
 }): AuditTriadConvergenceDecision {
   const blockers: string[] = [];
   blockers.push(...currentHashBindingIssues(input.plan));
+  blockers.push(...auditTriadRoundHistoryIssues(input.rounds));
   const rounds = input.rounds.slice(-input.plan.roundPolicy.consecutiveNoGapRoundsRequired);
   const seenRoundIds = new Set<string>();
   const seenRequestHashes = new Set<string>();
   const seenProviderRunIds = new Set<string>();
   const seenJudgeReceiptHashes = new Set<string>();
   const seenReadonlyHostReceiptHashes = new Set<string>();
+  const seenScoreWriterReceiptHashes = new Set<string>();
   if (rounds.length !== input.plan.roundPolicy.consecutiveNoGapRoundsRequired) {
     blockers.push('audit_triad_three_rounds_missing');
   }
@@ -598,8 +755,16 @@ export function evaluateAuditTriadConvergence(input: {
       if (!round.perspectiveResults[perspective])
         blockers.push(`${prefix}_perspective_missing:${perspective}`);
     }
+    if (!round.readonlyAuditorInvocationId?.trim()) {
+      blockers.push(`${prefix}_readonly_auditor_invocation_id_missing`);
+    }
     const agentIds = Object.values(round.perspectiveResults).map((result) => result.agentId);
-    if (new Set(agentIds).size !== agentIds.length) blockers.push(`${prefix}_duplicate_agent`);
+    if (
+      round.readonlyAuditorInvocationId?.trim() &&
+      agentIds.some((agentId) => agentId !== round.readonlyAuditorInvocationId)
+    ) {
+      blockers.push(`${prefix}_readonly_auditor_invocation_binding_mismatch`);
+    }
     for (const item of input.plan.subagents[0]?.requiredCheckItemIds ?? []) {
       if (!round.coveredCheckItemIds.includes(item))
         blockers.push(`${prefix}_check_item_missing:${item}`);
@@ -658,6 +823,16 @@ export function evaluateAuditTriadConvergence(input: {
       blockers.push(`${prefix}_current_attempt_hash_mismatch`);
     if (!same(round.currentEvidenceHash, input.plan.currentEvidenceHash))
       blockers.push(`${prefix}_current_evidence_hash_mismatch`);
+    const roundRecord = round as unknown as Record<string, unknown>;
+    const roundReceiptHash = round.receiptHash?.trim() ?? '';
+    const { receiptHash: _ignoredRoundReceiptHash, ...roundWithoutHash } = roundRecord;
+    if (!roundReceiptHash) {
+      blockers.push(`${prefix}_round_receipt_self_hash_missing`);
+    } else if (!isSha256Hash(roundReceiptHash)) {
+      blockers.push(`${prefix}_round_receipt_self_hash_invalid`);
+    } else if (roundReceiptHash !== sha256Json(roundWithoutHash)) {
+      blockers.push(`${prefix}_round_receipt_self_hash_mismatch`);
+    }
     if (!same(round.criticalAuditorProfileHash, input.plan.criticalAuditorProfileHash))
       blockers.push(`${prefix}_profile_hash_mismatch`);
     if (!same(round.criticalAuditorStageProfileHash, input.plan.criticalAuditorStageProfileHash))
@@ -702,6 +877,20 @@ export function evaluateAuditTriadConvergence(input: {
         blockers.push(`${prefix}_independent_provider_evidence_invalid:${issueCode}`);
       }
     }
+    const providerReceiptRef = round.providerInvocationReceiptRef;
+    if (!providerReceiptRef) {
+      blockers.push(`${prefix}_provider_invocation_receipt_ref_missing`);
+    } else {
+      if (!providerReceiptRef.path?.trim()) {
+        blockers.push(`${prefix}_provider_invocation_receipt_path_missing`);
+      }
+      if (!isSha256Hash(providerReceiptRef.contentHash)) {
+        blockers.push(`${prefix}_provider_invocation_receipt_content_hash_invalid`);
+      }
+      if (!isSha256Hash(providerReceiptRef.receiptHash)) {
+        blockers.push(`${prefix}_provider_invocation_receipt_self_hash_invalid`);
+      }
+    }
     const judgeReceiptRef = round.judgeExecutionReceiptRef;
     if (input.scoreReceiptRequired) {
       if (!judgeReceiptRef) {
@@ -732,6 +921,32 @@ export function evaluateAuditTriadConvergence(input: {
         scoreReceiptRefs.includes(judgeReceiptRef.path.trim())
       ) {
         blockers.push(`${prefix}_score_receipt_role_invalid`);
+      }
+      const scoreWriterReceiptRef = round.scoreWriterInvocationReceiptRef;
+      if (!scoreWriterReceiptRef) {
+        blockers.push(`${prefix}_score_writer_invocation_receipt_ref_missing`);
+      } else {
+        if (!scoreWriterReceiptRef.path?.trim()) {
+          blockers.push(`${prefix}_score_writer_invocation_receipt_path_missing`);
+        }
+        if (!isSha256Hash(scoreWriterReceiptRef.contentHash)) {
+          blockers.push(`${prefix}_score_writer_invocation_receipt_content_hash_invalid`);
+        } else if (seenScoreWriterReceiptHashes.has(scoreWriterReceiptRef.contentHash)) {
+          blockers.push(`${prefix}_score_writer_invocation_receipt_hash_replayed`);
+        } else {
+          seenScoreWriterReceiptHashes.add(scoreWriterReceiptRef.contentHash);
+        }
+        if (!isSha256Hash(scoreWriterReceiptRef.receiptHash)) {
+          blockers.push(`${prefix}_score_writer_invocation_receipt_self_hash_invalid`);
+        }
+        if (
+          scoreWriterReceiptRef.path?.trim() === judgeReceiptRef?.path?.trim() ||
+          scoreWriterReceiptRef.path?.trim() ===
+            round.readonlyAuditorHostInvocationReceiptRef?.path?.trim() ||
+          scoreReceiptRefs.includes(scoreWriterReceiptRef.path?.trim())
+        ) {
+          blockers.push(`${prefix}_score_writer_invocation_receipt_role_invalid`);
+        }
       }
     }
     const readonlyHostReceiptRef = round.readonlyAuditorHostInvocationReceiptRef;

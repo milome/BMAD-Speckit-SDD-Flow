@@ -1,7 +1,6 @@
 import {
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   readdirSync,
   renameSync,
@@ -11,6 +10,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { writeJsonAtomic } from './requirement-record-control-store';
+import { createSameVolumeBoundedTempDirectory } from './requirements-contract-same-volume-bounded-temp';
 import {
   resolveInteractionCandidates,
   type InteractionResolutionCandidate,
@@ -33,6 +33,7 @@ import {
 } from './requirements-contract-semantic-resolver';
 import { semanticModelHash as semanticModelHashForContract } from './requirements-contract-hash-domains';
 import {
+  requirementsContractInvocationAuthorityBindingHash,
   type RequirementsContractInvocationAuthorityReceipt,
   validateRequirementsContractInvocationAuthorityReceipt,
 } from './requirements-contract-invocation-authority-receipt';
@@ -173,42 +174,47 @@ function createSemanticBundleStaging(input: {
   semanticConservationManifestPath: string;
 }): SemanticBundleStaging {
   const bundleRoot = path.resolve(path.dirname(input.semanticIrPath));
-  const stagingParent = path.join(path.dirname(bundleRoot), '.s');
-  mkdirSync(stagingParent, { recursive: true });
-  const root = mkdtempSync(path.join(stagingParent, 'r-'));
+  const relativePaths = {
+    semanticIrPath: relativeBundlePath(
+      bundleRoot,
+      input.semanticIrPath,
+      'Canonical Semantic IR path'
+    ),
+    semanticResolutionDir: relativeBundlePath(
+      bundleRoot,
+      input.semanticResolutionDir,
+      'Semantic Resolution Receipt directory'
+    ),
+    interactionResolutionPath: relativeBundlePath(
+      bundleRoot,
+      input.interactionResolutionPath,
+      'Interaction Resolution path'
+    ),
+    lifecycleValidationReportPath: relativeBundlePath(
+      bundleRoot,
+      input.lifecycleValidationReportPath,
+      'Lifecycle Validation Report path'
+    ),
+    semanticConservationManifestPath: relativeBundlePath(
+      bundleRoot,
+      input.semanticConservationManifestPath,
+      'Semantic Conservation Manifest path'
+    ),
+  };
+  const root = createSameVolumeBoundedTempDirectory({
+    anchorDirectory: path.dirname(bundleRoot),
+    prefix: 'r-',
+    projectedRelativePaths: Object.values(relativePaths),
+  });
   return {
     root,
-    semanticIrPath: path.join(
-      root,
-      relativeBundlePath(bundleRoot, input.semanticIrPath, 'Canonical Semantic IR path')
-    ),
-    semanticResolutionDir: path.join(
-      root,
-      relativeBundlePath(
-        bundleRoot,
-        input.semanticResolutionDir,
-        'Semantic Resolution Receipt directory'
-      )
-    ),
-    interactionResolutionPath: path.join(
-      root,
-      relativeBundlePath(bundleRoot, input.interactionResolutionPath, 'Interaction Resolution path')
-    ),
-    lifecycleValidationReportPath: path.join(
-      root,
-      relativeBundlePath(
-        bundleRoot,
-        input.lifecycleValidationReportPath,
-        'Lifecycle Validation Report path'
-      )
-    ),
+    semanticIrPath: path.join(root, relativePaths.semanticIrPath),
+    semanticResolutionDir: path.join(root, relativePaths.semanticResolutionDir),
+    interactionResolutionPath: path.join(root, relativePaths.interactionResolutionPath),
+    lifecycleValidationReportPath: path.join(root, relativePaths.lifecycleValidationReportPath),
     semanticConservationManifestPath: path.join(
       root,
-      relativeBundlePath(
-        bundleRoot,
-        input.semanticConservationManifestPath,
-        'Semantic Conservation Manifest path'
-      )
+      relativePaths.semanticConservationManifestPath
     ),
   };
 }
@@ -346,6 +352,46 @@ function canonicalModelPreimage(
   value: Omit<RequirementContractModelV2, 'semanticModelHash'>
 ): unknown {
   return value;
+}
+
+function intakeAuthorityBindingHash(receipt: Record<string, unknown>): string {
+  const { capturedAt: _capturedAt, receiptHash: _receiptHash, ...stableAuthority } = receipt;
+  return sha256Stable(stableAuthority);
+}
+
+function intentLineageAuthorityBindingHash(
+  ledger: Record<string, unknown>,
+  intakeBindingHash: string
+): string {
+  const {
+    intakeReceiptHash: _intakeReceiptHash,
+    ledgerHash: _ledgerHash,
+    ...stableAuthority
+  } = ledger;
+  return sha256Stable({
+    ...stableAuthority,
+    intakeAuthorityBindingHash: intakeBindingHash,
+  });
+}
+
+function semanticResolutionAuthorityBindingHash(receipt: SemanticResolutionReceipt): string {
+  if (!validateSemanticResolutionReceipt(receipt)) {
+    throw new Error('Invalid Semantic Resolution Receipt');
+  }
+  return sha256Stable({
+    schemaVersion: receipt.schemaVersion,
+    resolutionId: receipt.resolutionId,
+    fieldRef: receipt.fieldRef,
+    valueHash: receipt.valueHash,
+    resolutionAuthorityClass: receipt.resolutionAuthorityClass,
+    derivationRule: receipt.derivationRule,
+    applicabilityProof: receipt.applicabilityProof,
+    conflictingCandidates: [...receipt.conflictingCandidates].sort(),
+    sourceModelHashBefore: receipt.sourceModelHashBefore,
+    sourceModelHashAfter: receipt.sourceModelHashAfter,
+    resolverId: receipt.resolverId,
+    resolutionRunId: receipt.resolutionRunId,
+  });
 }
 
 function validateSourceRoots(sourceRoots: ProductionSemanticSourceRoot[]): void {
@@ -1055,11 +1101,18 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
     'requirements-contract-production-source-root-parser',
     canonicalModulePath('requirements-contract-production-semantic-pipeline')
   );
+  const intakeBindingHash = intakeAuthorityBindingHash(input.intakeReceipt);
+  const lineageBindingHash = intentLineageAuthorityBindingHash(
+    input.intentLineageLedger,
+    intakeBindingHash
+  );
   const inputSourceAuthorityHash = sha256Stable({
     requirementSetId: input.requirementSetId,
-    intakeReceiptHash: input.intakeReceipt.receiptHash,
-    intentLineageLedgerHash: input.intentLineageLedger.ledgerHash,
-    invocationAuthorityReceiptHash: input.invocationAuthorityReceipt?.receiptHash ?? null,
+    intakeAuthorityBindingHash: intakeBindingHash,
+    intentLineageAuthorityBindingHash: lineageBindingHash,
+    invocationAuthorityBindingHash: input.invocationAuthorityReceipt
+      ? requirementsContractInvocationAuthorityBindingHash(input.invocationAuthorityReceipt)
+      : null,
     sourceRoots: sourceRoots.map((root) => ({
       sourceRootId: root.sourceRootId,
       rootClass: root.rootClass,
@@ -1137,6 +1190,9 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
     const semanticResolutionReceiptSetHash = sha256Stable(
       resolution.receipts.map((receipt) => receipt.receiptHash).sort()
     );
+    const semanticResolutionBindingSetHash = sha256Stable(
+      resolution.receipts.map(semanticResolutionAuthorityBindingHash).sort()
+    );
     const interactionReceiptHashes = interactionResult.authorized.map((authorized) => {
       const receiptHash =
         authorized.semanticResolutionReceipt?.receiptHash ??
@@ -1150,16 +1206,21 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
     const resolvedSourceRootSetHash = sha256Stable(
       resolvedSourceRootProjection(resolvedSourceRoots)
     );
-    const canonicalSemanticAuthorityPreimage = {
+    const canonicalSemanticAuthorityBindingPreimage = {
       inputSourceAuthorityHash,
-      semanticResolutionReceiptSetHash,
+      semanticResolutionBindingSetHash,
       interactionResolutionReceiptSetHash,
       sequenceModelHashAfter: interactionResult.sequenceModelHashAfter,
       resolvedSourceRootSetHash,
     };
     const canonicalSemanticAuthority = {
-      ...canonicalSemanticAuthorityPreimage,
-      authorityHash: sha256Stable(canonicalSemanticAuthorityPreimage),
+      inputSourceAuthorityHash,
+      semanticResolutionReceiptSetHash,
+      semanticResolutionBindingSetHash,
+      interactionResolutionReceiptSetHash,
+      sequenceModelHashAfter: interactionResult.sequenceModelHashAfter,
+      resolvedSourceRootSetHash,
+      authorityHash: sha256Stable(canonicalSemanticAuthorityBindingPreimage),
     };
     const interactionResolution = {
       ...interactionResolutionBase,

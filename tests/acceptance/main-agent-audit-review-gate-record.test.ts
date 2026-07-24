@@ -106,6 +106,7 @@ function establishExecutionClosureAuthority(
 }
 
 function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadRoundReceipt {
+  const readonlyAuditorInvocationId = `readonly-${roundId}`;
   const criticalAuditorRequestHash = sha256Json({
     auditEpochId: plan.auditEpochId,
     roundId,
@@ -113,6 +114,11 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
   });
   const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
     ...plan.independentProviderBinding,
+    requestedModel: plan.independentProviderBinding.model,
+    model: `gateway-selected-${sha256Json({
+      providerId: plan.independentProviderBinding.providerId,
+      roundId,
+    }).slice('sha256:'.length, 'sha256:'.length + 16)}`,
     transactionId: plan.auditEpochId,
     auditAttemptId: plan.attemptId,
     providerRunId: `provider-${roundId}`,
@@ -122,17 +128,39 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
     semanticModelHash: plan.semanticModelHash,
     projectionSetHash: plan.projectionSetHash,
   };
-  return {
+  const judgeReceiptWithoutHash = {
+    schemaVersion: 'audit-judge-execution-receipt/v1',
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    roundId,
+    providerRunId: evidenceWithoutRunHash.providerRunId,
+  };
+  const readonlyHostReceiptWithoutHash = {
+    schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    roundId,
+    requestHash: criticalAuditorRequestHash,
+  };
+  const scoreWriterReceiptWithoutHash = {
+    schemaVersion: 'run-auditor-host-score-writer-invocation-receipt/v1',
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    roundId,
+    producerInvocationId: readonlyAuditorInvocationId,
+  };
+  const roundWithoutHash = {
     schemaVersion: 'audit-triad-round-receipt/v1',
     roundId,
     verdict: 'no_new_valid_gap',
     stageProfileId: plan.stageProfileId,
     auditEpochId: plan.auditEpochId,
     auditTargetBundleHash: plan.auditTargetBundleHash,
+    readonlyAuditorInvocationId,
     perspectiveResults: {
-      product_intent: { agentId: `product-${roundId}`, validGaps: [] },
-      model_projection: { agentId: `model-${roundId}`, validGaps: [] },
-      main_agent_execution: { agentId: `main-${roundId}`, validGaps: [] },
+      product_intent: { agentId: readonlyAuditorInvocationId, validGaps: [] },
+      model_projection: { agentId: readonlyAuditorInvocationId, validGaps: [] },
+      main_agent_execution: { agentId: readonlyAuditorInvocationId, validGaps: [] },
     },
     coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
     vetoItemResults: plan.subagents[0].requiredCheckItemIds
@@ -159,9 +187,41 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
       ...evidenceWithoutRunHash,
       runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
     },
+    judgeExecutionReceiptRef: {
+      path: `audit-triad/rounds/${roundId}/judge-execution-receipt.json`,
+      contentHash: sha256Json(judgeReceiptWithoutHash),
+      receiptHash: sha256Json(judgeReceiptWithoutHash),
+    },
+    readonlyAuditorHostInvocationReceiptRef: {
+      path: `audit-triad/rounds/${roundId}/readonly-auditor-host-invocation-receipt.json`,
+      contentHash: sha256Json(readonlyHostReceiptWithoutHash),
+      receiptHash: sha256Json(readonlyHostReceiptWithoutHash),
+    },
+    scoreWriterInvocationReceiptRef: {
+      path: `audit-triad/rounds/${roundId}/score-writer-invocation-receipt.json`,
+      contentHash: sha256Json(scoreWriterReceiptWithoutHash),
+      receiptHash: sha256Json(scoreWriterReceiptWithoutHash),
+    },
+    providerInvocationReceiptRef: {
+      path: `audit-triad/rounds/${roundId}/judge-provider-invocation-receipt.json`,
+      contentHash: sha256Json({
+        schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+        auditEpochId: plan.auditEpochId,
+        roundId,
+      }),
+      receiptHash: sha256Json({
+        schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+        auditEpochId: plan.auditEpochId,
+        roundId,
+      }),
+    },
     scoreReceiptRefs: [`score-${roundId}.json`],
     runAuditorHostReceiptRefs: [`auditor-host-${roundId}.json`],
   };
+  return {
+    ...roundWithoutHash,
+    receiptHash: sha256Json(roundWithoutHash),
+  } as AuditTriadRoundReceipt;
 }
 
 function materializePostRepairAuditGateFixture(input: {
@@ -281,6 +341,7 @@ function materializePostRepairAuditGateFixture(input: {
       modelPacketHash: preliminaryPlan.modelPacketHash ?? null,
       auditReceiptHash: preliminaryPlan.auditReceiptHash ?? null,
       goalExecutionHash: preliminaryPlan.goalExecutionHash ?? null,
+      vetoItemIds: preliminaryPlan.vetoItemIds,
       priorRepairReceiptRefs: [],
     }),
     changedHashFields: ['publicationHash'],
@@ -436,6 +497,11 @@ describe('main agent audit review gate', () => {
             role: 'audit_triad_execution_plan',
             path: planPath.replace(/\\/gu, '/'),
             hash: sha256Text(readFileSync(planPath, 'utf8')),
+          },
+          {
+            role: 'audit_triad_round_1',
+            path: roundsPath.replace(/\\/gu, '/'),
+            hash: sha256Text(readFileSync(roundsPath, 'utf8')),
           },
         ],
         deterministicGateOutputs: [
@@ -747,6 +813,83 @@ describe('main agent audit review gate', () => {
     }
   });
 
+  it('fails closed when an evaluated round receipt changes before the control commit', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const plan = createAuditTriadExecutionPlan({
+        projectRoot: fixture.root,
+        recordId: fixture.recordId,
+        stage: 'implement',
+        callPoint: 'audit_review',
+        attemptId: fixture.runId,
+        ...auditPlanSemanticBindings(fixture, compiled),
+        sourceDocumentHash: fixture.sourceDocumentHash,
+        implementationConfirmationHash: fixture.implementationConfirmationHash,
+        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+      });
+      const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
+      const roundPaths = Array.from({ length: 3 }, (_, index) => {
+        const roundPath = path.join(
+          path.dirname(planPath),
+          'rounds',
+          `round-${index + 1}`,
+          'audit-triad-round-receipt.json'
+        );
+        writeJson(roundPath, cleanRound(plan, `round-${index + 1}`));
+        return roundPath;
+      });
+      const reportPath = path.join(path.dirname(planPath), 'audit-review-report.json');
+      const recordBefore = readFileSync(fixture.recordPath, 'utf8');
+
+      expect(() =>
+        mainAuditReviewGate(
+          [
+            '--requirement-record',
+            fixture.recordPath,
+            '--attempt-id',
+            fixture.runId,
+            '--plan',
+            planPath,
+            ...roundPaths.flatMap((roundPath) => ['--round', roundPath]),
+            '--report-path',
+            reportPath,
+            '--evaluated-at',
+            '2026-07-23T17:30:00.000Z',
+          ],
+          {
+            beforeControlCommit: () => {
+              const round = JSON.parse(readFileSync(roundPaths[1], 'utf8')) as Record<
+                string,
+                unknown
+              >;
+              writeJson(roundPaths[1], {
+                ...round,
+                changedAfterEvaluation: true,
+              });
+            },
+          }
+        )
+      ).toThrow('audit_review_input_changed:round_2');
+
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(recordBefore);
+      expect(existsSync(reportPath)).toBe(false);
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
   it('fails closed without score and runAuditorHost receipts', () => {
     const fixture = materializeRequirementFixture({
       currentMentalModel: 'execution_closure',
@@ -810,8 +953,8 @@ describe('main agent audit review gate', () => {
       expect(record.sixModelResults.audit_review.status).toBe('blocked');
       expect(record.sixModelResults.audit_review.blockingReasons).toEqual(
         expect.arrayContaining([
-          'round_1_score_receipt_missing',
-          'round_1_run_auditor_host_receipt_missing',
+          'round_1_score_receipt_ref_missing',
+          'round_1_run_auditor_host_receipt_ref_missing',
         ])
       );
       expect(

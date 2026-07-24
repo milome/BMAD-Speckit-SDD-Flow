@@ -20,21 +20,25 @@ const PROMOTION_STAGE_POLICIES = {
     allowedStatuses: new Set(["user_confirmed"]),
     confirmationReadyOnSuccess: true,
     safePromotionAsDraft: false,
+    allowDeferredCriticalAuditorCheckpoints: false,
   },
   "authoring-draft": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: true,
+    allowDeferredCriticalAuditorCheckpoints: true,
   },
   "current-source-receipt-refresh": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: false,
+    allowDeferredCriticalAuditorCheckpoints: true,
   },
   "projection-metadata-resync": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: false,
+    allowDeferredCriticalAuditorCheckpoints: true,
   },
 };
 
@@ -575,6 +579,7 @@ const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES = new Set([
   "critical_auditor_less_than_three_no_new_gap_rounds",
   "critical_auditor_validated_gap_unresolved",
   "critical_auditor_receipts_required_before_checkpoint",
+  "critical_auditor_checkpoint_outcome_required",
   "author_claim_lacks_critic_disposition",
 ]);
 
@@ -1108,6 +1113,8 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
             sourceDocumentHash: semanticBinding.sourceDocumentHash,
             implementationConfirmationHash: semanticBinding.implementationConfirmationHash,
             allowDeferredCriticalAuditorBlockers:
+              promotionPolicyFor(args.promotionStage)
+                ?.allowDeferredCriticalAuditorCheckpoints === true &&
               checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy?.mode ===
                 "source_gap_fix_materialization" &&
               checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy

@@ -213,16 +213,23 @@ export function createFixtureAuditTriadRound(
   roundId: string,
   overrides: Partial<AuditTriadRoundReceipt> = {}
 ): AuditTriadRoundReceipt {
+  const readonlyAuditorInvocationId = `readonly-${roundId}`;
   const criticalAuditorRequestHash = sha256Json({
     auditEpochId: plan.auditEpochId,
     roundId,
     role: 'llm_as_judge',
   });
+  const providerRunId = `provider-${roundId}`;
+  const observedProviderModel = `gateway-selected-${sha256Json({
+    providerRunId,
+  }).slice(-16)}`;
   const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
     ...plan.independentProviderBinding,
+    requestedModel: plan.independentProviderBinding.model,
+    model: observedProviderModel,
     transactionId: plan.auditEpochId,
     auditAttemptId: plan.attemptId,
-    providerRunId: `provider-${roundId}`,
+    providerRunId,
     requestHash: criticalAuditorRequestHash,
     responseHash: sha256Json({ roundId, verdict: 'no_new_valid_gap' }),
     sourceDocumentHash: plan.sourceDocumentHash,
@@ -243,17 +250,32 @@ export function createFixtureAuditTriadRound(
     roundId,
     requestHash: criticalAuditorRequestHash,
   };
-  return {
+  const scoreWriterReceiptWithoutHash = {
+    schemaVersion: 'run-auditor-host-score-writer-invocation-receipt/v1',
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    roundId,
+    producerInvocationId: readonlyAuditorInvocationId,
+  };
+  const providerReceiptWithoutHash = {
+    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    roundId,
+    providerRunId,
+  };
+  const roundWithoutHash = {
     schemaVersion: 'audit-triad-round-receipt/v1',
     roundId,
     verdict: 'no_new_valid_gap',
     stageProfileId: plan.stageProfileId,
     auditEpochId: plan.auditEpochId,
     auditTargetBundleHash: plan.auditTargetBundleHash,
+    readonlyAuditorInvocationId,
     perspectiveResults: {
-      product_intent: { agentId: `product-${roundId}`, validGaps: [] },
-      model_projection: { agentId: `model-${roundId}`, validGaps: [] },
-      main_agent_execution: { agentId: `main-${roundId}`, validGaps: [] },
+      product_intent: { agentId: readonlyAuditorInvocationId, validGaps: [] },
+      model_projection: { agentId: readonlyAuditorInvocationId, validGaps: [] },
+      main_agent_execution: { agentId: readonlyAuditorInvocationId, validGaps: [] },
     },
     coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
     vetoItemResults: plan.subagents[0].requiredCheckItemIds
@@ -290,8 +312,24 @@ export function createFixtureAuditTriadRound(
       contentHash: sha256Json(readonlyHostReceiptWithoutHash),
       receiptHash: sha256Json(readonlyHostReceiptWithoutHash),
     },
+    scoreWriterInvocationReceiptRef: {
+      path: `audit-triad/rounds/${roundId}/score-writer-invocation-receipt.json`,
+      contentHash: sha256Json(scoreWriterReceiptWithoutHash),
+      receiptHash: sha256Json(scoreWriterReceiptWithoutHash),
+    },
+    providerInvocationReceiptRef: {
+      path: `audit-triad/rounds/${roundId}/judge-provider-invocation-receipt.json`,
+      contentHash: sha256Json(providerReceiptWithoutHash),
+      receiptHash: sha256Json(providerReceiptWithoutHash),
+    },
     scoreReceiptRefs: [`score-${roundId}.json`],
     runAuditorHostReceiptRefs: [`auditor-host-${roundId}.json`],
     ...overrides,
+  };
+  const overrideReceiptHash = overrides.receiptHash;
+  delete (roundWithoutHash as { receiptHash?: string }).receiptHash;
+  return {
+    ...roundWithoutHash,
+    receiptHash: overrideReceiptHash ?? sha256Json(roundWithoutHash),
   };
 }

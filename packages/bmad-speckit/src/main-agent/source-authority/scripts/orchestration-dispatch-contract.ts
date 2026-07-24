@@ -484,9 +484,19 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
     if (input.auditExecutionProfile.checkedProjectionQualityRuleCodes.length === 0) {
       throw new Error('auditExecutionProfile checkedProjectionQualityRuleCodes are required');
     }
+    const independentProviderBinding =
+      input.auditExecutionProfile.independentProviderBinding as CriticalAuditorJudgeRuntimeBinding &
+        Record<string, unknown>;
+    const configuredModel = independentProviderBinding.model;
+    if (
+      !Object.hasOwn(independentProviderBinding, 'model') ||
+      (configuredModel !== null &&
+        (typeof configuredModel !== 'string' || !configuredModel.trim()))
+    ) {
+      throw new Error('auditExecutionProfile independentProviderBinding model is required');
+    }
     for (const field of [
       'providerId',
-      'model',
       'transport',
       'apiStyle',
       'configuredBaseUrlHash',
@@ -494,7 +504,7 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
       'providerRegistryHash',
       'providerConfigurationHash',
     ] as const) {
-      const value = input.auditExecutionProfile.independentProviderBinding[field];
+      const value = independentProviderBinding[field];
       if (!value) {
         throw new Error(`auditExecutionProfile independentProviderBinding ${field} is required`);
       }

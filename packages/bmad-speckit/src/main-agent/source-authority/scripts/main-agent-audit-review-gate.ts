@@ -571,6 +571,25 @@ function readRounds(paths: string[]): AuditTriadRoundReceipt[] {
   );
 }
 
+function readRoundsWithFrozenInputs(paths: string[]): {
+  rounds: AuditTriadRoundReceipt[];
+  frozenInputs: FrozenAuditRepairInput[];
+} {
+  const rounds: AuditTriadRoundReceipt[] = [];
+  const frozenInputs: FrozenAuditRepairInput[] = [];
+  for (const [sourceIndex, item] of paths.entries()) {
+    const sourceRounds = readJsonArray(item) as unknown as AuditTriadRoundReceipt[];
+    const contentHash = sha256File(item);
+    rounds.push(...sourceRounds);
+    frozenInputs.push({
+      role: `round_${sourceIndex + 1}`,
+      path: item,
+      contentHash,
+    });
+  }
+  return { rounds, frozenInputs };
+}
+
 function evaluate(input: {
   record: JsonObject;
   attemptId: string;
@@ -686,6 +705,7 @@ function createAuditReviewRuntimeStatus(
     evaluatedAt: string;
     evaluatedBy: string;
     repairEvidence: AuditTriadRepairEvidenceBinding | null;
+    roundInputs: FrozenAuditRepairInput[];
   }
 ): RuntimeStatusProjectionUpdate {
   const gateCheckId = `audit-review:${input.attemptId}`;
@@ -721,6 +741,11 @@ function createAuditReviewRuntimeStatus(
         path: normalizePathForRecord(input.planPath),
         hash: input.planHash,
       },
+      ...input.roundInputs.map((roundInput) => ({
+        role: `audit_triad_${roundInput.role}`,
+        path: normalizePathForRecord(roundInput.path),
+        hash: roundInput.contentHash,
+      })),
       ...(input.repairEvidence?.repairReceiptRefs ?? []).map((ref) => ({
         role: 'audit_main_agent_repair_receipt',
         path: ref.path,
@@ -742,6 +767,7 @@ function createAuditReviewRuntimeStatus(
     blockerRefs: input.blockingReasons,
     evidenceRefs: [
       normalizePathForRecord(input.reportPath),
+      ...input.roundInputs.map((roundInput) => normalizePathForRecord(roundInput.path)),
       ...(input.repairEvidence?.repairReceiptRefs ?? []).map((ref) => ref.path),
       ...(input.repairEvidence?.repairFeedbackDispatchRefs ?? []).map((ref) => ref.path),
     ],
@@ -874,7 +900,8 @@ export function mainAuditReviewGate(
   const planSnapshot = readJsonSnapshot(planPath);
   const plan = planSnapshot.value as unknown as AuditTriadExecutionPlan;
   const planHash = planSnapshot.contentHash;
-  const rounds = readRounds(roundPaths);
+  const roundInputs = readRoundsWithFrozenInputs(roundPaths);
+  const rounds = roundInputs.rounds;
   const repairEvidenceValidation = validateAuditRepairEvidence({
     recordPath,
     record,
@@ -974,6 +1001,7 @@ export function mainAuditReviewGate(
     evaluatedAt,
     evaluatedBy,
     repairEvidence: repairEvidenceValidation.binding,
+    roundInputs: roundInputs.frozenInputs,
   });
   const payload = {
     attemptId,
@@ -991,6 +1019,11 @@ export function mainAuditReviewGate(
   deps.beforeControlCommit?.();
   if (sha256File(planPath) !== planHash) {
     throw new Error('audit_review_input_changed:plan');
+  }
+  for (const input of roundInputs.frozenInputs) {
+    if (!fs.existsSync(input.path) || sha256File(input.path) !== input.contentHash) {
+      throw new Error(`audit_review_input_changed:${input.role}`);
+    }
   }
   for (const input of repairEvidenceValidation.frozenInputs) {
     if (!fs.existsSync(input.path) || sha256File(input.path) !== input.contentHash) {

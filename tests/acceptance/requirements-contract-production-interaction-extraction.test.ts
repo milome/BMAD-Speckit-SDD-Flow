@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -82,10 +83,28 @@ interface InteractionResolutionProjection {
   canonicalSemanticAuthority: {
     inputSourceAuthorityHash: string;
     semanticResolutionReceiptSetHash: string;
+    semanticResolutionBindingSetHash: string;
     interactionResolutionReceiptSetHash: string;
     sequenceModelHashAfter: string;
     resolvedSourceRootSetHash: string;
     authorityHash: string;
+  };
+}
+
+function semanticResolutionAuthorityBinding(receipt: Record<string, unknown>) {
+  return {
+    schemaVersion: receipt.schemaVersion,
+    resolutionId: receipt.resolutionId,
+    fieldRef: receipt.fieldRef,
+    valueHash: receipt.valueHash,
+    resolutionAuthorityClass: receipt.resolutionAuthorityClass,
+    derivationRule: receipt.derivationRule,
+    applicabilityProof: receipt.applicabilityProof,
+    conflictingCandidates: [...((receipt.conflictingCandidates as string[]) ?? [])].sort(),
+    sourceModelHashBefore: receipt.sourceModelHashBefore,
+    sourceModelHashAfter: receipt.sourceModelHashAfter,
+    resolverId: receipt.resolverId,
+    resolutionRunId: receipt.resolutionRunId,
   };
 }
 
@@ -425,6 +444,17 @@ describe('production interaction candidate extraction', () => {
       const semanticResolutionReceiptSetHash = sha256Stable(
         result.semanticResolutionReceipts.map((receipt) => receipt.receiptHash).sort()
       );
+      const semanticResolutionBindingSetHash = sha256Stable(
+        result.semanticResolutionReceipts
+          .map((receipt) =>
+            sha256Stable(
+              semanticResolutionAuthorityBinding(
+                receipt as unknown as Record<string, unknown>
+              )
+            )
+          )
+          .sort()
+      );
       const interactionResolutionReceiptSetHash = sha256Stable(
         interactionResolution.authorized
           .map(
@@ -456,6 +486,7 @@ describe('production interaction candidate extraction', () => {
       ).toEqual(result.interactionResolution);
       expect(interactionResolution.canonicalSemanticAuthority).toMatchObject({
         semanticResolutionReceiptSetHash,
+        semanticResolutionBindingSetHash,
         interactionResolutionReceiptSetHash,
         sequenceModelHashAfter: interactionResolution.sequenceModelHashAfter,
         resolvedSourceRootSetHash,
@@ -464,7 +495,7 @@ describe('production interaction candidate extraction', () => {
         sha256Stable({
           inputSourceAuthorityHash:
             interactionResolution.canonicalSemanticAuthority.inputSourceAuthorityHash,
-          semanticResolutionReceiptSetHash,
+          semanticResolutionBindingSetHash,
           interactionResolutionReceiptSetHash,
           sequenceModelHashAfter: interactionResolution.sequenceModelHashAfter,
           resolvedSourceRootSetHash,
@@ -480,6 +511,37 @@ describe('production interaction candidate extraction', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it.skipIf(process.platform !== 'win32')(
+    'publishes the semantic bundle from a long requirement-record path without using a long staging root',
+    () => {
+      const baseRoot = mkdtempSync(
+        path.join(os.tmpdir(), 'requirements-contract-long-semantic-staging-')
+      );
+      const root = path.join(
+        baseRoot,
+        ...Array.from({ length: 6 }, () => `segment-${randomUUID()}`)
+      );
+      try {
+        mkdirSync(root, { recursive: true });
+        expect(path.join(root, 'authoring', '.s', 'r-XXXXXX').length).toBeGreaterThanOrEqual(
+          260
+        );
+        const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
+        const result = runSemanticPipelineForSourceRoots(
+          root,
+          PRIMARY_INTERACTION_FIXTURE,
+          sourceRoots
+        );
+        expect(result.semanticResolutionReceipts.length).toBeGreaterThan(0);
+        expect(readFileSync(path.join(root, 'authoring', 'semantic-ir.json'), 'utf8')).toContain(
+          '"schemaVersion"'
+        );
+      } finally {
+        rmSync(baseRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+      }
+    }
+  );
 
   it('keeps compiler classification and requirement topology under Canonical IR authority', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-compiler-topology-'));

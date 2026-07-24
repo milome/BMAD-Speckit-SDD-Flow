@@ -334,7 +334,6 @@ describe('requirements contract Judge adapter surface parity', () => {
       'bearer',
       'https://judge.example.test'
     );
-    providerConfig.model = 'claude-sonnet-5';
     const normalized = asRecord(
       await judge({
         providerRef: 'local-sonnet-judge',
@@ -378,8 +377,8 @@ describe('requirements contract Judge adapter surface parity', () => {
       schemaVersion: 'requirements-contract-normalized-judge-response/v1',
       providerRef: 'local-sonnet-judge',
       transport: 'openai-compatible',
-      configuredModel: 'claude-sonnet-5',
-      returnedModel: 'claude-sonnet-5',
+      configuredModel: providerConfig.model,
+      returnedModel: providerConfig.model,
       decision: 'pass',
       findings: [],
       challengeRequests: [],
@@ -399,7 +398,6 @@ describe('requirements contract Judge adapter surface parity', () => {
       'bearer',
       'https://judge.example.test'
     );
-    providerConfig.model = 'claude-sonnet-5';
 
     const normalized = asRecord(
       await judge({
@@ -456,7 +454,6 @@ describe('requirements contract Judge adapter surface parity', () => {
       'bearer',
       'https://judge.example.test'
     );
-    providerConfig.model = 'claude-sonnet-5';
 
     await expect(
       judge({
@@ -510,7 +507,6 @@ describe('requirements contract Judge adapter surface parity', () => {
       'bearer',
       'https://judge.example.test'
     );
-    providerConfig.model = 'claude-sonnet-5';
 
     await expect(
       judge({

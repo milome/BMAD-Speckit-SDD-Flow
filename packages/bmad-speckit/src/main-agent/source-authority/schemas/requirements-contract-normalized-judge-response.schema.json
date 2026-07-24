@@ -21,12 +21,12 @@
     "schemaVersion": {
       "const": "requirements-contract-normalized-judge-response/v1"
     },
-    "providerRef": { "const": "local-sonnet-judge" },
+    "providerRef": { "type": "string", "minLength": 1 },
     "transport": {
       "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
     },
-    "configuredModel": { "const": "claude-sonnet-5" },
-    "returnedModel": { "const": "claude-sonnet-5" },
+    "configuredModel": { "type": ["string", "null"], "minLength": 1 },
+    "returnedModel": { "type": "string", "minLength": 1 },
     "decision": { "enum": ["pass", "block", "inconclusive"] },
     "findings": {
       "type": "array",
@@ -76,6 +76,10 @@
         "executorKind",
         "processId",
         "requestedModel",
+        "initModel",
+        "modelUsageModels",
+        "credentialRevision",
+        "credentialEnvironmentVariable",
         "sessionId",
         "exitCode",
         "stdoutPath",
@@ -84,6 +88,7 @@
         "stderrHash",
         "transcriptPath",
         "transcriptHash",
+        "structuredOutputSchemaHash",
         "snapshotManifestPath",
         "snapshotHash"
       ],
@@ -105,7 +110,19 @@
           "type": ["integer", "null"],
           "minimum": 1
         },
-        "requestedModel": { "const": "claude-sonnet-5" },
+        "requestedModel": { "type": ["string", "null"], "minLength": 1 },
+        "initModel": { "type": ["string", "null"], "minLength": 1 },
+        "modelUsageModels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "credentialRevision": { "type": "integer", "minimum": 1 },
+        "credentialEnvironmentVariable": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
         "sessionId": {
           "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
@@ -117,6 +134,7 @@
         "stderrHash": { "$ref": "#/$defs/hash" },
         "transcriptPath": { "type": "string", "minLength": 1 },
         "transcriptHash": { "$ref": "#/$defs/hash" },
+        "structuredOutputSchemaHash": { "$ref": "#/$defs/hash" },
         "snapshotManifestPath": { "type": "string", "minLength": 1 },
         "snapshotHash": { "$ref": "#/$defs/hash" }
       }

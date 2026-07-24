@@ -176,6 +176,12 @@ async function scoreCommand(opts, deps = {}) {
     iteration_count: iterationCount,
     triggerStage: triggerStage !== stage ? triggerStage : undefined,
     iterationReportPaths: iterationReportPaths.length > 0 ? iterationReportPaths : undefined,
+    dimensionContractId: opts.dimensionContractId,
+    dimensionMode: opts.dimensionMode,
+    expectedDimensions: Array.isArray(opts.expectedDimensions)
+      ? opts.expectedDimensions.map(String)
+      : undefined,
+    atomicItemSetId: opts.atomicItemSetId,
   }));
 
   const effectivePhaseScore =

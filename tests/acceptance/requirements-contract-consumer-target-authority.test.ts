@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
@@ -13,6 +15,8 @@ import {
   writeText,
 } from './helpers/requirements-contract-authoring-fixture';
 
+type ProjectKind = 'consumer_product' | 'governance_framework' | 'hybrid';
+
 interface TargetAuthorityArtifact {
   decision: string;
   accepted: Array<{
@@ -27,6 +31,56 @@ interface DraftConfirmationArtifact {
   implementationConfirmation: {
     targetModificationPaths: Array<{ path: string }>;
   };
+}
+
+function declareProjectProfile(input: {
+  root: string;
+  sourcePath: string;
+  projectKind: ProjectKind;
+  authoritySeed: string;
+  owningSystem: string;
+}): { authorityPath: string } {
+  const authorityFileName = `${input.authoritySeed.replace(/[^a-z0-9-]+/giu, '-')}.json`;
+  const authorityRef = path.posix.join('authority', authorityFileName);
+  const authorityPath = writeText(
+    input.root,
+    authorityRef,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'registered-architecture-record/v1',
+        projectKind: input.projectKind,
+        owningSystem: input.owningSystem,
+      },
+      null,
+      2
+    )}\n`
+  );
+  const diagramPolicyPath = writeText(
+    input.root,
+    path.posix.join('authority', `${authorityFileName}.diagram-policy.json`),
+    `${JSON.stringify({ sequenceFirst: true, projectKind: input.projectKind })}\n`
+  );
+  const sourceRelativePath = path.relative(input.root, input.sourcePath);
+  const sourceText = readFileSync(input.sourcePath, 'utf8');
+  writeText(
+    input.root,
+    sourceRelativePath,
+    [
+      'projectProfile:',
+      '  schemaVersion: requirements-contract-project-profile/v1',
+      `  projectKind: ${input.projectKind}`,
+      `  owningSystem: ${input.owningSystem}`,
+      `  governanceFramework: ${input.authoritySeed}`,
+      '  classificationAuthority:',
+      '    kind: registered_architecture_record',
+      `    ref: ${authorityRef}`,
+      `    hash: ${sha256File(authorityPath)}`,
+      `  diagramPolicyRegistryHash: ${sha256File(diagramPolicyPath)}`,
+      '',
+      sourceText,
+    ].join('\n')
+  );
+  return { authorityPath };
 }
 
 describe('requirements contract consumer target authority', () => {
@@ -199,6 +253,13 @@ describe('requirements contract consumer target authority', () => {
         'docs/requirements/domain-mismatch.md',
         descriptor
       );
+      declareProjectProfile({
+        root,
+        sourcePath: materialized.sourcePath,
+        projectKind: 'consumer_product',
+        authoritySeed: descriptor.refs.pathId,
+        owningSystem: descriptor.target.owner,
+      });
       const {
         targetPath: sourceDeclaredTargetPath,
         requiredCommand: sourceDeclaredRequiredCommand,
@@ -222,6 +283,96 @@ describe('requirements contract consumer target authority', () => {
       expect(sanity.decision).toBe('block');
       expect(sanity.offendingTargets).toContain(descriptor.target.path);
       expect(decision.finalDecision).toBe('block_source_materialization');
+      expectSourceHashUnchanged(materialized.sourcePath, beforeHash);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('uses a valid governance profile instead of consumer keywords for projection authority', () => {
+    const root = createTempRoot('requirements-contract-governance-profile-');
+    try {
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'consumer-target-authority-governance-profile'
+      );
+      descriptor.target.path =
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts';
+      const materialized = writeMinimalConsumerRequirement(
+        root,
+        'docs/requirements/governance-profile.md',
+        descriptor
+      );
+      declareProjectProfile({
+        root,
+        sourcePath: materialized.sourcePath,
+        projectKind: 'governance_framework',
+        authoritySeed: descriptor.refs.pathId,
+        owningSystem: descriptor.target.owner,
+      });
+      const { targetPath: sourceDeclaredTargetPath, ...authoringOptions } =
+        materialized.authoringOptions;
+
+      const result = runAuthoring(
+        root,
+        materialized.sourcePath,
+        'REQ-GOVERNANCE-PROFILE',
+        authoringOptions
+      );
+      const sanity = readJson(artifacts(root, 'REQ-GOVERNANCE-PROFILE').projectionDomainSanityReport);
+
+      expect(sourceDeclaredTargetPath).toBe(descriptor.target.path);
+      expect(issueCodes(result)).not.toContain('projection_domain_mismatch');
+      expect(sanity).toMatchObject({
+        decision: 'pass',
+        projectProfileDeclared: true,
+        projectKind: 'governance_framework',
+      });
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('fails closed when the declared classification authority bytes no longer match its hash', () => {
+    const root = createTempRoot('requirements-contract-project-profile-tamper-');
+    try {
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'consumer-target-authority-profile-tamper'
+      );
+      descriptor.target.path =
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts';
+      const materialized = writeMinimalConsumerRequirement(
+        root,
+        'docs/requirements/project-profile-tamper.md',
+        descriptor
+      );
+      const { authorityPath } = declareProjectProfile({
+        root,
+        sourcePath: materialized.sourcePath,
+        projectKind: 'governance_framework',
+        authoritySeed: descriptor.refs.pathId,
+        owningSystem: descriptor.target.owner,
+      });
+      writeText(
+        root,
+        path.relative(root, authorityPath),
+        `${JSON.stringify({ tampered: true, authoritySeed: descriptor.refs.pathId })}\n`
+      );
+      const { targetPath: sourceDeclaredTargetPath, ...authoringOptions } =
+        materialized.authoringOptions;
+      const beforeHash = sha256File(materialized.sourcePath);
+
+      const result = runAuthoring(
+        root,
+        materialized.sourcePath,
+        'REQ-PROJECT-PROFILE-TAMPER',
+        authoringOptions
+      );
+      const paths = artifacts(root, 'REQ-PROJECT-PROFILE-TAMPER');
+      const sanity = readJson(paths.projectionDomainSanityReport);
+
+      expect(sourceDeclaredTargetPath).toBe(descriptor.target.path);
+      expect(issueCodes(result)).toContain('project_profile_authority_hash_mismatch');
+      expect(sanity.decision).toBe('block');
       expectSourceHashUnchanged(materialized.sourcePath, beforeHash);
     } finally {
       removeTempRoot(root);

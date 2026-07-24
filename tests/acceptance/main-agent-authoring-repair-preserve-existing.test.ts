@@ -16,6 +16,7 @@ import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   mainMainAgentOrchestration,
+  materializeSplitMustSourceRows,
   runMainAgentAuthoringRepair as runMainAgentAuthoringRepairRaw,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { criticalAuditorIndependentProviderRunHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
@@ -743,6 +744,7 @@ function withIndependentProviderEvidence(
   const evidenceWithoutRunHash = Object.fromEntries(
     Object.entries({
       ...binding,
+      requestedModel: binding.model,
       transactionId: request.transactionId,
       auditAttemptId: request.auditAttemptId,
       providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
@@ -1021,6 +1023,161 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
 }
 
 describe('main-agent authoring-repair preserve-existing lane', () => {
+  it.each([
+    ['\n', 2],
+    ['\r\n', 4],
+  ] as const)(
+    'materializes split MUSTs and their source authority ownership with dynamic IDs (%j, %i replacements)',
+    (lineEnding, replacementCount) => {
+      const originalOrdinal = crypto.randomInt(1, 300);
+      const existingOrdinal = crypto.randomInt(originalOrdinal + 1, 800);
+      const formatRequirementId = (prefix: string, ordinal: number) =>
+        `${prefix}-${String(ordinal).padStart(3, '0')}`;
+      const sourceRequirementId = formatRequirementId('FR', originalOrdinal);
+      const existingRequirementId = formatRequirementId('FR', existingOrdinal);
+      const sourceMustRef = `MUST-${sourceRequirementId}`;
+      const existingMustRef = `MUST-${existingRequirementId}`;
+      const canonicalSourceRequirementIds = [
+        sourceRequirementId,
+        ...Array.from({ length: replacementCount - 1 }, (_, index) =>
+          formatRequirementId('FR', existingOrdinal + index + 1)
+        ),
+      ];
+      const canonicalMustRefs = canonicalSourceRequirementIds.map((id) => `MUST-${id}`);
+      const modelReplacementIds = [
+        sourceMustRef,
+        ...Array.from(
+          { length: replacementCount - 1 },
+          () => `${sourceMustRef}-${crypto.randomUUID().toUpperCase()}`
+        ),
+      ];
+      const replacementTexts = Array.from(
+        { length: replacementCount },
+        (_, index) => `Atomic behavior ${index + 1} ${crypto.randomUUID()}.`
+      );
+      const replacements = modelReplacementIds.map((id, index) => ({
+        id,
+        text: replacementTexts[index]!,
+      }));
+      const originalText = `Original broad behavior ${crypto.randomUUID()}.`;
+      const originalRationale = `Preserve rationale ${crypto.randomUUID()}.`;
+      const existingText = `Existing later behavior ${crypto.randomUUID()}.`;
+      const existingRationale = `Preserve later rationale ${crypto.randomUUID()}.`;
+      const acceptanceRef = formatRequirementId('ACC', originalOrdinal);
+      const existingAcceptanceRef = formatRequirementId('ACC', existingOrdinal);
+      const e2eRef = formatRequirementId('E2E', originalOrdinal);
+      const traceRef = formatRequirementId('TRACE', originalOrdinal);
+      const failureRef = formatRequirementId('FAIL', originalOrdinal);
+      const existingFailureRef = formatRequirementId('FAIL', existingOrdinal);
+      const negativeRef = formatRequirementId('NEG', originalOrdinal);
+      const commandRef = formatRequirementId('CMD', originalOrdinal);
+      const pathRef = formatRequirementId('PATH', originalOrdinal);
+      const sourceLines = [
+        '# Source contract',
+        '',
+        '## Functional Requirements',
+        '',
+        '| ID | Requirement | Source rationale | Acceptance link |',
+        '| --- | --- | --- | --- |',
+        `| ${sourceRequirementId} | ${originalText} | ${originalRationale} | ${acceptanceRef} ${e2eRef} |`,
+        `| ${existingRequirementId} | ${existingText} | ${existingRationale} | ${existingAcceptanceRef} |`,
+        '',
+        '## Failure Matrix',
+        '',
+        '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+        '| --- | --- | --- | --- | --- | --- |',
+        `| ${failureRef} | ${crypto.randomUUID()} | ${crypto.randomUUID()} | ${negativeRef} | ${acceptanceRef} | ${sourceMustRef} |`,
+        `| ${existingFailureRef} | ${crypto.randomUUID()} | ${crypto.randomUUID()} | none | ${existingAcceptanceRef} | ${existingMustRef} |`,
+        '',
+        '## Acceptance Evidence',
+        '',
+        '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+        '| --- | --- | --- | --- | --- | --- | --- |',
+        `| ${acceptanceRef} | ${crypto.randomUUID()} | ${sourceMustRef} ${negativeRef} | ${commandRef} | ${crypto.randomUUID()} | ${traceRef} | ${pathRef} |`,
+        '',
+        '## Test And Verification Paths',
+        '',
+        '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        `| ${commandRef} | contract-validation | ${sourceMustRef} ${negativeRef} | npm test | ${crypto.randomUUID()} | ${crypto.randomUUID()} | ${acceptanceRef} ${traceRef} | ${pathRef} | tests/dynamic.test.ts |`,
+        `| ${e2eRef} | e2e | ${sourceMustRef} ${negativeRef} | npm test | ${crypto.randomUUID()} | ${crypto.randomUUID()} | ${acceptanceRef} ${traceRef} | ${pathRef} | tests/dynamic.test.ts |`,
+        '',
+        '## Trace Matrix Source',
+        '',
+        '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        `| ${traceRef} | ${sourceMustRef} ${negativeRef} | none | ${acceptanceRef} ${e2eRef} | ${commandRef} | ${commandRef} ${e2eRef} | none | ${pathRef} | none | ${crypto.randomUUID()} | ${crypto.randomUUID()} | ${pathRef} |`,
+        '',
+        '## Implementation Path Map',
+        '',
+        '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- |',
+        `| ${pathRef} | packages/example.ts | owner | ${crypto.randomUUID()} | ${sourceMustRef} ${negativeRef} | ${crypto.randomUUID()} | ${acceptanceRef} ${traceRef} | owner |`,
+        '',
+        '## Implementation Notes',
+        '',
+        'Keep notes.',
+      ];
+      const sourceText = sourceLines.join(lineEnding);
+      const sourceRowIndex = sourceLines.findIndex((line) =>
+        line.startsWith(`| ${sourceRequirementId} |`)
+      );
+      expect(sourceRowIndex).toBeGreaterThanOrEqual(0);
+      const sourceRow = sourceLines[sourceRowIndex]!;
+      const sourceLineNumber = sourceRowIndex + 1;
+      const result = materializeSplitMustSourceRows({
+        sourceText,
+        sourcePath: path.join(os.tmpdir(), `${crypto.randomUUID()}.md`),
+        sourceMustRef,
+        replacements,
+        sourceSpan: { startLine: sourceLineNumber, endLine: sourceLineNumber },
+        expectedSourceText: sourceRow,
+      });
+
+      const resultLines = result.sourceText.split(/\r\n|\n/u);
+      expect(resultLines).toEqual(
+        expect.arrayContaining(
+          canonicalSourceRequirementIds
+            .map(
+              (id, index) =>
+                `| ${id} | ${replacementTexts[index]} | ${originalRationale} | ${acceptanceRef} ${e2eRef} |`
+            )
+            .concat(
+              `| ${existingRequirementId} | ${existingText} | ${existingRationale} | ${existingAcceptanceRef} |`
+            )
+        )
+      );
+      for (const modelReplacementId of modelReplacementIds.slice(1)) {
+        expect(result.sourceText).not.toContain(modelReplacementId);
+      }
+      expect(result.bindings.map((binding) => binding.sourceRequirementId)).toEqual(
+        canonicalSourceRequirementIds
+      );
+      expect(result.bindings.map((binding) => binding.mustId)).toEqual(canonicalMustRefs);
+      for (const authorityId of [
+        failureRef,
+        acceptanceRef,
+        commandRef,
+        e2eRef,
+        traceRef,
+        pathRef,
+      ]) {
+        const authorityRow = resultLines.find((line) => line.startsWith(`| ${authorityId} |`));
+        expect(authorityRow).toBeDefined();
+        for (const mustRef of canonicalMustRefs) {
+          expect(authorityRow).toContain(mustRef);
+        }
+      }
+      const unrelatedFailureRow = resultLines.find((line) =>
+        line.startsWith(`| ${existingFailureRef} |`)
+      );
+      expect(unrelatedFailureRow).toContain(existingMustRef);
+      for (const mustRef of canonicalMustRefs.slice(1)) {
+        expect(unrelatedFailureRow).not.toContain(mustRef);
+      }
+    }
+  );
+
   it('rejects caller-provided Critical Auditor response paths before ingest', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-response-injection-'));
     try {
@@ -1052,6 +1209,64 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           )
         )
       ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
+  it('binds current top-level projection identities into the Critical Auditor request', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-projection-inventory-'));
+    try {
+      const recordId = `REQ-${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`;
+      const source = writeRichSource(root, recordId);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+
+      const confirmation = readInlineConfirmation(source);
+      const request = readJson(paths.request(1));
+      const collectIds = (value: unknown): string[] => {
+        if (Array.isArray(value)) return value.flatMap(collectIds);
+        if (!value || typeof value !== 'object') return [];
+        const row = value as Record<string, unknown>;
+        return [
+          typeof row.id === 'string' && row.id.trim() ? row.id.trim() : '',
+          ...Object.values(row).flatMap(collectIds),
+        ].filter(Boolean);
+      };
+      const auditedSurfaces = [
+        'businessViews',
+        'sequenceViews',
+        'flowViews',
+        'edgeCaseViews',
+        'boundaryViews',
+        'currentTargetMap',
+        'aiTddContractExecutionManifestProjection',
+      ] as const;
+      const inventoryEntries = auditedSurfaces.flatMap((group) =>
+        [...new Set(collectIds(confirmation[group]))].map((id) => ({ group, id }))
+      );
+      const expectedProjectionRefs = inventoryEntries.flatMap(({ group, id }) => [
+        id,
+        `${group}:${id}`,
+      ]);
+      const projectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
+      const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
+
+      expect(inventoryEntries.length).toBeGreaterThan(0);
+      expect(projectionGroups).toEqual(
+        expect.arrayContaining([...new Set(inventoryEntries.map(({ group }) => group))])
+      );
+      expect(projectionRefs).toEqual(expect.arrayContaining(expectedProjectionRefs));
+      expect(request.projectionSetHash).toBe(
+        sha256Json([...new Set(projectionRefs)].sort())
+      );
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }

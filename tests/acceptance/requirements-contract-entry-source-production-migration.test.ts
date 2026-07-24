@@ -817,6 +817,7 @@ describe('requirement entry-source production migration', () => {
         }),
         compilerInputHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
       });
+      expect(report.requirementContractModelHash).toBe(fileHash(paths.compiledModel));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -1,5 +1,6 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -124,14 +125,17 @@ describe.runIf(
     expect(validate(explicitPath)).toBe(false);
   });
 
-  it('accepts normalized responses and rejects returned-model mismatch authority', () => {
+  it('treats the configured provider and request model as routing inputs rather than frozen model identity', () => {
     const validate = validator('normalizedResponse');
+    const providerRef = `gateway-${randomUUID()}`;
+    const requestedModel = `route-${randomUUID()}`;
+    const returnedModel = `decision-${randomUUID()}`;
     const response = {
       schemaVersion: 'requirements-contract-normalized-judge-response/v1',
-      providerRef: 'local-sonnet-judge',
+      providerRef,
       transport: 'openai-compatible',
-      configuredModel: 'claude-sonnet-5',
-      returnedModel: 'claude-sonnet-5',
+      configuredModel: requestedModel,
+      returnedModel,
       decision: 'pass',
       findings: [],
       challengeRequests: [],
@@ -142,28 +146,30 @@ describe.runIf(
     };
 
     expect(validate(response), JSON.stringify(validate.errors)).toBe(true);
-    expect(validate({ ...response, returnedModel: 'different-model' })).toBe(false);
+    expect(validate({ ...response, returnedModel: '' })).toBe(false);
   });
 
   it('requires attempt-bound capability and frozen selection receipts', () => {
     const validateCapability = validator('capability');
     const validateSelection = validator('selection');
+    const providerRef = `gateway-${randomUUID()}`;
+    const returnedModel = `decision-${randomUUID()}`;
     const capability = {
       schemaVersion: 'requirements-contract-judge-capability-receipt/v1',
       transactionId: 'TX-001',
       auditAttemptId: 'AUD-001',
-      providerRef: 'local-sonnet-judge',
+      providerRef,
       publicProviderConfigHash: HASH,
       credentialRevision: 1,
       credentialResolutionDecision: 'pass',
       credentialRedactionDecision: 'pass',
       configuredBaseUrlHash: HASH,
-      transport: 'openai-compatible',
-      apiStyle: 'chat_completions',
-      endpointResolutionMode: 'transport_managed',
+      transport: 'claude-code-cli',
+      apiStyle: 'cli',
+      endpointResolutionMode: 'path_search',
       upstreamVersioning: 'gateway_managed',
-      configuredModel: 'claude-sonnet-5',
-      returnedModel: 'claude-sonnet-5',
+      configuredModel: null,
+      returnedModel,
       transportSuccess: true,
       structuredOutputSupport: true,
       originPreservationDecision: 'pass',
@@ -179,11 +185,11 @@ describe.runIf(
       providerRegistryHash: HASH,
       publicProviderConfigHash: HASH,
       capabilityReceiptHash: HASH,
-      providerRef: 'local-sonnet-judge',
+      providerRef,
       configuredBaseUrlHash: HASH,
-      transport: 'openai-compatible',
-      apiStyle: 'chat_completions',
-      model: 'claude-sonnet-5',
+      transport: 'claude-code-cli',
+      apiStyle: 'cli',
+      model: null,
       credentialRevision: 1,
       independenceClass: 'different_provider_different_model',
       blindReview: true,
@@ -214,5 +220,55 @@ describe.runIf(
     expect(validateSelection(selection), JSON.stringify(validateSelection.errors)).toBe(true);
     expect(validateCapability({ ...capability, fallbackObserved: true })).toBe(false);
     expect(validateSelection({ ...selection, allowPassAuthority: true })).toBe(false);
+  });
+
+  it('allows a gateway-managed Claude CLI provider to delegate model selection', () => {
+    const validate = validator('runtime');
+    const providerRef = `gateway-${randomUUID()}`;
+    const base = runtimeConfig();
+    base.activeProviderRef = providerRef;
+    base.selectionPolicy.cliTransportAllowed = true;
+    base.providers = {
+      [providerRef]: {
+        enabled: true,
+        transport: 'claude-code-cli',
+        apiStyle: 'cli',
+        credentialRef: `credential-${randomUUID()}`,
+        endpoint: {
+          command: 'claude',
+          baseUrl: `https://${randomUUID()}.example.test`,
+          resolutionMode: 'path_search',
+          routingOwnership: 'transport_adapter',
+          upstreamVersioning: 'gateway_managed',
+          explicitOperationPath: null,
+        },
+        authentication: {
+          type: 'bearer',
+          sensitivity: 'secret',
+          arbitraryNonEmptyValueAllowed: false,
+        },
+        auditPolicy: {
+          independenceClass: `independent-${randomUUID()}`,
+          blindReview: true,
+          allowPassAuthority: false,
+          toolsAllowed: true,
+          allowedTools: ['Read'],
+          implementationWritesAllowed: false,
+        },
+        requestPolicy: {
+          timeoutMs: 120_000,
+          maximumAttempts: 1,
+          structuredResponseRequired: true,
+        },
+      },
+    };
+
+    expect(validate(base), JSON.stringify(validate.errors)).toBe(true);
+    const explicitNull = structuredClone(base);
+    explicitNull.providers[providerRef].model = null;
+    expect(validate(explicitNull), JSON.stringify(validate.errors)).toBe(true);
+    const fixedModel = structuredClone(base);
+    fixedModel.providers[providerRef].model = `fixed-${randomUUID()}`;
+    expect(validate(fixedModel)).toBe(false);
   });
 });

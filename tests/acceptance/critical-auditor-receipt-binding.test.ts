@@ -85,6 +85,9 @@ function createRoundFixture(roundIndex: number, shared?: Partial<CriticalAuditor
     requestHash: expectation.requestHash,
     gateDryRunHash: expectation.gateDryRunHash,
     responseHash: sha256Json(response),
+    independentProviderEvidence: {
+      providerRunId: `provider-${randomUUID()}`,
+    },
     convergenceDecision: {
       verdict: 'no_new_valid_gap',
       resetsConvergenceCounter: false,
@@ -120,6 +123,24 @@ describe('Critical Auditor receipt binding', () => {
       issueCodes: [],
     });
     expect(result.latestReceiptHash).toBe(rounds[2].receipt.receiptHash);
+  });
+
+  it('rejects a provider run replay across otherwise current rounds', () => {
+    const shared = sharedExpectation();
+    const rounds = [1, 2, 3].map((roundIndex) => createRoundFixture(roundIndex, shared));
+    const firstEvidence = rounds[0].receipt.independentProviderEvidence as JsonRecord;
+    rounds[1].receipt = resignReceipt({
+      ...rounds[1].receipt,
+      independentProviderEvidence: {
+        ...(rounds[1].receipt.independentProviderEvidence as JsonRecord),
+        providerRunId: firstEvidence.providerRunId,
+      },
+    });
+
+    const result = evaluateCriticalAuditorReceiptBindingSequence(rounds);
+
+    expect(result.ok).toBe(false);
+    expect(result.issueCodes).toContain('critical_auditor_cross_round_replay_detected');
   });
 
   it('rejects a missing receipt or response artifact', () => {

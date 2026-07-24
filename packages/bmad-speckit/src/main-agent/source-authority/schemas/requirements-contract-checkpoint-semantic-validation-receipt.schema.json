@@ -92,7 +92,6 @@
     },
     "validatedInputs": {
       "type": "array",
-      "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -182,6 +181,9 @@
           },
           "blockers": {
             "maxItems": 0
+          },
+          "validatedInputs": {
+            "minItems": 1
           }
         }
       }

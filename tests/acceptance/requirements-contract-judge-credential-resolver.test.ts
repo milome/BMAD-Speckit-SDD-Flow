@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -166,6 +167,47 @@ describe('requirements contract Judge credential resolver', () => {
     expect(resolved.credentialHandle).toBeTypeOf('object');
     expect(JSON.stringify(resolved)).not.toContain(fakeCredential);
     expect(JSON.stringify(resolved)).not.toContain('apiKey');
+  });
+
+  it('exposes current credential metadata without exposing a secret or credential handle', async () => {
+    const loaded = (await import(pathToFileURL(RESOLVER_PATH).href)) as JsonRecord;
+    const metadataResolver =
+      loaded.resolveRequirementsContractJudgeCredentialMetadata;
+    expect(metadataResolver).toBeTypeOf('function');
+    if (typeof metadataResolver !== 'function') return;
+    const providerRef = `provider-${randomUUID()}`;
+    const credentialRef = `credential-${randomUUID()}`;
+    const secret = `private-${randomUUID()}`;
+    const fixture = createFixture(
+      runtimeConfig({ activeProviderRef: providerRef, credentialRef }),
+      {
+        schemaVersion: 'requirements-contract-judge-credentials/v1',
+        credentialRevision: 9,
+        providers: {
+          [credentialRef]: {
+            authenticationType: 'bearer',
+            apiKey: secret,
+          },
+        },
+      }
+    );
+
+    const metadata = asRecord(
+      metadataResolver({
+        cwd: fixture.root,
+        config: path.relative(fixture.root, fixture.configPath),
+      })
+    );
+
+    expect(metadata).toMatchObject({
+      providerRef,
+      credentialRef,
+      authenticationType: 'bearer',
+      credentialRevision: 9,
+    });
+    expect(metadata.credentialHandle).toBeUndefined();
+    expect(JSON.stringify(metadata)).not.toContain(secret);
+    expect(JSON.stringify(metadata)).not.toContain('apiKey');
   });
 
   it.each([

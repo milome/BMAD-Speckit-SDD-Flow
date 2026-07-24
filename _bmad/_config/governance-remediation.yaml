@@ -52,19 +52,18 @@ judgeRuntime:
       enabled: true
       transport: claude-code-cli
       apiStyle: cli
-      model: claude-sonnet-5
-      credentialRef: claude-code-session
+      credentialRef: local-sonnet-judge
       endpoint:
         command: claude
+        baseUrl: http://localhost:3010
         resolutionMode: path_search
         routingOwnership: transport_adapter
-        upstreamVersioning: cli_managed
+        upstreamVersioning: gateway_managed
         explicitOperationPath: null
       authentication:
-        type: claude_code_session
-        sensitivity: host_managed
+        type: bearer
+        sensitivity: secret
         arbitraryNonEmptyValueAllowed: false
-        sessionRevision: 1
       auditPolicy:
         independenceClass: different_provider_different_model
         blindReview: true
@@ -74,7 +73,7 @@ judgeRuntime:
           - Read
         implementationWritesAllowed: false
       requestPolicy:
-        timeoutMs: 300000
+        timeoutMs: 1800000
         maximumAttempts: 1
         structuredResponseRequired: true
         maxBudgetUsd: 5

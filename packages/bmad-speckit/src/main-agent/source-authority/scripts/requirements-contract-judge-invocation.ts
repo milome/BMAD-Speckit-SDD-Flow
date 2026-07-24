@@ -22,6 +22,7 @@ type JudgeFunction = (input: {
     systemPrompt: string;
     request: RequirementsContractJudgeJsonRecord;
     executionContext?: RequirementsContractJudgeJsonRecord;
+    structuredOutputSchema?: RequirementsContractJudgeJsonRecord;
   };
 }) => Promise<unknown>;
 
@@ -37,6 +38,7 @@ export interface PreparedRequirementsContractJudgeInvocation {
     systemPrompt: string;
     request: RequirementsContractJudgeJsonRecord;
     executionContext?: RequirementsContractJudgeJsonRecord;
+    structuredOutputSchema?: RequirementsContractJudgeJsonRecord;
   }): Promise<RequirementsContractJudgeJsonRecord>;
 }
 
@@ -150,19 +152,21 @@ export async function prepareRequirementsContractJudgeInvocation(input: {
         'requirements_contract_judge_authentication_missing'
       )
     : null;
-  const credential = cliTransport
+  const hostManagedCliSession =
+    cliTransport && authentication?.type === 'claude_code_session';
+  const credential = hostManagedCliSession
     ? null
     : await resolveRequirementsContractJudgeCredential({
         cwd: root,
         config: relativeSlash(root, configPath),
       });
-  const credentialProviderRef = cliTransport
+  const credentialProviderRef = hostManagedCliSession
     ? providerRef
     : requiredText(
         credential?.providerRef,
         'requirements_contract_judge_credential_provider_ref_missing'
       );
-  const credentialRevision = cliTransport
+  const credentialRevision = hostManagedCliSession
     ? Number(authentication?.sessionRevision)
     : credential?.credentialRevision;
   if (!Number.isInteger(credentialRevision) || Number(credentialRevision) < 1) {
@@ -181,7 +185,7 @@ export async function prepareRequirementsContractJudgeInvocation(input: {
     providerRegistryHash,
     credentialProviderRef,
     credentialRevision,
-    invoke: async ({ systemPrompt, request, executionContext }) => {
+    invoke: async ({ systemPrompt, request, executionContext, structuredOutputSchema }) => {
       if (!systemPrompt.trim()) {
         throw new Error('requirements_contract_judge_system_prompt_missing');
       }
@@ -194,6 +198,7 @@ export async function prepareRequirementsContractJudgeInvocation(input: {
             systemPrompt,
             request,
             ...(executionContext ? { executionContext } : {}),
+            ...(structuredOutputSchema ? { structuredOutputSchema } : {}),
           },
         })
       );

@@ -38,38 +38,13 @@
       }
     },
     "activeProviderRef": {
-      "const": "local-sonnet-judge"
+      "type": "string",
+      "minLength": 1
     },
     "providers": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/providerBinding" },
-      "contains": {
-        "type": "object",
-        "required": ["providerRef", "provider", "adapterRef"],
-        "properties": {
-          "providerRef": { "const": "local-sonnet-judge" },
-          "adapterRef": { "const": "ClaudeCodeCliJudgeAdapter" },
-          "provider": {
-            "type": "object",
-            "required": ["transport", "apiStyle", "model", "endpoint"],
-            "properties": {
-              "transport": { "const": "claude-code-cli" },
-              "apiStyle": { "const": "cli" },
-              "model": { "const": "claude-sonnet-5" },
-              "endpoint": {
-                "type": "object",
-                "required": ["command"],
-                "properties": {
-                  "command": { "const": "claude" }
-                }
-              }
-            }
-          }
-        }
-      },
-      "minContains": 1,
-      "maxContains": 1
+      "items": { "$ref": "#/$defs/providerBinding" }
     },
     "registryHash": { "$ref": "#/$defs/hash" }
   },
@@ -98,7 +73,6 @@
             "enabled",
             "transport",
             "apiStyle",
-            "model",
             "credentialRef",
             "endpoint",
             "authentication",
@@ -113,7 +87,7 @@
             "apiStyle": {
               "enum": ["chat_completions", "messages", "cli"]
             },
-            "model": { "type": "string", "minLength": 1 },
+            "model": { "type": ["string", "null"], "minLength": 1 },
             "credentialRef": { "type": "string", "minLength": 1 },
             "endpoint": {
               "type": "object",
@@ -182,7 +156,100 @@
                 "maxBudgetUsd": { "type": "number", "exclusiveMinimum": 0 }
               }
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "transport": { "const": "claude-code-cli" } }
+              },
+              "then": {
+                "properties": {
+                  "apiStyle": { "const": "cli" },
+                  "endpoint": {
+                    "required": ["command"],
+                    "properties": {
+                      "command": { "const": "claude" },
+                      "resolutionMode": { "const": "path_search" }
+                    }
+                  },
+                  "auditPolicy": {
+                    "required": ["allowedTools"],
+                    "properties": {
+                      "toolsAllowed": { "const": true },
+                      "allowedTools": { "const": ["Read"] }
+                    }
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": ["model"],
+                    "properties": {
+                      "model": { "type": "string", "minLength": 1 },
+                      "endpoint": {
+                        "not": { "required": ["baseUrl"] },
+                        "properties": {
+                          "upstreamVersioning": { "const": "cli_managed" }
+                        }
+                      },
+                      "authentication": {
+                        "required": ["sessionRevision"],
+                        "properties": {
+                          "type": { "const": "claude_code_session" },
+                          "sensitivity": { "const": "host_managed" },
+                          "arbitraryNonEmptyValueAllowed": { "const": false }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "model": { "type": "null" },
+                      "endpoint": {
+                        "required": ["baseUrl"],
+                        "properties": {
+                          "upstreamVersioning": { "const": "gateway_managed" }
+                        }
+                      },
+                      "authentication": {
+                        "not": { "required": ["sessionRevision"] },
+                        "properties": {
+                          "type": { "enum": ["bearer", "api_key"] },
+                          "sensitivity": { "const": "secret" },
+                          "arbitraryNonEmptyValueAllowed": { "const": false }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "transport": {
+                    "enum": ["openai-compatible", "anthropic-compatible"]
+                  }
+                }
+              },
+              "then": {
+                "required": ["model"],
+                "properties": {
+                  "model": { "type": "string", "minLength": 1 },
+                  "endpoint": {
+                    "required": ["baseUrl"],
+                    "not": { "required": ["command"] },
+                    "properties": {
+                      "resolutionMode": { "const": "transport_managed" },
+                      "upstreamVersioning": { "const": "gateway_managed" }
+                    }
+                  },
+                  "authentication": {
+                    "not": { "required": ["sessionRevision"] }
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     }

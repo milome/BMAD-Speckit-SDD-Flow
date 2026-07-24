@@ -11,10 +11,12 @@
       "additionalProperties": false,
       "required": [
         "providerId",
+        "requestedModel",
         "model",
         "transport",
         "apiStyle",
         "configuredBaseUrlHash",
+        "credentialRevision",
         "independenceClass",
         "providerRegistryHash",
         "providerConfigurationHash",
@@ -22,10 +24,12 @@
       ],
       "properties": {
         "providerId": { "type": "string", "minLength": 1 },
+        "requestedModel": { "type": ["string", "null"], "minLength": 1 },
         "model": { "type": "string", "minLength": 1 },
         "transport": { "type": "string", "minLength": 1 },
         "apiStyle": { "type": "string", "minLength": 1 },
         "configuredBaseUrlHash": { "$ref": "#/$defs/hash" },
+        "credentialRevision": { "type": "integer", "minimum": 1 },
         "independenceClass": { "type": "string", "minLength": 1 },
         "providerRegistryHash": { "$ref": "#/$defs/hash" },
         "providerConfigurationHash": { "$ref": "#/$defs/hash" },
@@ -117,6 +121,7 @@
           }
         },
         "falsePositiveProofs": { "$ref": "#/$defs/objectArray" },
+        "auditReviewScoring": { "type": "object" },
         "rationale": { "type": "string", "minLength": 1 }
       }
     }

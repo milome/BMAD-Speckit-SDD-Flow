@@ -469,6 +469,16 @@ function refreshRequirementsContractArtifactRoleRegistry() {
 }
 
 function publishRequirementsContractDerivedRegistries() {
+  const judgeProviderRegistryModule = require(path.join(
+    distRoot,
+    'source-authority',
+    'scripts',
+    'requirements-contract-judge-provider-registry.js'
+  ));
+  writeRequirementsContractProjection(
+    'requirements-contract-judge-provider-registry.json',
+    judgeProviderRegistryModule.createRequirementsContractJudgeProviderRegistryProjection(repoRoot)
+  );
   refreshRequirementsContractArtifactRoleRegistry();
   refreshRequirementsContractConsumerRegistry();
   const projectionRegistryModule = require(path.join(

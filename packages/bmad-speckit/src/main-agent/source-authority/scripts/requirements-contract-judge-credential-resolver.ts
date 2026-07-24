@@ -85,9 +85,10 @@ function validateSchema(value: unknown, schemaName: string, code: string): void 
   if (!validate(value)) throw new Error(`${code}:${JSON.stringify(validate.errors ?? [])}`);
 }
 
-export async function resolveRequirementsContractJudgeCredential(
-  input: JsonRecord
-): Promise<JsonRecord> {
+function resolveRequirementsContractJudgeCredentialSelection(input: JsonRecord): {
+  metadata: JsonRecord;
+  secret: string;
+} {
   rejectOverrides(input);
   const root = path.resolve(typeof input.cwd === 'string' ? input.cwd : process.cwd());
   const configPath = resolveProjectRelative(root, input.config);
@@ -150,21 +151,39 @@ export async function resolveRequirementsContractJudgeCredential(
   if (typeof selected.apiKey !== 'string' || selected.apiKey.length === 0) {
     throw new Error('judge_credential_missing');
   }
-  const credentialHandle = createCredentialHandle(
-    {
+  return {
+    metadata: {
       providerRef,
       credentialRef,
       authenticationType: selected.authenticationType,
       credentialRevision: credentials.credentialRevision,
+      credentialPath,
     },
-    selected.apiKey
+    secret: selected.apiKey,
+  };
+}
+
+export function resolveRequirementsContractJudgeCredentialMetadata(
+  input: JsonRecord
+): JsonRecord {
+  return resolveRequirementsContractJudgeCredentialSelection(input).metadata;
+}
+
+export async function resolveRequirementsContractJudgeCredential(
+  input: JsonRecord
+): Promise<JsonRecord> {
+  const selection = resolveRequirementsContractJudgeCredentialSelection(input);
+  const credentialHandle = createCredentialHandle(
+    {
+      providerRef: selection.metadata.providerRef,
+      credentialRef: selection.metadata.credentialRef,
+      authenticationType: selection.metadata.authenticationType,
+      credentialRevision: selection.metadata.credentialRevision,
+    },
+    selection.secret
   );
   return {
-    providerRef,
-    credentialRef,
-    authenticationType: selected.authenticationType,
-    credentialRevision: credentials.credentialRevision,
-    credentialPath,
+    ...selection.metadata,
     credentialHandle,
   };
 }

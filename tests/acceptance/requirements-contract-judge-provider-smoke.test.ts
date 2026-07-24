@@ -26,7 +26,9 @@ afterEach(() => {
 describe('requirements contract Judge Provider smoke', () => {
   it('publishes current-attempt capability and selection receipts without credential leakage', async () => {
     const token = `token-${randomUUID()}`;
-    const providerRef = 'local-sonnet-judge';
+    const providerRef = `gateway-${randomUUID()}`;
+    const requestedModel = `route-${randomUUID()}`;
+    const returnedModel = `decision-${randomUUID()}`;
     const phaseAuditAttemptId = `AUD-${randomUUID()}`;
     const transactionId = `TX-${randomUUID()}`;
     const hash = `sha256:${'6'.repeat(64)}`;
@@ -36,7 +38,7 @@ describe('requirements contract Judge Provider smoke', () => {
       response.setHeader('content-type', 'application/json');
       response.end(
         JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: returnedModel,
           choices: [{ message: { content: '{"decision":"pass"}' } }],
         })
       );
@@ -73,7 +75,7 @@ describe('requirements contract Judge Provider smoke', () => {
           '      enabled: true',
           '      transport: openai-compatible',
           '      apiStyle: chat_completions',
-          '      model: claude-sonnet-5',
+          `      model: ${requestedModel}`,
           `      credentialRef: ${providerRef}`,
           '      endpoint:',
           `        baseUrl: "http://127.0.0.1:${address.port}"`,
@@ -199,7 +201,8 @@ describe('requirements contract Judge Provider smoke', () => {
         transactionId,
         auditAttemptId: phaseAuditAttemptId,
         transportSuccess: true,
-        configuredModel: 'claude-sonnet-5',
+        configuredModel: requestedModel,
+        returnedModel,
         decision: 'pass',
       });
     } finally {

@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -69,6 +70,13 @@ function judgeProviderRegistry(): Record<string, unknown> {
       environmentOverrideAllowed: false,
       cliTransportAllowed: true,
       selectionReceiptRequired: true,
+    },
+    credentialConfig: {
+      source: 'config_file',
+      path: '_bmad-output/config/private/judge-provider.credentials.yaml',
+      schemaVersion: 'requirements-contract-judge-credentials/v1',
+      allowedRoot: '_bmad-output/config/private',
+      environmentFallbackAllowed: false,
     },
     providers: {
       'local-sonnet-judge': {
@@ -147,11 +155,33 @@ function judgeSelectionReceipt(
     'local-sonnet-judge'
   ];
   const lineage = independentProviderExpectation();
+  const runtimeBinding = buildCriticalAuditorJudgeRuntimeBinding(registry);
+  if (!runtimeBinding.binding || runtimeBinding.issueCodes.length > 0) {
+    return withReceiptHash({
+      schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
+      transactionId,
+      auditAttemptId,
+      providerRegistryHash: sha256Stable(registry),
+      publicProviderConfigurationHash: sha256Stable(provider),
+      capabilityReceiptHash: capability.receiptHash,
+      selectedProvider: 'local-sonnet-judge',
+      configuredBaseUrlHash: sha256Stable('claude'),
+      transport: 'claude-code-cli',
+      apiStyle: 'cli',
+      model: 'claude-sonnet-5',
+      independenceClass: 'different_provider_different_model',
+      blindReview: true,
+      allowPassAuthority: false,
+      runtimeFallbackAllowed: false,
+      sourceHash: lineage.sourceDocumentHash,
+      decision: 'frozen',
+    });
+  }
   return withReceiptHash({
     schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
     transactionId,
     auditAttemptId,
-    providerRegistryHash: sha256Stable(registry),
+    providerRegistryHash: runtimeBinding.binding.providerRegistryHash,
     publicProviderConfigurationHash: sha256Stable(provider),
     capabilityReceiptHash: capability.receiptHash,
     selectedProvider: 'local-sonnet-judge',
@@ -202,6 +232,7 @@ function independentProviderEvidence(
   const expected = independentProviderExpectation();
   const evidenceWithoutRunHash = {
     ...expected,
+    requestedModel: expected.model,
     providerRunId: 'critical-auditor-run-current',
     responseHash:
       'sha256:6666666666666666666666666666666666666666666666666666666666666666',
@@ -305,11 +336,42 @@ describe('S127 Critical Auditor independence', () => {
     expect(validation).toEqual({ ok: true, issueCodes: [] });
   });
 
+  it('treats the configured model as a routing hint and binds a different returned model', () => {
+    const expected = independentProviderExpectation();
+    const validation = validateCriticalAuditorIndependentProviderEvidence({
+      expected,
+      evidence: independentProviderEvidence({
+        requestedModel: expected.model,
+        model: 'gateway-returned-model',
+      } as Partial<CriticalAuditorIndependentProviderEvidence>),
+    });
+
+    expect(validation).toEqual({ ok: true, issueCodes: [] });
+  });
+
+  it('rejects requested model drift independently of the returned model identity', () => {
+    const validation = validateCriticalAuditorIndependentProviderEvidence({
+      expected: independentProviderExpectation(),
+      evidence: independentProviderEvidence({
+        requestedModel: 'different-routing-hint',
+      } as Partial<CriticalAuditorIndependentProviderEvidence>),
+    });
+
+    expect(validation.ok).toBe(false);
+    expect(validation.issueCodes).toContain(
+      'critical_auditor_requested_model_identity_mismatch'
+    );
+  });
+
   it.each([
     ['transactionId', 'other-transaction', 'critical_auditor_transaction_id_mismatch'],
     ['auditAttemptId', 'other-audit-attempt', 'critical_auditor_audit_attempt_id_mismatch'],
     ['providerId', 'other-provider', 'critical_auditor_provider_identity_mismatch'],
-    ['model', 'other-model', 'critical_auditor_model_identity_mismatch'],
+    [
+      'requestedModel',
+      'other-model',
+      'critical_auditor_requested_model_identity_mismatch',
+    ],
     ['transport', 'anthropic-compatible', 'critical_auditor_transport_identity_mismatch'],
     ['apiStyle', 'messages', 'critical_auditor_api_style_mismatch'],
     [
@@ -443,16 +505,55 @@ describe('S127 Critical Auditor independence', () => {
     expect(bindingResult.issueCodes).toEqual([]);
     expect(bindingResult.binding).toMatchObject({
       providerId: 'local-sonnet-judge',
-      model: 'claude-sonnet-5',
+      model: null,
       transport: 'claude-code-cli',
       apiStyle: 'cli',
     });
     expect(expectationResult.issueCodes).toEqual([]);
     expect(expectationResult.expectation).toMatchObject({
       providerId: 'local-sonnet-judge',
-      model: 'claude-sonnet-5',
+      model: null,
       transport: 'claude-code-cli',
       apiStyle: 'cli',
+    });
+  });
+
+  it('binds a gateway-selected model while preserving a null requested model', () => {
+    const expected = {
+      ...independentProviderExpectation(),
+      model: null,
+    } as unknown as CriticalAuditorIndependentProviderExpectation;
+    const evidenceWithoutRunHash = {
+      ...expected,
+      requestedModel: null,
+      model: `returned-${randomUUID()}`,
+      providerRunId: `provider-run-${randomUUID()}`,
+      responseHash:
+        'sha256:6666666666666666666666666666666666666666666666666666666666666666',
+    };
+    const evidence = {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(
+        evidenceWithoutRunHash as unknown as Omit<
+          CriticalAuditorIndependentProviderEvidence,
+          'runHash'
+        >
+      ),
+    } as unknown as CriticalAuditorIndependentProviderEvidence;
+
+    expect(
+      validateCriticalAuditorIndependentProviderEvidence({ expected, evidence })
+    ).toEqual({ ok: true, issueCodes: [] });
+    expect(
+      validateCriticalAuditorIndependentProviderEvidence({
+        expected,
+        evidence: { ...evidence, requestedModel: undefined },
+      })
+    ).toMatchObject({
+      ok: false,
+      issueCodes: expect.arrayContaining([
+        'critical_auditor_requested_model_identity_mismatch',
+      ]),
     });
   });
 

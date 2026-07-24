@@ -6,7 +6,7 @@
   },
   "sourceConfig": {
     "path": "_bmad/_config/governance-remediation.yaml",
-    "hash": "sha256:9eb745fc622a6e33a1801dc618ccb32c9b216276d2b0fa7eb796a6928911bd53"
+    "hash": "sha256:3fdd09c42772b1a640fef58ce0fb11fa5a0464cd1d39f95b5c2acb5258a35bf4"
   },
   "activeProviderRef": "local-sonnet-judge",
   "providers": [
@@ -16,20 +16,19 @@
         "enabled": true,
         "transport": "claude-code-cli",
         "apiStyle": "cli",
-        "model": "claude-sonnet-5",
-        "credentialRef": "claude-code-session",
+        "credentialRef": "local-sonnet-judge",
         "endpoint": {
           "command": "claude",
+          "baseUrl": "http://localhost:3010",
           "resolutionMode": "path_search",
           "routingOwnership": "transport_adapter",
-          "upstreamVersioning": "cli_managed",
+          "upstreamVersioning": "gateway_managed",
           "explicitOperationPath": null
         },
         "authentication": {
-          "type": "claude_code_session",
-          "sensitivity": "host_managed",
-          "arbitraryNonEmptyValueAllowed": false,
-          "sessionRevision": 1
+          "type": "bearer",
+          "sensitivity": "secret",
+          "arbitraryNonEmptyValueAllowed": false
         },
         "auditPolicy": {
           "independenceClass": "different_provider_different_model",
@@ -42,7 +41,7 @@
           "implementationWritesAllowed": false
         },
         "requestPolicy": {
-          "timeoutMs": 300000,
+          "timeoutMs": 1800000,
           "maximumAttempts": 1,
           "structuredResponseRequired": true,
           "maxBudgetUsd": 5
@@ -51,5 +50,5 @@
       "adapterRef": "ClaudeCodeCliJudgeAdapter"
     }
   ],
-  "registryHash": "sha256:d401ea8caf99e709f5007941cf61ea450a0585b0876e00696f98a85e556c21b1"
+  "registryHash": "sha256:7bd225e757c35b882c9bb0001ea573f09f04549fb2d59645af43ea293702fef7"
 }

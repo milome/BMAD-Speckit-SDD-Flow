@@ -1,13 +1,19 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
+import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import yaml from 'js-yaml';
-import { buildCriticalAuditorJudgeRuntimeBinding } from './requirements-contract-critical-auditor-independence';
+import {
+  buildCriticalAuditorJudgeRuntimeBinding,
+  type CriticalAuditorJudgeRuntimeBinding,
+} from './requirements-contract-critical-auditor-independence';
 import {
   buildClaudeCodeCliJudgeArgs,
+  buildClaudeCodeCliJudgePrompt,
   type ClaudeCodeCliCommandInvocation,
   type ClaudeCodeCliCommandResult,
+  type SnapshotReadPlanEntry,
 } from './requirements-contract-claude-code-cli-judge-adapter';
 import { prepareRequirementsContractJudgeInvocation } from './requirements-contract-judge-invocation';
 
@@ -33,6 +39,17 @@ const UUID_V4_PATTERN =
 const CLI_TRANSCRIPT_TOOL_NAMES = new Set(['Read', 'StructuredOutput']);
 const PROVIDER_BINDING_FIELDS = [
   'providerId',
+  'model',
+  'transport',
+  'apiStyle',
+  'configuredBaseUrlHash',
+  'independenceClass',
+  'providerRegistryHash',
+  'providerConfigurationHash',
+] as const;
+const PROVIDER_RUN_FIELDS = [
+  'providerId',
+  'requestedModel',
   'model',
   'transport',
   'apiStyle',
@@ -67,6 +84,7 @@ const ASSESSMENT_FIELDS = [
   'checkedProjectionQualityRuleCodes',
   'priorFindingsDisposition',
   'falsePositiveProofs',
+  'auditReviewScoring',
   'rationale',
 ] as const;
 const CREDENTIAL_KEY_PATTERN =
@@ -86,6 +104,19 @@ const SYSTEM_PROMPT = [
   'overBroadTaskFindings, missingProjectionFindings, invalidProofFindings, legacyBypassFindings,',
   'sourceMaterializationFindings, reviewedMustRefs, reviewedProjectionRefs, checkedProjectionGroups,',
   'checkedProjectionQualityRuleCodes, priorFindingsDisposition, falsePositiveProofs, and rationale.',
+  'When the request contains auditReviewScoringContract, also include auditReviewScoring and bind it exactly to that contract.',
+  'auditReviewScoring must contain independently assessed overallGrade, every required dimension score, phaseScore, vetoTriggered, effectiveVerdict, all five structured drift signals, evidenceRefs, and rationale.',
+  'Do not infer PASS from the readonly auditor status alone; use the frozen evidence snapshot and return a non-pass verdict when scoring or drift evidence is insufficient.',
+  'When auditReviewScoringContract is absent, omit auditReviewScoring.',
+  'When verdict is new_valid_gap, every validatedGaps item must include a non-empty repairActions array.',
+  'Each repair action must include actionId, type, sourceSpan, sourceText, targetField, newValue, reason, mustRefs, and requirementIds.',
+  'Before authoring a repair action, Read request.sourceDocument from the frozen evidence snapshot.',
+  'sourceSpan must identify one or more complete raw lines in request.sourceDocument using 1-based inclusive line numbers.',
+  'sourceText must equal those complete raw source lines exactly after CRLF-to-LF normalization and outer whitespace trimming; include Markdown table delimiters, IDs, and every cell on the selected lines.',
+  'Do not put only a table cell, extracted requirement text, paraphrase, or normalized semantic text in sourceText.',
+  'If you cannot verify the exact source bytes, return verdict insufficient_audit and decision=inconclusive instead of emitting a repair action.',
+  'Allowed repair action types are add_must, split_must, add_neg, add_out, add_evidence, add_trace, upsert_trace, upsert_failure_path, upsert_edge_case, add_acc, add_e2e, add_business_view, add_business_visual, replace_target_path, and replace_validation_command.',
+  'For split_must, newValue must contain exactly sourceMustRef and replacements; replacements must contain at least two unique {id,text} rows and retain sourceMustRef exactly once.',
   'priorFindingsDisposition must be [] when previousReceipts and gateDryRun.actionableBlockingIssues are both empty;',
   'otherwise classify every prior finding or actionable blocker and include non-empty evidenceRefs.',
   'Never invent a baseline or placeholder finding only to make priorFindingsDisposition non-empty.',
@@ -95,6 +126,160 @@ const SYSTEM_PROMPT = [
   'the controlled executor binds those fields.',
 ].join(' ');
 
+function requiredUniqueStrings(value: unknown, code: string): string[] {
+  if (!Array.isArray(value)) throw new Error(code);
+  const values = [...new Set(value.map(text).filter(Boolean))];
+  if (values.length === 0) throw new Error(code);
+  return values;
+}
+
+function authorityBoundStringArraySchema(values: string[]): JsonRecord {
+  return {
+    type: 'array',
+    minItems: 1,
+    uniqueItems: true,
+    items: { enum: values },
+  };
+}
+
+function authorityReferenceArraySchema(): JsonRecord {
+  return {
+    type: 'array',
+    minItems: 1,
+    uniqueItems: true,
+    items: { type: 'string', minLength: 1 },
+  };
+}
+
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function criticalAuditorTransportOutputSchema(request: JsonRecord): JsonRecord {
+  const assessmentSchema = readJsonObject(
+    path.resolve(
+      __dirname,
+      '..',
+      'schemas',
+      'requirements-contract-critical-auditor-judge-assessment.schema.json'
+    ),
+    'critical_auditor_judge_assessment_schema_invalid'
+  );
+  const assessmentProperties = cloneJson(
+    record(
+      assessmentSchema.properties,
+      'critical_auditor_judge_assessment_schema_invalid'
+    )
+  );
+  const assessmentRequired = requiredUniqueStrings(
+    assessmentSchema.required,
+    'critical_auditor_judge_assessment_schema_invalid'
+  );
+  const assessmentDefinitions = cloneJson(
+    record(assessmentSchema.$defs, 'critical_auditor_judge_assessment_schema_invalid')
+  );
+  const assessmentAllOf = Array.isArray(assessmentSchema.allOf)
+    ? cloneJson(assessmentSchema.allOf)
+    : [];
+  const projectionSummary = record(
+    request.packetProjectionSummary,
+    'critical_auditor_judge_packet_projection_summary_invalid'
+  );
+  const projectionQualityGate = record(
+    request.projectionQualityGate,
+    'critical_auditor_judge_projection_quality_gate_invalid'
+  );
+  const reviewedMustRefs = requiredUniqueStrings(
+    request.mustRefs,
+    'critical_auditor_judge_must_refs_invalid'
+  );
+  const checkedProjectionGroups = requiredUniqueStrings(
+    projectionSummary.projectionGroups,
+    'critical_auditor_judge_projection_groups_invalid'
+  );
+  const checkedProjectionQualityRuleCodes = requiredUniqueStrings(
+    projectionQualityGate.requiredRuleCodes,
+    'critical_auditor_judge_projection_quality_rule_codes_invalid'
+  );
+  assessmentProperties.reviewedMustRefs = authorityBoundStringArraySchema(reviewedMustRefs);
+  assessmentProperties.reviewedProjectionRefs = authorityReferenceArraySchema();
+  assessmentProperties.checkedProjectionGroups =
+    authorityBoundStringArraySchema(checkedProjectionGroups);
+  assessmentProperties.checkedProjectionQualityRuleCodes =
+    authorityBoundStringArraySchema(checkedProjectionQualityRuleCodes);
+
+  const scoringContractValue = request.auditReviewScoringContract;
+  const scoringContract =
+    scoringContractValue === undefined || scoringContractValue === null
+      ? null
+      : record(
+          scoringContractValue,
+          'critical_auditor_judge_audit_review_scoring_contract_invalid'
+        );
+  if (scoringContract) {
+    const scoringSchema = record(
+      assessmentProperties.auditReviewScoring,
+      'critical_auditor_judge_assessment_schema_invalid'
+    );
+    const scoringProperties = record(
+      scoringSchema.properties,
+      'critical_auditor_judge_assessment_schema_invalid'
+    );
+    const dimensionContractId = text(scoringContract.dimensionContractId);
+    const dimensionMode = text(scoringContract.dimensionMode);
+    const expectedDimensions = requiredUniqueStrings(
+      scoringContract.expectedDimensions,
+      'critical_auditor_judge_audit_review_scoring_contract_invalid'
+    );
+    if (!dimensionContractId || !dimensionMode) {
+      throw new Error('critical_auditor_judge_audit_review_scoring_contract_invalid');
+    }
+    assessmentProperties.auditReviewScoring = {
+      ...scoringSchema,
+      properties: {
+        ...scoringProperties,
+        dimensionContractId: { const: dimensionContractId },
+        dimensionMode: { const: dimensionMode },
+        expectedDimensions: { const: expectedDimensions },
+      },
+    };
+    assessmentRequired.push('auditReviewScoring');
+  } else {
+    delete assessmentProperties.auditReviewScoring;
+  }
+
+  return {
+    type: 'object',
+    additionalProperties: false,
+    $defs: assessmentDefinitions,
+    required: ['decision', 'findings', 'challengeRequests', 'evidenceRefs'],
+    properties: {
+      decision: { enum: ['pass', 'block', 'inconclusive'] },
+      findings: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: assessmentRequired,
+          properties: assessmentProperties,
+          allOf: assessmentAllOf,
+        },
+      },
+      challengeRequests: {
+        type: 'array',
+        maxItems: 0,
+      },
+      evidenceRefs: {
+        type: 'array',
+        uniqueItems: true,
+        items: { type: 'string', minLength: 1 },
+      },
+    },
+  };
+}
+
 function record(value: unknown, code: string): JsonRecord {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(code);
   return value as JsonRecord;
@@ -102,6 +287,48 @@ function record(value: unknown, code: string): JsonRecord {
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizedConfiguredModel(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim();
+  return normalized || undefined;
+}
+
+function requiredConfiguredModel(value: unknown, code: string): string | null {
+  const normalized = normalizedConfiguredModel(value);
+  if (normalized === undefined) throw new Error(code);
+  return normalized;
+}
+
+function requiredSortedUniqueStrings(value: unknown, code: string): string[] {
+  if (!Array.isArray(value)) throw new Error(code);
+  const values = value.map(text);
+  const sorted = [...values].sort();
+  if (
+    values.length === 0 ||
+    values.some((entry) => !entry) ||
+    new Set(values).size !== values.length ||
+    JSON.stringify(values) !== JSON.stringify(sorted)
+  ) {
+    throw new Error(code);
+  }
+  return values;
+}
+
+function modelUsageModelNames(value: unknown, code: string): string[] {
+  const usage = record(value, code);
+  const rawNames = Object.keys(usage);
+  const normalizedNames = rawNames.map((name) => name.trim());
+  if (
+    normalizedNames.length === 0 ||
+    normalizedNames.some((name, index) => !name || name !== rawNames[index]) ||
+    new Set(normalizedNames).size !== normalizedNames.length
+  ) {
+    throw new Error(code);
+  }
+  return normalizedNames.sort();
 }
 
 function isWithin(root: string, target: string): boolean {
@@ -176,10 +403,23 @@ function withSelfHash(value: JsonRecord, hashField: string): JsonRecord {
   };
 }
 
+function withCanonicalSelfHash(value: JsonRecord, hashField: string): JsonRecord {
+  return {
+    ...value,
+    [hashField]: sha256CanonicalJson(value),
+  };
+}
+
 function assertSelfHash(value: JsonRecord, hashField: string, code: string): void {
   const withoutHash = { ...value };
   delete withoutHash[hashField];
   if (text(value[hashField]) !== sha256Json(withoutHash)) throw new Error(code);
+}
+
+function assertCanonicalSelfHash(value: JsonRecord, hashField: string, code: string): void {
+  const withoutHash = { ...value };
+  delete withoutHash[hashField];
+  if (text(value[hashField]) !== sha256CanonicalJson(withoutHash)) throw new Error(code);
 }
 
 function schema(name: string): JsonRecord {
@@ -213,7 +453,19 @@ function assertRequestBinding(request: JsonRecord, runtimeBinding: JsonRecord): 
     throw new Error('critical_auditor_judge_request_provider_binding_invalid');
   }
   for (const field of PROVIDER_BINDING_FIELDS) {
-    if (text(requestBinding[field]) !== text(runtimeBinding[field])) {
+    const matches =
+      field === 'model'
+        ? Object.hasOwn(requestBinding, field) &&
+          requiredConfiguredModel(
+            requestBinding[field],
+            'critical_auditor_judge_request_model_mismatch'
+          ) ===
+            requiredConfiguredModel(
+              runtimeBinding[field],
+              'critical_auditor_judge_runtime_model_invalid'
+            )
+        : text(requestBinding[field]) === text(runtimeBinding[field]);
+    if (!matches) {
       throw new Error(`critical_auditor_judge_request_${field}_mismatch`);
     }
   }
@@ -305,7 +557,7 @@ function hasExactCliShape(args: string[]): boolean {
   }
   for (const flag of CLI_VALUE_FLAGS) {
     const count = counts.get(flag) ?? 0;
-    if (flag === '--max-budget-usd') {
+    if (flag === '--max-budget-usd' || flag === '--model') {
       if (count > 1) return false;
     } else if (count !== 1) {
       return false;
@@ -330,7 +582,8 @@ function hasEmptyMcpConfig(args: string[]): boolean {
 
 function expectedClaudeCodeCliArgv(
   judgeRuntime: JsonRecord,
-  runtimeBinding: JsonRecord
+  runtimeBinding: JsonRecord,
+  request: JsonRecord
 ): string[] {
   const providers = record(
     judgeRuntime.providers,
@@ -343,6 +596,7 @@ function expectedClaudeCodeCliArgv(
   return buildClaudeCodeCliJudgeArgs({
     provider,
     systemPrompt: SYSTEM_PROMPT,
+    structuredOutputSchema: criticalAuditorTransportOutputSchema(request),
   });
 }
 
@@ -375,14 +629,55 @@ function cliTransportEvidence(
     normalized.transportEvidence,
     'critical_auditor_judge_cli_transport_evidence_missing'
   );
+  const credentialRevision = Number(evidence.credentialRevision);
+  const expectedCredentialRevision = Number(runtimeBinding.credentialRevision);
+  const expectedCredentialEnvironmentVariable =
+    runtimeBinding.credentialEnvironmentVariable;
+  const expectedRequestedModel = requiredConfiguredModel(
+    runtimeBinding.model,
+    'critical_auditor_judge_runtime_model_invalid'
+  );
+  const evidenceRequestedModel = requiredConfiguredModel(
+    evidence.requestedModel,
+    'critical_auditor_judge_cli_requested_model_invalid'
+  );
+  const evidenceInitModel = requiredConfiguredModel(
+    evidence.initModel,
+    'critical_auditor_judge_cli_init_model_invalid'
+  );
+  const evidenceModelUsageModels = requiredSortedUniqueStrings(
+    evidence.modelUsageModels,
+    'critical_auditor_judge_cli_model_usage_models_invalid'
+  );
   const args = Array.isArray(evidence.argv) ? evidence.argv.map(String) : [];
+  const jsonSchemaIndex = expectedArgv.indexOf('--json-schema');
+  const expectedStructuredOutputSchema =
+    jsonSchemaIndex >= 0 ? expectedArgv[jsonSchemaIndex + 1] : '';
   if (text(evidence.executorKind) !== expectedExecutorKind) {
     throw new Error('critical_auditor_judge_cli_executor_kind_mismatch');
   }
   if (
+    expectedExecutorKind === 'native_spawn' &&
+    (!evidenceInitModel || !evidenceModelUsageModels.includes(evidenceInitModel))
+  ) {
+    throw new Error('critical_auditor_judge_cli_init_binding_mismatch');
+  }
+  if (
     text(evidence.schemaVersion) !== 'requirements-contract-claude-code-cli-execution/v1' ||
     text(evidence.command) !== 'claude' ||
-    text(evidence.requestedModel) !== text(runtimeBinding.model) ||
+    !Object.hasOwn(evidence, 'requestedModel') ||
+    !Object.hasOwn(evidence, 'initModel') ||
+    !Object.hasOwn(evidence, 'modelUsageModels') ||
+    evidenceRequestedModel !== expectedRequestedModel ||
+    (expectedExecutorKind === 'injected_test_transport' && evidenceInitModel !== null) ||
+    !Number.isInteger(credentialRevision) ||
+    credentialRevision < 1 ||
+    (Number.isInteger(expectedCredentialRevision) &&
+      expectedCredentialRevision > 0 &&
+      credentialRevision !== expectedCredentialRevision) ||
+    (expectedCredentialEnvironmentVariable !== undefined &&
+      (evidence.credentialEnvironmentVariable ?? null) !==
+        (expectedCredentialEnvironmentVariable ?? null)) ||
     text(evidence.sessionId) !== text(normalized.providerRequestId) ||
     Number(evidence.exitCode) !== 0 ||
     !UUID_V4_PATTERN.test(text(evidence.sessionId)) ||
@@ -390,6 +685,8 @@ function cliTransportEvidence(
     !HASH_PATTERN.test(text(evidence.stderrHash)) ||
     !HASH_PATTERN.test(text(evidence.transcriptHash)) ||
     !HASH_PATTERN.test(text(evidence.snapshotHash)) ||
+    text(evidence.structuredOutputSchemaHash) !==
+      sha256Text(expectedStructuredOutputSchema) ||
     (expectedExecutorKind === 'native_spawn' &&
       (!Number.isInteger(Number(evidence.processId)) || Number(evidence.processId) <= 0)) ||
     (expectedExecutorKind === 'injected_test_transport' && evidence.processId !== null) ||
@@ -398,7 +695,9 @@ function cliTransportEvidence(
     !args.includes('--print') ||
     !args.includes('--bare') ||
     !hasArgumentPair(args, '--effort', 'xhigh') ||
-    !hasArgumentPair(args, '--model', text(runtimeBinding.model)) ||
+    (expectedRequestedModel === null
+      ? args.includes('--model')
+      : !hasArgumentPair(args, '--model', expectedRequestedModel)) ||
     !hasArgumentPair(args, '--tools', 'Read') ||
     !hasArgumentPair(args, '--permission-mode', 'dontAsk') ||
     !hasArgumentPair(args, '--output-format', 'stream-json') ||
@@ -455,20 +754,31 @@ function assertTranscriptToolCalls(
   manifestedPaths: Set<string>
 ): {
   readPaths: Set<string>;
-  toolUses: Map<string, { name: string; eventIndex: number }>;
-  toolResults: Map<string, { eventIndex: number; isError: boolean }>;
+  toolUses: Map<string, { name: string; eventIndex: number; readPath?: string }>;
+  toolResults: Map<
+    string,
+    { eventIndex: number; isError: boolean; content: unknown }
+  >;
   structuredOutputs: Array<{
     toolUseId: string;
     eventIndex: number;
+    model: string;
     input: JsonRecord;
   }>;
 } {
   const readPaths = new Set<string>();
-  const toolUses = new Map<string, { name: string; eventIndex: number }>();
-  const toolResults = new Map<string, { eventIndex: number; isError: boolean }>();
+  const toolUses = new Map<
+    string,
+    { name: string; eventIndex: number; readPath?: string }
+  >();
+  const toolResults = new Map<
+    string,
+    { eventIndex: number; isError: boolean; content: unknown }
+  >();
   const structuredOutputs: Array<{
     toolUseId: string;
     eventIndex: number;
+    model: string;
     input: JsonRecord;
   }> = [];
   for (const [eventIndex, event] of events.entries()) {
@@ -488,6 +798,7 @@ function assertTranscriptToolCalls(
         toolResults.set(toolUseId, {
           eventIndex,
           isError: block.is_error === true,
+          content: block.content,
         });
         continue;
       }
@@ -500,7 +811,6 @@ function assertTranscriptToolCalls(
       if (!toolUseId || toolUses.has(toolUseId)) {
         throw new Error('critical_auditor_judge_cli_tool_invocation_invalid');
       }
-      toolUses.set(toolUseId, { name: toolName, eventIndex });
       const toolInput = record(
         block.input,
         'critical_auditor_judge_cli_tool_input_invalid'
@@ -510,18 +820,27 @@ function assertTranscriptToolCalls(
         if (!manifestedPaths.has(relativePath)) {
           throw new Error('critical_auditor_judge_cli_tool_path_not_manifested');
         }
+        toolUses.set(toolUseId, {
+          name: toolName,
+          eventIndex,
+          readPath: relativePath,
+        });
         readPaths.add(relativePath);
       } else if (toolName === 'Glob') {
+        toolUses.set(toolUseId, { name: toolName, eventIndex });
         assertSnapshotPattern(toolInput.pattern);
         if (toolInput.path !== undefined) {
           assertSnapshotRelativePath(snapshotRoot, toolInput.path);
         }
       } else if (toolName === 'Grep' && toolInput.path !== undefined) {
+        toolUses.set(toolUseId, { name: toolName, eventIndex });
         assertSnapshotRelativePath(snapshotRoot, toolInput.path);
       } else if (toolName === 'StructuredOutput') {
+        toolUses.set(toolUseId, { name: toolName, eventIndex });
         structuredOutputs.push({
           toolUseId,
           eventIndex,
+          model: text(message.model),
           input: toolInput,
         });
       }
@@ -533,6 +852,86 @@ function assertTranscriptToolCalls(
     toolResults,
     structuredOutputs,
   };
+}
+
+function assertTranscriptReadContentBindings(input: {
+  snapshotRoot: string;
+  requiredReadPaths: Set<string>;
+  toolSummary: ReturnType<typeof assertTranscriptToolCalls>;
+}): void {
+  const observedByPath = new Map<string, Map<number, string>>();
+  for (const [toolUseId, toolUse] of input.toolSummary.toolUses) {
+    if (toolUse.name !== 'Read' || !toolUse.readPath) continue;
+    const result = input.toolSummary.toolResults.get(toolUseId);
+    if (!result || result.isError || typeof result.content !== 'string') {
+      throw new Error('critical_auditor_judge_cli_read_content_binding_mismatch');
+    }
+    const canonicalPath = path.resolve(input.snapshotRoot, toolUse.readPath);
+    const canonicalContent = fs.readFileSync(canonicalPath, 'utf8');
+    const canonicalIsEmpty = canonicalContent.length === 0;
+    const observedLines = observedByPath.get(toolUse.readPath) ?? new Map<number, string>();
+    let parsedLineCount = 0;
+    for (const line of result.content.split('\n')) {
+      const match = /^(\d+)\t(.*)$/u.exec(line.replace(/\r$/u, ''));
+      if (!match) continue;
+      const lineNumber = Number(match[1]);
+      const lineText = match[2];
+      if (
+        !Number.isInteger(lineNumber) ||
+        lineNumber <= 0 ||
+        (observedLines.has(lineNumber) && observedLines.get(lineNumber) !== lineText)
+      ) {
+        throw new Error('critical_auditor_judge_cli_read_content_binding_mismatch');
+      }
+      observedLines.set(lineNumber, lineText);
+      parsedLineCount += 1;
+    }
+    if (
+      (canonicalIsEmpty && parsedLineCount !== 0) ||
+      (!canonicalIsEmpty && parsedLineCount === 0)
+    ) {
+      throw new Error('critical_auditor_judge_cli_read_content_binding_mismatch');
+    }
+    observedByPath.set(toolUse.readPath, observedLines);
+  }
+
+  for (const [relativePath, observedLines] of observedByPath) {
+    const canonicalPath = path.resolve(input.snapshotRoot, relativePath);
+    const canonicalContent = fs.readFileSync(canonicalPath, 'utf8');
+    const canonicalLines =
+      canonicalContent.length === 0 ? [] : canonicalContent.split(/\r?\n/u);
+    if (observedLines.size !== canonicalLines.length) {
+      throw new Error('critical_auditor_judge_cli_read_content_binding_mismatch');
+    }
+    for (const [index, expectedLine] of canonicalLines.entries()) {
+      if (observedLines.get(index + 1) !== expectedLine) {
+        throw new Error('critical_auditor_judge_cli_read_content_binding_mismatch');
+      }
+    }
+  }
+  if (
+    [...input.requiredReadPaths].some(
+      (relativePath) => !observedByPath.has(relativePath)
+    )
+  ) {
+    throw new Error('critical_auditor_judge_cli_read_content_binding_mismatch');
+  }
+}
+
+function isAllowedCliExecutionRoot(
+  executionRoot: string,
+  snapshotRoot: string,
+  expectedExecutorKind: ClaudeCodeCliExecutorKind
+): boolean {
+  if (executionRoot === snapshotRoot) return true;
+  if (expectedExecutorKind !== 'native_spawn' || process.platform !== 'win32') {
+    return false;
+  }
+  return (
+    executionRoot.length < 260 &&
+    path.dirname(executionRoot) === path.resolve(tmpdir()) &&
+    /^j-[a-z0-9]{6}$/iu.test(path.basename(executionRoot))
+  );
 }
 
 function decisionProjection(value: unknown, code: string): JsonRecord {
@@ -554,6 +953,13 @@ function decisionProjection(value: unknown, code: string): JsonRecord {
   };
 }
 
+function isStructuredOutputSchemaValidationError(content: unknown): boolean {
+  return (
+    typeof content === 'string' &&
+    /^Output does not match required schema(?:$|:|\r?\n)/u.test(content.trim())
+  );
+}
+
 function assertTranscriptResult(input: {
   events: JsonRecord[];
   normalized: JsonRecord;
@@ -562,25 +968,59 @@ function assertTranscriptResult(input: {
   snapshotRoot: string;
   expectedExecutorKind: ClaudeCodeCliExecutorKind;
   requiredReadPaths: Set<string>;
-  toolSummary: {
-    readPaths: Set<string>;
-    toolUses: Map<string, { name: string; eventIndex: number }>;
-    toolResults: Map<string, { eventIndex: number; isError: boolean }>;
-    structuredOutputs: Array<{
-      toolUseId: string;
-      eventIndex: number;
-      input: JsonRecord;
-    }>;
-  };
+  toolSummary: ReturnType<typeof assertTranscriptToolCalls>;
 }): void {
-  const expectedModel = text(input.runtimeBinding.model);
+  const requestedModel = requiredConfiguredModel(
+    input.runtimeBinding.model,
+    'critical_auditor_judge_runtime_model_invalid'
+  );
+  const returnedModel = text(input.normalized.returnedModel);
+  const successfulStructuredOutputs = input.toolSummary.structuredOutputs.filter(
+    (structuredOutput) => {
+      const result = input.toolSummary.toolResults.get(structuredOutput.toolUseId);
+      return result !== undefined && !result.isError;
+    }
+  );
+  const resultEvents = input.events.filter((event) => event.type === 'result');
+  const result = resultEvents[0];
+  if (
+    resultEvents.length !== 1 ||
+    input.events[input.events.length - 1] !== result ||
+    result.subtype !== 'success' ||
+    result.is_error === true ||
+    text(result.session_id) !== text(input.normalized.providerRequestId)
+  ) {
+    throw new Error('critical_auditor_judge_transcript_result_mismatch');
+  }
+  const permissionDenials = result.permission_denials;
+  const modelUsageModels = modelUsageModelNames(
+    result.modelUsage,
+    'critical_auditor_judge_transcript_result_mismatch'
+  );
+  const evidenceModelUsageModels = requiredSortedUniqueStrings(
+    input.evidence.modelUsageModels,
+    'critical_auditor_judge_cli_model_usage_binding_mismatch'
+  );
+  const evidenceInitModel = requiredConfiguredModel(
+    input.evidence.initModel,
+    'critical_auditor_judge_cli_init_model_binding_mismatch'
+  );
+  if (
+    !Array.isArray(permissionDenials) ||
+    permissionDenials.length > 0 ||
+    !returnedModel ||
+    JSON.stringify(evidenceModelUsageModels) !== JSON.stringify(modelUsageModels) ||
+    text(input.normalized.responseHash) !== text(input.evidence.stdoutHash)
+  ) {
+    throw new Error('critical_auditor_judge_transcript_result_mismatch');
+  }
   for (const event of input.events) {
     if (event.type !== 'assistant') continue;
     const message = record(
       event.message,
       'critical_auditor_judge_transcript_result_mismatch'
     );
-    if (message.model !== expectedModel) {
+    if (!text(message.model)) {
       throw new Error('critical_auditor_judge_transcript_result_mismatch');
     }
   }
@@ -593,12 +1033,16 @@ function assertTranscriptResult(input: {
         ? initEvents[0].tools.map(String).sort()
         : [];
     const initEvent = initEvents[0];
+    const initModel = text(initEvent?.model);
     if (
       !initEvent ||
       JSON.stringify(initTools) !== JSON.stringify(['Read', 'StructuredOutput']) ||
       path.resolve(text(initEvent.cwd)) !== path.resolve(input.snapshotRoot) ||
       text(initEvent.session_id) !== text(input.evidence.sessionId) ||
-      initEvent.model !== expectedModel ||
+      !initModel ||
+      initModel !== evidenceInitModel ||
+      (requestedModel !== null && initModel !== requestedModel) ||
+      !modelUsageModels.includes(initModel) ||
       initEvent.permissionMode !== 'dontAsk' ||
       !Array.isArray(initEvent.mcp_servers) ||
       initEvent.mcp_servers.length !== 0
@@ -613,7 +1057,11 @@ function assertTranscriptResult(input: {
       if (!result || result.eventIndex <= toolUse.eventIndex) {
         throw new Error('critical_auditor_judge_cli_tool_result_missing');
       }
-      if (result.isError) {
+      if (
+        result.isError &&
+        (toolUse.name !== 'StructuredOutput' ||
+          !isStructuredOutputSchemaValidationError(result.content))
+      ) {
         throw new Error('critical_auditor_judge_cli_tool_result_failed');
       }
     }
@@ -629,33 +1077,17 @@ function assertTranscriptResult(input: {
     ) {
       throw new Error('critical_auditor_judge_cli_evidence_coverage_incomplete');
     }
-    if (input.toolSummary.structuredOutputs.length === 0) {
+    if (successfulStructuredOutputs.length === 0) {
       throw new Error('critical_auditor_judge_cli_structured_output_tool_invalid');
     }
-  }
-  const resultEvents = input.events.filter((event) => event.type === 'result');
-  const result = resultEvents[0];
-  if (
-    resultEvents.length !== 1 ||
-    input.events[input.events.length - 1] !== result ||
-    result.subtype !== 'success' ||
-    result.is_error === true ||
-    text(result.session_id) !== text(input.normalized.providerRequestId)
-  ) {
-    throw new Error('critical_auditor_judge_transcript_result_mismatch');
-  }
-  const permissionDenials = result.permission_denials;
-  const modelUsage = record(
-    result.modelUsage,
-    'critical_auditor_judge_transcript_result_mismatch'
-  );
-  if (
-    !Array.isArray(permissionDenials) ||
-    permissionDenials.length > 0 ||
-    !Object.hasOwn(modelUsage, text(input.runtimeBinding.model)) ||
-    text(input.normalized.responseHash) !== text(input.evidence.stdoutHash)
-  ) {
-    throw new Error('critical_auditor_judge_transcript_result_mismatch');
+    if (
+      successfulStructuredOutputs.some(
+        (structuredOutput) =>
+          !structuredOutput.model || structuredOutput.model !== returnedModel
+      )
+    ) {
+      throw new Error('critical_auditor_judge_transcript_result_mismatch');
+    }
   }
   const transcriptDecision = decisionProjection(
     result.structured_output,
@@ -669,7 +1101,7 @@ function assertTranscriptResult(input: {
       )
     );
     if (
-      input.toolSummary.structuredOutputs.some(
+      successfulStructuredOutputs.some(
         (structuredOutput) =>
           stableStringify(structuredOutput.input) !== finalStructuredOutput
       )
@@ -689,7 +1121,7 @@ function assertTranscriptResult(input: {
 function assertSnapshotManifest(
   manifestPath: string,
   manifest: JsonRecord
-): Set<string> {
+): { manifestedPaths: Set<string>; readPlan: SnapshotReadPlanEntry[] } {
   const snapshotRoot = path.dirname(manifestPath);
   if (
     fs.lstatSync(snapshotRoot).isSymbolicLink() ||
@@ -700,13 +1132,18 @@ function assertSnapshotManifest(
   const snapshotRealRoot = fs.realpathSync(snapshotRoot);
   const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
   const seen = new Set<string>();
+  const entryByPath = new Map<string, { hash: string; bytes: number }>();
   for (const entryValue of entries) {
     const entry = record(
       entryValue,
       'critical_auditor_judge_cli_snapshot_manifest_invalid'
     );
     const relativePath = text(entry.path).replace(/\\/gu, '/');
+    const roles = Array.isArray(entry.roles) ? entry.roles.map(text).filter(Boolean) : [];
     if (!relativePath || seen.has(relativePath)) {
+      throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+    }
+    if (roles.length === 0 || new Set(roles).size !== roles.length) {
       throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
     }
     seen.add(relativePath);
@@ -733,14 +1170,98 @@ function assertSnapshotManifest(
     ) {
       throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
     }
+    entryByPath.set(relativePath, {
+      hash: text(entry.hash),
+      bytes: Number(entry.bytes),
+    });
+  }
+  const readPlanValues = Array.isArray(manifest.readPlan) ? manifest.readPlan : [];
+  const readPlan: SnapshotReadPlanEntry[] = [];
+  const coveredPaths = new Set<string>();
+  const sourcePaths = new Set<string>();
+  for (const planValue of readPlanValues) {
+    const plan = record(
+      planValue,
+      'critical_auditor_judge_cli_snapshot_manifest_invalid'
+    );
+    const sourcePath = assertSnapshotRelativePath(snapshotRoot, plan.sourcePath);
+    const sourceHash = text(plan.sourceHash);
+    const sourceBytes = Number(plan.sourceBytes);
+    const segmentValues = Array.isArray(plan.segments) ? plan.segments : [];
+    if (
+      sourcePaths.has(sourcePath) ||
+      !HASH_PATTERN.test(sourceHash) ||
+      !Number.isInteger(sourceBytes) ||
+      sourceBytes < 0 ||
+      segmentValues.length === 0
+    ) {
+      throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+    }
+    sourcePaths.add(sourcePath);
+    let nextByte = 0;
+    const segmentBuffers: Buffer[] = [];
+    const segments = segmentValues.map((segmentValue) => {
+      const segment = record(
+        segmentValue,
+        'critical_auditor_judge_cli_snapshot_manifest_invalid'
+      );
+      const segmentPath = assertSnapshotRelativePath(snapshotRoot, segment.path);
+      const entry = entryByPath.get(segmentPath);
+      const segmentHash = text(segment.hash);
+      const segmentBytes = Number(segment.bytes);
+      const startByte = Number(segment.startByte);
+      const endByteExclusive = Number(segment.endByteExclusive);
+      if (
+        !entry ||
+        coveredPaths.has(segmentPath) ||
+        !HASH_PATTERN.test(segmentHash) ||
+        !Number.isInteger(segmentBytes) ||
+        segmentBytes < 0 ||
+        startByte !== nextByte ||
+        endByteExclusive !== startByte + segmentBytes ||
+        endByteExclusive > sourceBytes ||
+        entry.hash !== segmentHash ||
+        entry.bytes !== segmentBytes
+      ) {
+        throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+      }
+      const content = fs.readFileSync(path.resolve(snapshotRoot, segmentPath));
+      segmentBuffers.push(content);
+      coveredPaths.add(segmentPath);
+      nextByte = endByteExclusive;
+      return {
+        path: segmentPath,
+        hash: segmentHash,
+        bytes: segmentBytes,
+        startByte,
+        endByteExclusive,
+      };
+    });
+    const reconstructed = Buffer.concat(segmentBuffers);
+    if (
+      nextByte !== sourceBytes ||
+      reconstructed.byteLength !== sourceBytes ||
+      `sha256:${crypto.createHash('sha256').update(reconstructed).digest('hex')}` !== sourceHash
+    ) {
+      throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+    }
+    readPlan.push({
+      sourcePath,
+      sourceHash,
+      sourceBytes,
+      segments,
+    });
   }
   if (
     entries.length === 0 ||
-    text(manifest.snapshotHash) !== sha256Json(entries)
+    readPlan.length === 0 ||
+    coveredPaths.size !== seen.size ||
+    [...seen].some((relativePath) => !coveredPaths.has(relativePath)) ||
+    text(manifest.snapshotHash) !== sha256Json({ entries, readPlan: readPlanValues })
   ) {
     throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
   }
-  return seen;
+  return { manifestedPaths: seen, readPlan };
 }
 
 function normalizedJudgeResponse(
@@ -750,12 +1271,21 @@ function normalizedJudgeResponse(
   expectedExecutorKind: ClaudeCodeCliExecutorKind
 ): JsonRecord {
   const normalized = record(value, 'critical_auditor_judge_normalized_response_invalid');
+  const configuredModel = requiredConfiguredModel(
+    normalized.configuredModel,
+    'critical_auditor_judge_normalized_response_invalid'
+  );
+  const runtimeConfiguredModel = requiredConfiguredModel(
+    runtimeBinding.model,
+    'critical_auditor_judge_runtime_model_invalid'
+  );
   if (
     text(normalized.schemaVersion) !== 'requirements-contract-normalized-judge-response/v1' ||
     text(normalized.providerRef) !== text(runtimeBinding.providerId) ||
     text(normalized.transport) !== text(runtimeBinding.transport) ||
-    text(normalized.configuredModel) !== text(runtimeBinding.model) ||
-    text(normalized.returnedModel) !== text(runtimeBinding.model) ||
+    !Object.hasOwn(normalized, 'configuredModel') ||
+    configuredModel !== runtimeConfiguredModel ||
+    !text(normalized.returnedModel) ||
     !text(normalized.providerRequestId) ||
     !HASH_PATTERN.test(text(normalized.requestHash)) ||
     !HASH_PATTERN.test(text(normalized.responseHash))
@@ -831,20 +1361,49 @@ function assertCliTransportArtifacts(input: {
     manifestPath,
     'critical_auditor_judge_cli_snapshot_manifest_invalid'
   );
+  const request = readJsonObject(
+    input.requestPath,
+    'critical_auditor_judge_request_invalid'
+  );
+  const requestBinding = record(
+    manifest.requestBinding,
+    'critical_auditor_judge_cli_snapshot_manifest_invalid'
+  );
+  const requestRelativePath = relativeSlash(input.root, input.requestPath);
   const snapshotRoot = path.dirname(manifestPath);
+  const executionRoot = path.resolve(text(evidence.cwd));
   if (
-    text(manifest.schemaVersion) !== 'requirements-contract-judge-evidence-snapshot/v1' ||
+    text(manifest.schemaVersion) !== 'requirements-contract-judge-evidence-snapshot/v2' ||
     text(manifest.snapshotHash) !== text(evidence.snapshotHash) ||
-    path.resolve(text(evidence.cwd)) !== snapshotRoot
+    !isAllowedCliExecutionRoot(
+      executionRoot,
+      snapshotRoot,
+      input.expectedExecutorKind
+    ) ||
+    text(requestBinding.requestPath) !== requestRelativePath ||
+    text(requestBinding.requestContentHash) !== sha256File(input.requestPath) ||
+    text(requestBinding.requestHash) !== text(request.requestHash) ||
+    text(requestBinding.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+    text(requestBinding.semanticModelHash) !== text(request.semanticModelHash) ||
+    text(requestBinding.projectionSetHash) !== text(request.projectionSetHash)
   ) {
     throw new Error('critical_auditor_judge_cli_snapshot_binding_mismatch');
   }
-  const manifestedPaths = assertSnapshotManifest(manifestPath, manifest);
-  const requestSnapshotPath = path
-    .relative(input.root, input.requestPath)
-    .replace(/\\/gu, '/');
+  const verifiedManifest = assertSnapshotManifest(manifestPath, manifest);
+  const manifestedPaths = verifiedManifest.manifestedPaths;
+  const expectedPromptHash = sha256Text(
+    buildClaudeCodeCliJudgePrompt(SYSTEM_PROMPT, request, verifiedManifest.readPlan)
+  );
+  if (text(input.normalized.requestHash) !== expectedPromptHash) {
+    throw new Error('critical_auditor_judge_provider_request_hash_mismatch');
+  }
+  const requestReadPaths = new Set(
+    verifiedManifest.readPlan
+      .find((entry) => entry.sourcePath === requestRelativePath)
+      ?.segments.map((segment) => segment.path) ?? []
+  );
   const requiredReadPaths = new Set(
-    [...manifestedPaths].filter((relativePath) => relativePath !== requestSnapshotPath)
+    [...manifestedPaths].filter((relativePath) => !requestReadPaths.has(relativePath))
   );
   const transcriptPath = resolveWithin(
     input.root,
@@ -857,7 +1416,7 @@ function assertCliTransportArtifacts(input: {
   );
   const toolSummary = assertTranscriptToolCalls(
     transcriptEvents,
-    snapshotRoot,
+    executionRoot,
     manifestedPaths
   );
   assertTranscriptResult({
@@ -865,11 +1424,18 @@ function assertCliTransportArtifacts(input: {
     normalized: input.normalized,
     runtimeBinding: input.runtimeBinding,
     evidence,
-    snapshotRoot,
+    snapshotRoot: executionRoot,
     expectedExecutorKind: input.expectedExecutorKind,
     requiredReadPaths,
     toolSummary,
   });
+  if (input.expectedExecutorKind === 'native_spawn') {
+    assertTranscriptReadContentBindings({
+      snapshotRoot,
+      requiredReadPaths,
+      toolSummary,
+    });
+  }
   return evidence;
 }
 
@@ -905,6 +1471,128 @@ function judgeAssessment(normalized: JsonRecord): JsonRecord {
   return assessment;
 }
 
+function assertAssessmentAuthorityBindings(
+  request: JsonRecord,
+  assessment: JsonRecord
+): void {
+  const projectionSummary = record(
+    request.packetProjectionSummary,
+    'critical_auditor_judge_packet_projection_summary_invalid'
+  );
+  const allowedProjectionRefs = new Set(
+    requiredUniqueStrings(
+      projectionSummary.projectionRefs,
+      'critical_auditor_judge_projection_refs_invalid'
+    )
+  );
+  const reviewedProjectionRefs = requiredUniqueStrings(
+    assessment.reviewedProjectionRefs,
+    'critical_auditor_judge_reviewed_projection_refs_invalid'
+  );
+  for (const projectionRef of reviewedProjectionRefs) {
+    if (!allowedProjectionRefs.has(projectionRef)) {
+      throw new Error('critical_auditor_judge_reviewed_projection_ref_unknown');
+    }
+  }
+}
+
+const AUDIT_REVIEW_DRIFT_SIGNAL_IDS = [
+  'smoke_task_chain',
+  'closure_task_id',
+  'journey_unlock',
+  'gap_split_contract',
+  'shared_path_reference',
+] as const;
+
+function auditReviewGradeForScore(score: number): string {
+  if (score >= 90) return 'A';
+  if (score >= 80) return 'B';
+  if (score >= 60) return 'C';
+  return 'D';
+}
+
+function assertAuditReviewScoringContractBinding(
+  request: JsonRecord,
+  assessment: JsonRecord
+): void {
+  const contractValue = request.auditReviewScoringContract;
+  const scoringValue = assessment.auditReviewScoring;
+  const hasContract =
+    Boolean(contractValue) && typeof contractValue === 'object' && !Array.isArray(contractValue);
+  const hasScoring =
+    Boolean(scoringValue) && typeof scoringValue === 'object' && !Array.isArray(scoringValue);
+  if (hasContract !== hasScoring) {
+    throw new Error('critical_auditor_judge_audit_review_scoring_presence_mismatch');
+  }
+  if (!hasContract) return;
+  const contract = contractValue as JsonRecord;
+  const scoring = scoringValue as JsonRecord;
+  const expectedDimensions = Array.isArray(contract.expectedDimensions)
+    ? contract.expectedDimensions.map(text)
+    : [];
+  const scoringExpectedDimensions = Array.isArray(scoring.expectedDimensions)
+    ? scoring.expectedDimensions.map(text)
+    : [];
+  const dimensions = Array.isArray(scoring.dimensionScores)
+    ? scoring.dimensionScores.map((row) =>
+        record(row, 'critical_auditor_judge_audit_review_dimension_score_invalid')
+      )
+    : [];
+  const dimensionIds = dimensions.map((row) => text(row.dimension));
+  const phaseScore = Number(scoring.phaseScore);
+  if (
+    text(contract.schemaVersion) !== 'audit-review-scoring-contract/v1' ||
+    text(scoring.dimensionContractId) !== text(contract.dimensionContractId) ||
+    text(scoring.dimensionMode) !== text(contract.dimensionMode) ||
+    expectedDimensions.length === 0 ||
+    stableStringify(scoringExpectedDimensions) !== stableStringify(expectedDimensions) ||
+    dimensionIds.length !== expectedDimensions.length ||
+    new Set(dimensionIds).size !== dimensionIds.length ||
+    expectedDimensions.some((dimension) => !dimensionIds.includes(dimension)) ||
+    dimensions.some(
+      (row) =>
+        !Number.isFinite(Number(row.score)) ||
+        Number(row.score) < 0 ||
+        Number(row.score) > 100 ||
+        !text(row.rationale)
+    ) ||
+    !Number.isFinite(phaseScore) ||
+    phaseScore < 0 ||
+    phaseScore > 100 ||
+    text(scoring.overallGrade) !== auditReviewGradeForScore(phaseScore)
+  ) {
+    throw new Error('critical_auditor_judge_audit_review_scoring_contract_mismatch');
+  }
+  const signals = Array.isArray(scoring.structuredDriftSignals)
+    ? scoring.structuredDriftSignals.map((row) =>
+        record(row, 'critical_auditor_judge_audit_review_drift_signal_invalid')
+      )
+    : [];
+  const signalIds = signals.map((row) => text(row.signal));
+  if (
+    signalIds.length !== AUDIT_REVIEW_DRIFT_SIGNAL_IDS.length ||
+    new Set(signalIds).size !== signalIds.length ||
+    AUDIT_REVIEW_DRIFT_SIGNAL_IDS.some((signalId) => !signalIds.includes(signalId)) ||
+    signals.some(
+      (row) => typeof row.triggered !== 'boolean' || !text(row.evidence)
+    )
+  ) {
+    throw new Error('critical_auditor_judge_audit_review_drift_signal_invalid');
+  }
+  const verdict = text(assessment.verdict);
+  const convergent =
+    verdict === 'no_new_valid_gap' || verdict === 'no_new_confirmation_blocking_gap';
+  if (
+    convergent &&
+    (phaseScore < Number(contract.minimumPhaseScore) ||
+      scoring.vetoTriggered !== false ||
+      text(scoring.effectiveVerdict) !== 'approved' ||
+      signals.some((row) => row.triggered === true))
+  ) {
+    throw new Error('critical_auditor_judge_audit_review_scoring_not_approved');
+  }
+}
+
 function responseFrom(input: {
   request: JsonRecord;
   round: number;
@@ -918,8 +1606,12 @@ function responseFrom(input: {
     gateDryRun.reconciliation,
     'critical_auditor_judge_request_reconciliation_missing'
   );
+  assertAuditReviewScoringContractBinding(input.request, input.assessment);
   const semanticAssessment = Object.fromEntries(
-    ASSESSMENT_FIELDS.map((field) => [field, input.assessment[field]])
+    ASSESSMENT_FIELDS.filter((field) => input.assessment[field] !== undefined).map((field) => [
+      field,
+      input.assessment[field],
+    ])
   );
   return {
     schemaVersion: 'critical-auditor-round-response/v1',
@@ -944,7 +1636,9 @@ interface JudgeInvocationPaths {
   resultPath: string;
   receiptPath: string;
   statePath: string;
+  commitPath: string;
   lockPath: string;
+  lockOwnerPath: string;
 }
 
 function judgeInvocationPaths(input: {
@@ -970,12 +1664,15 @@ function judgeInvocationPaths(input: {
   if (fs.existsSync(outputDir) && !fs.statSync(outputDir).isDirectory()) {
     throw new Error('critical_auditor_judge_adapter_output_dir_invalid');
   }
+  const lockPath = path.join(outputDir, 'judge-provider-invocation.lock');
   return {
     outputDir,
     resultPath: path.join(outputDir, 'judge-provider-result.json'),
     receiptPath: path.join(outputDir, 'judge-provider-invocation-receipt.json'),
     statePath: path.join(outputDir, 'judge-provider-invocation-state.json'),
-    lockPath: path.join(outputDir, 'judge-provider-invocation.lock'),
+    commitPath: path.join(outputDir, 'judge-provider-invocation-commit.json'),
+    lockPath,
+    lockOwnerPath: path.join(lockPath, 'owner.json'),
   };
 }
 
@@ -993,7 +1690,15 @@ function invocationBinding(input: {
     semanticModelHash: text(input.request.semanticModelHash),
     projectionSetHash: text(input.request.projectionSetHash),
     providerBinding: Object.fromEntries(
-      PROVIDER_BINDING_FIELDS.map((field) => [field, text(input.runtimeBinding[field])])
+      PROVIDER_BINDING_FIELDS.map((field) => [
+        field,
+        field === 'model'
+          ? requiredConfiguredModel(
+              input.runtimeBinding[field],
+              'critical_auditor_judge_runtime_model_invalid'
+            )
+          : text(input.runtimeBinding[field]),
+      ])
     ),
   };
 }
@@ -1005,14 +1710,20 @@ function adapterResultFrom(input: {
   round: number;
 }): JsonRecord {
   const assessment = judgeAssessment(input.normalized);
+  assertAssessmentAuthorityBindings(input.request, assessment);
   const result = {
     schemaVersion: 'critical-auditor-external-adapter-result/v1',
     providerRun: {
       providerId: text(input.runtimeBinding.providerId),
-      model: text(input.runtimeBinding.model),
+      requestedModel: requiredConfiguredModel(
+        input.runtimeBinding.model,
+        'critical_auditor_judge_runtime_model_invalid'
+      ),
+      model: text(input.normalized.returnedModel),
       transport: text(input.runtimeBinding.transport),
       apiStyle: text(input.runtimeBinding.apiStyle),
       configuredBaseUrlHash: text(input.runtimeBinding.configuredBaseUrlHash),
+      credentialRevision: Number(input.runtimeBinding.credentialRevision),
       independenceClass: text(input.runtimeBinding.independenceClass),
       providerRegistryHash: text(input.runtimeBinding.providerRegistryHash),
       providerConfigurationHash: text(input.runtimeBinding.providerConfigurationHash),
@@ -1049,7 +1760,8 @@ export interface ReconciledCriticalAuditorJudgeInvocation {
 }
 
 interface RetryableFailedJudgeInvocation {
-  archivePath: string;
+  archiveDir: string;
+  invocationId: string;
   stateContentHash: string;
 }
 
@@ -1057,13 +1769,7 @@ function readRetryableFailedJudgeInvocation(input: {
   paths: JudgeInvocationPaths;
   binding: JsonRecord;
 }): RetryableFailedJudgeInvocation | null {
-  if (
-    !fs.existsSync(input.paths.statePath) ||
-    fs.existsSync(input.paths.resultPath) ||
-    fs.existsSync(input.paths.receiptPath)
-  ) {
-    return null;
-  }
+  if (!fs.existsSync(input.paths.statePath)) return null;
   const state = readJsonObject(
     input.paths.statePath,
     'critical_auditor_judge_invocation_state_invalid'
@@ -1077,6 +1783,7 @@ function readRetryableFailedJudgeInvocation(input: {
   if (
     text(state.schemaVersion) !== 'critical-auditor-judge-invocation-state/v1' ||
     text(state.status) !== 'failed' ||
+    text(state.generationId) !== invocationId ||
     text(state.invocationBindingHash) !== sha256Json(input.binding)
   ) {
     return null;
@@ -1098,18 +1805,30 @@ function readRetryableFailedJudgeInvocation(input: {
     completedAtTime < startedAtTime ||
     typeof state.failureCode !== 'string' ||
     state.failureCode.length === 0 ||
-    state.resultContentHash !== null ||
-    state.receiptHash !== null ||
-    state.receiptContentHash !== null ||
     !UUID_V4_PATTERN.test(invocationId)
   ) {
     throw new Error('critical_auditor_judge_invocation_failed_state_binding_mismatch');
   }
+  for (const [filePath, expectedHash] of [
+    [input.paths.resultPath, state.resultContentHash],
+    [input.paths.receiptPath, state.receiptContentHash],
+  ] as const) {
+    const present = fs.existsSync(filePath);
+    const expected = text(expectedHash);
+    if (
+      (present && (!HASH_PATTERN.test(expected) || sha256File(filePath) !== expected)) ||
+      (!present && expectedHash !== null)
+    ) {
+      throw new Error('critical_auditor_judge_invocation_failed_state_binding_mismatch');
+    }
+  }
   return {
-    archivePath: path.join(
+    archiveDir: path.join(
       input.paths.outputDir,
-      `judge-provider-invocation-state.failed.${invocationId}.json`
+      'failed-generations',
+      invocationId
     ),
+    invocationId,
     stateContentHash: sha256File(input.paths.statePath),
   };
 }
@@ -1121,10 +1840,109 @@ function preserveRetryableFailedJudgeInvocation(input: {
   if (sha256File(input.paths.statePath) !== input.failed.stateContentHash) {
     throw new Error('critical_auditor_judge_invocation_state_changed');
   }
-  if (fs.existsSync(input.failed.archivePath)) {
+  if (fs.existsSync(input.failed.archiveDir)) {
     throw new Error('critical_auditor_judge_invocation_failure_archive_exists');
   }
-  fs.renameSync(input.paths.statePath, input.failed.archivePath);
+  fs.mkdirSync(input.failed.archiveDir, { recursive: true });
+  for (const filePath of [
+    input.paths.statePath,
+    input.paths.resultPath,
+    input.paths.receiptPath,
+    input.paths.commitPath,
+  ]) {
+    if (!fs.existsSync(filePath)) continue;
+    fs.renameSync(filePath, path.join(input.failed.archiveDir, path.basename(filePath)));
+  }
+}
+
+function writeJudgeInvocationLockOwner(input: {
+  paths: JudgeInvocationPaths;
+  invocationId: string;
+  invocationBindingHash: string;
+  startedAt: string;
+}): JsonRecord {
+  const owner = withSelfHash(
+    {
+      schemaVersion: 'critical-auditor-judge-invocation-lock-owner/v1',
+      invocationId: input.invocationId,
+      generationId: input.invocationId,
+      invocationBindingHash: input.invocationBindingHash,
+      ownerProcessId: process.pid,
+      startedAt: input.startedAt,
+    },
+    'ownerHash'
+  );
+  writeJsonAtomic(input.paths.lockOwnerPath, owner);
+  return owner;
+}
+
+function readJudgeInvocationLockOwner(paths: JudgeInvocationPaths): JsonRecord {
+  const owner = readJsonObject(
+    paths.lockOwnerPath,
+    'critical_auditor_judge_invocation_lock_owner_missing'
+  );
+  assertSelfHash(
+    owner,
+    'ownerHash',
+    'critical_auditor_judge_invocation_lock_owner_hash_mismatch'
+  );
+  return owner;
+}
+
+function processIsAlive(processId: number): boolean {
+  if (!Number.isSafeInteger(processId) || processId <= 0) return false;
+  try {
+    process.kill(processId, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+function assertJudgeInvocationLockOwnership(input: {
+  paths: JudgeInvocationPaths;
+  invocationId: string;
+  invocationBindingHash: string;
+  ownerHash: string;
+  preparedStateHash?: string;
+}): JsonRecord {
+  if (!fs.existsSync(input.paths.lockPath)) {
+    throw new Error('critical_auditor_judge_invocation_fence_lost');
+  }
+  const owner = readJudgeInvocationLockOwner(input.paths);
+  if (
+    text(owner.schemaVersion) !== 'critical-auditor-judge-invocation-lock-owner/v1' ||
+    text(owner.invocationId) !== input.invocationId ||
+    text(owner.generationId) !== input.invocationId ||
+    text(owner.invocationBindingHash) !== input.invocationBindingHash ||
+    text(owner.ownerHash) !== input.ownerHash
+  ) {
+    throw new Error('critical_auditor_judge_invocation_fence_lost');
+  }
+  if (
+    input.preparedStateHash &&
+    (!fs.existsSync(input.paths.statePath) ||
+      sha256File(input.paths.statePath) !== input.preparedStateHash)
+  ) {
+    throw new Error('critical_auditor_judge_invocation_prepared_state_changed');
+  }
+  return owner;
+}
+
+function releaseJudgeInvocationLock(
+  paths: JudgeInvocationPaths,
+  invocationId: string,
+  expectedOwnerHash?: string
+): void {
+  if (!fs.existsSync(paths.lockPath)) return;
+  const owner = readJudgeInvocationLockOwner(paths);
+  if (
+    text(owner.invocationId) !== invocationId ||
+    (expectedOwnerHash && text(owner.ownerHash) !== expectedOwnerHash)
+  ) {
+    throw new Error('critical_auditor_judge_invocation_lock_owner_changed');
+  }
+  fs.rmSync(paths.lockPath, { recursive: true, force: true });
 }
 
 function readCommittedJudgeInvocation(input: {
@@ -1138,11 +1956,15 @@ function readCommittedJudgeInvocation(input: {
   expectedExecutorKind: ClaudeCodeCliExecutorKind;
   round: number;
 }): CommittedCriticalAuditorJudgeInvocation | null {
-  const present = [input.paths.statePath, input.paths.resultPath, input.paths.receiptPath].filter(
-    (filePath) => fs.existsSync(filePath)
-  );
+  const committedPaths = [
+    input.paths.statePath,
+    input.paths.resultPath,
+    input.paths.receiptPath,
+    input.paths.commitPath,
+  ];
+  const present = committedPaths.filter((filePath) => fs.existsSync(filePath));
   if (present.length === 0) return null;
-  if (present.length !== 3) {
+  if (present.length !== committedPaths.length) {
     throw new Error('critical_auditor_judge_invocation_incomplete');
   }
   const state = readJsonObject(
@@ -1169,6 +1991,7 @@ function readCommittedJudgeInvocation(input: {
   const stateCompletedAtTime = Date.parse(stateCompletedAt);
   if (
     !UUID_V4_PATTERN.test(invocationId) ||
+    text(state.generationId) !== invocationId ||
     state.roundIndex !== input.round ||
     text(state.requestHash) !== text(input.request.requestHash) ||
     text(state.sourceDocumentHash) !== text(input.request.sourceDocumentHash) ||
@@ -1192,6 +2015,7 @@ function readCommittedJudgeInvocation(input: {
   );
   if (
     text(persisted.schemaVersion) !== 'critical-auditor-judge-provider-result/v1' ||
+    text(persisted.generationId) !== invocationId ||
     text(persisted.invocationBindingHash) !== bindingHash ||
     sha256File(input.paths.resultPath) !== text(state.resultContentHash)
   ) {
@@ -1229,7 +2053,7 @@ function readCommittedJudgeInvocation(input: {
     input.paths.receiptPath,
     'critical_auditor_judge_invocation_receipt_invalid'
   );
-  assertSelfHash(
+  assertCanonicalSelfHash(
     receipt,
     'receiptHash',
     'critical_auditor_judge_invocation_receipt_hash_mismatch'
@@ -1240,12 +2064,27 @@ function readCommittedJudgeInvocation(input: {
     receipt.transportEvidence,
     'critical_auditor_judge_invocation_receipt_transport_evidence_invalid'
   );
-  const providerBindingMismatch = PROVIDER_BINDING_FIELDS.some(
-    (field) => text(receipt[field]) !== text(providerRun[field])
-  );
+  const providerBindingMismatch = PROVIDER_RUN_FIELDS.some((field) => {
+    if (field === 'requestedModel') {
+      return (
+        !Object.hasOwn(receipt, field) ||
+        !Object.hasOwn(providerRun, field) ||
+        requiredConfiguredModel(
+          receipt[field],
+          'critical_auditor_judge_invocation_receipt_requested_model_invalid'
+        ) !==
+          requiredConfiguredModel(
+            providerRun[field],
+            'critical_auditor_judge_provider_run_requested_model_invalid'
+          )
+      );
+    }
+    return text(receipt[field]) !== text(providerRun[field]);
+  });
   if (
     text(receipt.schemaVersion) !== 'critical-auditor-judge-invocation-receipt/v1' ||
     text(receipt.invocationId) !== invocationId ||
+    text(receipt.generationId) !== invocationId ||
     text(receipt.invocationBindingHash) !== bindingHash ||
     Number(receipt.roundIndex) !== input.round ||
     text(receipt.requestHash) !== text(input.request.requestHash) ||
@@ -1253,6 +2092,7 @@ function readCommittedJudgeInvocation(input: {
     text(receipt.semanticModelHash) !== text(input.request.semanticModelHash) ||
     text(receipt.projectionSetHash) !== text(input.request.projectionSetHash) ||
     providerBindingMismatch ||
+    Number(receipt.credentialRevision) !== Number(providerRun.credentialRevision) ||
     text(receipt.providerRunId) !== text(providerRun.providerRunId) ||
     text(receipt.responseHash) !== sha256Json(response) ||
     text(receipt.providerRequestHash) !== text(normalized.requestHash) ||
@@ -1267,6 +2107,27 @@ function readCommittedJudgeInvocation(input: {
     text(state.receiptHash) !== text(receipt.receiptHash)
   ) {
     throw new Error('critical_auditor_judge_invocation_receipt_binding_mismatch');
+  }
+  const commit = readJsonObject(
+    input.paths.commitPath,
+    'critical_auditor_judge_invocation_commit_invalid'
+  );
+  assertCanonicalSelfHash(
+    commit,
+    'commitHash',
+    'critical_auditor_judge_invocation_commit_hash_mismatch'
+  );
+  if (
+    text(commit.schemaVersion) !== 'critical-auditor-judge-invocation-commit/v1' ||
+    text(commit.invocationId) !== invocationId ||
+    text(commit.generationId) !== invocationId ||
+    text(commit.invocationBindingHash) !== bindingHash ||
+    text(commit.stateContentHash) !== sha256File(input.paths.statePath) ||
+    text(commit.resultContentHash) !== sha256File(input.paths.resultPath) ||
+    text(commit.receiptContentHash) !== sha256File(input.paths.receiptPath) ||
+    text(commit.receiptHash) !== text(receipt.receiptHash)
+  ) {
+    throw new Error('critical_auditor_judge_invocation_commit_binding_mismatch');
   }
   return {
     result,
@@ -1297,7 +2158,8 @@ export function readCommittedRequirementsContractCriticalAuditorJudgeInvocation(
   assertRequestBinding(request, runtimeBinding);
   const expectedArgv = expectedClaudeCodeCliArgv(
     readJudgeRuntimeConfig(root, input.config),
-    runtimeBinding
+    runtimeBinding,
+    request
   );
   const paths = judgeInvocationPaths({
     root,
@@ -1346,27 +2208,59 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
   if (!fs.existsSync(paths.lockPath)) {
     return { decision: 'not_locked' };
   }
-  if (!fs.existsSync(paths.statePath)) {
-    throw new Error('critical_auditor_judge_abandoned_lock_state_missing');
-  }
-  if (fs.existsSync(paths.resultPath) || fs.existsSync(paths.receiptPath)) {
-    throw new Error('critical_auditor_judge_abandoned_lock_artifacts_present');
-  }
   const binding = invocationBinding({
     request,
     runtimeBinding,
     round: input.round,
   });
+  const bindingHash = sha256Json(binding);
+  const staleAfterMs = Number(input.staleAfterMs);
+  if (!Number.isFinite(staleAfterMs) || staleAfterMs < 0) {
+    throw new Error('critical_auditor_judge_abandoned_lock_timeout_invalid');
+  }
+  const failureCode = text(input.failureCode);
+  if (!failureCode || failureCode.includes(':')) {
+    throw new Error('critical_auditor_judge_abandoned_lock_failure_code_invalid');
+  }
+  const owner = readJudgeInvocationLockOwner(paths);
+  const ownerHash = text(owner.ownerHash);
+  const ownerInvocationId = text(owner.invocationId);
+  const ownerStartedAt = text(owner.startedAt);
+  const ownerStartedAtTime = Date.parse(ownerStartedAt);
+  if (
+    text(owner.schemaVersion) !== 'critical-auditor-judge-invocation-lock-owner/v1' ||
+    text(owner.generationId) !== ownerInvocationId ||
+    text(owner.invocationBindingHash) !== bindingHash ||
+    !UUID_V4_PATTERN.test(ownerInvocationId) ||
+    !HASH_PATTERN.test(ownerHash) ||
+    !Number.isFinite(ownerStartedAtTime) ||
+    new Date(ownerStartedAtTime).toISOString() !== ownerStartedAt
+  ) {
+    throw new Error('critical_auditor_judge_invocation_lock_owner_mismatch');
+  }
+  const ownerAlive = processIsAlive(Number(owner.ownerProcessId));
+  if (!fs.existsSync(paths.statePath)) {
+    if (ownerAlive || Date.now() - ownerStartedAtTime < staleAfterMs) {
+      return {
+        decision: 'active',
+        invocationId: ownerInvocationId,
+      };
+    }
+    releaseJudgeInvocationLock(paths, ownerInvocationId, ownerHash);
+    return {
+      decision: 'recovered',
+      invocationId: ownerInvocationId,
+    };
+  }
   const retryableFailed = readRetryableFailedJudgeInvocation({ paths, binding });
   if (retryableFailed) {
-    const failedState = readJsonObject(
-      paths.statePath,
-      'critical_auditor_judge_invocation_state_invalid'
-    );
-    fs.rmSync(paths.lockPath, { recursive: true, force: true });
+    if (ownerInvocationId !== retryableFailed.invocationId) {
+      throw new Error('critical_auditor_judge_invocation_lock_owner_mismatch');
+    }
+    releaseJudgeInvocationLock(paths, retryableFailed.invocationId, ownerHash);
     return {
       decision: 'failed_lock_released',
-      invocationId: text(failedState.invocationId),
+      invocationId: retryableFailed.invocationId,
     };
   }
   const state = readJsonObject(
@@ -1382,9 +2276,92 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
   const startedAt = text(state.startedAt);
   const startedAtTime = Date.parse(startedAt);
   if (
+    ownerInvocationId !== invocationId ||
+    ownerStartedAt !== startedAt ||
+    text(owner.generationId) !== invocationId ||
+    text(owner.invocationBindingHash) !== bindingHash
+  ) {
+    throw new Error('critical_auditor_judge_invocation_lock_owner_mismatch');
+  }
+  if (ownerAlive) {
+    return {
+      decision: 'active',
+      invocationId,
+    };
+  }
+  if (Date.now() - startedAtTime < staleAfterMs) {
+    return {
+      decision: 'active',
+      invocationId,
+    };
+  }
+  if (text(state.status) === 'committed') {
+    const receipt = readJsonObject(
+      paths.receiptPath,
+      'critical_auditor_judge_invocation_receipt_invalid'
+    );
+    if (
+      text(state.schemaVersion) !== 'critical-auditor-judge-invocation-state/v1' ||
+      text(state.generationId) !== invocationId ||
+      text(state.invocationBindingHash) !== bindingHash ||
+      state.roundIndex !== input.round ||
+      text(state.requestHash) !== text(request.requestHash) ||
+      text(state.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+      text(state.semanticModelHash) !== text(request.semanticModelHash) ||
+      text(state.projectionSetHash) !== text(request.projectionSetHash) ||
+      !fs.existsSync(paths.resultPath) ||
+      text(state.resultContentHash) !== sha256File(paths.resultPath) ||
+      text(state.receiptContentHash) !== sha256File(paths.receiptPath) ||
+      text(state.receiptHash) !== text(receipt.receiptHash)
+    ) {
+      throw new Error('critical_auditor_judge_invocation_committed_state_binding_mismatch');
+    }
+    if (!fs.existsSync(paths.commitPath)) {
+      writeJsonAtomic(
+        paths.commitPath,
+        withCanonicalSelfHash(
+          {
+            schemaVersion: 'critical-auditor-judge-invocation-commit/v1',
+            invocationId,
+            generationId: invocationId,
+            invocationBindingHash: bindingHash,
+            stateContentHash: sha256File(paths.statePath),
+            resultContentHash: sha256File(paths.resultPath),
+            receiptContentHash: sha256File(paths.receiptPath),
+            receiptHash: text(receipt.receiptHash),
+            committedAt: text(state.completedAt),
+          },
+          'commitHash'
+        )
+      );
+    }
+    const expectedArgv = expectedClaudeCodeCliArgv(
+      readJudgeRuntimeConfig(root),
+      runtimeBinding,
+      request
+    );
+    readCommittedJudgeInvocation({
+      root,
+      requestPath,
+      paths,
+      binding,
+      request,
+      runtimeBinding,
+      expectedArgv,
+      expectedExecutorKind: 'native_spawn',
+      round: input.round,
+    });
+    releaseJudgeInvocationLock(paths, invocationId, ownerHash);
+    return {
+      decision: 'recovered',
+      invocationId,
+    };
+  }
+  if (
     text(state.schemaVersion) !== 'critical-auditor-judge-invocation-state/v1' ||
     text(state.status) !== 'prepared' ||
-    text(state.invocationBindingHash) !== sha256Json(binding) ||
+    text(state.invocationBindingHash) !== bindingHash ||
+    text(state.generationId) !== invocationId ||
     state.roundIndex !== input.round ||
     text(state.requestHash) !== text(request.requestHash) ||
     text(state.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
@@ -1401,24 +2378,28 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
   ) {
     throw new Error('critical_auditor_judge_prepared_state_binding_mismatch');
   }
-  const staleAfterMs = Number(input.staleAfterMs);
-  if (!Number.isFinite(staleAfterMs) || staleAfterMs < 0) {
-    throw new Error('critical_auditor_judge_abandoned_lock_timeout_invalid');
-  }
-  if (Date.now() - startedAtTime < staleAfterMs) {
-    return {
-      decision: 'active',
-      invocationId,
-    };
-  }
-  const failureCode = text(input.failureCode);
-  if (!failureCode || failureCode.includes(':')) {
-    throw new Error('critical_auditor_judge_abandoned_lock_failure_code_invalid');
-  }
   const stateContentHash = sha256File(paths.statePath);
-  if (!fs.existsSync(paths.lockPath) || sha256File(paths.statePath) !== stateContentHash) {
+  if (
+    !fs.existsSync(paths.lockPath) ||
+    sha256File(paths.statePath) !== stateContentHash ||
+    text(readJudgeInvocationLockOwner(paths).ownerHash) !== ownerHash
+  ) {
     throw new Error('critical_auditor_judge_invocation_state_changed');
   }
+  const resultContentHash = fs.existsSync(paths.resultPath)
+    ? sha256File(paths.resultPath)
+    : null;
+  const receiptContentHash = fs.existsSync(paths.receiptPath)
+    ? sha256File(paths.receiptPath)
+    : null;
+  const receiptHash = fs.existsSync(paths.receiptPath)
+    ? text(
+        readJsonObject(
+          paths.receiptPath,
+          'critical_auditor_judge_invocation_receipt_invalid'
+        ).receiptHash
+      )
+    : null;
   const stateWithoutHash = { ...state };
   delete stateWithoutHash.stateHash;
   writeJsonAtomic(
@@ -1428,15 +2409,15 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
         ...stateWithoutHash,
         status: 'failed',
         completedAt: new Date().toISOString(),
-        resultContentHash: null,
-        receiptHash: null,
-        receiptContentHash: null,
+        resultContentHash,
+        receiptHash,
+        receiptContentHash,
         failureCode,
       },
       'stateHash'
     )
   );
-  fs.rmSync(paths.lockPath, { recursive: true, force: true });
+  releaseJudgeInvocationLock(paths, invocationId, ownerHash);
   return {
     decision: 'recovered',
     invocationId,
@@ -1484,8 +2465,41 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
       `critical_auditor_judge_adapter_runtime_binding_invalid:${bindingResult.issueCodes.join(',')}`
     );
   }
-  const runtimeBinding = bindingResult.binding as unknown as JsonRecord;
-  const expectedArgv = expectedClaudeCodeCliArgv(judgeRuntime, runtimeBinding);
+  const provider = record(
+    judgeInvocation.provider,
+    'critical_auditor_judge_adapter_provider_missing'
+  );
+  const authentication = record(
+    provider.authentication,
+    'critical_auditor_judge_adapter_authentication_missing'
+  );
+  const credentialEnvironmentVariable =
+    authentication.type === 'claude_code_session'
+      ? null
+      : authentication.type === 'bearer'
+        ? 'ANTHROPIC_AUTH_TOKEN'
+        : authentication.type === 'api_key'
+          ? 'ANTHROPIC_API_KEY'
+          : '';
+  const credentialRevision = Number(judgeInvocation.credentialRevision);
+  const runtimeBinding: CriticalAuditorJudgeRuntimeBinding & {
+    credentialRevision: number;
+    credentialEnvironmentVariable: string | null;
+  } = {
+    ...bindingResult.binding,
+    credentialRevision,
+    credentialEnvironmentVariable,
+  };
+  if (
+    judgeInvocation.providerRef !== text(runtimeBinding.providerId) ||
+    judgeInvocation.providerRegistryHash !== text(runtimeBinding.providerRegistryHash) ||
+    sha256CanonicalJson(provider) !== text(runtimeBinding.providerConfigurationHash) ||
+    !Number.isInteger(credentialRevision) ||
+    credentialRevision < 1 ||
+    credentialEnvironmentVariable === ''
+  ) {
+    throw new Error('critical_auditor_judge_adapter_runtime_binding_invalid');
+  }
   const expectedExecutorKind: ClaudeCodeCliExecutorKind =
     options.executeClaudeCodeCliCommand
       ? 'injected_test_transport'
@@ -1496,14 +2510,17 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
   );
   assertRequestIdentity(request, round);
   assertRequestBinding(request, runtimeBinding);
+  const structuredOutputSchema = criticalAuditorTransportOutputSchema(request);
+  const expectedArgv = expectedClaudeCodeCliArgv(judgeRuntime, runtimeBinding, request);
   const paths = judgeInvocationPaths({
     root,
     requestPath,
     outputDir: options.outputDir,
   });
   const binding = invocationBinding({ request, runtimeBinding, round });
+  const invocationBindingHash = sha256Json(binding);
   if (
-    [paths.statePath, paths.resultPath, paths.receiptPath].every((filePath) =>
+    [paths.statePath, paths.resultPath, paths.receiptPath, paths.commitPath].every((filePath) =>
       fs.existsSync(filePath)
     )
   ) {
@@ -1520,7 +2537,7 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
         round,
       });
       if (committed) {
-        throw new Error('critical_auditor_judge_invocation_committed_replay_forbidden');
+        return committed.result;
       }
     } catch (error) {
       if (
@@ -1538,12 +2555,25 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
     paths.outputDir,
     'critical_auditor_judge_output_path_realpath_escape'
   );
+  const startedAt = new Date().toISOString();
+  const invocationId = crypto.randomUUID();
+  let lockCreated = false;
+  let lockOwnerHash = '';
   try {
     fs.mkdirSync(paths.lockPath);
+    lockCreated = true;
+    const lockOwner = writeJudgeInvocationLockOwner({
+      paths,
+      invocationId,
+      invocationBindingHash,
+      startedAt,
+    });
+    lockOwnerHash = text(lockOwner.ownerHash);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
       throw new Error('critical_auditor_judge_invocation_lock_held');
     }
+    if (lockCreated) fs.rmSync(paths.lockPath, { recursive: true, force: true });
     throw error;
   }
   try {
@@ -1567,18 +2597,16 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
     if (retryableFailed) {
       preserveRetryableFailedJudgeInvocation({ paths, failed: retryableFailed });
     }
-    const startedAt = new Date().toISOString();
-    const invocationId = crypto.randomUUID();
     const providerRunKey = invocationId.replace(/-/gu, '').slice(0, 16);
     const providerRunOutputDir = path.join(
       paths.outputDir,
       'r',
       providerRunKey
     );
-    const invocationBindingHash = sha256Json(binding);
     const baseState = {
       schemaVersion: 'critical-auditor-judge-invocation-state/v1',
       invocationId,
+      generationId: invocationId,
       invocationBindingHash,
       roundIndex: round,
       requestHash: text(request.requestHash),
@@ -1602,12 +2630,14 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
         'stateHash'
       )
     );
+    const preparedStateHash = sha256File(paths.statePath);
     let result: JsonRecord;
     try {
       const normalized = normalizedJudgeResponse(
         await judgeInvocation.invoke({
           systemPrompt: SYSTEM_PROMPT,
           request,
+          structuredOutputSchema,
           executionContext: {
             projectRoot: root,
             requestPath,
@@ -1618,6 +2648,13 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
         expectedArgv,
         expectedExecutorKind
       );
+      assertJudgeInvocationLockOwnership({
+        paths,
+        invocationId,
+        invocationBindingHash,
+        ownerHash: lockOwnerHash,
+        preparedStateHash,
+      });
       const transportEvidence = assertCliTransportArtifacts({
         root,
         requestPath,
@@ -1633,8 +2670,16 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
         normalized,
         round,
       });
+      assertJudgeInvocationLockOwnership({
+        paths,
+        invocationId,
+        invocationBindingHash,
+        ownerHash: lockOwnerHash,
+        preparedStateHash,
+      });
       writeJsonAtomic(paths.resultPath, {
         schemaVersion: 'critical-auditor-judge-provider-result/v1',
+        generationId: invocationId,
         invocationBindingHash,
         normalizedProviderResponse: normalized,
         adapterResult: result,
@@ -1645,10 +2690,11 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
       );
       const response = record(result.response, 'critical_auditor_judge_response_invalid');
       const completedAt = new Date().toISOString();
-      const receipt = withSelfHash(
+      const receipt = withCanonicalSelfHash(
         {
           schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
           invocationId,
+          generationId: invocationId,
           invocationBindingHash,
           roundIndex: round,
           requestHash: text(request.requestHash),
@@ -1656,10 +2702,15 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
           semanticModelHash: text(request.semanticModelHash),
           projectionSetHash: text(request.projectionSetHash),
           providerId: text(providerRun.providerId),
+          requestedModel: requiredConfiguredModel(
+            providerRun.requestedModel,
+            'critical_auditor_judge_provider_run_requested_model_invalid'
+          ),
           model: text(providerRun.model),
           transport: text(providerRun.transport),
           apiStyle: text(providerRun.apiStyle),
           configuredBaseUrlHash: text(providerRun.configuredBaseUrlHash),
+          credentialRevision: Number(providerRun.credentialRevision),
           independenceClass: text(providerRun.independenceClass),
           providerRegistryHash: text(providerRun.providerRegistryHash),
           providerConfigurationHash: text(providerRun.providerConfigurationHash),
@@ -1676,7 +2727,21 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
         },
         'receiptHash'
       );
+      assertJudgeInvocationLockOwnership({
+        paths,
+        invocationId,
+        invocationBindingHash,
+        ownerHash: lockOwnerHash,
+        preparedStateHash,
+      });
       writeJsonAtomic(paths.receiptPath, receipt);
+      assertJudgeInvocationLockOwnership({
+        paths,
+        invocationId,
+        invocationBindingHash,
+        ownerHash: lockOwnerHash,
+        preparedStateHash,
+      });
       writeJsonAtomic(
         paths.statePath,
         withSelfHash(
@@ -1692,41 +2757,155 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
           'stateHash'
         )
       );
-    } catch (error) {
-      writeJsonAtomic(
-        paths.statePath,
-        withSelfHash(
-          {
-            ...baseState,
-            status: 'failed',
-            completedAt: new Date().toISOString(),
-            resultContentHash: fs.existsSync(paths.resultPath)
-              ? sha256File(paths.resultPath)
-              : null,
-            receiptHash: fs.existsSync(paths.receiptPath)
-              ? text(
-                  readJsonObject(
-                    paths.receiptPath,
-                    'critical_auditor_judge_invocation_receipt_invalid'
-                  ).receiptHash
-                )
-              : null,
-            receiptContentHash: fs.existsSync(paths.receiptPath)
-              ? sha256File(paths.receiptPath)
-              : null,
-            failureCode:
-              error instanceof Error
-                ? error.message.split(':', 1)[0]
-                : 'critical_auditor_judge_invocation_failed',
-          },
-          'stateHash'
-        )
+      const committedStateHash = sha256File(paths.statePath);
+      assertJudgeInvocationLockOwnership({
+        paths,
+        invocationId,
+        invocationBindingHash,
+        ownerHash: lockOwnerHash,
+      });
+      const commit = withCanonicalSelfHash(
+        {
+          schemaVersion: 'critical-auditor-judge-invocation-commit/v1',
+          invocationId,
+          generationId: invocationId,
+          invocationBindingHash,
+          stateContentHash: committedStateHash,
+          resultContentHash: sha256File(paths.resultPath),
+          receiptContentHash: sha256File(paths.receiptPath),
+          receiptHash: text(receipt.receiptHash),
+          committedAt: completedAt,
+        },
+        'commitHash'
       );
+      writeJsonAtomic(paths.commitPath, commit);
+    } catch (error) {
+      const stillOwnsLock =
+        fs.existsSync(paths.lockPath) &&
+        (() => {
+          try {
+            const owner = readJudgeInvocationLockOwner(paths);
+            return (
+              text(owner.invocationId) === invocationId &&
+              text(owner.ownerHash) === lockOwnerHash
+            );
+          } catch {
+            return false;
+          }
+        })();
+      if (stillOwnsLock) {
+        fs.rmSync(paths.commitPath, { force: true });
+        writeJsonAtomic(
+          paths.statePath,
+          withSelfHash(
+            {
+              ...baseState,
+              status: 'failed',
+              completedAt: new Date().toISOString(),
+              resultContentHash: fs.existsSync(paths.resultPath)
+                ? sha256File(paths.resultPath)
+                : null,
+              receiptHash: fs.existsSync(paths.receiptPath)
+                ? text(
+                    readJsonObject(
+                      paths.receiptPath,
+                      'critical_auditor_judge_invocation_receipt_invalid'
+                    ).receiptHash
+                  )
+                : null,
+              receiptContentHash: fs.existsSync(paths.receiptPath)
+                ? sha256File(paths.receiptPath)
+                : null,
+              failureCode:
+                error instanceof Error
+                  ? error.message.split(':', 1)[0]
+                  : 'critical_auditor_judge_invocation_failed',
+            },
+            'stateHash'
+          )
+        );
+      }
       throw error;
     }
     if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
     return result;
   } finally {
-    fs.rmSync(paths.lockPath, { recursive: true, force: true });
+    if (lockCreated && fs.existsSync(paths.lockPath)) {
+      const owner = readJudgeInvocationLockOwner(paths);
+      if (
+        text(owner.invocationId) === invocationId &&
+        text(owner.ownerHash) === lockOwnerHash
+      ) {
+        releaseJudgeInvocationLock(paths, invocationId, lockOwnerHash);
+      }
+    }
   }
+}
+
+function parseDirectJudgeAdapterArgs(
+  argv: string[]
+): RequirementsContractCriticalAuditorJudgeAdapterOptions {
+  const values = new Map<string, string>();
+  let json = false;
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--json') {
+      json = true;
+      continue;
+    }
+    if (
+      ![
+        '--project-root',
+        '--config',
+        '--request',
+        '--round',
+        '--output-dir',
+      ].includes(arg)
+    ) {
+      throw new Error(`critical_auditor_judge_adapter_cli_argument_invalid:${arg}`);
+    }
+    const value = argv[index + 1];
+    if (!value || value.startsWith('--')) {
+      throw new Error(`critical_auditor_judge_adapter_cli_argument_missing:${arg}`);
+    }
+    values.set(arg, value);
+    index += 1;
+  }
+  const required = (flag: string): string => {
+    const value = values.get(flag);
+    if (!value) {
+      throw new Error(`critical_auditor_judge_adapter_cli_argument_missing:${flag}`);
+    }
+    return value;
+  };
+  const projectRoot = required('--project-root');
+  return {
+    cwd: projectRoot,
+    projectRoot,
+    config: required('--config'),
+    request: required('--request'),
+    round: Number(required('--round')),
+    outputDir: required('--output-dir'),
+    json,
+  };
+}
+
+export async function mainRequirementsContractCriticalAuditorJudgeAdapter(
+  argv: string[] = process.argv.slice(2)
+): Promise<number> {
+  try {
+    await requirementsContractCriticalAuditorJudgeAdapterCommand(
+      parseDirectJudgeAdapterArgs(argv)
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    return 1;
+  }
+}
+
+if (require.main === module) {
+  void mainRequirementsContractCriticalAuditorJudgeAdapter().then((exitCode) => {
+    process.exitCode = exitCode;
+  });
 }

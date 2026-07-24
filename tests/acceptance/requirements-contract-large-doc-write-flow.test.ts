@@ -106,6 +106,8 @@ function writeAuthoringPromotionGuard(
     targetPath: string;
     routeDecision?: string;
     includeCheckpointEvidence?: boolean;
+    checkpointEvidenceMode?: 'complete' | 'deferred-critical-auditor';
+    deferredCriticalAuditorBlockerCodes?: string[];
     sourceMutationFinalDecision?: string;
     encodingFindings?: any[];
     sourceDocumentHashBefore?: string;
@@ -230,7 +232,31 @@ function writeAuthoringPromotionGuard(
     paths.receiptOutPath,
   ];
   if (options.includeCheckpointEvidence) {
-    const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId) => {
+    const checkpointEvidenceMode = options.checkpointEvidenceMode ?? 'complete';
+    const deferredCriticalAuditor = checkpointEvidenceMode === 'deferred-critical-auditor';
+    const deferredCriticalAuditorBlockerCodes =
+      options.deferredCriticalAuditorBlockerCodes ?? [
+        'critical_auditor_receipt_missing',
+        'critical_auditor_checkpoint_outcome_required',
+      ];
+    const deferredCheckpointIndex = 2;
+    const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId, checkpointIndex) => {
+      const receiptPath = path.join(tempDir, `${name}-${checkpointId}-receipt.json`);
+      if (deferredCriticalAuditor && checkpointIndex > deferredCheckpointIndex) {
+        return {
+          checkpointId,
+          path: receiptPath.replace(/\\/g, '/'),
+          hash: null,
+          status: 'pending',
+          persistenceStatus: 'pending',
+          semanticValidationStatus: 'pending',
+        };
+      }
+      const deferredCheckpoint =
+        deferredCriticalAuditor && checkpointIndex === deferredCheckpointIndex;
+      const blockers = deferredCheckpoint
+        ? deferredCriticalAuditorBlockerCodes.map((code) => ({ code, refs: [] }))
+        : [];
       const receiptPayload = {
         schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
         checkpointId,
@@ -241,7 +267,7 @@ function writeAuthoringPromotionGuard(
         sourceDocumentHash: draftSemanticSourceHash,
         implementationConfirmationHash: draftImplementationHash,
         persistenceStatus: 'committed',
-        semanticValidationStatus: 'pass',
+        semanticValidationStatus: deferredCheckpoint ? 'block' : 'pass',
         validatedInputs: [
           {
             role: 'source_document',
@@ -249,35 +275,55 @@ function writeAuthoringPromotionGuard(
             hash: draftHash,
           },
         ],
-        blockers: [],
-        decision: 'pass',
+        blockers,
+        decision: deferredCheckpoint ? 'block' : 'pass',
         createdAt: '2026-06-02T00:00:00.000Z',
       };
-      const receiptPath = writeJson(`${name}-${checkpointId}-receipt.json`, {
-        ...receiptPayload,
-        receiptHash: sha256Json(receiptPayload),
-      });
+      fs.writeFileSync(
+        receiptPath,
+        `${JSON.stringify(
+          {
+            ...receiptPayload,
+            receiptHash: sha256Json(receiptPayload),
+          },
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
       return {
         checkpointId,
         path: receiptPath.replace(/\\/g, '/'),
         hash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
-        status: 'passed',
+        status: deferredCheckpoint ? 'blocked' : 'passed',
         persistenceStatus: 'committed',
-        semanticValidationStatus: 'pass',
+        semanticValidationStatus: deferredCheckpoint ? 'block' : 'pass',
       };
     });
     paths.checkpointPersistenceEvidencePath = writeJson(`${name}-checkpoint-persistence-evidence.json`, {
       ...checkpointIdentity,
-      checkpointPersistenceSatisfiedCandidate: true,
+      checkpointPersistenceSatisfiedCandidate: !deferredCriticalAuditor,
       checkpointPersistenceRef: {
         routeDecisionHash: `sha256:${'3'.repeat(64)}`,
         progressPath: path.join(tempDir, `${name}-semantic-checkpoint-progress.json`).replace(/\\/g, '/'),
         progressHash: `sha256:${'4'.repeat(64)}`,
         checkpointReceiptRefs,
-        completedCheckpointIds: REQUIRED_CHECKPOINT_IDS,
+        completedCheckpointIds: deferredCriticalAuditor
+          ? REQUIRED_CHECKPOINT_IDS.slice(0, deferredCheckpointIndex)
+          : REQUIRED_CHECKPOINT_IDS,
         preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
         preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
         packetSourceReconciliationHash: `sha256:${'7'.repeat(64)}`,
+        preRenderGatePolicy: deferredCriticalAuditor
+          ? {
+              mode: 'source_gap_fix_materialization',
+              structuralGateSatisfied: false,
+              auditorConvergenceDeferredToNextRound: true,
+              deferredCriticalAuditorBlockers: deferredCriticalAuditorBlockerCodes.map(
+                (code) => ({ code, refs: [] })
+              ),
+            }
+          : undefined,
       },
       progressHash: `sha256:${'4'.repeat(64)}`,
       preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
@@ -1272,6 +1318,64 @@ describe('requirements-contract large document write flow', () => {
       completedCheckpointCount: REQUIRED_CHECKPOINT_IDS.length,
     });
     expect(fs.readFileSync(target, 'utf8')).toContain('implementationConfirmation:');
+  });
+
+  it('allows deferred Critical Auditor checkpoints only for staging draft promotion', () => {
+    const stagingTarget = path.join(tempDir, 'staging-repair-target.md');
+    const stagingDraft = write('staging-repair-draft.md', draftWithStatus('draft'));
+    const stagingGuard = writeAuthoringPromotionGuard('staging-repair-deferred', {
+      draftPath: stagingDraft,
+      targetPath: stagingTarget,
+      routeDecision: 'checkpoint_required',
+      includeCheckpointEvidence: true,
+      checkpointEvidenceMode: 'deferred-critical-auditor',
+    });
+
+    const staged = runNode(PROMOTE, [
+      '--draft',
+      stagingDraft,
+      '--target',
+      stagingTarget,
+      '--promotion-stage',
+      'authoring-draft',
+      ...stagingGuard.args,
+      '--json',
+    ]);
+
+    expect(staged.result.status, staged.output).toBe(0);
+    expect(staged.json.authoringPromotionGate).toMatchObject({
+      required: true,
+      ok: true,
+    });
+    expect(fs.existsSync(stagingTarget)).toBe(true);
+
+    const finalTarget = path.join(tempDir, 'docs', 'plans', 'final-source-target.md');
+    const finalDraft = write('final-source-draft.md', draftWithStatus('user_confirmed'));
+    const finalGuard = writeAuthoringPromotionGuard('final-source-deferred', {
+      draftPath: finalDraft,
+      targetPath: finalTarget,
+      routeDecision: 'checkpoint_required',
+      includeCheckpointEvidence: true,
+      checkpointEvidenceMode: 'deferred-critical-auditor',
+    });
+
+    const blockedFinal = runNode(PROMOTE, [
+      '--draft',
+      finalDraft,
+      '--target',
+      finalTarget,
+      '--promotion-stage',
+      'confirmation-ready',
+      ...finalGuard.args,
+      '--json',
+    ]);
+
+    expect(blockedFinal.result.status).toBe(1);
+    expect(blockedFinal.json.failureClass).toBe('authoring_promotion_gate_failed');
+    expect(blockedFinal.json.authoringPromotionGate.errors).toContain(
+      'checkpoint_persistence_satisfied_candidate_required'
+    );
+    expect(fs.existsSync(finalTarget)).toBe(false);
   });
 
   it('blocks checkpoint persistence evidence when checkpoint receipts are bound to a stale semantic source hash', () => {

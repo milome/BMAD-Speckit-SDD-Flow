@@ -344,12 +344,24 @@ export function stagingTransactionDir(root: string, recordId: string): string {
     ? readdirSync(stagingRoot, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .map((entry) => path.join(stagingRoot, entry.name))
-        .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs)
     : [];
   if (entries.length === 0) {
     throw new Error(`expected at least one staging transaction under ${stagingRoot}, found 0`);
   }
-  return entries[0];
+  const committedNext = (transactionDir: string): string | null => {
+    for (const fileName of ['audit-source-transition.json', 'staging-repair-commit.json']) {
+      const commitPath = path.join(transactionDir, fileName);
+      if (!existsSync(commitPath)) continue;
+      const commit = readJson<Record<string, unknown>>(commitPath);
+      if (commit.status === 'committed' && typeof commit.nextTransactionId === 'string') {
+        return commit.nextTransactionId;
+      }
+    }
+    return null;
+  };
+  const leaves = entries.filter((transactionDir) => committedNext(transactionDir) === null);
+  const candidates = leaves.length > 0 ? leaves : entries;
+  return candidates.sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs)[0];
 }
 
 export function roundArtifact(
@@ -590,6 +602,7 @@ export function buildValidResponseFromRequest(
   }
   const evidenceWithoutRunHash = {
     ...binding,
+    requestedModel: binding.model,
     transactionId: request.transactionId,
     auditAttemptId: request.auditAttemptId,
     providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
@@ -615,6 +628,7 @@ export function withIndependentProviderEvidence<T extends Record<string, unknown
   const expectation = input.independentProviderExpectation;
   const evidenceWithoutRunHash = {
     ...expectation,
+    requestedModel: expectation.model,
     providerRunId: `critical-auditor-run/${input.roundIndex}/${expectation.requestHash.slice(-16)}`,
     responseHash: sha256Text(JSON.stringify(result)),
   };

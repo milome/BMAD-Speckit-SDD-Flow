@@ -632,6 +632,46 @@ describe('main-agent orchestration consumer', () => {
     }
   });
 
+  it('rejects direct Audit Judge result injection at the async entry before project inspection', async () => {
+    let projectRootRead = false;
+    const input = {
+      get projectRoot(): string {
+        projectRootRead = true;
+        throw new Error('project_root_should_not_be_read');
+      },
+      flow: 'standalone_tasks' as const,
+      stage: 'implement',
+      auditJudgeExecutor: (() => ({})) as AuditJudgeExecutor,
+    };
+
+    await expect(
+      runMainAgentAutomaticLoopAsync(
+        input as unknown as Parameters<typeof runMainAgentAutomaticLoopAsync>[0]
+      )
+    ).rejects.toThrow('audit_judge_result_injection_forbidden');
+    expect(projectRootRead).toBe(false);
+  });
+
+  it('rejects audit process command override at the async entry before project inspection', async () => {
+    let projectRootRead = false;
+    const input = {
+      get projectRoot(): string {
+        projectRootRead = true;
+        throw new Error('project_root_should_not_be_read');
+      },
+      flow: 'standalone_tasks' as const,
+      stage: 'implement',
+      args: {
+        auditJudgeAdapterCommand: JSON.stringify([process.execPath, '-e', 'process.exit(0)']),
+      },
+    };
+
+    await expect(runMainAgentAutomaticLoopAsync(input)).rejects.toThrow(
+      'audit_controlled_executor_command_override_forbidden'
+    );
+    expect(projectRootRead).toBe(false);
+  });
+
   it.each([
     'auditJudgeAdapterCommand',
     'auditReadonlyAuditorAdapterCommand',
@@ -1847,6 +1887,120 @@ describe('main-agent orchestration consumer', () => {
         ).toBe('readonly-auditor-js-entry-reached');
         expect(existsSync(path.join(roundDir, 'readonly-auditor-response.json'))).toBe(false);
         expect(existsSync(path.join(roundDir, 'judge-request.json'))).toBe(false);
+      } finally {
+        process.env.PATH = originalPath;
+        fixture.cleanup();
+      }
+    }
+  );
+
+  it.runIf(process.platform === 'win32')(
+    'emits a Codex-compatible readonly Auditor output schema',
+    async () => {
+      const fixture = materializePromptPublicationFixture();
+      const originalPath = process.env.PATH;
+      try {
+        fixture.options.currentDispatchPointer = path.join(
+          fixture.root,
+          'docs',
+          'plans',
+          'evidence',
+          'loop-engineering-remediation',
+          'current-dispatch-pointer-receipt.json'
+        );
+        setPromptPublicationReadiness(fixture, { decision: 'pass' });
+        prepareAuditDispatchRuntime(fixture);
+        const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+        const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+          extraPacket: {
+            packetId: fixture.identity.implementationAttemptId,
+          },
+        }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+        const publishCode = await requirementsContractPromptTransactionPublishCommand(
+          fixture.options,
+          { runCompiledPrompt }
+        ).finally(() => stdout.mockRestore());
+        expect(publishCode).toBe(0);
+
+        const fakeBin = path.join(fixture.root, 'readonly-auditor-schema-bin');
+        const codexEntry = path.join(
+          fakeBin,
+          'node_modules',
+          '@openai',
+          'codex',
+          'bin',
+          'codex.js'
+        );
+        mkdirSync(path.dirname(codexEntry), { recursive: true });
+        writeFileSync(path.join(fakeBin, 'codex.cmd'), '@exit /b 99\r\n', 'utf8');
+        writeFileSync(codexEntry, 'process.exit(17);\n', 'utf8');
+        process.env.PATH = `${fakeBin}${path.delimiter}${originalPath ?? ''}`;
+
+        const loop = runMainAgentAutomaticLoop({
+          projectRoot: fixture.root,
+          recordId: fixture.authority.recordId,
+          requirementSetId: fixture.identity.requirementSetId,
+          runId: fixture.identity.implementationAttemptId,
+          flow: 'standalone_tasks',
+          stage: 'implement',
+          host: 'codex',
+        });
+        const packet = loop.dispatchInstruction?.packet as ExecutionPacket;
+        const schemaPath = path.join(
+          path.dirname(packet.auditTriadExecutionPlanRef!.path),
+          'rounds',
+          'round-1',
+          'readonly-auditor-response.schema.json'
+        );
+        const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as Record<string, unknown>;
+        const untypedPropertyPaths: string[] = [];
+        const unsupportedKeywordPaths: string[] = [];
+        const nonStrictObjectPaths: string[] = [];
+        const unsupportedKeywords = new Set([
+          'minItems',
+          'maxItems',
+          'uniqueItems',
+          'contains',
+          'unevaluatedItems',
+        ]);
+        const inspectSchema = (node: unknown, nodePath: string): void => {
+          if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+          const record = node as Record<string, unknown>;
+          for (const keyword of Object.keys(record)) {
+            if (unsupportedKeywords.has(keyword)) {
+              unsupportedKeywordPaths.push(`${nodePath}.${keyword}`);
+            }
+          }
+          if (record.type === 'object' && record.additionalProperties !== false) {
+            nonStrictObjectPaths.push(nodePath);
+          }
+          if (record.properties && typeof record.properties === 'object') {
+            for (const [name, propertySchema] of Object.entries(
+              record.properties as Record<string, unknown>
+            )) {
+              if (
+                !propertySchema ||
+                typeof propertySchema !== 'object' ||
+                Array.isArray(propertySchema) ||
+                typeof (propertySchema as Record<string, unknown>).type !== 'string'
+              ) {
+                untypedPropertyPaths.push(`${nodePath}.properties.${name}`);
+              }
+              inspectSchema(propertySchema, `${nodePath}.properties.${name}`);
+            }
+          }
+          inspectSchema(record.items, `${nodePath}.items`);
+          for (const [index, variant] of (
+            Array.isArray(record.anyOf) ? record.anyOf : []
+          ).entries()) {
+            inspectSchema(variant, `${nodePath}.anyOf[${index}]`);
+          }
+        };
+        inspectSchema(schema, '$');
+
+        expect(untypedPropertyPaths).toEqual([]);
+        expect(unsupportedKeywordPaths).toEqual([]);
+        expect(nonStrictObjectPaths).toEqual([]);
       } finally {
         process.env.PATH = originalPath;
         fixture.cleanup();

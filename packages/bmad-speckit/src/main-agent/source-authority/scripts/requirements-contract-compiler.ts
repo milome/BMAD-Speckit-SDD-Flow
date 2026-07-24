@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {
@@ -275,7 +276,11 @@ export function writeRequirementContractModelArtifacts(input: {
   fs.mkdirSync(input.authoringDir, { recursive: true });
   const modelPath = path.join(input.authoringDir, 'requirement-contract-model.json');
   const reportPath = path.join(input.authoringDir, 'compiler-closure-report.json');
-  fs.writeFileSync(modelPath, `${JSON.stringify(input.model, null, 2)}\n`, 'utf8');
+  const modelBytes = `${JSON.stringify(input.model, null, 2)}\n`;
+  const requirementContractModelHash = `sha256:${createHash('sha256')
+    .update(modelBytes, 'utf8')
+    .digest('hex')}`;
+  fs.writeFileSync(modelPath, modelBytes, 'utf8');
   fs.writeFileSync(
     reportPath,
     `${JSON.stringify(
@@ -283,6 +288,7 @@ export function writeRequirementContractModelArtifacts(input: {
         schemaVersion: 'requirement-contract-compiler-closure-report/v1',
         recordId: input.model.recordId,
         requirementSetId: input.model.requirementSetId,
+        requirementContractModelHash,
         appliedPasses: input.model.invariantClosure.appliedPasses,
         remainingIssueCount: input.model.invariantClosure.remainingIssueCount,
         rendererBlockerPolicy: input.model.invariantClosure.rendererBlockerPolicy,

@@ -95,6 +95,7 @@ const CHECKPOINTS = [
   },
 ];
 const CHECKPOINT_VALIDATOR_VERSION = '1.0.0';
+const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const EVIDENCE_ONLY_CHECKPOINT_IDS = new Set(
   CHECKPOINTS
     .filter((checkpoint) => checkpoint.id !== 'cp-00-semantic-kernel')
@@ -308,10 +309,19 @@ function semanticAuthoringPaths(sourcePath, progressPath = '') {
   return {
     authoringDir,
     semanticKernel: path.join(authoringDir, 'semantic-kernel.json'),
+    semanticIr: path.join(authoringDir, 'semantic-ir.json'),
+    semanticConservationManifest: path.join(
+      authoringDir,
+      'proofs',
+      'semantic-conservation-manifest.json'
+    ),
+    requirementContractModel: path.join(authoringDir, 'requirement-contract-model.json'),
+    compilerClosureReport: path.join(authoringDir, 'compiler-closure-report.json'),
     mustDecompositionPacket: path.join(authoringDir, 'must_decomposition_packet.json'),
     mustDecompositionReceipt: path.join(authoringDir, 'must_decomposition_receipt.json'),
     packetSourceReconciliation: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
     preRenderMustDecompositionGate: path.join(authoringDir, 'pre-render-must-decomposition-gate-report.json'),
+    criticalAuditorOutcome: path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
   };
 }
 
@@ -417,6 +427,12 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
   const paths = semanticAuthoringPaths(sourcePath, progressPath);
   const binding = currentSemanticBinding(sourcePath);
   const kernel = readSemanticJson(paths.semanticKernel)?.semanticKernel ?? readSemanticJson(paths.semanticKernel);
+  const semanticIrDocument = readSemanticJson(paths.semanticIr);
+  const semanticConservationManifestDocument = readSemanticJson(
+    paths.semanticConservationManifest
+  );
+  const requirementContractModelDocument = readSemanticJson(paths.requirementContractModel);
+  const compilerClosureReportDocument = readSemanticJson(paths.compilerClosureReport);
   const packet =
     readSemanticJson(paths.mustDecompositionPacket)?.must_decomposition_packet ??
     readSemanticJson(paths.mustDecompositionPacket)?.mustDecompositionPacket ??
@@ -425,15 +441,21 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
   const receipts = receiptFiles.map((filePath) => unwrapReceipt(readSemanticJson(filePath))).filter(Boolean);
   const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
   const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
+  const criticalAuditorOutcome = readSemanticJson(paths.criticalAuditorOutcome);
   return {
     ...paths,
     ...binding,
     kernel,
+    semanticIrDocument,
+    semanticConservationManifestDocument,
+    requirementContractModelDocument,
+    compilerClosureReportDocument,
     packet,
     receiptFiles,
     receipts,
     reconciliation,
     gateReport,
+    criticalAuditorOutcome,
   };
 }
 
@@ -450,11 +472,16 @@ function noNewGapReceiptCount(receipts, auditInputHash = null) {
 function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressPath = '' }) {
   const evidence = currentAuthoringEvidence(sourcePath, progressPath);
   const issues = [];
+  const normalizeIssueRef = (ref) => {
+    const value = String(ref ?? '').trim();
+    if (!value) return '<missing>';
+    return SHA256_PATTERN.test(value) ? value : normalizePathForReport(value);
+  };
   const issue = (code, message, refs = [], nextAction = null) => {
     issues.push({
       code,
       message,
-      refs: refs.map(normalizePathForReport),
+      refs: refs.map(normalizeIssueRef),
       nextAction,
     });
   };
@@ -483,6 +510,156 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       'run_authoring_repair_preserve_existing'
     );
   }
+  if (checkpoint.id === 'cp-00-semantic-kernel') {
+    const requiredSemanticArtifacts = [
+      ['semanticIr', evidence.semanticIr, evidence.semanticIrDocument],
+      [
+        'semanticConservationManifest',
+        evidence.semanticConservationManifest,
+        evidence.semanticConservationManifestDocument,
+      ],
+      [
+        'requirementContractModel',
+        evidence.requirementContractModel,
+        evidence.requirementContractModelDocument,
+      ],
+      [
+        'compilerClosureReport',
+        evidence.compilerClosureReport,
+        evidence.compilerClosureReportDocument,
+      ],
+    ];
+    for (const [name, artifactPath, artifactDocument] of requiredSemanticArtifacts) {
+      if (!artifactDocument) {
+        issue(
+          'semantic_checkpoint_artifact_required',
+          `${name} must exist before cp-00 can be recorded`,
+          [artifactPath],
+          'rebuild_current_semantic_artifacts'
+        );
+      }
+    }
+    const semanticModelHash = String(evidence.kernel?.semanticModelHash ?? '').trim();
+    for (const [name, value] of [
+      ['semanticIr', evidence.semanticIrDocument?.semanticModelHash],
+      [
+        'semanticConservationManifest',
+        evidence.semanticConservationManifestDocument?.semanticModelHash,
+      ],
+    ]) {
+      if (!semanticModelHash || String(value ?? '').trim() !== semanticModelHash) {
+        issue(
+          'semantic_checkpoint_semantic_model_hash_mismatch',
+          `${name} is not bound to the current semanticModelHash`,
+          [
+            name === 'semanticIr'
+              ? evidence.semanticIr
+              : name === 'semanticConservationManifest'
+                ? evidence.semanticConservationManifest
+                : evidence.compilerClosureReport,
+            semanticModelHash,
+            String(value ?? ''),
+          ],
+          'rebuild_current_semantic_artifacts'
+        );
+      }
+    }
+    const compilerClosureReport = evidence.compilerClosureReportDocument;
+    const canonicalInputAuthority = compilerClosureReport?.canonicalInputAuthority;
+    const requirementContractModelHash = pathExists(evidence.requirementContractModel)
+      ? sha256File(evidence.requirementContractModel)
+      : '';
+    const reportedRequirementContractModelHash = String(
+      compilerClosureReport?.requirementContractModelHash ?? ''
+    ).trim();
+    if (
+      compilerClosureReport &&
+      (String(compilerClosureReport.schemaVersion ?? '').trim() !==
+        'requirement-contract-compiler-closure-report/v1' ||
+        String(compilerClosureReport.recordId ?? '').trim() !==
+          String(evidence.requirementContractModelDocument?.recordId ?? '').trim() ||
+        String(compilerClosureReport.requirementSetId ?? '').trim() !==
+          String(evidence.requirementContractModelDocument?.requirementSetId ?? '').trim())
+    ) {
+      issue(
+        'semantic_checkpoint_compiler_closure_identity_mismatch',
+        'compiler-closure-report.json is not bound to the current requirement contract model identity',
+        [evidence.compilerClosureReport, evidence.requirementContractModel],
+        'rebuild_current_semantic_artifacts'
+      );
+    }
+    if (
+      evidence.requirementContractModelDocument &&
+      (String(evidence.requirementContractModelDocument.schemaVersion ?? '').trim() !==
+        'requirement-contract-model/v1' ||
+        String(evidence.requirementContractModelDocument.recordId ?? '').trim() !==
+          String(evidence.semanticIrDocument?.recordId ?? '').trim() ||
+        String(evidence.requirementContractModelDocument.requirementSetId ?? '').trim() !==
+          String(evidence.semanticIrDocument?.requirementSetId ?? '').trim())
+    ) {
+      issue(
+        'semantic_checkpoint_requirement_contract_model_identity_mismatch',
+        'requirement-contract-model.json is not the current Semantic IR projection identity',
+        [evidence.requirementContractModel, evidence.semanticIr],
+        'rebuild_current_semantic_artifacts'
+      );
+    }
+    if (
+      !SHA256_PATTERN.test(reportedRequirementContractModelHash) ||
+      reportedRequirementContractModelHash !== requirementContractModelHash
+    ) {
+      issue(
+        'semantic_checkpoint_requirement_contract_model_hash_mismatch',
+        'requirement-contract-model.json does not match the compiler closure model hash binding',
+        [
+          evidence.requirementContractModel,
+          reportedRequirementContractModelHash,
+          requirementContractModelHash,
+        ],
+        'rebuild_current_semantic_artifacts'
+      );
+    }
+    if (
+      !canonicalInputAuthority ||
+      String(canonicalInputAuthority.source ?? '').trim() !== 'canonical_semantic_ir' ||
+      String(canonicalInputAuthority.semanticModelHash ?? '').trim() !== semanticModelHash ||
+      String(canonicalInputAuthority.semanticConservationManifestHash ?? '').trim() !==
+        String(evidence.semanticConservationManifestDocument?.manifestHash ?? '').trim() ||
+      String(canonicalInputAuthority.sourceAuthorityHash ?? '').trim() !==
+        String(evidence.semanticIrDocument?.sourceAuthorityHash ?? '').trim() ||
+      String(canonicalInputAuthority.sourceAuthorityHash ?? '').trim() !==
+        String(
+          evidence.semanticConservationManifestDocument?.hashChain?.sourceAuthorityHash ?? ''
+        ).trim() ||
+      !SHA256_PATTERN.test(String(canonicalInputAuthority.sourceRootSetHash ?? '').trim()) ||
+      !SHA256_PATTERN.test(String(canonicalInputAuthority.compilerInputHash ?? '').trim())
+    ) {
+      issue(
+        'semantic_checkpoint_compiler_input_authority_mismatch',
+        'compiler-closure-report.json is not bound to the current canonical Semantic IR authority',
+        [
+          evidence.compilerClosureReport,
+          semanticModelHash,
+          String(canonicalInputAuthority?.semanticModelHash ?? ''),
+          String(evidence.semanticConservationManifestDocument?.manifestHash ?? ''),
+          String(canonicalInputAuthority?.semanticConservationManifestHash ?? ''),
+        ],
+        'rebuild_current_semantic_artifacts'
+      );
+    }
+    if (
+      evidence.compilerClosureReportDocument &&
+      (Number(evidence.compilerClosureReportDocument.remainingIssueCount ?? -1) !== 0 ||
+        String(evidence.compilerClosureReportDocument.terminalState ?? '').trim() === 'blocked')
+    ) {
+      issue(
+        'semantic_checkpoint_compiler_closure_blocked',
+        'compiler-closure-report.json is not in a zero-issue terminal state',
+        [evidence.compilerClosureReport],
+        'rebuild_current_semantic_artifacts'
+      );
+    }
+  }
   if (
     ['cp-01-must-decomposition-packet', 'cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
     (!evidence.packet || evidence.packet.schemaVersion !== 'must-decomposition-packet/v1' || evidence.packet.status !== 'synchronized')
@@ -506,25 +683,91 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       'run_authoring_repair_preserve_existing'
     );
   }
-  if (
-    ['cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id)
-  ) {
-    const auditInputHash = evidence.kernel && evidence.packet && evidence.implementationConfirmationHash
-      ? mustDecompositionGate.buildAuditInputHash({
-          sourceDocumentHash: evidence.sourceDocumentHash,
-          implementationConfirmationHash: evidence.implementationConfirmationHash,
-          kernel: evidence.kernel,
-          packet: evidence.packet,
-        })
-      : null;
-    if (noNewGapReceiptCount(evidence.receipts, auditInputHash) < 3) {
+  const auditInputHash = evidence.kernel && evidence.packet && evidence.implementationConfirmationHash
+    ? mustDecompositionGate.buildAuditInputHash({
+        sourceDocumentHash: evidence.sourceDocumentHash,
+        implementationConfirmationHash: evidence.implementationConfirmationHash,
+        kernel: evidence.kernel,
+        packet: evidence.packet,
+      })
+    : null;
+  if (checkpoint.id === 'cp-02-atomic-decomposition-loop-convergence') {
+    const outcome = evidence.criticalAuditorOutcome;
+    if (!outcome) {
       issue(
-        'critical_auditor_receipts_required_before_checkpoint',
-        'three current-hash no-new-gap Critical Auditor receipts are required before checkpoint materialization can continue',
-        [evidence.authoringDir],
-        'run_critical_auditor_until_three_no_new_gap_rounds'
+        'critical_auditor_checkpoint_outcome_required',
+        'A current Critical Auditor checkpoint outcome is required before cp-02 can be recorded',
+        [evidence.criticalAuditorOutcome],
+        'run_critical_auditor_round'
       );
+    } else {
+      const outcomeSourceHash = String(outcome.sourceDocumentHash ?? '').trim();
+      if (outcomeSourceHash !== evidence.sourceDocumentHash) {
+        issue(
+          'critical_auditor_checkpoint_outcome_source_hash_mismatch',
+          'Critical Auditor checkpoint outcome is stale for the current source document',
+          [evidence.criticalAuditorOutcome, evidence.sourceDocumentHash, outcomeSourceHash],
+          'run_critical_auditor_round'
+        );
+      }
+      const outcomeAuditInputHash = String(outcome.auditInputHash ?? '').trim();
+      if (!auditInputHash || outcomeAuditInputHash !== auditInputHash) {
+        issue(
+          'critical_auditor_checkpoint_outcome_input_hash_mismatch',
+          'Critical Auditor checkpoint outcome is stale for the current audit input',
+          [evidence.criticalAuditorOutcome, auditInputHash, outcomeAuditInputHash],
+          'run_critical_auditor_round'
+        );
+      }
+      const outcomeDecision = String(outcome.decision ?? '').trim();
+      const outcomeVerdict = String(outcome.verdict ?? '').trim();
+      if (!['pass', 'block'].includes(outcomeDecision)) {
+        issue(
+          'critical_auditor_checkpoint_outcome_decision_invalid',
+          'Critical Auditor checkpoint outcome must explicitly record pass or block',
+          [evidence.criticalAuditorOutcome],
+          'run_critical_auditor_round'
+        );
+      }
+      if (outcomeDecision === 'pass') {
+        if (
+          !['no_new_valid_gap', 'no_new_confirmation_blocking_gap'].includes(outcomeVerdict) ||
+          noNewGapReceiptCount(evidence.receipts, auditInputHash) < 3
+        ) {
+          issue(
+            'critical_auditor_checkpoint_outcome_pass_invalid',
+            'cp-02 pass requires three current-hash no-new-gap receipts',
+            [evidence.criticalAuditorOutcome, evidence.authoringDir],
+            'run_critical_auditor_until_three_no_new_gap_rounds'
+          );
+        }
+      } else if (!Array.isArray(outcome.blockingIssues) || outcome.blockingIssues.length === 0) {
+        issue(
+          'critical_auditor_checkpoint_outcome_block_reason_missing',
+          'cp-02 block requires a non-empty blockingIssues array',
+          [evidence.criticalAuditorOutcome],
+          'record_fail_closed_auditor_outcome'
+        );
+      } else {
+        const primary = outcome.blockingIssues[0] ?? {};
+        issue(
+          String(primary.code ?? 'critical_auditor_checkpoint_outcome_blocked'),
+          String(primary.message ?? 'Critical Auditor outcome blocks cp-02 progression'),
+          Array.isArray(primary.refs) ? primary.refs : [evidence.criticalAuditorOutcome],
+          'resolve_critical_auditor_blocker'
+        );
+      }
     }
+  } else if (
+    ['cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
+    noNewGapReceiptCount(evidence.receipts, auditInputHash) < 3
+  ) {
+    issue(
+      'critical_auditor_receipts_required_before_checkpoint',
+      'three current-hash no-new-gap Critical Auditor receipts are required before checkpoint materialization can continue',
+      [evidence.authoringDir],
+      'run_critical_auditor_until_three_no_new_gap_rounds'
+    );
   }
   if (
     ['cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
@@ -560,6 +803,17 @@ function checkpointValidatedInputs({ sourcePath, checkpoint, progressPath = '', 
     { role: 'source_document', path: sourcePath },
     { role: 'semantic_kernel', path: evidence.semanticKernel },
   ];
+  if (checkpoint.id === 'cp-00-semantic-kernel') {
+    candidates.push(
+      { role: 'semantic_ir', path: evidence.semanticIr },
+      {
+        role: 'semantic_conservation_manifest',
+        path: evidence.semanticConservationManifest,
+      },
+      { role: 'requirement_contract_model', path: evidence.requirementContractModel },
+      { role: 'compiler_closure_report', path: evidence.compilerClosureReport }
+    );
+  }
   if (checkpointPosition >= 1) {
     candidates.push({ role: 'must_decomposition_packet', path: evidence.mustDecompositionPacket });
   }
@@ -567,6 +821,12 @@ function checkpointValidatedInputs({ sourcePath, checkpoint, progressPath = '', 
     for (const receiptPath of evidence.receiptFiles) {
       candidates.push({ role: 'critical_auditor_receipt', path: receiptPath });
     }
+  }
+  if (checkpoint.id === 'cp-02-atomic-decomposition-loop-convergence') {
+    candidates.push({
+      role: 'critical_auditor_checkpoint_outcome',
+      path: evidence.criticalAuditorOutcome,
+    });
   }
   if (checkpointPosition >= 3) {
     candidates.push(

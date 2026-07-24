@@ -44,6 +44,55 @@ function sha256Json(value: unknown): string {
   return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
 }
 
+function implementationConfirmationFromText(sourceText: string): Record<string, any> {
+  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) {
+    throw new Error('test_implementation_confirmation_missing');
+  }
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    if (!line.trim()) continue;
+    if (/^\S/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  const parsed = yaml.load(lines.slice(start, end).join('\n')) as {
+    implementationConfirmation?: Record<string, any>;
+  } | null;
+  if (!parsed?.implementationConfirmation) {
+    throw new Error('test_implementation_confirmation_invalid');
+  }
+  return parsed.implementationConfirmation;
+}
+
+function replaceImplementationConfirmation(
+  sourceText: string,
+  confirmation: Record<string, unknown>
+): string {
+  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
+  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
+  if (start < 0) {
+    throw new Error('test_implementation_confirmation_missing');
+  }
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    if (!line.trim()) continue;
+    if (/^\S/u.test(line)) {
+      end = index;
+      break;
+    }
+  }
+  return [
+    ...lines.slice(0, start),
+    yaml.dump({ implementationConfirmation: confirmation }, { lineWidth: 120 }).trimEnd(),
+    ...lines.slice(end),
+  ].join('\n');
+}
+
 function createRequestForResponseFile(root: string, recordId: string) {
   const materialization = createAuthoringConsumerFixture(root, recordId);
   const source = materialization.sourcePath;
@@ -55,6 +104,7 @@ function createRequestForResponseFile(root: string, recordId: string) {
       `critical auditor request was not generated: ${JSON.stringify({
         blockingStage: first.blockingStage ?? null,
         issueCodes: issueCodes(first),
+        blockingIssues: first.blockingIssues ?? [],
       })}`
     );
   }
@@ -142,6 +192,128 @@ describe('requirements contract Critical Auditor provider modes', () => {
             entry.name.startsWith('critical-auditor-receipt-round-')
           )
       ).toBe(true);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('keeps semantic binding stable when the same source is materialized under another project root', () => {
+    const firstRoot = createTempRoot('requirements-contract-semantic-binding-root-a-');
+    const secondRoot = createTempRoot('requirements-contract-semantic-binding-root-b-');
+    try {
+      const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+      const first = createRequestForResponseFile(firstRoot, recordId);
+      const second = createRequestForResponseFile(secondRoot, recordId);
+
+      expect(second.request.semanticModelHash).toBe(first.request.semanticModelHash);
+      expect(second.request.auditInputHash).toBe(first.request.auditInputHash);
+
+      for (const root of [firstRoot, secondRoot]) {
+        const semanticIr = readJson<Record<string, any>>(artifacts(root, recordId).semanticIr);
+        const commandBodies = Object.values(
+          (semanticIr.semanticBodies ?? {}) as Record<string, Record<string, unknown>>
+        ).filter((body) => typeof body.command === 'string');
+        expect(commandBodies.length).toBeGreaterThan(0);
+        expect(commandBodies.every((body) => body.workingDirectory === '.')).toBe(true);
+      }
+    } finally {
+      removeTempRoot(firstRoot);
+      removeTempRoot(secondRoot);
+    }
+  });
+
+  it('allocates canonical identities while preserving audited split MUST rows across the next production rebuild', () => {
+    const root = createTempRoot('requirements-contract-audited-split-must-conservation-');
+    try {
+      const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+      const fixture = createRequestForResponseFile(root, recordId);
+      const firstPreviewPath = artifacts(root, recordId).draftSourcePreview;
+      const firstPreviewText = readFileSync(firstPreviewPath, 'utf8');
+      const firstConfirmation = implementationConfirmationFromText(firstPreviewText);
+      const firstMustRows = firstConfirmation.must as Array<Record<string, any>>;
+      expect(firstMustRows).toHaveLength(1);
+      const sourceMust = firstMustRows[0]!;
+      const sourceMustId = String(sourceMust.id);
+      const sourceRequirementId =
+        String(sourceMust.sourceRequirementId || '').trim() ||
+        sourceMustId.replace(/^MUST-/u, '');
+      const auditorProposedId = `${sourceMustId}-${randomUUID()
+        .replaceAll('-', '')
+        .slice(0, 12)
+        .toUpperCase()}`;
+      const auditedSplitText = `${String(
+        sourceMust.text
+      )} The independently audited completion receipt remains observable.`;
+      const auditedSplitMust = {
+        ...sourceMust,
+        id: auditorProposedId,
+        text: auditedSplitText,
+        source: 'critical_auditor_validated_gap',
+        sourceRequirementId,
+      };
+      const repairedSourcePath = path.join(
+        root,
+        'docs',
+        'requirements',
+        `audited-split-${randomUUID()}.md`
+      );
+      writeFileSync(
+        repairedSourcePath,
+        replaceImplementationConfirmation(firstPreviewText, {
+          ...firstConfirmation,
+          must: [sourceMust, auditedSplitMust],
+        }),
+        'utf8'
+      );
+
+      const repairedRecordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+      const repairedResult = runAuthoring(
+        root,
+        repairedSourcePath,
+        repairedRecordId,
+        fixture.authoringOptions
+      );
+
+      const repairedArtifacts = artifacts(root, repairedRecordId);
+      expect(existsSync(repairedArtifacts.semanticIr), JSON.stringify(repairedResult, null, 2)).toBe(
+        true
+      );
+      const semanticIr = readJson<Record<string, any>>(repairedArtifacts.semanticIr);
+      const sourceBoundSemanticBodies = Object.values(
+        (semanticIr.semanticBodies ?? {}) as Record<string, Record<string, unknown>>
+      ).filter(
+        (body) =>
+          String((body.source as Record<string, unknown> | undefined)?.sourceRequirementId) ===
+          sourceRequirementId
+      );
+      expect(sourceBoundSemanticBodies).toHaveLength(2);
+      const semanticBodyIds = sourceBoundSemanticBodies.map((body) => String(body.id));
+      expect(new Set(semanticBodyIds).size).toBe(2);
+      expect(semanticBodyIds).toContain(sourceMustId);
+      expect(semanticBodyIds).not.toContain(auditorProposedId);
+      expect(semanticBodyIds.every((id) => /^MUST-(?:FR|NFR)-\d{3}$/u.test(id))).toBe(true);
+      expect(
+        sourceBoundSemanticBodies.every(
+          (body) =>
+            String((body.source as Record<string, unknown>).sourceRequirementId) ===
+            sourceRequirementId
+        )
+      ).toBe(true);
+      const auditedSplitCanonicalId = String(
+        sourceBoundSemanticBodies.find((body) => body.text === auditedSplitText)?.id ?? ''
+      );
+      expect(auditedSplitCanonicalId).toMatch(/^MUST-(?:FR|NFR)-\d{3}$/u);
+      expect(auditedSplitCanonicalId).not.toBe(sourceMustId);
+      const compiledModel = readJson<Record<string, any>>(repairedArtifacts.compiledModel);
+      expect((compiledModel.must ?? []).map((row: Record<string, unknown>) => row.id)).toEqual(
+        expect.arrayContaining(semanticBodyIds)
+      );
+      const rebuiltConfirmation = implementationConfirmationFromText(
+        readFileSync(repairedArtifacts.draftSourcePreview, 'utf8')
+      );
+      expect(
+        (rebuiltConfirmation.must ?? []).map((row: Record<string, unknown>) => row.id)
+      ).toEqual(expect.arrayContaining(semanticBodyIds));
     } finally {
       removeTempRoot(root);
     }
@@ -310,6 +482,31 @@ describe('requirements contract Critical Auditor provider modes', () => {
     }
   });
 
+  it('binds the staging transaction to the exact frozen draft audited by the request', () => {
+    const root = createTempRoot('requirements-contract-critical-auditor-audit-source-binding-');
+    try {
+      const recordId = `REQ-CRITICAL-AUDITOR-${randomUUID()}`.toUpperCase();
+      const { first, request } = createRequestForResponseFile(root, recordId);
+      const stagingTransaction = first.stagingTransaction as
+        | {
+            sourceStartHash?: string;
+            auditSourceHash?: string;
+            transactionId?: string;
+            namespaceVersion?: string;
+          }
+        | null
+        | undefined;
+
+      expect(stagingTransaction).toBeTruthy();
+      expect(stagingTransaction?.auditSourceHash).toBe(request.sourceDocumentHash);
+      expect(stagingTransaction?.sourceStartHash).not.toBe(stagingTransaction?.auditSourceHash);
+      expect(request.transactionId).toBe(stagingTransaction?.transactionId);
+      expect(request.namespaceVersion).toBe(stagingTransaction?.namespaceVersion);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('no-new-gap response writer fails closed on malformed gate counts and out-of-scope requests', () => {
     const root = createTempRoot('requirements-contract-critical-auditor-writer-fail-closed-');
     try {
@@ -422,6 +619,23 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(request.requiredResponseSchema.checkedProjectionQualityRuleCodes).toEqual(
         request.projectionQualityGate.requiredRuleCodes
       );
+      expect(request.requiredResponseSchema.validatedGaps).toEqual([
+        expect.objectContaining({
+          repairActions: [
+            expect.objectContaining({
+              actionId: expect.any(String),
+              type: expect.any(String),
+              sourceSpan: expect.any(Object),
+              sourceText: expect.any(String),
+              targetField: expect.any(String),
+              newValue: expect.anything(),
+              reason: expect.any(String),
+              mustRefs: expect.any(Array),
+              requirementIds: expect.any(Array),
+            }),
+          ],
+        }),
+      ]);
     } finally {
       removeTempRoot(root);
     }
@@ -650,6 +864,64 @@ describe('requirements contract Critical Auditor provider modes', () => {
     try {
       const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
       const fixture = createRequestForResponseFile(root, recordId);
+      const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+      const config = yaml.load(readFileSync(configPath, 'utf8')) as {
+        judgeRuntime?: {
+          activeProviderRef?: string;
+          providers?: Record<
+            string,
+            {
+              credentialRef?: string;
+              authentication?: {
+                type?: string;
+              };
+              requestPolicy?: {
+                timeoutMs?: number;
+              };
+            }
+          >;
+          credentialConfig?: {
+            path?: string;
+            schemaVersion?: string;
+          };
+        };
+      };
+      const activeProviderRef = String(config.judgeRuntime?.activeProviderRef ?? '');
+      const provider = config.judgeRuntime?.providers?.[activeProviderRef];
+      const requestPolicy = provider?.requestPolicy;
+      if (!requestPolicy) {
+        throw new Error('test_judge_request_policy_missing');
+      }
+      const credentialConfig = config.judgeRuntime?.credentialConfig;
+      const credentialRef = String(provider?.credentialRef ?? '');
+      const authenticationType = String(provider?.authentication?.type ?? '');
+      if (
+        !credentialConfig?.path ||
+        !credentialConfig.schemaVersion ||
+        !credentialRef ||
+        !authenticationType
+      ) {
+        throw new Error('test_judge_credential_configuration_missing');
+      }
+      const credentialPath = path.resolve(root, credentialConfig.path);
+      mkdirSync(path.dirname(credentialPath), { recursive: true });
+      writeFileSync(
+        credentialPath,
+        yaml.dump({
+          schemaVersion: credentialConfig.schemaVersion,
+          credentialRevision: 1,
+          providers: {
+            [credentialRef]: {
+              authenticationType,
+              apiKey: randomUUID(),
+            },
+          },
+        }),
+        'utf8'
+      );
+      const configuredTimeoutMs = Number(requestPolicy.timeoutMs);
+      requestPolicy.timeoutMs = Math.min(configuredTimeoutMs, 1_000);
+      writeFileSync(configPath, yaml.dump(config), 'utf8');
       const invoke = () =>
         runAuthoring(root, fixture.source, recordId, {
           ...fixture.authoringOptions,
@@ -663,40 +935,25 @@ describe('requirements contract Critical Auditor provider modes', () => {
       );
       expect(JSON.stringify(first)).not.toContain('critical_auditor_judge_host_log_changed');
 
-      const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
-      const config = yaml.load(readFileSync(configPath, 'utf8')) as {
-        judgeRuntime?: {
-          credentialConfig?: {
-            path?: string;
-          };
-        };
-      };
-      const credentialPath = path.join(
-        root,
-        String(config.judgeRuntime?.credentialConfig?.path ?? '')
-      );
-      mkdirSync(path.dirname(credentialPath), { recursive: true });
-      writeFileSync(
-        credentialPath,
-        [
-          'schemaVersion: invalid-judge-credentials/v1',
-          'credentialRevision: 1',
-          'providers: {}',
-          '',
-        ].join('\n'),
-        'utf8'
-      );
-
       const second = invoke();
       expect(issueCodes(second), JSON.stringify(second, null, 2)).toContain(
         'critical_auditor_external_adapter_failed'
       );
       expect(JSON.stringify(second)).not.toContain('critical_auditor_judge_host_log_changed');
 
+      const firstStagingDir = path.resolve(
+        root,
+        String((first.stagingTransaction as Record<string, unknown>)?.stagingDir ?? '')
+      );
+      const secondStagingDir = path.resolve(
+        root,
+        String((second.stagingTransaction as Record<string, unknown>)?.stagingDir ?? '')
+      );
+      expect(secondStagingDir, JSON.stringify({ first, second }, null, 2)).toBe(firstStagingDir);
       const outputDir = path.join(
-        path.dirname(fixture.requestPath),
-        'judge-provider-invocations',
-        'round-1'
+        secondStagingDir,
+        'j',
+        '1'
       );
       const hostAttemptsDir = path.join(outputDir, 'judge-adapter-host-attempts');
       const attemptDirs = readdirSync(hostAttemptsDir, { withFileTypes: true }).filter((entry) =>
@@ -707,6 +964,72 @@ describe('requirements contract Critical Auditor provider modes', () => {
         expect(existsSync(path.join(hostAttemptsDir, attemptDir.name, 'stdout.log'))).toBe(true);
         expect(existsSync(path.join(hostAttemptsDir, attemptDir.name, 'stderr.log'))).toBe(true);
       }
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('archives the provider invocation namespace with a stale auditor request', () => {
+    const root = createTempRoot('requirements-contract-stale-provider-invocation-');
+    try {
+      const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+      const fixture = createRequestForResponseFile(root, recordId);
+      const stagingDir = path.resolve(
+        root,
+        String(
+          (fixture.first.stagingTransaction as Record<string, unknown>)?.stagingDir ?? ''
+        )
+      );
+      expect(path.dirname(fixture.requestPath)).toBe(stagingDir);
+      const providerInvocationDir = path.join(
+        stagingDir,
+        'j',
+        '1'
+      );
+      const sentinelName = `failed-invocation-${randomUUID()}.json`;
+      mkdirSync(providerInvocationDir, { recursive: true });
+      writeFileSync(
+        path.join(providerInvocationDir, sentinelName),
+        `${JSON.stringify({
+          schemaVersion: 'failed-provider-invocation-sentinel/v1',
+          invocationId: randomUUID(),
+        })}\n`,
+        'utf8'
+      );
+      writeFileSync(
+        fixture.requestPath,
+        `${JSON.stringify(
+          {
+            ...fixture.request,
+            auditInputHash: sha256Json({ staleAuditInput: randomUUID() }),
+          },
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
+
+      runAuthoring(root, fixture.source, recordId, fixture.authoringOptions);
+
+      expect(existsSync(providerInvocationDir)).toBe(false);
+      const authoringDir = path.dirname(path.dirname(stagingDir));
+      const archiveRoot = path.join(authoringDir, 'archive');
+      const archivedSentinelExists = readdirSync(archiveRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .some((entry) =>
+          existsSync(
+            path.join(
+              archiveRoot,
+              entry.name,
+              'staging',
+              path.basename(stagingDir),
+              'j',
+              '1',
+              sentinelName
+            )
+          )
+        );
+      expect(archivedSentinelExists).toBe(true);
     } finally {
       removeTempRoot(root);
     }
