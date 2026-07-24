@@ -1,0 +1,26 @@
+{
+  "name": "target-validity-fixture",
+  "type": "module",
+  "exports": {
+    "./exported": "./src/exported.ts",
+    "./conditional": {
+      "node": "./src/conditional-target.ts",
+      "browser": "external-package"
+    }
+  },
+  "bin": {
+    "target-validity-cli": "./src/cli.ts"
+  },
+  "testPortfolioAudit": {
+    "protectedBindings": [
+      {
+        "targetPath": "src/protected.ts",
+        "evidenceRef": "compatibility:protected-api"
+      },
+      {
+        "targetPattern": "src/protected-unbound.ts",
+        "evidenceRef": "compatibility:unbound-proof"
+      }
+    ]
+  }
+}

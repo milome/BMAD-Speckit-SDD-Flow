@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  ORACLE_FIXTURE,
+  TARGET_FIXTURE,
   analyzerInput,
   executionRoute,
   testIdentity,
@@ -11,6 +13,10 @@ import {
 
 const require = createRequire(import.meta.url);
 const duplicate = require('../../tools/test-portfolio-audit/analyzers/duplicate.cjs');
+const loadTargetValidity = () =>
+  require('../../tools/test-portfolio-audit/analyzers/target-validity.cjs');
+const loadOracleEffectiveness = () =>
+  require('../../tools/test-portfolio-audit/analyzers/oracle-effectiveness.cjs');
 const ROUTE_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/routes');
 const SHARED_IDENTITY = 'root-vitest::tests/shared.test.ts';
 
@@ -225,5 +231,349 @@ describe('test portfolio analyzers', () => {
       value: 'duplicate',
       executionRouteRefs: directAndDelegatedRoutes.map((route) => route.routeId).sort(),
     });
+  });
+});
+
+describe('target validity analyzer', () => {
+  it('classifies target validity only with direct reachability and protection evidence', async () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json'],
+    });
+
+    expect([...sourceIndex.nodes.keys()]).toEqual(
+      [...sourceIndex.nodes.keys()].sort((left, right) => left.localeCompare(right, 'en'))
+    );
+    expect(sourceIndex.packageExports.get('src/exported.ts')).toEqual([
+      'source:package.json#exports:./exported',
+    ]);
+    expect(sourceIndex.packageBins.get('src/cli.ts')).toEqual([
+      'source:package.json#bin:target-validity-cli',
+    ]);
+    expect(sourceIndex.productionEdges).toEqual(
+      expect.arrayContaining([
+        {
+          from: 'src/entry.ts',
+          to: 'src/production-imported.ts',
+          evidenceRef: 'source:src/entry.ts#import:./production-imported',
+        },
+      ])
+    );
+    expect(sourceIndex.protectedBindings).toEqual(
+      expect.arrayContaining([
+        {
+          targetPath: 'src/protected.ts',
+          evidenceRef: 'compatibility:protected-api',
+        },
+      ])
+    );
+    expect(sourceIndex.dynamicUncertainty).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          targetPath: 'src/dynamic-registry.ts',
+          issueCode: 'TARGET_DYNAMIC_REGISTRATION_UNRESOLVED',
+        }),
+      ])
+    );
+
+    const inventory = {
+      tests: [
+        testIdentity('root-vitest::tests/targets.test.ts', {
+          testPath: 'tests/targets.test.ts',
+        }),
+        testIdentity('root-vitest::tests/broken.test.ts', {
+          testPath: 'tests/broken.test.ts',
+        }),
+      ],
+    };
+    const result = await targetValidity.analyze({
+      repoRoot: TARGET_FIXTURE,
+      inventory,
+      routeGraph: { routes: [] },
+      sourceIndex,
+    });
+
+    expect(result).toMatchObject({
+      analyzerId: 'target-validity',
+      analyzerVersion: '1',
+      dimension: 'targetValidity',
+      required: true,
+      status: 'complete',
+      issues: [],
+    });
+    expect(
+      new Set(result.findings.map((finding: { identityKey: string }) => finding.identityKey))
+    ).toEqual(new Set(inventory.tests.map((test) => test.identityKey)));
+
+    const targetFindings = result.findings.filter(
+      (finding: { identityKey: string }) =>
+        finding.identityKey === 'root-vitest::tests/targets.test.ts'
+    );
+    const byTarget = new Map(
+      targetFindings.map((finding: { targetRef: string }) => [finding.targetRef, finding])
+    );
+
+    expect(byTarget.get('src/unused.ts')).toEqual({
+      identityKey: 'root-vitest::tests/targets.test.ts',
+      targetRef: 'src/unused.ts',
+      value: 'obsolete_candidate',
+      confidence: 'high',
+      evidenceRefs: [
+        'source:package.json#not-bin',
+        'source:package.json#not-exported',
+        'source:src/unused.ts#no-production-inbound',
+        'source:src/unused.ts#no-protection',
+      ],
+      issueCodes: ['PRODUCT_TARGET_OBSOLETE_CANDIDATE'],
+    });
+    expect(byTarget.get('src/exported.ts')).toMatchObject({
+      value: 'active',
+      confidence: 'high',
+      issueCodes: [],
+    });
+    expect(byTarget.get('src/cli.ts')).toMatchObject({
+      value: 'active',
+      confidence: 'high',
+      issueCodes: [],
+    });
+    expect(byTarget.get('src/production-imported.ts')).toMatchObject({
+      value: 'active',
+      confidence: 'high',
+      issueCodes: [],
+    });
+    expect(byTarget.get('src/protected.ts')).toMatchObject({
+      value: 'active',
+      confidence: 'high',
+      issueCodes: [],
+    });
+    expect(byTarget.get('src/dynamic-registry.ts')).toMatchObject({
+      value: 'ambiguous',
+      confidence: 'low',
+      issueCodes: ['TARGET_DYNAMIC_REGISTRATION_UNRESOLVED'],
+    });
+    expect(byTarget.get('src/generated-ownerless.ts')).toMatchObject({
+      value: 'ambiguous',
+      confidence: 'low',
+      issueCodes: ['TARGET_GENERATED_OWNER_UNRESOLVED'],
+    });
+    expect(byTarget.get('src/conditional-target.ts')).toMatchObject({
+      value: 'ambiguous',
+      confidence: 'low',
+      issueCodes: ['TARGET_PACKAGE_EXPORT_UNRESOLVED'],
+    });
+    expect(byTarget.get('src/protected-unbound.ts')).toMatchObject({
+      value: 'ambiguous',
+      confidence: 'low',
+      issueCodes: ['TARGET_PROTECTION_BINDING_UNRESOLVED'],
+    });
+    expect(
+      result.findings.find(
+        (finding: { identityKey: string }) =>
+          finding.identityKey === 'root-vitest::tests/broken.test.ts'
+      )
+    ).toMatchObject({
+      value: 'ambiguous',
+      confidence: 'low',
+      issueCodes: ['TARGET_TEST_PARSE_ERROR'],
+    });
+
+    const repeated = await targetValidity.analyze({
+      repoRoot: TARGET_FIXTURE,
+      inventory,
+      routeGraph: { routes: [] },
+      sourceIndex,
+    });
+    expect(repeated).toEqual(result);
+    for (const finding of result.findings) {
+      expect(finding.evidenceRefs).toEqual([...new Set(finding.evidenceRefs)].sort());
+      expect(finding.issueCodes).toEqual([...new Set(finding.issueCodes)].sort());
+    }
+  });
+});
+
+describe('oracle effectiveness analyzer', () => {
+  it('detects oracle tautology as ineffective', async () => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath: 'tautology.test.ts',
+    });
+
+    expect(finding).toMatchObject({
+      value: 'ineffective_candidate',
+      issueCodes: ['ORACLE_TAUTOLOGY'],
+    });
+  });
+
+  it.each([
+    ['self-generated.test.ts', 'ORACLE_SELF_GENERATED_EXPECTED'],
+    ['hidden-skip.test.ts', 'ORACLE_SKIP_AS_PASS'],
+  ])('detects ineffective oracle provenance in %s', async (testPath, issueCode) => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath,
+    });
+
+    expect(finding).toMatchObject({
+      value: 'ineffective_candidate',
+      issueCodes: [issueCode],
+    });
+  });
+
+  it('preserves source-only assertions as structural contracts', async () => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath: 'source-structural.test.ts',
+    });
+
+    expect(finding).toMatchObject({
+      value: 'effective',
+      evidenceRole: 'structural_contract',
+      issueCodes: [],
+    });
+    expect(finding.claimedRoles).not.toContain('process_e2e');
+  });
+
+  it.each([
+    ['negative-fixture.test.ts', 'behavioral'],
+    ['process-boundary.test.ts', 'process_boundary'],
+  ])('accepts independent oracle evidence in %s', async (testPath, evidenceRole) => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath,
+    });
+
+    expect(finding).toMatchObject({
+      value: 'effective',
+      evidenceRole,
+      issueCodes: [],
+    });
+  });
+
+  it('rejects exit-code-only behavior claims', async () => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath: 'exit-code-only.test.ts',
+    });
+
+    expect(finding).toMatchObject({
+      value: 'ineffective_candidate',
+      issueCodes: ['ORACLE_EXIT_CODE_ONLY'],
+    });
+  });
+
+  it('reports source assertion role overclaim without discarding structural evidence', async () => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath: 'source-role-overclaim.test.ts',
+    });
+
+    expect(finding).toMatchObject({
+      value: 'effective',
+      evidenceRole: 'structural_contract',
+      issueCodes: ['ORACLE_ROLE_OVERCLAIM'],
+    });
+    expect(finding.claimedRoles).toEqual(
+      expect.arrayContaining(['behavioral', 'integration', 'process_e2e'])
+    );
+  });
+
+  it('keeps batch findings complete and deterministic across per-test parse errors', async () => {
+    const oracle = loadOracleEffectiveness();
+    const tests = [
+      'tautology.test.ts',
+      'source-structural.test.ts',
+      'self-generated.test.ts',
+      'hidden-skip.test.ts',
+      'negative-fixture.test.ts',
+      'process-boundary.test.ts',
+      'exit-code-only.test.ts',
+      'source-role-overclaim.test.ts',
+      'parse-error.test.ts',
+    ].map((testPath) =>
+      testIdentity(`root-vitest::${testPath}`, {
+        testPath,
+      })
+    );
+    const input = {
+      repoRoot: ORACLE_FIXTURE,
+      inventory: { tests },
+      routeGraph: { routes: [] },
+    };
+
+    const result = await oracle.analyze(input);
+    expect(result).toMatchObject({
+      analyzerId: 'oracle-effectiveness',
+      analyzerVersion: '1',
+      dimension: 'oracleEffectiveness',
+      required: true,
+      status: 'complete',
+      issues: [],
+    });
+    expect(result.findings).toHaveLength(tests.length);
+    expect(result.findings.map((finding: { identityKey: string }) => finding.identityKey)).toEqual(
+      tests.map((test) => test.identityKey).sort((left, right) => left.localeCompare(right, 'en'))
+    );
+    expect(
+      result.findings.find(
+        (finding: { identityKey: string }) =>
+          finding.identityKey === 'root-vitest::parse-error.test.ts'
+      )
+    ).toMatchObject({
+      value: 'ambiguous',
+      confidence: 'low',
+      issueCodes: ['ORACLE_TEST_PARSE_ERROR'],
+    });
+    expect(await oracle.analyze(input)).toEqual(result);
+    for (const finding of result.findings) {
+      expect(finding.evidenceRefs).toEqual([...new Set(finding.evidenceRefs)].sort());
+      expect(finding.issueCodes).toEqual([...new Set(finding.issueCodes)].sort());
+    }
+  });
+
+  it('keeps target validity and oracle effectiveness orthogonal for one test identity', async () => {
+    const targetValidity = loadTargetValidity();
+    const oracle = loadOracleEffectiveness();
+    const test = testIdentity('root-vitest::tests/targets.test.ts', {
+      testPath: 'tests/targets.test.ts',
+    });
+    const inventory = { tests: [test] };
+    const targetResult = await targetValidity.analyze({
+      repoRoot: TARGET_FIXTURE,
+      inventory,
+      routeGraph: { routes: [] },
+      sourceIndex: targetValidity.buildSourceIndex({
+        repoRoot: TARGET_FIXTURE,
+        packagePaths: ['package.json'],
+      }),
+    });
+    const oracleResult = await oracle.analyze({
+      repoRoot: TARGET_FIXTURE,
+      inventory,
+      routeGraph: { routes: [] },
+    });
+
+    expect(targetResult.dimension).toBe('targetValidity');
+    expect(oracleResult.dimension).toBe('oracleEffectiveness');
+    expect(
+      targetResult.findings.every(
+        (finding: { identityKey: string; targetRef?: string }) =>
+          finding.identityKey === test.identityKey && typeof finding.targetRef === 'string'
+      )
+    ).toBe(true);
+    expect(oracleResult.findings).toEqual([
+      expect.objectContaining({
+        identityKey: test.identityKey,
+        value: 'ambiguous',
+        issueCodes: ['ORACLE_INDEPENDENCE_UNPROVEN'],
+      }),
+    ]);
+    expect(oracleResult.findings[0]).not.toHaveProperty('targetRef');
   });
 });

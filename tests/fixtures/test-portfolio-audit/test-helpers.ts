@@ -1,5 +1,9 @@
+import { join } from 'node:path';
+
 export type TestIdentity = {
   identityKey: string;
+  testPath?: string;
+  claimedRoles?: string[];
 };
 
 export type ExecutionRoute = {
@@ -11,8 +15,18 @@ export type ExecutionRoute = {
   sourceRef?: string;
 };
 
-export function testIdentity(identityKey: string): TestIdentity {
-  return { identityKey };
+export const TEST_PORTFOLIO_FIXTURE_ROOT = join(
+  process.cwd(),
+  'tests/fixtures/test-portfolio-audit'
+);
+export const TARGET_FIXTURE = join(TEST_PORTFOLIO_FIXTURE_ROOT, 'target-validity');
+export const ORACLE_FIXTURE = join(TEST_PORTFOLIO_FIXTURE_ROOT, 'oracle-effectiveness');
+
+export function testIdentity(
+  identityKey: string,
+  overrides: Omit<Partial<TestIdentity>, 'identityKey'> = {}
+): TestIdentity {
+  return { identityKey, ...overrides };
 }
 
 export function executionRoute(
