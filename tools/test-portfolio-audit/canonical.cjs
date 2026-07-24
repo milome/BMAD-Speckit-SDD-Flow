@@ -24,11 +24,24 @@ function normalizeRepoPath(repoRoot, value) {
 }
 
 function normalizeEvidenceRef(value) {
-  const text = String(value || '')
-    .trim()
-    .replace(/\\/g, '/')
-    .replace(/^source:\.\//, 'source:');
+  if (typeof value !== 'string') throw new Error('EVIDENCE_REF_INVALID');
+  const text = value.trim().replace(/\\/g, '/');
   if (!text) throw new Error('EVIDENCE_REF_EMPTY');
+  if (text.startsWith('source:')) {
+    const source = text.slice('source:'.length);
+    const fragmentIndex = source.indexOf('#');
+    const sourcePath = fragmentIndex === -1 ? source : source.slice(0, fragmentIndex);
+    const fragment = fragmentIndex === -1 ? '' : source.slice(fragmentIndex);
+    const normalizedPath = path.posix.normalize(sourcePath);
+    if (
+      normalizedPath === '..' ||
+      normalizedPath.startsWith('../') ||
+      path.posix.isAbsolute(normalizedPath)
+    ) {
+      throw new Error('EVIDENCE_SOURCE_OUTSIDE_REPO');
+    }
+    return `source:${normalizedPath}${fragment}`;
+  }
   return text;
 }
 
@@ -120,10 +133,15 @@ function validateCanonicalAudit(artifact) {
   if (!Array.isArray(artifact.tests)) throw new Error('AUDIT_TESTS_INVALID');
   for (const row of artifact.tests) {
     if (!isPlainObject(row)) throw new Error('AUDIT_TEST_ROW_INVALID');
+    const normalizedTestPath =
+      typeof row.testPath === 'string'
+        ? path.posix.normalize(row.testPath.trim().replace(/\\/g, '/'))
+        : '';
     if (
       typeof row.testPath !== 'string' ||
       row.testPath.trim() === '' ||
-      row.testPath === '.' ||
+      normalizedTestPath === '.' ||
+      normalizedTestPath === './' ||
       typeof row.runnerId !== 'string' ||
       row.runnerId.trim() === ''
     ) {
@@ -135,8 +153,13 @@ function validateCanonicalAudit(artifact) {
     ) {
       throw new Error('DUPLICATE_EVIDENCE_INCOMPLETE');
     }
-    for (const [dimension, evidence] of Object.entries(row.confidence || {})) {
-      if (!CONFIDENCE.has(evidence)) throw new Error(`CONFIDENCE_INVALID:${dimension}`);
+    if (Object.prototype.hasOwnProperty.call(row, 'confidence')) {
+      if (!isPlainObject(row.confidence)) {
+        throw new Error('CONFIDENCE_CONTAINER_INVALID');
+      }
+      for (const [dimension, evidence] of Object.entries(row.confidence)) {
+        if (!CONFIDENCE.has(evidence)) throw new Error(`CONFIDENCE_INVALID:${dimension}`);
+      }
     }
   }
   return artifact;

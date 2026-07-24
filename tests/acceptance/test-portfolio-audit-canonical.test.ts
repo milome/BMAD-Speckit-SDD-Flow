@@ -129,6 +129,58 @@ describe('test portfolio canonical core', () => {
     ).toThrow('DUPLICATE_EVIDENCE_INCOMPLETE');
   });
 
+  it('rejects non-string duplicate route evidence', () => {
+    for (const value of [1, ['route:array'], { ref: 'route:object' }]) {
+      expect(() => normalizeEvidenceRef(value)).toThrow('EVIDENCE_REF_INVALID');
+      expect(() => validateCanonicalAudit(duplicateAudit(['route:valid', value]))).toThrow(
+        'DUPLICATE_EVIDENCE_INCOMPLETE'
+      );
+    }
+  });
+
+  it('normalizes source paths without changing route semantics', () => {
+    expect(normalizeEvidenceRef('source:././package.json#scripts.test')).toBe(
+      'source:package.json#scripts.test'
+    );
+    expect(normalizeEvidenceRef(' source:.\\config\\..\\package.json#scripts.test ')).toBe(
+      'source:package.json#scripts.test'
+    );
+    expect(normalizeEvidenceRef('route:pr-full\\./test-ci')).toBe('route:pr-full/./test-ci');
+    expect(() => normalizeEvidenceRef('source:../outside.test.ts#suite')).toThrow(
+      'EVIDENCE_SOURCE_OUTSIDE_REPO'
+    );
+    expect(() =>
+      validateCanonicalAudit(
+        duplicateAudit(['source:././package.json#scripts.test', 'source:package.json#scripts.test'])
+      )
+    ).toThrow('DUPLICATE_EVIDENCE_INCOMPLETE');
+  });
+
+  it('requires confidence to be a plain object when present', () => {
+    for (const confidence of [undefined, null, [], new Date(0)]) {
+      expect(() =>
+        validateCanonicalAudit(
+          auditWithTests([
+            {
+              testPath: 'tests/a.test.ts',
+              runnerId: 'root-vitest',
+              confidence,
+            },
+          ])
+        )
+      ).toThrow('CONFIDENCE_CONTAINER_INVALID');
+    }
+
+    const artifact = auditWithTests([
+      {
+        testPath: 'tests/a.test.ts',
+        runnerId: 'root-vitest',
+        confidence: { criticality: 'high' },
+      },
+    ]);
+    expect(validateCanonicalAudit(artifact)).toBe(artifact);
+  });
+
   it('rejects malformed audit structures with stable domain errors', () => {
     for (const artifact of [null, [], 'invalid', new Date(0)]) {
       expect(() => validateCanonicalAudit(artifact)).toThrow('AUDIT_ARTIFACT_INVALID');
@@ -154,16 +206,18 @@ describe('test portfolio canonical core', () => {
       expect(() => normalizeRepoPath('D:/repo', value)).toThrow('PATH_EMPTY');
     }
     expect(normalizeRepoPath('D:/repo', '.')).toBe('.');
-    expect(() =>
-      validateCanonicalAudit(
-        auditWithTests([
-          {
-            testPath: '.',
-            runnerId: 'root-vitest',
-          },
-        ])
-      )
-    ).toThrow('TEST_IDENTITY_MISSING');
+    for (const testPath of ['.', './']) {
+      expect(() =>
+        validateCanonicalAudit(
+          auditWithTests([
+            {
+              testPath,
+              runnerId: 'root-vitest',
+            },
+          ])
+        )
+      ).toThrow('TEST_IDENTITY_MISSING');
+    }
   });
 
   it('hashes canonical bytes with the known SHA-256 vector', () => {
