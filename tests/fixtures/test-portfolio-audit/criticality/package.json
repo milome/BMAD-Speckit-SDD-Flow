@@ -1,0 +1,16 @@
+{
+  "name": "test-portfolio-criticality-fixture",
+  "version": "1.0.0",
+  "main": "./dist/runtime.cjs",
+  "bin": {
+    "test-portfolio-fixture": "./bin/test-portfolio-fixture.cjs"
+  },
+  "testPortfolioAudit": {
+    "packageInstallTests": [
+      "tests/package-install.test.ts"
+    ],
+    "packagedRuntimeTests": [
+      "tests/packaged-runtime.test.ts"
+    ]
+  }
+}

@@ -17,8 +17,89 @@ const loadTargetValidity = () =>
   require('../../tools/test-portfolio-audit/analyzers/target-validity.cjs');
 const loadOracleEffectiveness = () =>
   require('../../tools/test-portfolio-audit/analyzers/oracle-effectiveness.cjs');
+const loadParallelSafety = () =>
+  require('../../tools/test-portfolio-audit/analyzers/parallel-safety.cjs');
+const loadCriticality = () => require('../../tools/test-portfolio-audit/analyzers/criticality.cjs');
 const ROUTE_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/routes');
+const PARALLEL_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/parallel-safety');
+const CRITICALITY_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/criticality');
 const SHARED_IDENTITY = 'root-vitest::tests/shared.test.ts';
+const REDUCER_CONTRACT_IDENTITY = 'root-vitest::tests/package-install.test.ts';
+
+type CriticalityBindingKind =
+  | 'package_install'
+  | 'packaged_runtime'
+  | 'cli_bin'
+  | 'main_agent_core'
+  | 'release_path'
+  | 'consumer_compatibility'
+  | 'security_encoding_persistence'
+  | 'protected_acceptance_or_proof'
+  | 'active_regression_binding';
+
+type CriticalityBinding = {
+  kind: CriticalityBindingKind;
+  evidenceRef: string;
+};
+
+function criticalitySourceIndex() {
+  return {
+    packageInstallBindings: new Map<string, CriticalityBinding[]>([
+      [
+        'tests/package-install.test.ts',
+        [
+          {
+            kind: 'package_install',
+            evidenceRef: 'source:package.json#testPortfolioAudit:packageInstallTests',
+          },
+        ],
+      ],
+    ]),
+    packagedRuntimeBindings: new Map<string, CriticalityBinding[]>([
+      [
+        'tests/packaged-runtime.test.ts',
+        [
+          {
+            kind: 'packaged_runtime',
+            evidenceRef: 'source:package.json#main',
+          },
+        ],
+      ],
+    ]),
+    cliBinBindings: new Map<string, CriticalityBinding[]>([
+      [
+        'tests/cli-bin.test.ts',
+        [
+          {
+            kind: 'cli_bin',
+            evidenceRef: 'source:package.json#bin:test-portfolio-fixture',
+          },
+        ],
+      ],
+    ]),
+  };
+}
+
+function criticalityRouteGraph() {
+  return {
+    routes: [
+      {
+        routeId: 'route:release/evidence',
+        identityKey: 'root-vitest::tests/release-evidence.test.ts',
+        testPath: 'tests/release-evidence.test.ts',
+        purpose: 'release_validation',
+        sourceRef: 'workflow:.github/workflows/release.yml#job:release',
+      },
+      {
+        routeId: 'route:compatibility/host-matrix',
+        identityKey: 'root-vitest::tests/host-matrix.test.ts',
+        testPath: 'tests/host-matrix.test.ts',
+        purpose: 'extended_host_matrix',
+        sourceRef: 'workflow:.github/workflows/release.yml#job:host-matrix',
+      },
+    ],
+  };
+}
 
 type RouteInvocation = {
   jobId: string;
@@ -575,5 +656,265 @@ describe('oracle effectiveness analyzer', () => {
       }),
     ]);
     expect(oracleResult.findings[0]).not.toHaveProperty('targetRef');
+  });
+});
+
+describe('parallel safety analyzer', () => {
+  it.each([
+    ['repo-write.test.ts', 'PARALLEL_REPO_GLOBAL_WRITE'],
+    ['fixed-temp.test.ts', 'PARALLEL_FIXED_TEMP_PATH'],
+    ['env-unrestored.test.ts', 'PARALLEL_PROCESS_ENV_MUTATION'],
+    ['fixed-port.test.ts', 'PARALLEL_FIXED_PORT'],
+    ['root-pack.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
+  ])('marks %s unsafe with exact issue code', async (testPath, issueCode) => {
+    const parallelSafety = loadParallelSafety();
+    const result = await parallelSafety.analyzeTestFile({
+      repoRoot: PARALLEL_FIXTURE,
+      testPath,
+    });
+
+    expect(result).toMatchObject({
+      value: 'unsafe',
+      confidence: 'high',
+    });
+    expect(result.issueCodes).toContain(issueCode);
+    expect(result.evidenceRefs.length).toBeGreaterThan(0);
+  });
+
+  it.each(['env-restored.test.ts', 'isolated-temp.test.ts'])(
+    'keeps %s as a static safe candidate',
+    async (testPath) => {
+      const parallelSafety = loadParallelSafety();
+      const result = await parallelSafety.analyzeTestFile({
+        repoRoot: PARALLEL_FIXTURE,
+        testPath,
+      });
+
+      expect(result).toMatchObject({
+        value: 'safe_candidate',
+        confidence: 'medium',
+        issueCodes: [],
+      });
+    }
+  );
+
+  it('fails closed for one parse error without failing the analyzer batch', async () => {
+    const parallelSafety = loadParallelSafety();
+    const tests = ['isolated-temp.test.ts', 'parse-error.test.ts', 'repo-write.test.ts'].map(
+      (testPath) =>
+        testIdentity(`root-vitest::${testPath}`, {
+          testPath,
+        })
+    );
+    const input = {
+      repoRoot: PARALLEL_FIXTURE,
+      inventory: { tests },
+      routeGraph: { routes: [] },
+    };
+
+    const result = await parallelSafety.analyze(input);
+
+    expect(result).toMatchObject({
+      analyzerId: 'parallel-safety',
+      analyzerVersion: '1',
+      dimension: 'parallelSafety',
+      required: true,
+      status: 'complete',
+      issues: [],
+    });
+    expect(result.findings).toHaveLength(tests.length);
+    expect(result.findings.map((finding: { identityKey: string }) => finding.identityKey)).toEqual(
+      tests.map((test) => test.identityKey).sort((left, right) => left.localeCompare(right, 'en'))
+    );
+    expect(
+      result.findings.find(
+        (finding: { identityKey: string }) =>
+          finding.identityKey === 'root-vitest::parse-error.test.ts'
+      )
+    ).toMatchObject({
+      value: 'unknown',
+      confidence: 'low',
+      issueCodes: ['PARALLEL_ANALYSIS_INCOMPLETE'],
+    });
+    expect(await parallelSafety.analyze(input)).toEqual(result);
+    for (const finding of result.findings) {
+      expect(finding.evidenceRefs).toEqual([...new Set(finding.evidenceRefs)].sort());
+      expect(finding.issueCodes).toEqual([...new Set(finding.issueCodes)].sort());
+    }
+  });
+});
+
+describe('criticality analyzer', () => {
+  it.each([
+    ['tests/package-install.test.ts', 'package_install'],
+    ['tests/packaged-runtime.test.ts', 'packaged_runtime'],
+    ['tests/cli-bin.test.ts', 'cli_bin'],
+    ['tests/release-evidence.test.ts', 'release_path'],
+  ] as const)('binds %s to explicit critical evidence', async (testPath, bindingKind) => {
+    const criticality = loadCriticality();
+    const result = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath,
+      identityKey: `root-vitest::${testPath}`,
+      routeGraph: criticalityRouteGraph(),
+      sourceIndex: criticalitySourceIndex(),
+    });
+
+    expect(result).toMatchObject({ value: 'critical', confidence: 'high' });
+    expect(result.bindings).toContainEqual(
+      expect.objectContaining({
+        kind: bindingKind,
+      })
+    );
+    expect(result.evidenceRefs.length).toBeGreaterThan(0);
+  });
+
+  it('does not infer criticality from filename or caller-provided heuristics', async () => {
+    const criticality = loadCriticality();
+    const result = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/critical-name-only.test.ts',
+      identityKey: 'root-vitest::tests/critical-name-only.test.ts',
+      routeGraph: criticalityRouteGraph(),
+      sourceIndex: {
+        ...criticalitySourceIndex(),
+        explicitBindings: [
+          {
+            testPath: 'tests/critical-name-only.test.ts',
+            kind: 'package_install',
+            evidenceRef: 'caller:declared-criticality',
+          },
+        ],
+      },
+      runtimeMs: 120_000,
+      assertionCount: 50,
+      executionFrequency: 500,
+      declaredCriticality: 'critical',
+    });
+
+    expect(result).toMatchObject({
+      value: 'standard',
+      confidence: 'medium',
+      bindings: [],
+      evidenceRefs: [],
+      issueCodes: [],
+    });
+  });
+
+  it('classifies an extended host matrix as specialized', async () => {
+    const criticality = loadCriticality();
+    const result = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/host-matrix.test.ts',
+      identityKey: 'root-vitest::tests/host-matrix.test.ts',
+      routeGraph: criticalityRouteGraph(),
+      sourceIndex: criticalitySourceIndex(),
+    });
+
+    expect(result).toMatchObject({
+      value: 'specialized',
+      confidence: 'high',
+    });
+  });
+
+  it('keeps batch findings complete and deterministic across per-test parse errors', async () => {
+    const criticality = loadCriticality();
+    const testPaths = [
+      'tests/package-install.test.ts',
+      'tests/packaged-runtime.test.ts',
+      'tests/cli-bin.test.ts',
+      'tests/release-evidence.test.ts',
+      'tests/critical-name-only.test.ts',
+      'tests/host-matrix.test.ts',
+      'tests/parse-error.test.ts',
+    ];
+    const tests = testPaths.map((testPath) =>
+      testIdentity(`root-vitest::${testPath}`, {
+        testPath,
+      })
+    );
+    const input = {
+      repoRoot: CRITICALITY_FIXTURE,
+      inventory: { tests },
+      routeGraph: criticalityRouteGraph(),
+      sourceIndex: criticalitySourceIndex(),
+    };
+
+    const result = await criticality.analyze(input);
+
+    expect(result).toMatchObject({
+      analyzerId: 'criticality',
+      analyzerVersion: '1',
+      dimension: 'criticality',
+      required: true,
+      status: 'complete',
+      issues: [],
+    });
+    expect(result.findings).toHaveLength(tests.length);
+    expect(result.findings.map((finding: { identityKey: string }) => finding.identityKey)).toEqual(
+      tests.map((test) => test.identityKey).sort((left, right) => left.localeCompare(right, 'en'))
+    );
+    expect(
+      result.findings.find(
+        (finding: { identityKey: string }) =>
+          finding.identityKey === 'root-vitest::tests/parse-error.test.ts'
+      )
+    ).toMatchObject({
+      value: 'unknown',
+      confidence: 'low',
+      issueCodes: ['CRITICALITY_ANALYSIS_INCOMPLETE'],
+    });
+    expect(await criticality.analyze(input)).toEqual(result);
+    for (const finding of result.findings) {
+      expect(finding.bindings).toEqual(
+        [...finding.bindings].sort((left, right) =>
+          `${left.evidenceRef}\0${left.kind}`.localeCompare(
+            `${right.evidenceRef}\0${right.kind}`,
+            'en'
+          )
+        )
+      );
+      expect(finding.evidenceRefs).toEqual([...new Set(finding.evidenceRefs)].sort());
+      expect(finding.issueCodes).toEqual([...new Set(finding.issueCodes)].sort());
+    }
+  });
+
+  it('preserves the five analyzer dimensions as an orthogonal reducer contract', async () => {
+    const parallelSafety = loadParallelSafety();
+    const criticality = loadCriticality();
+    const parallelFinding = await parallelSafety.analyzeTestFile({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/package-install.test.ts',
+      identityKey: REDUCER_CONTRACT_IDENTITY,
+    });
+    const criticalityFinding = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/package-install.test.ts',
+      identityKey: REDUCER_CONTRACT_IDENTITY,
+      routeGraph: criticalityRouteGraph(),
+      sourceIndex: criticalitySourceIndex(),
+    });
+    const reducerContractFixture = Object.freeze({
+      identityKey: REDUCER_CONTRACT_IDENTITY,
+      executionMultiplicity: 'duplicate',
+      targetValidity: 'active',
+      oracleEffectiveness: 'ineffective_candidate',
+    });
+    const reducedRow = {
+      ...reducerContractFixture,
+      parallelSafety: parallelFinding.value,
+      criticality: criticalityFinding.value,
+    };
+
+    expect(reducedRow).toMatchObject({
+      identityKey: REDUCER_CONTRACT_IDENTITY,
+      executionMultiplicity: 'duplicate',
+      targetValidity: 'active',
+      oracleEffectiveness: 'ineffective_candidate',
+      parallelSafety: 'unsafe',
+      criticality: 'critical',
+    });
+    expect(parallelFinding).not.toHaveProperty('criticality');
+    expect(criticalityFinding).not.toHaveProperty('parallelSafety');
   });
 });
