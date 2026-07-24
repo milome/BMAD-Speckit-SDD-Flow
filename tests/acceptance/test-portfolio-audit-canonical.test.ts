@@ -156,6 +156,46 @@ describe('test portfolio canonical core', () => {
     ).toThrow('DUPLICATE_EVIDENCE_INCOMPLETE');
   });
 
+  it('rejects empty, root, and absolute source paths', () => {
+    for (const value of ['source:', 'source:.', 'source:./']) {
+      expect(() => normalizeEvidenceRef(value)).toThrow('EVIDENCE_SOURCE_PATH_EMPTY');
+    }
+    for (const value of [
+      'source:/outside.test.ts',
+      'source:C:/outside.test.ts',
+      'source:C:\\outside.test.ts',
+      'source:C:outside.test.ts',
+    ]) {
+      expect(() => normalizeEvidenceRef(value)).toThrow('EVIDENCE_SOURCE_OUTSIDE_REPO');
+    }
+  });
+
+  it('removes source trailing slashes while preserving fragments', () => {
+    expect(normalizeEvidenceRef('source:dir')).toBe('source:dir');
+    expect(normalizeEvidenceRef('source:dir/')).toBe('source:dir');
+    expect(normalizeEvidenceRef('source:dir/#suite')).toBe('source:dir#suite');
+    expect(normalizeEvidenceRef('source:dir/../file.test.ts#suite')).toBe(
+      'source:file.test.ts#suite'
+    );
+  });
+
+  it('requires dense distinct route refs for duplicate execution evidence', () => {
+    const sparseRefs = ['route:a'];
+    sparseRefs.length = 2;
+
+    for (const refs of [
+      ['route:a', 'route:'],
+      ['route:a', 'source:tests/a.test.ts'],
+      ['source:tests/a.test.ts', 'source:tests/b.test.ts'],
+      ['route:group\\test', 'route:group/test'],
+      sparseRefs,
+    ]) {
+      expect(() => validateCanonicalAudit(duplicateAudit(refs))).toThrow(
+        'DUPLICATE_EVIDENCE_INCOMPLETE'
+      );
+    }
+  });
+
   it('requires confidence to be a plain object when present', () => {
     for (const confidence of [undefined, null, [], new Date(0)]) {
       expect(() =>

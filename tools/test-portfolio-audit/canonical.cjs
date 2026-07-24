@@ -32,12 +32,14 @@ function normalizeEvidenceRef(value) {
     const fragmentIndex = source.indexOf('#');
     const sourcePath = fragmentIndex === -1 ? source : source.slice(0, fragmentIndex);
     const fragment = fragmentIndex === -1 ? '' : source.slice(fragmentIndex);
-    const normalizedPath = path.posix.normalize(sourcePath);
-    if (
-      normalizedPath === '..' ||
-      normalizedPath.startsWith('../') ||
-      path.posix.isAbsolute(normalizedPath)
-    ) {
+    if (path.posix.isAbsolute(sourcePath) || /^[A-Za-z]:/.test(sourcePath)) {
+      throw new Error('EVIDENCE_SOURCE_OUTSIDE_REPO');
+    }
+    const normalizedPath = path.posix.normalize(sourcePath).replace(/\/+$/, '');
+    if (!normalizedPath || normalizedPath === '.') {
+      throw new Error('EVIDENCE_SOURCE_PATH_EMPTY');
+    }
+    if (normalizedPath === '..' || normalizedPath.startsWith('../')) {
       throw new Error('EVIDENCE_SOURCE_OUTSIDE_REPO');
     }
     return `source:${normalizedPath}${fragment}`;
@@ -167,11 +169,22 @@ function validateCanonicalAudit(artifact) {
 
 function hasCompleteDuplicateEvidence(values) {
   if (!Array.isArray(values)) return false;
-  try {
-    return stableUnique(values.map(normalizeEvidenceRef)).length >= 2;
-  } catch {
-    return false;
+  const normalizedValues = [];
+  for (let index = 0; index < values.length; index += 1) {
+    if (!Object.prototype.hasOwnProperty.call(values, index)) return false;
+    const value = values[index];
+    if (typeof value !== 'string') return false;
+    try {
+      const normalizedValue = normalizeEvidenceRef(value);
+      if (!normalizedValue.startsWith('route:') || normalizedValue.slice('route:'.length) === '') {
+        return false;
+      }
+      normalizedValues.push(normalizedValue);
+    } catch {
+      return false;
+    }
   }
+  return stableUnique(normalizedValues).length >= 2;
 }
 
 module.exports = {
