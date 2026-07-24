@@ -1,0 +1,19 @@
+{
+  "name": "test-portfolio-route-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "broad": "vitest run",
+    "explicit": "npx vitest run tests/shared.test.ts",
+    "test:all": "npm run broad && npm run explicit",
+    "package-node": "npm run test --prefix package-node",
+    "package-node-alt": "npm --prefix package-node run test",
+    "delegate": "node tools/run-root-tests.cjs",
+    "test:governance-fixtures": "node --test tests/governance.test.js",
+    "test:vitest:default": "npm run broad",
+    "test:bmad-speckit": "npm run package-node",
+    "cycle:a": "npm run cycle:b",
+    "cycle:b": "npm run cycle:a",
+    "unknown": "npm run missing-script"
+  }
+}
