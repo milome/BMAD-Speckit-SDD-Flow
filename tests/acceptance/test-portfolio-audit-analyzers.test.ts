@@ -12,6 +12,7 @@ import {
 } from '../fixtures/test-portfolio-audit/test-helpers';
 
 const require = createRequire(import.meta.url);
+const { reduceAudit } = require('../../tools/test-portfolio-audit/audit.cjs');
 const duplicate = require('../../tools/test-portfolio-audit/analyzers/duplicate.cjs');
 const loadTargetValidity = () =>
   require('../../tools/test-portfolio-audit/analyzers/target-validity.cjs');
@@ -25,6 +26,116 @@ const PARALLEL_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audi
 const CRITICALITY_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/criticality');
 const SHARED_IDENTITY = 'root-vitest::tests/shared.test.ts';
 const REDUCER_CONTRACT_IDENTITY = 'root-vitest::tests/package-install.test.ts';
+
+type ReducerDimension =
+  | 'executionMultiplicity'
+  | 'targetValidity'
+  | 'oracleEffectiveness'
+  | 'parallelSafety'
+  | 'criticality';
+
+function reducerFinding(
+  value: string,
+  extras: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    identityKey: REDUCER_CONTRACT_IDENTITY,
+    value,
+    confidence: 'high',
+    evidenceRefs: ['source:tests/package-install.test.ts#L1'],
+    issueCodes: [],
+    ...extras,
+  };
+}
+
+function reducerAnalyzerResult(
+  dimension: ReducerDimension,
+  findings: Array<Record<string, unknown>>,
+  extras: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const analyzerIds: Record<ReducerDimension, string> = {
+    executionMultiplicity: 'duplicate-execution',
+    targetValidity: 'target-validity',
+    oracleEffectiveness: 'oracle-effectiveness',
+    parallelSafety: 'parallel-safety',
+    criticality: 'criticality',
+  };
+  return {
+    analyzerId: analyzerIds[dimension],
+    analyzerVersion: '1',
+    dimension,
+    required: true,
+    status: 'complete',
+    findings,
+    issues: [],
+    ...extras,
+  };
+}
+
+function reducerInput(
+  analyzerResults: Array<Record<string, unknown>>,
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    repository: { commit: 'fixture-commit', dirty: false },
+    tool: { version: 'test-portfolio-audit/1', runnerVersions: [] },
+    inventory: {
+      tests: [
+        {
+          identityKey: REDUCER_CONTRACT_IDENTITY,
+          testPath: 'tests/package-install.test.ts',
+          runnerId: 'root-vitest',
+          executionRouteRefs: ['route:ci/test-a', 'route:ci/test-b'],
+        },
+      ],
+    },
+    discovery: {
+      complete: true,
+      runnerResolvedCount: 1,
+      candidateCount: 1,
+      unexplainedRunnerOnlyCount: 0,
+      unexplainedCandidateOnlyCount: 0,
+    },
+    routeGraph: { failed: false },
+    analyzerResults,
+    probeResults: {
+      requested: 0,
+      selected: 0,
+      completed: 0,
+      failed: 0,
+      timedOut: 0,
+      unprobed: 0,
+      budgetExhausted: false,
+      results: [],
+    },
+    timings: { [REDUCER_CONTRACT_IDENTITY]: 500 },
+    issues: [],
+    fatalIssues: [],
+    ...overrides,
+  };
+}
+
+function completeReducerResults(
+  replacements: Partial<Record<ReducerDimension, Record<string, unknown>>> = {}
+): Array<Record<string, unknown>> {
+  const defaults: Record<ReducerDimension, Record<string, unknown>> = {
+    executionMultiplicity: reducerAnalyzerResult('executionMultiplicity', [
+      reducerFinding('duplicate', {
+        executionRouteRefs: ['route:ci/test-b', 'route:ci/test-a'],
+        removableDurationMs: 500,
+      }),
+    ]),
+    targetValidity: reducerAnalyzerResult('targetValidity', [reducerFinding('active')]),
+    oracleEffectiveness: reducerAnalyzerResult('oracleEffectiveness', [
+      reducerFinding('ineffective_candidate'),
+    ]),
+    parallelSafety: reducerAnalyzerResult('parallelSafety', [reducerFinding('unsafe')]),
+    criticality: reducerAnalyzerResult('criticality', [reducerFinding('critical')]),
+  };
+  return (Object.keys(defaults) as ReducerDimension[]).map(
+    (dimension) => replacements[dimension] || defaults[dimension]
+  );
+}
 
 type CriticalityBindingKind =
   | 'package_install'
@@ -916,5 +1027,205 @@ describe('criticality analyzer', () => {
     });
     expect(parallelFinding).not.toHaveProperty('criticality');
     expect(criticalityFinding).not.toHaveProperty('parallelSafety');
+  });
+});
+
+describe('test portfolio analyzer reducer', () => {
+  it('keeps all five dimensions on one canonical identity row', () => {
+    const result = reduceAudit(reducerInput(completeReducerResults()));
+
+    expect(result.artifact.tests[0]).toMatchObject({
+      executionMultiplicity: 'duplicate',
+      targetValidity: 'active',
+      oracleEffectiveness: 'ineffective_candidate',
+      parallelSafety: 'unsafe',
+      criticality: 'critical',
+    });
+  });
+
+  it('turns conflicting definitive target evidence into ambiguous and incomplete', () => {
+    const targetResult = reducerAnalyzerResult('targetValidity', [
+      reducerFinding('active', {
+        evidenceRefs: ['source:package.json#exports'],
+      }),
+      reducerFinding('obsolete_candidate', {
+        evidenceRefs: ['source:src/a.ts#no-inbound'],
+      }),
+    ]);
+    const result = reduceAudit(
+      reducerInput(completeReducerResults({ targetValidity: targetResult }))
+    );
+
+    expect(result.artifact.tests[0]).toMatchObject({
+      targetValidity: 'ambiguous',
+      issueCodes: expect.arrayContaining(['TARGET_CLASSIFICATION_CONFLICT']),
+    });
+    expect(result.artifact.issues).toContainEqual(
+      expect.objectContaining({
+        severity: 'warning',
+        code: 'TARGET_CLASSIFICATION_CONFLICT',
+        identityKey: REDUCER_CONTRACT_IDENTITY,
+      })
+    );
+    expect(result.artifact.status).toBe('INCOMPLETE');
+  });
+
+  it('does not default a missing required analyzer dimension to a positive value', () => {
+    const analyzerResults = completeReducerResults().filter(
+      (result) => result.dimension !== 'parallelSafety'
+    );
+    const result = reduceAudit(reducerInput(analyzerResults));
+
+    expect(result.artifact.tests[0]).toMatchObject({
+      parallelSafety: 'unknown',
+      issueCodes: expect.arrayContaining(['PARALLEL_SAFETY_COVERAGE_MISSING']),
+    });
+    expect(result.artifact.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'PARALLEL_SAFETY_COVERAGE_MISSING',
+        identityKey: REDUCER_CONTRACT_IDENTITY,
+      })
+    );
+    expect(result.artifact.status).toBe('INCOMPLETE');
+  });
+
+  it('records unsupported findings instead of dropping them', () => {
+    const parallelResult = reducerAnalyzerResult('parallelSafety', [
+      reducerFinding('optimistic-safe', {
+        evidenceRefs: ['source:tests/package-install.test.ts#unsupported'],
+        issueCodes: ['UPSTREAM_UNSUPPORTED_VALUE'],
+      }),
+    ]);
+    const result = reduceAudit(
+      reducerInput(completeReducerResults({ parallelSafety: parallelResult }))
+    );
+
+    expect(result.artifact.tests[0]).toMatchObject({
+      parallelSafety: 'unknown',
+      issueCodes: expect.arrayContaining([
+        'ANALYZER_FINDING_VALUE_UNSUPPORTED',
+        'PARALLEL_SAFETY_COVERAGE_MISSING',
+        'UPSTREAM_UNSUPPORTED_VALUE',
+      ]),
+    });
+    expect(result.artifact.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'ANALYZER_FINDING_VALUE_UNSUPPORTED',
+          identityKey: REDUCER_CONTRACT_IDENTITY,
+          evidenceRef: 'source:tests/package-install.test.ts#unsupported',
+        }),
+        expect.objectContaining({
+          code: 'PARALLEL_SAFETY_COVERAGE_MISSING',
+          identityKey: REDUCER_CONTRACT_IDENTITY,
+        }),
+      ])
+    );
+    expect(result.artifact.status).toBe('INCOMPLETE');
+  });
+
+  it.each([
+    ['unsafe', 'high', 'unsafe', 'high'],
+    ['unknown', 'low', 'unknown', 'low'],
+  ])(
+    'allows the runtime probe to downgrade safe_candidate to %s',
+    (probeValue, probeConfidence, expectedValue, expectedConfidence) => {
+      const parallelResult = reducerAnalyzerResult('parallelSafety', [
+        reducerFinding('safe_candidate', { confidence: 'medium' }),
+      ]);
+      const result = reduceAudit(
+        reducerInput(completeReducerResults({ parallelSafety: parallelResult }), {
+          probeResults: {
+            requested: 1,
+            selected: 1,
+            completed: 1,
+            failed: 0,
+            timedOut: 0,
+            unprobed: 0,
+            budgetExhausted: false,
+            results: [
+              {
+                identityKey: REDUCER_CONTRACT_IDENTITY,
+                value: probeValue,
+                confidence: probeConfidence,
+                evidenceRefs: ['probe:runtime'],
+                issueCodes: [`PROBE_${String(probeValue).toUpperCase()}`],
+              },
+            ],
+          },
+        })
+      );
+
+      expect(result.artifact.tests[0].parallelSafety).toBe(expectedValue);
+      expect(result.artifact.tests[0].confidence.parallelSafety).toBe(expectedConfidence);
+    }
+  );
+
+  it('does not let a successful probe upgrade unknown or safe_candidate to high confidence', () => {
+    const safeProbe = {
+      requested: 1,
+      selected: 1,
+      completed: 1,
+      failed: 0,
+      timedOut: 0,
+      unprobed: 0,
+      budgetExhausted: false,
+      results: [
+        {
+          identityKey: REDUCER_CONTRACT_IDENTITY,
+          value: 'safe_candidate',
+          confidence: 'high',
+          evidenceRefs: ['probe:runtime'],
+          issueCodes: [],
+        },
+      ],
+    };
+    const safeStatic = reducerAnalyzerResult('parallelSafety', [
+      reducerFinding('safe_candidate', { confidence: 'medium' }),
+    ]);
+    const unknownStatic = reducerAnalyzerResult('parallelSafety', [
+      reducerFinding('unknown', { confidence: 'low' }),
+    ]);
+
+    const safeResult = reduceAudit(
+      reducerInput(completeReducerResults({ parallelSafety: safeStatic }), {
+        probeResults: safeProbe,
+      })
+    );
+    const unknownResult = reduceAudit(
+      reducerInput(completeReducerResults({ parallelSafety: unknownStatic }), {
+        probeResults: safeProbe,
+      })
+    );
+
+    expect(safeResult.artifact.tests[0]).toMatchObject({
+      parallelSafety: 'safe_candidate',
+      confidence: { parallelSafety: 'medium' },
+    });
+    expect(unknownResult.artifact.tests[0]).toMatchObject({
+      parallelSafety: 'unknown',
+      confidence: { parallelSafety: 'low' },
+    });
+  });
+
+  it('marks failed required analyzers and declared coverage gaps incomplete', () => {
+    const criticalityResult = reducerAnalyzerResult('criticality', [reducerFinding('critical')], {
+      status: 'failed',
+    });
+    const oracleResult = reducerAnalyzerResult(
+      'oracleEffectiveness',
+      [reducerFinding('effective')],
+      { coverageMissing: true }
+    );
+    const result = reduceAudit(
+      reducerInput(
+        completeReducerResults({
+          criticality: criticalityResult,
+          oracleEffectiveness: oracleResult,
+        })
+      )
+    );
+
+    expect(result.artifact.status).toBe('INCOMPLETE');
   });
 });

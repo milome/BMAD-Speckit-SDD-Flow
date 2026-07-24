@@ -12,6 +12,118 @@ const {
   stableUnique,
   validateCanonicalAudit,
 } = require('../../tools/test-portfolio-audit/canonical.cjs');
+const { reduceAudit } = require('../../tools/test-portfolio-audit/audit.cjs');
+
+type AnalyzerDimension =
+  | 'executionMultiplicity'
+  | 'targetValidity'
+  | 'oracleEffectiveness'
+  | 'parallelSafety'
+  | 'criticality';
+
+const REDUCER_IDENTITY_KEY = 'root-vitest::tests/a.test.ts';
+
+function reducerFinding(
+  value: string,
+  extras: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    identityKey: REDUCER_IDENTITY_KEY,
+    value,
+    confidence: 'high',
+    evidenceRefs: ['source:tests/a.test.ts#L10'],
+    issueCodes: [],
+    ...extras,
+  };
+}
+
+function analyzerResult(
+  dimension: AnalyzerDimension,
+  value: string,
+  extras: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const analyzerIds: Record<AnalyzerDimension, string> = {
+    executionMultiplicity: 'duplicate-execution',
+    targetValidity: 'target-validity',
+    oracleEffectiveness: 'oracle-effectiveness',
+    parallelSafety: 'parallel-safety',
+    criticality: 'criticality',
+  };
+  return {
+    analyzerId: analyzerIds[dimension],
+    analyzerVersion: '1',
+    dimension,
+    required: true,
+    status: 'complete',
+    findings: [
+      reducerFinding(
+        value,
+        dimension === 'executionMultiplicity'
+          ? { executionRouteRefs: ['route:workflow/test-b', 'route:workflow/test-a'] }
+          : {}
+      ),
+    ],
+    issues: [],
+    ...extras,
+  };
+}
+
+function baseReducerInput(
+  analyzerResults: Array<Record<string, unknown>>,
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    repository: {
+      commit: 'dd4086c4c5a707850ff1d72221b7dfa935683ee7',
+      dirty: false,
+    },
+    tool: {
+      version: 'test-portfolio-audit/1',
+      runnerVersions: [
+        { runnerId: 'root-vitest', version: '4.0.18' },
+        { runnerId: 'bmad-speckit-node-test', version: process.version },
+      ],
+    },
+    inventory: {
+      tests: [
+        {
+          identityKey: REDUCER_IDENTITY_KEY,
+          testPath: 'tests/a.test.ts',
+          runnerId: 'root-vitest',
+          runnerBindings: [
+            { runnerId: 'root-vitest', configPath: 'vitest.config.ts' },
+            { runnerId: 'bmad-speckit-node-test', configPath: 'package.json' },
+          ],
+          executionRouteRefs: ['route:workflow/test-b', 'route:workflow/test-a'],
+          evidenceRefs: ['source:vitest.config.ts#test.include'],
+        },
+      ],
+    },
+    discovery: {
+      complete: true,
+      runnerResolvedCount: 1,
+      candidateCount: 1,
+      unexplainedRunnerOnlyCount: 0,
+      unexplainedCandidateOnlyCount: 0,
+    },
+    routeGraph: { failed: false },
+    analyzerResults,
+    probeResults: {
+      requested: 0,
+      selected: 0,
+      completed: 0,
+      failed: 0,
+      timedOut: 0,
+      unprobed: 0,
+      budgetExhausted: false,
+      results: [],
+    },
+    timings: { [REDUCER_IDENTITY_KEY]: 125 },
+    issues: [],
+    fatalIssues: [],
+    ...overrides,
+  };
+}
 
 function auditWithTests(tests: unknown): Record<string, unknown> {
   return {
@@ -366,5 +478,90 @@ describe('test portfolio canonical core', () => {
     const artifact = duplicateAudit(['route:pr-full/test-ci', 'route:pr-full/test-bmad']);
 
     expect(validateCanonicalAudit(artifact)).toBe(artifact);
+  });
+});
+
+describe('test portfolio canonical reducer', () => {
+  it('produces equal canonical bytes for analyzer completion permutations', () => {
+    const duplicate = analyzerResult('executionMultiplicity', 'duplicate');
+    const oracle = analyzerResult('oracleEffectiveness', 'ineffective_candidate');
+
+    const left = reduceAudit(baseReducerInput([duplicate, oracle]));
+    const right = reduceAudit(baseReducerInput([oracle, duplicate]));
+
+    expect(left.canonicalBytes.equals(right.canonicalBytes)).toBe(true);
+    expect(left.artifactSha256).toBe(right.artifactSha256);
+  });
+
+  it('assembles the fixed canonical shape with stable nested array order', () => {
+    const result = reduceAudit(
+      baseReducerInput([
+        analyzerResult('targetValidity', 'active', { analyzerVersion: '2' }),
+        analyzerResult('executionMultiplicity', 'duplicate'),
+        analyzerResult('criticality', 'critical'),
+        analyzerResult('parallelSafety', 'safe_candidate'),
+        analyzerResult('oracleEffectiveness', 'effective'),
+      ])
+    );
+
+    expect(result.artifact).toMatchObject({
+      schemaVersion: 'test-portfolio-audit/v1',
+      repository: {
+        commit: 'dd4086c4c5a707850ff1d72221b7dfa935683ee7',
+        dirty: false,
+      },
+      tool: { version: 'test-portfolio-audit/1' },
+      status: 'COMPLETE',
+      discovery: { complete: true },
+      probe: { complete: true },
+      tests: [
+        {
+          testPath: 'tests/a.test.ts',
+          runnerId: 'root-vitest',
+          executionRouteRefs: ['route:workflow/test-a', 'route:workflow/test-b'],
+        },
+      ],
+    });
+    expect(result.artifact.tool.analyzerVersions).toEqual([
+      { analyzerId: 'criticality', version: '1' },
+      { analyzerId: 'duplicate-execution', version: '1' },
+      { analyzerId: 'oracle-effectiveness', version: '1' },
+      { analyzerId: 'parallel-safety', version: '1' },
+      { analyzerId: 'target-validity', version: '2' },
+    ]);
+    expect(result.artifact.tests[0].runnerBindings).toEqual([
+      { runnerId: 'bmad-speckit-node-test', configPath: 'package.json' },
+      { runnerId: 'root-vitest', configPath: 'vitest.config.ts' },
+    ]);
+    expect(result.artifact.tests[0].evidenceRefs).toEqual([
+      'source:tests/a.test.ts#L10',
+      'source:vitest.config.ts#test.include',
+    ]);
+    expect(result.artifact).not.toHaveProperty('artifactSha256');
+    expect(result.artifact).not.toHaveProperty('observedAt');
+    expect(result.artifact).not.toHaveProperty('durationMs');
+    expect(JSON.parse(result.canonicalBytes.toString('utf8'))).toEqual(result.artifact);
+    expect(result.artifactSha256).toBe(sha256Bytes(result.canonicalBytes));
+  });
+
+  it.each([
+    [{ fatalIssues: [{ code: 'AUDIT_FATAL', severity: 'fatal' }] }, 'FAILED'],
+    [{ routeGraph: { failed: true } }, 'FAILED'],
+    [{ discovery: { complete: false } }, 'INCOMPLETE'],
+  ])('calculates fail-closed audit status for %o', (overrides, expectedStatus) => {
+    const result = reduceAudit(
+      baseReducerInput(
+        [
+          analyzerResult('executionMultiplicity', 'single'),
+          analyzerResult('targetValidity', 'active'),
+          analyzerResult('oracleEffectiveness', 'effective'),
+          analyzerResult('parallelSafety', 'safe_candidate'),
+          analyzerResult('criticality', 'standard'),
+        ],
+        overrides
+      )
+    );
+
+    expect(result.artifact.status).toBe(expectedStatus);
   });
 });
