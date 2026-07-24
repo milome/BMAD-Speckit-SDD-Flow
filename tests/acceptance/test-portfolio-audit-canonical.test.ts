@@ -170,6 +170,14 @@ describe('test portfolio canonical core', () => {
     }
   });
 
+  it.each([
+    'source:./C:/outside.test.ts',
+    'source:dir/../C:/outside.test.ts',
+    'source:./C:outside.test.ts',
+  ])('rejects drive-qualified source paths exposed by normalization: %s', (value) => {
+    expect(() => normalizeEvidenceRef(value)).toThrow('EVIDENCE_SOURCE_OUTSIDE_REPO');
+  });
+
   it('removes source trailing slashes while preserving fragments', () => {
     expect(normalizeEvidenceRef('source:dir')).toBe('source:dir');
     expect(normalizeEvidenceRef('source:dir/')).toBe('source:dir');

@@ -39,7 +39,12 @@ function normalizeEvidenceRef(value) {
     if (!normalizedPath || normalizedPath === '.') {
       throw new Error('EVIDENCE_SOURCE_PATH_EMPTY');
     }
-    if (normalizedPath === '..' || normalizedPath.startsWith('../')) {
+    if (
+      normalizedPath === '..' ||
+      normalizedPath.startsWith('../') ||
+      path.posix.isAbsolute(normalizedPath) ||
+      /^[A-Za-z]:/.test(normalizedPath)
+    ) {
       throw new Error('EVIDENCE_SOURCE_OUTSIDE_REPO');
     }
     return `source:${normalizedPath}${fragment}`;
