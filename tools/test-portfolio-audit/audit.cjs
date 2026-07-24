@@ -643,7 +643,7 @@ function calculateTotals(tests, issues) {
         total + (row.parallelSafety === 'safe_candidate' ? finiteDuration(row.durationMs) || 0 : 0),
       0
     ),
-    dimensions,
+    ...dimensions,
   };
 }
 

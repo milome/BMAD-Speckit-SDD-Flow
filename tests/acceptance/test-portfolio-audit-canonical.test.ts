@@ -544,6 +544,27 @@ describe('test portfolio canonical reducer', () => {
     expect(result.artifactSha256).toBe(sha256Bytes(result.canonicalBytes));
   });
 
+  it('publishes each analyzer dimension directly under totals', () => {
+    const result = reduceAudit(
+      baseReducerInput([
+        analyzerResult('executionMultiplicity', 'duplicate'),
+        analyzerResult('targetValidity', 'active'),
+        analyzerResult('oracleEffectiveness', 'effective'),
+        analyzerResult('parallelSafety', 'safe_candidate'),
+        analyzerResult('criticality', 'critical'),
+      ])
+    );
+
+    expect(result.artifact.totals).toMatchObject({
+      executionMultiplicity: { duplicate: 1 },
+      targetValidity: { active: 1 },
+      oracleEffectiveness: { effective: 1 },
+      parallelSafety: { safe_candidate: 1 },
+      criticality: { critical: 1 },
+    });
+    expect(result.artifact.totals).not.toHaveProperty('dimensions');
+  });
+
   it.each([
     [{ fatalIssues: [{ code: 'AUDIT_FATAL', severity: 'fatal' }] }, 'FAILED'],
     [{ routeGraph: { failed: true } }, 'FAILED'],
