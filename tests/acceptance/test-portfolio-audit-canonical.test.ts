@@ -58,6 +58,15 @@ describe('test portfolio canonical core', () => {
     ).toThrow('PATH_OUTSIDE_REPO');
   });
 
+  it.each([
+    './C:/outside.test.ts',
+    'dir/../C:/outside.test.ts',
+    './\\\\server\\share\\outside.test.ts',
+    'dir/../\\\\server\\share\\outside.test.ts',
+  ])('rejects Windows absolute aliases after repo path normalization: %s', (value) => {
+    expect(() => normalizeRepoPath('/repo', value)).toThrow('PATH_OUTSIDE_REPO');
+  });
+
   it('uses Windows containment rules for a Windows repository root', () => {
     expect(normalizeRepoPath('C:\\repo', 'tests\\acceptance\\a.test.ts')).toBe(
       'tests/acceptance/a.test.ts'
@@ -245,6 +254,15 @@ describe('test portfolio canonical core', () => {
     'source:dir/../C:/outside.test.ts',
     'source:./C:outside.test.ts',
   ])('rejects drive-qualified source paths exposed by normalization: %s', (value) => {
+    expect(() => normalizeEvidenceRef(value)).toThrow('EVIDENCE_SOURCE_OUTSIDE_REPO');
+  });
+
+  it.each([
+    'source:./C:/outside.test.ts',
+    'source:dir/../C:/outside.test.ts',
+    'source:./\\\\server\\share\\outside.test.ts',
+    'source:dir/../\\\\server\\share\\outside.test.ts',
+  ])('rejects Windows absolute aliases after source path normalization: %s', (value) => {
     expect(() => normalizeEvidenceRef(value)).toThrow('EVIDENCE_SOURCE_OUTSIDE_REPO');
   });
 

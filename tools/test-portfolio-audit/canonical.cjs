@@ -5,6 +5,30 @@ const AUDIT_SCHEMA_VERSION = 'test-portfolio-audit/v1';
 const CONFIDENCE = new Set(['high', 'medium', 'low']);
 const STATUS = new Set(['COMPLETE', 'INCOMPLETE', 'FAILED']);
 
+function isWindowsAbsoluteLike(value) {
+  const raw = String(value);
+  const slashNormalized = path.posix.normalize(raw.replace(/\\/g, '/'));
+  const win32Normalized = path.win32.normalize(raw);
+
+  if ([raw, slashNormalized, win32Normalized].some((candidate) => /^[A-Za-z]:/.test(candidate))) {
+    return true;
+  }
+  if (
+    /^\\/.test(raw) ||
+    /^(?:\\\\|\/\/)/.test(raw) ||
+    (path.win32.isAbsolute(raw) && raw.includes('\\'))
+  ) {
+    return true;
+  }
+
+  const separatorRuns = raw.matchAll(/[\\/]{2,}/g);
+  for (const match of separatorRuns) {
+    const prefix = raw.slice(0, match.index).replace(/\\/g, '/');
+    if (path.posix.normalize(prefix || '.') === '.') return true;
+  }
+  return false;
+}
+
 function normalizeRepoPath(repoRoot, value) {
   if (value === undefined || value === null || String(value).trim() === '') {
     const error = new Error('PATH_EMPTY');
@@ -15,8 +39,13 @@ function normalizeRepoPath(repoRoot, value) {
   const candidateText = String(value);
   const windowsRoot = /^[A-Za-z]:[\\/]/.test(rootText) || /^(?:\\\\|\/\/)/.test(rootText);
   const posixRoot = !windowsRoot && path.posix.isAbsolute(rootText);
-  const windowsCandidate = /^[A-Za-z]:/.test(candidateText) || /^(?:\\\\|\/\/)/.test(candidateText);
+  const windowsCandidate = isWindowsAbsoluteLike(candidateText);
   if (posixRoot && windowsCandidate) {
+    const error = new Error(`PATH_OUTSIDE_REPO:${value}`);
+    error.code = 'PATH_OUTSIDE_REPO';
+    throw error;
+  }
+  if (windowsRoot && windowsCandidate && !path.win32.isAbsolute(candidateText)) {
     const error = new Error(`PATH_OUTSIDE_REPO:${value}`);
     error.code = 'PATH_OUTSIDE_REPO';
     throw error;
@@ -41,14 +70,19 @@ function normalizeRepoPath(repoRoot, value) {
 
 function normalizeEvidenceRef(value) {
   if (typeof value !== 'string') throw new Error('EVIDENCE_REF_INVALID');
-  const text = value.trim().replace(/\\/g, '/');
+  const rawText = value.trim();
+  const text = rawText.replace(/\\/g, '/');
   if (!text) throw new Error('EVIDENCE_REF_EMPTY');
   if (text.startsWith('source:')) {
+    const rawSource = rawText.slice('source:'.length);
+    const rawFragmentIndex = rawSource.indexOf('#');
+    const rawSourcePath =
+      rawFragmentIndex === -1 ? rawSource : rawSource.slice(0, rawFragmentIndex);
     const source = text.slice('source:'.length);
     const fragmentIndex = source.indexOf('#');
     const sourcePath = fragmentIndex === -1 ? source : source.slice(0, fragmentIndex);
     const fragment = fragmentIndex === -1 ? '' : source.slice(fragmentIndex);
-    if (path.posix.isAbsolute(sourcePath) || /^[A-Za-z]:/.test(sourcePath)) {
+    if (path.posix.isAbsolute(sourcePath) || isWindowsAbsoluteLike(rawSourcePath)) {
       throw new Error('EVIDENCE_SOURCE_OUTSIDE_REPO');
     }
     const normalizedPath = path.posix.normalize(sourcePath).replace(/\/+$/, '');
@@ -59,7 +93,7 @@ function normalizeEvidenceRef(value) {
       normalizedPath === '..' ||
       normalizedPath.startsWith('../') ||
       path.posix.isAbsolute(normalizedPath) ||
-      /^[A-Za-z]:/.test(normalizedPath)
+      isWindowsAbsoluteLike(normalizedPath)
     ) {
       throw new Error('EVIDENCE_SOURCE_OUTSIDE_REPO');
     }
