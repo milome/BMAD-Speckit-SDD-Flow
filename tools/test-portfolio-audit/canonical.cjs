@@ -11,16 +11,32 @@ function normalizeRepoPath(repoRoot, value) {
     error.code = 'PATH_EMPTY';
     throw error;
   }
-  const root = path.resolve(repoRoot);
-  const candidate = String(value).replace(/\\/g, '/');
-  const absolute = path.resolve(root, candidate);
-  const relative = path.relative(root, absolute).replace(/\\/g, '/');
-  if (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative)) {
+  const rootText = String(repoRoot);
+  const candidateText = String(value);
+  const windowsRoot = /^[A-Za-z]:[\\/]/.test(rootText) || /^(?:\\\\|\/\/)/.test(rootText);
+  const posixRoot = !windowsRoot && path.posix.isAbsolute(rootText);
+  const windowsCandidate = /^[A-Za-z]:/.test(candidateText) || /^(?:\\\\|\/\/)/.test(candidateText);
+  if (posixRoot && windowsCandidate) {
     const error = new Error(`PATH_OUTSIDE_REPO:${value}`);
     error.code = 'PATH_OUTSIDE_REPO';
     throw error;
   }
-  return relative === '' ? '.' : relative;
+  const pathApi = windowsRoot ? path.win32 : posixRoot ? path.posix : path;
+  const root = pathApi.resolve(rootText);
+  const candidate = windowsRoot ? candidateText : candidateText.replace(/\\/g, '/');
+  const absolute = pathApi.resolve(root, candidate);
+  const relative = pathApi.relative(root, absolute);
+  if (
+    relative === '..' ||
+    relative.startsWith(`..${pathApi.sep}`) ||
+    pathApi.isAbsolute(relative)
+  ) {
+    const error = new Error(`PATH_OUTSIDE_REPO:${value}`);
+    error.code = 'PATH_OUTSIDE_REPO';
+    throw error;
+  }
+  const normalizedRelative = relative.replace(/\\/g, '/');
+  return normalizedRelative === '' ? '.' : normalizedRelative;
 }
 
 function normalizeEvidenceRef(value) {
@@ -138,6 +154,7 @@ function validateCanonicalAudit(artifact) {
   }
   if (!STATUS.has(artifact.status)) throw new Error('AUDIT_STATUS_INVALID');
   if (!Array.isArray(artifact.tests)) throw new Error('AUDIT_TESTS_INVALID');
+  const runnerIdsByTestPath = new Map();
   for (const row of artifact.tests) {
     if (!isPlainObject(row)) throw new Error('AUDIT_TEST_ROW_INVALID');
     const normalizedTestPath =
@@ -168,6 +185,14 @@ function validateCanonicalAudit(artifact) {
         if (!CONFIDENCE.has(evidence)) throw new Error(`CONFIDENCE_INVALID:${dimension}`);
       }
     }
+    const normalizedRunnerId = row.runnerId.trim();
+    let runnerIds = runnerIdsByTestPath.get(normalizedTestPath);
+    if (!runnerIds) {
+      runnerIds = new Set();
+      runnerIdsByTestPath.set(normalizedTestPath, runnerIds);
+    }
+    if (runnerIds.has(normalizedRunnerId)) throw new Error('TEST_IDENTITY_DUPLICATE');
+    runnerIds.add(normalizedRunnerId);
   }
   return artifact;
 }

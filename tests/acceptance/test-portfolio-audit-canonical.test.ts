@@ -43,6 +43,41 @@ describe('test portfolio canonical core', () => {
     expect(() => normalizeRepoPath('D:/repo', '../outside.test.ts')).toThrow('PATH_OUTSIDE_REPO');
   });
 
+  it('fails closed for Windows path dialects under a POSIX repository root', () => {
+    for (const value of [
+      'C:/outside.test.ts',
+      'C:\\outside.test.ts',
+      '\\\\server\\share\\outside.test.ts',
+    ]) {
+      expect(() => normalizeRepoPath('/repo', value)).toThrow('PATH_OUTSIDE_REPO');
+    }
+
+    const hostDrive = process.cwd().match(/^[A-Za-z]:/)?.[0] || 'C:';
+    expect(() =>
+      normalizeRepoPath('/repo', `${hostDrive}/repo/tests/acceptance/a.test.ts`)
+    ).toThrow('PATH_OUTSIDE_REPO');
+  });
+
+  it('uses Windows containment rules for a Windows repository root', () => {
+    expect(normalizeRepoPath('C:\\repo', 'tests\\acceptance\\a.test.ts')).toBe(
+      'tests/acceptance/a.test.ts'
+    );
+    expect(normalizeRepoPath('C:\\repo', 'C:\\repo\\tests\\acceptance\\a.test.ts')).toBe(
+      'tests/acceptance/a.test.ts'
+    );
+    expect(normalizeRepoPath('C:/repo', 'C:/repo/tests/acceptance/a.test.ts')).toBe(
+      'tests/acceptance/a.test.ts'
+    );
+
+    for (const value of [
+      'C:\\outside.test.ts',
+      'D:\\repo\\tests\\acceptance\\a.test.ts',
+      '\\\\server\\share\\outside.test.ts',
+    ]) {
+      expect(() => normalizeRepoPath('C:\\repo', value)).toThrow('PATH_OUTSIDE_REPO');
+    }
+  });
+
   it('normalizes path-bearing evidence without changing route semantics', () => {
     expect(normalizeEvidenceRef('source:.\\package.json#scripts.test')).toBe(
       'source:package.json#scripts.test'
@@ -113,6 +148,41 @@ describe('test portfolio canonical core', () => {
         { testPath: 'tests/a.test.ts', runnerId: 'runner-10' }
       )
     ).toBeLessThan(0);
+  });
+
+  it.each([
+    [
+      {
+        testPath: './tests\\acceptance\\a.test.ts',
+        runnerId: ' root-vitest ',
+        confidence: { criticality: 'high' },
+        classification: 'first',
+      },
+      {
+        testPath: 'tests/acceptance/a.test.ts',
+        runnerId: 'root-vitest',
+        confidence: { criticality: 'low' },
+        classification: 'second',
+      },
+    ],
+    [
+      {
+        testPath: 'tests/acceptance/a.test.ts',
+        runnerId: 'root-vitest',
+        confidence: { criticality: 'low' },
+        classification: 'second',
+      },
+      {
+        testPath: './tests\\acceptance\\a.test.ts',
+        runnerId: ' root-vitest ',
+        confidence: { criticality: 'high' },
+        classification: 'first',
+      },
+    ],
+  ])('rejects duplicate normalized runner-bound identities in either order', (first, second) => {
+    expect(() => validateCanonicalAudit(auditWithTests([first, second]))).toThrow(
+      'TEST_IDENTITY_DUPLICATE'
+    );
   });
 
   it('requires duplicate route evidence to be normalized, non-empty, and distinct', () => {
