@@ -1,16 +1,12 @@
+import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const {
-  buildPortfolioAudit,
-  discoverConfiguredTests,
-  renderSummary,
-  writeAuditArtifacts,
-} = require('../../tools/test-portfolio-audit/run.cjs');
+const { parseArgs } = require('../../tools/test-portfolio-audit/run.cjs');
 const {
   canonicalJsonBytes,
   sha256Bytes,
@@ -19,65 +15,124 @@ const {
   renderSummary: renderCanonicalSummary,
   writeAuditArtifacts: writeCanonicalArtifacts,
 } = require('../../tools/test-portfolio-audit/report.cjs');
+const { reduceAudit } = require('../../tools/test-portfolio-audit/audit.cjs');
 
 const temporaryRoots: string[] = [];
+const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
+const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
 
-function createFixture(): string {
-  const root = mkdtempSync(join(tmpdir(), 'test-portfolio-audit-'));
+function createTemporaryRoot(prefix = 'test-portfolio-audit-'): string {
+  const root = mkdtempSync(join(tmpdir(), prefix));
   temporaryRoots.push(root);
-  mkdirSync(join(root, 'src'), { recursive: true });
-  mkdirSync(join(root, 'tests', 'acceptance'), { recursive: true });
-  writeFileSync(join(root, 'src', 'target.ts'), 'export const value = 1;\n', 'utf8');
-  writeFileSync(join(root, 'src', 'helper.test.ts'), 'export const helper = true;\n', 'utf8');
+  return root;
+}
+
+function runCli(args: string[]) {
+  return spawnSync(process.execPath, [cliPath, ...args], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+}
+
+function createIncompleteFixture(): string {
+  const root = createTemporaryRoot('test-portfolio-audit-incomplete-');
+  mkdirSync(join(root, '.github', 'workflows'), { recursive: true });
+  mkdirSync(join(root, 'tests'), { recursive: true });
   writeFileSync(
-    join(root, 'tests', 'effective.test.ts'),
+    join(root, 'package.json'),
+    JSON.stringify({
+      name: 'unsupported-runner-fixture',
+      private: true,
+      scripts: { 'test:required': 'jest --runInBand' },
+    }),
+    'utf8'
+  );
+  writeFileSync(
+    join(root, '.github', 'workflows', 'ci.yml'),
     [
-      "import { helper } from '../src/helper.test';",
-      "import { value } from '../src/target';",
-      "test('works', () => expect(helper && value).toBe(1));",
+      'name: CI',
+      'on: [pull_request]',
+      'jobs:',
+      '  test:',
+      '    runs-on: ubuntu-latest',
+      '    steps:',
+      '      - run: npm run test:required',
       '',
     ].join('\n'),
     'utf8'
   );
   writeFileSync(
-    join(root, 'tests', 'no-oracle.test.ts'),
-    "test('does work', () => { const value = 1 + 1; void value; });\n",
-    'utf8'
-  );
-  writeFileSync(
-    join(root, 'tests', 'unsafe.test.ts'),
-    "test('mutates global state', () => { process.env.PORT = '3000'; });\n",
-    'utf8'
-  );
-  writeFileSync(
-    join(root, 'tests', 'acceptance', 'release-install.test.ts'),
-    "test('packages release', () => expect('package').toContain('pack'));\n",
-    'utf8'
-  );
-  writeFileSync(
-    join(root, 'tests', 'string-fixture.test.ts'),
-    [
-      "test('keeps fixture text inert', () => {",
-      "  const fixture = \"import '../missing'; process.env.PORT = '3000';\";",
-      '  // 中文注释不得改变后续 token 的位置。',
-      "  expect(fixture).toContain('PORT');",
-      '});',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
-  writeFileSync(
-    join(root, 'tests', 'custom-harness.test.js'),
-    [
-      'function check() { return true; }',
-      'let failed = 0;',
-      'if (!check()) failed++;',
-      "if (failed > 0) throw new Error('failed');",
-      '',
-    ].join('\n'),
+    join(root, 'tests', 'unsupported.test.ts'),
+    "test('unsupported runner', () => expect(true).toBe(true));\n",
     'utf8'
   );
   return root;
+}
+
+function createFailedFixture(): string {
+  const root = createTemporaryRoot('test-portfolio-audit-failed-');
+  mkdirSync(join(root, 'tests'), { recursive: true });
+  writeFileSync(join(root, 'package.json'), '{ invalid json\n', 'utf8');
+  writeFileSync(
+    join(root, 'tests', 'unreachable.test.ts'),
+    "test('unreachable', () => expect(true).toBe(true));\n",
+    'utf8'
+  );
+  return root;
+}
+
+function createConfiguredVitestFixture(): string {
+  const root = createTemporaryRoot('test-portfolio-audit-configured-vitest-');
+  mkdirSync(join(root, 'contracts'), { recursive: true });
+  mkdirSync(join(root, 'tests'), { recursive: true });
+  writeFileSync(
+    join(root, 'package.json'),
+    JSON.stringify({
+      name: 'configured-vitest-fixture',
+      private: true,
+      scripts: {
+        'test:default': 'vitest run',
+        'test:explicit': 'vitest run tests/explicit.test.ts',
+      },
+    }),
+    'utf8'
+  );
+  writeFileSync(
+    join(root, 'vitest.config.cjs'),
+    [
+      "const explicitTest = 'tests/explicit.test.ts';",
+      "const requested = process.argv.some((arg) => arg.replace(/\\\\/g, '/').endsWith(explicitTest));",
+      'module.exports = {',
+      '  test: {',
+      "    include: ['tests/**/*.test.ts'],",
+      '    exclude: requested ? [] : [explicitTest],',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  writeFileSync(
+    join(root, 'tests', 'default.test.ts'),
+    "test('default route', () => expect(true).toBe(true));\n",
+    'utf8'
+  );
+  writeFileSync(
+    join(root, 'tests', 'explicit.test.ts'),
+    "test('explicit route', () => expect(true).toBe(true));\n",
+    'utf8'
+  );
+  writeFileSync(join(root, 'contracts', 'audit.spec.yaml'), 'kind: contract\n', 'utf8');
+  return root;
+}
+
+function readReceipt(stdout: string): Record<string, any> {
+  return JSON.parse(stdout.trim());
+}
+
+function readArtifact(outputDir: string): Record<string, any> {
+  return JSON.parse(readFileSync(join(outputDir, 'test-portfolio-audit.json'), 'utf8'));
 }
 
 afterEach(() => {
@@ -86,113 +141,307 @@ afterEach(() => {
   }
 });
 
-describe('test portfolio audit minimum end-to-end slice', () => {
-  it('discovers executable files from the configured Vitest and Node runners', () => {
-    const result = discoverConfiguredTests({ repoRoot: process.cwd() });
-
-    expect(result.issues).toEqual([]);
-    expect(result.tests.length).toBeGreaterThanOrEqual(900);
-    expect(new Set(result.tests.map((row: { runnerId: string }) => row.runnerId))).toEqual(
-      new Set(['root-vitest', 'bmad-speckit-node-test'])
-    );
-    const nodeRoute = result.tests.find(
-      (row: { testPath: string }) =>
-        row.testPath === 'packages/bmad-speckit/tests/ai-registry.test.js'
-    );
-    expect(
-      nodeRoute.routeRefs.filter((value: string) =>
-        value.startsWith('route:.github/workflows/ci.yml/test#')
-      )
-    ).toHaveLength(1);
-    expect(
-      result.tests.some(
-        (row: { testPath: string }) =>
-          row.testPath === 'tests/acceptance/accept-install-consumer-cli.test.ts'
-      )
-    ).toBe(true);
-    const consumerInstall = result.tests.find(
-      (row: { testPath: string }) =>
-        row.testPath === 'tests/acceptance/accept-install-consumer-cli.test.ts'
-    );
-    expect(consumerInstall.routeRefs).toEqual([
-      expect.stringMatching(/^route:\.github\/workflows\/ci\.yml\/test#L115$/),
+describe('test portfolio audit CLI option contract', () => {
+  it('accepts only the approved option surface and resolves paths', () => {
+    const outputDir = createTemporaryRoot('test-portfolio-audit-options-');
+    const parsed = parseArgs([
+      '--json',
+      '--repo-root',
+      routeFixture,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '7',
+      '--probe-budget-ms',
+      '120000',
+      '--probe-sandbox-root',
+      routeFixture,
     ]);
-  }, 30_000);
 
-  it('produces conservative evidence-backed classifications and exactly two artifacts', () => {
-    const repoRoot = createFixture();
-    const discoveredTests = [
-      {
-        testPath: 'tests/effective.test.ts',
-        runnerId: 'root-vitest',
-        routeRefs: ['route:ci/test#default', 'route:ci/test#focused'],
-      },
-      {
-        testPath: 'tests/no-oracle.test.ts',
-        runnerId: 'root-vitest',
-        routeRefs: ['route:ci/test#default'],
-      },
-      {
-        testPath: 'tests/unsafe.test.ts',
-        runnerId: 'root-vitest',
-        routeRefs: ['route:ci/test#default'],
-      },
-      {
-        testPath: 'tests/acceptance/release-install.test.ts',
-        runnerId: 'root-vitest',
-        routeRefs: ['route:release/release#test'],
-      },
-      {
-        testPath: 'tests/string-fixture.test.ts',
-        runnerId: 'root-vitest',
-        routeRefs: ['route:ci/test#default'],
-      },
-      {
-        testPath: 'tests/custom-harness.test.js',
-        runnerId: 'bmad-speckit-node-test',
-        routeRefs: ['route:ci/test#node'],
-      },
-    ];
+    expect(parsed).toEqual({
+      json: true,
+      repoRoot: resolve(routeFixture),
+      outputDir: resolve(outputDir),
+      probeLimit: 7,
+      probeBudgetMs: 120000,
+      probeSandboxRoot: resolve(routeFixture),
+    });
+  });
 
-    const audit = buildPortfolioAudit({ repoRoot, discoveredTests, discoveryIssues: [] });
-    const byPath = new Map(
-      audit.tests.map((row: { testPath: string }) => [row.testPath, row] as const)
-    );
+  it.each([
+    ['negative probe limit', ['--probe-limit', '-1']],
+    ['probe limit above twenty', ['--probe-limit', '21']],
+    ['probe budget above maximum', ['--probe-budget-ms', '600001']],
+    ['unknown option', ['--unknown-option']],
+  ])('fails closed for %s', (_name, args) => {
+    const result = runCli(args);
 
-    expect(audit.status).toBe('COMPLETE');
-    expect(byPath.get('tests/effective.test.ts')).toMatchObject({
-      executionMultiplicity: 'duplicate',
-      targetValidity: 'active',
-      oracleEffectiveness: 'effective',
-    });
-    expect(byPath.get('tests/no-oracle.test.ts')).toMatchObject({
-      oracleEffectiveness: 'ineffective_candidate',
-      issueCodes: expect.arrayContaining(['ORACLE_DIRECT_ASSERTION_NOT_FOUND']),
-    });
-    expect(byPath.get('tests/unsafe.test.ts')).toMatchObject({
-      parallelSafety: 'unsafe',
-      issueCodes: expect.arrayContaining(['PARALLEL_PROCESS_ENV_MUTATION']),
-    });
-    expect(byPath.get('tests/acceptance/release-install.test.ts')).toMatchObject({
-      criticality: 'critical',
-    });
-    expect(byPath.get('tests/string-fixture.test.ts')).toMatchObject({
-      targetValidity: 'ambiguous',
-      oracleEffectiveness: 'effective',
-      parallelSafety: 'unknown',
-    });
-    expect(byPath.get('tests/custom-harness.test.js')).toMatchObject({
-      oracleEffectiveness: 'effective',
-    });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).not.toBe('');
+  });
 
-    const outputDir = join(repoRoot, '.artifacts', 'ci');
-    const written = writeAuditArtifacts({ audit, outputDir });
+  it.each([
+    '--repo-root',
+    '--output-dir',
+    '--probe-limit',
+    '--probe-budget-ms',
+    '--probe-sandbox-root',
+  ])('fails closed when %s has no value', (option) => {
+    const result = runCli([option]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('OPTION_VALUE_REQUIRED');
+  });
+
+  it.each(['--inventory', '--classification', '--confidence', '--expected-hash'])(
+    'rejects caller-supplied audit authority through %s',
+    (option) => {
+      const result = runCli([option, 'caller-value']);
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('UNKNOWN_OPTION');
+    }
+  );
+});
+
+describe('test portfolio audit CLI orchestration', () => {
+  it('runs the route fixture and writes exactly two deterministic-authority artifacts', () => {
+    const outputDir = createTemporaryRoot('test-portfolio-audit-output-');
+    const result = runCli([
+      '--repo-root',
+      routeFixture,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '0',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
     expect(readdirSync(outputDir).sort()).toEqual([
       'test-portfolio-audit.json',
       'test-portfolio-summary.md',
     ]);
-    expect(JSON.parse(readFileSync(written.jsonPath, 'utf8'))).toEqual(audit);
-    expect(readFileSync(written.markdownPath, 'utf8')).toBe(renderSummary(audit));
+
+    const artifact = readArtifact(outputDir);
+    const receipt = readReceipt(result.stdout);
+    expect(artifact.schemaVersion).toBe('test-portfolio-audit/v1');
+    expect(artifact.status).toBe('COMPLETE');
+    expect(artifact.tests.length).toBeGreaterThan(0);
+    expect(artifact).not.toHaveProperty('timestamp');
+    expect(artifact).not.toHaveProperty('auditSha256');
+    expect(artifact).not.toHaveProperty('artifactSha256');
+    expect(artifact).not.toHaveProperty('staticAnalysisDurationMs');
+    expect(artifact).not.toHaveProperty('probeDurationMs');
+    expect(artifact).not.toHaveProperty('totalDurationMs');
+    expect(receipt).toMatchObject({
+      schemaVersion: 'test-portfolio-audit-run-receipt/v1',
+      status: 'COMPLETE',
+      executableTestCount: artifact.tests.length,
+      probe: {
+        requested: 0,
+        selected: 0,
+        completed: 0,
+        failed: 0,
+        timedOut: 0,
+      },
+    });
+    expect(isAbsolute(receipt.auditPath)).toBe(true);
+    expect(isAbsolute(receipt.summaryPath)).toBe(true);
+    expect(receipt.auditSha256).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(receipt.staticAnalysisDurationMs).toBeGreaterThanOrEqual(0);
+    expect(receipt.probeDurationMs).toBeGreaterThanOrEqual(0);
+    expect(receipt.totalDurationMs).toBeGreaterThanOrEqual(0);
+  }, 30_000);
+
+  it('maps an incomplete artifact to exit two with visible discovery issues', () => {
+    const repoRoot = createIncompleteFixture();
+    const outputDir = join(repoRoot, '.artifacts', 'ci');
+    const result = runCli([
+      '--repo-root',
+      repoRoot,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '0',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(2);
+    const artifact = readArtifact(outputDir);
+    const receipt = readReceipt(result.stdout);
+    expect(artifact.status).toBe('INCOMPLETE');
+    expect(receipt.status).toBe('INCOMPLETE');
+    expect(artifact.issues.map((issue: { code: string }) => issue.code)).toContain(
+      'CONFIGURED_RUNNER_UNSUPPORTED'
+    );
+  });
+
+  it('maps a failed artifact to exit one with a visible fatal issue', () => {
+    const repoRoot = createFailedFixture();
+    const outputDir = join(repoRoot, '.artifacts', 'ci');
+    const result = runCli([
+      '--repo-root',
+      repoRoot,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '0',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(1);
+    const artifact = readArtifact(outputDir);
+    const receipt = readReceipt(result.stdout);
+    expect(artifact.status).toBe('FAILED');
+    expect(receipt.status).toBe('FAILED');
+    expect(artifact.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'fatal',
+          code: 'CONFIGURED_DISCOVERY_FAILED',
+        }),
+      ])
+    );
+  });
+
+  it('disables requested probes without a sandbox and executes none in the source workspace', () => {
+    const outputDir = createTemporaryRoot('test-portfolio-audit-no-sandbox-');
+    const result = runCli([
+      '--repo-root',
+      routeFixture,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '1',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(0);
+    const artifact = readArtifact(outputDir);
+    const receipt = readReceipt(result.stdout);
+    expect(artifact.status).toBe('COMPLETE');
+    expect(artifact.probe).toMatchObject({
+      requested: 1,
+      selected: 0,
+      completed: 0,
+      failed: 0,
+      timedOut: 0,
+    });
+    expect(artifact.issues.map((issue: { code: string }) => issue.code)).toContain(
+      'PROBE_DISABLED_NO_SANDBOX'
+    );
+    expect(receipt.probe).toMatchObject({
+      requested: 1,
+      selected: 0,
+      completed: 0,
+      failed: 0,
+      timedOut: 0,
+      issueCodes: ['PROBE_DISABLED_NO_SANDBOX'],
+    });
+  }, 30_000);
+
+  it('reconciles executable candidates with explicit Vitest script targets', () => {
+    const repoRoot = createConfiguredVitestFixture();
+    const outputDir = join(repoRoot, '.artifacts', 'ci');
+    const result = runCli([
+      '--repo-root',
+      repoRoot,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '0',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const artifact = readArtifact(outputDir);
+    const receipt = readReceipt(result.stdout);
+    expect(receipt).toMatchObject({
+      status: 'COMPLETE',
+      discovery: {
+        runnerResolvedCount: 2,
+        candidateCount: 2,
+        unexplainedRunnerOnlyCount: 0,
+        unexplainedCandidateOnlyCount: 0,
+      },
+    });
+    expect(
+      artifact.tests.map((test: { runnerId: string; testPath: string }) => [
+        test.runnerId,
+        test.testPath,
+      ])
+    ).toEqual([
+      ['root-vitest', 'tests/default.test.ts'],
+      ['root-vitest', 'tests/explicit.test.ts'],
+    ]);
+  }, 30_000);
+});
+
+describe('test portfolio audit orchestration normalization', () => {
+  it('does not treat findings for distinct target refs as contradictory evidence', () => {
+    const identityKey = 'root-vitest#tests/multi-target.test.ts';
+    const analyzerResult = (
+      analyzerId: string,
+      dimension: string,
+      findings: Record<string, unknown>[]
+    ) => ({
+      analyzerId,
+      analyzerVersion: '1',
+      dimension,
+      required: true,
+      status: 'complete',
+      findings: findings.map((finding) => ({
+        identityKey,
+        confidence: 'high',
+        evidenceRefs: [],
+        issueCodes: [],
+        ...finding,
+      })),
+      issues: [],
+    });
+    const result = reduceAudit({
+      repository: { commit: 'fixture', dirty: false },
+      tool: { version: 'test-portfolio-audit/1', runnerVersions: [] },
+      inventory: {
+        tests: [
+          {
+            identityKey,
+            testPath: 'tests/multi-target.test.ts',
+            runnerId: 'root-vitest',
+          },
+        ],
+      },
+      routeGraph: { routes: [], issues: [] },
+      discovery: {
+        complete: true,
+        runnerResolvedCount: 1,
+        candidateCount: 1,
+        unexplainedRunnerOnlyCount: 0,
+        unexplainedCandidateOnlyCount: 0,
+      },
+      probeResults: { requested: 0, results: [] },
+      analyzerResults: [
+        analyzerResult('duplicate', 'executionMultiplicity', [{ value: 'single' }]),
+        analyzerResult('target-validity', 'targetValidity', [
+          { targetRef: 'src/active.ts', value: 'active' },
+          { targetRef: 'src/obsolete.ts', value: 'obsolete_candidate' },
+        ]),
+        analyzerResult('oracle-effectiveness', 'oracleEffectiveness', [{ value: 'effective' }]),
+        analyzerResult('parallel-safety', 'parallelSafety', [{ value: 'safe_candidate' }]),
+        analyzerResult('criticality', 'criticality', [{ value: 'standard' }]),
+      ],
+    });
+
+    expect(result.artifact.status).toBe('COMPLETE');
+    expect(result.artifact.tests[0]).toMatchObject({
+      targetValidity: 'ambiguous',
+    });
+    expect(result.artifact.tests[0].issueCodes).not.toContain('TARGET_CLASSIFICATION_CONFLICT');
   });
 });
 

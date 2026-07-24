@@ -232,6 +232,14 @@ function applyProbeFinding(reduced, probeFinding, context, issues) {
   };
 }
 
+function hasDistinctTargetScopes(dimension, findings) {
+  if (dimension !== 'targetValidity' || findings.length < 2) return false;
+  const targetRefs = findings.map((finding) =>
+    typeof finding.targetRef === 'string' ? finding.targetRef : ''
+  );
+  return targetRefs.every(Boolean) && new Set(targetRefs).size === targetRefs.length;
+}
+
 function reduceDimension({ dimension, findings = [], probeFinding, identityKey = '' }) {
   const contract = DIMENSIONS[dimension];
   if (!contract) throw new Error(`ANALYZER_DIMENSION_UNSUPPORTED:${dimension}`);
@@ -286,7 +294,13 @@ function reduceDimension({ dimension, findings = [], probeFinding, identityKey =
     issues,
   };
 
-  if (values.size > 1) {
+  if (values.size > 1 && hasDistinctTargetScopes(dimension, supported)) {
+    reduced = {
+      ...reduced,
+      value: contract.conflict,
+      confidence: 'low',
+    };
+  } else if (values.size > 1) {
     addIssue(issues, contract.conflictCode, {
       ...context,
       evidenceRef: merged.evidenceRefs[0] || '',
