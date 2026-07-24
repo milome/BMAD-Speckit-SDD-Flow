@@ -127,6 +127,71 @@ function createConfiguredVitestFixture(): string {
   return root;
 }
 
+function createDualRunnerIdentityFixture(): string {
+  const root = createTemporaryRoot('test-portfolio-audit-dual-runner-');
+  mkdirSync(join(root, 'tests'), { recursive: true });
+  writeFileSync(
+    join(root, 'package.json'),
+    JSON.stringify({
+      name: 'dual-runner-identity-fixture',
+      private: true,
+      scripts: {
+        'test:node': 'node --test tests/shared.test.js',
+        'test:vitest': 'vitest run',
+      },
+    }),
+    'utf8'
+  );
+  writeFileSync(
+    join(root, 'vitest.config.cjs'),
+    "module.exports = { test: { globals: true, include: ['tests/shared.test.js'] } };\n",
+    'utf8'
+  );
+  writeFileSync(
+    join(root, 'tests', 'shared.test.js'),
+    [
+      'if (process.env.VITEST) {',
+      "  test('vitest identity', () => expect(1).toBe(1));",
+      '} else {',
+      "  require('node:test').test('node identity', () => require('node:assert').strictEqual(1, 1));",
+      '}',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return root;
+}
+
+function createDeterminismFixture(reverseOrder: boolean): string {
+  const root = createTemporaryRoot('test-portfolio-audit-determinism-');
+  const packageJson = reverseOrder
+    ? {
+        scripts: { test: 'vitest run' },
+        private: true,
+        name: 'determinism-fixture',
+      }
+    : {
+        name: 'determinism-fixture',
+        private: true,
+        scripts: { test: 'vitest run' },
+      };
+  const files = [
+    ['package.json', `${JSON.stringify(packageJson, null, 2)}\n`],
+    ['vitest.config.cjs', "module.exports = { test: { include: ['tests/**/*.test.ts'] } };\n"],
+    [
+      'tests/alpha.test.ts',
+      "test('alpha', () => expect({ ready: true }).toEqual({ ready: true }));\n",
+    ],
+    ['tests/zeta.test.ts', "test('zeta', () => expect([2, 1].sort()).toEqual([1, 2]));\n"],
+  ] as const;
+
+  for (const [relativePath, source] of reverseOrder ? [...files].reverse() : files) {
+    mkdirSync(join(root, relativePath, '..'), { recursive: true });
+    writeFileSync(join(root, relativePath), source, 'utf8');
+  }
+  return root;
+}
+
 function readReceipt(stdout: string): Record<string, any> {
   return JSON.parse(stdout.trim());
 }
@@ -380,6 +445,92 @@ describe('test portfolio audit CLI orchestration', () => {
       ['root-vitest', 'tests/explicit.test.ts'],
     ]);
   }, 30_000);
+
+  it('preserves two runner identities for one normalized test path', () => {
+    const repoRoot = createDualRunnerIdentityFixture();
+    const outputDir = join(repoRoot, '.artifacts', 'ci');
+    const result = runCli([
+      '--repo-root',
+      repoRoot.replace(/\\/gu, '/'),
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '0',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const artifact = readArtifact(outputDir);
+    const receipt = readReceipt(result.stdout);
+    expect(receipt.discovery).toEqual({
+      complete: true,
+      runnerResolvedCount: 1,
+      candidateCount: 1,
+      unexplainedRunnerOnlyCount: 0,
+      unexplainedCandidateOnlyCount: 0,
+    });
+    expect(
+      artifact.tests.map((test: { identityKey: string; runnerId: string; testPath: string }) => ({
+        identityKey: test.identityKey,
+        runnerId: test.runnerId,
+        testPath: test.testPath,
+      }))
+    ).toEqual([
+      {
+        identityKey: 'node-test#tests/shared.test.js',
+        runnerId: 'node-test',
+        testPath: 'tests/shared.test.js',
+      },
+      {
+        identityKey: 'root-vitest#tests/shared.test.js',
+        runnerId: 'root-vitest',
+        testPath: 'tests/shared.test.js',
+      },
+    ]);
+  }, 30_000);
+
+  it('keeps canonical artifact bytes stable across filesystem, package, path, and timing permutations', () => {
+    const roots = [createDeterminismFixture(false), createDeterminismFixture(true)];
+    const runs = roots.map((repoRoot, index) => {
+      const outputDir = join(repoRoot, '.artifacts', 'ci');
+      const pathArgument = index === 0 ? repoRoot : repoRoot.replace(/\\/gu, '/');
+      const result = runCli([
+        '--repo-root',
+        pathArgument,
+        '--output-dir',
+        outputDir,
+        '--probe-limit',
+        '0',
+        '--json',
+      ]);
+
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      return {
+        artifactBytes: readFileSync(join(outputDir, 'test-portfolio-audit.json')),
+        receipt: readReceipt(result.stdout),
+      };
+    });
+
+    expect(runs[1].artifactBytes.equals(runs[0].artifactBytes)).toBe(true);
+    expect(
+      runs.map(({ receipt }) => ({
+        staticAnalysisDurationMs: receipt.staticAnalysisDurationMs,
+        probeDurationMs: receipt.probeDurationMs,
+        totalDurationMs: receipt.totalDurationMs,
+      }))
+    ).not.toEqual([
+      {
+        staticAnalysisDurationMs: runs[0].receipt.staticAnalysisDurationMs,
+        probeDurationMs: runs[0].receipt.probeDurationMs,
+        totalDurationMs: runs[0].receipt.totalDurationMs,
+      },
+      {
+        staticAnalysisDurationMs: runs[0].receipt.staticAnalysisDurationMs,
+        probeDurationMs: runs[0].receipt.probeDurationMs,
+        totalDurationMs: runs[0].receipt.totalDurationMs,
+      },
+    ]);
+  }, 60_000);
 });
 
 describe('test portfolio audit orchestration normalization', () => {

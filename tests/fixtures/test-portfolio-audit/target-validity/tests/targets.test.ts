@@ -3,6 +3,7 @@ import { conditionalTarget } from '../src/conditional-target';
 import { loadRegisteredTarget } from '../src/dynamic-registry';
 import { exported } from '../src/exported';
 import { generatedOwnerless } from '../src/generated-ownerless';
+import { generatedRetired } from '../src/generated-retired';
 import { productionImported } from '../src/production-imported';
 import { protectedApi } from '../src/protected';
 import { protectedUnbound } from '../src/protected-unbound';
@@ -12,6 +13,7 @@ void [
   conditionalTarget,
   exported,
   generatedOwnerless,
+  generatedRetired,
   loadRegisteredTarget,
   productionImported,
   protectedApi,

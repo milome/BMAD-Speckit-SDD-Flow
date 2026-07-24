@@ -443,6 +443,7 @@ describe('target validity analyzer', () => {
     expect(sourceIndex.packageBins.get('src/cli.ts')).toEqual([
       'source:package.json#bin:target-validity-cli',
     ]);
+    expect([...sourceIndex.generatorOwners]).toEqual(['src/generated-retired.ts']);
     expect(sourceIndex.productionEdges).toEqual(
       expect.arrayContaining([
         {
@@ -548,6 +549,19 @@ describe('target validity analyzer', () => {
       value: 'ambiguous',
       confidence: 'low',
       issueCodes: ['TARGET_GENERATED_OWNER_UNRESOLVED'],
+    });
+    expect(byTarget.get('src/generated-retired.ts')).toEqual({
+      identityKey: 'root-vitest::tests/targets.test.ts',
+      targetRef: 'src/generated-retired.ts',
+      value: 'obsolete_candidate',
+      confidence: 'high',
+      evidenceRefs: [
+        'source:package.json#not-bin',
+        'source:package.json#not-exported',
+        'source:src/generated-retired.ts#no-production-inbound',
+        'source:src/generated-retired.ts#no-protection',
+      ],
+      issueCodes: ['PRODUCT_TARGET_OBSOLETE_CANDIDATE'],
     });
     expect(byTarget.get('src/conditional-target.ts')).toMatchObject({
       value: 'ambiguous',

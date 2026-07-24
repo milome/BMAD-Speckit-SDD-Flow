@@ -364,6 +364,20 @@ describe('test portfolio execution routes', () => {
         testPath: 'tests/missing.test.ts',
       })
     );
+    expect(
+      (graph.routes as Route[])
+        .filter(
+          (route) =>
+            route.workflowPath === '.github/workflows/dynamic.yml' &&
+            [
+              'dynamic-command',
+              'dynamic-matrix',
+              'dynamic-working-directory',
+              'unknown-test-command',
+            ].includes(route.jobId)
+        )
+        .map((route) => route.routeId)
+    ).toEqual([]);
 
     const configured = extractConfiguredCandidateRefs(graph);
     expect(configured).toContainEqual({

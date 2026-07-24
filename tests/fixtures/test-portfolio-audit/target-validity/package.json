@@ -12,6 +12,11 @@
     "target-validity-cli": "./src/cli.ts"
   },
   "testPortfolioAudit": {
+    "generatorOwners": [
+      {
+        "targetPath": "src/generated-retired.ts"
+      }
+    ],
     "protectedBindings": [
       {
         "targetPath": "src/protected.ts",
