@@ -1,28 +1,78 @@
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { safeWriteText, sha256File } = require('../utils/large-document-writer');
-const { extractSourceObligations } = require('../utils/goal-contract/source-obligation-extractor');
-const { buildSlotData } = require('../utils/goal-contract/slot-data-builder');
-const {
-  resolveEntryScenario,
-  validateEntryAuthority,
-} = require('../utils/goal-contract/entry-scenarios');
-const {
-  defaultReceiptPaths,
-  writeCoverageReceipt,
-  writeGenerationReceipt,
-} = require('../utils/goal-contract/goal-contract-receipts');
-const {
-  resolveAuditProfile,
-  runStandaloneDeterministicPreflight,
-} = require('../utils/goal-contract/standalone-audit-controller');
-const { goalContractReleaseGateCommand } = require('../utils/goal-contract/release-gate');
+
+export type GoalContractCommandModule = never;
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
 const SOURCE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+const PARTITION_ASSET_ROOT = __filename.endsWith('.ts')
+  ? SOURCE_ROOT
+  : PACKAGE_ROOT;
 
 function firstExistingPath(candidates) {
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
+}
+
+function loadDistModule(relativePath) {
+  return require(path.join(PACKAGE_ROOT, 'dist', relativePath));
+}
+
+function loadPartitionModule(relativePath) {
+  const sourceBase = path.join(PACKAGE_ROOT, 'src', relativePath);
+  const distBase = path.join(PACKAGE_ROOT, 'dist', relativePath);
+  const candidates = __filename.endsWith('.ts')
+    ? [
+        `${sourceBase}.ts`,
+        path.join(sourceBase, 'index.ts'),
+        `${distBase}.js`,
+        path.join(distBase, 'index.js'),
+      ]
+    : [
+        `${distBase}.js`,
+        path.join(distBase, 'index.js'),
+        `${sourceBase}.ts`,
+        path.join(sourceBase, 'index.ts'),
+      ];
+  return require(firstExistingPath(candidates));
+}
+
+function loadWholeSourceDependencies() {
+  const { safeWriteText, sha256File } = loadDistModule(
+    'utils/large-document-writer'
+  );
+  const { extractSourceObligations } = loadDistModule(
+    'utils/goal-contract/source-obligation-extractor'
+  );
+  const { buildSlotData } = loadDistModule(
+    'utils/goal-contract/slot-data-builder'
+  );
+  const {
+    resolveEntryScenario,
+    validateEntryAuthority,
+  } = loadDistModule('utils/goal-contract/entry-scenarios');
+  const {
+    defaultReceiptPaths,
+    writeCoverageReceipt,
+    writeGenerationReceipt,
+  } = loadDistModule('utils/goal-contract/goal-contract-receipts');
+  const {
+    resolveAuditProfile,
+    runStandaloneDeterministicPreflight,
+  } = loadDistModule('utils/goal-contract/standalone-audit-controller');
+  return {
+    buildSlotData,
+    defaultReceiptPaths,
+    extractSourceObligations,
+    resolveAuditProfile,
+    resolveEntryScenario,
+    runStandaloneDeterministicPreflight,
+    safeWriteText,
+    sha256File,
+    validateEntryAuthority,
+    writeCoverageReceipt,
+    writeGenerationReceipt,
+  };
 }
 
 function take(args, name, fallback = undefined) {
@@ -53,6 +103,23 @@ function emitJson(value) {
 
 function normalize(filePath) {
   return path.resolve(filePath).replace(/\\/g, '/');
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value) ?? 'null';
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  return `{${Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+    .join(',')}}`;
+}
+
+function sha256Text(value) {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
 
 function loadRenderer() {
@@ -99,7 +166,43 @@ function rendererIssues(audit) {
   return issues;
 }
 
+function assertPartitionGenerationArgsComplete(args) {
+  const manifestFlag = has(args, '--partition-manifest');
+  const partitionIdFlag = has(args, '--partition-id');
+  const manifestPath = take(args, '--partition-manifest');
+  const partitionId = take(args, '--partition-id');
+  if (
+    manifestFlag !== partitionIdFlag ||
+    (manifestFlag && (!manifestPath || !partitionId))
+  ) {
+    throw Object.assign(
+      new Error('partition_generation_arguments_incomplete'),
+      {
+        failureClass: 'partition_generation_arguments_incomplete',
+        missingArguments: [
+          ...(!manifestPath ? ['--partition-manifest'] : []),
+          ...(!partitionId ? ['--partition-id'] : []),
+        ],
+      }
+    );
+  }
+}
+
 function generate(args) {
+  assertPartitionGenerationArgsComplete(args);
+  const {
+    buildSlotData,
+    defaultReceiptPaths,
+    extractSourceObligations,
+    resolveAuditProfile,
+    resolveEntryScenario,
+    runStandaloneDeterministicPreflight,
+    safeWriteText,
+    sha256File,
+    validateEntryAuthority,
+    writeCoverageReceipt,
+    writeGenerationReceipt,
+  } = loadWholeSourceDependencies();
   const entry = resolveEntryScenario(takeAll(args, '--entry'));
   if (entry.entryScenario !== 'standalone_goal_contract') {
     throw Object.assign(new Error('entry_route_mismatch'), {
@@ -275,27 +378,162 @@ function generate(args) {
   return generationReceipt;
 }
 
-function goalContractCommand(_opts = {}, forwardedArgs = []) {
+function assertNoForbiddenPartitionAuthorityArgs(args) {
+  const forbiddenFlags = [
+    '--partition-count',
+    '--task',
+    '--selected-candidate',
+    '--decision',
+    '--selection-receipt',
+    '--partition-policy-hash',
+    '--policy-hash',
+  ];
+  const forbidden = forbiddenFlags.filter((flag) =>
+    args.some((arg) => arg === flag || arg.startsWith(`${flag}=`))
+  );
+  if (forbidden.length > 0) {
+    throw Object.assign(
+      new Error('partition_authority_argument_forbidden'),
+      {
+        failureClass: 'partition_authority_argument_forbidden',
+        forbidden,
+      }
+    );
+  }
+}
+
+function requireExistingSource(args) {
+  const sourcePath = take(args, '--source');
+  if (!sourcePath || !fs.existsSync(sourcePath)) {
+    throw Object.assign(
+      new Error(`source plan missing: ${sourcePath || ''}`),
+      {
+        failureClass: 'source_plan_missing',
+      }
+    );
+  }
+  return path.resolve(sourcePath);
+}
+
+function buildApplicabilityInput({ snapshot, obligations, methodology }) {
+  const semanticModel = obligations.sourceObligations.map((obligation) => ({
+    id: obligation.id,
+    kind: obligation.kind,
+    normativeStrength: obligation.normativeStrength,
+    dependencyRefs: obligation.dependencyRefs,
+    evidenceRefs: obligation.evidenceRefs,
+  }));
+  const traceGraph = {
+    nodes: semanticModel.map(({ id, kind }) => ({ id, kind })),
+    edges: semanticModel.flatMap((obligation) =>
+      obligation.dependencyRefs.map((dependencyId) => ({
+        from: obligation.id,
+        to: dependencyId,
+      }))
+    ),
+  };
+  return {
+    sourceSnapshotHash: snapshot.aggregateHash,
+    semanticModelHash: sha256Text(stableStringify(semanticModel)),
+    traceGraphHash: sha256Text(stableStringify(traceGraph)),
+    architectureFacts: {},
+    policyVersion: methodology.profile.profileVersion,
+  };
+}
+
+function partition(args): never {
+  assertNoForbiddenPartitionAuthorityArgs(args);
+  const { resolveEntryScenario } = loadPartitionModule(
+    'utils/goal-contract/entry-scenarios'
+  );
+  const entry = resolveEntryScenario(takeAll(args, '--entry'));
+  if (entry.entryScenario !== 'standalone_goal_contract') {
+    throw Object.assign(new Error('entry_route_mismatch'), {
+      failureClass: 'entry_route_mismatch',
+      entryScenario: entry.entryScenario,
+      expectedEntryScenario: 'standalone_goal_contract',
+    });
+  }
+  const sourcePath = requireExistingSource(args);
+  const rawBytes = fs.readFileSync(sourcePath);
+  const { buildSourceSnapshot } = loadPartitionModule(
+    'utils/goal-contract/dual-view-derivation'
+  );
+  const { loadPartitionMethodologyProfile } = loadPartitionModule(
+    'utils/goal-contract/partition-methodology-profile'
+  );
+  const { extractSourceObligations } = loadPartitionModule(
+    'utils/goal-contract/source-obligation-extractor'
+  );
+  const { loadPartitionPolicy } = loadPartitionModule(
+    'utils/goal-contract/partition-policy'
+  );
+  const { decideSequenceApplicability } = loadPartitionModule(
+    'utils/goal-contract/sequence-applicability'
+  );
+  const snapshot = buildSourceSnapshot({
+    sourceType: 'source_plan',
+    sourcePath: normalize(sourcePath),
+    rawBytes,
+  });
+  const methodology = loadPartitionMethodologyProfile({
+    packageRoot: PARTITION_ASSET_ROOT,
+  });
+  const policyBinding = loadPartitionPolicy({
+    packageRoot: PARTITION_ASSET_ROOT,
+    policyPath: take(args, '--policy', null),
+  });
+  const obligations = extractSourceObligations({ snapshot });
+  const applicability = decideSequenceApplicability(
+    buildApplicabilityInput({ snapshot, obligations, methodology })
+  );
+  throw Object.assign(
+    new Error('execution_projection_not_implemented'),
+    {
+      failureClass: 'execution_projection_not_implemented',
+      sourceSnapshotHash: snapshot.aggregateHash,
+      methodologyProfileHash: methodology.methodologyProfileHash,
+      partitionPolicyHash: policyBinding.partitionPolicyHash,
+      partitionPolicyArtifactHash:
+        policyBinding.partitionPolicyArtifactHash,
+      policyPath: policyBinding.policyPath,
+      policyBytes: policyBinding.policyBytes,
+      semanticDerivationAllowance:
+        policyBinding.policy.semanticDerivationAllowance,
+      sequenceApplicabilityReceipt: applicability,
+    }
+  );
+}
+
+function goalContractCommand(
+  _opts: { json?: boolean } = {},
+  forwardedArgs: string[] = []
+) {
   const args = [...forwardedArgs];
   const subcommand = args.shift();
   const json = has(args, '--json') || _opts.json;
   try {
     if (subcommand === 'release-gate') {
+      const { goalContractReleaseGateCommand } = loadDistModule(
+        'utils/goal-contract/release-gate'
+      );
       return goalContractReleaseGateCommand(_opts, args);
     }
-    if (subcommand !== 'generate') {
+    if (!['generate', 'partition'].includes(subcommand)) {
       throw Object.assign(
         new Error(
-          'Usage: bmad-speckit goal-contract generate --entry standalone_goal_contract --source <plan.md> --out <goal.md> --json'
+          'Usage: bmad-speckit goal-contract <generate|partition> --entry standalone_goal_contract --source <plan.md> --out <artifact> --json'
         ),
         {
           failureClass: 'invalid_subcommand',
         }
       );
     }
-    const result = generate(args);
+    const result = subcommand === 'partition' ? partition(args) : generate(args);
     if (json) emitJson(result);
-    else process.stdout.write(`${result.goalContractPath}\n`);
+    else if (result?.goalContractPath) {
+      process.stdout.write(`${result.goalContractPath}\n`);
+    }
     return 0;
   } catch (error) {
     const failureClass = error.failureClass || error.code || 'goal_contract_generation_failed';
@@ -319,6 +557,41 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
         ? { deterministicPreflight: error.deterministicPreflight }
         : {}),
       ...(error.auditMetrics ? { auditMetrics: error.auditMetrics } : {}),
+      ...(error.forbidden ? { forbidden: error.forbidden } : {}),
+      ...(error.missingArguments
+        ? { missingArguments: error.missingArguments }
+        : {}),
+      ...(error.sourceSnapshotHash
+        ? { sourceSnapshotHash: error.sourceSnapshotHash }
+        : {}),
+      ...(error.methodologyProfileHash
+        ? { methodologyProfileHash: error.methodologyProfileHash }
+        : {}),
+      ...(error.partitionPolicyHash
+        ? { partitionPolicyHash: error.partitionPolicyHash }
+        : {}),
+      ...(error.partitionPolicyArtifactHash
+        ? {
+            partitionPolicyArtifactHash:
+              error.partitionPolicyArtifactHash,
+          }
+        : {}),
+      ...(error.policyPath ? { policyPath: error.policyPath } : {}),
+      ...(Number.isInteger(error.policyBytes)
+        ? { policyBytes: error.policyBytes }
+        : {}),
+      ...(typeof error.semanticDerivationAllowance === 'boolean'
+        ? {
+            semanticDerivationAllowance:
+              error.semanticDerivationAllowance,
+          }
+        : {}),
+      ...(error.sequenceApplicabilityReceipt
+        ? {
+            sequenceApplicabilityReceipt:
+              error.sequenceApplicabilityReceipt,
+          }
+        : {}),
     });
     if (json) emitJson(payload);
     else console.error(payload.message);
@@ -329,4 +602,5 @@ function goalContractCommand(_opts = {}, forwardedArgs = []) {
 module.exports = {
   generate,
   goalContractCommand,
+  partition,
 };

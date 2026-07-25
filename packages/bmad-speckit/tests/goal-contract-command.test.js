@@ -79,6 +79,8 @@ describe('bmad-speckit goal-contract command', () => {
     assert.ok(payload.sourceObligationCount > 0);
     assert.match(payload.sourcePlanHash, /^sha256:[0-9a-f]{64}$/u);
     assert.match(payload.goalContractHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(Object.hasOwn(payload, 'partitionId'), false);
+    assert.equal(Object.hasOwn(payload, 'partitionManifestPath'), false);
     assert.ok(fs.existsSync(out));
     assert.ok(fs.existsSync(payload.coverageReceiptPath));
     assert.ok(fs.existsSync(payload.generationReceiptPath));

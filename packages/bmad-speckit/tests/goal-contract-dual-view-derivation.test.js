@@ -71,17 +71,30 @@ describe('goal-contract dual-view derivation', () => {
   });
 
   it('builds an immutable source-plan snapshot from exact raw bytes', () => {
+    const rawBytes = Buffer.from('# Plan\r\nExact bytes.\r\n', 'utf8');
     const snapshot = buildSourceSnapshot({
       sourceType: 'source_plan',
       sourcePath: 'docs\\plans\\source.md',
-      rawBytes: Buffer.from('# Plan\r\nExact bytes.\r\n', 'utf8'),
+      rawBytes,
+      sourcePlanSemanticHash: `sha256:${'a'.repeat(64)}`,
     });
 
     assert.equal(snapshot.sourceType, 'source_plan');
     assert.equal(snapshot.sourcePath, 'docs/plans/source.md');
     assert.match(snapshot.aggregateHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(snapshot.exactByteHash, snapshot.aggregateHash);
+    assert.equal(snapshot.sourceBytes, rawBytes.length);
+    assert.equal(snapshot.sourceLines, 3);
+    assert.equal(snapshot.sourcePlanSemanticHash, `sha256:${'a'.repeat(64)}`);
     assert.equal(snapshot.segments.length, 1);
     assert.equal(snapshot.segments[0].content, '# Plan\r\nExact bytes.\r\n');
+    assert.deepEqual(snapshot.segments[0].boundary, {
+      sourcePath: 'docs/plans/source.md',
+      byteStart: 0,
+      byteEnd: rawBytes.length,
+      lineStart: 1,
+      lineEnd: 3,
+    });
     assert.equal(Object.isFrozen(snapshot), true);
     assert.equal(Object.isFrozen(snapshot.segments), true);
     assert.equal(Object.isFrozen(snapshot.segments[0]), true);

@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceSnapshotHash",
+    "semanticModelHash",
+    "traceGraphHash",
+    "policyVersion",
+    "decision",
+    "reasonCodes",
+    "evidenceRefs",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-sequence-applicability-receipt/v1"
+    },
+    "sourceSnapshotHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "semanticModelHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "traceGraphHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "methodologyProfileHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "policyVersion": { "type": "string", "minLength": 1 },
+    "decision": {
+      "enum": ["required", "not_applicable_with_proof", "unresolved"]
+    },
+    "reasonCodes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "producerAvailability": {
+      "enum": ["available", "unavailable", "not_applicable"]
+    },
+    "failureClass": { "type": "string", "minLength": 1 },
+    "freshnessRoot": { "type": "string", "minLength": 1 },
+    "blockingReasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "receiptHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": { "const": "not_applicable_with_proof" }
+        }
+      },
+      "then": {
+        "properties": {
+          "evidenceRefs": { "minItems": 1 }
+        }
+      }
+    }
+  ]
+}

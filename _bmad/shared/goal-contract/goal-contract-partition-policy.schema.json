@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyId",
+    "policyVersion",
+    "limits",
+    "weights",
+    "semanticDerivationAllowance",
+    "canonicalizationVersion"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-policy/v1"
+    },
+    "policyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policyVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxClosureCostPerPartition",
+        "maxAtomicTasksPerPartition",
+        "maxPrimaryWriteScopeOwnersPerPartition",
+        "maxCrossPartitionDependencies",
+        "maxCandidateFrontiers",
+        "maxSearchStates"
+      ],
+      "properties": {
+        "maxClosureCostPerPartition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxAtomicTasksPerPartition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxPrimaryWriteScopeOwnersPerPartition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxCrossPartitionDependencies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxCandidateFrontiers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxSearchStates": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependencyCut",
+        "sharedFileChurn",
+        "auditOverhead",
+        "closureFragmentation",
+        "effortImbalance",
+        "sourceBoundaryViolation",
+        "finalIntegration",
+        "semanticCohesionBenefit",
+        "evidenceLocalityBenefit"
+      ],
+      "properties": {
+        "dependencyCut": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sharedFileChurn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auditOverhead": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "closureFragmentation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effortImbalance": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceBoundaryViolation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "finalIntegration": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "semanticCohesionBenefit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidenceLocalityBenefit": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "semanticDerivationAllowance": {
+      "type": "boolean"
+    },
+    "canonicalizationVersion": {
+      "const": "goal-contract-partition-policy-canonical/v1"
+    }
+  }
+}

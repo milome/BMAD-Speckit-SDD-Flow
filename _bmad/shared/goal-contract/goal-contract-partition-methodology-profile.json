@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "partition-methodology-profile/v1",
+  "profileId": "goal-contract-partition-default",
+  "profileVersion": "1.0.0",
+  "canonicalizationVersion": "stable-json/path-sorted-rules/v1",
+  "rules": [
+    {
+      "ruleId": "PM-001",
+      "classification": "adopted",
+      "normativeRule": "Group requirements by user-observable outcome or coherent system capability rather than by directory, package, language or technical layer.",
+      "deterministicChecks": ["epic_grouping_not_technical_layer"]
+    },
+    {
+      "ruleId": "PM-002",
+      "classification": "adopted",
+      "normativeRule": "Preserve complete requirement coverage through an explicit machine-verifiable coverage map.",
+      "deterministicChecks": ["exact_primary_source_coverage"]
+    },
+    {
+      "ruleId": "PM-003",
+      "classification": "adapted",
+      "normativeRule": "Prefer independently closeable vertical Trace Slices that bind implementation, acceptance, applicable negative controls and evidence.",
+      "deterministicChecks": ["trace_slice_vertical_closure"]
+    },
+    {
+      "ruleId": "PM-004",
+      "classification": "adopted",
+      "normativeRule": "An execution unit may depend only on frozen inputs and completed predecessor outputs.",
+      "deterministicChecks": ["no_future_dependency"]
+    },
+    {
+      "ruleId": "PM-005",
+      "classification": "adopted",
+      "normativeRule": "Every Atomic Task is bounded for one implementation agent with an explicit write scope and verification command set.",
+      "deterministicChecks": ["atomic_task_agent_bounded"]
+    },
+    {
+      "ruleId": "PM-006",
+      "classification": "adapted",
+      "normativeRule": "Validate dependency direction, complete coverage, acceptance quality and applicable failure paths before release.",
+      "deterministicChecks": ["dependency_direction_valid", "acceptance_evidence_complete"]
+    },
+    {
+      "ruleId": "PM-007",
+      "classification": "project-extension",
+      "normativeRule": "Bind Completion Predicates, Evidence Contracts, independent oracles, freshness and replay rules to each Trace Slice.",
+      "deterministicChecks": ["evidence_contract_complete"]
+    },
+    {
+      "ruleId": "PM-008",
+      "classification": "project-extension",
+      "normativeRule": "Preserve one typed task universe, deterministic hash binding and fail-closed reconciliation.",
+      "deterministicChecks": ["single_task_universe", "fail_closed_reconciliation"]
+    }
+  ],
+  "exclusions": [
+    "interactive_bmad_workflow",
+    "intermediate_epics_markdown",
+    "interactive_menu_state",
+    "bmad_story_runtime_state",
+    "fixed_epic_story_markdown_template",
+    "prd_architecture_ux_only_input_assumption"
+  ],
+  "provenance": {
+    "schemaVersion": "partition-methodology-upstream-provenance/v1",
+    "methodologySourceBundleHash": "sha256:03f9e1601aec725d2b42faef1bd5ae2683080fe4e693e8d96a1c1b1c2763701a",
+    "assets": [
+      {
+        "path": "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md",
+        "sha256": "sha256:758f9193130e1a8b7649c3e7f8ae1e6fbf51b4041b98c77fc48e8058fc0a0c33"
+      },
+      {
+        "path": "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-01-validate-prerequisites.md",
+        "sha256": "sha256:07ac46eb89b0cdb9d66b220932ad4301f529bac4a91f560e081804d353984e2e"
+      },
+      {
+        "path": "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-02-design-epics.md",
+        "sha256": "sha256:397c4fe0e7718e39dd3d134f6d80bd75c8f22a4e97dd9f8feba1c21839646b7a"
+      },
+      {
+        "path": "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-03-create-stories.md",
+        "sha256": "sha256:0382b0717efef4c8a4dd3d35e2f37e19078073d219aa5a7e7c890f33bd1e7ff7"
+      },
+      {
+        "path": "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-04-final-validation.md",
+        "sha256": "sha256:e3b1425d6db27591dd464622ef4397b418f521174089c19f3e8a3c4690747880"
+      },
+      {
+        "path": "_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/templates/epics-template.md",
+        "sha256": "sha256:b8ec5562b2a77efd80c40eba0421bbaab931681552e5a0ff01cd93902c447ff7"
+      }
+    ]
+  }
+}

@@ -1,6 +1,11 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { extractSourceObligations } = require('../dist/utils/goal-contract/source-obligation-extractor');
+const {
+  buildSourceSnapshot,
+} = require('../src/utils/goal-contract/dual-view-derivation.ts');
+const {
+  extractSourceObligations,
+} = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 
 const SOURCE_PATH = 'docs/plans/source-plan.md';
 const SOURCE_TEXT = [
@@ -66,5 +71,141 @@ describe('goal-contract source obligation extractor', () => {
       assert.ok(obligation.lineEnd >= obligation.lineStart);
       assert.equal(obligation.required, true);
     }
+  });
+
+  it('preserves declared identity and exact snapshot bindings', () => {
+    const rawBytes = Buffer.from(
+      '# Plan\r\n## Implementation Tasks\r\n- [ ] PLAN-T01: Preserve exact bytes.\r\n',
+      'utf8'
+    );
+    const snapshot = buildSourceSnapshot({
+      sourceType: 'source_plan',
+      sourcePath: 'docs/plans/source.md',
+      rawBytes,
+      sourcePlanSemanticHash: `sha256:${'a'.repeat(64)}`,
+    });
+    const result = extractSourceObligations({ snapshot });
+    const obligation = result.sourceObligations.find((item) => item.id === 'PLAN-T01');
+
+    assert.equal(result.sourceSnapshotHash, snapshot.aggregateHash);
+    assert.equal(obligation.declaredId, true);
+    assert.equal(obligation.normativeStrength, 'must');
+    assert.equal(obligation.sourceSnapshotHash, snapshot.aggregateHash);
+    assert.equal(obligation.sourcePlanHash, snapshot.aggregateHash);
+    assert.equal(obligation.exactText, '- [ ] PLAN-T01: Preserve exact bytes.');
+    assert.deepEqual(obligation.headingPath, ['Plan', 'Implementation Tasks']);
+  });
+
+  it('recognizes task headings and limits dependencies to explicit relation fragments', () => {
+    const sourceText = [
+      '# Plan',
+      '',
+      '## Tasks',
+      '',
+      '### Task P04-T04: Bind Shared-Artifact Changes to Dependency Compatibility Receipts',
+      '',
+      '```json',
+      '{"rules":[{"ruleId":"PM-001","normativeRule":"Validate dependency direction."}]}',
+      '```',
+      '',
+      '- [ ] P05-T01: Dependencies: P04-T04; mention PM-002 as evidence.',
+      '',
+    ].join('\n');
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/source.md',
+        rawBytes: Buffer.from(sourceText, 'utf8'),
+      }),
+    });
+    const heading = result.sourceObligations.find((item) => item.id === 'P04-T04');
+    const codeBlock = result.sourceObligations.find(
+      (item) => item.kind === 'command_block'
+    );
+    const dependentTask = result.sourceObligations.find((item) => item.id === 'P05-T01');
+
+    assert.equal(heading.declaredId, true);
+    assert.deepEqual(heading.dependencyRefs, []);
+    assert.deepEqual(codeBlock.dependencyRefs, []);
+    assert.deepEqual(dependentTask.dependencyRefs, ['P04-T04']);
+  });
+
+  it('accepts deterministic permissions and explicit optional argument fallbacks', () => {
+    const sourceText = [
+      '# Dynamic Compiler Implementation Plan',
+      '',
+      '> Workers may inspect evidence, but they must not modify repository files.',
+      '',
+      '## Global Implementation Rules',
+      '',
+      '- Sequence Closure may supply typed constraints only. It must not create tasks.',
+      '',
+      '## Task P01-T01: Load the profile',
+      '',
+      'The schema must constrain classification to the three allowed values.',
+      '',
+      'Add optional `--release-receipt`; otherwise use the default receipt path.',
+      '',
+      '## P01 Slice Gate',
+      '',
+      '- Different source shapes can produce different counts.',
+      '',
+    ].join('\n');
+
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/source.md',
+        rawBytes: Buffer.from(sourceText, 'utf8'),
+      }),
+    });
+    const preamble = result.sourceObligations.find((item) =>
+      item.exactText.startsWith('> Workers may inspect evidence')
+    );
+
+    assert.equal(preamble.kind, 'heading_requirement');
+    assert.ok(result.sourceObligations.some((item) => item.id === 'P01-T01'));
+  });
+
+  it('fails closed on duplicate IDs, unknown dependencies, and ambiguous execution prose', () => {
+    const extract = (text) =>
+      extractSourceObligations({
+        snapshot: buildSourceSnapshot({
+          sourceType: 'source_plan',
+          sourcePath: 'docs/plans/source.md',
+          rawBytes: Buffer.from(text, 'utf8'),
+        }),
+      });
+
+    assert.throws(
+      () => extract('# Plan\n## Tasks\n- [ ] PLAN-T01: First.\n- [ ] PLAN-T01: Second.\n'),
+      (error) => error.failureClass === 'source_obligation_id_duplicate'
+    );
+    assert.throws(
+      () => extract('# Plan\n## Tasks\n- [ ] PLAN-T01: MUST depend on PLAN-T99.\n'),
+      (error) => error.failureClass === 'source_obligation_dependency_unknown'
+    );
+    assert.throws(
+      () => extract('# Plan\n## Tasks\n- [ ] PLAN-T01: Might change execution scope.\n'),
+      (error) => error.failureClass === 'source_obligation_classification_ambiguous'
+    );
+  });
+
+  it('derives stable fallback IDs that change with exact text', () => {
+    const extract = (text) =>
+      extractSourceObligations({
+        snapshot: buildSourceSnapshot({
+          sourceType: 'source_plan',
+          sourcePath: 'docs/plans/source.md',
+          rawBytes: Buffer.from(`# Plan\n## Tasks\n- MUST ${text}.\n`, 'utf8'),
+        }),
+      }).sourceObligations.find((item) => item.exactText.startsWith('- MUST'));
+    const first = extract('preserve exact bytes');
+    const repeated = extract('preserve exact bytes');
+    const changed = extract('preserve changed bytes');
+
+    assert.equal(first.id, repeated.id);
+    assert.notEqual(first.id, changed.id);
+    assert.equal(first.declaredId, false);
   });
 });

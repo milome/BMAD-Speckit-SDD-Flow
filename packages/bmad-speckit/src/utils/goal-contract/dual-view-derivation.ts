@@ -1,5 +1,7 @@
 const { createHash } = require('node:crypto');
 
+export type GoalContractDualViewDerivationModule = never;
+
 const IMPLEMENTATION_REQUIRED_FIELDS = Object.freeze([
   'tasks',
   'traceSlices',
@@ -83,19 +85,30 @@ function sourcePlanSnapshot(input) {
   const content = input.rawBytes.toString('utf8');
   const contentHash = sha256(input.rawBytes);
   const sourcePath = normalizeRepoPath(input.sourcePath);
+  const sourceLines = normalizeLineEndings(content).split('\n').length;
   return deepFreeze({
     schemaVersion: 'goal-contract-source-snapshot/v1',
     sourceType: 'source_plan',
     snapshotId: `source-plan:${contentHash}`,
     sourcePath,
     aggregateHash: contentHash,
+    exactByteHash: contentHash,
+    sourceBytes: input.rawBytes.length,
+    sourceLines,
+    sourcePlanSemanticHash: input.sourcePlanSemanticHash || null,
     segments: [
       {
         segmentId: 'SEG-001',
         role: 'source_plan',
         content,
         contentHash,
-        boundary: { sourcePath, byteLength: input.rawBytes.length },
+        boundary: {
+          sourcePath,
+          byteStart: 0,
+          byteEnd: input.rawBytes.length,
+          lineStart: 1,
+          lineEnd: sourceLines,
+        },
       },
     ],
   });
@@ -277,7 +290,10 @@ function assertViewIsolation(implementationResult, acceptanceEvidenceResult) {
 }
 
 class StandaloneViewProvider {
-  constructor(adapter = {}) {
+  adapter: Record<string, any>;
+  sessionIdentities: Set<unknown>;
+
+  constructor(adapter: Record<string, any> = {}) {
     this.adapter = adapter;
     this.sessionIdentities = new Set();
   }
