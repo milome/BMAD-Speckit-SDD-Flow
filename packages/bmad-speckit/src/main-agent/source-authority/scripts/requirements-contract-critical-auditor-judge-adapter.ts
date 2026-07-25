@@ -8,6 +8,7 @@ import {
   buildCriticalAuditorJudgeRuntimeBinding,
   type CriticalAuditorJudgeRuntimeBinding,
 } from './requirements-contract-critical-auditor-independence';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
 import {
   buildClaudeCodeCliJudgeArgs,
   buildClaudeCodeCliJudgePrompt,
@@ -15,10 +16,17 @@ import {
   type ClaudeCodeCliCommandResult,
   type SnapshotReadPlanEntry,
 } from './requirements-contract-claude-code-cli-judge-adapter';
+import {
+  buildCodexCliJudgeArgs,
+  buildCodexCliJudgePrompt,
+  CodexCliCommandInvocation,
+  CodexCliCommandResult,
+} from './requirements-contract-codex-cli-judge-adapter';
 import { prepareRequirementsContractJudgeInvocation } from './requirements-contract-judge-invocation';
+import { resolveRequirementsContractJudgeCredentialEnvironmentVariable } from './requirements-contract-judge-credential-resolver';
 
 type JsonRecord = Record<string, unknown>;
-type ClaudeCodeCliExecutorKind = 'native_spawn' | 'injected_test_transport';
+type CliExecutorKind = 'native_spawn' | 'injected_test_transport';
 
 export interface RequirementsContractCriticalAuditorJudgeAdapterOptions {
   cwd?: string;
@@ -31,6 +39,9 @@ export interface RequirementsContractCriticalAuditorJudgeAdapterOptions {
   executeClaudeCodeCliCommand?: (
     invocation: ClaudeCodeCliCommandInvocation
   ) => Promise<ClaudeCodeCliCommandResult>;
+  executeCodexCliCommand?: (
+    invocation: CodexCliCommandInvocation
+  ) => Promise<CodexCliCommandResult>;
 }
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
@@ -41,6 +52,7 @@ const PROVIDER_BINDING_FIELDS = [
   'providerId',
   'model',
   'transport',
+  'adapterRef',
   'apiStyle',
   'configuredBaseUrlHash',
   'independenceClass',
@@ -52,6 +64,7 @@ const PROVIDER_RUN_FIELDS = [
   'requestedModel',
   'model',
   'transport',
+  'adapterRef',
   'apiStyle',
   'configuredBaseUrlHash',
   'independenceClass',
@@ -62,6 +75,7 @@ const REQUEST_HASH_FIELDS = [
   'requestHash',
   'sourceHash',
   'sourceDocumentHash',
+  'sourceBytesHash',
   'semanticModelHash',
   'implementationConfirmationHash',
   'packetHash',
@@ -207,6 +221,75 @@ function criticalAuditorTransportOutputSchema(request: JsonRecord): JsonRecord {
     authorityBoundStringArraySchema(checkedProjectionGroups);
   assessmentProperties.checkedProjectionQualityRuleCodes =
     authorityBoundStringArraySchema(checkedProjectionQualityRuleCodes);
+  const repairActionSchema = record(
+    assessmentDefinitions.repairAction,
+    'critical_auditor_judge_assessment_schema_invalid'
+  );
+  const repairActionAllOf = Array.isArray(repairActionSchema.allOf)
+    ? cloneJson(repairActionSchema.allOf)
+    : [];
+  repairActionAllOf.push({
+    if: {
+      properties: {
+        type: { const: 'split_must' },
+      },
+      required: ['type'],
+    },
+    then: {
+      properties: {
+        mustRefs: {
+          oneOf: reviewedMustRefs.map((mustRef) => ({ const: [mustRef] })),
+        },
+      },
+    },
+  });
+  for (const mustRef of reviewedMustRefs) {
+    repairActionAllOf.push({
+      if: {
+        properties: {
+          type: { const: 'split_must' },
+          mustRefs: { const: [mustRef] },
+        },
+        required: ['type', 'mustRefs'],
+      },
+      then: {
+        properties: {
+          newValue: {
+            properties: {
+              sourceMustRef: { const: mustRef },
+              replacements: {
+                contains: {
+                  type: 'object',
+                  required: ['id'],
+                  properties: {
+                    id: { const: mustRef },
+                  },
+                },
+                minContains: 1,
+                maxContains: 1,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+  repairActionSchema.allOf = repairActionAllOf;
+  const gateDryRun = record(
+    request.gateDryRun,
+    'critical_auditor_judge_request_gate_dry_run_missing'
+  );
+  const priorFindingsDispositionRequired =
+    (Array.isArray(request.previousReceipts) && request.previousReceipts.length > 0) ||
+    (Array.isArray(gateDryRun.actionableBlockingIssues) &&
+      gateDryRun.actionableBlockingIssues.length > 0);
+  assessmentProperties.priorFindingsDisposition = {
+    ...record(
+      assessmentProperties.priorFindingsDisposition,
+      'critical_auditor_judge_assessment_schema_invalid'
+    ),
+    ...(priorFindingsDispositionRequired ? { minItems: 1 } : { maxItems: 0 }),
+  };
 
   const scoringContractValue = request.auditReviewScoringContract;
   const scoringContract =
@@ -580,7 +663,7 @@ function hasEmptyMcpConfig(args: string[]): boolean {
   }
 }
 
-function expectedClaudeCodeCliArgv(
+function expectedCliArgv(
   judgeRuntime: JsonRecord,
   runtimeBinding: JsonRecord,
   request: JsonRecord
@@ -593,6 +676,17 @@ function expectedClaudeCodeCliArgv(
     providers[text(runtimeBinding.providerId)],
     'critical_auditor_judge_runtime_provider_missing'
   );
+  if (text(runtimeBinding.adapterRef) === 'CodexCliJudgeAdapter') {
+    return buildCodexCliJudgeArgs({
+      cwd: '.',
+      outputSchemaPath: '../structured-output.schema.json',
+      outputLastMessagePath: '../structured-output.json',
+      configuredModel: requiredConfiguredModel(
+        runtimeBinding.model,
+        'critical_auditor_judge_runtime_model_invalid'
+      ),
+    });
+  }
   return buildClaudeCodeCliJudgeArgs({
     provider,
     systemPrompt: SYSTEM_PROMPT,
@@ -616,13 +710,178 @@ function readJudgeRuntimeConfig(root: string, config?: string): JsonRecord {
   );
 }
 
-function cliTransportEvidence(
+function assertCodexCliLaunchProvenance(
+  evidence: JsonRecord,
+  expectedArgv: string[],
+  expectedExecutorKind: CliExecutorKind
+): void {
+  const resolution = text(evidence.commandResolution);
+  if (expectedExecutorKind === 'injected_test_transport') {
+    if (
+      resolution !== 'injected_test_transport' ||
+      evidence.launchCommand !== null ||
+      evidence.launchCommandHash !== null ||
+      evidence.launchArgv !== null ||
+      evidence.launchEntryPath !== null ||
+      evidence.launchEntryHash !== null
+    ) {
+      throw new Error('critical_auditor_judge_cli_launch_provenance_mismatch');
+    }
+    return;
+  }
+
+  const launchCommand = text(evidence.launchCommand);
+  const launchArgv = Array.isArray(evidence.launchArgv)
+    ? evidence.launchArgv.map(String)
+    : [];
+  if (
+    !['path_search_executable', 'windows_npm_shim'].includes(resolution) ||
+    !path.isAbsolute(launchCommand) ||
+    !fs.existsSync(launchCommand) ||
+    !fs.statSync(launchCommand).isFile() ||
+    fs.lstatSync(launchCommand).isSymbolicLink() ||
+    text(evidence.launchCommandHash) !== sha256File(launchCommand)
+  ) {
+    throw new Error('critical_auditor_judge_cli_launch_provenance_mismatch');
+  }
+
+  if (resolution === 'path_search_executable') {
+    const executableName = path.basename(launchCommand).toLowerCase();
+    if (
+      !['codex', 'codex.exe'].includes(executableName) ||
+      stableStringify(launchArgv) !== stableStringify(expectedArgv) ||
+      evidence.launchEntryPath !== null ||
+      evidence.launchEntryHash !== null
+    ) {
+      throw new Error('critical_auditor_judge_cli_launch_provenance_mismatch');
+    }
+    return;
+  }
+
+  const launchEntryPath = text(evidence.launchEntryPath);
+  const normalizedEntryPath = launchEntryPath.replace(/\\/gu, '/').toLowerCase();
+  if (
+    process.platform !== 'win32' ||
+    path.resolve(launchCommand) !== path.resolve(process.execPath) ||
+    !path.isAbsolute(launchEntryPath) ||
+    !normalizedEntryPath.endsWith('/node_modules/@openai/codex/bin/codex.js') ||
+    !fs.existsSync(launchEntryPath) ||
+    !fs.statSync(launchEntryPath).isFile() ||
+    fs.lstatSync(launchEntryPath).isSymbolicLink() ||
+    text(evidence.launchEntryHash) !== sha256File(launchEntryPath) ||
+    path.resolve(launchArgv[0] ?? '') !== path.resolve(launchEntryPath) ||
+    stableStringify(launchArgv.slice(1)) !== stableStringify(expectedArgv)
+  ) {
+    throw new Error('critical_auditor_judge_cli_launch_provenance_mismatch');
+  }
+}
+
+function codexCliTransportEvidence(
   normalized: JsonRecord,
   runtimeBinding: JsonRecord,
   expectedArgv: string[],
-  expectedExecutorKind: ClaudeCodeCliExecutorKind
+  expectedExecutorKind: CliExecutorKind
 ): JsonRecord {
-  if (text(runtimeBinding.transport) !== 'claude-code-cli') {
+  if (
+    text(runtimeBinding.transport) !== 'cli' ||
+    text(runtimeBinding.adapterRef) !== 'CodexCliJudgeAdapter'
+  ) {
+    throw new Error('critical_auditor_judge_codex_cli_transport_required');
+  }
+  const evidence = record(
+    normalized.transportEvidence,
+    'critical_auditor_judge_cli_transport_evidence_missing'
+  );
+  const args = Array.isArray(evidence.argv) ? evidence.argv.map(String) : [];
+  const expectedRequestedModel = requiredConfiguredModel(
+    runtimeBinding.model,
+    'critical_auditor_judge_runtime_model_invalid'
+  );
+  const evidenceRequestedModel = requiredConfiguredModel(
+    evidence.requestedModel,
+    'critical_auditor_judge_cli_requested_model_invalid'
+  );
+  const credentialRevision = Number(evidence.credentialRevision);
+  const expectedCredentialRevision = Number(runtimeBinding.credentialRevision);
+  const expectedCredentialEnvironmentVariable =
+    runtimeBinding.credentialEnvironmentVariable;
+  if (text(evidence.executorKind) !== expectedExecutorKind) {
+    throw new Error('critical_auditor_judge_cli_executor_kind_mismatch');
+  }
+  assertCodexCliLaunchProvenance(evidence, expectedArgv, expectedExecutorKind);
+  if (
+    text(evidence.schemaVersion) !==
+      'requirements-contract-cli-judge-execution-receipt/v1' ||
+    text(evidence.adapterRef) !== 'CodexCliJudgeAdapter' ||
+    text(evidence.protocol) !== 'codex_exec_jsonl' ||
+    !text(evidence.command) ||
+    sha256Stable(text(evidence.command)) !==
+      text(runtimeBinding.configuredBaseUrlHash) ||
+    JSON.stringify(args) !== JSON.stringify(expectedArgv) ||
+    !hasArgumentPair(args, '--ask-for-approval', 'never') ||
+    !args.includes('exec') ||
+    !hasArgumentPair(args, '--sandbox', 'read-only') ||
+    !args.includes('--ephemeral') ||
+    !args.includes('--ignore-rules') ||
+    !args.includes('--skip-git-repo-check') ||
+    !args.includes('--strict-config') ||
+    !args.includes('--json') ||
+    args.some((arg) =>
+      [
+        '--print',
+        '--effort',
+        '--permission-mode',
+        '--output-format',
+        '--json-schema',
+        '--mcp-config',
+      ].includes(arg)
+    ) ||
+    !Object.hasOwn(evidence, 'requestedModel') ||
+    evidenceRequestedModel !== expectedRequestedModel ||
+    text(evidence.observedModel) !== text(normalized.returnedModel) ||
+    !['cli_event', 'gateway_receipt'].includes(
+      text(evidence.modelObservationSource)
+    ) ||
+    evidence.decisionBearingModelEvidence !== true ||
+    text(evidence.providerRequestId) !== text(normalized.providerRequestId) ||
+    !UUID_V4_PATTERN.test(text(evidence.providerRequestId)) ||
+    !Number.isInteger(credentialRevision) ||
+    credentialRevision < 1 ||
+    (Number.isInteger(expectedCredentialRevision) &&
+      expectedCredentialRevision > 0 &&
+      credentialRevision !== expectedCredentialRevision) ||
+    (expectedCredentialEnvironmentVariable !== undefined &&
+      text(evidence.credentialEnvironmentVariable) !==
+        text(expectedCredentialEnvironmentVariable)) ||
+    !text(evidence.runtimeHomePath) ||
+    !HASH_PATTERN.test(text(evidence.runtimeConfigHash)) ||
+    Number(evidence.exitCode) !== 0 ||
+    !HASH_PATTERN.test(text(evidence.stdoutHash)) ||
+    !HASH_PATTERN.test(text(evidence.stderrHash)) ||
+    !HASH_PATTERN.test(text(evidence.transcriptHash)) ||
+    !HASH_PATTERN.test(text(evidence.outputHash)) ||
+    !HASH_PATTERN.test(text(evidence.structuredOutputSchemaHash)) ||
+    !HASH_PATTERN.test(text(evidence.snapshotHash)) ||
+    text(normalized.responseHash) !== text(evidence.outputHash) ||
+    (expectedExecutorKind === 'native_spawn' &&
+      (!Number.isInteger(Number(evidence.processId)) || Number(evidence.processId) <= 0)) ||
+    (expectedExecutorKind === 'injected_test_transport' && evidence.processId !== null)
+  ) {
+    throw new Error('critical_auditor_judge_cli_transport_evidence_invalid');
+  }
+  return evidence;
+}
+
+function claudeCodeCliTransportEvidence(
+  normalized: JsonRecord,
+  runtimeBinding: JsonRecord,
+  expectedArgv: string[],
+  expectedExecutorKind: CliExecutorKind
+): JsonRecord {
+  if (
+    !['cli', 'claude-code-cli'].includes(text(runtimeBinding.transport)) ||
+    text(runtimeBinding.adapterRef) !== 'ClaudeCodeCliJudgeAdapter'
+  ) {
     throw new Error('critical_auditor_judge_cli_transport_required');
   }
   const evidence = record(
@@ -653,6 +912,10 @@ function cliTransportEvidence(
   const jsonSchemaIndex = expectedArgv.indexOf('--json-schema');
   const expectedStructuredOutputSchema =
     jsonSchemaIndex >= 0 ? expectedArgv[jsonSchemaIndex + 1] : '';
+  const expectedCommandResolution =
+    expectedExecutorKind === 'native_spawn'
+      ? 'process_spawn_path_search'
+      : 'injected_test_transport';
   if (text(evidence.executorKind) !== expectedExecutorKind) {
     throw new Error('critical_auditor_judge_cli_executor_kind_mismatch');
   }
@@ -663,12 +926,35 @@ function cliTransportEvidence(
     throw new Error('critical_auditor_judge_cli_init_binding_mismatch');
   }
   if (
-    text(evidence.schemaVersion) !== 'requirements-contract-claude-code-cli-execution/v1' ||
-    text(evidence.command) !== 'claude' ||
+    text(evidence.schemaVersion) !==
+      'requirements-contract-cli-judge-execution-receipt/v1' ||
+    text(evidence.adapterRef) !== text(runtimeBinding.adapterRef) ||
+    text(evidence.protocol) !== 'claude_stream_json' ||
+    !text(evidence.command) ||
+    sha256Stable(text(evidence.command)) !==
+      text(runtimeBinding.configuredBaseUrlHash) ||
+    text(evidence.commandResolution) !== expectedCommandResolution ||
+    (expectedExecutorKind === 'native_spawn' &&
+      (text(evidence.launchCommand) !== text(evidence.command) ||
+        text(evidence.launchCommandHash) !==
+          sha256Stable(text(evidence.command)) ||
+        JSON.stringify(evidence.launchArgv) !== JSON.stringify(expectedArgv) ||
+        evidence.launchEntryPath !== null ||
+        evidence.launchEntryHash !== null)) ||
+    (expectedExecutorKind === 'injected_test_transport' &&
+      (evidence.launchCommand !== null ||
+        evidence.launchCommandHash !== null ||
+        evidence.launchArgv !== null ||
+        evidence.launchEntryPath !== null ||
+        evidence.launchEntryHash !== null)) ||
     !Object.hasOwn(evidence, 'requestedModel') ||
+    !Object.hasOwn(evidence, 'observedModel') ||
     !Object.hasOwn(evidence, 'initModel') ||
     !Object.hasOwn(evidence, 'modelUsageModels') ||
     evidenceRequestedModel !== expectedRequestedModel ||
+    text(evidence.observedModel) !== text(normalized.returnedModel) ||
+    text(evidence.modelObservationSource) !== 'cli_event' ||
+    evidence.decisionBearingModelEvidence !== true ||
     (expectedExecutorKind === 'injected_test_transport' && evidenceInitModel !== null) ||
     !Number.isInteger(credentialRevision) ||
     credentialRevision < 1 ||
@@ -678,9 +964,15 @@ function cliTransportEvidence(
     (expectedCredentialEnvironmentVariable !== undefined &&
       (evidence.credentialEnvironmentVariable ?? null) !==
         (expectedCredentialEnvironmentVariable ?? null)) ||
+    text(evidence.providerRequestId) !== text(normalized.providerRequestId) ||
     text(evidence.sessionId) !== text(normalized.providerRequestId) ||
+    evidence.runtimeHomePath !== null ||
+    evidence.runtimeConfigHash !== null ||
+    evidence.outputPath !== null ||
+    evidence.outputHash !== null ||
+    evidence.structuredOutputSchemaPath !== null ||
     Number(evidence.exitCode) !== 0 ||
-    !UUID_V4_PATTERN.test(text(evidence.sessionId)) ||
+    !UUID_V4_PATTERN.test(text(evidence.providerRequestId)) ||
     !HASH_PATTERN.test(text(evidence.stdoutHash)) ||
     !HASH_PATTERN.test(text(evidence.stderrHash)) ||
     !HASH_PATTERN.test(text(evidence.transcriptHash)) ||
@@ -708,6 +1000,28 @@ function cliTransportEvidence(
     throw new Error('critical_auditor_judge_cli_transport_evidence_invalid');
   }
   return evidence;
+}
+
+function cliTransportEvidence(
+  normalized: JsonRecord,
+  runtimeBinding: JsonRecord,
+  expectedArgv: string[],
+  expectedExecutorKind: CliExecutorKind
+): JsonRecord {
+  if (text(runtimeBinding.adapterRef) === 'CodexCliJudgeAdapter') {
+    return codexCliTransportEvidence(
+      normalized,
+      runtimeBinding,
+      expectedArgv,
+      expectedExecutorKind
+    );
+  }
+  return claudeCodeCliTransportEvidence(
+    normalized,
+    runtimeBinding,
+    expectedArgv,
+    expectedExecutorKind
+  );
 }
 
 function readJsonLines(filePath: string, code: string): JsonRecord[] {
@@ -921,7 +1235,7 @@ function assertTranscriptReadContentBindings(input: {
 function isAllowedCliExecutionRoot(
   executionRoot: string,
   snapshotRoot: string,
-  expectedExecutorKind: ClaudeCodeCliExecutorKind
+  expectedExecutorKind: CliExecutorKind
 ): boolean {
   if (executionRoot === snapshotRoot) return true;
   if (expectedExecutorKind !== 'native_spawn' || process.platform !== 'win32') {
@@ -966,7 +1280,7 @@ function assertTranscriptResult(input: {
   runtimeBinding: JsonRecord;
   evidence: JsonRecord;
   snapshotRoot: string;
-  expectedExecutorKind: ClaudeCodeCliExecutorKind;
+  expectedExecutorKind: CliExecutorKind;
   requiredReadPaths: Set<string>;
   toolSummary: ReturnType<typeof assertTranscriptToolCalls>;
 }): void {
@@ -1268,7 +1582,7 @@ function normalizedJudgeResponse(
   value: unknown,
   runtimeBinding: JsonRecord,
   expectedArgv: string[],
-  expectedExecutorKind: ClaudeCodeCliExecutorKind
+  expectedExecutorKind: CliExecutorKind
 ): JsonRecord {
   const normalized = record(value, 'critical_auditor_judge_normalized_response_invalid');
   const configuredModel = requiredConfiguredModel(
@@ -1307,6 +1621,268 @@ function normalizedJudgeResponse(
   return normalized;
 }
 
+function assertCodexSnapshotManifest(input: {
+  root: string;
+  requestPath: string;
+  manifestPath: string;
+  manifest: JsonRecord;
+  request: JsonRecord;
+}): { snapshotRoot: string; readAllowlist: string[] } {
+  const snapshotRoot = path.dirname(input.manifestPath);
+  if (
+    fs.lstatSync(snapshotRoot).isSymbolicLink() ||
+    fs.lstatSync(input.manifestPath).isSymbolicLink() ||
+    text(input.manifest.schemaVersion) !==
+      'requirements-contract-cli-judge-evidence-snapshot/v1'
+  ) {
+    throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+  }
+  const entries = Array.isArray(input.manifest.entries)
+    ? input.manifest.entries
+    : [];
+  const seen = new Set<string>();
+  for (const entryValue of entries) {
+    const entry = record(
+      entryValue,
+      'critical_auditor_judge_cli_snapshot_manifest_invalid'
+    );
+    const relativePath = assertSnapshotRelativePath(snapshotRoot, entry.path);
+    const filePath = path.resolve(snapshotRoot, relativePath);
+    if (
+      seen.has(relativePath) ||
+      !fs.existsSync(filePath) ||
+      !fs.statSync(filePath).isFile() ||
+      fs.lstatSync(filePath).isSymbolicLink() ||
+      text(entry.hash) !== sha256File(filePath) ||
+      Number(entry.bytes) !== fs.statSync(filePath).size
+    ) {
+      throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+    }
+    seen.add(relativePath);
+  }
+  if (
+    entries.length === 0 ||
+    text(input.manifest.snapshotHash) !==
+      sha256Json({
+        schemaVersion: input.manifest.schemaVersion,
+        entries,
+      })
+  ) {
+    throw new Error('critical_auditor_judge_cli_snapshot_manifest_invalid');
+  }
+  const requestRelativePath = relativeSlash(input.root, input.requestPath);
+  const requestSnapshotPath = path.resolve(snapshotRoot, requestRelativePath);
+  const sourceDocument = text(input.request.sourceDocument);
+  const sourceRelativePath = sourceDocument
+    ? relativeSlash(
+        input.root,
+        resolveWithin(
+          input.root,
+          sourceDocument,
+          'critical_auditor_judge_cli_source_document_path_escape'
+        )
+      )
+    : '';
+  const sourceSnapshotPath = sourceRelativePath
+    ? path.resolve(snapshotRoot, sourceRelativePath)
+    : '';
+  if (
+    !seen.has(requestRelativePath) ||
+    !fs.existsSync(requestSnapshotPath) ||
+    sha256File(requestSnapshotPath) !== sha256File(input.requestPath) ||
+    !sourceRelativePath ||
+    !seen.has(sourceRelativePath) ||
+    !fs.existsSync(sourceSnapshotPath) ||
+    sha256File(sourceSnapshotPath) !== text(input.request.sourceBytesHash)
+  ) {
+    throw new Error('critical_auditor_judge_cli_snapshot_binding_mismatch');
+  }
+  return {
+    snapshotRoot,
+    readAllowlist: [...seen].sort(),
+  };
+}
+
+function assertCodexTranscript(input: {
+  events: JsonRecord[];
+  normalized: JsonRecord;
+  evidence: JsonRecord;
+  expectedExecutorKind: CliExecutorKind;
+}): void {
+  const threadEvents = input.events.filter(
+    (event) => event.type === 'thread.started'
+  );
+  const completedTurns = input.events.filter(
+    (event) => event.type === 'turn.completed'
+  );
+  const modelObservations = new Set<string>();
+  for (const event of input.events) {
+    if (
+      ['thread.started', 'turn.started', 'turn.completed'].includes(
+        text(event.type)
+      ) &&
+      text(event.model)
+    ) {
+      modelObservations.add(text(event.model));
+    }
+    if (event.type === 'item.completed') {
+      const item =
+        event.item && typeof event.item === 'object' && !Array.isArray(event.item)
+          ? (event.item as JsonRecord)
+          : null;
+      if (item && text(item.model)) modelObservations.add(text(item.model));
+      if (item?.type === 'error') {
+        throw new Error('critical_auditor_judge_cli_transcript_error');
+      }
+    }
+  }
+  if (
+    threadEvents.length !== 1 ||
+    text(threadEvents[0].thread_id) !== text(input.normalized.providerRequestId) ||
+    completedTurns.length !== 1 ||
+    input.events[input.events.length - 1] !== completedTurns[0] ||
+    modelObservations.size !== 1 ||
+    [...modelObservations][0] !== text(input.normalized.returnedModel) ||
+    text(input.evidence.observedModel) !== text(input.normalized.returnedModel)
+  ) {
+    throw new Error('critical_auditor_judge_transcript_result_mismatch');
+  }
+  if (input.expectedExecutorKind === 'native_spawn') {
+    const completedCommands = input.events.filter((event) => {
+      if (event.type !== 'item.completed') return false;
+      const item =
+        event.item && typeof event.item === 'object' && !Array.isArray(event.item)
+          ? (event.item as JsonRecord)
+          : null;
+      return (
+        item?.type === 'command_execution' &&
+        item.status === 'completed' &&
+        Number(item.exit_code) === 0 &&
+        Boolean(text(item.command))
+      );
+    });
+    if (completedCommands.length === 0) {
+      throw new Error('critical_auditor_judge_cli_evidence_coverage_incomplete');
+    }
+  }
+}
+
+function assertCodexCliTransportArtifacts(input: {
+  root: string;
+  requestPath: string;
+  outputDir: string;
+  normalized: JsonRecord;
+  runtimeBinding: JsonRecord;
+  evidence: JsonRecord;
+  expectedExecutorKind: CliExecutorKind;
+}): JsonRecord {
+  const outputDir = path.resolve(input.outputDir);
+  for (const [pathField, hashField] of [
+    ['stdoutPath', 'stdoutHash'],
+    ['stderrPath', 'stderrHash'],
+    ['transcriptPath', 'transcriptHash'],
+    ['outputPath', 'outputHash'],
+    ['structuredOutputSchemaPath', 'structuredOutputSchemaHash'],
+  ] as const) {
+    const artifactPath = resolveWithin(
+      input.root,
+      text(input.evidence[pathField]),
+      'critical_auditor_judge_cli_artifact_path_escape'
+    );
+    const relative = path.relative(outputDir, artifactPath);
+    if (
+      relative.startsWith('..') ||
+      path.isAbsolute(relative) ||
+      !fs.existsSync(artifactPath) ||
+      sha256File(artifactPath) !== text(input.evidence[hashField])
+    ) {
+      throw new Error('critical_auditor_judge_cli_artifact_binding_mismatch');
+    }
+  }
+  const runtimeHomePath = resolveWithin(
+    input.root,
+    text(input.evidence.runtimeHomePath),
+    'critical_auditor_judge_cli_runtime_home_path_escape'
+  );
+  const runtimeConfigPath = path.join(runtimeHomePath, 'config.toml');
+  if (
+    !isWithin(outputDir, runtimeHomePath) ||
+    !fs.existsSync(runtimeConfigPath) ||
+    sha256File(runtimeConfigPath) !== text(input.evidence.runtimeConfigHash)
+  ) {
+    throw new Error('critical_auditor_judge_cli_runtime_config_mismatch');
+  }
+  const manifestPath = resolveWithin(
+    input.root,
+    text(input.evidence.snapshotManifestPath),
+    'critical_auditor_judge_cli_snapshot_path_escape'
+  );
+  if (!isWithin(outputDir, manifestPath) || !fs.existsSync(manifestPath)) {
+    throw new Error('critical_auditor_judge_cli_snapshot_binding_mismatch');
+  }
+  const request = readJsonObject(
+    input.requestPath,
+    'critical_auditor_judge_request_invalid'
+  );
+  const snapshot = assertCodexSnapshotManifest({
+    root: input.root,
+    requestPath: input.requestPath,
+    manifestPath,
+    manifest: readJsonObject(
+      manifestPath,
+      'critical_auditor_judge_cli_snapshot_manifest_invalid'
+    ),
+    request,
+  });
+  if (
+    path.resolve(text(input.evidence.cwd)) !== path.resolve(snapshot.snapshotRoot) ||
+    text(input.normalized.requestHash) !==
+      sha256Text(
+        buildCodexCliJudgePrompt({
+          systemPrompt: SYSTEM_PROMPT,
+          request,
+          readAllowlist: snapshot.readAllowlist,
+        })
+      )
+  ) {
+    throw new Error('critical_auditor_judge_provider_request_hash_mismatch');
+  }
+  const outputPath = resolveWithin(
+    input.root,
+    text(input.evidence.outputPath),
+    'critical_auditor_judge_cli_artifact_path_escape'
+  );
+  const outputDecision = decisionProjection(
+    readJsonObject(
+      outputPath,
+      'critical_auditor_judge_transcript_result_mismatch'
+    ),
+    'critical_auditor_judge_transcript_result_mismatch'
+  );
+  const normalizedDecision = decisionProjection(
+    input.normalized,
+    'critical_auditor_judge_transcript_result_mismatch'
+  );
+  if (sha256Json(outputDecision) !== sha256Json(normalizedDecision)) {
+    throw new Error('critical_auditor_judge_transcript_result_mismatch');
+  }
+  const transcriptPath = resolveWithin(
+    input.root,
+    text(input.evidence.transcriptPath),
+    'critical_auditor_judge_cli_artifact_path_escape'
+  );
+  assertCodexTranscript({
+    events: readJsonLines(
+      transcriptPath,
+      'critical_auditor_judge_cli_transcript_invalid'
+    ),
+    normalized: input.normalized,
+    evidence: input.evidence,
+    expectedExecutorKind: input.expectedExecutorKind,
+  });
+  return input.evidence;
+}
+
 function assertCliTransportArtifacts(input: {
   root: string;
   requestPath: string;
@@ -1314,7 +1890,7 @@ function assertCliTransportArtifacts(input: {
   normalized: JsonRecord;
   runtimeBinding: JsonRecord;
   expectedArgv: string[];
-  expectedExecutorKind: ClaudeCodeCliExecutorKind;
+  expectedExecutorKind: CliExecutorKind;
 }): JsonRecord {
   const evidence = cliTransportEvidence(
     input.normalized,
@@ -1322,6 +1898,17 @@ function assertCliTransportArtifacts(input: {
     input.expectedArgv,
     input.expectedExecutorKind
   );
+  if (text(input.runtimeBinding.adapterRef) === 'CodexCliJudgeAdapter') {
+    return assertCodexCliTransportArtifacts({
+      root: input.root,
+      requestPath: input.requestPath,
+      outputDir: input.outputDir,
+      normalized: input.normalized,
+      runtimeBinding: input.runtimeBinding,
+      evidence,
+      expectedExecutorKind: input.expectedExecutorKind,
+    });
+  }
   const outputDir = path.resolve(input.outputDir);
   const artifactFields = [
     ['stdoutPath', 'stdoutHash'],
@@ -1384,12 +1971,34 @@ function assertCliTransportArtifacts(input: {
     text(requestBinding.requestContentHash) !== sha256File(input.requestPath) ||
     text(requestBinding.requestHash) !== text(request.requestHash) ||
     text(requestBinding.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+    text(requestBinding.sourceBytesHash) !== text(request.sourceBytesHash) ||
     text(requestBinding.semanticModelHash) !== text(request.semanticModelHash) ||
     text(requestBinding.projectionSetHash) !== text(request.projectionSetHash)
   ) {
     throw new Error('critical_auditor_judge_cli_snapshot_binding_mismatch');
   }
   const verifiedManifest = assertSnapshotManifest(manifestPath, manifest);
+  const sourceDocument = text(request.sourceDocument);
+  const sourceDocumentPath = sourceDocument
+    ? resolveWithin(
+        input.root,
+        sourceDocument,
+        'critical_auditor_judge_cli_source_document_path_escape'
+      )
+    : '';
+  const sourceDocumentRelativePath = sourceDocumentPath
+    ? relativeSlash(input.root, sourceDocumentPath)
+    : '';
+  const sourceReadPlan = verifiedManifest.readPlan.find(
+    (entry) => entry.sourcePath === sourceDocumentRelativePath
+  );
+  if (
+    !sourceDocumentRelativePath ||
+    !sourceReadPlan ||
+    sourceReadPlan.sourceHash !== text(request.sourceBytesHash)
+  ) {
+    throw new Error('critical_auditor_judge_cli_source_snapshot_binding_mismatch');
+  }
   const manifestedPaths = verifiedManifest.manifestedPaths;
   const expectedPromptHash = sha256Text(
     buildClaudeCodeCliJudgePrompt(SYSTEM_PROMPT, request, verifiedManifest.readPlan)
@@ -1621,6 +2230,7 @@ function responseFrom(input: {
     requestHash: text(input.request.requestHash),
     sourceHash: text(input.request.sourceHash),
     sourceDocumentHash: text(input.request.sourceDocumentHash),
+    sourceBytesHash: text(input.request.sourceBytesHash),
     semanticModelHash: text(input.request.semanticModelHash),
     implementationConfirmationHash: text(input.request.implementationConfirmationHash),
     packetHash: text(input.request.packetHash),
@@ -1637,6 +2247,8 @@ interface JudgeInvocationPaths {
   receiptPath: string;
   statePath: string;
   commitPath: string;
+  semanticRejectionPath: string;
+  providerContractBlockedPath: string;
   lockPath: string;
   lockOwnerPath: string;
 }
@@ -1671,8 +2283,714 @@ function judgeInvocationPaths(input: {
     receiptPath: path.join(outputDir, 'judge-provider-invocation-receipt.json'),
     statePath: path.join(outputDir, 'judge-provider-invocation-state.json'),
     commitPath: path.join(outputDir, 'judge-provider-invocation-commit.json'),
+    semanticRejectionPath: path.join(
+      outputDir,
+      'judge-provider-semantic-rejection.json'
+    ),
+    providerContractBlockedPath: path.join(
+      outputDir,
+      'judge-provider-contract-blocked.json'
+    ),
     lockPath,
     lockOwnerPath: path.join(lockPath, 'owner.json'),
+  };
+}
+
+function semanticIssueCodes(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error('critical_auditor_judge_semantic_issue_codes_invalid');
+  }
+  const issueCodes = [...new Set(value.map(text).filter(Boolean))].sort();
+  if (
+    issueCodes.length === 0 ||
+    issueCodes.some((code) => !/^[a-z0-9][a-z0-9_.:-]*$/u.test(code))
+  ) {
+    throw new Error('critical_auditor_judge_semantic_issue_codes_invalid');
+  }
+  return issueCodes;
+}
+
+function validateSemanticRejectionMarker(
+  marker: JsonRecord,
+  request: JsonRecord,
+  round: number
+): void {
+  assertCanonicalSelfHash(
+    marker,
+    'rejectionHash',
+    'critical_auditor_judge_semantic_rejection_hash_mismatch'
+  );
+  const issueCodes = semanticIssueCodes(marker.semanticIssueCodes);
+  if (
+    text(marker.schemaVersion) !==
+      'critical-auditor-judge-semantic-rejection/v1' ||
+    Number(marker.roundIndex) !== round ||
+    text(marker.requestHash) !== text(request.requestHash) ||
+    text(marker.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+    text(marker.sourceBytesHash) !== text(request.sourceBytesHash) ||
+    text(marker.semanticModelHash) !== text(request.semanticModelHash) ||
+    text(marker.projectionSetHash) !== text(request.projectionSetHash) ||
+    text(marker.semanticIssueFingerprint) !==
+      sha256CanonicalJson({ semanticIssueCodes: issueCodes }) ||
+    !UUID_V4_PATTERN.test(text(marker.generationId)) ||
+    !HASH_PATTERN.test(text(marker.stateContentHash)) ||
+    !HASH_PATTERN.test(text(marker.resultContentHash)) ||
+    !HASH_PATTERN.test(text(marker.receiptContentHash)) ||
+    !HASH_PATTERN.test(text(marker.commitContentHash)) ||
+    !HASH_PATTERN.test(text(marker.receiptHash)) ||
+    !HASH_PATTERN.test(text(marker.providerResponseHash)) ||
+    !text(marker.providerRunId) ||
+    !Number.isSafeInteger(Number(marker.priorMatchingRejectionCount)) ||
+    Number(marker.priorMatchingRejectionCount) < 0 ||
+    !['retry_allowed', 'provider_contract_blocked'].includes(
+      text(marker.retryDecision)
+    ) ||
+    (Number(marker.priorMatchingRejectionCount) === 0) !==
+      (text(marker.retryDecision) === 'retry_allowed') ||
+    !Number.isFinite(Date.parse(text(marker.rejectedAt))) ||
+    new Date(Date.parse(text(marker.rejectedAt))).toISOString() !==
+      text(marker.rejectedAt)
+  ) {
+    throw new Error('critical_auditor_judge_semantic_rejection_binding_mismatch');
+  }
+}
+
+function semanticRejectionBundleEntries(
+  paths: JudgeInvocationPaths,
+  marker: JsonRecord
+): Array<{ sourcePath: string; fileName: string; expectedHash: string }> {
+  return [
+    {
+      sourcePath: paths.statePath,
+      fileName: path.basename(paths.statePath),
+      expectedHash: text(marker.stateContentHash),
+    },
+    {
+      sourcePath: paths.resultPath,
+      fileName: path.basename(paths.resultPath),
+      expectedHash: text(marker.resultContentHash),
+    },
+    {
+      sourcePath: paths.receiptPath,
+      fileName: path.basename(paths.receiptPath),
+      expectedHash: text(marker.receiptContentHash),
+    },
+    {
+      sourcePath: paths.commitPath,
+      fileName: path.basename(paths.commitPath),
+      expectedHash: text(marker.commitContentHash),
+    },
+    {
+      sourcePath: paths.semanticRejectionPath,
+      fileName: 'semantic-rejection.json',
+      expectedHash: sha256File(paths.semanticRejectionPath),
+    },
+  ];
+}
+
+function verifySemanticRejectionArchive(
+  archiveDir: string,
+  entries: Array<{ fileName: string; expectedHash: string }>,
+  marker: JsonRecord
+): void {
+  for (const entry of entries) {
+    const archivedPath = path.join(archiveDir, entry.fileName);
+    if (
+      !fs.existsSync(archivedPath) ||
+      sha256File(archivedPath) !== entry.expectedHash
+    ) {
+      throw new Error('critical_auditor_judge_semantic_rejection_archive_invalid');
+    }
+  }
+  const archiveCommitPath = path.join(archiveDir, 'archive-commit.json');
+  const archiveCommit = readJsonObject(
+    archiveCommitPath,
+    'critical_auditor_judge_semantic_rejection_archive_commit_missing'
+  );
+  assertCanonicalSelfHash(
+    archiveCommit,
+    'commitHash',
+    'critical_auditor_judge_semantic_rejection_archive_commit_hash_mismatch'
+  );
+  if (
+    text(archiveCommit.schemaVersion) !==
+      'critical-auditor-judge-semantic-rejection-archive-commit/v1' ||
+    text(archiveCommit.generationId) !== text(marker.generationId) ||
+    text(archiveCommit.rejectionHash) !== text(marker.rejectionHash) ||
+    sha256CanonicalJson(archiveCommit.files) !==
+      sha256CanonicalJson(
+        Object.fromEntries(entries.map((entry) => [entry.fileName, entry.expectedHash]))
+      )
+  ) {
+    throw new Error(
+      'critical_auditor_judge_semantic_rejection_archive_commit_binding_mismatch'
+    );
+  }
+}
+
+function validateProviderContractBlockedMarker(input: {
+  marker: JsonRecord;
+  request: JsonRecord;
+  round: number;
+  paths: JudgeInvocationPaths;
+}): void {
+  assertCanonicalSelfHash(
+    input.marker,
+    'terminalHash',
+    'critical_auditor_judge_provider_contract_blocked_hash_mismatch'
+  );
+  const issueCodes = semanticIssueCodes(input.marker.semanticIssueCodes);
+  const generationId = text(input.marker.generationId);
+  const archiveDir = path.join(
+    input.paths.outputDir,
+    'rejected-generations',
+    generationId
+  );
+  const archivedRejectionPath = path.join(archiveDir, 'semantic-rejection.json');
+  const archiveCommitPath = path.join(archiveDir, 'archive-commit.json');
+  if (
+    text(input.marker.schemaVersion) !==
+      'critical-auditor-judge-provider-contract-blocked/v1' ||
+    Number(input.marker.roundIndex) !== input.round ||
+    text(input.marker.requestHash) !== text(input.request.requestHash) ||
+    text(input.marker.sourceDocumentHash) !== text(input.request.sourceDocumentHash) ||
+    text(input.marker.sourceBytesHash) !== text(input.request.sourceBytesHash) ||
+    text(input.marker.semanticModelHash) !== text(input.request.semanticModelHash) ||
+    text(input.marker.projectionSetHash) !== text(input.request.projectionSetHash) ||
+    text(input.marker.semanticIssueFingerprint) !==
+      sha256CanonicalJson({ semanticIssueCodes: issueCodes }) ||
+    !UUID_V4_PATTERN.test(generationId) ||
+    text(input.marker.retryDecision) !== 'provider_contract_blocked' ||
+    !HASH_PATTERN.test(text(input.marker.rejectionHash)) ||
+    !HASH_PATTERN.test(text(input.marker.rejectionContentHash)) ||
+    !HASH_PATTERN.test(text(input.marker.archiveCommitHash)) ||
+    !HASH_PATTERN.test(text(input.marker.archiveCommitContentHash)) ||
+    !Number.isFinite(Date.parse(text(input.marker.terminalAt))) ||
+    new Date(Date.parse(text(input.marker.terminalAt))).toISOString() !==
+      text(input.marker.terminalAt) ||
+    !fs.existsSync(archivedRejectionPath) ||
+    !fs.existsSync(archiveCommitPath) ||
+    sha256File(archivedRejectionPath) !== text(input.marker.rejectionContentHash) ||
+    sha256File(archiveCommitPath) !== text(input.marker.archiveCommitContentHash)
+  ) {
+    throw new Error(
+      'critical_auditor_judge_provider_contract_blocked_binding_mismatch'
+    );
+  }
+  const rejection = readJsonObject(
+    archivedRejectionPath,
+    'critical_auditor_judge_provider_contract_blocked_rejection_missing'
+  );
+  validateSemanticRejectionMarker(rejection, input.request, input.round);
+  const archiveCommit = readJsonObject(
+    archiveCommitPath,
+    'critical_auditor_judge_provider_contract_blocked_archive_commit_missing'
+  );
+  assertCanonicalSelfHash(
+    archiveCommit,
+    'commitHash',
+    'critical_auditor_judge_provider_contract_blocked_archive_commit_hash_mismatch'
+  );
+  if (
+    text(rejection.generationId) !== generationId ||
+    text(rejection.retryDecision) !== 'provider_contract_blocked' ||
+    text(rejection.rejectionHash) !== text(input.marker.rejectionHash) ||
+    text(rejection.semanticIssueFingerprint) !==
+      text(input.marker.semanticIssueFingerprint) ||
+    text(archiveCommit.generationId) !== generationId ||
+    text(archiveCommit.rejectionHash) !== text(input.marker.rejectionHash) ||
+    text(archiveCommit.commitHash) !== text(input.marker.archiveCommitHash)
+  ) {
+    throw new Error(
+      'critical_auditor_judge_provider_contract_blocked_binding_mismatch'
+    );
+  }
+}
+
+function readProviderContractBlockedMarker(input: {
+  paths: JudgeInvocationPaths;
+  request: JsonRecord;
+  round: number;
+}): JsonRecord | null {
+  if (!fs.existsSync(input.paths.providerContractBlockedPath)) return null;
+  const marker = readJsonObject(
+    input.paths.providerContractBlockedPath,
+    'critical_auditor_judge_provider_contract_blocked_invalid'
+  );
+  validateProviderContractBlockedMarker({ ...input, marker });
+  return marker;
+}
+
+function persistProviderContractBlockedMarker(input: {
+  paths: JudgeInvocationPaths;
+  request: JsonRecord;
+  round: number;
+  rejection: JsonRecord;
+  archiveDir: string;
+}): JsonRecord {
+  const archivedRejectionPath = path.join(
+    input.archiveDir,
+    'semantic-rejection.json'
+  );
+  const archiveCommitPath = path.join(input.archiveDir, 'archive-commit.json');
+  const archiveCommit = readJsonObject(
+    archiveCommitPath,
+    'critical_auditor_judge_provider_contract_blocked_archive_commit_missing'
+  );
+  assertCanonicalSelfHash(
+    archiveCommit,
+    'commitHash',
+    'critical_auditor_judge_provider_contract_blocked_archive_commit_hash_mismatch'
+  );
+  const marker = withCanonicalSelfHash(
+    {
+      schemaVersion: 'critical-auditor-judge-provider-contract-blocked/v1',
+      generationId: text(input.rejection.generationId),
+      roundIndex: input.round,
+      requestHash: text(input.request.requestHash),
+      sourceDocumentHash: text(input.request.sourceDocumentHash),
+      sourceBytesHash: text(input.request.sourceBytesHash),
+      semanticModelHash: text(input.request.semanticModelHash),
+      projectionSetHash: text(input.request.projectionSetHash),
+      semanticIssueCodes: semanticIssueCodes(input.rejection.semanticIssueCodes),
+      semanticIssueFingerprint: text(input.rejection.semanticIssueFingerprint),
+      retryDecision: 'provider_contract_blocked',
+      rejectionHash: text(input.rejection.rejectionHash),
+      rejectionContentHash: sha256File(archivedRejectionPath),
+      archiveCommitHash: text(archiveCommit.commitHash),
+      archiveCommitContentHash: sha256File(archiveCommitPath),
+      terminalAt: new Date().toISOString(),
+    },
+    'terminalHash'
+  );
+  const existing = fs.existsSync(input.paths.providerContractBlockedPath)
+    ? readJsonObject(
+        input.paths.providerContractBlockedPath,
+        'critical_auditor_judge_provider_contract_blocked_invalid'
+      )
+    : null;
+  if (existing) {
+    validateProviderContractBlockedMarker({
+      marker: existing,
+      request: input.request,
+      round: input.round,
+      paths: input.paths,
+    });
+    return existing;
+  }
+  writeJsonAtomic(input.paths.providerContractBlockedPath, marker);
+  validateProviderContractBlockedMarker({
+    marker,
+    request: input.request,
+    round: input.round,
+    paths: input.paths,
+  });
+  return marker;
+}
+
+function archiveValidatedSemanticRejectionBundle(input: {
+  paths: JudgeInvocationPaths;
+  request: JsonRecord;
+  round: number;
+  marker: JsonRecord;
+}): {
+  archiveDir: string;
+  terminal: JsonRecord | null;
+} {
+  const archiveDir = path.join(
+    input.paths.outputDir,
+    'rejected-generations',
+    text(input.marker.generationId)
+  );
+  const entries = semanticRejectionBundleEntries(input.paths, input.marker);
+  if (!fs.existsSync(archiveDir)) {
+    const temporaryArchiveDir = `${archiveDir}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    fs.mkdirSync(temporaryArchiveDir, { recursive: true });
+    try {
+      for (const entry of entries) {
+        fs.copyFileSync(entry.sourcePath, path.join(temporaryArchiveDir, entry.fileName));
+        if (
+          sha256File(path.join(temporaryArchiveDir, entry.fileName)) !==
+          entry.expectedHash
+        ) {
+          throw new Error(
+            'critical_auditor_judge_semantic_rejection_archive_copy_mismatch'
+          );
+        }
+      }
+      const archiveFiles = Object.fromEntries(
+        entries.map((entry) => [entry.fileName, entry.expectedHash])
+      );
+      writeJsonAtomic(
+        path.join(temporaryArchiveDir, 'archive-commit.json'),
+        withCanonicalSelfHash(
+          {
+            schemaVersion:
+              'critical-auditor-judge-semantic-rejection-archive-commit/v1',
+            generationId: text(input.marker.generationId),
+            rejectionHash: text(input.marker.rejectionHash),
+            files: archiveFiles,
+            archivedAt: new Date().toISOString(),
+          },
+          'commitHash'
+        )
+      );
+      fs.mkdirSync(path.dirname(archiveDir), { recursive: true });
+      fs.renameSync(temporaryArchiveDir, archiveDir);
+    } catch (error) {
+      fs.rmSync(temporaryArchiveDir, { recursive: true, force: true });
+      throw error;
+    }
+  }
+  verifySemanticRejectionArchive(archiveDir, entries, input.marker);
+  const terminal =
+    text(input.marker.retryDecision) === 'provider_contract_blocked'
+      ? persistProviderContractBlockedMarker({
+          paths: input.paths,
+          request: input.request,
+          round: input.round,
+          rejection: input.marker,
+          archiveDir,
+        })
+      : null;
+  for (const entry of entries) {
+    if (
+      fs.existsSync(entry.sourcePath) &&
+      sha256File(entry.sourcePath) !== entry.expectedHash
+    ) {
+      throw new Error('critical_auditor_judge_semantic_rejection_source_changed');
+    }
+  }
+  for (const entry of entries) {
+    fs.rmSync(entry.sourcePath, { force: true });
+  }
+  return { archiveDir, terminal };
+}
+
+function archiveSemanticallyRejectedJudgeInvocation(input: {
+  root: string;
+  requestPath: string;
+  paths: JudgeInvocationPaths;
+  binding: JsonRecord;
+  request: JsonRecord;
+  runtimeBinding: JsonRecord;
+  expectedArgv: string[];
+  expectedExecutorKind: CliExecutorKind;
+  round: number;
+}): JsonRecord | null {
+  if (!fs.existsSync(input.paths.semanticRejectionPath)) return null;
+  const marker = readJsonObject(
+    input.paths.semanticRejectionPath,
+    'critical_auditor_judge_semantic_rejection_invalid'
+  );
+  validateSemanticRejectionMarker(marker, input.request, input.round);
+  const committed = readCommittedJudgeInvocation(input);
+  if (!committed) {
+    throw new Error('critical_auditor_judge_semantic_rejection_commit_missing');
+  }
+  const receipt = committed.receipt;
+  if (
+    text(marker.generationId) !== text(receipt.generationId) ||
+    text(marker.stateContentHash) !== sha256File(input.paths.statePath) ||
+    text(marker.resultContentHash) !== sha256File(input.paths.resultPath) ||
+    text(marker.receiptContentHash) !== sha256File(input.paths.receiptPath) ||
+    text(marker.commitContentHash) !== sha256File(input.paths.commitPath) ||
+    text(marker.receiptHash) !== text(receipt.receiptHash) ||
+    text(marker.providerResponseHash) !== text(receipt.providerResponseHash) ||
+    text(marker.providerRunId) !== text(receipt.providerRunId)
+  ) {
+    throw new Error('critical_auditor_judge_semantic_rejection_commit_mismatch');
+  }
+  archiveValidatedSemanticRejectionBundle({
+    paths: input.paths,
+    request: input.request,
+    round: input.round,
+    marker,
+  });
+  return marker;
+}
+
+export function requirementsContractCriticalAuditorJudgeInvocationDisposition(input: {
+  projectRoot: string;
+  requestPath: string;
+  outputDir?: string;
+  round: number;
+}): JsonRecord {
+  const root = path.resolve(input.projectRoot);
+  const requestPath = resolveWithin(
+    root,
+    input.requestPath,
+    'critical_auditor_judge_adapter_request_path_escape'
+  );
+  const request = readJsonObject(requestPath, 'critical_auditor_judge_request_invalid');
+  assertRequestIdentity(request, input.round);
+  const paths = judgeInvocationPaths({
+    root,
+    requestPath,
+    outputDir: input.outputDir,
+  });
+  const terminal = readProviderContractBlockedMarker({
+    paths,
+    request,
+    round: input.round,
+  });
+  if (terminal) {
+    return {
+      decision: 'provider_contract_blocked',
+      semanticIssueFingerprint: text(terminal.semanticIssueFingerprint),
+      terminalHash: text(terminal.terminalHash),
+    };
+  }
+  if (!fs.existsSync(paths.semanticRejectionPath)) {
+    return { decision: 'clear' };
+  }
+  const rejection = readJsonObject(
+    paths.semanticRejectionPath,
+    'critical_auditor_judge_semantic_rejection_invalid'
+  );
+  validateSemanticRejectionMarker(rejection, request, input.round);
+  return {
+    decision: 'semantic_rejection_pending',
+    retryDecision: text(rejection.retryDecision),
+    semanticIssueFingerprint: text(rejection.semanticIssueFingerprint),
+    rejectionHash: text(rejection.rejectionHash),
+  };
+}
+
+function countMatchingSemanticRejections(input: {
+  paths: JudgeInvocationPaths;
+  request: JsonRecord;
+  round: number;
+  semanticIssueFingerprint: string;
+}): number {
+  const archiveRoot = path.join(input.paths.outputDir, 'rejected-generations');
+  if (!fs.existsSync(archiveRoot)) return 0;
+  let count = 0;
+  for (const entry of fs.readdirSync(archiveRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const markerPath = path.join(
+      archiveRoot,
+      entry.name,
+      'semantic-rejection.json'
+    );
+    if (!fs.existsSync(markerPath)) {
+      throw new Error('critical_auditor_judge_semantic_rejection_archive_invalid');
+    }
+    const marker = readJsonObject(
+      markerPath,
+      'critical_auditor_judge_semantic_rejection_archive_invalid'
+    );
+    validateSemanticRejectionMarker(marker, input.request, input.round);
+    if (
+      text(marker.requestHash) === text(input.request.requestHash) &&
+      text(marker.semanticIssueFingerprint) === input.semanticIssueFingerprint
+    ) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+export function rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation(input: {
+  projectRoot: string;
+  request: string;
+  outputDir: string;
+  round: number;
+  semanticIssueCodes: string[];
+}): JsonRecord {
+  const root = path.resolve(input.projectRoot);
+  const requestPath = resolveWithin(
+    root,
+    input.request,
+    'critical_auditor_judge_adapter_request_path_escape'
+  );
+  const request = readJsonObject(requestPath, 'critical_auditor_judge_request_invalid');
+  assertRequestIdentity(request, input.round);
+  const paths = judgeInvocationPaths({
+    root,
+    requestPath,
+    outputDir: input.outputDir,
+  });
+  const state = readJsonObject(
+    paths.statePath,
+    'critical_auditor_judge_invocation_state_invalid'
+  );
+  assertSelfHash(
+    state,
+    'stateHash',
+    'critical_auditor_judge_invocation_state_hash_mismatch'
+  );
+  const result = readJsonObject(
+    paths.resultPath,
+    'critical_auditor_judge_provider_result_invalid'
+  );
+  const receipt = readJsonObject(
+    paths.receiptPath,
+    'critical_auditor_judge_invocation_receipt_invalid'
+  );
+  assertCanonicalSelfHash(
+    receipt,
+    'receiptHash',
+    'critical_auditor_judge_invocation_receipt_hash_mismatch'
+  );
+  const commit = readJsonObject(
+    paths.commitPath,
+    'critical_auditor_judge_invocation_commit_invalid'
+  );
+  assertCanonicalSelfHash(
+    commit,
+    'commitHash',
+    'critical_auditor_judge_invocation_commit_hash_mismatch'
+  );
+  const generationId = text(state.generationId);
+  if (
+    text(state.status) !== 'committed' ||
+    !UUID_V4_PATTERN.test(generationId) ||
+    text(state.invocationId) !== generationId ||
+    Number(state.roundIndex) !== input.round ||
+    text(state.requestHash) !== text(request.requestHash) ||
+    text(state.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+    text(state.sourceBytesHash) !== text(request.sourceBytesHash) ||
+    text(state.semanticModelHash) !== text(request.semanticModelHash) ||
+    text(state.projectionSetHash) !== text(request.projectionSetHash) ||
+    text(result.generationId) !== generationId ||
+    text(result.invocationBindingHash) !== text(state.invocationBindingHash) ||
+    text(receipt.generationId) !== generationId ||
+    text(receipt.invocationBindingHash) !== text(state.invocationBindingHash) ||
+    text(receipt.requestHash) !== text(request.requestHash) ||
+    text(receipt.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+    text(receipt.sourceBytesHash) !== text(request.sourceBytesHash) ||
+    text(receipt.semanticModelHash) !== text(request.semanticModelHash) ||
+    text(receipt.projectionSetHash) !== text(request.projectionSetHash) ||
+    text(commit.generationId) !== generationId ||
+    text(commit.invocationBindingHash) !== text(state.invocationBindingHash) ||
+    text(state.resultContentHash) !== sha256File(paths.resultPath) ||
+    text(state.receiptContentHash) !== sha256File(paths.receiptPath) ||
+    text(state.receiptHash) !== text(receipt.receiptHash) ||
+    text(commit.stateContentHash) !== sha256File(paths.statePath) ||
+    text(commit.resultContentHash) !== sha256File(paths.resultPath) ||
+    text(commit.receiptContentHash) !== sha256File(paths.receiptPath) ||
+    text(commit.receiptHash) !== text(receipt.receiptHash)
+  ) {
+    throw new Error('critical_auditor_judge_semantic_rejection_commit_mismatch');
+  }
+  const issueCodes = semanticIssueCodes(input.semanticIssueCodes);
+  const semanticIssueFingerprint = sha256CanonicalJson({
+    semanticIssueCodes: issueCodes,
+  });
+  const priorMatchingRejectionCount = countMatchingSemanticRejections({
+    paths,
+    request,
+    round: input.round,
+    semanticIssueFingerprint,
+  });
+  const marker = withCanonicalSelfHash(
+    {
+      schemaVersion: 'critical-auditor-judge-semantic-rejection/v1',
+      generationId,
+      roundIndex: input.round,
+      requestHash: text(request.requestHash),
+      sourceDocumentHash: text(request.sourceDocumentHash),
+      sourceBytesHash: text(request.sourceBytesHash),
+      semanticModelHash: text(request.semanticModelHash),
+      projectionSetHash: text(request.projectionSetHash),
+      semanticIssueCodes: issueCodes,
+      semanticIssueFingerprint,
+      priorMatchingRejectionCount,
+      retryDecision:
+        priorMatchingRejectionCount === 0
+          ? 'retry_allowed'
+          : 'provider_contract_blocked',
+      stateContentHash: sha256File(paths.statePath),
+      resultContentHash: sha256File(paths.resultPath),
+      receiptContentHash: sha256File(paths.receiptPath),
+      commitContentHash: sha256File(paths.commitPath),
+      receiptHash: text(receipt.receiptHash),
+      providerRunId: text(receipt.providerRunId),
+      providerResponseHash: text(receipt.providerResponseHash),
+      rejectedAt: new Date().toISOString(),
+    },
+    'rejectionHash'
+  );
+  const existing = fs.existsSync(paths.semanticRejectionPath)
+    ? readJsonObject(
+        paths.semanticRejectionPath,
+        'critical_auditor_judge_semantic_rejection_invalid'
+      )
+    : null;
+  if (existing) {
+    validateSemanticRejectionMarker(existing, request, input.round);
+    if (
+      text(existing.generationId) !== generationId ||
+      text(existing.semanticIssueFingerprint) !==
+        text(marker.semanticIssueFingerprint) ||
+      text(existing.receiptHash) !== text(receipt.receiptHash)
+    ) {
+      throw new Error('critical_auditor_judge_semantic_rejection_conflict');
+    }
+    if (text(existing.retryDecision) === 'provider_contract_blocked') {
+      const archived = archiveValidatedSemanticRejectionBundle({
+        paths,
+        request,
+        round: input.round,
+        marker: existing,
+      });
+      return {
+        decision: 'provider_contract_blocked',
+        retryDecision: 'provider_contract_blocked',
+        generationId,
+        semanticIssueFingerprint: text(existing.semanticIssueFingerprint),
+        rejectionHash: text(existing.rejectionHash),
+        semanticRejectionPath: relativeSlash(
+          root,
+          path.join(archived.archiveDir, 'semantic-rejection.json')
+        ),
+        providerContractBlockedPath: relativeSlash(
+          root,
+          paths.providerContractBlockedPath
+        ),
+        terminalHash: text(archived.terminal?.terminalHash),
+      };
+    }
+    return {
+      decision: 'semantic_rejection_already_recorded',
+      retryDecision: text(existing.retryDecision),
+      generationId,
+      rejectionHash: text(existing.rejectionHash),
+      semanticRejectionPath: relativeSlash(root, paths.semanticRejectionPath),
+    };
+  }
+  writeJsonAtomic(paths.semanticRejectionPath, marker);
+  if (text(marker.retryDecision) === 'provider_contract_blocked') {
+    const archived = archiveValidatedSemanticRejectionBundle({
+      paths,
+      request,
+      round: input.round,
+      marker,
+    });
+    return {
+      decision: 'provider_contract_blocked',
+      retryDecision: 'provider_contract_blocked',
+      generationId,
+      semanticIssueFingerprint,
+      rejectionHash: text(marker.rejectionHash),
+      semanticRejectionPath: relativeSlash(
+        root,
+        path.join(archived.archiveDir, 'semantic-rejection.json')
+      ),
+      providerContractBlockedPath: relativeSlash(
+        root,
+        paths.providerContractBlockedPath
+      ),
+      terminalHash: text(archived.terminal?.terminalHash),
+    };
+  }
+  return {
+    decision: 'semantic_rejection_recorded',
+    retryDecision: text(marker.retryDecision),
+    generationId,
+    rejectionHash: text(marker.rejectionHash),
+    semanticRejectionPath: relativeSlash(root, paths.semanticRejectionPath),
   };
 }
 
@@ -1687,6 +3005,7 @@ function invocationBinding(input: {
     namespaceVersion: text(input.request.namespaceVersion),
     requestHash: text(input.request.requestHash),
     sourceDocumentHash: text(input.request.sourceDocumentHash),
+    sourceBytesHash: text(input.request.sourceBytesHash),
     semanticModelHash: text(input.request.semanticModelHash),
     projectionSetHash: text(input.request.projectionSetHash),
     providerBinding: Object.fromEntries(
@@ -1721,6 +3040,7 @@ function adapterResultFrom(input: {
       ),
       model: text(input.normalized.returnedModel),
       transport: text(input.runtimeBinding.transport),
+      adapterRef: text(input.runtimeBinding.adapterRef),
       apiStyle: text(input.runtimeBinding.apiStyle),
       configuredBaseUrlHash: text(input.runtimeBinding.configuredBaseUrlHash),
       credentialRevision: Number(input.runtimeBinding.credentialRevision),
@@ -1796,6 +3116,7 @@ function readRetryableFailedJudgeInvocation(input: {
     state.roundIndex !== input.binding.roundIndex ||
     text(state.requestHash) !== text(input.binding.requestHash) ||
     text(state.sourceDocumentHash) !== text(input.binding.sourceDocumentHash) ||
+    text(state.sourceBytesHash) !== text(input.binding.sourceBytesHash) ||
     text(state.semanticModelHash) !== text(input.binding.semanticModelHash) ||
     text(state.projectionSetHash) !== text(input.binding.projectionSetHash) ||
     !Number.isFinite(startedAtTime) ||
@@ -1953,7 +3274,7 @@ function readCommittedJudgeInvocation(input: {
   request: JsonRecord;
   runtimeBinding: JsonRecord;
   expectedArgv: string[];
-  expectedExecutorKind: ClaudeCodeCliExecutorKind;
+  expectedExecutorKind: CliExecutorKind;
   round: number;
 }): CommittedCriticalAuditorJudgeInvocation | null {
   const committedPaths = [
@@ -1995,6 +3316,7 @@ function readCommittedJudgeInvocation(input: {
     state.roundIndex !== input.round ||
     text(state.requestHash) !== text(input.request.requestHash) ||
     text(state.sourceDocumentHash) !== text(input.request.sourceDocumentHash) ||
+    text(state.sourceBytesHash) !== text(input.request.sourceBytesHash) ||
     text(state.semanticModelHash) !== text(input.request.semanticModelHash) ||
     text(state.projectionSetHash) !== text(input.request.projectionSetHash) ||
     !Number.isFinite(stateStartedAtTime) ||
@@ -2089,6 +3411,7 @@ function readCommittedJudgeInvocation(input: {
     Number(receipt.roundIndex) !== input.round ||
     text(receipt.requestHash) !== text(input.request.requestHash) ||
     text(receipt.sourceDocumentHash) !== text(input.request.sourceDocumentHash) ||
+    text(receipt.sourceBytesHash) !== text(input.request.sourceBytesHash) ||
     text(receipt.semanticModelHash) !== text(input.request.semanticModelHash) ||
     text(receipt.projectionSetHash) !== text(input.request.projectionSetHash) ||
     providerBindingMismatch ||
@@ -2156,7 +3479,7 @@ export function readCommittedRequirementsContractCriticalAuditorJudgeInvocation(
   assertRequestIdentity(request, input.round);
   const runtimeBinding = input.runtimeBinding as JsonRecord;
   assertRequestBinding(request, runtimeBinding);
-  const expectedArgv = expectedClaudeCodeCliArgv(
+  const expectedArgv = expectedCliArgv(
     readJudgeRuntimeConfig(root, input.config),
     runtimeBinding,
     request
@@ -2166,6 +3489,30 @@ export function readCommittedRequirementsContractCriticalAuditorJudgeInvocation(
     requestPath,
     outputDir: input.outputDir,
   });
+  const terminal = readProviderContractBlockedMarker({
+    paths,
+    request,
+    round: input.round,
+  });
+  if (terminal) {
+    throw new Error(
+      `critical_auditor_judge_provider_contract_blocked:${text(
+        terminal.semanticIssueFingerprint
+      )}`
+    );
+  }
+  if (fs.existsSync(paths.semanticRejectionPath)) {
+    const rejection = readJsonObject(
+      paths.semanticRejectionPath,
+      'critical_auditor_judge_semantic_rejection_invalid'
+    );
+    validateSemanticRejectionMarker(rejection, request, input.round);
+    throw new Error(
+      `critical_auditor_judge_committed_generation_semantically_rejected:${text(
+        rejection.semanticIssueFingerprint
+      )}`
+    );
+  }
   const committed = readCommittedJudgeInvocation({
     root,
     requestPath,
@@ -2307,6 +3654,7 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
       state.roundIndex !== input.round ||
       text(state.requestHash) !== text(request.requestHash) ||
       text(state.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+      text(state.sourceBytesHash) !== text(request.sourceBytesHash) ||
       text(state.semanticModelHash) !== text(request.semanticModelHash) ||
       text(state.projectionSetHash) !== text(request.projectionSetHash) ||
       !fs.existsSync(paths.resultPath) ||
@@ -2335,7 +3683,7 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
         )
       );
     }
-    const expectedArgv = expectedClaudeCodeCliArgv(
+    const expectedArgv = expectedCliArgv(
       readJudgeRuntimeConfig(root),
       runtimeBinding,
       request
@@ -2365,6 +3713,7 @@ export function reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvoca
     state.roundIndex !== input.round ||
     text(state.requestHash) !== text(request.requestHash) ||
     text(state.sourceDocumentHash) !== text(request.sourceDocumentHash) ||
+    text(state.sourceBytesHash) !== text(request.sourceBytesHash) ||
     text(state.semanticModelHash) !== text(request.semanticModelHash) ||
     text(state.projectionSetHash) !== text(request.projectionSetHash) ||
     !UUID_V4_PATTERN.test(invocationId) ||
@@ -2457,6 +3806,9 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
     ...(options.executeClaudeCodeCliCommand
       ? { executeClaudeCodeCliCommand: options.executeClaudeCodeCliCommand }
       : {}),
+    ...(options.executeCodexCliCommand
+      ? { executeCodexCliCommand: options.executeCodexCliCommand }
+      : {}),
   });
   const judgeRuntime = judgeInvocation.judgeRuntime;
   const bindingResult = buildCriticalAuditorJudgeRuntimeBinding(judgeRuntime);
@@ -2474,13 +3826,10 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
     'critical_auditor_judge_adapter_authentication_missing'
   );
   const credentialEnvironmentVariable =
-    authentication.type === 'claude_code_session'
-      ? null
-      : authentication.type === 'bearer'
-        ? 'ANTHROPIC_AUTH_TOKEN'
-        : authentication.type === 'api_key'
-          ? 'ANTHROPIC_API_KEY'
-          : '';
+    resolveRequirementsContractJudgeCredentialEnvironmentVariable({
+      adapterRef: bindingResult.binding.adapterRef,
+      authenticationType: authentication.type,
+    });
   const credentialRevision = Number(judgeInvocation.credentialRevision);
   const runtimeBinding: CriticalAuditorJudgeRuntimeBinding & {
     credentialRevision: number;
@@ -2496,12 +3845,14 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
     sha256CanonicalJson(provider) !== text(runtimeBinding.providerConfigurationHash) ||
     !Number.isInteger(credentialRevision) ||
     credentialRevision < 1 ||
-    credentialEnvironmentVariable === ''
+    credentialEnvironmentVariable === undefined
   ) {
     throw new Error('critical_auditor_judge_adapter_runtime_binding_invalid');
   }
-  const expectedExecutorKind: ClaudeCodeCliExecutorKind =
-    options.executeClaudeCodeCliCommand
+  const expectedExecutorKind: CliExecutorKind =
+    (text(runtimeBinding.adapterRef) === 'CodexCliJudgeAdapter'
+      ? options.executeCodexCliCommand
+      : options.executeClaudeCodeCliCommand)
       ? 'injected_test_transport'
       : 'native_spawn';
   const request = record(
@@ -2511,14 +3862,43 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
   assertRequestIdentity(request, round);
   assertRequestBinding(request, runtimeBinding);
   const structuredOutputSchema = criticalAuditorTransportOutputSchema(request);
-  const expectedArgv = expectedClaudeCodeCliArgv(judgeRuntime, runtimeBinding, request);
+  const expectedArgv = expectedCliArgv(judgeRuntime, runtimeBinding, request);
   const paths = judgeInvocationPaths({
     root,
     requestPath,
     outputDir: options.outputDir,
   });
+  const terminal = readProviderContractBlockedMarker({ paths, request, round });
+  if (terminal) {
+    throw new Error(
+      `critical_auditor_judge_provider_contract_blocked:${text(
+        terminal.semanticIssueFingerprint
+      )}`
+    );
+  }
   const binding = invocationBinding({ request, runtimeBinding, round });
   const invocationBindingHash = sha256Json(binding);
+  const archivedSemanticRejection = archiveSemanticallyRejectedJudgeInvocation({
+    root,
+    requestPath,
+    paths,
+    binding,
+    request,
+    runtimeBinding,
+    expectedArgv,
+    expectedExecutorKind,
+    round,
+  });
+  if (
+    text(archivedSemanticRejection?.retryDecision) ===
+    'provider_contract_blocked'
+  ) {
+    throw new Error(
+      `critical_auditor_judge_provider_contract_blocked:${text(
+        archivedSemanticRejection?.semanticIssueFingerprint
+      )}`
+    );
+  }
   if (
     [paths.statePath, paths.resultPath, paths.receiptPath, paths.commitPath].every((filePath) =>
       fs.existsSync(filePath)
@@ -2611,6 +3991,7 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
       roundIndex: round,
       requestHash: text(request.requestHash),
       sourceDocumentHash: text(request.sourceDocumentHash),
+      sourceBytesHash: text(request.sourceBytesHash),
       semanticModelHash: text(request.semanticModelHash),
       projectionSetHash: text(request.projectionSetHash),
       startedAt,
@@ -2699,6 +4080,7 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
           roundIndex: round,
           requestHash: text(request.requestHash),
           sourceDocumentHash: text(request.sourceDocumentHash),
+          sourceBytesHash: text(request.sourceBytesHash),
           semanticModelHash: text(request.semanticModelHash),
           projectionSetHash: text(request.projectionSetHash),
           providerId: text(providerRun.providerId),
@@ -2708,6 +4090,7 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
           ),
           model: text(providerRun.model),
           transport: text(providerRun.transport),
+          adapterRef: text(providerRun.adapterRef),
           apiStyle: text(providerRun.apiStyle),
           configuredBaseUrlHash: text(providerRun.configuredBaseUrlHash),
           credentialRevision: Number(providerRun.credentialRevision),

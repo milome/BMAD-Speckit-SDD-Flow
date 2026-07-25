@@ -64,9 +64,14 @@ export interface JudgeRuntimeConfig {
     string,
     {
       enabled: boolean;
-      transport: 'openai-compatible' | 'anthropic-compatible' | 'claude-code-cli';
+      transport:
+        | 'openai-compatible'
+        | 'anthropic-compatible'
+        | 'claude-code-cli'
+        | 'cli';
+      adapterRef?: string;
       apiStyle: 'chat_completions' | 'messages' | 'cli';
-      model: string;
+      model?: string | null;
       credentialRef: string;
       endpoint: {
         baseUrl?: string;

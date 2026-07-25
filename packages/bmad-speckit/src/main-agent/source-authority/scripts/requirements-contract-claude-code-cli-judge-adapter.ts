@@ -3,6 +3,7 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:chil
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { readRequirementsContractJudgeCredentialSecret } from './requirements-contract-judge-credential-resolver';
 
 type JsonRecord = Record<string, unknown>;
@@ -342,6 +343,32 @@ function materializeEvidenceSnapshot(input: {
   if (!fs.existsSync(requestPath) || !fs.statSync(requestPath).isFile()) {
     throw new Error('claude_code_cli_judge_request_path_missing');
   }
+  const sourceDocument = requiredText(
+    input.request.sourceDocument,
+    'claude_code_cli_judge_source_document_missing'
+  );
+  const sourcePath = resolveWithin(
+    projectRoot,
+    sourceDocument,
+    'claude_code_cli_judge_source_document_path_escape'
+  );
+  if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
+    throw new Error('claude_code_cli_judge_source_document_missing');
+  }
+  const sourceRealPath = fs.realpathSync(sourcePath);
+  if (!isWithin(fs.realpathSync(projectRoot), sourceRealPath)) {
+    throw new Error('claude_code_cli_judge_source_document_realpath_escape');
+  }
+  const sourceBytesHash = requiredText(
+    input.request.sourceBytesHash,
+    'claude_code_cli_judge_source_bytes_hash_missing'
+  );
+  if (!/^sha256:[a-f0-9]{64}$/u.test(sourceBytesHash)) {
+    throw new Error('claude_code_cli_judge_source_bytes_hash_invalid');
+  }
+  if (sha256(fs.readFileSync(sourcePath)) !== sourceBytesHash) {
+    throw new Error('claude_code_cli_judge_source_bytes_hash_mismatch');
+  }
   const snapshotRoot = path.join(outputDir, 's');
   if (fs.existsSync(snapshotRoot)) {
     throw new Error('claude_code_cli_judge_snapshot_already_exists');
@@ -368,6 +395,13 @@ function materializeEvidenceSnapshot(input: {
     );
   const entries = materializedFiles.flatMap((materialized) => materialized.entries);
   const readPlan = materializedFiles.map((materialized) => materialized.readPlan);
+  const sourceRelativePath = slash(path.relative(projectRoot, sourcePath));
+  const sourceReadPlan = readPlan.find(
+    (entry) => entry.sourcePath === sourceRelativePath
+  );
+  if (!sourceReadPlan || sourceReadPlan.sourceHash !== sourceBytesHash) {
+    throw new Error('claude_code_cli_judge_source_snapshot_binding_mismatch');
+  }
   const snapshotHash = sha256(JSON.stringify({ entries, readPlan }));
   const manifestPath = path.join(snapshotRoot, 'snapshot-manifest.json');
   const requestBinding = {
@@ -381,6 +415,7 @@ function materializeEvidenceSnapshot(input: {
       input.request.sourceDocumentHash,
       'claude_code_cli_judge_source_document_hash_missing'
     ),
+    sourceBytesHash,
     semanticModelHash: requiredText(
       input.request.semanticModelHash,
       'claude_code_cli_judge_semantic_model_hash_missing'
@@ -485,12 +520,20 @@ function configuredRequestedModel(provider: JsonRecord): string | null {
 }
 
 function assertProvider(provider: JsonRecord): void {
-  if (provider.transport !== 'claude-code-cli' || provider.apiStyle !== 'cli') {
+  const legacyBinding = provider.transport === 'claude-code-cli';
+  const configuredBinding =
+    provider.transport === 'cli' &&
+    provider.adapterRef === 'ClaudeCodeCliJudgeAdapter';
+  if ((!legacyBinding && !configuredBinding) || provider.apiStyle !== 'cli') {
     throw new Error('claude_code_cli_judge_provider_binding_invalid');
   }
   const endpoint = record(provider.endpoint, 'claude_code_cli_judge_endpoint_invalid');
+  const command = requiredText(
+    endpoint.command,
+    'claude_code_cli_judge_command_missing'
+  );
   if (
-    endpoint.command !== 'claude' ||
+    (legacyBinding && command !== 'claude') ||
     endpoint.resolutionMode !== 'path_search' ||
     endpoint.routingOwnership !== 'transport_adapter' ||
     endpoint.explicitOperationPath !== null
@@ -636,6 +679,9 @@ export function buildClaudeCodeCliJudgePrompt(
     'Read every allowlisted file completely before producing a decision.',
     'If Read reports a partial or truncated view, continue reading the same path from the first unread line until EOF.',
     'Do not call StructuredOutput while any allowlisted file still has unread lines.',
+    `Before calling StructuredOutput, verify that the set of successfully and completely read paths equals the ${readAllowlist.length}-entry allowlist.`,
+    'Never pass readPlan.sourcePath or a path found inside judge-request-json to Read unless that exact string is also present in judge-read-allowlist-json.',
+    'No allowlisted path is optional, including stdout logs, stderr logs, receipts, prior-round artifacts, and evidence that appears redundant.',
     'A source file may be represented by multiple exact byte segments in the read plan.',
     'Read every segment in ascending startByte order; concatenating those segments exactly reconstructs sourcePath.',
     'Use sourcePath rather than segment paths when returning evidence references or source spans.',
@@ -973,6 +1019,24 @@ function structuredDecision(value: unknown): {
   };
 }
 
+function validateExecutionReceipt(receipt: JsonRecord): void {
+  const schemaPath = path.resolve(
+    __dirname,
+    '..',
+    'schemas',
+    'requirements-contract-cli-judge-execution-receipt.schema.json'
+  );
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+  if (!validate(receipt)) {
+    throw new Error(
+      `claude_code_cli_judge_execution_receipt_invalid:${JSON.stringify(
+        validate.errors ?? []
+      )}`
+    );
+  }
+}
+
 export function createClaudeCodeCliJudgeAdapter(
   dependencies: ClaudeCodeCliJudgeAdapterDependencies = {}
 ) {
@@ -1026,7 +1090,14 @@ export function createClaudeCodeCliJudgeAdapter(
       if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
         throw new Error('claude_code_cli_judge_timeout_invalid');
       }
-      const command = 'claude';
+      const endpoint = record(
+        provider.endpoint,
+        'claude_code_cli_judge_endpoint_invalid'
+      );
+      const command = requiredText(
+        endpoint.command,
+        'claude_code_cli_judge_command_missing'
+      );
       const outputDir = path.resolve(context.outputDir);
       const stdoutPath = path.join(outputDir, 'claude-code-cli-stdout.jsonl');
       const stderrPath = path.join(outputDir, 'claude-code-cli-stderr.log');
@@ -1080,6 +1151,63 @@ export function createClaudeCodeCliJudgeAdapter(
         );
         const returnedModel = modelBinding.returnedModel;
         const normalized = structuredDecision(result.structured_output);
+        const transportEvidence = {
+          schemaVersion: 'requirements-contract-cli-judge-execution-receipt/v1',
+          adapterRef: 'ClaudeCodeCliJudgeAdapter',
+          protocol: 'claude_stream_json',
+          command,
+          argv: args,
+          commandResolution:
+            executorKind === 'native_spawn'
+              ? 'process_spawn_path_search'
+              : 'injected_test_transport',
+          launchCommand: executorKind === 'native_spawn' ? command : null,
+          launchCommandHash:
+            executorKind === 'native_spawn'
+              ? sha256(JSON.stringify(command))
+              : null,
+          launchArgv: executorKind === 'native_spawn' ? args : null,
+          launchEntryPath: null,
+          launchEntryHash: null,
+          cwd: executionSnapshot.cwd,
+          executorKind,
+          processId:
+            executorKind === 'native_spawn' &&
+            Number.isInteger(execution.processId) &&
+            Number(execution.processId) > 0
+              ? execution.processId
+              : null,
+          providerRequestId: result.session_id,
+          requestedModel: model,
+          observedModel: returnedModel,
+          modelObservationSource: 'cli_event',
+          decisionBearingModelEvidence: true,
+          credentialRevision: credential.credentialRevision,
+          credentialEnvironmentVariable: credential.credentialEnvironmentVariable,
+          runtimeHomePath: null,
+          runtimeConfigHash: null,
+          exitCode: execution.exitCode,
+          stdoutPath: slash(path.relative(context.projectRoot, stdoutPath)),
+          stdoutHash: sha256(execution.stdout),
+          stderrPath: slash(path.relative(context.projectRoot, stderrPath)),
+          stderrHash: sha256(execution.stderr),
+          transcriptPath: slash(path.relative(context.projectRoot, transcriptPath)),
+          transcriptHash: sha256(fs.readFileSync(transcriptPath)),
+          outputPath: null,
+          outputHash: null,
+          structuredOutputSchemaPath: null,
+          structuredOutputSchemaHash: sha256(
+            JSON.stringify(structuredOutputSchema ?? DEFAULT_STRUCTURED_OUTPUT_SCHEMA)
+          ),
+          snapshotManifestPath: slash(
+            path.relative(context.projectRoot, snapshot.manifestPath)
+          ),
+          snapshotHash: snapshot.snapshotHash,
+          sessionId: result.session_id,
+          initModel: modelBinding.initModel,
+          modelUsageModels: modelBinding.modelUsageModels,
+        };
+        validateExecutionReceipt(transportEvidence);
         return {
           schemaVersion: 'requirements-contract-normalized-judge-response/v1',
           providerRef,
@@ -1090,39 +1218,7 @@ export function createClaudeCodeCliJudgeAdapter(
           providerRequestId: result.session_id,
           requestHash: sha256(prompt),
           responseHash: sha256(execution.stdout),
-          transportEvidence: {
-            schemaVersion: 'requirements-contract-claude-code-cli-execution/v1',
-            command,
-            argv: args,
-            cwd: executionSnapshot.cwd,
-            executorKind,
-            processId:
-              executorKind === 'native_spawn' &&
-              Number.isInteger(execution.processId) &&
-              Number(execution.processId) > 0
-                ? execution.processId
-                : null,
-            requestedModel: model,
-            initModel: modelBinding.initModel,
-            modelUsageModels: modelBinding.modelUsageModels,
-            credentialRevision: credential.credentialRevision,
-            credentialEnvironmentVariable: credential.credentialEnvironmentVariable,
-            sessionId: result.session_id,
-            exitCode: execution.exitCode,
-            stdoutPath: slash(path.relative(context.projectRoot, stdoutPath)),
-            stdoutHash: sha256(execution.stdout),
-            stderrPath: slash(path.relative(context.projectRoot, stderrPath)),
-            stderrHash: sha256(execution.stderr),
-            transcriptPath: slash(path.relative(context.projectRoot, transcriptPath)),
-            transcriptHash: sha256(fs.readFileSync(transcriptPath)),
-            structuredOutputSchemaHash: sha256(
-              JSON.stringify(structuredOutputSchema ?? DEFAULT_STRUCTURED_OUTPUT_SCHEMA)
-            ),
-            snapshotManifestPath: slash(
-              path.relative(context.projectRoot, snapshot.manifestPath)
-            ),
-            snapshotHash: snapshot.snapshotHash,
-          },
+          transportEvidence,
         };
       } finally {
         executionSnapshot.dispose();

@@ -7,6 +7,9 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 type JsonRecord = Record<string, unknown>;
+type RawBoundExpectation = CriticalAuditorReceiptBindingExpectation & {
+  sourceBytesHash: string;
+};
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') {
@@ -38,14 +41,15 @@ function resignReceipt(receipt: JsonRecord): JsonRecord {
   };
 }
 
-function createRoundFixture(roundIndex: number, shared?: Partial<CriticalAuditorReceiptBindingExpectation>) {
-  const expectation: CriticalAuditorReceiptBindingExpectation = {
+function createRoundFixture(roundIndex: number, shared?: Partial<RawBoundExpectation>) {
+  const expectation: RawBoundExpectation = {
     roundIndex,
     transactionId: shared?.transactionId ?? `tx-${randomUUID()}`,
     namespaceVersion: shared?.namespaceVersion ?? `namespace-${randomUUID()}`,
     auditInputHash: shared?.auditInputHash ?? freshHash('audit-input'),
     recordId: shared?.recordId ?? `record-${randomUUID()}`,
     sourceDocumentHash: shared?.sourceDocumentHash ?? freshHash('source-document'),
+    sourceBytesHash: shared?.sourceBytesHash ?? freshHash('source-bytes'),
     semanticModelHash: shared?.semanticModelHash ?? freshHash('semantic-model'),
     implementationConfirmationHash:
       shared?.implementationConfirmationHash ?? freshHash('implementation-confirmation'),
@@ -62,6 +66,7 @@ function createRoundFixture(roundIndex: number, shared?: Partial<CriticalAuditor
     requestHash: expectation.requestHash,
     gateDryRunHash: expectation.gateDryRunHash,
     sourceDocumentHash: expectation.sourceDocumentHash,
+    sourceBytesHash: expectation.sourceBytesHash,
     semanticModelHash: expectation.semanticModelHash,
     implementationConfirmationHash: expectation.implementationConfirmationHash,
     packetHash: expectation.packetHash,
@@ -77,6 +82,7 @@ function createRoundFixture(roundIndex: number, shared?: Partial<CriticalAuditor
     recordId: expectation.recordId,
     inputHash: expectation.auditInputHash,
     sourceDocumentHash: expectation.sourceDocumentHash,
+    sourceBytesHash: expectation.sourceBytesHash,
     semanticModelHash: expectation.semanticModelHash,
     implementationConfirmationHash: expectation.implementationConfirmationHash,
     packetHash: expectation.packetHash,
@@ -96,13 +102,14 @@ function createRoundFixture(roundIndex: number, shared?: Partial<CriticalAuditor
   return { expectation, response, receipt };
 }
 
-function sharedExpectation(): Partial<CriticalAuditorReceiptBindingExpectation> {
+function sharedExpectation(): Partial<RawBoundExpectation> {
   return {
     transactionId: `tx-${randomUUID()}`,
     namespaceVersion: `namespace-${randomUUID()}`,
     auditInputHash: freshHash('audit-input'),
     recordId: `record-${randomUUID()}`,
     sourceDocumentHash: freshHash('source-document'),
+    sourceBytesHash: freshHash('source-bytes'),
     semanticModelHash: freshHash('semantic-model'),
     implementationConfirmationHash: freshHash('implementation-confirmation'),
     packetHash: freshHash('packet'),
@@ -192,6 +199,7 @@ describe('Critical Auditor receipt binding', () => {
 
   it.each([
     ['transactionId', 'critical_auditor_receipt_transaction_id_mismatch'],
+    ['sourceBytesHash', 'critical_auditor_receipt_source_bytes_hash_mismatch'],
     ['semanticModelHash', 'critical_auditor_receipt_semantic_model_hash_mismatch'],
     ['packetHash', 'critical_auditor_receipt_packet_hash_mismatch'],
     ['requestHash', 'critical_auditor_receipt_request_hash_mismatch'],
@@ -213,6 +221,7 @@ describe('Critical Auditor receipt binding', () => {
 
   it.each([
     ['transactionId', 'critical_auditor_response_transaction_id_mismatch'],
+    ['sourceBytesHash', 'critical_auditor_response_source_bytes_hash_mismatch'],
     ['semanticModelHash', 'critical_auditor_response_semantic_model_hash_mismatch'],
     ['packetHash', 'critical_auditor_response_packet_hash_mismatch'],
     ['requestHash', 'critical_auditor_response_request_hash_mismatch'],
@@ -250,6 +259,7 @@ describe('Critical Auditor receipt binding', () => {
 
   it.each([
     'transactionId',
+    'sourceBytesHash',
     'semanticModelHash',
     'packetHash',
     'requestHash',

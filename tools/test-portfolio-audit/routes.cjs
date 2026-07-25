@@ -687,6 +687,7 @@ function buildExecutionRouteGraph({ repoRoot, inventory }) {
         effectiveProfileId: invocation.effectiveProfileId,
         environmentId: invocation.environmentId,
         purpose: invocation.purpose,
+        selectionKind: explicit.length > 0 ? 'explicit' : 'inherited',
       });
     }
   }
@@ -717,4 +718,5 @@ module.exports = {
   expandPackageScript,
   extractConfiguredCandidateRefs,
   parseCommandChain,
+  parseNpmRun,
 };

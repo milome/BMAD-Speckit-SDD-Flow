@@ -1,8 +1,23 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
+import {
+  createRequirementsContractConsumerRegistry,
+  REQUIREMENTS_CONTRACT_CONSUMER_DEFINITIONS,
+  REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry';
 import { REQUIREMENTS_CONTRACT_BMAD_CONSUMERS } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-bmad-consumer-registry';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
@@ -105,6 +120,25 @@ function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
 }
 
+function writeFixtureFile(root: string, relativePath: string, source: string): void {
+  const filePath = path.resolve(root, relativePath);
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, source, 'utf8');
+}
+
+function declaredConsumerPath(definition: {
+  path?: string;
+  fileName?: string;
+}): string {
+  return normalize(
+    definition.path ??
+      path.posix.join(
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts',
+        definition.fileName ?? ''
+      )
+  );
+}
+
 function filesBelow(root: string): string[] {
   if (!existsSync(root)) return [];
   const result: string[] = [];
@@ -131,6 +165,60 @@ function discoverPaths(registry: ConsumerRegistry): string[] {
 }
 
 describe('requirements contract consumer registry', () => {
+  it('discovers declared source consumers without treating package or installed mirrors as owners', () => {
+    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'requirements-consumer-registry-'));
+    try {
+      const declaredPaths = [
+        ...new Set(REQUIREMENTS_CONTRACT_CONSUMER_DEFINITIONS.map(declaredConsumerPath)),
+      ].sort();
+      writeFixtureFile(
+        fixtureRoot,
+        REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH,
+        'export const owner = true;\n'
+      );
+      for (const declaredPath of declaredPaths) {
+        writeFixtureFile(
+          fixtureRoot,
+          declaredPath,
+          "export const semanticConsumer = 'implementationConfirmation';\n"
+        );
+      }
+
+      const sourceEntry = declaredPaths.find((entry) =>
+        entry.startsWith('packages/bmad-speckit/src/')
+      );
+      expect(sourceEntry).toBeDefined();
+      if (!sourceEntry) return;
+      const sourceText = readFileSync(path.resolve(fixtureRoot, sourceEntry), 'utf8');
+      const sourceFileName = path.posix.basename(sourceEntry).replace(/\.ts$/u, '.js');
+      for (const mirrorPath of [
+        path.posix.join(
+          'packages/bmad-speckit/dist/main-agent/source-authority/scripts',
+          sourceFileName
+        ),
+        path.posix.join('packages/bmad-speckit/_bmad/generated', sourceFileName),
+        path.posix.join('node_modules/bmad-speckit/src/generated', sourceFileName),
+        path.posix.join('node_modules/bmad-speckit/dist/generated', sourceFileName),
+      ]) {
+        writeFixtureFile(fixtureRoot, mirrorPath, sourceText);
+      }
+
+      const registry = createRequirementsContractConsumerRegistry(fixtureRoot);
+      expect(registry.discovery.declaredPaths).toEqual(declaredPaths);
+      expect(registry.discovery.discoveredPaths).toEqual(declaredPaths);
+      expect(
+        registry.discovery.discoveredPaths.filter(
+          (entry) =>
+            entry.startsWith('packages/bmad-speckit/dist/') ||
+            entry.startsWith('packages/bmad-speckit/_bmad/') ||
+            entry.startsWith('node_modules/')
+        )
+      ).toEqual([]);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it('publishes one tracked schema-valid registry with deterministic discovery', () => {
     expect(existsSync(REGISTRY_PATH), 'consumer registry is missing').toBe(true);
     expect(existsSync(SCHEMA_PATH), 'consumer registry schema is missing').toBe(true);

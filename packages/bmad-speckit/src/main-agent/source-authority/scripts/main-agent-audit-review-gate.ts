@@ -9,9 +9,12 @@ import {
   type AuditTriadRepairEvidenceBinding,
   type AuditTriadRoundReceipt,
 } from './audit-triad-orchestrator';
+import { validateAuditTriadProducerArtifacts } from './audit-triad-producer-artifact-validator';
 import {
   appendControlEventAndReplay,
   canonicalizeRequirementRecord,
+  eventLogPathForRecord,
+  receiptPathForEvent,
   sha256Json,
   sha256Text,
 } from './requirement-record-control-store';
@@ -28,6 +31,69 @@ import { validateSourcePrdLintTransitionFromFiles } from './requirements-contrac
 type JsonObject = Record<string, unknown>;
 type AuditReviewDecision = 'pass' | 'blocked';
 
+export interface AuditReviewGateArtifactSnapshot {
+  role: string;
+  path: string;
+  contentHash: string;
+}
+
+export interface AuditReviewGateCommitBundle {
+  schemaVersion: 'audit-review-gate-commit-bundle/v1';
+  decision: AuditReviewDecision;
+  blockingReasons: string[];
+  plan: {
+    path: string;
+    contentHash: string;
+    value: AuditTriadExecutionPlan;
+  };
+  roundInputs: AuditReviewGateArtifactSnapshot[];
+  repairInputs: AuditReviewGateArtifactSnapshot[];
+  frozenInputs: AuditReviewGateArtifactSnapshot[];
+  report: {
+    path: string;
+    contentHash: string;
+    content: string;
+    value: JsonObject;
+  };
+  runtimeStatus: {
+    path: string;
+    contentHash: string;
+    content: string;
+    value: JsonObject;
+  };
+  control: {
+    transactionId: string;
+    eventId: string;
+    eventHash: string;
+    beforeRecordHash: string;
+    afterRecordHash: string;
+    commitReceiptPath: string;
+    commitReceiptContentHash: string;
+    eventLogPath: string;
+  };
+}
+
+interface AuditReviewGateSnapshot {
+  schemaVersion: 'audit-review-gate-snapshot/v1';
+  gateInvocationId: string;
+  eventId: string;
+  recordId: string;
+  requirementSetId: string;
+  attemptId: string;
+  implementationAttemptId: string;
+  evaluatedAt: string;
+  evaluatedBy: string;
+  decision: AuditReviewDecision;
+  blockingReasons: string[];
+  plan: AuditReviewGateCommitBundle['plan'];
+  roundInputs: AuditReviewGateArtifactSnapshot[];
+  repairInputs: AuditReviewGateArtifactSnapshot[];
+  frozenInputs: AuditReviewGateArtifactSnapshot[];
+  report: AuditReviewGateCommitBundle['report'];
+  runtimeStatus: AuditReviewGateCommitBundle['runtimeStatus'];
+  snapshotHash: string;
+}
+
 interface ParsedArgs {
   requirementRecord?: string;
   attemptId?: string;
@@ -43,8 +109,9 @@ interface ParsedArgs {
   help?: boolean;
 }
 
-interface MainAuditReviewGateDeps {
+export interface MainAuditReviewGateDeps {
   beforeControlCommit?: () => void;
+  onCommitted?: (bundle: Readonly<AuditReviewGateCommitBundle>) => void;
   writeOutput?: (value: string) => void;
 }
 
@@ -132,8 +199,276 @@ function readJsonArray(file: string): JsonObject[] {
   throw new Error(`JSON object or array expected: ${file}`);
 }
 
+function deepFreeze<T>(value: T): Readonly<T> {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value as Record<string, unknown>)) {
+      deepFreeze(child);
+    }
+  }
+  return value as Readonly<T>;
+}
+
+function immutableJsonSnapshot<T>(value: T): Readonly<T> {
+  return deepFreeze(JSON.parse(JSON.stringify(value)) as T);
+}
+
 function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`;
+}
+
+function auditReviewGateSnapshotPayload(
+  snapshot: Omit<AuditReviewGateSnapshot, 'snapshotHash'> | AuditReviewGateSnapshot
+): Omit<AuditReviewGateSnapshot, 'snapshotHash'> {
+  return {
+    schemaVersion: 'audit-review-gate-snapshot/v1',
+    gateInvocationId: snapshot.gateInvocationId,
+    eventId: snapshot.eventId,
+    recordId: snapshot.recordId,
+    requirementSetId: snapshot.requirementSetId,
+    attemptId: snapshot.attemptId,
+    implementationAttemptId: snapshot.implementationAttemptId,
+    evaluatedAt: snapshot.evaluatedAt,
+    evaluatedBy: snapshot.evaluatedBy,
+    decision: snapshot.decision,
+    blockingReasons: snapshot.blockingReasons,
+    plan: snapshot.plan,
+    roundInputs: snapshot.roundInputs,
+    repairInputs: snapshot.repairInputs,
+    frozenInputs: snapshot.frozenInputs,
+    report: snapshot.report,
+    runtimeStatus: snapshot.runtimeStatus,
+  };
+}
+
+function materializeAuditReviewGateSnapshot(
+  payload: Omit<AuditReviewGateSnapshot, 'snapshotHash'>
+): { snapshot: AuditReviewGateSnapshot; content: string; contentHash: string } {
+  const snapshot: AuditReviewGateSnapshot = {
+    ...payload,
+    snapshotHash: sha256Json(auditReviewGateSnapshotPayload(payload)),
+  };
+  const content = `${JSON.stringify(snapshot, null, 2)}\n`;
+  return {
+    snapshot,
+    content,
+    contentHash: sha256Text(content),
+  };
+}
+
+function readAuditReviewGateSnapshot(snapshotPath: string): {
+  snapshot: AuditReviewGateSnapshot;
+  contentHash: string;
+} {
+  const contentHash = sha256File(snapshotPath);
+  const snapshot = readJson(snapshotPath) as unknown as AuditReviewGateSnapshot;
+  if (
+    snapshot.schemaVersion !== 'audit-review-gate-snapshot/v1' ||
+    !text(snapshot.gateInvocationId) ||
+    !text(snapshot.eventId) ||
+    !text(snapshot.recordId) ||
+    !text(snapshot.requirementSetId) ||
+    !text(snapshot.attemptId) ||
+    !text(snapshot.implementationAttemptId) ||
+    !text(snapshot.evaluatedAt) ||
+    !text(snapshot.evaluatedBy) ||
+    (snapshot.decision !== 'pass' && snapshot.decision !== 'blocked') ||
+    !Array.isArray(snapshot.blockingReasons) ||
+    !Array.isArray(snapshot.roundInputs) ||
+    !Array.isArray(snapshot.repairInputs) ||
+    !Array.isArray(snapshot.frozenInputs) ||
+    !text(snapshot.snapshotHash) ||
+    snapshot.snapshotHash !== sha256Json(auditReviewGateSnapshotPayload(snapshot))
+  ) {
+    throw new Error('audit_review_gate_snapshot_invalid');
+  }
+  return { snapshot, contentHash };
+}
+
+function sameResolvedPath(left: string, right: string): boolean {
+  return path.resolve(left) === path.resolve(right);
+}
+
+function assertArtifactSnapshotCurrent(
+  snapshot: AuditReviewGateArtifactSnapshot,
+  issuePrefix: string
+): void {
+  if (
+    !text(snapshot.role) ||
+    !text(snapshot.path) ||
+    !text(snapshot.contentHash) ||
+    !fs.existsSync(snapshot.path) ||
+    sha256File(snapshot.path) !== snapshot.contentHash
+  ) {
+    throw new Error(`${issuePrefix}:${text(snapshot.role) || 'unknown'}`);
+  }
+}
+
+function readLastControlEvent(eventLogPath: string): JsonObject {
+  if (!fs.existsSync(eventLogPath)) {
+    throw new Error('audit_review_gate_event_log_missing');
+  }
+  const lines = fs
+    .readFileSync(eventLogPath, 'utf8')
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) {
+    throw new Error('audit_review_gate_event_log_empty');
+  }
+  return JSON.parse(lines.at(-1)!) as JsonObject;
+}
+
+function assertControlEventHash(event: JsonObject): void {
+  const eventHash = text(event.eventHash);
+  const unsigned = { ...event };
+  delete unsigned.eventHash;
+  if (!eventHash || eventHash !== sha256Json(unsigned)) {
+    throw new Error('audit_review_gate_event_hash_invalid');
+  }
+}
+
+function committedAuditReviewGateBundle(input: {
+  recordPath: string;
+  record: JsonObject;
+  snapshotPath: string;
+  gateInvocationId: string;
+  eventId: string;
+}): AuditReviewGateCommitBundle | null {
+  const safeEventId = input.eventId.replace(/[^a-z0-9_.-]/giu, '_');
+  const commitReceiptPath = receiptPathForEvent(input.recordPath, safeEventId);
+  const snapshotExists = fs.existsSync(input.snapshotPath);
+  const receiptExists = fs.existsSync(commitReceiptPath);
+  if (!snapshotExists && !receiptExists) return null;
+  if (!snapshotExists || !receiptExists) {
+    throw new Error('audit_review_gate_committed_snapshot_incomplete');
+  }
+
+  const { snapshot, contentHash: snapshotContentHash } = readAuditReviewGateSnapshot(
+    input.snapshotPath
+  );
+  if (
+    snapshot.gateInvocationId !== input.gateInvocationId ||
+    snapshot.eventId !== input.eventId ||
+    snapshot.recordId !== text(input.record.recordId) ||
+    snapshot.requirementSetId !==
+      (text(input.record.requirementSetId) || text(input.record.recordId))
+  ) {
+    throw new Error('audit_review_gate_snapshot_identity_mismatch');
+  }
+  const commitReceipt = readJson(commitReceiptPath);
+  const transactionId = text(commitReceipt.transactionId);
+  const eventHash = text(commitReceipt.eventHash);
+  const beforeRecordHash = text(commitReceipt.beforeRecordHash);
+  const afterRecordHash = text(commitReceipt.afterRecordHash);
+  if (
+    text(commitReceipt.receiptType) !== 'control_event_committed' ||
+    !transactionId ||
+    text(commitReceipt.eventId) !== input.eventId ||
+    text(commitReceipt.eventType) !== 'audit_review_result_recorded' ||
+    text(commitReceipt.writerId) !== 'audit-review-gate-writer' ||
+    !eventHash ||
+    !beforeRecordHash ||
+    !afterRecordHash ||
+    text(input.record.lastAppliedEventId) !== input.eventId ||
+    text(input.record.lastAppliedEventHash) !== eventHash ||
+    text(input.record.recordHash) !== afterRecordHash
+  ) {
+    throw new Error('audit_review_gate_control_commit_mismatch');
+  }
+
+  const eventLogPath = eventLogPathForRecord(input.recordPath);
+  const event = readLastControlEvent(eventLogPath);
+  assertControlEventHash(event);
+  const eventPayload = nested(event.payload);
+  if (
+    text(event.eventId) !== input.eventId ||
+    text(event.eventHash) !== eventHash ||
+    text(event.afterRecordHash) !== afterRecordHash ||
+    text(eventPayload.gateInvocationId) !== input.gateInvocationId ||
+    !sameResolvedPath(text(eventPayload.gateSnapshotPath), input.snapshotPath) ||
+    text(eventPayload.gateSnapshotContentHash) !== snapshotContentHash ||
+    text(eventPayload.reportHash) !== snapshot.report.contentHash
+  ) {
+    throw new Error('audit_review_gate_event_snapshot_binding_mismatch');
+  }
+  const committedArtifactPaths = strings(commitReceipt.artifactPaths).map((artifactPath) =>
+    path.resolve(artifactPath)
+  );
+  for (const artifactPath of [
+    input.snapshotPath,
+    snapshot.report.path,
+    snapshot.runtimeStatus.path,
+  ]) {
+    if (!committedArtifactPaths.includes(path.resolve(artifactPath))) {
+      throw new Error('audit_review_gate_control_artifact_binding_missing');
+    }
+  }
+  for (const frozenInput of snapshot.frozenInputs) {
+    assertArtifactSnapshotCurrent(frozenInput, 'audit_review_gate_frozen_input_changed');
+  }
+  assertArtifactSnapshotCurrent(
+    {
+      role: 'audit_review_report',
+      path: snapshot.report.path,
+      contentHash: snapshot.report.contentHash,
+    },
+    'audit_review_gate_committed_output_changed'
+  );
+  assertArtifactSnapshotCurrent(
+    {
+      role: 'audit_review_runtime_status_receipt',
+      path: snapshot.runtimeStatus.path,
+      contentHash: snapshot.runtimeStatus.contentHash,
+    },
+    'audit_review_gate_committed_output_changed'
+  );
+
+  return {
+    schemaVersion: 'audit-review-gate-commit-bundle/v1',
+    decision: snapshot.decision,
+    blockingReasons: [...snapshot.blockingReasons],
+    plan: snapshot.plan,
+    roundInputs: snapshot.roundInputs,
+    repairInputs: snapshot.repairInputs,
+    frozenInputs: snapshot.frozenInputs,
+    report: snapshot.report,
+    runtimeStatus: snapshot.runtimeStatus,
+    control: {
+      transactionId,
+      eventId: input.eventId,
+      eventHash,
+      beforeRecordHash,
+      afterRecordHash,
+      commitReceiptPath,
+      commitReceiptContentHash: sha256File(commitReceiptPath),
+      eventLogPath,
+    },
+  };
+}
+
+function emitAuditReviewGateBundle(
+  bundle: AuditReviewGateCommitBundle,
+  args: ParsedArgs,
+  deps: MainAuditReviewGateDeps
+): number {
+  deps.onCommitted?.(immutableJsonSnapshot(bundle));
+  const output = {
+    ok: true,
+    reportPath: normalizePathForRecord(bundle.report.path),
+    decision: bundle.decision,
+    blockingReasons: bundle.blockingReasons,
+    controlEventId: bundle.control.eventId,
+    controlEventHash: bundle.control.eventHash,
+    eventLogPath: normalizePathForRecord(bundle.control.eventLogPath),
+    receiptPath: normalizePathForRecord(bundle.control.commitReceiptPath),
+  };
+  (deps.writeOutput ?? process.stdout.write.bind(process.stdout))(
+    args.json
+      ? `${JSON.stringify(output, null, 2)}\n`
+      : `audit_review=${bundle.decision}\n`
+  );
+  return bundle.decision === 'pass' ? 0 : 1;
 }
 
 interface FrozenAuditRepairInput {
@@ -571,23 +906,51 @@ function readRounds(paths: string[]): AuditTriadRoundReceipt[] {
   );
 }
 
-function readRoundsWithFrozenInputs(paths: string[]): {
+function readRoundsWithFrozenInputs(input: {
+  paths: string[];
+  projectRoot: string;
+  plan: AuditTriadExecutionPlan;
+  reservedPaths: Array<{ role: string; path: string }>;
+}): {
   rounds: AuditTriadRoundReceipt[];
   frozenInputs: FrozenAuditRepairInput[];
+  producerArtifactIssueCodes: string[];
 } {
   const rounds: AuditTriadRoundReceipt[] = [];
   const frozenInputs: FrozenAuditRepairInput[] = [];
-  for (const [sourceIndex, item] of paths.entries()) {
+  const producerArtifactIssueCodes: string[] = [];
+  for (const [sourceIndex, item] of input.paths.entries()) {
     const sourceRounds = readJsonArray(item) as unknown as AuditTriadRoundReceipt[];
     const contentHash = sha256File(item);
-    rounds.push(...sourceRounds);
     frozenInputs.push({
       role: `round_${sourceIndex + 1}`,
       path: item,
       contentHash,
     });
+    for (const [roundOffset, round] of sourceRounds.entries()) {
+      const validation = validateAuditTriadProducerArtifacts({
+        projectRoot: input.projectRoot,
+        plan: input.plan,
+        round,
+        roundIndex: rounds.length + roundOffset + 1,
+        reservedPaths: [
+          ...input.reservedPaths,
+          ...frozenInputs.map((frozen) => ({
+            role: frozen.role,
+            path: frozen.path,
+          })),
+        ],
+      });
+      producerArtifactIssueCodes.push(...validation.issueCodes);
+      frozenInputs.push(...validation.frozenInputs);
+    }
+    rounds.push(...sourceRounds);
   }
-  return { rounds, frozenInputs };
+  return {
+    rounds,
+    frozenInputs,
+    producerArtifactIssueCodes: [...new Set(producerArtifactIssueCodes)],
+  };
 }
 
 function evaluate(input: {
@@ -599,6 +962,7 @@ function evaluate(input: {
   repairReceiptRefs: string[];
   repairFeedbackDispatchRefs: string[];
   repairEvidence: AuditTriadRepairEvidenceBinding | null;
+  producerArtifactIssueCodes: string[];
 }): {
   decision: AuditReviewDecision;
   blockingReasons: string[];
@@ -680,6 +1044,12 @@ function evaluate(input: {
     blockingReasons: convergence.blockingReasons,
   });
   blockingReasons.push(...convergence.blockingReasons);
+  checks.push({
+    id: 'audit-triad-producer-artifacts-valid',
+    passed: input.producerArtifactIssueCodes.length === 0,
+    blockingReasons: input.producerArtifactIssueCodes,
+  });
+  blockingReasons.push(...input.producerArtifactIssueCodes);
 
   const uniqueBlockingReasons = [...new Set(blockingReasons.filter(Boolean))];
   return {
@@ -876,7 +1246,7 @@ export function mainAuditReviewGate(
     implementationAttemptId,
     'audit_review.json'
   );
-  assertUniqueAuditPaths([
+  const auditPathEntries = [
     { role: 'requirement_record', path: recordPath },
     ...(text(record.sourcePath)
       ? [{ role: 'requirement_source', path: path.resolve(text(record.sourcePath)) }]
@@ -896,11 +1266,17 @@ export function mainAuditReviewGate(
     })),
     { role: 'audit_review_report', path: reportPath },
     { role: 'audit_review_runtime_status_receipt', path: runtimeStatusReceiptPath },
-  ]);
+  ];
+  assertUniqueAuditPaths(auditPathEntries);
   const planSnapshot = readJsonSnapshot(planPath);
   const plan = planSnapshot.value as unknown as AuditTriadExecutionPlan;
   const planHash = planSnapshot.contentHash;
-  const roundInputs = readRoundsWithFrozenInputs(roundPaths);
+  const roundInputs = readRoundsWithFrozenInputs({
+    paths: roundPaths,
+    projectRoot: projectRootFromRecordPath(recordPath),
+    plan,
+    reservedPaths: auditPathEntries,
+  });
   const rounds = roundInputs.rounds;
   const repairEvidenceValidation = validateAuditRepairEvidence({
     recordPath,
@@ -909,6 +1285,61 @@ export function mainAuditReviewGate(
     repairReceiptPaths: args.repairReceipt ?? [],
     repairFeedbackDispatchPaths: args.repairFeedbackDispatch ?? [],
   });
+  const gateInvocationHash = sha256Json({
+    schemaVersion: 'audit-review-gate-invocation/v1',
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    attemptId,
+    implementationAttemptId,
+    evaluatedBy,
+    plan: {
+      path: normalizePathForRecord(planPath),
+      contentHash: planHash,
+    },
+    frozenInputs: [
+      ...roundInputs.frozenInputs,
+      ...repairEvidenceValidation.frozenInputs,
+    ].map((input) => ({
+      role: input.role,
+      path: normalizePathForRecord(path.resolve(input.path)),
+      contentHash: input.contentHash,
+    })),
+    reportPath: normalizePathForRecord(reportPath),
+    runtimeStatusReceiptPath: normalizePathForRecord(runtimeStatusReceiptPath),
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    semanticModelHash: plan.semanticModelHash,
+    projectionSetHash: plan.projectionSetHash,
+    qualityRuleSetHash: plan.qualityRuleSetHash,
+  });
+  const gateInvocationId = `AUDIT-GATE-${gateInvocationHash.slice(
+    'sha256:'.length,
+    'sha256:'.length + 24
+  )}`;
+  const eventId = `audit-review-${gateInvocationHash.slice(
+    'sha256:'.length,
+    'sha256:'.length + 24
+  )}`;
+  const gateSnapshotPath = path.join(
+    path.dirname(reportPath),
+    'gate-commits',
+    gateInvocationId,
+    'audit-review-gate-snapshot.json'
+  );
+  assertUniqueAuditPaths([
+    ...auditPathEntries,
+    { role: 'audit_review_gate_snapshot', path: gateSnapshotPath },
+  ]);
+  const recoveredBundle = committedAuditReviewGateBundle({
+    recordPath,
+    record,
+    snapshotPath: gateSnapshotPath,
+    gateInvocationId,
+    eventId,
+  });
+  if (recoveredBundle) {
+    return emitAuditReviewGateBundle(recoveredBundle, args, deps);
+  }
   const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
     transition: 'audit-review',
     requirementRecordPath: recordPath,
@@ -923,6 +1354,7 @@ export function mainAuditReviewGate(
     repairReceiptRefs: args.repairReceipt ?? [],
     repairFeedbackDispatchRefs: args.repairFeedbackDispatch ?? [],
     repairEvidence: repairEvidenceValidation.binding,
+    producerArtifactIssueCodes: roundInputs.producerArtifactIssueCodes,
   });
   const repairEvidenceEvaluation =
     repairEvidenceValidation.issueCodes.length === 0
@@ -1003,7 +1435,66 @@ export function mainAuditReviewGate(
     repairEvidence: repairEvidenceValidation.binding,
     roundInputs: roundInputs.frozenInputs,
   });
+  const runtimeStatusWrites = runtimeStatusProjectionArtifactWrites(runtimeStatus);
+  const runtimeStatusWrite = runtimeStatusWrites[0];
+  if (!runtimeStatusWrite || !runtimeStatus.receiptRef) {
+    throw new Error('audit_review_runtime_status_snapshot_missing');
+  }
+  const roundInputSnapshots = roundPaths.map((roundPath, index) => {
+    const snapshot = roundInputs.frozenInputs.find(
+      (input) => path.resolve(input.path) === path.resolve(roundPath)
+    );
+    if (!snapshot) {
+      throw new Error(`audit_review_round_snapshot_missing:${index + 1}`);
+    }
+    return snapshot;
+  });
+  const frozenInputs: AuditReviewGateArtifactSnapshot[] = [
+    {
+      role: 'audit_triad_execution_plan',
+      path: planPath,
+      contentHash: planHash,
+    },
+    ...roundInputs.frozenInputs,
+    ...repairEvidenceValidation.frozenInputs,
+  ];
+  const gateSnapshot = materializeAuditReviewGateSnapshot({
+    schemaVersion: 'audit-review-gate-snapshot/v1',
+    gateInvocationId,
+    eventId,
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    attemptId,
+    implementationAttemptId,
+    evaluatedAt,
+    evaluatedBy,
+    decision: evaluation.decision,
+    blockingReasons: evaluation.blockingReasons,
+    plan: {
+      path: planPath,
+      contentHash: planHash,
+      value: plan,
+    },
+    roundInputs: roundInputSnapshots,
+    repairInputs: repairEvidenceValidation.frozenInputs,
+    frozenInputs,
+    report: {
+      path: reportPath,
+      contentHash: reportHash,
+      content: reportText,
+      value: report,
+    },
+    runtimeStatus: {
+      path: runtimeStatusReceiptPath,
+      contentHash: runtimeStatusWrite.contentHash,
+      content: runtimeStatusWrite.content,
+      value: runtimeStatus.receiptRef.receipt as unknown as JsonObject,
+    },
+  });
   const payload = {
+    gateInvocationId,
+    gateSnapshotPath: normalizePathForRecord(gateSnapshotPath),
+    gateSnapshotContentHash: gateSnapshot.contentHash,
     attemptId,
     implementationAttemptId,
     planPath: normalizePathForRecord(planPath),
@@ -1034,6 +1525,7 @@ export function mainAuditReviewGate(
     recordPath,
     writerId: 'audit-review-gate-writer',
     eventType: 'audit_review_result_recorded',
+    eventId,
     recordedAt: evaluatedAt,
     expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(record)),
     payload,
@@ -1043,7 +1535,12 @@ export function mainAuditReviewGate(
         content: reportText,
         contentHash: reportHash,
       },
-      ...runtimeStatusProjectionArtifactWrites(runtimeStatus),
+      ...runtimeStatusWrites,
+      {
+        path: gateSnapshotPath,
+        content: gateSnapshot.content,
+        contentHash: gateSnapshot.contentHash,
+      },
     ],
     reduce: (currentRecord) =>
       updateRecord(currentRecord, {
@@ -1058,20 +1555,21 @@ export function mainAuditReviewGate(
         runtimeStatus,
       }),
   });
-  const output = {
-    ok: true,
-    reportPath: normalizePathForRecord(reportPath),
-    decision: evaluation.decision,
-    blockingReasons: evaluation.blockingReasons,
-    controlEventId: commit.event.eventId,
-    controlEventHash: commit.event.eventHash,
-    eventLogPath: normalizePathForRecord(commit.eventLogPath),
-    receiptPath: normalizePathForRecord(commit.receiptPath),
-  };
-  (deps.writeOutput ?? process.stdout.write.bind(process.stdout))(
-    args.json ? `${JSON.stringify(output, null, 2)}\n` : `audit_review=${evaluation.decision}\n`
-  );
-  return evaluation.decision === 'pass' ? 0 : 1;
+  const bundle = committedAuditReviewGateBundle({
+    recordPath,
+    record: readJson(recordPath),
+    snapshotPath: gateSnapshotPath,
+    gateInvocationId,
+    eventId,
+  });
+  if (
+    !bundle ||
+    bundle.control.eventHash !== commit.event.eventHash ||
+    bundle.control.afterRecordHash !== commit.afterRecordHash
+  ) {
+    throw new Error('audit_review_control_commit_snapshot_invalid');
+  }
+  return emitAuditReviewGateBundle(bundle, args, deps);
 }
 
 if (require.main === module && isDirectMainAgentAuditReviewGateCli(process.argv[1])) {

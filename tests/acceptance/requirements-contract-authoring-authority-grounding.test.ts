@@ -4,6 +4,7 @@ import { compileRequirementContractModel } from '../../packages/bmad-speckit/src
 import {
   artifacts,
   cleanCriticalAuditorRound,
+  createMinimalConsumerRequirementDescriptor,
   createSourceAuthorityProjectionDescriptor,
   createTempRoot,
   createTestAuthoringExecutionOptions,
@@ -12,10 +13,12 @@ import {
   readJson,
   removeTempRoot,
   runAuthoring,
+  sha256Text,
   stagingMustDecompositionPacket,
   writeSourceAuthorityProjection,
   writeText,
 } from './helpers/requirements-contract-authoring-fixture';
+import { inspectRequirementsContractSourceAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
 function createJudgeReadyTempRoot(prefix: string): string {
   const root = createTempRoot(prefix);
@@ -29,6 +32,20 @@ function sourceLineOf(sourcePath: string, needle: string): number {
     .findIndex((line) => line.includes(needle));
   if (lineIndex < 0) throw new Error(`source line not found: ${needle}`);
   return lineIndex + 1;
+}
+
+function sourceObligationIdentityFromSeed(seedHash: string): {
+  sourceRequirementId: string;
+  canonicalRequirementId: string;
+  projectedMustId: string;
+} {
+  const ordinal = (Number.parseInt(seedHash.slice(-8), 16) % 900) + 1;
+  const paddedOrdinal = String(ordinal).padStart(3, '0');
+  return {
+    sourceRequirementId: `S${paddedOrdinal}`,
+    canonicalRequirementId: `FR-${paddedOrdinal}`,
+    projectedMustId: `MUST-FR-${paddedOrdinal}`,
+  };
 }
 
 function perMustProductProjectionFixture(): string {
@@ -103,6 +120,193 @@ function perMustProductProjectionFixture(): string {
 }
 
 describe('requirements contract authoring authority grounding', () => {
+  it('preserves an upstream source-obligation identity through its canonical MUST alias', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-source-obligation-alias-');
+    try {
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'source-obligation-alias'
+      );
+      const identity = sourceObligationIdentityFromSeed(descriptor.seedHash);
+      const source = writeText(
+        root,
+        `docs/requirements/${descriptor.seedHash.slice(-12)}.md`,
+        [
+          `# ${descriptor.semantics.title} Requirement`,
+          '',
+          '## Authoritative Source Requirement',
+          '',
+          `${identity.sourceRequirementId}: ${descriptor.semantics.requirement}`,
+          '',
+        ].join('\n')
+      );
+
+      const analysis = inspectRequirementsContractSourceAuthority({
+        root,
+        sourcePath: source,
+        explicitTargetPaths: [descriptor.target.path],
+        explicitRequiredCommands: [descriptor.verification.requiredCommand],
+      });
+
+      expect(analysis.controlledMustCandidates).toHaveLength(1);
+      expect(analysis.controlledMustCandidates[0]).toMatchObject({
+        sourceRequirementId: identity.sourceRequirementId,
+        projectedMustId: identity.projectedMustId,
+        normalizedRequirement: descriptor.semantics.requirement,
+      });
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('fails closed when two upstream identities resolve to the same canonical MUST alias', () => {
+    const root = createJudgeReadyTempRoot(
+      'requirements-contract-source-obligation-alias-collision-'
+    );
+    try {
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'source-obligation-alias-collision'
+      );
+      const identity = sourceObligationIdentityFromSeed(descriptor.seedHash);
+      const source = writeText(
+        root,
+        `docs/requirements/${descriptor.seedHash.slice(-12)}.md`,
+        [
+          `# ${descriptor.semantics.title} Requirement`,
+          '',
+          '## Authoritative Source Requirements',
+          '',
+          `${identity.sourceRequirementId}: ${descriptor.semantics.requirement}`,
+          '',
+          `${identity.canonicalRequirementId}: ${descriptor.semantics.negativeRequirement}`,
+          '',
+        ].join('\n')
+      );
+
+      expect(() =>
+        inspectRequirementsContractSourceAuthority({
+          root,
+          sourcePath: source,
+          explicitTargetPaths: [descriptor.target.path],
+          explicitRequiredCommands: [descriptor.verification.requiredCommand],
+        })
+      ).toThrow(/Canonical Source requirement alias collision/u);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('keeps acceptance and provenance metadata outside legacy MUST and target authority', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-legacy-authority-boundary-');
+    try {
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'legacy-authority-boundary'
+      );
+      const recordId = `REQ-${descriptor.seedHash.slice(-12).toUpperCase()}`;
+      const provenancePath = `docs/plans/upstream-${descriptor.seedHash.slice(-12)}.md`;
+      const source = writeText(
+        root,
+        `docs/requirements/${descriptor.seedHash.slice(-12)}.md`,
+        [
+          `# ${descriptor.semantics.title} Requirement`,
+          '',
+          '## Authoritative Source Requirement',
+          '',
+          descriptor.semantics.requirement,
+          '',
+          '## Authoritative Acceptance Criteria',
+          '',
+          `${descriptor.refs.acceptanceId}: ${descriptor.semantics.oracle}`,
+          '',
+          '## Source Authority Provenance',
+          '',
+          `- Contract path: \`${provenancePath}\``,
+          `- Contract SHA256: \`${descriptor.seedHash}\``,
+          '- Source line: `1`',
+          '',
+        ].join('\n')
+      );
+
+      const analysis = inspectRequirementsContractSourceAuthority({
+        root,
+        sourcePath: source,
+        explicitTargetPaths: [descriptor.target.path],
+        explicitRequiredCommands: [descriptor.verification.requiredCommand],
+      });
+
+      expect(analysis.controlledMustCandidates).toHaveLength(1);
+      expect(analysis.controlledMustCandidates[0]).toMatchObject({
+        originalText: descriptor.semantics.requirement,
+        normalizedRequirement: descriptor.semantics.requirement,
+      });
+      expect(analysis.targetPaths).toContain(descriptor.target.path);
+      expect(analysis.targetPaths).not.toContain(provenancePath);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('derives business failure applicability from the authoritative project profile', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-failure-applicability-');
+    try {
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'business-failure-applicability'
+      );
+      const authorityRelativePath = `architecture/${descriptor.seedHash.slice(-12)}.json`;
+      const authorityContent = `${JSON.stringify({
+        schemaVersion: 'registered-architecture-record/v1',
+        owningSystem: descriptor.semantics.title,
+      })}\n`;
+      writeText(root, authorityRelativePath, authorityContent);
+      const authorityHash = sha256Text(authorityContent);
+      const renderSource = (projectKind: 'consumer_product' | 'governance_framework') =>
+        [
+          'projectProfile:',
+          '  schemaVersion: requirements-contract-project-profile/v1',
+          `  projectKind: ${projectKind}`,
+          `  owningSystem: ${descriptor.semantics.title}`,
+          '  governanceFramework: BMAD-Speckit',
+          '  classificationAuthority:',
+          '    kind: registered_architecture_record',
+          `    ref: ${authorityRelativePath}`,
+          `    hash: ${authorityHash}`,
+          `  diagramPolicyRegistryHash: ${descriptor.seedHash}`,
+          '',
+          `# ${descriptor.semantics.title}`,
+          '',
+          '## Authoritative Source Requirement',
+          '',
+          descriptor.semantics.requirement,
+          '',
+        ].join('\n');
+      const inspect = (projectKind: 'consumer_product' | 'governance_framework') => {
+        const source = writeText(
+          root,
+          `docs/requirements/${projectKind}-${descriptor.seedHash.slice(-12)}.md`,
+          renderSource(projectKind)
+        );
+        return inspectRequirementsContractSourceAuthority({
+          root,
+          sourcePath: source,
+          explicitTargetPaths: [descriptor.target.path],
+          explicitRequiredCommands: [descriptor.verification.requiredCommand],
+        });
+      };
+
+      expect(inspect('governance_framework').businessFailureAuthority).toEqual({
+        applies: false,
+        projectKind: 'governance_framework',
+        reasonCode: 'governance_framework_business_failure_not_applicable',
+      });
+      expect(inspect('consumer_product').businessFailureAuthority).toEqual({
+        applies: true,
+        projectKind: 'consumer_product',
+        reasonCode: 'consumer_product_business_failure_required',
+      });
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('derives requirement lineage and preserves explicit boundary authority', () => {
     const sourcePath = 'docs/requirements/widget.md';
     const requirement = {

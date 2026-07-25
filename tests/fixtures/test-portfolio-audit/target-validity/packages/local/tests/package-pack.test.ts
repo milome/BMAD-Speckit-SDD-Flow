@@ -1,0 +1,6 @@
+import { execSync } from 'node:child_process';
+import path from 'node:path';
+
+const PACKAGE_ROOT = path.resolve(import.meta.dirname, '..');
+
+execSync('npm pack --dry-run --json', { cwd: PACKAGE_ROOT });

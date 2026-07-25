@@ -43,6 +43,7 @@ const DIMENSIONS = Object.freeze({
 });
 
 const CONFIDENCE_RANK = Object.freeze({ low: 0, medium: 1, high: 2 });
+const RELEASE_GATE_MEMBERSHIPS = new Set(['none', 'inherited', 'explicit', 'mixed', 'unknown']);
 
 function compareText(left, right) {
   const leftText = String(left || '');
@@ -176,11 +177,33 @@ function highestDuration(findings, field) {
   return values.length === 0 ? undefined : Math.max(...values);
 }
 
+function mergeReleaseGateMembership(findings, context, issues) {
+  const values = [];
+  for (const finding of findings) {
+    const value = finding.releaseGateMembership || 'none';
+    if (!RELEASE_GATE_MEMBERSHIPS.has(value)) {
+      addIssue(issues, 'RELEASE_GATE_MEMBERSHIP_UNSUPPORTED', {
+        ...context,
+        value,
+      });
+      values.push('unknown');
+      continue;
+    }
+    values.push(value);
+  }
+  const set = new Set(values);
+  if (set.has('unknown')) return 'unknown';
+  if (set.has('mixed') || (set.has('explicit') && set.has('inherited'))) return 'mixed';
+  if (set.has('explicit')) return 'explicit';
+  if (set.has('inherited')) return 'inherited';
+  return 'none';
+}
+
 function mergeFindings(findings, context, issues) {
   const confidences = findings.map((finding) =>
     normalizeConfidence(finding.confidence, context, issues)
   );
-  return {
+  const merged = {
     confidence: conservativeConfidence(confidences),
     evidenceRefs: normalizedRefs(
       findings.flatMap((finding) => finding.evidenceRefs || []),
@@ -196,6 +219,10 @@ function mergeFindings(findings, context, issues) {
     durationMs: highestDuration(findings, 'durationMs'),
     removableDurationMs: highestDuration(findings, 'removableDurationMs'),
   };
+  if (context.dimension === 'criticality') {
+    merged.releaseGateMembership = mergeReleaseGateMembership(findings, context, issues);
+  }
+  return merged;
 }
 
 function applyProbeFinding(reduced, probeFinding, context, issues) {
@@ -437,7 +464,7 @@ function reduceIdentity(identity, findingIndex, input, issues) {
     { identityKey: identity.identityKey, dimension: 'executionMultiplicity' },
     issues
   );
-  const issueCodes = stableUnique(
+  let issueCodes = stableUnique(
     Object.values(dimensionResults).flatMap((result) => result.issueCodes)
   );
   for (const code of issueCodes) {
@@ -447,6 +474,21 @@ function reduceIdentity(identity, findingIndex, input, issues) {
         code,
         identityKey: identity.identityKey,
         evidenceRef: evidenceRefs[0] || '',
+      })
+    );
+  }
+  if (
+    dimensionResults.criticality.value === 'critical' &&
+    dimensionResults.targetValidity.value === 'obsolete_candidate'
+  ) {
+    const code = 'CRITICAL_TARGET_OBSOLESCENCE_CONFLICT';
+    issueCodes = stableUnique([...issueCodes, code]);
+    issues.push(
+      normalizeIssue({
+        severity: 'warning',
+        code,
+        identityKey: identity.identityKey,
+        evidenceRef: dimensionResults.criticality.evidenceRefs[0] || evidenceRefs[0] || '',
       })
     );
   }
@@ -468,6 +510,7 @@ function reduceIdentity(identity, findingIndex, input, issues) {
     oracleEffectiveness: dimensionResults.oracleEffectiveness.value,
     parallelSafety: dimensionResults.parallelSafety.value,
     criticality: dimensionResults.criticality.value,
+    releaseGateMembership: dimensionResults.criticality.releaseGateMembership || 'unknown',
     confidence: Object.fromEntries(
       Object.entries(dimensionResults).map(([dimension, result]) => [dimension, result.confidence])
     ),
@@ -630,6 +673,14 @@ function calculateTotals(tests, issues) {
       (row) => row.oracleEffectiveness === 'ineffective_candidate'
     ).length,
     criticalCount: tests.filter((row) => row.criticality === 'critical').length,
+    releaseGateMembership: Object.fromEntries(
+      Object.entries(
+        tests.reduce((counts, row) => {
+          counts[row.releaseGateMembership] = (counts[row.releaseGateMembership] || 0) + 1;
+          return counts;
+        }, {})
+      ).sort(([left], [right]) => compareText(left, right))
+    ),
     estimatedDuplicateDurationMs: tests.reduce(
       (total, row) =>
         total +

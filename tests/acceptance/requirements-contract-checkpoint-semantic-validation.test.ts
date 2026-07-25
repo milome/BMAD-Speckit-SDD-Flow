@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
@@ -22,6 +23,20 @@ import {
   runAuthoring,
   writeLintReadyMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
+
+const require = createRequire(import.meta.url);
+const { checkpointSemanticValidationObservation } = require(
+  path.resolve('_bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js')
+) as {
+  checkpointSemanticValidationObservation(input: {
+    sourcePath: string;
+    checkpointId: string;
+    progressPath?: string;
+  }): {
+    decision: 'pass' | 'block';
+    validatedInputs: Array<{ role: string; path: string; hash: string }>;
+  };
+};
 
 function checkpointReceiptValidator() {
   const schemaPath = path.resolve(
@@ -80,6 +95,37 @@ function expectDeferredCriticalAuditorCheckpointState(
 }
 
 describe('requirements contract checkpoint semantic validation', () => {
+  it('hash-binds the Critical Auditor checkpoint outcome even when cp-02 fails closed', () => {
+    const root = createTempRoot('requirements-contract-checkpoint-outcome-binding-');
+    try {
+      const sourcePath = path.join(root, 'source.md');
+      const authoringDir = path.join(root, 'authoring');
+      const progressPath = path.join(authoringDir, 'semantic-checkpoint-progress.json');
+      const semanticKernelPath = path.join(authoringDir, 'semantic-kernel.json');
+      const outcomePath = path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json');
+      mkdirSync(authoringDir, { recursive: true });
+      writeFileSync(sourcePath, '# Source\n', 'utf8');
+      writeFileSync(semanticKernelPath, '{}\n', 'utf8');
+      writeFileSync(outcomePath, '{}\n', 'utf8');
+
+      const observation = checkpointSemanticValidationObservation({
+        sourcePath,
+        checkpointId: 'cp-02-atomic-decomposition-loop-convergence',
+        progressPath,
+      });
+
+      expect(observation.decision).toBe('block');
+      expect(observation.validatedInputs).toContainEqual(
+        expect.objectContaining({
+          role: 'critical_auditor_checkpoint_outcome',
+          hash: fileHash(outcomePath),
+        })
+      );
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
   it('persists a fail-closed receipt when validation stops before any input is accepted', () => {
     const hash = sha256Stable({ phase: 'checkpoint-blocked-before-input-validation' });
     const receipt = createCheckpointSemanticValidationReceipt({

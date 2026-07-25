@@ -10,6 +10,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
 import yaml from 'js-yaml';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createClaudeCodeCliJudgeAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter';
@@ -40,15 +41,23 @@ function createRoot(): string {
   return root;
 }
 
-function provider(model = `route-${randomUUID()}`): JsonRecord {
+function provider(
+  model = `route-${randomUUID()}`,
+  options: {
+    transport?: string;
+    adapterRef?: string;
+    command?: string;
+  } = {}
+): JsonRecord {
   return {
     enabled: true,
-    transport: 'claude-code-cli',
+    transport: options.transport ?? 'claude-code-cli',
+    ...(options.adapterRef ? { adapterRef: options.adapterRef } : {}),
     apiStyle: 'cli',
     model,
     credentialRef: 'claude-code-session',
     endpoint: {
-      command: 'claude',
+      command: options.command ?? 'claude',
       resolutionMode: 'path_search',
       routingOwnership: 'transport_adapter',
       upstreamVersioning: 'cli_managed',
@@ -86,16 +95,29 @@ function requireCommandInvocation(
   return invocation;
 }
 
-function boundRequest(extra: JsonRecord = {}): JsonRecord {
+function boundRequest(root: string, extra: JsonRecord = {}): JsonRecord {
   const seed = randomUUID();
   const hash = (role: string) =>
     `sha256:${createHash('sha256').update(`${seed}:${role}`, 'utf8').digest('hex')}`;
+  const sourceDocument =
+    typeof extra.sourceDocument === 'string' && extra.sourceDocument.trim()
+      ? extra.sourceDocument
+      : path.join('evidence', `${randomUUID()}.md`);
+  const sourcePath = path.join(root, sourceDocument);
+  if (!existsSync(sourcePath)) {
+    mkdirSync(path.dirname(sourcePath), { recursive: true });
+    writeFileSync(sourcePath, `${randomUUID()}\n`, 'utf8');
+  }
   return {
     requestHash: hash('request'),
     sourceDocumentHash: hash('source-document'),
     semanticModelHash: hash('semantic-model'),
     projectionSetHash: hash('projection-set'),
     ...extra,
+    sourceDocument,
+    sourceBytesHash: `sha256:${createHash('sha256')
+      .update(readFileSync(sourcePath))
+      .digest('hex')}`,
   };
 }
 
@@ -221,6 +243,51 @@ afterEach(() => {
 });
 
 describe('Claude Code CLI Judge adapter', () => {
+  it('uses the configured CLI command and binds the selected adapter into transport evidence', async () => {
+    const root = createRoot();
+    const outputDir = path.join(root, 'runtime', randomUUID());
+    const requestPath = path.join(root, 'requests', `${randomUUID()}.json`);
+    const mustRef = `must/${randomUUID()}`;
+    const request = boundRequest(root, { mustRefs: [mustRef] });
+    mkdirSync(path.dirname(requestPath), { recursive: true });
+    writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
+    const configuredModel = `route-${randomUUID()}`;
+    const configuredCommand = `judge-cli-${randomUUID()}`;
+    let capturedInvocation: CommandInvocation | null = null;
+    const adapter = createClaudeCodeCliJudgeAdapter({
+      executeCommand: async (invocation) => {
+        capturedInvocation = invocation;
+        return runNodeChild(invocation);
+      },
+    });
+
+    const normalized = (await adapter.judge({
+      providerRef: `provider-${randomUUID()}`,
+      provider: provider(configuredModel, {
+        transport: 'cli',
+        adapterRef: 'ClaudeCodeCliJudgeAdapter',
+        command: configuredCommand,
+      }),
+      payload: {
+        systemPrompt: 'Inspect the frozen evidence and return the schema-bound decision.',
+        request,
+        executionContext: {
+          projectRoot: root,
+          requestPath,
+          outputDir,
+        },
+      },
+    })) as JsonRecord;
+
+    const invocation = requireCommandInvocation(capturedInvocation);
+    expect(invocation.command).toBe(configuredCommand);
+    expect(normalized.transport).toBe('cli');
+    expect(normalized.transportEvidence).toMatchObject({
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      command: configuredCommand,
+    });
+  });
+
   it('runs an isolated readonly child process against a frozen local evidence snapshot', async () => {
     const root = createRoot();
     const outputDir = path.join(root, 'runtime', randomUUID());
@@ -231,7 +298,7 @@ describe('Claude Code CLI Judge adapter', () => {
     mkdirSync(path.dirname(requestPath), { recursive: true });
     writeFileSync(sourcePath, 'required receipt is missing', 'utf8');
     const mustRef = `must/${randomUUID()}`;
-    const request = boundRequest({
+    const request = boundRequest(root, {
       sourceDocument,
       mustRefs: [mustRef],
     });
@@ -309,6 +376,15 @@ describe('Claude Code CLI Judge adapter', () => {
       'Do not call StructuredOutput while any allowlisted file still has unread lines.'
     );
     expect(capturedInvocation.stdin).toContain(
+      `Before calling StructuredOutput, verify that the set of successfully and completely read paths equals the ${readAllowlist.length}-entry allowlist.`
+    );
+    expect(capturedInvocation.stdin).toContain(
+      'Never pass readPlan.sourcePath or a path found inside judge-request-json to Read unless that exact string is also present in judge-read-allowlist-json.'
+    );
+    expect(capturedInvocation.stdin).toContain(
+      'No allowlisted path is optional, including stdout logs, stderr logs, receipts, prior-round artifacts, and evidence that appears redundant.'
+    );
+    expect(capturedInvocation.stdin).toContain(
       'Treat requirement refs, projection refs, group IDs, rule codes, hashes, and receipt IDs as opaque data, not file paths.'
     );
     expect(capturedInvocation.stdin).toContain(
@@ -357,12 +433,34 @@ describe('Claude Code CLI Judge adapter', () => {
     );
     const evidence = normalized.transportEvidence as JsonRecord;
     expect(evidence).toMatchObject({
-      schemaVersion: 'requirements-contract-claude-code-cli-execution/v1',
+      schemaVersion: 'requirements-contract-cli-judge-execution-receipt/v1',
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      protocol: 'claude_stream_json',
       command: 'claude',
+      providerRequestId: normalized.providerRequestId,
       requestedModel: configuredModel,
+      observedModel: configuredModel,
+      modelObservationSource: 'cli_event',
+      decisionBearingModelEvidence: true,
       exitCode: 0,
       executorKind: 'injected_test_transport',
     });
+    const receiptSchema = JSON.parse(
+      readFileSync(
+        path.resolve(
+          process.cwd(),
+          'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json'
+        ),
+        'utf8'
+      )
+    );
+    const validateReceipt = new Ajv2020({ allErrors: true, strict: false }).compile(
+      receiptSchema
+    );
+    expect(
+      validateReceipt(evidence),
+      JSON.stringify(validateReceipt.errors, null, 2)
+    ).toBe(true);
     expect(existsSync(path.join(outputDir, 'claude-code-cli-stdout.jsonl'))).toBe(true);
     expect(existsSync(path.join(outputDir, 'claude-code-cli-stderr.log'))).toBe(true);
     expect(existsSync(path.join(outputDir, 'claude-code-cli-transcript.jsonl'))).toBe(true);
@@ -375,7 +473,7 @@ describe('Claude Code CLI Judge adapter', () => {
   it('records the gateway-selected decision model without treating the request model as provider identity', async () => {
     const root = createRoot();
     const requestPath = path.join(root, `${randomUUID()}.json`);
-    const request = boundRequest();
+    const request = boundRequest(root);
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
     const sessionId = randomUUID();
     const configuredModel = `route-${randomUUID()}`;
@@ -457,7 +555,7 @@ describe('Claude Code CLI Judge adapter', () => {
   it('binds a gateway-routed decision model even when CLI modelUsage retains route labels', async () => {
     const root = createRoot();
     const requestPath = path.join(root, 'requests', `${randomUUID()}.json`);
-    const request = boundRequest();
+    const request = boundRequest(root);
     mkdirSync(path.dirname(requestPath), { recursive: true });
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
     const requestedModel = `route-${randomUUID()}`;
@@ -562,7 +660,7 @@ describe('Claude Code CLI Judge adapter', () => {
     mkdirSync(path.dirname(configPath), { recursive: true });
     mkdirSync(path.dirname(credentialPath), { recursive: true });
     mkdirSync(path.dirname(requestPath), { recursive: true });
-    const request = boundRequest();
+    const request = boundRequest(root);
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
     writeFileSync(
       configPath,
@@ -718,7 +816,7 @@ describe('Claude Code CLI Judge adapter', () => {
   it('rejects a cli-managed provider when its requested model is absent', async () => {
     const root = createRoot();
     const requestPath = path.join(root, 'requests', `${randomUUID()}.json`);
-    const request = boundRequest();
+    const request = boundRequest(root);
     mkdirSync(path.dirname(requestPath), { recursive: true });
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
     const cliManagedProvider = provider();
@@ -760,7 +858,7 @@ describe('Claude Code CLI Judge adapter', () => {
     ).join('\n')}\n`;
     const sourceBytes = Buffer.from(sourceText, 'utf8');
     writeFileSync(sourcePath, sourceBytes);
-    const request = boundRequest({
+    const request = boundRequest(root, {
       sourceDocument,
       mustRefs: [`must/${randomUUID()}`],
     });
@@ -891,7 +989,7 @@ describe('Claude Code CLI Judge adapter', () => {
       mkdirSync(path.dirname(sourcePath), { recursive: true });
       mkdirSync(path.dirname(requestPath), { recursive: true });
       writeFileSync(sourcePath, 'required receipt is missing', 'utf8');
-      const request = boundRequest({
+      const request = boundRequest(root, {
         sourceDocument,
         mustRefs: [`must/${randomUUID()}`],
       });
@@ -986,7 +1084,7 @@ describe('Claude Code CLI Judge adapter', () => {
         `${JSON.stringify({ observed: randomUUID() })}\n`,
         'utf8'
       );
-      const request = boundRequest({
+      const request = boundRequest(root, {
         sourceDocument,
         previousRoundEvidence: [{ evidencePath: priorRoundEvidence }],
       });
@@ -1039,7 +1137,7 @@ describe('Claude Code CLI Judge adapter', () => {
   it('fails closed when the CLI reports a denied tool request', async () => {
     const root = createRoot();
     const requestPath = path.join(root, `${randomUUID()}.json`);
-    const request = boundRequest();
+    const request = boundRequest(root);
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
     const configuredModel = `route-${randomUUID()}`;
     const adapter = createClaudeCodeCliJudgeAdapter({

@@ -76,6 +76,7 @@ export function compiledPromptRunnerFor(
       controlledRequiredCommandDescriptor(confirmation, command, controlledExecutionContext)
     );
     const packet = {
+      schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
       artifactRole: options.artifactRole ?? 'execution_authority',
       sourceDocumentHash: value.identity.sourceDocumentHash,
       implementationConfirmationHash: value.identity.implementationConfirmationHash,

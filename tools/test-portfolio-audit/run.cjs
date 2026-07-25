@@ -116,6 +116,39 @@ function readPackageRecords(repoRoot, packagePaths) {
   });
 }
 
+function workspacePatterns(packageJson) {
+  const workspaces = packageJson?.workspaces;
+  if (Array.isArray(workspaces)) return workspaces;
+  if (workspaces && typeof workspaces === 'object' && Array.isArray(workspaces.packages)) {
+    return workspaces.packages;
+  }
+  return [];
+}
+
+function selectCriticalAuthorityPackagePaths(packageRecords) {
+  const rootRecord = packageRecords.find((record) => record.packagePath === 'package.json');
+  const patterns = workspacePatterns(rootRecord?.packageJson)
+    .filter((pattern) => typeof pattern === 'string' && pattern.trim() !== '')
+    .map((pattern) => pattern.trim().replace(/\\/g, '/').replace(/\/+$/u, ''));
+  const includePatterns = patterns.filter((pattern) => !pattern.startsWith('!')).map(globPattern);
+  const excludePatterns = patterns
+    .filter((pattern) => pattern.startsWith('!'))
+    .map((pattern) => globPattern(pattern.slice(1)));
+
+  return stableUnique(
+    packageRecords
+      .filter((record) => {
+        if (record.packagePath === 'package.json') return true;
+        const packageDirectory = path.posix.dirname(record.packagePath);
+        return (
+          includePatterns.some((pattern) => pattern.test(packageDirectory)) &&
+          !excludePatterns.some((pattern) => pattern.test(packageDirectory))
+        );
+      })
+      .map((record) => record.packagePath)
+  );
+}
+
 function scriptEntries(record) {
   return Object.entries(record.packageJson?.scripts || {}).filter(
     ([, command]) => typeof command === 'string'
@@ -389,6 +422,7 @@ function discoverConfiguredTests({ repoRoot }) {
     return {
       failed: true,
       packagePaths: ['package.json'],
+      criticalAuthorityPackagePaths: ['package.json'],
       runnerResults: [],
       issues: [
         issue('CONFIGURED_DISCOVERY_FAILED', {
@@ -423,6 +457,7 @@ function discoverConfiguredTests({ repoRoot }) {
   return {
     failed: false,
     packagePaths,
+    criticalAuthorityPackagePaths: selectCriticalAuthorityPackagePaths(packageRecords),
     runnerResults,
     issues: [
       ...packageRecords.flatMap((record) => (record.issue ? [record.issue] : [])),
@@ -678,10 +713,8 @@ function safeRouteGraph(repoRoot, inventory) {
 
 function createStaticAnalysisView(repoRoot) {
   const analysisRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-portfolio-static-view-'));
-  const includedExtensions = new Set(['.ts', '.tsx', '.js', '.cjs', '.mjs']);
-  for (const absolutePath of collectFiles(
-    repoRoot,
-    (_filePath, name) => name === 'package.json' || includedExtensions.has(path.extname(name))
+  for (const absolutePath of collectFiles(repoRoot, (_filePath, name) =>
+    targetValidity.isTargetFileName(name)
   )) {
     const relativePath = normalizeRepoPath(repoRoot, absolutePath);
     const targetPath = path.resolve(analysisRoot, relativePath);
@@ -695,12 +728,16 @@ function createStaticAnalysisView(repoRoot) {
   return analysisRoot;
 }
 
-function safeSourceIndex(repoRoot, packagePaths) {
+function safeSourceIndex(repoRoot, packagePaths, criticalBindingPackagePaths) {
   let analysisRoot;
   try {
     analysisRoot = createStaticAnalysisView(repoRoot);
     return {
-      sourceIndex: targetValidity.buildSourceIndex({ repoRoot: analysisRoot, packagePaths }),
+      sourceIndex: targetValidity.buildSourceIndex({
+        repoRoot: analysisRoot,
+        packagePaths,
+        criticalBindingPackagePaths,
+      }),
       analysisRoot,
       issues: [],
     };
@@ -781,7 +818,11 @@ async function runAudit(options) {
     })
   );
   const inventory = buildCanonicalInventory(runnerResults, routeGraph);
-  const sourceIndexResult = safeSourceIndex(options.repoRoot, discoveryRun.packagePaths);
+  const sourceIndexResult = safeSourceIndex(
+    options.repoRoot,
+    discoveryRun.packagePaths,
+    discoveryRun.criticalAuthorityPackagePaths
+  );
   let analyzerResults;
   try {
     analyzerResults = await runAnalyzersIndependently({
@@ -940,4 +981,5 @@ module.exports = {
   main,
   parseArgs,
   runAudit,
+  selectCriticalAuthorityPackagePaths,
 };

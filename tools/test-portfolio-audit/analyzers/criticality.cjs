@@ -91,10 +91,10 @@ function toArray(value) {
 
 function valuesForKey(collection, identityKey, testPath) {
   if (collection instanceof Map) {
-    return collection.get(testPath) || collection.get(identityKey) || [];
+    return collection.get(identityKey) || collection.get(testPath) || [];
   }
   if (!collection || typeof collection !== 'object' || Array.isArray(collection)) return [];
-  return collection[testPath] || collection[identityKey] || [];
+  return collection[identityKey] || collection[testPath] || [];
 }
 
 function collectSourceBindings({ identityKey, testPath, sourceIndex }) {
@@ -106,6 +106,28 @@ function collectSourceBindings({ identityKey, testPath, sourceIndex }) {
     }
   }
   return bindings;
+}
+
+function isReleaseRoute(route) {
+  return /release|publish|package_parity|artifact|eligibility/iu.test(
+    [route?.workflowPath, route?.jobId, route?.purpose, sourceRefFragment(route?.sourceRef)].join(
+      ' '
+    )
+  );
+}
+
+function releaseRouteMembership({ identityKey, testPath, routeGraph }) {
+  const routes = matchingRoutes(routeGraph, identityKey, testPath).filter(isReleaseRoute);
+  const hasExplicit = routes.some((route) => route.selectionKind === 'explicit');
+  const hasInherited = routes.some((route) => route.selectionKind !== 'explicit');
+  let value = 'none';
+  if (hasExplicit && hasInherited) value = 'mixed';
+  else if (hasExplicit) value = 'explicit';
+  else if (hasInherited) value = 'inherited';
+  return {
+    value,
+    evidenceRefs: stableUnique(routes.map((route) => route.sourceRef)),
+  };
 }
 
 function matchingRoutes(routeGraph, identityKey, testPath) {
@@ -134,9 +156,8 @@ function collectRouteBindings({ identityKey, testPath, routeGraph }) {
   for (const route of matchingRoutes(routeGraph, identityKey, testPath)) {
     if (
       typeof route.sourceRef === 'string' &&
-      /release|publish|package_parity|artifact|eligibility/iu.test(
-        `${route.purpose || ''} ${sourceRefFragment(route.sourceRef)}`
-      )
+      isReleaseRoute(route) &&
+      route.selectionKind === 'explicit'
     ) {
       bindings.push({
         kind: 'release_path',
@@ -172,7 +193,15 @@ function specializedEvidenceRefs({ identityKey, testPath, routeGraph, sourceInde
   return stableUnique(refs);
 }
 
-function finding(identityKey, value, confidence, bindings, evidenceRefs, issueCodes) {
+function finding(
+  identityKey,
+  value,
+  confidence,
+  bindings,
+  evidenceRefs,
+  issueCodes,
+  releaseGateMembership = 'none'
+) {
   return {
     identityKey,
     value,
@@ -180,6 +209,7 @@ function finding(identityKey, value, confidence, bindings, evidenceRefs, issueCo
     bindings: stableBindings(bindings),
     evidenceRefs: stableUnique(evidenceRefs),
     issueCodes: stableUnique(issueCodes),
+    releaseGateMembership,
   };
 }
 
@@ -212,11 +242,22 @@ function parseTest(repoRoot, testPath) {
 async function analyzeTest(input) {
   const identityKey = input.identityKey || input.testPath;
   const testPath = normalizePath(input.testPath || identityKey);
+  const releaseMembership = releaseRouteMembership({
+    ...input,
+    identityKey,
+    testPath,
+  });
   const parsed = parseTest(input.repoRoot, testPath);
   if (parsed.error) {
-    return finding(identityKey, 'unknown', 'low', [], parsed.evidenceRefs, [
-      'CRITICALITY_ANALYSIS_INCOMPLETE',
-    ]);
+    return finding(
+      identityKey,
+      'unknown',
+      'low',
+      [],
+      [...parsed.evidenceRefs, ...releaseMembership.evidenceRefs],
+      ['CRITICALITY_ANALYSIS_INCOMPLETE'],
+      releaseMembership.value
+    );
   }
 
   const bindings = collectCriticalBindings({
@@ -230,8 +271,9 @@ async function analyzeTest(input) {
       'critical',
       'high',
       bindings,
-      bindings.map((binding) => binding.evidenceRef),
-      []
+      [...bindings.map((binding) => binding.evidenceRef), ...releaseMembership.evidenceRefs],
+      [],
+      releaseMembership.value
     );
   }
 
@@ -241,9 +283,25 @@ async function analyzeTest(input) {
     testPath,
   });
   if (specializedRefs.length > 0) {
-    return finding(identityKey, 'specialized', 'high', [], specializedRefs, []);
+    return finding(
+      identityKey,
+      'specialized',
+      'high',
+      [],
+      [...specializedRefs, ...releaseMembership.evidenceRefs],
+      [],
+      releaseMembership.value
+    );
   }
-  return finding(identityKey, 'standard', 'medium', [], [], []);
+  return finding(
+    identityKey,
+    'standard',
+    'medium',
+    [],
+    releaseMembership.evidenceRefs,
+    [],
+    releaseMembership.value
+  );
 }
 
 async function analyze(input) {
@@ -257,6 +315,20 @@ async function analyze(input) {
       findings: [],
       issues: ['CRITICALITY_INITIALIZATION_FAILED'],
     };
+  }
+  if (Array.isArray(input.sourceIndex?.criticalBindingIssues)) {
+    const issues = [...input.sourceIndex.criticalBindingIssues];
+    if (issues.length > 0) {
+      return {
+        analyzerId: ANALYZER_ID,
+        analyzerVersion: ANALYZER_VERSION,
+        dimension: DIMENSION,
+        required: true,
+        status: 'failed',
+        findings: [],
+        issues,
+      };
+    }
   }
 
   const findings = [];
@@ -289,6 +361,7 @@ module.exports = {
   ALLOWED_BINDING_KINDS,
   ANALYZER_ID,
   ANALYZER_VERSION,
+  SOURCE_BINDING_FIELDS,
   analyze,
   analyzeTest,
   collectCriticalBindings,

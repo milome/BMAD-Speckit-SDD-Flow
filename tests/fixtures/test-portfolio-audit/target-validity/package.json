@@ -1,6 +1,9 @@
 {
   "name": "target-validity-fixture",
   "type": "module",
+  "files": [
+    "src/package-surface"
+  ],
   "exports": {
     "./exported": "./src/exported.ts",
     "./conditional": {
@@ -11,7 +14,31 @@
   "bin": {
     "target-validity-cli": "./src/cli.ts"
   },
+  "scripts": {
+    "fixture:array": "node src/array-target.ts",
+    "fixture:command": "node src/command-target.js",
+    "fixture:copy": "node src/copy-target.ts",
+    "fixture:each": "node src/each-target.ts",
+    "fixture:generate": "node src/generator-source.ts",
+    "fixture:helper": "node src/helper-target.ts",
+    "fixture:powershell": "pwsh -File scripts/setup.ps1",
+    "fixture:script": "node src/script-entry.ts",
+    "fixture:shell": "sh scripts/setup.sh",
+    "fixture:ui": "node src/ui.jsx"
+  },
   "testPortfolioAudit": {
+    "generatorBindings": [
+      {
+        "ownerPath": "src/generator-source.ts",
+        "outputPath": "src/generated-active.ts",
+        "consumerPath": "src/generated-consumer.ts"
+      },
+      {
+        "ownerPath": "src/generator-source.ts",
+        "outputPath": "src/generated-unconsumed.ts",
+        "consumerPath": "src/generated-unrelated-consumer.ts"
+      }
+    ],
     "generatorOwners": [
       {
         "targetPath": "src/generated-retired.ts"

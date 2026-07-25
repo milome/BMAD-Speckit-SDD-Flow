@@ -43,6 +43,7 @@ type Route = {
   effectiveProfileId: string;
   environmentId: string;
   purpose: string;
+  selectionKind: 'explicit' | 'inherited';
 };
 
 function expectCommandDynamic(command: string): void {
@@ -248,6 +249,7 @@ describe('test portfolio execution routes', () => {
         effectiveProfileId: expect.any(String),
         environmentId: expect.any(String),
         purpose: expect.any(String),
+        selectionKind: expect.stringMatching(/^(explicit|inherited)$/u),
       });
     }
 
@@ -324,8 +326,11 @@ describe('test portfolio execution routes', () => {
     expect(
       (graph.routes as Route[])
         .filter((route) => route.routeId.startsWith(`route:${prBroad.invocationId}`))
-        .map((route) => route.testPath)
-    ).toEqual(['tests/platform.test.ts', 'tests/shared.test.ts']);
+        .map((route) => ({ selectionKind: route.selectionKind, testPath: route.testPath }))
+    ).toEqual([
+      { selectionKind: 'inherited', testPath: 'tests/platform.test.ts' },
+      { selectionKind: 'inherited', testPath: 'tests/shared.test.ts' },
+    ]);
 
     const prExplicit = (graph.invocations as Invocation[]).find(
       (row) =>
@@ -336,8 +341,8 @@ describe('test portfolio execution routes', () => {
     expect(
       (graph.routes as Route[])
         .filter((route) => route.routeId.startsWith(`route:${prExplicit.invocationId}`))
-        .map((route) => route.testPath)
-    ).toEqual(['tests/shared.test.ts']);
+        .map((route) => ({ selectionKind: route.selectionKind, testPath: route.testPath }))
+    ).toEqual([{ selectionKind: 'explicit', testPath: 'tests/shared.test.ts' }]);
   });
 
   it('keeps dynamic workflows, undiscovered explicit tests, and unknown test commands visible', () => {

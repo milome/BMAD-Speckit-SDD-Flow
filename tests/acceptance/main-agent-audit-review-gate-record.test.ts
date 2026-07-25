@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   createAuditTriadExecutionPlan,
   sha256Json,
@@ -18,7 +18,10 @@ import {
   runtimeStatusProjectionRecordPatch,
   validateRuntimeStatusDecisionReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
-import { sha256Text } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
+import {
+  sha256Json as sha256ControlJson,
+  sha256Text,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,
@@ -542,6 +545,118 @@ describe('main agent audit review gate', () => {
       expect(runtimeDecision.currentModelStatus).toBe('pass');
       expect(runtimeDecision.nextAction).toBe('run_closeout');
     } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it('fails closed when round metadata references missing producer artifacts', () => {
+    const fixture = materializeRequirementFixture({
+      currentMentalModel: 'execution_closure',
+      sixModelResults: {
+        requirement_confirmation: { status: 'pass' },
+        architecture_confirmation: { status: 'pass' },
+        implementation_readiness: { status: 'pass' },
+        execution_closure: { status: 'pass' },
+      },
+    });
+    try {
+      const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
+      establishExecutionClosureAuthority(fixture, compiled);
+      const plan = createAuditTriadExecutionPlan({
+        projectRoot: fixture.root,
+        recordId: fixture.recordId,
+        stage: 'implement',
+        callPoint: 'audit_review',
+        attemptId: fixture.runId,
+        ...auditPlanSemanticBindings(fixture, compiled),
+        sourceDocumentHash: fixture.sourceDocumentHash,
+        implementationConfirmationHash: fixture.implementationConfirmationHash,
+        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
+        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
+        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
+      });
+      const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
+      const roundsPath = path.join(path.dirname(planPath), 'rounds.json');
+      writeJson(
+        roundsPath,
+        Array.from({ length: 3 }, (_, index) =>
+          cleanRound(plan, `${fixture.runId}-missing-producer-${index + 1}`)
+        )
+      );
+      let committedBundle: Record<string, unknown> | null = null;
+
+      const gateArgs = [
+        '--requirement-record',
+        fixture.recordPath,
+        '--attempt-id',
+        fixture.runId,
+        '--plan',
+        planPath,
+        '--rounds',
+        roundsPath,
+        '--json',
+      ];
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-07-24T01:00:00.000Z'));
+      const code = mainAuditReviewGate(
+        gateArgs,
+        {
+          onCommitted: (bundle: Record<string, unknown>) => {
+            committedBundle = bundle;
+          },
+        }
+      );
+
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+      expect(record.sixModelResults.audit_review.blockingReasons).toContain(
+        'round_1_provider_invocation_receipt_artifact_missing'
+      );
+      expect(committedBundle).toMatchObject({
+        decision: 'blocked',
+        report: {
+          path: expect.stringContaining('audit-review-report.json'),
+          contentHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        },
+        control: {
+          eventId: expect.any(String),
+          eventHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+          afterRecordHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+          transactionId: expect.any(String),
+        },
+      });
+      let recoveredBundle: Record<string, unknown> | null = null;
+      vi.setSystemTime(new Date('2026-07-24T01:05:00.000Z'));
+      expect(
+        mainAuditReviewGate(gateArgs, {
+          onCommitted: (bundle: Record<string, unknown>) => {
+            recoveredBundle = bundle;
+          },
+        })
+      ).toBe(1);
+      expect(recoveredBundle).toMatchObject({
+        control: {
+          eventId: (committedBundle as Record<string, any>).control.eventId,
+          eventHash: (committedBundle as Record<string, any>).control.eventHash,
+          transactionId: (committedBundle as Record<string, any>).control.transactionId,
+        },
+      });
+      const eventLogPath = path.join(path.dirname(fixture.recordPath), 'events', 'control-events.jsonl');
+      const events = readFileSync(eventLogPath, 'utf8')
+        .trim()
+        .split(/\r?\n/u)
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as Record<string, unknown>);
+      expect(events).toHaveLength(1);
+      const payload = events[0].payload as Record<string, unknown>;
+      const snapshotPath = String(payload.gateSnapshotPath);
+      expect(existsSync(snapshotPath)).toBe(true);
+      const snapshot = JSON.parse(readFileSync(snapshotPath, 'utf8')) as Record<string, unknown>;
+      const snapshotHash = String(snapshot.snapshotHash);
+      const { snapshotHash: _ignoredSnapshotHash, ...snapshotPayload } = snapshot;
+      expect(snapshotHash).toBe(sha256ControlJson(snapshotPayload));
+    } finally {
+      vi.useRealTimers();
       cleanupRequirementWorkspace(fixture.root);
     }
   });

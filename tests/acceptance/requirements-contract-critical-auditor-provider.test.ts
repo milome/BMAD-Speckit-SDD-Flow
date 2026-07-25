@@ -4,7 +4,12 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
-import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import {
+  criticalAuditorJudgeInvocationOutputDir,
+  criticalAuditorPublishedRoundRequestCanReuseReceipt,
+  mainMainAgentOrchestration,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import * as mainAgentOrchestrationModule from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   artifacts,
   buildValidResponseFromRequest,
@@ -42,6 +47,21 @@ function createAuthoringConsumerFixture(root: string, recordId: string) {
 
 function sha256Json(value: unknown): string {
   return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
+}
+
+function canonicalSha256Json(value: unknown): string {
+  const stable = (item: unknown): string => {
+    if (item === null || typeof item !== 'object') return JSON.stringify(item);
+    if (Array.isArray(item)) return `[${item.map(stable).join(',')}]`;
+    return `{${Object.keys(item as Record<string, unknown>)
+      .sort()
+      .map(
+        (key) =>
+          `${JSON.stringify(key)}:${stable((item as Record<string, unknown>)[key])}`
+      )
+      .join(',')}}`;
+  };
+  return `sha256:${createHash('sha256').update(stable(value)).digest('hex')}`;
 }
 
 function implementationConfirmationFromText(sourceText: string): Record<string, any> {
@@ -120,6 +140,186 @@ function createRequestForResponseFile(root: string, recordId: string) {
 }
 
 describe('requirements contract Critical Auditor provider modes', () => {
+  it('routes a blocked provider contract without dispatching Source gap repair', () => {
+    const route = (
+      mainAgentOrchestrationModule as unknown as {
+        criticalAuditorProviderContractBlockedRoute?: (issueCodes: string[]) => {
+          attemptDomain: string;
+          providerAttemptState: string;
+          repairAttemptState: string;
+          blockingStage: string;
+          nextRequiredAction: string;
+        } | null;
+      }
+    ).criticalAuditorProviderContractBlockedRoute;
+    expect(typeof route).toBe('function');
+    expect(
+      route?.([
+        `unrelated_${randomUUID().replaceAll('-', '_')}`,
+        'critical_auditor_judge_provider_contract_blocked',
+      ])
+    ).toEqual({
+      attemptDomain: 'provider',
+      providerAttemptState: 'provider_contract_blocked',
+      repairAttemptState: 'repair_not_required',
+      blockingStage: 'critical_auditor_judge_provider_contract_blocked',
+      nextRequiredAction:
+        'remediate_provider_contract_then_start_fresh_audit_transaction',
+    });
+    expect(route?.([`unrelated_${randomUUID().replaceAll('-', '_')}`])).toBeNull();
+  });
+
+  it('namespaces Judge invocations by request binding instead of round alone', () => {
+    const stagingDir = path.join('runtime', 'authoring', 'staging');
+    const roundIndex = 1;
+    const firstRequestHash = sha256Json({ request: 'first' });
+    const secondRequestHash = sha256Json({ request: 'second' });
+
+    const first = criticalAuditorJudgeInvocationOutputDir({
+      stagingDir,
+      roundIndex,
+      requestHash: firstRequestHash,
+    });
+    const second = criticalAuditorJudgeInvocationOutputDir({
+      stagingDir,
+      roundIndex,
+      requestHash: secondRequestHash,
+    });
+
+    expect(path.dirname(first)).toBe(path.join(stagingDir, 'j', String(roundIndex)));
+    expect(path.basename(first)).toMatch(/^request-[a-f0-9]{24}$/u);
+    expect(first).not.toBe(second);
+    expect(() =>
+      criticalAuditorJudgeInvocationOutputDir({
+        stagingDir,
+        roundIndex: 1,
+        requestHash: 'invalid',
+      })
+    ).toThrow('critical_auditor_judge_request_hash_invalid');
+    expect(() =>
+      criticalAuditorJudgeInvocationOutputDir({
+        stagingDir,
+        roundIndex: 0,
+        requestHash: firstRequestHash,
+      })
+    ).toThrow('critical_auditor_judge_round_index_invalid');
+  });
+
+  it('reuses a published round request across non-substantive gate evidence refreshes', () => {
+    const hash = (label: string) => sha256Json({ label, nonce: randomUUID() });
+    const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+    const mustRef = `MUST-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+    const projectionRef = `TRACE-${randomUUID().replaceAll('-', '').toUpperCase()}`;
+    const gateSummary = (gateDryRunHash: string) => ({
+      reportPath: `runtime/${randomUUID()}/gate-report.json`,
+      receiptPath: `runtime/${randomUUID()}/gate-receipt.json`,
+      reconciliationReportPath: `runtime/${randomUUID()}/gate-reconciliation.json`,
+      verdict: 'PASS',
+      failedChecks: [],
+      blockingIssues: [],
+      actionableBlockingIssues: [],
+      actionableBlockingIssueCount: 0,
+      reconciliation: {
+        verdict: 'pass',
+        issueCount: 0,
+        checkedGroups: [projectionRef],
+      },
+      hash: gateDryRunHash,
+    });
+    const request = {
+      schemaVersion: 'critical-auditor-round-request/v1',
+      recordId,
+      roundIndex: 1,
+      transactionId: `CATX-${randomUUID()}`,
+      namespaceVersion: `critical-auditor-namespace/${randomUUID()}`,
+      sourceHash: hash('source'),
+      sourceDocumentHash: hash('source-document'),
+      sourceBytesHash: hash('source-bytes'),
+      semanticModelHash: hash('semantic-model'),
+      implementationConfirmationHash: hash('implementation-confirmation'),
+      packetHash: hash('packet'),
+      projectionSetHash: hash('projection-set'),
+      auditAttemptId: `critical-auditor-attempt/${randomUUID()}`,
+      auditInputHash: hash('audit-input'),
+      mustRefs: [mustRef],
+      sourceRequirementTexts: ['A user-visible behavior remains independently verifiable.'],
+      packetProjectionSummary: {
+        projectionRefs: [projectionRef],
+      },
+      previousReceipts: [],
+      independentProviderBinding: {
+        providerId: `provider-${randomUUID()}`,
+        transport: 'claude-code-cli',
+      },
+      independentProviderBindingIssueCodes: [],
+      gateDryRun: {
+        gateDryRunHash: hash('first-gate'),
+      },
+      requiredResponseSchema: {
+        gateDryRunHash: hash('first-schema-gate'),
+      },
+      createdAt: new Date(1_000).toISOString(),
+      requestHash: null,
+    } satisfies Record<string, unknown>;
+    request.requestHash = canonicalSha256Json(request);
+    const refreshed = {
+      ...request,
+      gateDryRun: {
+        gateDryRunHash: hash('refreshed-gate'),
+      },
+      requiredResponseSchema: {
+        gateDryRunHash: hash('refreshed-schema-gate'),
+      },
+      createdAt: new Date(2_000).toISOString(),
+      requestHash: null,
+    };
+    refreshed.requestHash = canonicalSha256Json(refreshed);
+    const existingGate = gateSummary(String((request.gateDryRun as any).gateDryRunHash));
+    const refreshedGate = gateSummary(String(refreshed.gateDryRun.gateDryRunHash));
+
+    expect(
+      criticalAuditorPublishedRoundRequestCanReuseReceipt({
+        existingRequest: request,
+        candidateRequest: refreshed,
+        existingGateDryRun: existingGate,
+        currentGateDryRun: refreshedGate,
+      })
+    ).toBe(true);
+    expect(
+      criticalAuditorPublishedRoundRequestCanReuseReceipt({
+        existingRequest: request,
+        candidateRequest: refreshed,
+        existingGateDryRun: existingGate,
+        currentGateDryRun: {
+          ...refreshedGate,
+          verdict: 'FAIL',
+          failedChecks: ['current_source_projection_incomplete'],
+          actionableBlockingIssues: [
+            {
+              code: 'current_source_projection_incomplete',
+              message: 'Current source projection is incomplete.',
+              refs: [projectionRef],
+              severity: 'blocker',
+              source: 'critical_auditor',
+            },
+          ],
+          actionableBlockingIssueCount: 1,
+        },
+      })
+    ).toBe(false);
+    expect(
+      criticalAuditorPublishedRoundRequestCanReuseReceipt({
+        existingRequest: request,
+        candidateRequest: {
+          ...refreshed,
+          auditInputHash: hash('changed-audit-input'),
+        },
+        existingGateDryRun: existingGate,
+        currentGateDryRun: refreshedGate,
+      })
+    ).toBe(false);
+  });
+
   it('rejects direct Critical Auditor result injection before provider dispatch', () => {
     const root = createTempRoot('requirements-contract-critical-auditor-result-injection-');
     try {
@@ -950,11 +1150,12 @@ describe('requirements contract Critical Auditor provider modes', () => {
         String((second.stagingTransaction as Record<string, unknown>)?.stagingDir ?? '')
       );
       expect(secondStagingDir, JSON.stringify({ first, second }, null, 2)).toBe(firstStagingDir);
-      const outputDir = path.join(
-        secondStagingDir,
-        'j',
-        '1'
-      );
+      const currentRequest = readJson<Record<string, unknown>>(fixture.requestPath);
+      const outputDir = criticalAuditorJudgeInvocationOutputDir({
+        stagingDir: secondStagingDir,
+        roundIndex: Number(currentRequest.roundIndex),
+        requestHash: String(currentRequest.requestHash ?? ''),
+      });
       const hostAttemptsDir = path.join(outputDir, 'judge-adapter-host-attempts');
       const attemptDirs = readdirSync(hostAttemptsDir, { withFileTypes: true }).filter((entry) =>
         entry.isDirectory()
@@ -981,11 +1182,12 @@ describe('requirements contract Critical Auditor provider modes', () => {
         )
       );
       expect(path.dirname(fixture.requestPath)).toBe(stagingDir);
-      const providerInvocationDir = path.join(
+      const providerInvocationDir = criticalAuditorJudgeInvocationOutputDir({
         stagingDir,
-        'j',
-        '1'
-      );
+        roundIndex: Number(fixture.request.roundIndex),
+        requestHash: String(fixture.request.requestHash ?? ''),
+      });
+      const providerInvocationRelativePath = path.relative(stagingDir, providerInvocationDir);
       const sentinelName = `failed-invocation-${randomUUID()}.json`;
       mkdirSync(providerInvocationDir, { recursive: true });
       writeFileSync(
@@ -1023,8 +1225,7 @@ describe('requirements contract Critical Auditor provider modes', () => {
               entry.name,
               'staging',
               path.basename(stagingDir),
-              'j',
-              '1',
+              providerInvocationRelativePath,
               sentinelName
             )
           )

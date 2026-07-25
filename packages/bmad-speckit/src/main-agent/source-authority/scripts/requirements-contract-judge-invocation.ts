@@ -11,6 +11,10 @@ import type {
   ClaudeCodeCliCommandInvocation,
   ClaudeCodeCliCommandResult,
 } from './requirements-contract-claude-code-cli-judge-adapter';
+import type {
+  CodexCliCommandInvocation,
+  CodexCliCommandResult,
+} from './requirements-contract-codex-cli-judge-adapter';
 
 export type RequirementsContractJudgeJsonRecord = Record<string, unknown>;
 
@@ -101,6 +105,9 @@ export async function prepareRequirementsContractJudgeInvocation(input: {
   executeClaudeCodeCliCommand?: (
     invocation: ClaudeCodeCliCommandInvocation
   ) => Promise<ClaudeCodeCliCommandResult>;
+  executeCodexCliCommand?: (
+    invocation: CodexCliCommandInvocation
+  ) => Promise<CodexCliCommandResult>;
 }): Promise<PreparedRequirementsContractJudgeInvocation> {
   const root = path.resolve(input.projectRoot);
   const configPath = resolveWithin(root, input.config);
@@ -120,6 +127,13 @@ export async function prepareRequirementsContractJudgeInvocation(input: {
       ? {
           claudeCodeCli: {
             executeCommand: input.executeClaudeCodeCliCommand,
+          },
+        }
+      : {}),
+    ...(input.executeCodexCliCommand
+      ? {
+          codexCli: {
+            executeCommand: input.executeCodexCliCommand,
           },
         }
       : {}),

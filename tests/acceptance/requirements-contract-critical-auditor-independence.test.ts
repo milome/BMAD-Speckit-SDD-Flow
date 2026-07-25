@@ -506,15 +506,44 @@ describe('S127 Critical Auditor independence', () => {
     expect(bindingResult.binding).toMatchObject({
       providerId: 'local-sonnet-judge',
       model: null,
-      transport: 'claude-code-cli',
+      transport: 'cli',
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
       apiStyle: 'cli',
     });
     expect(expectationResult.issueCodes).toEqual([]);
     expect(expectationResult.expectation).toMatchObject({
       providerId: 'local-sonnet-judge',
       model: null,
-      transport: 'claude-code-cli',
+      transport: 'cli',
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
       apiStyle: 'cli',
+    });
+  });
+
+  it('binds a configured CLI adapter and command without freezing Claude as provider identity', () => {
+    const registry = judgeProviderRegistry();
+    const providerRef = String(registry.activeProviderRef);
+    const providers = registry.providers as Record<string, Record<string, unknown>>;
+    const configuredCommand = `judge-cli-${randomUUID()}`;
+    providers[providerRef] = {
+      ...providers[providerRef],
+      transport: 'cli',
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      endpoint: {
+        ...(providers[providerRef].endpoint as Record<string, unknown>),
+        command: configuredCommand,
+      },
+    };
+
+    const result = buildCriticalAuditorJudgeRuntimeBinding(registry);
+
+    expect(result.issueCodes).toEqual([]);
+    expect(result.binding).toMatchObject({
+      providerId: providerRef,
+      transport: 'cli',
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      apiStyle: 'cli',
+      configuredBaseUrlHash: sha256Stable(configuredCommand),
     });
   });
 

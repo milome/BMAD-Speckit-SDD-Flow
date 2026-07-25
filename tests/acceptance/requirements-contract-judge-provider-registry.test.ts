@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -105,6 +106,69 @@ function runtime(activeProviderRef: 'provider-a' | 'provider-b') {
         'judge-model-b',
         'https://judge-b.example.test'
       ),
+    },
+  };
+}
+
+function cliRuntime(input: {
+  providerRef: string;
+  adapterRef: string;
+  command: string;
+}) {
+  return {
+    schemaVersion: 'requirements-contract-judge-runtime/v1',
+    enabled: true,
+    activeProviderRef: input.providerRef,
+    selectionPolicy: {
+      mode: 'contract_locked',
+      runtimeFallbackAllowed: false,
+      runtimeAutoDiscoveryAllowed: false,
+      environmentOverrideAllowed: false,
+      cliTransportAllowed: true,
+      selectionReceiptRequired: true,
+    },
+    credentialConfig: {
+      source: 'config_file',
+      path: '_bmad-output/config/private/judge-provider.credentials.yaml',
+      schemaVersion: 'requirements-contract-judge-credentials/v1',
+      allowedRoot: '_bmad-output/config/private',
+      environmentFallbackAllowed: false,
+    },
+    providers: {
+      [input.providerRef]: {
+        enabled: true,
+        transport: 'cli',
+        adapterRef: input.adapterRef,
+        apiStyle: 'cli',
+        model: null,
+        credentialRef: input.providerRef,
+        endpoint: {
+          command: input.command,
+          baseUrl: `https://${randomUUID()}.example.test`,
+          resolutionMode: 'path_search',
+          routingOwnership: 'transport_adapter',
+          upstreamVersioning: 'gateway_managed',
+          explicitOperationPath: null,
+        },
+        authentication: {
+          type: 'bearer',
+          sensitivity: 'secret',
+          arbitraryNonEmptyValueAllowed: false,
+        },
+        auditPolicy: {
+          independenceClass: 'different_provider_different_model',
+          blindReview: true,
+          allowPassAuthority: false,
+          toolsAllowed: true,
+          allowedTools: ['Read'],
+          implementationWritesAllowed: false,
+        },
+        requestPolicy: {
+          timeoutMs: 10_000,
+          maximumAttempts: 1,
+          structuredResponseRequired: true,
+        },
+      },
     },
   };
 }
@@ -301,6 +365,10 @@ describe('requirements contract Judge provider registry', () => {
           path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts',
         }),
         expect.objectContaining({
+          consumerId: 'codex-cli-judge-adapter',
+          path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.ts',
+        }),
+        expect.objectContaining({
           consumerId: 'judge-provider-smoke',
           path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke.ts',
         }),
@@ -358,6 +426,74 @@ describe('requirements contract Judge provider registry', () => {
     expect(providerB.apiStyle).toBe('messages');
     expect(providerB.model).toBe('judge-model-b');
     expect(selectionB.adapterRef ?? selectionB.adapterId ?? providerB.adapterRef).toBeDefined();
+  });
+
+  it('binds Codex CLI providers only to CodexCliJudgeAdapter', async () => {
+    const loaded = await loadRegistryModule();
+    if (!loaded) return;
+    const createRegistry = exportedFunction<RegistryFactory>(
+      loaded,
+      'createRequirementsContractJudgeProviderRegistry'
+    );
+    const resolveProvider = exportedFunction<ProviderResolver>(
+      loaded,
+      'resolveRequirementsContractJudgeProvider'
+    );
+    if (!createRegistry || !resolveProvider) return;
+
+    const providerRef = `provider-${randomUUID()}`;
+    const configured = cliRuntime({
+      providerRef,
+      adapterRef: 'CodexCliJudgeAdapter',
+      command: 'codex',
+    });
+    const registry = (await createRegistry({
+      judgeRuntime: configured,
+      runtime: configured,
+    })) as JsonRecord;
+    const selection = (await resolveProvider({
+      registry,
+      judgeRuntime: configured,
+      runtime: configured,
+      activeProviderRef: providerRef,
+    })) as JsonRecord;
+
+    expect(selection).toMatchObject({
+      providerRef,
+      adapterRef: 'CodexCliJudgeAdapter',
+      provider: {
+        transport: 'cli',
+        adapterRef: 'CodexCliJudgeAdapter',
+        endpoint: {
+          command: 'codex',
+        },
+      },
+    });
+    expect((selection.adapter as JsonRecord).judge).toBeTypeOf('function');
+  });
+
+  it('rejects routing the Codex command through ClaudeCodeCliJudgeAdapter', async () => {
+    const loaded = await loadRegistryModule();
+    if (!loaded) return;
+    const createRegistry = exportedFunction<RegistryFactory>(
+      loaded,
+      'createRequirementsContractJudgeProviderRegistry'
+    );
+    if (!createRegistry) return;
+
+    const providerRef = `provider-${randomUUID()}`;
+    const configured = cliRuntime({
+      providerRef,
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      command: 'codex',
+    });
+
+    expect(() =>
+      createRegistry({
+        judgeRuntime: configured,
+        runtime: configured,
+      })
+    ).toThrow('judge_provider_adapter_command_mismatch');
   });
 
   it('rejects CLI selection overrides instead of manufacturing a Provider choice', async () => {

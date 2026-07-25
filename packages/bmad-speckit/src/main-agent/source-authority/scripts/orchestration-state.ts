@@ -49,6 +49,18 @@ export interface PendingPacketPointer {
   stale_recovered_count?: number;
 }
 
+export interface AuditControlledFinalizationPointer {
+  schemaVersion: 'audit-controlled-finalization-pointer/v1';
+  status: 'prepared' | 'committed';
+  intentId: string;
+  intentPath: string;
+  intentContentHash: string;
+  packetId: string;
+  preparedAt: string;
+  finalizationReceiptPath?: string | null;
+  finalizationReceiptContentHash?: string | null;
+}
+
 export interface OrchestrationState {
   version: 1;
   sessionId: string;
@@ -57,6 +69,7 @@ export interface OrchestrationState {
   currentPhase: OrchestrationPhase;
   nextAction: OrchestrationNextAction;
   pendingPacket?: PendingPacketPointer | null;
+  auditControlledFinalization?: AuditControlledFinalizationPointer | null;
   originalExecutionPacketId?: string | null;
   fourSignal?: {
     latestStatus: 'pass' | 'warn' | 'block';
@@ -274,6 +287,7 @@ export function createDefaultOrchestrationState(
     currentPhase: input.currentPhase,
     nextAction: input.nextAction,
     pendingPacket: input.pendingPacket ?? null,
+    auditControlledFinalization: null,
     originalExecutionPacketId: null,
     gatesLoop: {
       retryCount: 0,

@@ -50,7 +50,8 @@ judgeRuntime:
   providers:
     local-sonnet-judge:
       enabled: true
-      transport: claude-code-cli
+      transport: cli
+      adapterRef: ClaudeCodeCliJudgeAdapter
       apiStyle: cli
       credentialRef: local-sonnet-judge
       endpoint:

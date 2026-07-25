@@ -14,43 +14,6 @@ export const REQUIREMENTS_CONTRACT_VALIDATION_MODES = [
 ] as const;
 
 const SCRIPT_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/scripts';
-const DISCOVERY_RULES = [
-  {
-    ruleId: 'root_production_sources',
-    root: 'scripts',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-  {
-    ruleId: 'root_runtime_sources',
-    root: 'src',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-  {
-    ruleId: 'root_command_sources',
-    root: 'bin',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-  {
-    ruleId: 'shared_production_sources',
-    root: '_bmad/shared',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-  {
-    ruleId: 'package_and_generated_sources',
-    root: 'packages',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-  {
-    ruleId: 'generated_host_sources',
-    root: '_bmad/codex',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-  {
-    ruleId: 'installed_package_sources',
-    root: 'node_modules/bmad-speckit',
-    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
-  },
-] as const;
 
 const NON_PRODUCTION_DIRECTORY_NAMES = new Set([
   '.git',
@@ -65,15 +28,6 @@ const NON_PRODUCTION_DIRECTORY_NAMES = new Set([
   'test-results',
   'tests',
 ]);
-
-const SEMANTIC_READER_PATTERNS = [
-  /\bimplementationConfirmation\b/u,
-  /\bcurrentTargetMap\b/u,
-  /\bRequirementContractModelV(?:1|2)\b/u,
-  /\brequirements-contract-read-facade\b/u,
-  /(?:logicalModel|semanticModel|requirementContract)\s*(?:\.\s*(?:semanticBodies|nodes|edges)|\[\s*['"](?:semanticBodies|nodes|edges)['"]\s*\])/u,
-  /(?:semantic-ir|trace-graph|target-bindings|task-graph|red-contracts|oracle-registry|acceptance-contracts|evidence-requirements|business-behavior-delta|implementation-impact-map)\.json/u,
-] as const;
 
 type ValidationMode = (typeof REQUIREMENTS_CONTRACT_VALIDATION_MODES)[number];
 
@@ -565,6 +519,13 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
     validatorRef: 'requirements-contract-normalized-judge-response.schema.json',
   },
   {
+    consumerId: 'codex-cli-judge-adapter',
+    fileName: 'requirements-contract-codex-cli-judge-adapter.ts',
+    inputRole: 'frozen_local_judge_evidence_snapshot',
+    supportedModes: ['execution', 'closeout'],
+    validatorRef: 'requirements-contract-normalized-judge-response.schema.json',
+  },
+  {
     consumerId: 'judge-provider-smoke',
     fileName: 'requirements-contract-judge-provider-smoke.ts',
     inputRole: 'audit_phase_context',
@@ -656,6 +617,41 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
     supportedModes: ['closeout'],
   },
 ] as const;
+
+interface ConsumerDiscoveryRule {
+  ruleId: string;
+  root: string;
+  fileNamePattern: string;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+function consumerDiscoveryRuleId(root: string, index: number): string {
+  if (root === '_bmad/shared/requirements-contract') return 'canonical_parser';
+  if (root === SCRIPT_ROOT) return 'requirements_contract_runtime_entries';
+  if (root === '_bmad/skills/requirements-contract-authoring/scripts') {
+    return 'requirements_contract_authoring_entries';
+  }
+  return `requirements_contract_declared_entries_${index + 1}`;
+}
+
+function createConsumerDiscoveryRules(): ConsumerDiscoveryRule[] {
+  const filesByRoot = new Map<string, Set<string>>();
+  for (const definition of CONSUMER_DEFINITIONS) {
+    const declaredPath = consumerPath(definition);
+    const root = normalize(path.posix.dirname(declaredPath));
+    const fileNames = filesByRoot.get(root) ?? new Set<string>();
+    fileNames.add(path.posix.basename(declaredPath));
+    filesByRoot.set(root, fileNames);
+  }
+  return [...filesByRoot.entries()].map(([root, fileNames], index) => ({
+    ruleId: consumerDiscoveryRuleId(root, index),
+    root,
+    fileNamePattern: `^(?:${[...fileNames].sort().map(escapeRegExp).join('|')})$`,
+  }));
+}
 
 function normalize(value: string): string {
   return value.replace(/\\/gu, '/');
@@ -902,21 +898,16 @@ export function createRequirementsContractSixModelConsumerInventory(
   };
 }
 
-function isSemanticReaderSource(source: string): boolean {
-  return SEMANTIC_READER_PATTERNS.some((pattern) => pattern.test(source));
-}
-
-function discoverConsumerPaths(root: string): string[] {
+function discoverConsumerPaths(root: string, rules: readonly ConsumerDiscoveryRule[]): string[] {
   const discovered = new Set<string>();
-  for (const rule of DISCOVERY_RULES) {
+  for (const rule of rules) {
     const pattern = new RegExp(rule.fileNamePattern, 'u');
     for (const filePath of filesBelow(path.resolve(root, rule.root))) {
       const relativePath = normalize(path.relative(root, filePath));
       if (
         relativePath === REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH ||
         /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(relativePath) ||
-        !pattern.test(path.basename(filePath)) ||
-        !isSemanticReaderSource(readFileSync(filePath, 'utf8'))
+        !pattern.test(path.basename(filePath))
       ) {
         continue;
       }
@@ -955,7 +946,8 @@ export function createRequirementsContractConsumerRegistry(root = process.cwd())
   const declaredPaths = [
     ...new Set(CONSUMER_DEFINITIONS.map((definition) => consumerPath(definition))),
   ].sort();
-  const discoveredPaths = discoverConsumerPaths(root);
+  const discoveryRules = createConsumerDiscoveryRules();
+  const discoveredPaths = discoverConsumerPaths(root, discoveryRules);
   const missingConsumerPaths = discoveredPaths.filter(
     (discoveredPath) => !declaredPaths.includes(discoveredPath)
   );
@@ -1007,7 +999,6 @@ export function createRequirementsContractConsumerRegistry(root = process.cwd())
   };
   const schemaVersion = 'requirements-contract-consumer-registry/v2';
   const validationModes = [...REQUIREMENTS_CONTRACT_VALIDATION_MODES];
-  const discoveryRules = DISCOVERY_RULES.map((rule) => ({ ...rule }));
   return {
     schemaVersion,
     owner: {

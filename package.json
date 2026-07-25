@@ -109,6 +109,62 @@
     "validate:no-root-scripts-ts": "node tools/script-migration/root-ts-hard-cut-guard.cjs --check root-inventory-zero --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check package-json-no-root-ts --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check workflows-no-root-ts --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check surfaces-no-root-ts-authority --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check tests-no-root-ts-authority --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check packages-no-root-ts-bridge --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check root-internal-graph-zero --json && node tools/script-migration/root-ts-hard-cut-guard.cjs --check registry-disposition --manifest repo-governance/script-migrations/root-ts-hard-cut/root-ts-deletion-manifest.json --json",
     "verify:requirements-contract-source-writes": "npx tsx packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts"
   },
+  "testPortfolioAudit": {
+    "criticalBindings": [
+      {
+        "bindingId": "consumer-install-boundary",
+        "kinds": [
+          "package_install",
+          "cli_bin",
+          "consumer_compatibility"
+        ],
+        "scriptName": "test:consumer-install-final"
+      },
+      {
+        "bindingId": "consumer-runtime-boundary",
+        "kinds": [
+          "packaged_runtime",
+          "consumer_compatibility"
+        ],
+        "scriptName": "test:consumer-runtime-final"
+      },
+      {
+        "bindingId": "main-agent-core-boundary",
+        "kinds": [
+          "main_agent_core"
+        ],
+        "scriptName": "test:ci:codex"
+      },
+      {
+        "bindingId": "runtime-policy-security-boundary",
+        "kinds": [
+          "security_encoding_persistence"
+        ],
+        "scriptName": "test:runtime-policy-inject"
+      },
+      {
+        "bindingId": "sprint-status-write-security-boundary",
+        "kinds": [
+          "security_encoding_persistence"
+        ],
+        "scriptName": "test:main-agent-sprint-status-write-gate"
+      },
+      {
+        "bindingId": "governance-proof-round-1",
+        "kinds": [
+          "protected_acceptance_or_proof"
+        ],
+        "scriptName": "test:governance-audit:round1"
+      },
+      {
+        "bindingId": "governance-proof-round-2",
+        "kinds": [
+          "protected_acceptance_or_proof"
+        ],
+        "scriptName": "test:governance-audit:round2"
+      }
+    ]
+  },
   "bin": {
     "bmad-speckit": "scripts/bmad-speckit-cli.js",
     "bmad-speckit-init": "scripts/init-to-root.js",

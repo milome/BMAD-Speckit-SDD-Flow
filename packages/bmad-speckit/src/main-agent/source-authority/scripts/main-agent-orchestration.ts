@@ -88,9 +88,14 @@ import {
 import {
   readCommittedRequirementsContractCriticalAuditorJudgeInvocation,
   reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation,
+  rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation,
+  requirementsContractCriticalAuditorJudgeInvocationDisposition,
   type CommittedCriticalAuditorJudgeInvocation,
 } from './requirements-contract-critical-auditor-judge-adapter';
-import { resolveRequirementsContractJudgeCredentialMetadata } from './requirements-contract-judge-credential-resolver';
+import {
+  resolveRequirementsContractJudgeCredentialEnvironmentVariable,
+  resolveRequirementsContractJudgeCredentialMetadata,
+} from './requirements-contract-judge-credential-resolver';
 import type { ResolvedRuntimeContext } from './resolve-active-requirement';
 import { isNoActiveRequirementError } from './resolve-active-requirement';
 import { runControlledReadinessAuditBridge } from './controlled-readiness-audit-bridge';
@@ -137,6 +142,7 @@ import {
 } from './requirements-contract-production-semantic-pipeline';
 import { createSameVolumeBoundedTempDirectory } from './requirements-contract-same-volume-bounded-temp';
 import {
+  extractRequirementsContractImplementationConfirmation,
   implementationConfirmationHashFor as implementationConfirmationHashForContract,
   sourceDocumentHashFor as sourceDocumentHashForContract,
 } from './requirements-contract-implementation-confirmation-codec';
@@ -166,7 +172,10 @@ import {
   type RequirementsContractCheckpointSemanticValidationReceipt,
 } from './requirements-contract-checkpoint-semantic-validation';
 import { mainImplementationReadinessGate } from './main-agent-implementation-readiness-gate';
-import { mainAuditReviewGate } from './main-agent-audit-review-gate';
+import {
+  mainAuditReviewGate,
+  type AuditReviewGateCommitBundle,
+} from './main-agent-audit-review-gate';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { mainRunRequiredCommandsFromAiTddManifest } from './run-required-commands-from-ai-tdd-manifest';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
@@ -2576,6 +2585,8 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     normalizeText(judgeReceipt.auditEpochId) !== input.plan.auditEpochId ||
     normalizeText(judgeReceipt.auditTargetBundleHash) !== input.plan.auditTargetBundleHash ||
     normalizeText(judgeReceipt.sourceDocumentHash) !== input.plan.sourceDocumentHash ||
+    !/^sha256:[a-f0-9]{64}$/u.test(normalizeText(judgeReceipt.sourceBytesHash)) ||
+    normalizeText(roundReceipt.sourceBytesHash) !== normalizeText(judgeReceipt.sourceBytesHash) ||
     normalizeText(judgeReceipt.semanticModelHash) !== input.plan.semanticModelHash ||
     normalizeText(judgeReceipt.implementationConfirmationHash) !==
       input.plan.implementationConfirmationHash ||
@@ -2653,9 +2664,11 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     receiptRef: judgeProviderReceiptRef,
     requestHash: normalizeText(roundReceipt.criticalAuditorRequestHash),
     sourceDocumentHash: input.plan.sourceDocumentHash,
+    sourceBytesHash: normalizeText(judgeReceipt.sourceBytesHash),
     semanticModelHash: input.plan.semanticModelHash,
     projectionSetHash: input.plan.projectionSetHash,
     providerRunId: normalizeText(judgeEvidence.providerRunId),
+    expectedProviderBinding: input.plan.independentProviderBinding,
   });
   const judgeHostExecution = validateCriticalAuditorJudgeHostExecution(
     input.projectRoot,
@@ -3480,6 +3493,13 @@ function writeAuditJudgeRequest(input: {
     projectRoot: input.projectRoot,
     plan: input.plan,
   });
+  const authorityBinding = resolveAuditJudgeRequestAuthorityBinding({
+    projectRoot: input.projectRoot,
+    modelPacketPath: normalizeText(input.readonlyAuditorRequest.auditArtifactPath),
+    modelPacketHash: normalizeText(input.plan.modelPacketHash),
+    sourceDocumentHash: input.plan.sourceDocumentHash,
+    projectionSetHash: input.plan.projectionSetHash,
+  });
   const readonlyValidatedGapRefs = stringsFrom(input.readonlyAuditorResponse.validatedGapRefs);
   const readonlyFailedVetoRefs = asRecordArray(input.readonlyAuditorResponse.vetoItemResults)
     .filter((item) => item.passed !== true)
@@ -3501,7 +3521,9 @@ function writeAuditJudgeRequest(input: {
     namespaceVersion: `audit-review/${input.plan.attemptId}`,
     auditAttemptId: input.plan.attemptId,
     sourceHash: input.plan.sourceDocumentHash,
+    sourceDocument: authorityBinding.sourceDocument,
     sourceDocumentHash: input.plan.sourceDocumentHash,
+    sourceBytesHash: authorityBinding.sourceBytesHash,
     semanticModelHash: input.plan.semanticModelHash,
     implementationConfirmationHash: input.plan.implementationConfirmationHash,
     packetHash: input.plan.modelPacketHash ?? input.plan.auditTargetBundleHash,
@@ -3514,6 +3536,9 @@ function writeAuditJudgeRequest(input: {
     projectionQualityGate: {
       requiredRuleCodes: input.plan.checkedProjectionQualityRuleCodes,
     },
+    packetProjectionSummary: authorityBinding.packetProjectionSummary,
+    mustRefs: authorityBinding.mustRefs,
+    sourceRequirementTexts: authorityBinding.sourceRequirementTexts,
     readonlyAuditorRequestHash: normalizeText(input.readonlyAuditorRequest.requestHash),
     readonlyAuditorResponseHash: input.readonlyAuditorResponseHash,
     readonlyAuditorResponse: input.readonlyAuditorResponse,
@@ -3573,6 +3598,7 @@ function executeAuditJudge(input: {
   for (const [field, expectedValue] of [
     ['requestHash', input.judgeRequest.requestHash],
     ['sourceDocumentHash', input.plan.sourceDocumentHash],
+    ['sourceBytesHash', input.judgeRequest.sourceBytesHash],
     ['semanticModelHash', input.plan.semanticModelHash],
     ['implementationConfirmationHash', input.plan.implementationConfirmationHash],
     ['packetHash', input.plan.modelPacketHash ?? input.plan.auditTargetBundleHash],
@@ -3861,9 +3887,11 @@ function materializeAuditControlledRound(input: {
     receiptRef: judgeResult.providerInvocationReceiptRef,
     requestHash: normalizeText(judgeRequest.request.requestHash),
     sourceDocumentHash: plan.sourceDocumentHash,
+    sourceBytesHash: normalizeText(judgeRequest.request.sourceBytesHash),
     semanticModelHash: plan.semanticModelHash,
     projectionSetHash: plan.projectionSetHash,
     providerRunId,
+    expectedProviderBinding: plan.independentProviderBinding,
   });
   validateCriticalAuditorJudgeHostExecution(
     input.projectRoot,
@@ -3898,6 +3926,7 @@ function materializeAuditControlledRound(input: {
     verdict: judgeResult.verdict,
     validatedGapRefs,
     sourceDocumentHash: plan.sourceDocumentHash,
+    sourceBytesHash: normalizeText(judgeRequest.request.sourceBytesHash),
     semanticModelHash: plan.semanticModelHash,
     implementationConfirmationHash: plan.implementationConfirmationHash,
     projectionSetHash: plan.projectionSetHash,
@@ -3961,6 +3990,7 @@ function materializeAuditControlledRound(input: {
     validatedGapRefs,
     invalidGapRefs: judgeGapRefs(judgeResult.rejectedGapCandidates),
     sourceDocumentHash: plan.sourceDocumentHash,
+    sourceBytesHash: normalizeText(judgeRequest.request.sourceBytesHash),
     semanticModelHash: plan.semanticModelHash,
     implementationConfirmationHash: plan.implementationConfirmationHash,
     projectionSetHash: plan.projectionSetHash,
@@ -4052,6 +4082,27 @@ interface AuditControlledFinalizationResult {
   runtimeStatusReceiptPath: string;
   finalizationReceiptPath: string;
   nextAction: string;
+}
+
+interface AuditControlledFinalizationIntent {
+  schemaVersion: 'audit-controlled-finalization-intent/v1';
+  intentId: string;
+  recordPath: string;
+  sessionId: string;
+  packetId: string;
+  currentStage: string;
+  instruction: MainAgentDispatchInstruction;
+  instructionHash: string;
+  planRef: {
+    path: string;
+    contentHash: string;
+  };
+  roundReceiptRefs: Array<{
+    path: string;
+    contentHash: string;
+  }>;
+  preparedAt: string;
+  intentHash: string;
 }
 
 interface AuditGapRemediationDispatchResult {
@@ -4553,14 +4604,20 @@ function materializeAuditGapRemediationDispatch(input: {
   };
 }
 
-function finalizeAuditControlledExecution(input: {
+interface AuditControlledFinalizationGatePreparation {
+  gateArgs: string[];
+  auditDir: string;
+  reportPath: string;
+  runtimeStatusReceiptPath: string;
+}
+
+function prepareAuditControlledFinalizationGate(input: {
   projectRoot: string;
   recordPath: string;
   instruction: MainAgentDispatchInstruction;
   planPath: string;
   roundReceiptPaths: string[];
-  currentStage: string;
-}): AuditControlledFinalizationResult {
+}): AuditControlledFinalizationGatePreparation {
   const plan = JSON.parse(fs.readFileSync(input.planPath, 'utf8')) as AuditTriadExecutionPlan;
   const record = readJsonIfExists(input.recordPath);
   const implementationAttemptId =
@@ -4605,31 +4662,441 @@ function finalizeAuditControlledExecution(input: {
     ]),
     ...input.roundReceiptPaths.flatMap((receiptPath) => ['--round', receiptPath]),
   ];
-  const gateCode = mainAuditReviewGate(gateArgs, {
-    writeOutput: () => undefined,
-  });
-  const report = readJsonIfExists(reportPath);
-  if (!report || !fs.existsSync(runtimeStatusReceiptPath)) {
-    throw new Error('audit_controlled_executor_finalization_artifact_missing');
+  return {
+    gateArgs,
+    auditDir,
+    reportPath,
+    runtimeStatusReceiptPath,
+  };
+}
+
+function writeJsonCreateOnlyOrEqual(
+  targetPath: string,
+  payload: Record<string, unknown>,
+  conflictCode: string
+): { content: string; contentHash: string } {
+  const content = `${JSON.stringify(payload, null, 2)}\n`;
+  const contentHash = sha256Text(content);
+  if (fs.existsSync(targetPath)) {
+    if (sha256Text(fs.readFileSync(targetPath, 'utf8')) !== contentHash) {
+      throw new Error(conflictCode);
+    }
+    return { content, contentHash };
   }
-  const decision = normalizeText(report.decision) === 'pass' && gateCode === 0 ? 'pass' : 'blocked';
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  const temporaryPath = `${targetPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporaryPath, content, 'utf8');
+    fs.renameSync(temporaryPath, targetPath);
+  } catch (error) {
+    if (
+      fs.existsSync(targetPath) &&
+      sha256Text(fs.readFileSync(targetPath, 'utf8')) === contentHash
+    ) {
+      return { content, contentHash };
+    }
+    throw error;
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.rmSync(temporaryPath, { force: true });
+  }
+  return { content, contentHash };
+}
+
+function auditControlledFinalizationIntentPayload(
+  intent:
+    | AuditControlledFinalizationIntent
+    | Omit<AuditControlledFinalizationIntent, 'intentHash'>
+): Omit<AuditControlledFinalizationIntent, 'intentHash'> {
+  return {
+    schemaVersion: 'audit-controlled-finalization-intent/v1',
+    intentId: intent.intentId,
+    recordPath: intent.recordPath,
+    sessionId: intent.sessionId,
+    packetId: intent.packetId,
+    currentStage: intent.currentStage,
+    instruction: intent.instruction,
+    instructionHash: intent.instructionHash,
+    planRef: intent.planRef,
+    roundReceiptRefs: intent.roundReceiptRefs,
+    preparedAt: intent.preparedAt,
+  };
+}
+
+function validateAuditControlledFinalizationIntent(input: {
+  projectRoot: string;
+  intentPath: string;
+  expectedIntentId?: string;
+  expectedContentHash?: string;
+}): AuditControlledFinalizationIntent {
+  const raw = readJsonIfExists(input.intentPath);
+  if (!raw) {
+    throw new Error('audit_controlled_executor_finalization_intent_missing');
+  }
+  const intent = raw as unknown as AuditControlledFinalizationIntent;
+  if (
+    intent.schemaVersion !== 'audit-controlled-finalization-intent/v1' ||
+    !normalizeText(intent.intentId) ||
+    (input.expectedIntentId && intent.intentId !== input.expectedIntentId) ||
+    !normalizeText(intent.recordPath) ||
+    !normalizeText(intent.sessionId) ||
+    !normalizeText(intent.packetId) ||
+    !normalizeText(intent.currentStage) ||
+    !intent.instruction ||
+    intent.instructionHash !== sha256Json(intent.instruction) ||
+    !normalizeText(intent.planRef?.path) ||
+    !normalizeText(intent.planRef?.contentHash) ||
+    !Array.isArray(intent.roundReceiptRefs) ||
+    !normalizeText(intent.preparedAt) ||
+    !normalizeText(intent.intentHash) ||
+    intent.intentHash !== sha256Json(auditControlledFinalizationIntentPayload(intent))
+  ) {
+    throw new Error('audit_controlled_executor_finalization_intent_invalid');
+  }
+  const contentHash = sha256File(input.intentPath);
+  if (input.expectedContentHash && contentHash !== input.expectedContentHash) {
+    throw new Error('audit_controlled_executor_finalization_intent_content_hash_mismatch');
+  }
+  const planPath = resolveRootRelativePath(input.projectRoot, intent.planRef.path);
+  if (
+    !fs.existsSync(planPath) ||
+    sha256File(planPath) !== intent.planRef.contentHash
+  ) {
+    throw new Error('audit_controlled_executor_finalization_intent_plan_changed');
+  }
+  for (const [index, receiptRef] of intent.roundReceiptRefs.entries()) {
+    const receiptPath = resolveRootRelativePath(input.projectRoot, receiptRef.path);
+    if (
+      !normalizeText(receiptRef.contentHash) ||
+      !fs.existsSync(receiptPath) ||
+      sha256File(receiptPath) !== receiptRef.contentHash
+    ) {
+      throw new Error(
+        `audit_controlled_executor_finalization_intent_round_changed:${index + 1}`
+      );
+    }
+  }
+  return intent;
+}
+
+function persistAuditControlledFinalizationPointer(input: {
+  projectRoot: string;
+  sessionId: string;
+  intent: AuditControlledFinalizationIntent;
+  intentPath: string;
+  intentContentHash: string;
+}): void {
+  updateOrchestrationState(input.projectRoot, input.sessionId, (current) => {
+    const existing = current.auditControlledFinalization;
+    if (
+      existing?.status === 'prepared' &&
+      existing.intentId !== input.intent.intentId
+    ) {
+      throw new Error('audit_controlled_executor_finalization_intent_in_progress');
+    }
+    if (
+      existing?.intentId === input.intent.intentId &&
+      existing.intentContentHash !== input.intentContentHash
+    ) {
+      throw new Error('audit_controlled_executor_finalization_pointer_hash_mismatch');
+    }
+    if (existing?.intentId === input.intent.intentId && existing.status === 'committed') {
+      return current;
+    }
+    return {
+      ...current,
+      auditControlledFinalization: {
+        schemaVersion: 'audit-controlled-finalization-pointer/v1',
+        status: 'prepared',
+        intentId: input.intent.intentId,
+        intentPath: toRootRelativePath(input.projectRoot, input.intentPath),
+        intentContentHash: input.intentContentHash,
+        packetId: input.intent.packetId,
+        preparedAt: input.intent.preparedAt,
+        finalizationReceiptPath: null,
+        finalizationReceiptContentHash: null,
+      },
+    };
+  });
+}
+
+function loadOrCreateAuditControlledFinalizationIntent(input: {
+  projectRoot: string;
+  recordPath: string;
+  instruction: MainAgentDispatchInstruction;
+  planPath: string;
+  roundReceiptPaths: string[];
+  currentStage: string;
+  auditDir: string;
+}): {
+  intent: AuditControlledFinalizationIntent;
+  path: string;
+  contentHash: string;
+} {
+  const planRef = {
+    path: toRootRelativePath(input.projectRoot, input.planPath),
+    contentHash: sha256File(input.planPath),
+  };
+  const roundReceiptRefs = input.roundReceiptPaths.map((roundReceiptPath) => ({
+    path: toRootRelativePath(input.projectRoot, roundReceiptPath),
+    contentHash: sha256File(roundReceiptPath),
+  }));
+  const identityHash = sha256Json({
+    schemaVersion: 'audit-controlled-finalization-intent-identity/v1',
+    recordPath: toRootRelativePath(input.projectRoot, input.recordPath),
+    sessionId: input.instruction.sessionId,
+    packetId: input.instruction.packetId,
+    currentStage: input.currentStage,
+    instructionHash: sha256Json(input.instruction),
+    planRef,
+    roundReceiptRefs,
+  });
+  const intentId = `AUDIT-FINAL-INTENT-${identityHash.slice(
+    'sha256:'.length,
+    'sha256:'.length + 24
+  )}`;
+  const intentPath = path.join(
+    input.auditDir,
+    'finalization-intents',
+    safeSegment(intentId),
+    'audit-finalization-intent.json'
+  );
+  let intent: AuditControlledFinalizationIntent;
+  let contentHash: string;
+  if (fs.existsSync(intentPath)) {
+    intent = validateAuditControlledFinalizationIntent({
+      projectRoot: input.projectRoot,
+      intentPath,
+      expectedIntentId: intentId,
+    });
+    contentHash = sha256File(intentPath);
+  } else {
+    const payload: Omit<AuditControlledFinalizationIntent, 'intentHash'> = {
+      schemaVersion: 'audit-controlled-finalization-intent/v1',
+      intentId,
+      recordPath: toRootRelativePath(input.projectRoot, input.recordPath),
+      sessionId: input.instruction.sessionId,
+      packetId: input.instruction.packetId,
+      currentStage: input.currentStage,
+      instruction: input.instruction,
+      instructionHash: sha256Json(input.instruction),
+      planRef,
+      roundReceiptRefs,
+      preparedAt: new Date().toISOString(),
+    };
+    intent = {
+      ...payload,
+      intentHash: sha256Json(auditControlledFinalizationIntentPayload(payload)),
+    };
+    contentHash = writeJsonCreateOnlyOrEqual(
+      intentPath,
+      intent as unknown as Record<string, unknown>,
+      'audit_controlled_executor_finalization_intent_conflict'
+    ).contentHash;
+  }
+  if (
+    intent.instructionHash !== sha256Json(input.instruction) ||
+    intent.planRef.contentHash !== planRef.contentHash ||
+    sha256Json(intent.roundReceiptRefs) !== sha256Json(roundReceiptRefs)
+  ) {
+    throw new Error('audit_controlled_executor_finalization_intent_input_mismatch');
+  }
+  persistAuditControlledFinalizationPointer({
+    projectRoot: input.projectRoot,
+    sessionId: input.instruction.sessionId,
+    intent,
+    intentPath,
+    intentContentHash: contentHash,
+  });
+  return { intent, path: intentPath, contentHash };
+}
+
+function taskReportStateProjection(report: TaskReport): NonNullable<
+  OrchestrationState['lastTaskReport']
+> {
+  return {
+    packetId: report.packetId,
+    status: report.status,
+    filesChanged: report.filesChanged,
+    validationsRun: report.validationsRun,
+    evidence: report.evidence,
+    ...(report.driftFlags ? { driftFlags: report.driftFlags } : {}),
+  };
+}
+
+function auditControlledTaskReportAlreadyIngested(input: {
+  projectRoot: string;
+  sessionId: string;
+  taskReport: TaskReport;
+}): OrchestrationState | null {
+  const state = readOrchestrationState(input.projectRoot, input.sessionId);
+  if (!state) {
+    throw new Error('audit_controlled_executor_orchestration_state_missing');
+  }
+  const expectedReport = taskReportStateProjection(input.taskReport);
+  const expectedPacketStatus =
+    input.taskReport.status === 'done' ? 'completed' : 'invalidated';
+  const reportMatches =
+    sha256Json(state.lastTaskReport ?? null) === sha256Json(expectedReport);
+  const packetMatches =
+    state.pendingPacket?.packetId === input.taskReport.packetId &&
+    state.pendingPacket.status === expectedPacketStatus;
+  if (reportMatches && packetMatches) {
+    return state;
+  }
+  if (
+    state.lastTaskReport?.packetId === input.taskReport.packetId ||
+    (state.pendingPacket?.packetId === input.taskReport.packetId &&
+      (state.pendingPacket.status === 'completed' ||
+        state.pendingPacket.status === 'invalidated'))
+  ) {
+    throw new Error('audit_controlled_executor_partial_task_report_ingest');
+  }
+  return null;
+}
+
+function auditControlledFinalizationStateHash(state: OrchestrationState): string {
+  const { auditControlledFinalization: _pointer, ...authorityState } = state;
+  return sha256Json(authorityState);
+}
+
+function markAuditControlledFinalizationCommitted(input: {
+  projectRoot: string;
+  sessionId: string;
+  intentId: string;
+  finalizationReceiptPath: string;
+  finalizationReceiptContentHash: string;
+}): void {
+  updateOrchestrationState(input.projectRoot, input.sessionId, (current) => {
+    const pointer = current.auditControlledFinalization;
+    if (!pointer || pointer.intentId !== input.intentId) {
+      throw new Error('audit_controlled_executor_finalization_pointer_missing');
+    }
+    if (
+      pointer.status === 'committed' &&
+      (pointer.finalizationReceiptPath !==
+        toRootRelativePath(input.projectRoot, input.finalizationReceiptPath) ||
+        pointer.finalizationReceiptContentHash !==
+          input.finalizationReceiptContentHash)
+    ) {
+      throw new Error('audit_controlled_executor_finalization_pointer_conflict');
+    }
+    return {
+      ...current,
+      auditControlledFinalization: {
+        ...pointer,
+        status: 'committed',
+        finalizationReceiptPath: toRootRelativePath(
+          input.projectRoot,
+          input.finalizationReceiptPath
+        ),
+        finalizationReceiptContentHash: input.finalizationReceiptContentHash,
+      },
+    };
+  });
+}
+
+function resumePreparedAuditControlledFinalization(input: {
+  projectRoot: string;
+  state: OrchestrationState | null;
+}): {
+  result: AuditControlledFinalizationResult;
+  instruction: MainAgentDispatchInstruction;
+} | null {
+  const pointer = input.state?.auditControlledFinalization;
+  if (!pointer || pointer.status !== 'prepared') return null;
+  const intentPath = resolveRootRelativePath(input.projectRoot, pointer.intentPath);
+  const intent = validateAuditControlledFinalizationIntent({
+    projectRoot: input.projectRoot,
+    intentPath,
+    expectedIntentId: pointer.intentId,
+    expectedContentHash: pointer.intentContentHash,
+  });
+  if (
+    pointer.packetId !== intent.packetId ||
+    input.state?.sessionId !== intent.sessionId
+  ) {
+    throw new Error('audit_controlled_executor_finalization_pointer_identity_mismatch');
+  }
+  return {
+    result: finalizeAuditControlledExecution({
+      projectRoot: input.projectRoot,
+      recordPath: resolveRootRelativePath(input.projectRoot, intent.recordPath),
+      instruction: intent.instruction,
+      planPath: resolveRootRelativePath(input.projectRoot, intent.planRef.path),
+      roundReceiptPaths: intent.roundReceiptRefs.map((receiptRef) =>
+        resolveRootRelativePath(input.projectRoot, receiptRef.path)
+      ),
+      currentStage: intent.currentStage,
+    }),
+    instruction: intent.instruction,
+  };
+}
+
+function finalizeAuditControlledExecution(input: {
+  projectRoot: string;
+  recordPath: string;
+  instruction: MainAgentDispatchInstruction;
+  planPath: string;
+  roundReceiptPaths: string[];
+  currentStage: string;
+}): AuditControlledFinalizationResult {
+  const preparation = prepareAuditControlledFinalizationGate(input);
+  const finalizationIntent = loadOrCreateAuditControlledFinalizationIntent({
+    ...input,
+    auditDir: preparation.auditDir,
+  });
+  preparation.gateArgs.push(
+    '--evaluated-at',
+    finalizationIntent.intent.preparedAt
+  );
+  let gateCommitBundle: Readonly<AuditReviewGateCommitBundle> | null = null;
+  const gateCode = mainAuditReviewGate(preparation.gateArgs, {
+    writeOutput: () => undefined,
+    onCommitted: (bundle) => {
+      gateCommitBundle = bundle;
+    },
+  });
+  if (!gateCommitBundle) {
+    throw new Error('audit_controlled_executor_gate_commit_bundle_missing');
+  }
+  const bundle = gateCommitBundle as Readonly<AuditReviewGateCommitBundle>;
+  if (
+    path.resolve(bundle.report.path) !== path.resolve(preparation.reportPath) ||
+    path.resolve(bundle.runtimeStatus.path) !==
+      path.resolve(preparation.runtimeStatusReceiptPath) ||
+    (bundle.decision === 'pass') !== (gateCode === 0)
+  ) {
+    throw new Error('audit_controlled_executor_gate_commit_bundle_invalid');
+  }
+  const plan = bundle.plan.value;
+  const report = bundle.report.value;
+  const implementationAttemptId = normalizeText(
+    bundle.runtimeStatus.value.implementationAttemptId
+  );
+  if (!implementationAttemptId) {
+    throw new Error('audit_controlled_executor_implementation_attempt_missing');
+  }
+  const decision = bundle.decision;
+  const evidencePaths = [
+    bundle.plan.path,
+    ...bundle.roundInputs.map((artifact) => artifact.path),
+    ...bundle.repairInputs.map((artifact) => artifact.path),
+    bundle.report.path,
+    bundle.runtimeStatus.path,
+    bundle.control.commitReceiptPath,
+  ].filter((artifactPath, index, values) => values.indexOf(artifactPath) === index);
   const taskReport: TaskReport = {
     packetId: input.instruction.packetId,
     status: decision === 'pass' ? 'done' : 'blocked',
-    filesChanged: [reportPath, runtimeStatusReceiptPath],
+    filesChanged: [bundle.report.path, bundle.runtimeStatus.path],
     validationsRun: [
       'audit-triad-convergence',
       'main-agent-audit-review-gate',
       'audit-controlled-executor-finalization',
     ],
-    evidence: [
-      input.planPath,
-      ...input.roundReceiptPaths,
-      ...repairReceiptPaths.filter((artifactPath) => fs.existsSync(artifactPath)),
-      ...repairFeedbackDispatchPaths.filter((artifactPath) => fs.existsSync(artifactPath)),
-      reportPath,
-      runtimeStatusReceiptPath,
-    ].map((artifactPath) => toRootRelativePath(input.projectRoot, artifactPath)),
+    evidence: evidencePaths.map((artifactPath) =>
+      toRootRelativePath(input.projectRoot, artifactPath)
+    ),
     downstreamContext:
       decision === 'pass'
         ? ['Current audit epoch converged and Audit Review passed.']
@@ -4641,13 +5108,33 @@ function finalizeAuditControlledExecution(input: {
     input.instruction.sessionId,
     input.instruction.packetId
   );
-  writeJsonUtf8(taskReportPath, taskReport);
-  const completedState = ingestMainAgentTaskReport(
-    input.projectRoot,
-    input.instruction.sessionId,
-    taskReport,
-    { currentStage: input.currentStage }
+  const taskReportWrite = writeJsonCreateOnlyOrEqual(
+    taskReportPath,
+    taskReport as unknown as Record<string, unknown>,
+    'audit_controlled_executor_task_report_conflict'
   );
+  const completedState =
+    auditControlledTaskReportAlreadyIngested({
+      projectRoot: input.projectRoot,
+      sessionId: input.instruction.sessionId,
+      taskReport,
+    }) ??
+    ingestMainAgentTaskReport(
+      input.projectRoot,
+      input.instruction.sessionId,
+      taskReport,
+      {
+        currentStage: input.currentStage,
+        expectedRequirementRecordHash: bundle.control.afterRecordHash,
+      }
+    );
+  const finalizationTransactionId = `AUDIT-FINAL-${sha256Json({
+    finalizationIntentId: finalizationIntent.intent.intentId,
+    gateTransactionId: bundle.control.transactionId,
+    gateEventHash: bundle.control.eventHash,
+    packetId: input.instruction.packetId,
+    taskReportHash: taskReportWrite.contentHash,
+  }).slice('sha256:'.length, 'sha256:'.length + 24)}`;
   const finalizationReceiptWithoutHash = {
     schemaVersion: 'audit-controlled-executor-finalization-receipt/v1',
     recordId: plan.recordId,
@@ -4660,52 +5147,90 @@ function finalizeAuditControlledExecution(input: {
     qualityRuleSetHash: plan.qualityRuleSetHash,
     decision,
     auditTriadExecutionPlanRef: {
-      path: toRootRelativePath(input.projectRoot, input.planPath),
-      contentHash: sha256Text(fs.readFileSync(input.planPath, 'utf8')),
+      path: toRootRelativePath(input.projectRoot, bundle.plan.path),
+      contentHash: bundle.plan.contentHash,
     },
-    roundReceiptRefs: input.roundReceiptPaths.map((receiptPath) => ({
-      path: toRootRelativePath(input.projectRoot, receiptPath),
-      contentHash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
+    roundReceiptRefs: bundle.roundInputs.map((receipt) => ({
+      path: toRootRelativePath(input.projectRoot, receipt.path),
+      contentHash: receipt.contentHash,
     })),
-    repairReceiptRefs: repairReceiptPaths
-      .filter((receiptPath) => fs.existsSync(receiptPath))
-      .map((receiptPath) => ({
-        path: toRootRelativePath(input.projectRoot, receiptPath),
-        contentHash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
+    repairReceiptRefs: bundle.repairInputs
+      .filter((receipt) => receipt.role.startsWith('repair_receipt_'))
+      .map((receipt) => ({
+        path: toRootRelativePath(input.projectRoot, receipt.path),
+        contentHash: receipt.contentHash,
       })),
-    repairFeedbackDispatchRefs: repairFeedbackDispatchPaths
-      .filter((dispatchPath) => fs.existsSync(dispatchPath))
-      .map((dispatchPath) => ({
-        path: toRootRelativePath(input.projectRoot, dispatchPath),
-        contentHash: sha256Text(fs.readFileSync(dispatchPath, 'utf8')),
+    repairFeedbackDispatchRefs: bundle.repairInputs
+      .filter((dispatch) => dispatch.role.startsWith('repair_feedback_dispatch_'))
+      .map((dispatch) => ({
+        path: toRootRelativePath(input.projectRoot, dispatch.path),
+        contentHash: dispatch.contentHash,
       })),
     repairEvidence: recordObject(report.repairEvidence),
+    finalizationIntentRef: {
+      path: toRootRelativePath(input.projectRoot, finalizationIntent.path),
+      contentHash: finalizationIntent.contentHash,
+      intentHash: finalizationIntent.intent.intentHash,
+    },
     auditReviewReportRef: {
-      path: toRootRelativePath(input.projectRoot, reportPath),
-      contentHash: sha256Text(fs.readFileSync(reportPath, 'utf8')),
+      path: toRootRelativePath(input.projectRoot, bundle.report.path),
+      contentHash: bundle.report.contentHash,
     },
     runtimeStatusReceiptRef: {
-      path: toRootRelativePath(input.projectRoot, runtimeStatusReceiptPath),
-      contentHash: sha256Text(fs.readFileSync(runtimeStatusReceiptPath, 'utf8')),
+      path: toRootRelativePath(input.projectRoot, bundle.runtimeStatus.path),
+      contentHash: bundle.runtimeStatus.contentHash,
     },
     taskReportRef: {
       path: toRootRelativePath(input.projectRoot, taskReportPath),
-      contentHash: sha256Text(fs.readFileSync(taskReportPath, 'utf8')),
+      contentHash: taskReportWrite.contentHash,
     },
+    gateControlCommit: {
+      transactionId: bundle.control.transactionId,
+      eventId: bundle.control.eventId,
+      eventHash: bundle.control.eventHash,
+      beforeRecordHash: bundle.control.beforeRecordHash,
+      afterRecordHash: bundle.control.afterRecordHash,
+      commitReceiptRef: {
+        path: toRootRelativePath(
+          input.projectRoot,
+          bundle.control.commitReceiptPath
+        ),
+        contentHash: bundle.control.commitReceiptContentHash,
+      },
+    },
+    frozenInputSetHash: sha256Json(bundle.frozenInputs),
+    finalizationTransactionId,
+    orchestrationStateHash: auditControlledFinalizationStateHash(completedState),
     nextAction: completedState.nextAction,
   };
   const finalizationReceipt = {
     ...finalizationReceiptWithoutHash,
     receiptHash: sha256Json(finalizationReceiptWithoutHash),
   };
-  const finalizationReceiptPath = path.join(auditDir, 'audit-finalization-receipt.json');
-  writeJsonUtf8(finalizationReceiptPath, finalizationReceipt);
+  const finalizationReceiptPath = path.join(
+    preparation.auditDir,
+    'finalizations',
+    safeSegment(finalizationTransactionId),
+    'audit-finalization-receipt.json'
+  );
+  const finalizationReceiptWrite = writeJsonCreateOnlyOrEqual(
+    finalizationReceiptPath,
+    finalizationReceipt,
+    'audit_controlled_executor_finalization_receipt_conflict'
+  );
+  markAuditControlledFinalizationCommitted({
+    projectRoot: input.projectRoot,
+    sessionId: input.instruction.sessionId,
+    intentId: finalizationIntent.intent.intentId,
+    finalizationReceiptPath,
+    finalizationReceiptContentHash: finalizationReceiptWrite.contentHash,
+  });
   return {
     decision,
     taskReport,
     taskReportPath,
-    reportPath,
-    runtimeStatusReceiptPath,
+    reportPath: bundle.report.path,
+    runtimeStatusReceiptPath: bundle.runtimeStatus.path,
     finalizationReceiptPath,
     nextAction: completedState.nextAction,
   };
@@ -4994,6 +5519,7 @@ interface CriticalAuditorRoundInput {
   requirementSetId: string;
   implementationAttemptId: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
@@ -5019,6 +5545,7 @@ interface CriticalAuditorRoundResult {
   requestHash?: string;
   sourceHash?: string;
   sourceDocumentHash?: string;
+  sourceBytesHash?: string;
   semanticModelHash?: string;
   implementationConfirmationHash?: string;
   packetHash?: string;
@@ -5100,6 +5627,7 @@ interface CriticalAuditorProtectedFileState {
 const CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS = [
   'providerId',
   'transport',
+  'adapterRef',
   'apiStyle',
   'configuredBaseUrlHash',
   'independenceClass',
@@ -5304,6 +5832,52 @@ const CRITICAL_AUDITOR_JUDGE_ADAPTER_CLEANUP_GRACE_MS = 30_000;
 const CRITICAL_AUDITOR_JUDGE_ABANDONED_LOCK_GRACE_MS = 5_000;
 const CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR = 'j';
 
+export function criticalAuditorJudgeInvocationOutputDir(input: {
+  stagingDir: string;
+  roundIndex: number;
+  requestHash: string;
+}): string {
+  if (!Number.isSafeInteger(input.roundIndex) || input.roundIndex <= 0) {
+    throw new Error('critical_auditor_judge_round_index_invalid');
+  }
+  const requestDigest = /^sha256:([a-f0-9]{64})$/u.exec(input.requestHash)?.[1];
+  if (!requestDigest) {
+    throw new Error('critical_auditor_judge_request_hash_invalid');
+  }
+  return path.join(
+    input.stagingDir,
+    CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR,
+    String(input.roundIndex),
+    `request-${requestDigest.slice(0, 24)}`
+  );
+}
+
+export function criticalAuditorProviderContractBlockedRoute(
+  issueCodes: string[]
+): {
+  attemptDomain: 'provider';
+  providerAttemptState: 'provider_contract_blocked';
+  repairAttemptState: 'repair_not_required';
+  blockingStage: 'critical_auditor_judge_provider_contract_blocked';
+  nextRequiredAction: 'remediate_provider_contract_then_start_fresh_audit_transaction';
+} | null {
+  if (
+    !issueCodes.some(
+      (code) => normalizeText(code) === 'critical_auditor_judge_provider_contract_blocked'
+    )
+  ) {
+    return null;
+  }
+  return {
+    attemptDomain: 'provider',
+    providerAttemptState: 'provider_contract_blocked',
+    repairAttemptState: 'repair_not_required',
+    blockingStage: 'critical_auditor_judge_provider_contract_blocked',
+    nextRequiredAction:
+      'remediate_provider_contract_then_start_fresh_audit_transaction',
+  };
+}
+
 export function resolveAuditReadonlyAuditorHostTimeoutMs(projectRoot: string): number {
   const judgeRuntime = readGovernanceRemediationConfig(projectRoot).judgeRuntime;
   const providerRef = normalizeText(judgeRuntime?.activeProviderRef);
@@ -5363,14 +5937,10 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   }
   const authenticationType = normalizeText(credentialMetadata.authenticationType);
   const credentialEnvironmentVariable =
-    authenticationType === 'bearer'
-      ? 'ANTHROPIC_AUTH_TOKEN'
-      : authenticationType === 'api_key'
-        ? 'ANTHROPIC_API_KEY'
-        : '';
-  if (!credentialEnvironmentVariable) {
-    throw new Error('critical_auditor_judge_credential_metadata_invalid');
-  }
+    resolveRequirementsContractJudgeCredentialEnvironmentVariable({
+      adapterRef: input.expected.adapterRef,
+      authenticationType,
+    });
   const recoveryRuntimeBinding = {
     ...(input.expected as unknown as Record<string, unknown>),
     credentialRevision: Number(credentialMetadata.credentialRevision),
@@ -5407,6 +5977,23 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   if (preflightRecovery.decision === 'active') {
     throw new Error('critical_auditor_judge_invocation_lock_held');
   }
+  const semanticDisposition =
+    requirementsContractCriticalAuditorJudgeInvocationDisposition({
+      projectRoot: input.projectRoot,
+      requestPath: input.requestPath,
+      outputDir: input.outputDir,
+      round: input.roundIndex,
+    });
+  if (
+    normalizeText(semanticDisposition.decision) ===
+    'provider_contract_blocked'
+  ) {
+    throw new Error(
+      `critical_auditor_judge_provider_contract_blocked:${normalizeText(
+        semanticDisposition.semanticIssueFingerprint
+      )}`
+    );
+  }
   const committedStatePath = path.join(
     input.outputDir,
     'judge-provider-invocation-state.json'
@@ -5421,6 +6008,7 @@ export function executeCriticalAuditorJudgeAdapter(input: {
     'judge-provider-invocation-commit.json'
   );
   if (
+    normalizeText(semanticDisposition.decision) === 'clear' &&
     [
       committedStatePath,
       committedResultPath,
@@ -5499,6 +6087,12 @@ export function executeCriticalAuditorJudgeAdapter(input: {
     throw new Error(`critical_auditor_external_adapter_failed:${execution.error.message}`);
   }
   if (exitCode !== 0) {
+    const providerContractBlocked = /(?:^|\r?\n)(critical_auditor_judge_provider_contract_blocked:sha256:[a-f0-9]{64})(?:\r?\n|$)/u.exec(
+      stderr || stdout
+    )?.[1];
+    if (providerContractBlocked) {
+      throw new Error(providerContractBlocked);
+    }
     throw new Error(
       `critical_auditor_external_adapter_failed:${exitCode}:${stderr || stdout}`
     );
@@ -5542,14 +6136,16 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   };
 }
 
-function validateCriticalAuditorProviderInvocationReceipt(input: {
+export function validateCriticalAuditorProviderInvocationReceipt(input: {
   projectRoot: string;
   receiptRef: unknown;
   requestHash: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   projectionSetHash: string;
   providerRunId: string;
+  expectedProviderBinding: CriticalAuditorJudgeRuntimeBinding;
 }): Record<string, unknown> {
   const receiptRef = recordObject(input.receiptRef);
   const receiptPathValue = normalizeText(receiptRef.path);
@@ -5565,6 +6161,15 @@ function validateCriticalAuditorProviderInvocationReceipt(input: {
     throw new Error('critical_auditor_judge_invocation_receipt_invalid');
   }
   const transportEvidence = recordObject(receipt.transportEvidence);
+  const expectedRequestedModel =
+    input.expectedProviderBinding.model === null
+      ? null
+      : normalizeText(input.expectedProviderBinding.model);
+  const receiptRequestedModel =
+    receipt.requestedModel === null ? null : normalizeText(receipt.requestedModel);
+  const observedModel =
+    normalizeText(transportEvidence.observedModel) ||
+    normalizeText(transportEvidence.initModel);
   const receiptWithoutHash = { ...receipt };
   delete receiptWithoutHash.receiptHash;
   if (
@@ -5575,10 +6180,30 @@ function validateCriticalAuditorProviderInvocationReceipt(input: {
     normalizeText(receipt.receiptHash) !== sha256Json(receiptWithoutHash) ||
     normalizeText(receipt.requestHash) !== input.requestHash ||
     normalizeText(receipt.sourceDocumentHash) !== input.sourceDocumentHash ||
+    normalizeText(receipt.sourceBytesHash) !== input.sourceBytesHash ||
     normalizeText(receipt.semanticModelHash) !== input.semanticModelHash ||
     normalizeText(receipt.projectionSetHash) !== input.projectionSetHash ||
     normalizeText(receipt.providerRunId) !== input.providerRunId ||
-    normalizeText(transportEvidence.command) !== 'claude' ||
+    normalizeText(receipt.providerId) !== input.expectedProviderBinding.providerId ||
+    receiptRequestedModel !== expectedRequestedModel ||
+    normalizeText(receipt.model) !== observedModel ||
+    normalizeText(receipt.transport) !== input.expectedProviderBinding.transport ||
+    normalizeText(receipt.adapterRef) !== input.expectedProviderBinding.adapterRef ||
+    normalizeText(receipt.apiStyle) !== input.expectedProviderBinding.apiStyle ||
+    normalizeText(receipt.configuredBaseUrlHash) !==
+      input.expectedProviderBinding.configuredBaseUrlHash ||
+    normalizeText(receipt.independenceClass) !==
+      input.expectedProviderBinding.independenceClass ||
+    normalizeText(receipt.providerRegistryHash) !==
+      input.expectedProviderBinding.providerRegistryHash ||
+    normalizeText(receipt.providerConfigurationHash) !==
+      input.expectedProviderBinding.providerConfigurationHash ||
+    normalizeText(receipt.transportEvidenceHash) !==
+      sha256Text(JSON.stringify(transportEvidence)) ||
+    normalizeText(transportEvidence.adapterRef) !==
+      input.expectedProviderBinding.adapterRef ||
+    sha256Json(normalizeText(transportEvidence.command)) !==
+      input.expectedProviderBinding.configuredBaseUrlHash ||
     normalizeText(transportEvidence.executorKind) !== 'native_spawn' ||
     Number(transportEvidence.exitCode) !== 0
   ) {
@@ -5844,6 +6469,17 @@ interface SourceMustProjectionAuthority {
   viewRefs: string[];
   evidenceRefs: string[];
   sourceEvidenceRefs: string[];
+}
+
+interface BusinessFailureAuthorityApplicability {
+  applies: boolean;
+  projectKind: 'consumer_product' | 'governance_framework' | 'hybrid' | null;
+  reasonCode:
+    | 'consumer_product_business_failure_required'
+    | 'hybrid_business_failure_required'
+    | 'governance_framework_business_failure_not_applicable'
+    | 'project_profile_invalid_fail_closed'
+    | 'project_profile_missing_fail_closed';
 }
 
 interface SourceBusinessJourneyRow {
@@ -6678,6 +7314,7 @@ function latestCommittedCriticalAuditorGapRound(input: {
         auditInputHash: normalizeText(request.auditInputHash),
         recordId: normalizeText(request.recordId),
         sourceDocumentHash: normalizeText(request.sourceDocumentHash),
+        sourceBytesHash: normalizeText(request.sourceBytesHash),
         semanticModelHash: normalizeText(request.semanticModelHash),
         implementationConfirmationHash: normalizeText(
           request.implementationConfirmationHash
@@ -7476,6 +8113,7 @@ function sourceProjectionAuthorityIssuesForMusts(input: {
   mustRequirements: SourceMustRequirement[];
   sourceProjectionAuthority: Map<string, SourceMustProjectionAuthority>;
   sourceBusinessFailureRows: BusinessFailurePathRow[];
+  businessFailureAuthority: BusinessFailureAuthorityApplicability;
 }): PreConfirmationDrilldownIssue[] {
   const missingAuthorityRefs = input.mustRequirements.flatMap((requirement) => {
     const authority = input.sourceProjectionAuthority.get(requirement.id);
@@ -7486,7 +8124,9 @@ function sourceProjectionAuthorityIssuesForMusts(input: {
       authority?.traceRefs.length ? null : `${requirement.id}:trace`,
       authority?.acceptanceRefs.length ? null : `${requirement.id}:acceptance`,
       authority?.e2eRefs.length ? null : `${requirement.id}:e2e`,
-      failureRefs.length ? null : `${requirement.id}:failure`,
+      input.businessFailureAuthority.applies && failureRefs.length === 0
+        ? `${requirement.id}:failure`
+        : null,
     ].filter((ref): ref is string => Boolean(ref));
   });
   if (missingAuthorityRefs.length === 0) {
@@ -7495,7 +8135,9 @@ function sourceProjectionAuthorityIssuesForMusts(input: {
   return [
     preConfirmationIssue(
       'source_projection_authority_missing',
-      'Every controlled MUST requires source-declared Trace, Acceptance, E2E, and owner-specific Failure authority before decomposition packet projection.',
+      input.businessFailureAuthority.applies
+        ? 'Every controlled MUST requires source-declared Trace, Acceptance, E2E, and owner-specific business Failure authority before decomposition packet projection.'
+        : 'Every controlled MUST requires source-declared Trace, Acceptance, and E2E authority before decomposition packet projection; business Failure authority is not applicable to the authoritative governance-framework profile.',
       missingAuthorityRefs,
       'source_projection_authority'
     ),
@@ -7987,7 +8629,7 @@ function headingPathContainsCurrentTargetStateSection(headingPath: string[]): bo
 
 function headingPathAllowsMustProjection(headingPath: string[]): boolean {
   return headingPath.some((heading) =>
-    /^(?:(?:\d+\.?\s+)*)?(?:functional requirements|non functional requirements|功能需求|非功能需求)$/iu.test(
+    /^(?:(?:\d+\.?\s+)*)?(?:functional requirements|non functional requirements|authoritative source requirements?|source obligations?|功能需求|非功能需求)$/iu.test(
       normalizedHeadingLabel(heading)
     )
   );
@@ -7995,6 +8637,35 @@ function headingPathAllowsMustProjection(headingPath: string[]): boolean {
 
 function normalizeRequirementSourceId(value: unknown): string {
   return normalizeText(String(value ?? '')).toUpperCase();
+}
+
+interface CanonicalSourceRequirementAlias {
+  sourceRequirementId: string;
+  canonicalRequirementId: string;
+  projectedMustId: string;
+}
+
+function canonicalSourceRequirementAlias(value: unknown): CanonicalSourceRequirementAlias | null {
+  const sourceRequirementId = normalizeRequirementSourceId(value);
+  const canonicalMatch = sourceRequirementId.match(/^(FR|NFR)-(\d{1,3})$/u);
+  if (canonicalMatch) {
+    const canonicalRequirementId = `${canonicalMatch[1]}-${canonicalMatch[2].padStart(3, '0')}`;
+    return {
+      sourceRequirementId,
+      canonicalRequirementId,
+      projectedMustId: `MUST-${canonicalRequirementId}`,
+    };
+  }
+  const sourceObligationMatch = sourceRequirementId.match(/^S(\d{1,3})$/u);
+  if (!sourceObligationMatch) {
+    return null;
+  }
+  const canonicalRequirementId = `FR-${sourceObligationMatch[1].padStart(3, '0')}`;
+  return {
+    sourceRequirementId,
+    canonicalRequirementId,
+    projectedMustId: `MUST-${canonicalRequirementId}`,
+  };
 }
 
 function tableContextRowValue(
@@ -8019,28 +8690,31 @@ function tableContextRowValue(
 function sourceRequirementIdFromTableContext(
   tableContext: Record<string, unknown> | null | undefined
 ): string | null {
-  const id = normalizeRequirementSourceId(
+  return (
+    canonicalSourceRequirementAlias(
     tableContextRowValue(tableContext, ['ID', 'Requirement ID', 'Req ID', 'FR ID', 'NFR ID'])
+    )?.sourceRequirementId ?? null
   );
-  return /^(?:FR|NFR)-\d{1,3}$/u.test(id) ? id : null;
 }
 
 function sourceRequirementIdFromHeadingPath(headingPath: string[]): string | null {
   for (let index = headingPath.length - 1; index >= 0; index -= 1) {
-    const match = headingPath[index].match(/\b((?:FR|NFR)-\d{1,3})\b/iu);
-    if (match) {
-      return match[1].toUpperCase();
+    const match = headingPath[index].match(/\b((?:FR|NFR)-\d{1,3}|S\d{1,3})\b/iu);
+    const alias = canonicalSourceRequirementAlias(match?.[1]);
+    if (alias) {
+      return alias.sourceRequirementId;
     }
   }
   return null;
 }
 
+function sourceRequirementIdFromInlineText(text: string): string | null {
+  const match = normalizeText(text).match(/^((?:FR|NFR)-\d{1,3}|S\d{1,3})\s*[:：]/iu);
+  return canonicalSourceRequirementAlias(match?.[1])?.sourceRequirementId ?? null;
+}
+
 function projectedMustIdFromSourceRequirementId(sourceRequirementId: string | null): string | null {
-  const match = sourceRequirementId?.match(/^(FR|NFR)-(\d{1,3})$/u);
-  if (!match) {
-    return null;
-  }
-  return `MUST-${match[1]}-${match[2].padStart(3, '0')}`;
+  return canonicalSourceRequirementAlias(sourceRequirementId)?.projectedMustId ?? null;
 }
 
 export interface SplitMustSourceBinding {
@@ -8339,8 +9013,9 @@ export function materializeSplitMustSourceRows(input: {
 
 function sourceTextDeclaresPositiveRequirementIds(sourceText: string): boolean {
   return (
-    /(?:^|\n)\s{0,3}#{1,6}\s*(?:FR|NFR)-\d{1,3}\b/iu.test(sourceText) ||
-    /(?:^|\n)\s*\|\s*(?:FR|NFR)-\d{1,3}\s*\|/iu.test(sourceText)
+    /(?:^|\n)\s{0,3}#{1,6}\s*(?:(?:FR|NFR)-\d{1,3}|S\d{1,3})\b/iu.test(sourceText) ||
+    /(?:^|\n)\s*\|\s*(?:(?:FR|NFR)-\d{1,3}|S\d{1,3})\s*\|/iu.test(sourceText) ||
+    /(?:^|\n)\s*(?:(?:FR|NFR)-\d{1,3}|S\d{1,3})\s*[:：]/iu.test(sourceText)
   );
 }
 
@@ -8354,6 +9029,35 @@ function headingPathImpliesCommentaryOnly(headingPath: string[]): boolean {
       heading
     )
   );
+}
+
+function sourceProjectionOnlyHeadingSignal(headingPath: string[]): string | null {
+  const localHeading = normalizedHeadingLabel(headingPath[headingPath.length - 1] ?? '');
+  if (!localHeading) return null;
+  if (
+    /^(?:(?:authoritative|source|contract|requirement)\s+)*(?:authority\s+)?(?:provenance|lineage|references?|citations?|metadata)$/iu.test(
+      localHeading
+    ) ||
+    /^(?:source authority provenance|authority provenance|source lineage|来源|溯源|引用|出处)$/u.test(
+      localHeading
+    )
+  ) {
+    return 'authority_metadata_heading';
+  }
+  if (
+    /^(?:(?:authoritative|source)\s+)?(?:acceptance criteria|acceptance evidence)$/iu.test(
+      localHeading
+    )
+  ) {
+    return 'acceptance_projection_heading';
+  }
+  if (/^(?:test and verification paths|trace matrix source)$/iu.test(localHeading)) {
+    return 'verification_projection_heading';
+  }
+  if (/^(?:failure matrix|implementation path map)$/iu.test(localHeading)) {
+    return 'implementation_projection_heading';
+  }
+  return null;
 }
 
 function textImpliesTargetAuthority(text: string): boolean {
@@ -8376,16 +9080,22 @@ function classifyStructuredSourceBlock(input: {
 }): { decision: RequirementCoverageDecision; requirementSignal: string[] } {
   const normalized = normalizeText(input.text);
   const signal = new Set<string>();
+  const projectionOnlyHeadingSignal = sourceProjectionOnlyHeadingSignal(input.headingPath);
   const sourceRequirementId =
     input.blockKind === 'table_row'
       ? sourceRequirementIdFromTableContext(input.tableContext)
-      : sourceRequirementIdFromHeadingPath(input.headingPath);
+      : (sourceRequirementIdFromHeadingPath(input.headingPath) ??
+        sourceRequirementIdFromInlineText(normalized));
   if (headingPathContainsCurrentTargetStateSection(input.headingPath)) {
     signal.add('current_target_state_projection_section');
     return { decision: 'rejected_non_requirement', requirementSignal: [...signal] };
   }
   if (headingPathImpliesCommentaryOnly(input.headingPath)) {
     signal.add('commentary_only_heading');
+    return { decision: 'rejected_non_requirement', requirementSignal: [...signal] };
+  }
+  if (projectionOnlyHeadingSignal) {
+    signal.add(projectionOnlyHeadingSignal);
     return { decision: 'rejected_non_requirement', requirementSignal: [...signal] };
   }
   const requirementContext =
@@ -9173,6 +9883,150 @@ function buildValidationAuthority(input: {
   return { accepted, acceptedTargetRecords, rejected, issues };
 }
 
+interface RequirementsContractSourceAuthorityAnalysis {
+  structuredBlocks: StructuredSourceBlock[];
+  coverageLedger: RequirementCoverageLedger;
+  inlineMustRequirements: SourceMustRequirement[];
+  forbiddenLineBasedMustRequirements: SourceMustRequirement[];
+  controlledCandidates: ControlledMustCandidate[];
+  mustRequirements: SourceMustRequirement[];
+  hasForbiddenLineBasedMustRequirements: boolean;
+  targetAuthority: {
+    accepted: TargetAuthorityRecord[];
+    rejected: Array<Record<string, unknown>>;
+    issues: PreConfirmationDrilldownIssue[];
+  };
+  validationAuthority: {
+    accepted: ValidationAuthorityRecord[];
+    acceptedTargetRecords: TargetAuthorityRecord[];
+    rejected: Array<Record<string, unknown>>;
+    issues: PreConfirmationDrilldownIssue[];
+  };
+  businessFailureAuthority: BusinessFailureAuthorityApplicability;
+}
+
+function analyzeRequirementsContractSourceAuthority(input: {
+  root: string;
+  sourcePath: string;
+  sourceText: string;
+  explicitTargetPaths: string[];
+  explicitRequiredCommands: string[];
+  requireSourceRequirementIdsForControlledCandidates: boolean;
+}): RequirementsContractSourceAuthorityAnalysis {
+  const structuredBlocks = extractStructuredSourceBlocks(
+    input.root,
+    input.sourcePath,
+    input.sourceText
+  );
+  const coverageLedger = buildRequirementCoverageLedger({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText: input.sourceText,
+    blocks: structuredBlocks,
+  });
+  const inlineMustRequirements = resolveSourceMustRequirements(input.root, input.sourcePath);
+  const forbiddenLineBasedMustRequirements = inlineMustRequirements.filter((row) =>
+    isForbiddenLineBasedMustId(row.id)
+  );
+  const inlineConfirmation = extractImplementationConfirmationBlock(
+    input.sourceText
+  )?.confirmation;
+  const inlineHasCurrentAuthoringProjection =
+    Object.keys(recordObject(inlineConfirmation?.preConfirmationDrilldown)).length > 0;
+  const sourceDeclaresStableRequirementIds =
+    sourceTextDeclaresPositiveRequirementIds(input.sourceText) &&
+    !inlineHasCurrentAuthoringProjection;
+  let mustRequirements = sourceDeclaresStableRequirementIds
+    ? []
+    : inlineMustRequirements.filter((row) => !isForbiddenLineBasedMustId(row.id));
+  const controlledCandidates =
+    mustRequirements.length === 0
+      ? buildControlledMustCandidatesFromPlainSource(
+          input.root,
+          input.sourcePath,
+          input.sourceText,
+          {
+            requireSourceRequirementIds:
+              input.requireSourceRequirementIdsForControlledCandidates,
+          }
+        )
+      : [];
+  if (mustRequirements.length === 0) {
+    mustRequirements = mustRequirementsFromControlledCandidates(controlledCandidates);
+  }
+  mustRequirements = groundSourceMustRequirements(mustRequirements, structuredBlocks);
+  const sourceTargetRecords = extractTargetAuthorityFromSource({
+    root: input.root,
+    sourceText: input.sourceText,
+    blocks: structuredBlocks,
+  });
+  const targetAuthority = resolveTargetAuthority({
+    root: input.root,
+    sourceText: input.sourceText,
+    explicitTargetPaths: input.explicitTargetPaths,
+    sourceRecords: sourceTargetRecords,
+  });
+  const validationAuthority = buildValidationAuthority({
+    root: input.root,
+    sourceText: input.sourceText,
+    blocks: structuredBlocks,
+    explicitCommands: input.explicitRequiredCommands,
+    targetRecords: targetAuthority.accepted,
+  });
+  const businessFailureAuthority = resolveBusinessFailureAuthorityApplicability({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText: input.sourceText,
+  });
+  return {
+    structuredBlocks,
+    coverageLedger,
+    inlineMustRequirements,
+    forbiddenLineBasedMustRequirements,
+    controlledCandidates,
+    mustRequirements,
+    hasForbiddenLineBasedMustRequirements:
+      forbiddenLineBasedMustRequirements.length > 0 && mustRequirements.length === 0,
+    targetAuthority,
+    validationAuthority,
+    businessFailureAuthority,
+  };
+}
+
+export function inspectRequirementsContractSourceAuthority(input: {
+  root: string;
+  sourcePath: string;
+  explicitTargetPaths?: string[];
+  explicitRequiredCommands?: string[];
+  requireSourceRequirementIds?: boolean;
+}): {
+  controlledMustCandidates: Array<Record<string, unknown>>;
+  mustRequirements: Array<Record<string, unknown>>;
+  targetPaths: string[];
+  validationCommands: string[];
+  coverageLedger: Record<string, unknown>;
+  businessFailureAuthority: BusinessFailureAuthorityApplicability;
+} {
+  const sourceText = fs.readFileSync(input.sourcePath, 'utf8');
+  const analysis = analyzeRequirementsContractSourceAuthority({
+    root: input.root,
+    sourcePath: input.sourcePath,
+    sourceText,
+    explicitTargetPaths: uniqueNonEmpty(input.explicitTargetPaths ?? []),
+    explicitRequiredCommands: uniqueNonEmpty(input.explicitRequiredCommands ?? []),
+    requireSourceRequirementIdsForControlledCandidates:
+      input.requireSourceRequirementIds === true,
+  });
+  return {
+    controlledMustCandidates: analysis.controlledCandidates.map((row) => ({ ...row })),
+    mustRequirements: analysis.mustRequirements.map((row) => ({ ...row })),
+    targetPaths: analysis.validationAuthority.acceptedTargetRecords.map((row) => row.path),
+    validationCommands: analysis.validationAuthority.accepted.map((row) => row.command),
+    coverageLedger: { ...analysis.coverageLedger },
+    businessFailureAuthority: { ...analysis.businessFailureAuthority },
+  };
+}
+
 function writeAuthorityReports(input: {
   paths: PreConfirmationPaths;
   root: string;
@@ -9356,6 +10210,44 @@ function resolveExplicitSourceProjectProfile(input: {
     resolved,
     authorityFileHash,
     issue: null,
+  };
+}
+
+function resolveBusinessFailureAuthorityApplicability(input: {
+  root: string;
+  sourcePath: string;
+  sourceText: string;
+}): BusinessFailureAuthorityApplicability {
+  const projectProfile = resolveExplicitSourceProjectProfile(input);
+  if (!projectProfile.declared) {
+    return {
+      applies: true,
+      projectKind: null,
+      reasonCode: 'project_profile_missing_fail_closed',
+    };
+  }
+  if (!projectProfile.resolved || projectProfile.issue) {
+    return {
+      applies: true,
+      projectKind: null,
+      reasonCode: 'project_profile_invalid_fail_closed',
+    };
+  }
+  const projectKind = projectProfile.resolved.profile.projectKind;
+  if (projectKind === 'governance_framework') {
+    return {
+      applies: false,
+      projectKind,
+      reasonCode: 'governance_framework_business_failure_not_applicable',
+    };
+  }
+  return {
+    applies: true,
+    projectKind,
+    reasonCode:
+      projectKind === 'consumer_product'
+        ? 'consumer_product_business_failure_required'
+        : 'hybrid_business_failure_required',
   };
 }
 
@@ -9594,6 +10486,19 @@ function buildControlledMustCandidatesFromPlainSource(
     const existing = grouped.get(projectedMustId);
     const normalizedRequirement = normalizedRequirementTextFromBlock(row.block);
     if (existing) {
+      const existingSourceRequirementId = normalizeRequirementSourceId(
+        existing.sourceRequirementId
+      );
+      const nextSourceRequirementId = normalizeRequirementSourceId(row.sourceRequirementId);
+      if (
+        existingSourceRequirementId &&
+        nextSourceRequirementId &&
+        existingSourceRequirementId !== nextSourceRequirementId
+      ) {
+        throw new Error(
+          `Canonical Source requirement alias collision: ${existingSourceRequirementId}, ${nextSourceRequirementId} -> ${projectedMustId}`
+        );
+      }
       existing.sourceSpan = {
         startLine: Math.min(existing.sourceSpan.startLine, row.block.sourceSpan.startLine),
         endLine: Math.max(existing.sourceSpan.endLine, row.block.sourceSpan.endLine),
@@ -9746,7 +10651,10 @@ function sourceBlockRequirementId(block: StructuredSourceBlock): string | null {
   if (tableId) {
     return tableId;
   }
-  return sourceRequirementIdFromHeadingPath(block.headingPath);
+  return (
+    sourceRequirementIdFromHeadingPath(block.headingPath) ??
+    sourceRequirementIdFromInlineText(block.normalizedText)
+  );
 }
 
 function normalizedRequirementTextFromBlock(block: StructuredSourceBlock): string {
@@ -9757,6 +10665,16 @@ function normalizedRequirementTextFromBlock(block: StructuredSourceBlock): strin
       tableContextRowValue(block.tableContext, ['Behavior']);
     if (requirement) {
       return requirement;
+    }
+  }
+  const sourceRequirementId = sourceBlockRequirementId(block);
+  if (sourceRequirementId) {
+    const requirementText = normalizeText(block.normalizedText).replace(
+      new RegExp(`^${sourceRequirementId}\\s*[:：]\\s*`, 'iu'),
+      ''
+    );
+    if (requirementText) {
+      return requirementText;
     }
   }
   return block.normalizedText;
@@ -18519,6 +19437,7 @@ function buildMustDecompositionPacket(input: {
   structuredBlocks?: StructuredSourceBlock[];
   targetAuthorityRecords?: TargetAuthorityRecord[];
   validationAuthorityRecords?: ValidationAuthorityRecord[];
+  confirmation: Record<string, unknown>;
   consecutiveNoNewGapRounds?: number;
 }): Record<string, unknown> {
   const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
@@ -18745,6 +19664,7 @@ function buildMustDecompositionPacket(input: {
     consecutiveNoNewValidGapRounds: input.consecutiveNoNewGapRounds ?? 0,
     mustRefs,
     sourceRequirementTexts: mustTexts,
+    topLevelProjectionInventory: projectionInventoryFromConfirmation(input.confirmation),
     authorClaims: [
       {
         id: 'CLAIM-001',
@@ -21162,6 +22082,7 @@ function buildPreserveExistingMustDecompositionPacket(input: {
     consecutiveNoNewValidGapRounds: input.consecutiveNoNewGapRounds,
     mustRefs,
     sourceRequirementTexts: mustTexts,
+    topLevelProjectionInventory: projectionInventoryFromConfirmation(input.confirmation),
     authorClaims: [
       {
         id: 'CLAIM-PRESERVE-EXISTING',
@@ -21624,6 +22545,7 @@ export const CRITICAL_AUDITOR_RECEIPT_BINDING_ISSUE_CODES = [
   'critical_auditor_receipt_record_id_mismatch',
   'critical_auditor_receipt_input_hash_mismatch',
   'critical_auditor_receipt_source_document_hash_mismatch',
+  'critical_auditor_receipt_source_bytes_hash_mismatch',
   'critical_auditor_receipt_semantic_model_hash_mismatch',
   'critical_auditor_receipt_implementation_confirmation_hash_mismatch',
   'critical_auditor_receipt_packet_hash_mismatch',
@@ -21640,6 +22562,7 @@ export const CRITICAL_AUDITOR_RECEIPT_BINDING_ISSUE_CODES = [
   'critical_auditor_response_request_hash_mismatch',
   'critical_auditor_response_gate_dry_run_hash_mismatch',
   'critical_auditor_response_source_document_hash_mismatch',
+  'critical_auditor_response_source_bytes_hash_mismatch',
   'critical_auditor_response_semantic_model_hash_mismatch',
   'critical_auditor_response_implementation_confirmation_hash_mismatch',
   'critical_auditor_response_packet_hash_mismatch',
@@ -21657,6 +22580,7 @@ export interface CriticalAuditorReceiptBindingExpectation {
   auditInputHash: string;
   recordId: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
@@ -21741,6 +22665,11 @@ export function validateCriticalAuditorReceiptBinding(
       'critical_auditor_receipt_source_document_hash_mismatch'
     );
     compare(
+      receipt.sourceBytesHash,
+      expected.sourceBytesHash,
+      'critical_auditor_receipt_source_bytes_hash_mismatch'
+    );
+    compare(
       receipt.semanticModelHash,
       expected.semanticModelHash,
       'critical_auditor_receipt_semantic_model_hash_mismatch'
@@ -21815,6 +22744,11 @@ export function validateCriticalAuditorReceiptBinding(
       response.sourceDocumentHash,
       expected.sourceDocumentHash,
       'critical_auditor_response_source_document_hash_mismatch'
+    );
+    compare(
+      response.sourceBytesHash,
+      expected.sourceBytesHash,
+      'critical_auditor_response_source_bytes_hash_mismatch'
     );
     compare(
       response.semanticModelHash,
@@ -21913,6 +22847,7 @@ function buildCriticalAuditorResponseArtifact(input: {
   transaction: CriticalAuditorStagingTransaction;
   requestHash: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
@@ -21933,6 +22868,7 @@ function buildCriticalAuditorResponseArtifact(input: {
     requestHash: input.requestHash,
     sourceHash: input.sourceDocumentHash,
     sourceDocumentHash: input.sourceDocumentHash,
+    sourceBytesHash: input.sourceBytesHash,
     semanticModelHash: input.semanticModelHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
     packetHash: input.packetHash,
@@ -21950,6 +22886,7 @@ function criticalAuditorResponseArtifactMatchesExpectation(
     | 'transactionId'
     | 'namespaceVersion'
     | 'sourceDocumentHash'
+    | 'sourceBytesHash'
     | 'semanticModelHash'
     | 'implementationConfirmationHash'
     | 'packetHash'
@@ -21965,6 +22902,7 @@ function criticalAuditorResponseArtifactMatchesExpectation(
     normalizeText(response?.transactionId) === expectation.transactionId &&
     normalizeText(response?.namespaceVersion) === expectation.namespaceVersion &&
     normalizeText(response?.sourceDocumentHash) === expectation.sourceDocumentHash &&
+    normalizeText(response?.sourceBytesHash) === expectation.sourceBytesHash &&
     normalizeText(response?.semanticModelHash) === expectation.semanticModelHash &&
     normalizeText(response?.implementationConfirmationHash) ===
       expectation.implementationConfirmationHash &&
@@ -21985,6 +22923,7 @@ function buildCriticalAuditorReceipt(input: {
   auditInputHash: string;
   recordId: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
@@ -22007,6 +22946,7 @@ function buildCriticalAuditorReceipt(input: {
     inputHash: input.auditInputHash,
     sourceHash: input.sourceDocumentHash,
     sourceDocumentHash: input.sourceDocumentHash,
+    sourceBytesHash: input.sourceBytesHash,
     semanticModelHash: input.semanticModelHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
     packetHash: input.packetHash,
@@ -22068,6 +23008,7 @@ function criticalAuditorReceiptMatchesCurrent(input: {
   auditInputHash: string;
   recordId: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
@@ -22086,6 +23027,7 @@ function criticalAuditorReceiptMatchesCurrent(input: {
       auditInputHash: input.auditInputHash,
       recordId: input.recordId,
       sourceDocumentHash: input.sourceDocumentHash,
+      sourceBytesHash: input.sourceBytesHash,
       semanticModelHash: input.semanticModelHash,
       implementationConfirmationHash: input.implementationConfirmationHash,
       packetHash: input.packetHash,
@@ -22119,9 +23061,12 @@ function criticalAuditorReceiptMatchesCurrent(input: {
       receiptRef: receipt.providerInvocationReceiptRef,
       requestHash: input.requestHash,
       sourceDocumentHash: input.sourceDocumentHash,
+      sourceBytesHash: input.sourceBytesHash,
       semanticModelHash: input.semanticModelHash,
       projectionSetHash: input.projectionSetHash,
       providerRunId,
+      expectedProviderBinding:
+        expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
     });
     validateCriticalAuditorJudgeHostExecution(
       input.projectRoot,
@@ -22560,8 +23505,279 @@ function projectionRefsFromPacket(packet: Record<string, unknown>): string[] {
   return [...refs].sort();
 }
 
-function criticalAuditorProjectionSetHash(packet: Record<string, unknown>): string {
-  return projectionSetHashForContract(projectionRefsFromPacket(packet));
+function projectionIdentityIds(value: unknown): string[] {
+  const ids = new Set<string>();
+  const visit = (candidate: unknown): void => {
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) visit(item);
+      return;
+    }
+    const row = recordObject(candidate);
+    if (Object.keys(row).length === 0) return;
+    const id = normalizeText(row.id);
+    if (id) ids.add(id);
+    for (const child of Object.values(row)) visit(child);
+  };
+  visit(value);
+  return [...ids].sort();
+}
+
+function projectionInventoryFromConfirmation(
+  confirmation: Record<string, unknown>
+): {
+  projectionGroups: string[];
+  projectionRefs: string[];
+} {
+  const projectionGroups = new Set<string>();
+  const projectionRefs = new Set<string>();
+  for (const [group, value] of Object.entries(confirmation).sort(([left], [right]) =>
+    left.localeCompare(right)
+  )) {
+    const ids = projectionIdentityIds(value);
+    if (ids.length === 0) continue;
+    projectionGroups.add(group);
+    for (const id of ids) {
+      projectionRefs.add(id);
+      projectionRefs.add(`${group}:${id}`);
+    }
+  }
+  return {
+    projectionGroups: [...projectionGroups].sort(),
+    projectionRefs: [...projectionRefs].sort(),
+  };
+}
+
+function compiledModelPacketProjectionIdentity(row: Record<string, unknown>): string {
+  return normalizeText(
+    row.id ??
+      row.taskId ??
+      row.traceId ??
+      row.commandId ??
+      row.acceptanceId ??
+      row.e2eId ??
+      row.artifactId
+  );
+}
+
+function compiledModelPacketProjectionInventory(packet: Record<string, unknown>): {
+  projectionGroups: string[];
+  projectionRefs: string[];
+} {
+  const projectionGroups = new Set<string>();
+  const projectionRefs = new Set<string>();
+  const visit = (value: unknown, pathSegments: string[]): void => {
+    if (Array.isArray(value)) {
+      const group = pathSegments.join('.');
+      for (const item of value) {
+        const row = recordObject(item);
+        const identity = compiledModelPacketProjectionIdentity(row);
+        if (identity && group) {
+          projectionGroups.add(group);
+          projectionRefs.add(identity);
+          projectionRefs.add(`${group}:${identity}`);
+        }
+        if (Object.keys(row).length > 0) visit(row, pathSegments);
+      }
+      return;
+    }
+    const row = recordObject(value);
+    for (const [key, child] of Object.entries(row)) {
+      visit(child, [...pathSegments, key]);
+    }
+  };
+  visit(packet, []);
+  return {
+    projectionGroups: [...projectionGroups].sort(),
+    projectionRefs: [...projectionRefs].sort(),
+  };
+}
+
+function compiledModelPacketMustAuthority(packet: Record<string, unknown>): {
+  mustRefs: string[];
+  sourceRequirementTexts: string[];
+} {
+  const requirements = recordObject(packet.requirements);
+  const authorityByMustRef = new Map<string, string>();
+  for (const row of asRecordArray(requirements.must)) {
+    const mustRef = normalizeText(row.id);
+    const sourceRequirementText = normalizeText(row.text);
+    if (!mustRef || !sourceRequirementText) continue;
+    authorityByMustRef.set(mustRef, sourceRequirementText);
+  }
+  return {
+    mustRefs: [...authorityByMustRef.keys()],
+    sourceRequirementTexts: [...authorityByMustRef.values()],
+  };
+}
+
+export function resolveAuditJudgeRequestAuthorityBinding(input: {
+  projectRoot: string;
+  modelPacketPath: string;
+  modelPacketHash: string;
+  sourceDocumentHash: string;
+  projectionSetHash: string;
+}): {
+  sourceDocument: string;
+  sourceBytesHash: string;
+  mustRefs: string[];
+  sourceRequirementTexts: string[];
+  packetProjectionSummary: {
+    mustPacketCount: number;
+    projectionGroups: string[];
+    projectionRefs: string[];
+  };
+} {
+  const projectRoot = path.resolve(input.projectRoot);
+  const modelPacketPath = resolveRootRelativePath(projectRoot, input.modelPacketPath);
+  const relativeModelPacketPath = path.relative(projectRoot, modelPacketPath);
+  if (
+    !input.modelPacketPath ||
+    relativeModelPacketPath.startsWith('..') ||
+    path.isAbsolute(relativeModelPacketPath)
+  ) {
+    throw new Error('audit_judge_model_packet_path_invalid');
+  }
+  if (!fs.existsSync(modelPacketPath) || !fs.statSync(modelPacketPath).isFile()) {
+    throw new Error('audit_judge_model_packet_missing');
+  }
+  if (
+    !/^sha256:[a-f0-9]{64}$/u.test(input.modelPacketHash) ||
+    sha256File(modelPacketPath) !== input.modelPacketHash
+  ) {
+    throw new Error('audit_judge_model_packet_hash_mismatch');
+  }
+  const packet = readJsonIfExists(modelPacketPath);
+  if (
+    !packet ||
+    normalizeText(packet.schemaVersion) !== 'req-trace-ai-tdd-model-packet/v1'
+  ) {
+    throw new Error('audit_judge_model_packet_schema_invalid');
+  }
+  const sourceDocument = normalizeText(packet.sourceDocument);
+  if (!sourceDocument) {
+    throw new Error('audit_judge_source_document_missing');
+  }
+  if (
+    !/^sha256:[a-f0-9]{64}$/u.test(input.sourceDocumentHash) ||
+    normalizeText(packet.sourceDocumentHash) !== input.sourceDocumentHash
+  ) {
+    throw new Error('audit_judge_source_document_hash_mismatch');
+  }
+  const sourcePath = path.resolve(projectRoot, sourceDocument);
+  const relativeSourcePath = path.relative(projectRoot, sourcePath);
+  if (
+    path.isAbsolute(sourceDocument) ||
+    relativeSourcePath.startsWith('..') ||
+    path.isAbsolute(relativeSourcePath)
+  ) {
+    throw new Error('audit_judge_source_document_path_invalid');
+  }
+  if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
+    throw new Error('audit_judge_source_document_missing');
+  }
+  const projectRealPath = fs.realpathSync(projectRoot);
+  const sourceRealPath = fs.realpathSync(sourcePath);
+  const relativeRealSourcePath = path.relative(projectRealPath, sourceRealPath);
+  if (
+    relativeRealSourcePath.startsWith('..') ||
+    path.isAbsolute(relativeRealSourcePath)
+  ) {
+    throw new Error('audit_judge_source_document_realpath_escape');
+  }
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
+  if (
+    sourceDocumentHashForContract(
+      sourceText,
+      extracted.blockText,
+      extracted.value
+    ) !== input.sourceDocumentHash
+  ) {
+    throw new Error('audit_judge_source_document_hash_mismatch');
+  }
+  const mustAuthority = compiledModelPacketMustAuthority(packet);
+  if (mustAuthority.mustRefs.length === 0) {
+    throw new Error('audit_judge_must_refs_missing');
+  }
+  const projectionInventory = compiledModelPacketProjectionInventory(packet);
+  if (
+    projectionInventory.projectionGroups.length === 0 ||
+    projectionInventory.projectionRefs.length === 0
+  ) {
+    throw new Error('audit_judge_projection_inventory_missing');
+  }
+  const derivedProjectionSetHash = projectionSetHashForContract(
+    projectionInventory.projectionRefs
+  );
+  if (derivedProjectionSetHash !== input.projectionSetHash) {
+    throw new Error('audit_judge_projection_set_hash_mismatch');
+  }
+  return {
+    sourceDocument: relativeSourcePath.replace(/\\/gu, '/'),
+    sourceBytesHash: sha256File(sourcePath),
+    mustRefs: mustAuthority.mustRefs,
+    sourceRequirementTexts: mustAuthority.sourceRequirementTexts,
+    packetProjectionSummary: {
+      mustPacketCount: mustAuthority.mustRefs.length,
+      projectionGroups: projectionInventory.projectionGroups,
+      projectionRefs: projectionInventory.projectionRefs,
+    },
+  };
+}
+
+function packetTopLevelProjectionInventoryMatches(
+  packet: Record<string, unknown>,
+  confirmation: Record<string, unknown>
+): boolean {
+  const stored = recordObject(packet.topLevelProjectionInventory);
+  return (
+    sha256Json({
+      projectionGroups: uniqueStrings(asStringArray(stored.projectionGroups)).sort(),
+      projectionRefs: uniqueStrings(asStringArray(stored.projectionRefs)).sort(),
+    }) === sha256Json(projectionInventoryFromConfirmation(confirmation))
+  );
+}
+
+function criticalAuditorProjectionInventory(
+  packet: Record<string, unknown>,
+  confirmation?: Record<string, unknown>
+): {
+  projectionGroups: string[];
+  projectionRefs: string[];
+} {
+  if (
+    normalizeText(packet.schemaVersion) === 'req-trace-ai-tdd-model-packet/v1'
+  ) {
+    return compiledModelPacketProjectionInventory(packet);
+  }
+  const projectionGroups = new Set<string>(CRITICAL_AUDITOR_PROJECTION_GROUPS);
+  const projectionRefs = new Set<string>(projectionRefsFromPacket(packet));
+  const storedTopLevelInventory = recordObject(packet.topLevelProjectionInventory);
+  const topLevelInventory = confirmation
+    ? projectionInventoryFromConfirmation(confirmation)
+    : {
+        projectionGroups: asStringArray(storedTopLevelInventory.projectionGroups),
+        projectionRefs: asStringArray(storedTopLevelInventory.projectionRefs),
+      };
+  for (const group of topLevelInventory.projectionGroups) {
+    projectionGroups.add(group);
+  }
+  for (const ref of topLevelInventory.projectionRefs) {
+    projectionRefs.add(ref);
+  }
+  return {
+    projectionGroups: [...projectionGroups].sort(),
+    projectionRefs: [...projectionRefs].sort(),
+  };
+}
+
+function criticalAuditorProjectionSetHash(
+  packet: Record<string, unknown>,
+  confirmation?: Record<string, unknown>
+): string {
+  return projectionSetHashForContract(
+    criticalAuditorProjectionInventory(packet, confirmation).projectionRefs
+  );
 }
 
 function criticalAuditorAuditAttemptId(input: {
@@ -22599,6 +23815,7 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
     providerConfigurationHash: normalizeText(binding.providerConfigurationHash),
     requestHash: normalizeText(request.requestHash),
     sourceDocumentHash: normalizeText(request.sourceDocumentHash),
+    sourceBytesHash: normalizeText(request.sourceBytesHash),
     semanticModelHash: normalizeText(request.semanticModelHash),
     projectionSetHash: normalizeText(request.projectionSetHash),
   };
@@ -22608,6 +23825,12 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
         `critical_auditor_${field.replace(/[A-Z]/gu, (char) => `_${char.toLowerCase()}`)}_missing`
       );
     }
+  }
+  if (
+    required.sourceBytesHash &&
+    !/^sha256:[a-f0-9]{64}$/u.test(required.sourceBytesHash)
+  ) {
+    issueCodes.push('critical_auditor_source_bytes_hash_invalid');
   }
   if (issueCodes.length > 0) {
     return { expectation: null, issueCodes: [...new Set(issueCodes)] };
@@ -22755,6 +23978,7 @@ function runCriticalAuditorReceiptLoop(input: {
   issues: PreConfirmationDrilldownIssue[];
 } {
   const sourceText = fs.readFileSync(input.sourcePath, 'utf8');
+  const currentSourceBytesHash = sha256File(input.sourcePath);
   const sourceExtraction = extractImplementationConfirmationBlock(sourceText);
   if (!sourceExtraction) {
     return {
@@ -22771,7 +23995,13 @@ function runCriticalAuditorReceiptLoop(input: {
       ],
     };
   }
-  const projectionSetHash = criticalAuditorProjectionSetHash(input.packet);
+  const projectionInventory = criticalAuditorProjectionInventory(
+    input.packet,
+    sourceExtraction.confirmation
+  );
+  const projectionSetHash = projectionSetHashForContract(
+    projectionInventory.projectionRefs
+  );
   const auditAttemptId = criticalAuditorAuditAttemptId({
     transactionId: input.transaction.transactionId,
     auditInputHash: input.auditInputHash,
@@ -22833,6 +24063,7 @@ function runCriticalAuditorReceiptLoop(input: {
         sourceLine: index + 1,
       })),
       packet: input.packet,
+      confirmation: sourceExtraction.confirmation,
       previousReceipts: [],
       gateDryRun,
       createdAt: input.createdAt,
@@ -22906,7 +24137,6 @@ function runCriticalAuditorReceiptLoop(input: {
       roundIndex,
     });
     const roundPerspective = criticalAuditorRoundPerspective(roundIndex);
-    const projectionRefs = projectionRefsFromPacket(input.packet);
     const candidateRequest = buildCriticalAuditorRoundRequest({
       root: input.root,
       sourcePath: input.sourcePath,
@@ -22929,6 +24159,7 @@ function runCriticalAuditorReceiptLoop(input: {
         sourceLine: index + 1,
       })),
       packet: input.packet,
+      confirmation: sourceExtraction.confirmation,
       previousReceipts: receipts,
       gateDryRun,
       createdAt: input.createdAt,
@@ -22974,12 +24205,20 @@ function runCriticalAuditorReceiptLoop(input: {
     const existingFrozenGateDryRun = existingRequest
       ? criticalAuditorGateDryRunSummaryFromRequest(existingRequest, gateDryRun)
       : null;
-    const reusablePublishedReceipt =
+    const reusablePublishedRequest =
       existingRequest &&
       existingFrozenGateDryRun &&
-      criticalAuditorRoundRequestHashMatchesContent(existingRequest) &&
-      criticalAuditorSubstantiveGateBindingHash(existingFrozenGateDryRun) ===
-        criticalAuditorSubstantiveGateBindingHash(gateDryRun) &&
+      criticalAuditorPublishedRoundRequestCanReuseReceipt({
+        existingRequest,
+        candidateRequest,
+        existingGateDryRun: existingFrozenGateDryRun,
+        currentGateDryRun: gateDryRun,
+      })
+        ? existingRequest
+        : null;
+    const reusablePublishedReceipt =
+      reusablePublishedRequest &&
+      existingFrozenGateDryRun &&
       criticalAuditorReceiptMatchesCurrent({
         projectRoot: input.root,
         receipt: existingReceipt,
@@ -22989,26 +24228,44 @@ function runCriticalAuditorReceiptLoop(input: {
         auditInputHash: input.auditInputHash,
         recordId: input.recordId,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: currentSourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
         projectionSetHash,
-        requestHash: normalizeText(existingRequest.requestHash),
+        requestHash: normalizeText(reusablePublishedRequest.requestHash),
         gateDryRunHash: existingFrozenGateDryRun.hash,
       })
         ? existingReceipt
         : null;
     const request =
-      reusablePublishedReceipt && existingRequest
-        ? existingRequest
+      reusablePublishedRequest
+        ? reusablePublishedRequest
         : writeOrReuseCriticalAuditorRoundRequest({
             requestPath,
             candidate: candidateRequest,
           });
     const frozenGateDryRun =
-      reusablePublishedReceipt && existingFrozenGateDryRun
+      reusablePublishedRequest && existingFrozenGateDryRun
         ? existingFrozenGateDryRun
         : criticalAuditorGateDryRunSummaryFromRequest(request, gateDryRun);
+    const requestSourceBytesHash = normalizeText(request.sourceBytesHash);
+    if (!/^sha256:[a-f0-9]{64}$/u.test(requestSourceBytesHash)) {
+      const sourceBindingIssue = preConfirmationIssue(
+        'critical_auditor_request_source_bytes_hash_invalid',
+        `Critical Auditor request round ${roundIndex} lacks a valid frozen sourceBytesHash.`,
+        [requestPath, 'sourceBytesHash'],
+        'critical_auditor'
+      );
+      issues.push(sourceBindingIssue);
+      const outcomeCommit = commitRoundOutcome({
+        blockingIssues: [sourceBindingIssue],
+      });
+      if (!outcomeCommit.ok) {
+        issues.push(outcomeCommit.issue);
+      }
+      break;
+    }
     let receipt: Record<string, unknown> | null = reusablePublishedReceipt;
     if (
       !receipt &&
@@ -23021,6 +24278,7 @@ function runCriticalAuditorReceiptLoop(input: {
         auditInputHash: input.auditInputHash,
         recordId: input.recordId,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: requestSourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
@@ -23071,6 +24329,7 @@ function runCriticalAuditorReceiptLoop(input: {
           requirementSetId: input.requirementSetId,
           implementationAttemptId: input.implementationAttemptId,
           sourceDocumentHash: input.sourceDocumentHash,
+          sourceBytesHash: requestSourceBytesHash,
           semanticModelHash: input.semanticModelHash,
           implementationConfirmationHash: input.implementationConfirmationHash,
           packetHash: input.packetHash,
@@ -23079,8 +24338,8 @@ function runCriticalAuditorReceiptLoop(input: {
           roundPerspective,
           gateDryRun: frozenGateDryRun,
           packetProjectionSummary: {
-            projectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
-            projectionRefs,
+            projectionGroups: projectionInventory.projectionGroups,
+            projectionRefs: projectionInventory.projectionRefs,
           },
           mustRefs: input.mustRefs,
           sourceRequirementTexts: input.sourceRequirementTexts,
@@ -23116,11 +24375,67 @@ function runCriticalAuditorReceiptLoop(input: {
         sourceText,
         confirmation: sourceExtraction.confirmation,
         independentProviderExpectation,
+        sourceBytesHash: requestSourceBytesHash,
       });
       if (bindingIssues.length > 0) {
-        issues.push(...bindingIssues);
+        const judgeAdapterHostExecution = recordObject(
+          auditResult.judgeAdapterHostExecution
+        );
+        const productionJudgeAdapterResult = [
+          'package_cli_external_adapter',
+          'committed_provider_invocation_recovery',
+        ].includes(normalizeText(judgeAdapterHostExecution.adapterKind));
+        let rejectionRecordingIssue: PreConfirmationDrilldownIssue | null = null;
+        let providerContractBlockedIssue: PreConfirmationDrilldownIssue | null = null;
+        if (productionJudgeAdapterResult) {
+          const outputDir = criticalAuditorJudgeInvocationOutputDir({
+            stagingDir: input.transaction.stagingDir,
+            roundIndex,
+            requestHash: normalizeText(request.requestHash),
+          });
+          try {
+            const rejectionDisposition =
+              rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation({
+              projectRoot: input.root,
+              request: requestPath,
+              outputDir,
+              round: roundIndex,
+              semanticIssueCodes: bindingIssues.map((issue) => issue.code),
+            });
+            if (
+              normalizeText(rejectionDisposition.decision) ===
+              'provider_contract_blocked'
+            ) {
+              providerContractBlockedIssue = preConfirmationIssue(
+                'critical_auditor_judge_provider_contract_blocked',
+                `Judge provider contract repeated the same invalid semantic response (${normalizeText(
+                  rejectionDisposition.semanticIssueFingerprint
+                )}); repair of Source authority is not permitted for this failure domain.`,
+                [
+                  normalizeText(rejectionDisposition.providerContractBlockedPath),
+                  normalizeText(rejectionDisposition.semanticRejectionPath),
+                ].filter(Boolean),
+                'critical_auditor'
+              );
+            }
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            rejectionRecordingIssue = preConfirmationIssue(
+              'critical_auditor_judge_semantic_rejection_record_failed',
+              message,
+              [requestPath, outputDir],
+              'critical_auditor'
+            );
+          }
+        }
+        const blockingIssues = [
+          ...bindingIssues,
+          ...(providerContractBlockedIssue ? [providerContractBlockedIssue] : []),
+          ...(rejectionRecordingIssue ? [rejectionRecordingIssue] : []),
+        ];
+        issues.push(...blockingIssues);
         const outcomeCommit = commitRoundOutcome({
-          blockingIssues: bindingIssues,
+          blockingIssues,
         });
         if (!outcomeCommit.ok) {
           issues.push(outcomeCommit.issue);
@@ -23132,6 +24447,7 @@ function runCriticalAuditorReceiptLoop(input: {
         transactionId: input.transaction.transactionId,
         namespaceVersion: input.transaction.namespaceVersion,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: requestSourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
@@ -23144,6 +24460,7 @@ function runCriticalAuditorReceiptLoop(input: {
         transaction: input.transaction,
         requestHash: responseExpectation.requestHash,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: requestSourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
@@ -23151,14 +24468,55 @@ function runCriticalAuditorReceiptLoop(input: {
         gateDryRunHash: frozenGateDryRun.hash,
         auditResult,
       });
-      const persistedResponse = readJsonIfExists(responsePath);
+      let persistedResponse = readJsonIfExists(responsePath);
+      const persistedResponseConflicts = () =>
+        Boolean(
+          persistedResponse &&
+            (!criticalAuditorResponseArtifactMatchesExpectation(
+              persistedResponse,
+              responseExpectation
+            ) ||
+              sha256Json(persistedResponse) !== sha256Json(canonicalResponse))
+        );
+      const staleReceiptRequestHash = normalizeText(existingReceipt?.requestHash);
+      const staleReceiptGateDryRunHash = normalizeText(existingReceipt?.gateDryRunHash);
       if (
-        persistedResponse &&
-        (!criticalAuditorResponseArtifactMatchesExpectation(
-          persistedResponse,
-          responseExpectation
-        ) ||
-          sha256Json(persistedResponse) !== sha256Json(canonicalResponse))
+        persistedResponseConflicts() &&
+        staleReceiptRequestHash &&
+        staleReceiptRequestHash !== responseExpectation.requestHash &&
+        staleReceiptGateDryRunHash &&
+        criticalAuditorReceiptMatchesCurrent({
+          projectRoot: input.root,
+          receipt: existingReceipt,
+          response: persistedResponse,
+          roundIndex,
+          transaction: input.transaction,
+          auditInputHash: input.auditInputHash,
+          recordId: input.recordId,
+          sourceDocumentHash: input.sourceDocumentHash,
+          sourceBytesHash: requestSourceBytesHash,
+          semanticModelHash: input.semanticModelHash,
+          implementationConfirmationHash: input.implementationConfirmationHash,
+          packetHash: input.packetHash,
+          projectionSetHash,
+          requestHash: staleReceiptRequestHash,
+          gateDryRunHash: staleReceiptGateDryRunHash,
+        })
+      ) {
+        archiveSupersededCriticalAuditorRoundArtifacts({
+          root: input.root,
+          transaction: input.transaction,
+          roundIndex,
+          currentRequestHash: responseExpectation.requestHash,
+          staleReceipt: existingReceipt!,
+          responsePath,
+          receiptPath,
+          mirrorPath,
+        });
+        persistedResponse = null;
+      }
+      if (
+        persistedResponseConflicts()
       ) {
         const responseConflictIssue = preConfirmationIssue(
           'critical_auditor_response_conflicts_with_provider_result',
@@ -23190,6 +24548,7 @@ function runCriticalAuditorReceiptLoop(input: {
         auditInputHash: input.auditInputHash,
         recordId: input.recordId,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: requestSourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
@@ -23208,6 +24567,7 @@ function runCriticalAuditorReceiptLoop(input: {
           auditInputHash: input.auditInputHash,
           recordId: input.recordId,
           sourceDocumentHash: input.sourceDocumentHash,
+          sourceBytesHash: requestSourceBytesHash,
           semanticModelHash: input.semanticModelHash,
           implementationConfirmationHash: input.implementationConfirmationHash,
           packetHash: input.packetHash,
@@ -23252,6 +24612,7 @@ function runCriticalAuditorReceiptLoop(input: {
         auditInputHash: input.auditInputHash,
         recordId: input.recordId,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: requestSourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         implementationConfirmationHash: input.implementationConfirmationHash,
         packetHash: input.packetHash,
@@ -23482,18 +24843,23 @@ function buildCriticalAuditorRoundRequest(input: {
   auditInputHash: string;
   mustRequirements: Array<Pick<SourceMustRequirement, 'id' | 'text'>>;
   packet: Record<string, unknown>;
+  confirmation: Record<string, unknown>;
   previousReceipts: Record<string, unknown>[];
   gateDryRun: CriticalAuditorGateDryRunSummary;
   createdAt: string;
 }): Record<string, unknown> {
   const roundPerspective = criticalAuditorRoundPerspective(input.roundIndex);
-  const allProjectionRefs = projectionRefsFromPacket(input.packet);
+  const projectionInventory = criticalAuditorProjectionInventory(
+    input.packet,
+    input.confirmation
+  );
   const semanticModelHash = normalizeText(input.semanticModelHash);
   if (!semanticModelHash.startsWith('sha256:')) {
     throw new Error('critical_auditor_semantic_model_hash_missing');
   }
   const projectionSetHash =
-    normalizeText(input.projectionSetHash) || criticalAuditorProjectionSetHash(input.packet);
+    normalizeText(input.projectionSetHash) ||
+    criticalAuditorProjectionSetHash(input.packet, input.confirmation);
   const auditAttemptId =
     normalizeText(input.auditAttemptId) ||
     criticalAuditorAuditAttemptId({
@@ -23518,6 +24884,7 @@ function buildCriticalAuditorRoundRequest(input: {
       requiredEvidence: [
         'gate_dry_run_hash',
         'staging_source_hash',
+        'staging_source_bytes_hash',
         'current_implementationConfirmation_hash',
         'current_packet_hash',
       ],
@@ -23531,6 +24898,7 @@ function buildCriticalAuditorRoundRequest(input: {
     sourceDocument: toRootRelativePath(input.root, input.sourcePath),
     sourceHash: input.sourceDocumentHash,
     sourceDocumentHash: input.sourceDocumentHash,
+    sourceBytesHash: sha256File(input.sourcePath),
     repairActionSourceContract: {
       sourceDocument: toRootRelativePath(input.root, input.sourcePath),
       lineNumbering: 'one_based_inclusive',
@@ -23552,8 +24920,8 @@ function buildCriticalAuditorRoundRequest(input: {
     sourceRequirementTexts: input.mustRequirements.map((requirement) => requirement.text),
     packetProjectionSummary: {
       mustPacketCount: asRecordArray(input.packet.mustPackets).length,
-      projectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
-      projectionRefs: allProjectionRefs,
+      projectionGroups: projectionInventory.projectionGroups,
+      projectionRefs: projectionInventory.projectionRefs,
     },
     projectionQualityGate: {
       requiredRuleCodes: PROJECTION_QUALITY_RULE_CODES,
@@ -23599,13 +24967,14 @@ function buildCriticalAuditorRoundRequest(input: {
       namespaceVersion: input.namespaceVersion,
       sourceHash: input.sourceDocumentHash,
       sourceDocumentHash: input.sourceDocumentHash,
+      sourceBytesHash: sha256File(input.sourcePath),
       implementationConfirmationHash: input.implementationConfirmationHash,
       packetHash: input.packetHash,
       semanticModelHash,
       projectionSetHash,
       gateDryRunHash: input.gateDryRun.hash,
       reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
-      checkedProjectionGroups: CRITICAL_AUDITOR_PROJECTION_GROUPS,
+      checkedProjectionGroups: projectionInventory.projectionGroups,
       checkedProjectionQualityRuleCodes: PROJECTION_QUALITY_RULE_CODES,
       verdict:
         'no_new_valid_gap | no_new_confirmation_blocking_gap | new_valid_gap | insufficient_audit | blocked',
@@ -23690,25 +25059,8 @@ function criticalAuditorRoundRequestMatchesCurrent(
   existing: Record<string, unknown>,
   candidate: Record<string, unknown>
 ): boolean {
-  const comparableScalarKeys = [
-    'schemaVersion',
-    'recordId',
-    'roundIndex',
-    'transactionId',
-    'namespaceVersion',
-    'sourceHash',
-    'sourceDocumentHash',
-    'semanticModelHash',
-    'implementationConfirmationHash',
-    'packetHash',
-    'projectionSetHash',
-    'auditAttemptId',
-    'auditInputHash',
-  ];
-  for (const key of comparableScalarKeys) {
-    if (normalizeText(existing[key]) !== normalizeText(candidate[key])) {
-      return false;
-    }
+  if (!criticalAuditorRoundRequestAuthorityMatchesCurrent(existing, candidate)) {
+    return false;
   }
   const existingGateDryRun = recordObject(existing.gateDryRun);
   const candidateGateDryRun = recordObject(candidate.gateDryRun);
@@ -23726,8 +25078,34 @@ function criticalAuditorRoundRequestMatchesCurrent(
   ) {
     return false;
   }
-  // A published request remains frozen only while its semantic and gate bindings
-  // are unchanged, preserving response-file recovery without accepting stale audits.
+  return true;
+}
+
+function criticalAuditorRoundRequestAuthorityMatchesCurrent(
+  existing: Record<string, unknown>,
+  candidate: Record<string, unknown>
+): boolean {
+  const comparableScalarKeys = [
+    'schemaVersion',
+    'recordId',
+    'roundIndex',
+    'transactionId',
+    'namespaceVersion',
+    'sourceHash',
+    'sourceDocumentHash',
+    'sourceBytesHash',
+    'semanticModelHash',
+    'implementationConfirmationHash',
+    'packetHash',
+    'projectionSetHash',
+    'auditAttemptId',
+    'auditInputHash',
+  ];
+  for (const key of comparableScalarKeys) {
+    if (normalizeText(existing[key]) !== normalizeText(candidate[key])) {
+      return false;
+    }
+  }
   const comparableArrayKeys = ['mustRefs', 'sourceRequirementTexts'];
   for (const key of comparableArrayKeys) {
     if (sha256Json(asStringArray(existing[key])) !== sha256Json(asStringArray(candidate[key]))) {
@@ -23757,6 +25135,24 @@ function criticalAuditorRoundRequestMatchesCurrent(
     return false;
   }
   return Boolean(normalizeText(existing.requestHash));
+}
+
+export function criticalAuditorPublishedRoundRequestCanReuseReceipt(input: {
+  existingRequest: Record<string, unknown>;
+  candidateRequest: Record<string, unknown>;
+  existingGateDryRun: CriticalAuditorGateDryRunSummary;
+  currentGateDryRun: CriticalAuditorGateDryRunSummary;
+}): boolean {
+  return (
+    criticalAuditorRoundRequestAuthorityMatchesCurrent(
+      input.existingRequest,
+      input.candidateRequest
+    ) &&
+    criticalAuditorRoundRequestHashMatchesContent(input.existingRequest) &&
+    criticalAuditorRoundRequestHashMatchesContent(input.candidateRequest) &&
+    criticalAuditorSubstantiveGateBindingHash(input.existingGateDryRun) ===
+      criticalAuditorSubstantiveGateBindingHash(input.currentGateDryRun)
+  );
 }
 
 function criticalAuditorRoundRequestHashMatchesContent(request: Record<string, unknown>): boolean {
@@ -23866,6 +25262,7 @@ function pendingCriticalAuditorDraftText(input: {
     normalizeText(request.transactionId) !== input.transaction.transactionId ||
     normalizeText(request.namespaceVersion) !== input.transaction.namespaceVersion ||
     normalizeText(request.sourceDocumentHash) !== input.transaction.auditSourceHash ||
+    normalizeText(request.sourceBytesHash) !== sha256File(input.transaction.draftSource) ||
     normalizeText(request.packetHash) !== input.packetHash
   ) {
     return null;
@@ -23915,7 +25312,10 @@ function pendingFinalCriticalAuditorDraftText(input: {
   ) {
     return null;
   }
-  const projectionSetHash = criticalAuditorProjectionSetHash(packet);
+  const projectionSetHash = criticalAuditorProjectionSetHash(
+    packet,
+    extraction.confirmation
+  );
   const auditInputHash = sha256Json({
     sourceDocumentHash,
     semanticModelHash,
@@ -23936,6 +25336,7 @@ function pendingFinalCriticalAuditorDraftText(input: {
     normalizeText(request.transactionId) === input.transaction.transactionId &&
     normalizeText(request.namespaceVersion) === input.transaction.namespaceVersion &&
     normalizeText(request.sourceDocumentHash) === sourceDocumentHash &&
+    normalizeText(request.sourceBytesHash) === sha256File(finalDraftSource) &&
     normalizeText(request.semanticModelHash) === semanticModelHash &&
     normalizeText(request.implementationConfirmationHash) === implementationConfirmationHash &&
     normalizeText(request.packetHash) === input.packetHash &&
@@ -24039,10 +25440,107 @@ function archiveCriticalAuditorArtifacts(input: {
   return archiveDir;
 }
 
+function archiveSupersededCriticalAuditorRoundArtifacts(input: {
+  root: string;
+  transaction: CriticalAuditorStagingTransaction;
+  roundIndex: number;
+  currentRequestHash: string;
+  staleReceipt: Record<string, unknown>;
+  responsePath: string;
+  receiptPath: string;
+  mirrorPath: string;
+}): string {
+  const staleRequestHash = normalizeText(input.staleReceipt.requestHash);
+  const staleReceiptHash = normalizeText(input.staleReceipt.receiptHash);
+  if (
+    !/^sha256:[a-f0-9]{64}$/u.test(staleRequestHash) ||
+    !/^sha256:[a-f0-9]{64}$/u.test(staleReceiptHash) ||
+    !/^sha256:[a-f0-9]{64}$/u.test(input.currentRequestHash) ||
+    staleRequestHash === input.currentRequestHash
+  ) {
+    throw new Error('critical_auditor_superseded_round_archive_binding_invalid');
+  }
+  const archiveDir = path.join(
+    input.transaction.stagingDir,
+    'archive',
+    'superseded-rounds',
+    `round-${input.roundIndex}`,
+    `request-${staleRequestHash.slice('sha256:'.length, 'sha256:'.length + 24)}`
+  );
+  const candidates = [
+    { role: 'response', sourcePath: path.resolve(input.responsePath) },
+    { role: 'receipt', sourcePath: path.resolve(input.receiptPath) },
+    { role: 'mirror', sourcePath: path.resolve(input.mirrorPath) },
+  ];
+  const unique = new Map<string, { role: string; sourcePath: string }>();
+  for (const candidate of candidates) {
+    const existing = unique.get(candidate.sourcePath);
+    if (existing) {
+      existing.role = `${existing.role}+${candidate.role}`;
+    } else {
+      unique.set(candidate.sourcePath, candidate);
+    }
+  }
+  const artifacts = [...unique.values()].map((artifact) => {
+    if (!fs.existsSync(artifact.sourcePath)) {
+      throw new Error('critical_auditor_superseded_round_archive_source_missing');
+    }
+    const sourceHash = sha256File(artifact.sourcePath);
+    const archivePath = path.join(archiveDir, `${artifact.role}.json`);
+    fs.mkdirSync(path.dirname(archivePath), { recursive: true });
+    if (fs.existsSync(archivePath)) {
+      if (sha256File(archivePath) !== sourceHash) {
+        throw new Error('critical_auditor_superseded_round_archive_conflict');
+      }
+    } else {
+      const temporaryPath = `${archivePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+      try {
+        fs.copyFileSync(artifact.sourcePath, temporaryPath);
+        if (sha256File(temporaryPath) !== sourceHash) {
+          throw new Error('critical_auditor_superseded_round_archive_copy_invalid');
+        }
+        fs.renameSync(temporaryPath, archivePath);
+      } finally {
+        if (fs.existsSync(temporaryPath)) fs.rmSync(temporaryPath, { force: true });
+      }
+    }
+    return {
+      role: artifact.role,
+      sourcePath: toRootRelativePath(input.root, artifact.sourcePath),
+      sourceHash,
+      archivePath: toRootRelativePath(input.root, archivePath),
+    };
+  });
+  writeJsonCreateOnlyOrEqual(
+    path.join(archiveDir, 'archive-manifest.json'),
+    {
+      schemaVersion: 'critical-auditor-superseded-round-archive/v1',
+      transactionId: input.transaction.transactionId,
+      namespaceVersion: input.transaction.namespaceVersion,
+      roundIndex: input.roundIndex,
+      staleRequestHash,
+      staleReceiptHash,
+      currentRequestHash: input.currentRequestHash,
+      artifacts,
+    },
+    'critical_auditor_superseded_round_archive_manifest_conflict'
+  );
+  for (const artifact of artifacts) {
+    const sourcePath = path.resolve(input.root, artifact.sourcePath);
+    if (!fs.existsSync(sourcePath)) continue;
+    if (sha256File(sourcePath) !== artifact.sourceHash) {
+      throw new Error('critical_auditor_superseded_round_archive_source_changed');
+    }
+    fs.rmSync(sourcePath, { force: true });
+  }
+  return archiveDir;
+}
+
 function collectStaleCriticalAuditorArtifactIssues(input: {
   authoringDir: string;
   auditInputHash: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
 }): PreConfirmationDrilldownIssue[] {
@@ -24060,10 +25558,11 @@ function collectStaleCriticalAuditorArtifactIssues(input: {
     }
     for (const field of hashFields) {
       const expected = normalizeText((input as unknown as Record<string, unknown>)[field]);
+      const actual = normalizeText(artifact[field]);
       if (
         expected &&
-        normalizeText(artifact[field]) &&
-        normalizeText(artifact[field]) !== expected
+        ((field === 'sourceBytesHash' && actual !== expected) ||
+          (field !== 'sourceBytesHash' && actual && actual !== expected))
       ) {
         issues.push(
           preConfirmationIssue(
@@ -24082,6 +25581,7 @@ function collectStaleCriticalAuditorArtifactIssues(input: {
       const request = readJsonIfExists(filePath);
       staleIfMismatch(fileName, request, [
         'sourceDocumentHash',
+        'sourceBytesHash',
         'implementationConfirmationHash',
         'packetHash',
         'auditInputHash',
@@ -24091,6 +25591,7 @@ function collectStaleCriticalAuditorArtifactIssues(input: {
       const response = readJsonIfExists(filePath);
       staleIfMismatch(fileName, response, [
         'sourceDocumentHash',
+        'sourceBytesHash',
         'implementationConfirmationHash',
         'packetHash',
       ]);
@@ -24099,6 +25600,7 @@ function collectStaleCriticalAuditorArtifactIssues(input: {
       const receipt = unwrapCriticalAuditorReceipt(readJsonIfExists(filePath));
       staleIfMismatch(fileName, receipt, [
         'sourceDocumentHash',
+        'sourceBytesHash',
         'implementationConfirmationHash',
         'packetHash',
       ]);
@@ -24132,6 +25634,7 @@ function collectConsecutiveNoNewGapFromReceipts(input: {
   projectRoot: string;
   auditInputHash: string;
   sourceDocumentHash: string;
+  sourceBytesHash: string;
   semanticModelHash: string;
   implementationConfirmationHash: string;
   packetHash: string;
@@ -24172,6 +25675,7 @@ function collectConsecutiveNoNewGapFromReceipts(input: {
     if (
       normalizeText(receipt.inputHash) !== input.auditInputHash ||
       normalizeText(receipt.sourceDocumentHash) !== input.sourceDocumentHash ||
+      normalizeText(receipt.sourceBytesHash) !== input.sourceBytesHash ||
       normalizeText(receipt.semanticModelHash) !== input.semanticModelHash ||
       normalizeText(receipt.implementationConfirmationHash) !==
         input.implementationConfirmationHash ||
@@ -24185,6 +25689,7 @@ function collectConsecutiveNoNewGapFromReceipts(input: {
           [
             'inputHash',
             'sourceDocumentHash',
+            'sourceBytesHash',
             'semanticModelHash',
             'implementationConfirmationHash',
             'packetHash',
@@ -24247,9 +25752,12 @@ function collectConsecutiveNoNewGapFromReceipts(input: {
         receiptRef: receipt.providerInvocationReceiptRef,
         requestHash,
         sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: input.sourceBytesHash,
         semanticModelHash: input.semanticModelHash,
         projectionSetHash: input.projectionSetHash,
         providerRunId,
+        expectedProviderBinding:
+          expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
       });
       validateCriticalAuditorJudgeHostExecution(
         input.projectRoot,
@@ -24318,6 +25826,7 @@ function validateCriticalAuditorResponse(input: {
     };
   }
   const requestHash = normalizeText(input.request.requestHash);
+  const sourceBytesHash = normalizeText(input.request.sourceBytesHash);
   if (normalizeText(parsed.requestHash) !== requestHash) {
     issues.push(
       preConfirmationIssue(
@@ -24384,6 +25893,19 @@ function validateCriticalAuditorResponse(input: {
         'critical_auditor_response_source_hash_stale',
         'Critical Auditor response sourceDocumentHash is stale',
         ['sourceDocumentHash'],
+        'critical_auditor'
+      )
+    );
+  }
+  if (
+    !/^sha256:[a-f0-9]{64}$/u.test(sourceBytesHash) ||
+    normalizeText(parsed.sourceBytesHash) !== sourceBytesHash
+  ) {
+    issues.push(
+      preConfirmationIssue(
+        'critical_auditor_response_source_bytes_hash_mismatch',
+        'Critical Auditor response sourceBytesHash does not match the frozen request bytes.',
+        ['sourceBytesHash'],
         'critical_auditor'
       )
     );
@@ -24746,6 +26268,7 @@ function validateCriticalAuditorResponse(input: {
       requestHash,
       sourceHash: normalizeText(parsed.sourceHash) || input.sourceDocumentHash,
       sourceDocumentHash: input.sourceDocumentHash,
+      sourceBytesHash,
       semanticModelHash: normalizeText(parsed.semanticModelHash),
       implementationConfirmationHash: input.implementationConfirmationHash,
       packetHash: input.packetHash,
@@ -24786,6 +26309,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
   sourceText: string;
   confirmation: Record<string, unknown>;
   independentProviderExpectation: CriticalAuditorIndependentProviderExpectation;
+  sourceBytesHash: string;
 }): PreConfirmationDrilldownIssue[] {
   const issues: PreConfirmationDrilldownIssue[] = [];
   const result = input.auditResult;
@@ -24816,9 +26340,11 @@ function validateCriticalAuditorRoundResultBinding(input: {
         receiptRef: result.providerInvocationReceiptRef,
         requestHash: input.independentProviderExpectation.requestHash,
         sourceDocumentHash: input.independentProviderExpectation.sourceDocumentHash,
+        sourceBytesHash: input.sourceBytesHash,
         semanticModelHash: input.independentProviderExpectation.semanticModelHash,
         projectionSetHash: input.independentProviderExpectation.projectionSetHash,
         providerRunId,
+        expectedProviderBinding: input.independentProviderExpectation,
       });
       validateCriticalAuditorJudgeHostExecution(
         input.projectRoot,
@@ -24839,6 +26365,16 @@ function validateCriticalAuditorRoundResultBinding(input: {
         )
       );
     }
+  }
+  if (normalizeText(result.sourceBytesHash) !== input.sourceBytesHash) {
+    issues.push(
+      preConfirmationIssue(
+        'critical_auditor_response_source_bytes_hash_mismatch',
+        `Critical Auditor provider round ${input.roundIndex} did not bind the frozen source bytes hash.`,
+        ['sourceBytesHash'],
+        'critical_auditor'
+      )
+    );
   }
   if (normalizeText(result.gateDryRunHash) !== input.gateDryRun.hash) {
     issues.push(
@@ -24871,7 +26407,11 @@ function validateCriticalAuditorRoundResultBinding(input: {
       )
     );
   }
-  const allowedProjectionRefs = new Set(projectionRefsFromPacket(input.packet));
+  const projectionInventory = criticalAuditorProjectionInventory(
+    input.packet,
+    input.confirmation
+  );
+  const allowedProjectionRefs = new Set(projectionInventory.projectionRefs);
   for (const ref of reviewedProjectionRefs) {
     if (!allowedProjectionRefs.has(ref)) {
       issues.push(
@@ -24885,7 +26425,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
     }
   }
   const checkedGroups = new Set(result.checkedProjectionGroups ?? []);
-  for (const group of CRITICAL_AUDITOR_PROJECTION_GROUPS) {
+  for (const group of projectionInventory.projectionGroups) {
     if (!checkedGroups.has(group)) {
       issues.push(
         preConfirmationIssue(
@@ -25785,10 +27325,14 @@ export function runMainAgentAuthoringRepair(
     projectRoot: root,
     auditInputHash: rebuiltArtifacts.auditInputHash,
     sourceDocumentHash,
+    sourceBytesHash: sha256File(sourcePath),
     semanticModelHash,
     implementationConfirmationHash,
     packetHash,
-    projectionSetHash: criticalAuditorProjectionSetHash(rebuiltArtifacts.packet),
+    projectionSetHash: criticalAuditorProjectionSetHash(
+      rebuiltArtifacts.packet,
+      extraction.confirmation
+    ),
   });
   const packet =
     previousConvergence.consecutive === 0
@@ -26008,6 +27552,7 @@ export function runMainAgentAuthoringRepair(
     authoringDir: paths.authoringDir,
     auditInputHash,
     sourceDocumentHash,
+    sourceBytesHash: sha256File(sourcePath),
     implementationConfirmationHash,
     packetHash,
   });
@@ -26099,10 +27644,14 @@ export function runMainAgentAuthoringRepair(
           semanticModelHash,
           implementationConfirmationHash,
           packetHash,
-          projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+          projectionSetHash: criticalAuditorProjectionSetHash(
+            effectivePacket,
+            extraction.confirmation
+          ),
           auditInputHash,
           mustRequirements,
           packet: effectivePacket,
+          confirmation: extraction.confirmation,
           previousReceipts: asRecordArray(request.previousReceipts),
           gateDryRun: responseGateDryRun,
           createdAt,
@@ -26163,10 +27712,14 @@ export function runMainAgentAuthoringRepair(
       auditInputHash,
       recordId: identity.recordId,
       sourceDocumentHash,
+      sourceBytesHash: normalizeText(request.sourceBytesHash),
       semanticModelHash,
       implementationConfirmationHash,
       packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+      projectionSetHash: criticalAuditorProjectionSetHash(
+        effectivePacket,
+        extraction.confirmation
+      ),
       independentProviderExpectation: providerExpectation.expectation ?? undefined,
       createdAt,
       auditResult: validation.response,
@@ -26181,10 +27734,14 @@ export function runMainAgentAuthoringRepair(
         auditInputHash,
         recordId: identity.recordId,
         sourceDocumentHash,
+        sourceBytesHash: normalizeText(request.sourceBytesHash),
         semanticModelHash,
         implementationConfirmationHash,
         packetHash,
-        projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+        projectionSetHash: criticalAuditorProjectionSetHash(
+          effectivePacket,
+          extraction.confirmation
+        ),
         requestHash: normalizeText(request.requestHash),
         gateDryRunHash: responseGateDryRun.hash,
       },
@@ -26376,10 +27933,14 @@ export function runMainAgentAuthoringRepair(
         semanticModelHash: rebuilt.semanticModelHash,
         implementationConfirmationHash: rebuilt.implementationConfirmationHash,
         packetHash: rebuilt.packetHash,
-        projectionSetHash: criticalAuditorProjectionSetHash(rebuilt.effectivePacket),
+        projectionSetHash: criticalAuditorProjectionSetHash(
+          rebuilt.effectivePacket,
+          repaired.extraction.confirmation
+        ),
         auditInputHash: rebuilt.auditInputHash,
         mustRequirements: rebuilt.mustRequirements,
         packet: rebuilt.effectivePacket,
+        confirmation: repaired.extraction.confirmation,
         previousReceipts: [],
         gateDryRun: freshGateDryRun,
         createdAt,
@@ -26443,10 +28004,14 @@ export function runMainAgentAuthoringRepair(
     projectRoot: root,
     auditInputHash,
     sourceDocumentHash,
+    sourceBytesHash: sha256File(sourcePath),
     semanticModelHash,
     implementationConfirmationHash,
     packetHash,
-    projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+    projectionSetHash: criticalAuditorProjectionSetHash(
+      effectivePacket,
+      extraction.confirmation
+    ),
   });
   const restartIssues = [...staleArtifactIssues, ...convergence.issues];
   if (restartIssues.length > 0) {
@@ -26473,10 +28038,14 @@ export function runMainAgentAuthoringRepair(
       semanticModelHash,
       implementationConfirmationHash,
       packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+      projectionSetHash: criticalAuditorProjectionSetHash(
+        effectivePacket,
+        extraction.confirmation
+      ),
       auditInputHash,
       mustRequirements,
       packet: effectivePacket,
+      confirmation: extraction.confirmation,
       previousReceipts: [],
       gateDryRun: freshRequestGateDryRun,
       createdAt,
@@ -26520,10 +28089,14 @@ export function runMainAgentAuthoringRepair(
       semanticModelHash,
       implementationConfirmationHash,
       packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket),
+      projectionSetHash: criticalAuditorProjectionSetHash(
+        effectivePacket,
+        extraction.confirmation
+      ),
       auditInputHash,
       mustRequirements,
       packet: effectivePacket,
+      confirmation: extraction.confirmation,
       previousReceipts: receipts,
       gateDryRun: buildCriticalAuditorGateDryRunSummary({
         root,
@@ -28044,44 +29617,30 @@ export function runMainAgentPreConfirmationDrilldown(
       });
     }
   }
-  const structuredBlocks = extractStructuredSourceBlocks(root, semanticInputPath, sourceText);
-  const coverageLedger = buildRequirementCoverageLedger({
+  const explicitTargetPaths = normalizeStringList(options.targetPath);
+  const explicitRequiredCommands = normalizeStringList(options.requiredCommand);
+  const sourceAuthorityAnalysis = analyzeRequirementsContractSourceAuthority({
     root,
     sourcePath: semanticInputPath,
     sourceText,
-    blocks: structuredBlocks,
+    explicitTargetPaths,
+    explicitRequiredCommands,
+    requireSourceRequirementIdsForControlledCandidates:
+      sourcePrdInstanceLintRequired && detectedEntrySource !== 'session_requirements',
   });
+  const {
+    structuredBlocks,
+    coverageLedger,
+    forbiddenLineBasedMustRequirements,
+    controlledCandidates,
+    mustRequirements: analyzedMustRequirements,
+    hasForbiddenLineBasedMustRequirements,
+    targetAuthority,
+    validationAuthority,
+    businessFailureAuthority,
+  } = sourceAuthorityAnalysis;
+  let mustRequirements = analyzedMustRequirements;
   writeRequirementCoverageLedgerArtifact(paths.requirementCoverageLedger, coverageLedger);
-
-  const inlineMustRequirements = resolveSourceMustRequirements(root, semanticInputPath);
-  const forbiddenLineBasedMustRequirements = inlineMustRequirements.filter((row) =>
-    isForbiddenLineBasedMustId(row.id)
-  );
-  const inlineConfirmation = extractImplementationConfirmationBlock(sourceText)?.confirmation;
-  const inlineHasCurrentAuthoringProjection =
-    Object.keys(recordObject(inlineConfirmation?.preConfirmationDrilldown)).length > 0;
-  const sourceDeclaresStableRequirementIds =
-    sourceTextDeclaresPositiveRequirementIds(sourceText) && !inlineHasCurrentAuthoringProjection;
-  let mustRequirements = sourceDeclaresStableRequirementIds
-    ? []
-    : inlineMustRequirements.filter((row) => !isForbiddenLineBasedMustId(row.id));
-  const requireSourceRequirementIdsForControlledCandidates =
-    sourcePrdInstanceLintRequired && detectedEntrySource !== 'session_requirements';
-  const controlledCandidates =
-    mustRequirements.length === 0
-      ? buildControlledMustCandidatesFromPlainSource(root, semanticInputPath, sourceText, {
-          requireSourceRequirementIds: requireSourceRequirementIdsForControlledCandidates,
-        })
-      : [];
-  if (mustRequirements.length === 0) {
-    mustRequirements = mustRequirementsFromControlledCandidates(controlledCandidates);
-  }
-  mustRequirements = groundSourceMustRequirements(mustRequirements, structuredBlocks);
-  const hasForbiddenLineBasedMustRequirements =
-    forbiddenLineBasedMustRequirements.length > 0 && mustRequirements.length === 0;
-
-  const explicitTargetPaths = normalizeStringList(options.targetPath);
-  const explicitRequiredCommands = normalizeStringList(options.requiredCommand);
   let invocationEntryAuthority: InvocationEntryAuthority | null = null;
   if (explicitTargetPaths.length > 0 || explicitRequiredCommands.length > 0) {
     try {
@@ -28118,24 +29677,6 @@ export function runMainAgentPreConfirmationDrilldown(
       });
     }
   }
-  const sourceTargetRecords = extractTargetAuthorityFromSource({
-    root,
-    sourceText,
-    blocks: structuredBlocks,
-  });
-  const targetAuthority = resolveTargetAuthority({
-    root,
-    sourceText,
-    explicitTargetPaths,
-    sourceRecords: sourceTargetRecords,
-  });
-  const validationAuthority = buildValidationAuthority({
-    root,
-    sourceText,
-    blocks: structuredBlocks,
-    explicitCommands: explicitRequiredCommands,
-    targetRecords: targetAuthority.accepted,
-  });
   const projectionTargetAuthorityRecords = validationAuthority.acceptedTargetRecords;
   writeAuthorityReports({
     paths,
@@ -28309,6 +29850,7 @@ export function runMainAgentPreConfirmationDrilldown(
     mustRequirements,
     sourceProjectionAuthority,
     sourceBusinessFailureRows: sourceBusinessFailureAuthorityRows,
+    businessFailureAuthority,
   });
   const unownedBusinessJourneyIds = unownedSourceBusinessJourneyIds(
     structuredBlocks,
@@ -28372,7 +29914,7 @@ export function runMainAgentPreConfirmationDrilldown(
       )
     );
   }
-  if (sourceFailureMatrixBlocks.length === 0) {
+  if (businessFailureAuthority.applies && sourceFailureMatrixBlocks.length === 0) {
     businessFailureAuthorityIssues.push(
       preConfirmationIssue(
         'business_failure_paths_source_authority_required',
@@ -28381,7 +29923,7 @@ export function runMainAgentPreConfirmationDrilldown(
         'business_failure_paths'
       )
     );
-  } else {
+  } else if (sourceFailureMatrixBlocks.length > 0) {
     const invalidFailureBlocks = sourceFailureMatrixBlocks.filter((block) => {
       const sourceId = normalizeText(
         tableContextRowValue(block.tableContext, ['ID'])
@@ -29151,7 +30693,8 @@ export function runMainAgentPreConfirmationDrilldown(
     !stagingDraftRefreshed &&
     Object.keys(stagedPacket).length > 0 &&
     normalizeText(stagedPacket.semanticModelHash) === semanticModelHash &&
-    normalizeText(stagedPacket.semanticKernelHash) === semanticKernelHash
+    normalizeText(stagedPacket.semanticKernelHash) === semanticKernelHash &&
+    packetTopLevelProjectionInventoryMatches(stagedPacket, previewExtraction.confirmation)
   ) {
     previewPacket = stagedPacket;
     writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: previewPacket });
@@ -29171,6 +30714,7 @@ export function runMainAgentPreConfirmationDrilldown(
       structuredBlocks,
       targetAuthorityRecords: projectionTargetAuthorityRecords,
       validationAuthorityRecords: validationAuthority.accepted,
+      confirmation: previewExtraction.confirmation,
       consecutiveNoNewGapRounds: 0,
     });
     writeJsonUtf8(paths.mustDecompositionPacket, { must_decomposition_packet: previewPacket });
@@ -29250,6 +30794,7 @@ export function runMainAgentPreConfirmationDrilldown(
       authoringDir: paths.authoringDir,
       auditInputHash,
       sourceDocumentHash: previewSourceDocumentHash,
+      sourceBytesHash: sha256File(stagingTransaction.draftSource),
       implementationConfirmationHash: previewImplementationConfirmationHash,
       packetHash,
     }),
@@ -29257,6 +30802,7 @@ export function runMainAgentPreConfirmationDrilldown(
       authoringDir: stagingTransaction.stagingDir,
       auditInputHash,
       sourceDocumentHash: previewSourceDocumentHash,
+      sourceBytesHash: sha256File(stagingTransaction.draftSource),
       implementationConfirmationHash: previewImplementationConfirmationHash,
       packetHash,
     }),
@@ -29324,11 +30870,11 @@ export function runMainAgentPreConfirmationDrilldown(
               `critical-auditor-receipt-round-${round.roundIndex}.json`
             ),
           ]);
-          const outputDir = path.join(
-            stagingTransaction.stagingDir,
-            CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR,
-            String(round.roundIndex)
-          );
+          const outputDir = criticalAuditorJudgeInvocationOutputDir({
+            stagingDir: stagingTransaction.stagingDir,
+            roundIndex: round.roundIndex,
+            requestHash: round.independentProviderExpectation.requestHash,
+          });
           const execution = (() => {
             try {
               return {
@@ -29442,6 +30988,10 @@ export function runMainAgentPreConfirmationDrilldown(
     const providerMissing = criticalAuditorIssues.some(
       (issue) => issue.code === 'critical_auditor_provider_mode_required'
     );
+    const providerContractBlockedRoute =
+      criticalAuditorProviderContractBlockedRoute(
+        criticalAuditorIssues.map((issue) => issue.code)
+      );
     const namespaceMismatch = criticalAuditorIssues.some(
       (issue) => issue.code === 'id_namespace_mismatch'
     );
@@ -29472,10 +31022,14 @@ export function runMainAgentPreConfirmationDrilldown(
         semanticModelHash,
         implementationConfirmationHash: previewImplementationConfirmationHash,
         packetHash,
-        projectionSetHash: criticalAuditorProjectionSetHash(previewPacket),
+        projectionSetHash: criticalAuditorProjectionSetHash(
+          previewPacket,
+          previewExtraction.confirmation
+        ),
         auditInputHash,
         mustRequirements,
         packet: previewPacket,
+        confirmation: previewExtraction.confirmation,
         previousReceipts: [],
         gateDryRun: freshGateDryRun,
         createdAt,
@@ -29486,6 +31040,8 @@ export function runMainAgentPreConfirmationDrilldown(
       transaction: stagingTransaction,
       blockingStage: providerMissing
         ? 'critical_auditor_provider_mode_required'
+        : providerContractBlockedRoute
+          ? providerContractBlockedRoute.blockingStage
         : namespaceMismatch
           ? 'id_namespace_mismatch'
           : 'critical_auditor_convergence_required',
@@ -29526,7 +31082,8 @@ export function runMainAgentPreConfirmationDrilldown(
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
       nextRequiredAction: providerMissing
         ? 'run_main_session_critical_auditor_round'
-        : 'repair_critical_auditor_gap',
+        : providerContractBlockedRoute?.nextRequiredAction ??
+          'repair_critical_auditor_gap',
     });
     return buildPreConfirmationResult({
       root,
@@ -29539,15 +31096,20 @@ export function runMainAgentPreConfirmationDrilldown(
       sourceDocumentHash: sourceHashBefore,
       implementationConfirmationHash: previewImplementationConfirmationHash,
       criticalAuditorProviderMode,
-      blockingStage: providerMissing ? 'critical_auditor_provider_mode_required' : null,
+      blockingStage: providerMissing
+        ? 'critical_auditor_provider_mode_required'
+        : providerContractBlockedRoute?.blockingStage ?? null,
       sourceMutationPerformed: false,
       allowedArtifacts: providerMissing ? ['advisory', 'staging'] : undefined,
       forbiddenArtifacts: providerMissing
         ? ['promotion-receipt', 'source-materialization-receipt', 'source mutation']
         : undefined,
-      criticalAuditorContinuation: criticalAuditorLoop.continuation ?? null,
+      criticalAuditorContinuation:
+        providerContractBlockedRoute ?? criticalAuditorLoop.continuation ?? null,
       stagingTransaction,
-      nextRequiredAction: providerMissing ? 'run_main_session_critical_auditor_round' : undefined,
+      nextRequiredAction: providerMissing
+        ? 'run_main_session_critical_auditor_round'
+        : providerContractBlockedRoute?.nextRequiredAction,
       finalStandards: {
         newSkillFlowEntersAtomicDecompositionLoopBeforeMaterialization: true,
         singlePassCannotSkipAtomicDecompositionLoop: true,
@@ -29916,7 +31478,11 @@ export function runMainAgentPreConfirmationDrilldown(
     normalizeText(stagedFinalPacket.semanticModelHash) === semanticModelHash &&
     normalizeText(stagedFinalPacket.implementationConfirmationHash) ===
       auditedPreviewImplementationConfirmationHash &&
-    normalizeText(stagedFinalPacket.semanticKernelHash) === finalSemanticKernelHash
+    normalizeText(stagedFinalPacket.semanticKernelHash) === finalSemanticKernelHash &&
+    packetTopLevelProjectionInventoryMatches(
+      stagedFinalPacket,
+      auditedPreviewExtraction.confirmation
+    )
       ? stagedFinalPacket
       : buildMustDecompositionPacket({
           root,
@@ -29933,6 +31499,7 @@ export function runMainAgentPreConfirmationDrilldown(
           structuredBlocks,
           targetAuthorityRecords: projectionTargetAuthorityRecords,
           validationAuthorityRecords: validationAuthority.accepted,
+          confirmation: auditedPreviewExtraction.confirmation,
           consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
         });
   const finalPacket = packetWithCriticalAuditorConvergence(
@@ -29959,6 +31526,7 @@ export function runMainAgentPreConfirmationDrilldown(
       authoringDir: paths.authoringDir,
       auditInputHash: finalAuditInputHash,
       sourceDocumentHash: auditedPreviewSourceDocumentHash,
+      sourceBytesHash: sha256File(stagingTransaction.draftSource),
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       packetHash,
     }),
@@ -29966,6 +31534,7 @@ export function runMainAgentPreConfirmationDrilldown(
       authoringDir: stagingTransaction.stagingDir,
       auditInputHash: finalAuditInputHash,
       sourceDocumentHash: auditedPreviewSourceDocumentHash,
+      sourceBytesHash: sha256File(stagingTransaction.draftSource),
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       packetHash,
     }),
@@ -30043,9 +31612,15 @@ export function runMainAgentPreConfirmationDrilldown(
               'critical_auditor'
             ),
           ];
+    const providerContractBlockedRoute =
+      criticalAuditorProviderContractBlockedRoute(
+        finalAuditIssues.map((issue) => issue.code)
+      );
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
-      blockingStage: 'critical_auditor_receipt_binding_invalid',
+      blockingStage:
+        providerContractBlockedRoute?.blockingStage ??
+        'critical_auditor_receipt_binding_invalid',
       root,
       createdAt,
     });
@@ -30079,9 +31654,13 @@ export function runMainAgentPreConfirmationDrilldown(
       sourceDocumentHash: auditedPreviewSourceDocumentHash,
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       criticalAuditorProviderMode,
-      blockingStage: 'critical_auditor_receipt_binding_invalid',
+      blockingStage:
+        providerContractBlockedRoute?.blockingStage ??
+        'critical_auditor_receipt_binding_invalid',
       sourceMutationPerformed: false,
+      criticalAuditorContinuation: providerContractBlockedRoute,
       stagingTransaction,
+      nextRequiredAction: providerContractBlockedRoute?.nextRequiredAction,
     });
   }
   try {
@@ -33051,11 +34630,36 @@ export function ingestMainAgentTaskReport(
     currentStage?: string;
     nativeGoalProvenanceValidated?: boolean;
     authoritativeNextActionHint?: boolean;
+    expectedRequirementRecordHash?: string;
   } = {}
 ): OrchestrationState {
   const state = readOrchestrationState(projectRoot, sessionId);
   if (!state) {
     throw new Error(`Main-agent ingestion failed: session not found (${sessionId})`);
+  }
+  let boundRuntimeContext: ReturnType<typeof loadRuntimeContextForMainAgent> | null =
+    null;
+  let boundRequirementRecord: ReturnType<
+    typeof readRequirementRecordFromRuntimeContext
+  > | null = null;
+  if (options.expectedRequirementRecordHash) {
+    boundRuntimeContext = loadRuntimeContextForMainAgent({
+      projectRoot,
+      flow: state.flow as RuntimeFlowId,
+      stage: options.currentStage ?? state.currentPhase,
+    });
+    const requirementRecord =
+      readRequirementRecordFromRuntimeContext(boundRuntimeContext);
+    if (!requirementRecord) {
+      throw new Error('task_report_ingest_requirement_record_missing');
+    }
+    boundRequirementRecord = requirementRecord;
+    if (
+      normalizeText(boundRequirementRecord.recordHash) !==
+      options.expectedRequirementRecordHash
+    ) {
+      throw new Error('task_report_ingest_requirement_record_hash_mismatch');
+    }
   }
 
   const pendingPacket = state.pendingPacket;
@@ -33114,12 +34718,15 @@ export function ingestMainAgentTaskReport(
       ...(report.driftFlags ? { driftFlags: report.driftFlags } : {}),
     },
   }));
-  const runtimeContext = loadRuntimeContextForMainAgent({
-    projectRoot,
-    flow: evidenceState.flow as RuntimeFlowId,
-    stage: options.currentStage ?? evidenceState.currentPhase,
-  });
-  const requirementRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  const runtimeContext =
+    boundRuntimeContext ??
+    loadRuntimeContextForMainAgent({
+      projectRoot,
+      flow: evidenceState.flow as RuntimeFlowId,
+      stage: options.currentStage ?? evidenceState.currentPhase,
+    });
+  const requirementRecord =
+    boundRequirementRecord ?? readRequirementRecordFromRuntimeContext(runtimeContext);
   const matrix = resolveSixModelRuntimeDecision({
     record: requirementRecord,
     attemptId: report.packetId,
@@ -37200,6 +38807,57 @@ export function runMainAgentAutomaticLoop(input: {
 
   const activeRecordPath = runtimeRecordPath(runtimeContext);
   const activeRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
+  if (initialSurface.orchestrationState?.auditControlledFinalization?.status === 'prepared') {
+    try {
+      const recovered = resumePreparedAuditControlledFinalization({
+        projectRoot: input.projectRoot,
+        state: initialSurface.orchestrationState,
+      });
+      if (!recovered) {
+        throw new Error('audit_controlled_executor_finalization_resume_missing');
+      }
+      steps.push({
+        step: 'audit-controlled-executor.finalization-resume',
+        status: recovered.result.decision === 'pass' ? 'pass' : 'fail',
+        summary: `decision=${recovered.result.decision}, receipt=${relativePathFromRoot(
+          input.projectRoot,
+          recovered.result.finalizationReceiptPath
+        )}`,
+      });
+      const finalSurface = resolveMainAgentOrchestrationSurface({
+        ...surfaceInput,
+      });
+      return {
+        runId: `main-agent-run-loop-${Date.now()}`,
+        status: recovered.result.taskReport.status === 'done' ? 'completed' : 'blocked',
+        steps,
+        dispatchInstruction: recovered.instruction,
+        taskReport: recovered.result.taskReport,
+        finalSurface,
+        mainAgentStageSummary: finalSurface.mainAgentStageSummary,
+      };
+    } catch (error) {
+      const finalSurface = resolveMainAgentOrchestrationSurface({
+        ...surfaceInput,
+      });
+      return {
+        runId: `main-agent-run-loop-${Date.now()}`,
+        status: 'blocked',
+        steps: [
+          ...steps,
+          {
+            step: 'audit-controlled-executor.finalization-resume',
+            status: 'fail',
+            summary: error instanceof Error ? error.message : String(error),
+          },
+        ],
+        dispatchInstruction: null,
+        taskReport: null,
+        finalSurface,
+        mainAgentStageSummary: finalSurface.mainAgentStageSummary,
+      };
+    }
+  }
   if (nativeGoalHandoffRequiresTaskReportImport(activeRecord)) {
     const nextAction = 'await_native_goal_task_report';
     const finalSurface: MainAgentOrchestrationSurface = {

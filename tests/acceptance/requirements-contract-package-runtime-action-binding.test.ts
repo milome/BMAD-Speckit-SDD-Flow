@@ -267,9 +267,14 @@ describe('requirements contract package runtime action binding', () => {
     const reverseAudit = manifest.actions.find(
       (action) => action.actionId === 'requirements-contract-reverse-audit'
     );
+    const criticalAuditorJudge = manifest.actions.find(
+      (action) =>
+        action.actionId === 'requirements-contract-critical-auditor-judge-adapter'
+    );
     expect(stageAudit).toBeDefined();
     expect(reverseAudit).toBeDefined();
-    if (!stageAudit || !reverseAudit) return;
+    expect(criticalAuditorJudge).toBeDefined();
+    if (!stageAudit || !reverseAudit || !criticalAuditorJudge) return;
 
     const stageOutputPaths = stageAudit.outputSchemaRefs.map((ref) => ref.path);
     expect(stageOutputPaths).toContain(
@@ -289,12 +294,23 @@ describe('requirements contract package runtime action binding', () => {
     expect(reverseAudit.outputSchemaRefs.map((ref) => ref.path)).toContain(
       'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json'
     );
+    expect(criticalAuditorJudge.outputSchemaRefs.map((ref) => ref.path)).toContain(
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json'
+    );
+    expect(criticalAuditorJudge.runtimeRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: 'claude-code-cli-judge-adapter' }),
+        expect.objectContaining({ role: 'codex-cli-judge-adapter' }),
+      ])
+    );
     expect(reverseAudit.runtimeRefs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ role: 'judge-credential-resolver' }),
         expect.objectContaining({ role: 'judge-provider-registry' }),
         expect.objectContaining({ role: 'openai-compatible-judge-adapter' }),
         expect.objectContaining({ role: 'anthropic-compatible-judge-adapter' }),
+        expect.objectContaining({ role: 'claude-code-cli-judge-adapter' }),
+        expect.objectContaining({ role: 'codex-cli-judge-adapter' }),
         expect.objectContaining({ role: 'judge-provider-registry-projection' }),
       ])
     );

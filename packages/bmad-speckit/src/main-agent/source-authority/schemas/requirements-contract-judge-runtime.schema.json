@@ -77,8 +77,9 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "transport": {
-          "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
+          "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli", "cli"]
         },
+        "adapterRef": { "type": "string", "minLength": 1 },
         "apiStyle": {
           "enum": ["chat_completions", "messages", "cli"]
         },
@@ -163,7 +164,11 @@
       "allOf": [
         {
           "if": {
-            "properties": { "transport": { "const": "claude-code-cli" } }
+            "properties": {
+              "transport": {
+                "enum": ["claude-code-cli", "cli"]
+              }
+            }
           },
           "then": {
             "properties": {
@@ -171,7 +176,6 @@
               "endpoint": {
                 "required": ["command"],
                 "properties": {
-                  "command": { "const": "claude" },
                   "resolutionMode": { "const": "path_search" }
                 }
               },
@@ -226,6 +230,28 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "if": {
+            "properties": { "transport": { "const": "cli" } }
+          },
+          "then": {
+            "required": ["adapterRef"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "transport": { "const": "claude-code-cli" } }
+          },
+          "then": {
+            "properties": {
+              "endpoint": {
+                "properties": {
+                  "command": { "const": "claude" }
+                }
+              }
+            }
           }
         },
         {

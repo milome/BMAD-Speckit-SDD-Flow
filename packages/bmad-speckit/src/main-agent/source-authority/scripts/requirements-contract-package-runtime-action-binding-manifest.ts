@@ -258,6 +258,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-normalized-judge-response.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-cli-judge-execution-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-assessment.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-critical-auditor-external-adapter-result.schema.json`,
     ],
@@ -288,6 +289,18 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
         repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-anthropic-compatible-judge-adapter.js`,
         packagePath:
           'dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js',
+      },
+      {
+        role: 'claude-code-cli-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-claude-code-cli-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.js',
+      },
+      {
+        role: 'codex-cli-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-codex-cli-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js',
       },
     ],
   },
@@ -482,6 +495,18 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
         repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-anthropic-compatible-judge-adapter.js`,
         packagePath:
           'dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js',
+      },
+      {
+        role: 'claude-code-cli-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-claude-code-cli-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.js',
+      },
+      {
+        role: 'codex-cli-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-codex-cli-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js',
       },
       {
         role: 'judge-provider-registry-projection',

@@ -6,7 +6,10 @@ import { isAbsolute, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const { parseArgs } = require('../../tools/test-portfolio-audit/run.cjs');
+const {
+  parseArgs,
+  selectCriticalAuthorityPackagePaths,
+} = require('../../tools/test-portfolio-audit/run.cjs');
 const {
   canonicalJsonBytes,
   sha256Bytes,
@@ -20,6 +23,25 @@ const { reduceAudit } = require('../../tools/test-portfolio-audit/audit.cjs');
 const temporaryRoots: string[] = [];
 const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
 const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
+
+it('selects only root and declared workspace packages as critical authority packages', () => {
+  expect(
+    selectCriticalAuthorityPackagePaths([
+      {
+        packagePath: 'package.json',
+        packageJson: { workspaces: ['packages/*'] },
+      },
+      {
+        packagePath: 'packages/runtime/package.json',
+        packageJson: { name: '@fixture/runtime' },
+      },
+      {
+        packagePath: 'tests/fixtures/invalid/package.json',
+        packageJson: { name: 'invalid-authority-fixture' },
+      },
+    ])
+  ).toEqual(['package.json', 'packages/runtime/package.json']);
+});
 
 function createTemporaryRoot(prefix = 'test-portfolio-audit-'): string {
   const root = mkdtempSync(join(tmpdir(), prefix));
@@ -85,6 +107,7 @@ function createFailedFixture(): string {
 function createConfiguredVitestFixture(): string {
   const root = createTemporaryRoot('test-portfolio-audit-configured-vitest-');
   mkdirSync(join(root, 'contracts'), { recursive: true });
+  mkdirSync(join(root, 'scripts'), { recursive: true });
   mkdirSync(join(root, 'tests'), { recursive: true });
   writeFileSync(
     join(root, 'package.json'),
@@ -92,6 +115,8 @@ function createConfiguredVitestFixture(): string {
       name: 'configured-vitest-fixture',
       private: true,
       scripts: {
+        'fixture:powershell': 'pwsh -File scripts/setup.ps1',
+        'fixture:shell': 'sh scripts/setup.sh',
         'test:default': 'vitest run',
         'test:explicit': 'vitest run tests/explicit.test.ts',
       },
@@ -115,7 +140,15 @@ function createConfiguredVitestFixture(): string {
   );
   writeFileSync(
     join(root, 'tests', 'default.test.ts'),
-    "test('default route', () => expect(true).toBe(true));\n",
+    [
+      "import { readFileSync } from 'node:fs';",
+      "import path from 'node:path';",
+      "test('default route', () => {",
+      "  expect(readFileSync(path.join(process.cwd(), 'scripts', 'setup.ps1'), 'utf8')).toContain('fixture');",
+      "  expect(readFileSync(path.join(process.cwd(), 'scripts', 'setup.sh'), 'utf8')).toContain('fixture');",
+      '});',
+      '',
+    ].join('\n'),
     'utf8'
   );
   writeFileSync(
@@ -123,6 +156,8 @@ function createConfiguredVitestFixture(): string {
     "test('explicit route', () => expect(true).toBe(true));\n",
     'utf8'
   );
+  writeFileSync(join(root, 'scripts', 'setup.ps1'), "Write-Output 'fixture'\n", 'utf8');
+  writeFileSync(join(root, 'scripts', 'setup.sh'), "printf '%s\\n' 'fixture'\n", 'utf8');
   writeFileSync(join(root, 'contracts', 'audit.spec.yaml'), 'kind: contract\n', 'utf8');
   return root;
 }
@@ -444,6 +479,12 @@ describe('test portfolio audit CLI orchestration', () => {
       ['root-vitest', 'tests/default.test.ts'],
       ['root-vitest', 'tests/explicit.test.ts'],
     ]);
+    expect(
+      artifact.tests.find((test: { testPath: string }) => test.testPath === 'tests/default.test.ts')
+    ).toMatchObject({
+      targetValidity: 'active',
+      issueCodes: expect.not.arrayContaining(['TARGET_REFERENCE_UNRESOLVED']),
+    });
   }, 30_000);
 
   it('preserves two runner identities for one normalized test path', () => {
@@ -645,6 +686,13 @@ function canonicalReportFixture(priorityCount: number): Record<string, unknown> 
       safeCandidateCount: 4,
       estimatedDuplicateDurationMs: 1200,
       estimatedParallelizableDurationMs: 3400,
+      releaseGateMembership: {
+        explicit: 2,
+        inherited: 3,
+        mixed: 1,
+        none: 4,
+        unknown: 0,
+      },
     },
   };
 }
@@ -661,6 +709,9 @@ describe('test portfolio canonical report projector', () => {
     expect(markdown).toContain('Probe complete: no');
     expect(markdown).toContain('Estimated duplicate duration: 1200 ms');
     expect(markdown).toContain('Estimated parallelizable duration: 3400 ms');
+    expect(markdown).toContain(
+      'Release gate membership: explicit 2 | inherited 3 | mixed 1 | none 4 | unknown 0'
+    );
     expect(markdown).toContain('Critical + ineffective');
     expect(markdown.match(/tests\/priority-\d+\.test\.ts/gu)?.length).toBe(20);
     expect(markdown).not.toContain('sourceBody');
@@ -669,6 +720,17 @@ describe('test portfolio canonical report projector', () => {
   it('orders priority rows by category, duration, and lexical path', () => {
     const artifact = canonicalReportFixture(0);
     artifact.tests = [
+      {
+        testPath: 'tests/f-critical-obsolete.test.ts',
+        runnerId: 'root-vitest',
+        criticality: 'critical',
+        oracleEffectiveness: 'effective',
+        executionMultiplicity: 'single',
+        targetValidity: 'obsolete_candidate',
+        parallelSafety: 'unsafe',
+        durationMs: 1,
+        issueCodes: ['CRITICAL_TARGET_OBSOLESCENCE_CONFLICT'],
+      },
       {
         testPath: 'tests/e-critical-ineffective.test.ts',
         runnerId: 'root-vitest',
@@ -728,6 +790,7 @@ describe('test portfolio canonical report projector', () => {
 
     const markdown = renderCanonicalSummary(artifact);
     const orderedPaths = [
+      'tests/f-critical-obsolete.test.ts',
       'tests/e-critical-ineffective.test.ts',
       'tests/d-critical-duplicate.test.ts',
       'tests/c-safe-duration.test.ts',

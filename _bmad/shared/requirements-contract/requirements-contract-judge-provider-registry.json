@@ -2,11 +2,11 @@
   "schemaVersion": "requirements-contract-judge-provider-registry/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
-    "hash": "sha256:b881a0b20c2716cf2deb096b8484c9a3d22016815dc5d392d7c2ef99045e9e42"
+    "hash": "sha256:eb40bf0d8e855b0c00356012aad9245cd6c978d59133babf49771f40f4f197f7"
   },
   "sourceConfig": {
     "path": "_bmad/_config/governance-remediation.yaml",
-    "hash": "sha256:3fdd09c42772b1a640fef58ce0fb11fa5a0464cd1d39f95b5c2acb5258a35bf4"
+    "hash": "sha256:493028eb1221c8e86ba625dc486d58ab7157d9d1330710d14cfe2fe1c82ad147"
   },
   "activeProviderRef": "local-sonnet-judge",
   "providers": [
@@ -14,7 +14,8 @@
       "providerRef": "local-sonnet-judge",
       "provider": {
         "enabled": true,
-        "transport": "claude-code-cli",
+        "transport": "cli",
+        "adapterRef": "ClaudeCodeCliJudgeAdapter",
         "apiStyle": "cli",
         "credentialRef": "local-sonnet-judge",
         "endpoint": {
@@ -50,5 +51,5 @@
       "adapterRef": "ClaudeCodeCliJudgeAdapter"
     }
   ],
-  "registryHash": "sha256:7bd225e757c35b882c9bb0001ea573f09f04549fb2d59645af43ea293702fef7"
+  "registryHash": "sha256:4e4fa986eb0d107344e806b1d353da8e2590dc2b56932a233e87a686d1278890"
 }

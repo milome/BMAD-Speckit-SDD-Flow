@@ -63,7 +63,8 @@
           "enum": [
             "OpenAICompatibleJudgeAdapter",
             "AnthropicCompatibleJudgeAdapter",
-            "ClaudeCodeCliJudgeAdapter"
+            "ClaudeCodeCliJudgeAdapter",
+            "CodexCliJudgeAdapter"
           ]
         },
         "provider": {
@@ -81,8 +82,9 @@
           ],
           "properties": {
             "enabled": { "type": "boolean" },
+            "adapterRef": { "type": "string", "minLength": 1 },
             "transport": {
-              "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
+              "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli", "cli"]
             },
             "apiStyle": {
               "enum": ["chat_completions", "messages", "cli"]

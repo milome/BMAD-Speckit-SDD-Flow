@@ -426,27 +426,16 @@ function writeRequirementsContractProjection(fileName, value) {
 
 function refreshRequirementsContractConsumerRegistry() {
   const fileName = 'requirements-contract-consumer-registry.json';
-  const canonicalPath = path.join(requirementsContractSurfaceRoots[0], fileName);
-  const registry = JSON.parse(fs.readFileSync(canonicalPath, 'utf8'));
-  const semanticResolver = require(path.join(
+  const consumerRegistryModule = require(path.join(
     distRoot,
     'source-authority',
-    'scripts',
-    'requirements-contract-semantic-resolver.js'
+    'rules',
+    'requirements-contract-consumer-registry.js'
   ));
-  registry.owner.hash = `sha256:${sha256File(path.join(repoRoot, registry.owner.path))}`;
-  registry.consumers = registry.consumers.map((consumer) => ({
-    ...consumer,
-    pathHash: `sha256:${sha256File(path.join(repoRoot, consumer.path))}`,
-  }));
-  registry.registryHash = semanticResolver.sha256Stable({
-    schemaVersion: registry.schemaVersion,
-    validationModes: registry.validationModes,
-    discoveryRules: registry.discoveryRules,
-    consumers: registry.consumers,
-    discovery: registry.discovery,
-  });
-  writeRequirementsContractProjection(fileName, registry);
+  writeRequirementsContractProjection(
+    fileName,
+    consumerRegistryModule.createRequirementsContractConsumerRegistry(repoRoot)
+  );
 }
 
 function refreshRequirementsContractArtifactRoleRegistry() {

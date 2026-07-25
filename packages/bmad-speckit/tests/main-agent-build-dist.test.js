@@ -9,6 +9,7 @@ const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.cjs');
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
+const CLI_PATH = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
 const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
 const SRC_JS_ALLOWLIST = path.join(PACKAGE_ROOT, 'scripts', 'src-js-allowlist.json');
 const PACKAGE_DIST_ROOT = path.join(PACKAGE_ROOT, 'dist');
@@ -218,6 +219,16 @@ function collectTrackedPackageSourceFiles() {
     .map((relativePath) => relativePath.replace(/\\/g, '/'));
 }
 
+function registeredRuntimeActionIds() {
+  const cliSource = fs.readFileSync(CLI_PATH, 'utf8');
+  return [
+    ...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu),
+  ]
+    .map((match) => match.groups?.actionId ?? '')
+    .filter(Boolean)
+    .sort();
+}
+
 function collectSourceAuthorityGeneratedJavaScriptTwins() {
   const sourceAuthorityScriptsRoot = path.join(
     PACKAGE_ROOT,
@@ -408,33 +419,18 @@ describe('main-agent dist build', () => {
       );
     }
     const actionBindingManifest = JSON.parse(actionBindingManifestBytes.toString('utf8'));
+    const manifestActionIds = actionBindingManifest.actions
+      .map((action) => action.actionId)
+      .sort();
     assert.deepEqual(
-      actionBindingManifest.actions.map((action) => action.actionId),
-      [
-        'requirements-contract-bundle-publish',
-        'requirements-contract-candidate-package',
-        'requirements-contract-changed-path-manifest',
-        'requirements-contract-consumer-cli-capability-observe',
-        'requirements-contract-critical-auditor-judge-adapter',
-        'requirements-contract-detached-test-rerun',
-        'requirements-contract-eval',
-        'requirements-contract-evidence-verify',
-        'requirements-contract-finalization-safe-write',
-        'requirements-contract-judge-credentials-init',
-        'requirements-contract-judge-provider-smoke',
-        'requirements-contract-production-activate',
-        'requirements-contract-production-bypass-evidence-materialize',
-        'requirements-contract-production-bypass-verify',
-        'requirements-contract-prompt-transaction-publish',
-        'requirements-contract-real-consumer-journey',
-        'requirements-contract-recovery-bootstrap',
-        'requirements-contract-recovery-finalize',
-        'requirements-contract-reverse-audit',
-        'requirements-contract-six-model-projection-parity-verify',
-        'requirements-contract-stage-five-star-audit',
-        'requirements-contract-terminal-command-supervisor',
-      ],
+      manifestActionIds,
+      registeredRuntimeActionIds(),
       'build must project every registered package runtime action exactly once'
+    );
+    assert.equal(
+      new Set(manifestActionIds).size,
+      manifestActionIds.length,
+      'build must not project duplicate package runtime actions'
     );
     const finalizerBindings = actionBindingManifest.actions.filter(
       (action) => action.actionId === 'requirements-contract-recovery-finalize'

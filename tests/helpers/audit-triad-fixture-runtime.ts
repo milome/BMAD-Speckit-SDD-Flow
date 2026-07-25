@@ -134,6 +134,7 @@ export function createFixtureAuditAdapterCommands(input: {
       '    requestHash: request.requestHash,',
       '    sourceHash: request.sourceHash,',
       '    sourceDocumentHash: request.sourceDocumentHash,',
+      '    sourceBytesHash: request.sourceBytesHash,',
       '    semanticModelHash: request.semanticModelHash,',
       '    implementationConfirmationHash: request.implementationConfirmationHash,',
       '    packetHash: request.packetHash,',

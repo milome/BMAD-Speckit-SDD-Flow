@@ -441,7 +441,7 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
   const receipts = receiptFiles.map((filePath) => unwrapReceipt(readSemanticJson(filePath))).filter(Boolean);
   const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
   const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
-  const criticalAuditorOutcome = readSemanticJson(paths.criticalAuditorOutcome);
+  const criticalAuditorOutcomeDocument = readSemanticJson(paths.criticalAuditorOutcome);
   return {
     ...paths,
     ...binding,
@@ -455,7 +455,7 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
     receipts,
     reconciliation,
     gateReport,
-    criticalAuditorOutcome,
+    criticalAuditorOutcomeDocument,
   };
 }
 
@@ -692,7 +692,7 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       })
     : null;
   if (checkpoint.id === 'cp-02-atomic-decomposition-loop-convergence') {
-    const outcome = evidence.criticalAuditorOutcome;
+    const outcome = evidence.criticalAuditorOutcomeDocument;
     if (!outcome) {
       issue(
         'critical_auditor_checkpoint_outcome_required',

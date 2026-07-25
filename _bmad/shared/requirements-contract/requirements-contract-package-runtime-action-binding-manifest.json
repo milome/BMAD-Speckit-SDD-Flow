@@ -310,11 +310,11 @@
       "actionId": "requirements-contract-critical-auditor-judge-adapter",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts",
-        "hash": "sha256:dfe8c9579f583deffbf2fa418a5447510be985dfad03909a0c9c6084708faf68"
+        "hash": "sha256:fc6022263c5feea626619b05c3f1702682e67d7c4882bf64acfbd78baa81f72f"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-        "hash": "sha256:2bbd2a0acbdeb052121dde7ba96953bd3429192d801499dc50ee48d3d623513c"
+        "hash": "sha256:e5ea0174369c89fd2a2abff8a222fc49705415f092dd4617ceffecf2be3ce4c1"
       },
       "semanticGate": {
         "gateId": "requirements-contract-critical-auditor-judge-adapter:semantic-gate",
@@ -328,7 +328,7 @@
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-runtime.schema.json",
-          "hash": "sha256:e50c0767001fb7d1f81d7edb65c6b15337b4aebd37ba45ec17cedbd91285516a"
+          "hash": "sha256:19c57c675f095013784858eb16259f6abe70b25216102208469bf768a0f36592"
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credentials.schema.json",
@@ -338,7 +338,11 @@
       "outputSchemaRefs": [
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json",
-          "hash": "sha256:1543c721e9e80af6a313ae9a1905b3228242a57f294ed2667964123c790f1f57"
+          "hash": "sha256:862326cd023496be63059f537cc3c48b5e2235956b63efa9fb91b1cdb19bc941"
+        },
+        {
+          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json",
+          "hash": "sha256:c8f79649d84a1dcc529efb6d42ba784cc4633a73e4902a16c9b0c5429f02c5da"
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-assessment.schema.json",
@@ -346,35 +350,35 @@
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-external-adapter-result.schema.json",
-          "hash": "sha256:2d532d607a9f92370e54934ea04501b21e20871f6531f84e5d2501e37bf69a0e"
+          "hash": "sha256:c6f7a9383db43f9130dd753993623791f500f3d8f0bc61474264865fc02e14ff"
         }
       ],
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-critical-auditor-judge-adapter.test.ts",
-          "hash": "sha256:4eaf077316174fbe00f81fec19ff2c1537e0734c122e5b00e6c040d43c3e9c9c"
+          "hash": "sha256:4360896ea4ae5a16453cc4a06a630b69aa2c726fe77eda24cca0ad04b6cee402"
         }
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-        "hash": "sha256:2bbd2a0acbdeb052121dde7ba96953bd3429192d801499dc50ee48d3d623513c"
+        "hash": "sha256:e5ea0174369c89fd2a2abff8a222fc49705415f092dd4617ceffecf2be3ce4c1"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-          "hash": "sha256:2bbd2a0acbdeb052121dde7ba96953bd3429192d801499dc50ee48d3d623513c"
+          "hash": "sha256:e5ea0174369c89fd2a2abff8a222fc49705415f092dd4617ceffecf2be3ce4c1"
         }
       ],
       "runtimeRefs": [
         {
           "role": "judge-credential-resolver",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver.js",
-          "hash": "sha256:7baade683bdab48f19ded9af5877d8a88f06085a38a1697d96c3f95ce6a2b8f2"
+          "hash": "sha256:2ff6232ddc3543166513c8eb4c5456dda43e8fa551ceac949182b7ac7f3334d3"
         },
         {
           "role": "judge-provider-registry",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.js",
-          "hash": "sha256:e4a7ee9eba236e2f0d51773af3d94ecf15cf078bf69f3be6fd731fd25e7046a4"
+          "hash": "sha256:95ca3a84ffda1a8dec84752289cc731beb93322e5a9f2740dc1488684b724836"
         },
         {
           "role": "openai-compatible-judge-adapter",
@@ -385,6 +389,16 @@
           "role": "anthropic-compatible-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js",
           "hash": "sha256:71e87be7334dc72a2640f1c4f260f6961bd3c589eee53f64eeda42d51ebe1905"
+        },
+        {
+          "role": "claude-code-cli-judge-adapter",
+          "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.js",
+          "hash": "sha256:6cb4f6ea8cf8680de24f2104ddfa7f461765317250e920e13b9e91b4bd9220a9"
+        },
+        {
+          "role": "codex-cli-judge-adapter",
+          "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js",
+          "hash": "sha256:8346d111f0e7957b283eef342a6af94eaa4398ddbf1cc507999a5e4ff9739dc3"
         }
       ],
       "routingOnly": false
@@ -1180,7 +1194,7 @@
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-runtime.schema.json",
-          "hash": "sha256:e50c0767001fb7d1f81d7edb65c6b15337b4aebd37ba45ec17cedbd91285516a"
+          "hash": "sha256:19c57c675f095013784858eb16259f6abe70b25216102208469bf768a0f36592"
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credentials.schema.json",
@@ -1188,13 +1202,13 @@
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-provider-registry.schema.json",
-          "hash": "sha256:9662a7849b5f318e4e599246d685a38b29c5531a9861fdde8af1071552a27472"
+          "hash": "sha256:d754c15d73200c528c7349ca30247aa1012a83e01dcdf1e171284969f8723c38"
         }
       ],
       "outputSchemaRefs": [
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json",
-          "hash": "sha256:1543c721e9e80af6a313ae9a1905b3228242a57f294ed2667964123c790f1f57"
+          "hash": "sha256:862326cd023496be63059f537cc3c48b5e2235956b63efa9fb91b1cdb19bc941"
         },
         {
           "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-response.schema.json",
@@ -1229,12 +1243,12 @@
         {
           "role": "judge-credential-resolver",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver.js",
-          "hash": "sha256:7baade683bdab48f19ded9af5877d8a88f06085a38a1697d96c3f95ce6a2b8f2"
+          "hash": "sha256:2ff6232ddc3543166513c8eb4c5456dda43e8fa551ceac949182b7ac7f3334d3"
         },
         {
           "role": "judge-provider-registry",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.js",
-          "hash": "sha256:e4a7ee9eba236e2f0d51773af3d94ecf15cf078bf69f3be6fd731fd25e7046a4"
+          "hash": "sha256:95ca3a84ffda1a8dec84752289cc731beb93322e5a9f2740dc1488684b724836"
         },
         {
           "role": "openai-compatible-judge-adapter",
@@ -1247,9 +1261,19 @@
           "hash": "sha256:71e87be7334dc72a2640f1c4f260f6961bd3c589eee53f64eeda42d51ebe1905"
         },
         {
+          "role": "claude-code-cli-judge-adapter",
+          "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.js",
+          "hash": "sha256:6cb4f6ea8cf8680de24f2104ddfa7f461765317250e920e13b9e91b4bd9220a9"
+        },
+        {
+          "role": "codex-cli-judge-adapter",
+          "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js",
+          "hash": "sha256:8346d111f0e7957b283eef342a6af94eaa4398ddbf1cc507999a5e4ff9739dc3"
+        },
+        {
           "role": "judge-provider-registry-projection",
           "packagePath": "_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json",
-          "hash": "sha256:ba6af4e7f3f373b85ce37345833cd9a1b4d78a67a01e17a7d640a9d0e65b4968"
+          "hash": "sha256:4ebaa537f28f3aa9252c181a2e0c78dafc071e4dd41c40d5995f373085809809"
         }
       ],
       "routingOnly": false

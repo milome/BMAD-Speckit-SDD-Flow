@@ -75,6 +75,11 @@ const REQUIRED_DSA16_ASSETS = [
     'schema',
   ],
   [
+    'cli_judge_execution_receipt_schema',
+    'schemas/requirements-contract-cli-judge-execution-receipt.schema.json',
+    'schema',
+  ],
+  [
     'judge_capability_receipt_schema',
     'schemas/requirements-contract-judge-capability-receipt.schema.json',
     'schema',
@@ -163,6 +168,16 @@ const REQUIRED_DSA16_ASSETS = [
   [
     'anthropic_compatible_judge_adapter',
     'scripts/requirements-contract-anthropic-compatible-judge-adapter.ts',
+    'adapter',
+  ],
+  [
+    'claude_code_cli_judge_adapter',
+    'scripts/requirements-contract-claude-code-cli-judge-adapter.ts',
+    'adapter',
+  ],
+  [
+    'codex_cli_judge_adapter',
+    'scripts/requirements-contract-codex-cli-judge-adapter.ts',
     'adapter',
   ],
   ['judge_provider_smoke', 'scripts/requirements-contract-judge-provider-smoke.ts', 'producer'],

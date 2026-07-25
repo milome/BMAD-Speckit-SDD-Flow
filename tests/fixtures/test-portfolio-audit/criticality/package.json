@@ -5,12 +5,28 @@
   "bin": {
     "test-portfolio-fixture": "./bin/test-portfolio-fixture.cjs"
   },
+  "scripts": {
+    "critical:install": "vitest run tests/package-install.test.ts tests/cli-bin.test.ts",
+    "critical:runtime": "vitest run tests/packaged-runtime.test.ts"
+  },
   "testPortfolioAudit": {
-    "packageInstallTests": [
-      "tests/package-install.test.ts"
-    ],
-    "packagedRuntimeTests": [
-      "tests/packaged-runtime.test.ts"
+    "criticalBindings": [
+      {
+        "bindingId": "consumer-install-boundary",
+        "kinds": [
+          "package_install",
+          "cli_bin",
+          "consumer_compatibility"
+        ],
+        "scriptName": "critical:install"
+      },
+      {
+        "bindingId": "packaged-runtime-boundary",
+        "kinds": [
+          "packaged_runtime"
+        ],
+        "scriptName": "critical:runtime"
+      }
     ]
   }
 }

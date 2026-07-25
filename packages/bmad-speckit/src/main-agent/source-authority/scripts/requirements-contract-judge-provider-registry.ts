@@ -10,16 +10,22 @@ import {
   createClaudeCodeCliJudgeAdapter,
   type ClaudeCodeCliJudgeAdapterDependencies,
 } from './requirements-contract-claude-code-cli-judge-adapter';
+import {
+  createCodexCliJudgeAdapter,
+  type CodexCliJudgeAdapterDependencies,
+} from './requirements-contract-codex-cli-judge-adapter';
 import { OpenAICompatibleJudgeAdapter } from './requirements-contract-openai-compatible-judge-adapter';
 
 type JsonRecord = Record<string, unknown>;
 type JudgeAdapter =
   | typeof OpenAICompatibleJudgeAdapter
   | typeof AnthropicCompatibleJudgeAdapter
-  | ReturnType<typeof createClaudeCodeCliJudgeAdapter>;
+  | ReturnType<typeof createClaudeCodeCliJudgeAdapter>
+  | ReturnType<typeof createCodexCliJudgeAdapter>;
 
 export interface RequirementsContractJudgeProviderRegistryDependencies {
   claudeCodeCli?: ClaudeCodeCliJudgeAdapterDependencies;
+  codexCli?: CodexCliJudgeAdapterDependencies;
 }
 
 const OVERRIDE_KEYS = [
@@ -101,10 +107,33 @@ function adapterFor(
       adapter: AnthropicCompatibleJudgeAdapter,
     };
   }
-  if (provider.transport === 'claude-code-cli' && provider.apiStyle === 'cli') {
+  if (
+    provider.apiStyle === 'cli' &&
+    (provider.transport === 'claude-code-cli' ||
+      (provider.transport === 'cli' &&
+        provider.adapterRef === 'ClaudeCodeCliJudgeAdapter'))
+  ) {
+    const endpoint = record(provider.endpoint, 'judge_provider_endpoint_invalid');
+    if (endpoint.command !== 'claude') {
+      throw new Error('judge_provider_adapter_command_mismatch');
+    }
     return {
       adapterRef: 'ClaudeCodeCliJudgeAdapter',
       adapter: createClaudeCodeCliJudgeAdapter(dependencies.claudeCodeCli),
+    };
+  }
+  if (
+    provider.transport === 'cli' &&
+    provider.apiStyle === 'cli' &&
+    provider.adapterRef === 'CodexCliJudgeAdapter'
+  ) {
+    const endpoint = record(provider.endpoint, 'judge_provider_endpoint_invalid');
+    if (endpoint.command !== 'codex') {
+      throw new Error('judge_provider_adapter_command_mismatch');
+    }
+    return {
+      adapterRef: 'CodexCliJudgeAdapter',
+      adapter: createCodexCliJudgeAdapter(dependencies.codexCli),
     };
   }
   throw new Error('judge_provider_adapter_binding_missing');

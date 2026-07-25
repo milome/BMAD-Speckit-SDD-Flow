@@ -24,6 +24,10 @@ const loadCriticality = () => require('../../tools/test-portfolio-audit/analyzer
 const ROUTE_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/routes');
 const PARALLEL_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/parallel-safety');
 const CRITICALITY_FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/criticality');
+const CRITICALITY_INVALID_AUTHORITY_FIXTURE = join(
+  process.cwd(),
+  'tests/fixtures/test-portfolio-audit/criticality-invalid-authority'
+);
 const SHARED_IDENTITY = 'root-vitest::tests/shared.test.ts';
 const REDUCER_CONTRACT_IDENTITY = 'root-vitest::tests/package-install.test.ts';
 
@@ -200,6 +204,7 @@ function criticalityRouteGraph() {
         testPath: 'tests/release-evidence.test.ts',
         purpose: 'release_validation',
         sourceRef: 'workflow:.github/workflows/release.yml#job:release',
+        selectionKind: 'explicit',
       },
       {
         routeId: 'route:compatibility/host-matrix',
@@ -429,6 +434,23 @@ describe('test portfolio analyzers', () => {
 describe('target validity analyzer', () => {
   it('classifies target validity only with direct reachability and protection evidence', async () => {
     const targetValidity = loadTargetValidity();
+    expect(
+      targetValidity.resolveGeneratedSourceTarget(
+        'tests/generated-runtime.test.ts',
+        '../dist/runtime/render',
+        new Map([['src/runtime/render.ts', {}]])
+      )
+    ).toBe('src/runtime/render.ts');
+    expect(
+      targetValidity.resolveTargetCandidate(
+        'src/script-entry.ts',
+        { path: 'nested/example.test.ts', packageDirectory: 'nested' },
+        {
+          repoRoot: TARGET_FIXTURE,
+          nodes: new Map([['src/script-entry.ts', {}]]),
+        }
+      )
+    ).toBe('src/script-entry.ts');
     const sourceIndex = targetValidity.buildSourceIndex({
       repoRoot: TARGET_FIXTURE,
       packagePaths: ['package.json'],
@@ -443,7 +465,65 @@ describe('target validity analyzer', () => {
     expect(sourceIndex.packageBins.get('src/cli.ts')).toEqual([
       'source:package.json#bin:target-validity-cli',
     ]);
-    expect([...sourceIndex.generatorOwners]).toEqual(['src/generated-retired.ts']);
+    expect([...sourceIndex.generatorOwners].sort()).toEqual([
+      'src/generated-active.ts',
+      'src/generated-retired.ts',
+      'src/generated-unconsumed.ts',
+    ]);
+    expect(sourceIndex.scriptBindings.get('src/script-entry.ts')).toEqual([
+      'source:package.json#scripts.fixture:script',
+    ]);
+    expect(sourceIndex.scriptBindings.get('src/array-target.ts')).toEqual([
+      'source:package.json#scripts.fixture:array',
+    ]);
+    expect(sourceIndex.scriptBindings.get('scripts/setup.ps1')).toEqual([
+      'source:package.json#scripts.fixture:powershell',
+    ]);
+    expect(sourceIndex.scriptBindings.get('scripts/setup.sh')).toEqual([
+      'source:package.json#scripts.fixture:shell',
+    ]);
+    expect(sourceIndex.workflowBindings.get('src/workflow-entry.ts')).toEqual([
+      'source:.github/workflows/target-validity.yml#jobs.fixture.steps[0].run',
+    ]);
+    expect(sourceIndex.workflowBindings.get('.github/workflows/target-validity.yml')).toEqual([
+      'source:.github/workflows/target-validity.yml#workflow-definition',
+    ]);
+    expect(sourceIndex.registryBindings.get('src/registry-active.ts')).toEqual([
+      'source:_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json#consumers[0].path',
+      'source:_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json#discovery.declaredPaths[0]',
+      'source:_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json#discovery.discoveredPaths[0]',
+    ]);
+    expect(
+      sourceIndex.registryBindings.get(
+        '_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json'
+      )
+    ).toEqual([
+      'source:_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json#schemaVersion',
+    ]);
+    expect(sourceIndex.generatedBindings.get('src/generated-active.ts')).toEqual([
+      'source:package.json#testPortfolioAudit.generatorBindings[0]',
+    ]);
+    expect(sourceIndex.generatedBindings.has('src/generated-unconsumed.ts')).toBe(false);
+    expect(sourceIndex.generatedBindingRecords).toEqual([
+      {
+        ownerPath: 'src/generator-source.ts',
+        outputPath: 'src/generated-active.ts',
+        consumerPath: 'src/generated-consumer.ts',
+        evidenceRef: 'source:package.json#testPortfolioAudit.generatorBindings[0]',
+      },
+    ]);
+    expect(sourceIndex.generatedUncertainty).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          targetPath: 'src/generated-unconsumed.ts',
+          issueCode: 'TARGET_GENERATED_BINDING_UNRESOLVED',
+          evidenceRef: 'source:package.json#testPortfolioAudit.generatorBindings[1]',
+        }),
+      ])
+    );
+    expect(sourceIndex.nodes.get('src/generator-source.ts')).toMatchObject({
+      isGenerated: false,
+    });
     expect(sourceIndex.productionEdges).toEqual(
       expect.arrayContaining([
         {
@@ -477,6 +557,12 @@ describe('target validity analyzer', () => {
         }),
         testIdentity('root-vitest::tests/broken.test.ts', {
           testPath: 'tests/broken.test.ts',
+        }),
+        testIdentity('root-vitest::tests/bindings.test.ts', {
+          testPath: 'tests/bindings.test.ts',
+        }),
+        testIdentity('root-vitest::tests/advanced-bindings.test.ts', {
+          testPath: 'tests/advanced-bindings.test.ts',
         }),
       ],
     };
@@ -584,6 +670,59 @@ describe('target validity analyzer', () => {
       issueCodes: ['TARGET_TEST_PARSE_ERROR'],
     });
 
+    const bindingFindings = result.findings.filter(
+      (finding: { identityKey: string }) =>
+        finding.identityKey === 'root-vitest::tests/bindings.test.ts'
+    );
+    expect(bindingFindings.map((finding: { targetRef: string }) => finding.targetRef)).toEqual([
+      '_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json',
+      '.github/workflows/target-validity.yml',
+      'src/array-target.ts',
+      'src/generated-active.ts',
+      'src/generator-source.ts',
+      'src/registry-active.ts',
+      'src/script-entry.ts',
+      'src/workflow-entry.ts',
+    ]);
+    expect(bindingFindings).toEqual(
+      bindingFindings.map(() =>
+        expect.objectContaining({
+          value: 'active',
+          confidence: 'high',
+          issueCodes: [],
+        })
+      )
+    );
+
+    const advancedBindingFindings = result.findings.filter(
+      (finding: { identityKey: string }) =>
+        finding.identityKey === 'root-vitest::tests/advanced-bindings.test.ts'
+    );
+    expect(
+      advancedBindingFindings.map((finding: { targetRef: string }) => finding.targetRef)
+    ).toEqual([
+      'scripts/setup.ps1',
+      'scripts/setup.sh',
+      'src/array-target.ts',
+      'src/command-target.js',
+      'src/copy-target.ts',
+      'src/each-target.ts',
+      'src/helper-target.ts',
+      'src/registry-active.ts',
+      'src/script-entry.ts',
+      'src/ui.jsx',
+      'src/workflow-entry.ts',
+    ]);
+    expect(advancedBindingFindings).toEqual(
+      advancedBindingFindings.map(() =>
+        expect.objectContaining({
+          value: 'active',
+          confidence: 'high',
+          issueCodes: [],
+        })
+      )
+    );
+
     const repeated = await targetValidity.analyze({
       repoRoot: TARGET_FIXTURE,
       inventory,
@@ -595,6 +734,102 @@ describe('target validity analyzer', () => {
       expect(finding.evidenceRefs).toEqual([...new Set(finding.evidenceRefs)].sort());
       expect(finding.issueCodes).toEqual([...new Set(finding.issueCodes)].sort());
     }
+  });
+
+  it('prefers the nearest package when multiple packages declare the same bin', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json', 'packages/local/package.json'],
+    });
+
+    expect(sourceIndex.testTargets.get('packages/local/tests/process-bindings.test.ts')).toEqual([
+      'packages/local/src/local-cli.ts',
+    ]);
+  });
+
+  it('resolves direct process targets relative to an explicit static cwd', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json', 'packages/local/package.json'],
+    });
+
+    expect(sourceIndex.testTargets.get('tests/process-cwd.test.ts')).toEqual([
+      'packages/local/build.js',
+    ]);
+  });
+
+  it('propagates executable argv and cwd through a local process helper', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json', 'packages/local/package.json'],
+    });
+
+    expect(sourceIndex.testTargets.get('packages/local/tests/process-helper.test.ts')).toEqual([
+      'packages/local/helper-build.js',
+    ]);
+  });
+
+  it('binds root cwd command paths and package operations deterministically', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json', 'packages/local/package.json'],
+    });
+
+    expect(sourceIndex.testTargets.get('packages/local/tests/root-cwd-command.test.ts')).toEqual([
+      'src/root-command.ts',
+    ]);
+    expect(sourceIndex.testTargets.get('packages/local/tests/package-pack.test.ts')).toEqual([
+      'packages/local/package.json',
+    ]);
+    expect(
+      targetValidity.classifyTarget(
+        'fixture#packages/local/tests/package-pack.test.ts',
+        'packages/local/package.json',
+        sourceIndex
+      )
+    ).toMatchObject({
+      value: 'active',
+      confidence: 'high',
+      issueCodes: [],
+    });
+  });
+
+  it('registers frozen YAML script owner paths as authoritative targets', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json'],
+    });
+
+    expect(sourceIndex.registryBindings.get('src/registry-script.ts')).toEqual([
+      'source:_bmad/_config/script-owner-model-registry.yaml#scripts[0].path',
+      'source:_bmad/_config/script-owner-model-registry.yaml#scripts[0].sourceRepoPath',
+    ]);
+    expect(
+      targetValidity.classifyTarget(
+        'fixture#registry-script',
+        'src/registry-script.ts',
+        sourceIndex
+      )
+    ).toMatchObject({
+      value: 'active',
+      confidence: 'high',
+      issueCodes: [],
+    });
+  });
+
+  it('binds package-owned directory scans to the package manifest', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: TARGET_FIXTURE,
+      packagePaths: ['package.json'],
+    });
+
+    expect(sourceIndex.testTargets.get('tests/package-surface.test.ts')).toEqual(['package.json']);
   });
 });
 
@@ -870,6 +1105,107 @@ describe('parallel safety analyzer', () => {
 });
 
 describe('criticality analyzer', () => {
+  it('projects explicit package-script authority into exact critical test identities', async () => {
+    const criticality = loadCriticality();
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: CRITICALITY_FIXTURE,
+      packagePaths: ['package.json'],
+    });
+
+    const install = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/package-install.test.ts',
+      identityKey: 'root-vitest#tests/package-install.test.ts',
+      routeGraph: { routes: [] },
+      sourceIndex,
+    });
+    const runtime = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/packaged-runtime.test.ts',
+      identityKey: 'root-vitest#tests/packaged-runtime.test.ts',
+      routeGraph: { routes: [] },
+      sourceIndex,
+    });
+    const unbound = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/critical-name-only.test.ts',
+      identityKey: 'root-vitest#tests/critical-name-only.test.ts',
+      routeGraph: { routes: [] },
+      sourceIndex,
+    });
+
+    expect(install).toMatchObject({
+      value: 'critical',
+      bindings: expect.arrayContaining([
+        expect.objectContaining({ kind: 'package_install' }),
+        expect.objectContaining({ kind: 'cli_bin' }),
+        expect.objectContaining({ kind: 'consumer_compatibility' }),
+      ]),
+    });
+    expect(runtime).toMatchObject({
+      value: 'critical',
+      bindings: [expect.objectContaining({ kind: 'packaged_runtime' })],
+    });
+    expect(unbound).toMatchObject({
+      value: 'standard',
+      bindings: [],
+    });
+    expect(sourceIndex.criticalBindingIssues).toEqual([]);
+  });
+
+  it('fails closed when critical authority references broad or missing package scripts', async () => {
+    const criticality = loadCriticality();
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: CRITICALITY_INVALID_AUTHORITY_FIXTURE,
+      packagePaths: ['package.json'],
+    });
+    const identityKey = 'root-vitest#tests/sample.check.ts';
+    const result = await criticality.analyze({
+      repoRoot: CRITICALITY_INVALID_AUTHORITY_FIXTURE,
+      inventory: {
+        tests: [
+          {
+            identityKey,
+            testPath: 'tests/sample.check.ts',
+            runnerId: 'root-vitest',
+          },
+        ],
+      },
+      routeGraph: { routes: [] },
+      sourceIndex,
+    });
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      findings: [],
+      issues: expect.arrayContaining([
+        expect.objectContaining({ code: 'CRITICAL_BINDING_SCRIPT_NOT_EXPLICIT' }),
+        expect.objectContaining({ code: 'CRITICAL_BINDING_SCRIPT_UNRESOLVED' }),
+        expect.objectContaining({ code: 'CRITICAL_BINDING_ID_DUPLICATE' }),
+        expect.objectContaining({ code: 'CRITICAL_BINDING_KIND_UNSUPPORTED' }),
+        expect.objectContaining({ code: 'CRITICAL_BINDING_KINDS_INVALID' }),
+        expect.objectContaining({ code: 'CRITICAL_BINDING_SCRIPT_NAME_INVALID' }),
+        expect.objectContaining({ code: 'CRITICAL_BINDING_TEST_UNRESOLVED' }),
+      ]),
+    });
+  });
+
+  it('ignores critical bindings from package manifests outside the authority package set', () => {
+    const targetValidity = loadTargetValidity();
+    const sourceIndex = targetValidity.buildSourceIndex({
+      repoRoot: CRITICALITY_INVALID_AUTHORITY_FIXTURE,
+      packagePaths: ['package.json'],
+      criticalBindingPackagePaths: [],
+    });
+
+    expect(sourceIndex.criticalBindingIssues).toEqual([]);
+    expect(sourceIndex.packageInstallBindings.size).toBe(0);
+    expect(sourceIndex.cliBinBindings.size).toBe(0);
+    expect(sourceIndex.mainAgentCoreBindings.size).toBe(0);
+  });
+
   it.each([
     ['tests/package-install.test.ts', 'package_install'],
     ['tests/packaged-runtime.test.ts', 'packaged_runtime'],
@@ -923,6 +1259,60 @@ describe('criticality analyzer', () => {
       bindings: [],
       evidenceRefs: [],
       issueCodes: [],
+    });
+  });
+
+  it('records broad release execution as inherited membership without granting criticality', async () => {
+    const criticality = loadCriticality();
+    const result = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/critical-name-only.test.ts',
+      identityKey: 'root-vitest::tests/critical-name-only.test.ts',
+      routeGraph: {
+        routes: [
+          {
+            routeId: 'route:release/broad',
+            identityKey: 'root-vitest::tests/critical-name-only.test.ts',
+            testPath: 'tests/critical-name-only.test.ts',
+            purpose: 'release_validation',
+            sourceRef: 'source:.github/workflows/release.yml#jobs.release.steps[0].run',
+            selectionKind: 'inherited',
+          },
+        ],
+      },
+      sourceIndex: criticalitySourceIndex(),
+    });
+
+    expect(result).toMatchObject({
+      value: 'standard',
+      confidence: 'medium',
+      bindings: [],
+      releaseGateMembership: 'inherited',
+      evidenceRefs: ['source:.github/workflows/release.yml#jobs.release.steps[0].run'],
+      issueCodes: [],
+    });
+  });
+
+  it('grants release-path criticality only to an explicitly selected release test', async () => {
+    const criticality = loadCriticality();
+    const result = await criticality.analyzeTest({
+      repoRoot: CRITICALITY_FIXTURE,
+      testPath: 'tests/release-evidence.test.ts',
+      identityKey: 'root-vitest::tests/release-evidence.test.ts',
+      routeGraph: criticalityRouteGraph(),
+      sourceIndex: criticalitySourceIndex(),
+    });
+
+    expect(result).toMatchObject({
+      value: 'critical',
+      confidence: 'high',
+      releaseGateMembership: 'explicit',
+      bindings: [
+        {
+          kind: 'release_path',
+          evidenceRef: 'workflow:.github/workflows/release.yml#job:release',
+        },
+      ],
     });
   });
 
@@ -1046,7 +1436,12 @@ describe('criticality analyzer', () => {
 
 describe('test portfolio analyzer reducer', () => {
   it('keeps all five dimensions on one canonical identity row', () => {
-    const result = reduceAudit(reducerInput(completeReducerResults()));
+    const criticalityResult = reducerAnalyzerResult('criticality', [
+      reducerFinding('critical', { releaseGateMembership: 'explicit' }),
+    ]);
+    const result = reduceAudit(
+      reducerInput(completeReducerResults({ criticality: criticalityResult }))
+    );
 
     expect(result.artifact.tests[0]).toMatchObject({
       executionMultiplicity: 'duplicate',
@@ -1054,7 +1449,47 @@ describe('test portfolio analyzer reducer', () => {
       oracleEffectiveness: 'ineffective_candidate',
       parallelSafety: 'unsafe',
       criticality: 'critical',
+      releaseGateMembership: 'explicit',
     });
+    expect(result.artifact.totals).toMatchObject({
+      releaseGateMembership: { explicit: 1 },
+    });
+  });
+
+  it('raises a high-priority finding when explicit critical evidence targets obsolete code', () => {
+    const targetResult = reducerAnalyzerResult('targetValidity', [
+      reducerFinding('obsolete_candidate', {
+        evidenceRefs: ['source:src/obsolete.ts#no-production-inbound'],
+        targetRef: 'src/obsolete.ts',
+      }),
+    ]);
+    const criticalityResult = reducerAnalyzerResult('criticality', [
+      reducerFinding('critical', {
+        evidenceRefs: ['source:package.json#bin:bmad-speckit'],
+        releaseGateMembership: 'none',
+      }),
+    ]);
+    const result = reduceAudit(
+      reducerInput(
+        completeReducerResults({
+          targetValidity: targetResult,
+          criticality: criticalityResult,
+        })
+      )
+    );
+
+    expect(result.artifact.tests[0]).toMatchObject({
+      targetValidity: 'obsolete_candidate',
+      criticality: 'critical',
+      issueCodes: expect.arrayContaining(['CRITICAL_TARGET_OBSOLESCENCE_CONFLICT']),
+    });
+    expect(result.artifact.issues).toContainEqual(
+      expect.objectContaining({
+        severity: 'warning',
+        code: 'CRITICAL_TARGET_OBSOLESCENCE_CONFLICT',
+        identityKey: REDUCER_CONTRACT_IDENTITY,
+      })
+    );
   });
 
   it('turns conflicting definitive target evidence into ambiguous and incomplete', () => {

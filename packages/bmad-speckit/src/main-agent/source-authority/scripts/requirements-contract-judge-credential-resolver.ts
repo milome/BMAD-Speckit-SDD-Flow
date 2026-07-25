@@ -19,6 +19,36 @@ const OVERRIDE_KEYS = [
 const OVERRIDE_ENV =
   /^(?:BMAD_)?JUDGE_(?:PROVIDER|PROVIDER_REF|MODEL|BASE_URL|API_KEY|CREDENTIAL_PATH|ENDPOINT)$/u;
 
+export function resolveRequirementsContractJudgeCredentialEnvironmentVariable(input: {
+  adapterRef: unknown;
+  authenticationType: unknown;
+}): string | null {
+  const adapterRef =
+    typeof input.adapterRef === 'string' ? input.adapterRef.trim() : '';
+  const authenticationType =
+    typeof input.authenticationType === 'string'
+      ? input.authenticationType.trim()
+      : '';
+  if (
+    adapterRef === 'ClaudeCodeCliJudgeAdapter' &&
+    authenticationType === 'claude_code_session'
+  ) {
+    return null;
+  }
+  if (!['bearer', 'api_key'].includes(authenticationType)) {
+    throw new Error('judge_credential_authentication_invalid');
+  }
+  if (adapterRef === 'CodexCliJudgeAdapter') {
+    return 'BMAD_CODEX_JUDGE_API_KEY';
+  }
+  if (adapterRef === 'ClaudeCodeCliJudgeAdapter') {
+    return authenticationType === 'bearer'
+      ? 'ANTHROPIC_AUTH_TOKEN'
+      : 'ANTHROPIC_API_KEY';
+  }
+  throw new Error('judge_credential_adapter_invalid');
+}
+
 export function readRequirementsContractJudgeCredentialSecret(handle: unknown): string {
   if (!handle || typeof handle !== 'object' || Array.isArray(handle)) {
     throw new Error('judge_credential_handle_invalid');

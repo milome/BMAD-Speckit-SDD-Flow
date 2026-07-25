@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -19,6 +20,10 @@ import type {
   ClaudeCodeCliCommandInvocation,
   ClaudeCodeCliCommandResult,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter';
+import type {
+  CodexCliCommandInvocation,
+  CodexCliCommandResult,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter';
 import { buildCriticalAuditorJudgeRuntimeBinding } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
 import { readCommittedRequirementsContractCriticalAuditorJudgeInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
@@ -47,6 +52,9 @@ type RawJudgeAdapterCommand = (options: {
   executeClaudeCodeCliCommand?: (
     invocation: ClaudeCodeCliCommandInvocation
   ) => Promise<ClaudeCodeCliCommandResult>;
+  executeCodexCliCommand?: (
+    invocation: CodexCliCommandInvocation
+  ) => Promise<CodexCliCommandResult>;
 }) => Promise<JsonRecord>;
 
 const ACTION_SOURCE = path.resolve(
@@ -231,6 +239,63 @@ function requiredReturnedModel(normalized: JsonRecord): string {
   return model;
 }
 
+function nativeReadEventsFromCommittedSnapshot(input: {
+  root: string;
+  outputDir: string;
+}): JsonRecord[] {
+  const bundle = readCommittedBundle(input.outputDir);
+  const returnedModel = requiredReturnedModel(bundle.normalized);
+  const snapshotManifestPath = path.resolve(
+    input.root,
+    String(bundle.transportEvidence.snapshotManifestPath)
+  );
+  const snapshotRoot = path.dirname(snapshotManifestPath);
+  const manifest = record(
+    JSON.parse(readFileSync(snapshotManifestPath, 'utf8')),
+    'test_snapshot_manifest_missing'
+  );
+  const entries = Array.isArray(manifest.entries)
+    ? (manifest.entries as JsonRecord[])
+    : [];
+  return entries.flatMap((entry) => {
+    const relativePath = String(entry.path);
+    const filePath = path.join(snapshotRoot, relativePath);
+    const toolUseId = `tool/${randomUUID()}`;
+    const content =
+      Number(entry.bytes) === 0
+        ? `<system-reminder>empty-read/${randomUUID()}</system-reminder>`
+        : claudeReadResult(filePath);
+    return [
+      {
+        type: 'assistant',
+        message: {
+          model: returnedModel,
+          content: [
+            {
+              type: 'tool_use',
+              id: toolUseId,
+              name: 'Read',
+              input: { file_path: relativePath },
+            },
+          ],
+        },
+      },
+      {
+        type: 'user',
+        message: {
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: toolUseId,
+              content,
+            },
+          ],
+        },
+      },
+    ];
+  });
+}
+
 function rewriteCommittedTranscript(input: {
   root: string;
   outputDir: string;
@@ -246,7 +311,7 @@ function rewriteCommittedTranscript(input: {
   const transcript = `${input.events.map((event) => JSON.stringify(event)).join('\n')}\n`;
   writeFileSync(stdoutPath, transcript, 'utf8');
   writeFileSync(transcriptPath, transcript, 'utf8');
-  const nativeModelEvidence =
+  const nativeTransportEvidence =
     input.transportPatch?.executorKind === 'native_spawn'
       ? (() => {
           const initEvents = input.events.filter(
@@ -262,7 +327,17 @@ function rewriteCommittedTranscript(input: {
             !Array.isArray(resultEvent.modelUsage)
               ? (resultEvent.modelUsage as JsonRecord)
               : {};
+          const command = String(bundle.transportEvidence.command);
+          const argv = Array.isArray(bundle.transportEvidence.argv)
+            ? bundle.transportEvidence.argv.map(String)
+            : [];
           return {
+            commandResolution: 'process_spawn_path_search',
+            launchCommand: command,
+            launchCommandHash: sha256Stable(command),
+            launchArgv: argv,
+            launchEntryPath: null,
+            launchEntryHash: null,
             initModel:
               initEvents.length === 1 ? String(initEvents[0].model ?? '').trim() || null : null,
             modelUsageModels: Object.keys(modelUsage).sort(),
@@ -271,7 +346,7 @@ function rewriteCommittedTranscript(input: {
       : {};
   const transportEvidence = {
     ...bundle.transportEvidence,
-    ...nativeModelEvidence,
+    ...nativeTransportEvidence,
     ...input.transportPatch,
     stdoutHash: sha256FileContent(stdoutPath),
     transcriptHash: sha256FileContent(transcriptPath),
@@ -311,9 +386,11 @@ function rewriteNativeStructuredOutputTranscript(input: {
     .trim()
     .split(/\r?\n/u)
     .map((line) => record(JSON.parse(line), 'test_transcript_event_invalid'));
+  const resultEvents = existingEvents.filter((event) => event.type === 'result');
   const snapshotRoot = path.dirname(
     path.resolve(input.root, String(bundle.transportEvidence.snapshotManifestPath))
   );
+  const readEvents = nativeReadEventsFromCommittedSnapshot(input);
   const structuredOutputEvents = input.structuredOutputs.flatMap((structuredOutput) => {
     const toolUseId = `tool/${randomUUID()}`;
     return [
@@ -359,8 +436,9 @@ function rewriteNativeStructuredOutputTranscript(input: {
         model: returnedModel,
         permissionMode: 'dontAsk',
       },
+      ...readEvents,
       ...structuredOutputEvents,
-      ...existingEvents,
+      ...resultEvents,
     ],
     transportPatch: {
       executorKind: 'native_spawn',
@@ -424,6 +502,10 @@ function createFixture() {
     throw new Error(`test_judge_runtime_binding_invalid:${runtimeBinding.issueCodes.join(',')}`);
   }
   const requestSeed = randomUUID();
+  const sourceDocument = path.join('evidence', `${randomUUID()}.md`);
+  const sourcePath = path.join(root, sourceDocument);
+  mkdirSync(path.dirname(sourcePath), { recursive: true });
+  writeFileSync(sourcePath, `# ${randomUUID()}\n\n${randomUUID()}\n`, 'utf8');
   const projectionGroups = [`projection-group/${randomUUID()}`];
   const projectionRefs = [`projection-ref/${randomUUID()}`];
   const qualityRuleCodes = [`quality-rule/${randomUUID()}`];
@@ -436,7 +518,9 @@ function createFixture() {
     auditAttemptId: `audit-attempt/${randomUUID()}`,
     requestHash: null,
     sourceHash: sha256Stable({ requestSeed, role: 'source' }),
-    sourceDocumentHash: sha256Stable({ requestSeed, role: 'source-document' }),
+    sourceDocument,
+    sourceDocumentHash: sha256Stable({ requestSeed, role: 'source-document-semantic' }),
+    sourceBytesHash: sha256FileContent(sourcePath),
     semanticModelHash: sha256Stable({ requestSeed, role: 'semantic-model' }),
     implementationConfirmationHash: sha256Stable({
       requestSeed,
@@ -482,6 +566,56 @@ function createFixture() {
       credentialEnvironmentVariable,
     },
   };
+}
+
+function configureFixtureForCodex(
+  fixture: ReturnType<typeof createFixture>
+): JsonRecord {
+  const configPath = path.join(fixture.root, fixture.configRelativePath);
+  const config = record(
+    yaml.load(readFileSync(configPath, 'utf8')),
+    'test_governance_config_invalid'
+  );
+  const judgeRuntime = record(config.judgeRuntime, 'test_judge_runtime_missing');
+  const providerRef = String(judgeRuntime.activeProviderRef);
+  const providers = record(judgeRuntime.providers, 'test_judge_runtime_providers_missing');
+  const provider = record(providers[providerRef], 'test_judge_runtime_provider_missing');
+  provider.transport = 'cli';
+  provider.adapterRef = 'CodexCliJudgeAdapter';
+  provider.apiStyle = 'cli';
+  provider.model = null;
+  provider.endpoint = {
+    command: 'codex',
+    baseUrl: 'http://127.0.0.1:9',
+    resolutionMode: 'path_search',
+    routingOwnership: 'transport_adapter',
+    upstreamVersioning: 'gateway_managed',
+    explicitOperationPath: null,
+  };
+  provider.requestPolicy = {
+    timeoutMs: 1_000,
+    maximumAttempts: 1,
+    structuredResponseRequired: true,
+  };
+  writeFileSync(configPath, yaml.dump(config, { lineWidth: -1 }), 'utf8');
+
+  const runtimeBinding = buildCriticalAuditorJudgeRuntimeBinding(judgeRuntime);
+  if (!runtimeBinding.binding || runtimeBinding.issueCodes.length > 0) {
+    throw new Error(
+      `test_codex_judge_runtime_binding_invalid:${runtimeBinding.issueCodes.join(',')}`
+    );
+  }
+  fixture.request.independentProviderBinding = runtimeBinding.binding;
+  fixture.request.requestHash = sha256Stable({
+    ...fixture.request,
+    requestHash: null,
+  });
+  writeFileSync(
+    path.join(fixture.root, fixture.requestRelativePath),
+    `${JSON.stringify(fixture.request, null, 2)}\n`,
+    'utf8'
+  );
+  return runtimeBinding.binding;
 }
 
 function readCommittedFixture(
@@ -860,6 +994,501 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     expect(source).not.toContain('input.fetch');
   });
 
+  it('routes a configured Codex CLI provider through the Codex adapter and preserves model-observation fail-closed behavior', async () => {
+    const fixture = createFixture();
+    const outputDir = path.join('runtime', `codex-judge-${randomUUID()}`);
+    let invocationCount = 0;
+    try {
+      configureFixtureForCodex(fixture);
+      const actionModule = (await import(
+        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
+      )) as {
+        requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
+      };
+      const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
+      expect(command).toBeTypeOf('function');
+      if (!command) return;
+
+      await expect(
+        command({
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          outputDir,
+          executeCodexCliCommand: async (invocation) => {
+            invocationCount += 1;
+            expect(invocation.command).toBe('codex');
+            expect(invocation.args).toContain('exec');
+            expect(invocation.args).not.toEqual(
+              expect.arrayContaining(['--print', '--permission-mode'])
+            );
+            mkdirSync(path.dirname(invocation.outputPath), { recursive: true });
+            writeFileSync(
+              invocation.outputPath,
+              `${JSON.stringify({
+                decision: 'inconclusive',
+                findings: [],
+                challengeRequests: [],
+                evidenceRefs: [],
+              })}\n`,
+              'utf8'
+            );
+            return {
+              exitCode: 0,
+              stdout: `${JSON.stringify({
+                type: 'thread.started',
+                thread_id: randomUUID(),
+              })}\n${JSON.stringify({
+                type: 'turn.completed',
+                usage: { input_tokens: 1, output_tokens: 1 },
+              })}\n`,
+              stderr: '',
+            };
+          },
+        })
+      ).rejects.toThrow('codex_cli_judge_model_observation_missing');
+      expect(invocationCount).toBe(1);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('validates a Codex common execution receipt through the production Critical Auditor transaction', async () => {
+    const fixture = createFixture();
+    const outputDir = path.join('runtime', `codex-judge-${randomUUID()}`);
+    const returnedModel = `observed-model-${randomUUID()}`;
+    try {
+      configureFixtureForCodex(fixture);
+      const actionModule = (await import(
+        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
+      )) as {
+        requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
+      };
+      const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
+      expect(command).toBeTypeOf('function');
+      if (!command) return;
+      const assessment = semanticAssessmentFromRequest(fixture.request);
+      const gateDryRun = record(
+        fixture.request.gateDryRun,
+        'test_gate_dry_run_missing'
+      );
+
+      const result = await command({
+        projectRoot: fixture.root,
+        config: fixture.configRelativePath,
+        request: fixture.requestRelativePath,
+        round: Number(fixture.request.roundIndex),
+        outputDir,
+        executeCodexCliCommand: async (invocation) => {
+          mkdirSync(path.dirname(invocation.outputPath), { recursive: true });
+          writeFileSync(
+            invocation.outputPath,
+            `${JSON.stringify({
+              decision: 'inconclusive',
+              findings: [assessment],
+              challengeRequests: [],
+              evidenceRefs: [String(gateDryRun.reportPath)],
+            })}\n`,
+            'utf8'
+          );
+          const requestId = randomUUID();
+          return {
+            exitCode: 0,
+            stdout: `${JSON.stringify({
+              type: 'thread.started',
+              thread_id: requestId,
+              model: returnedModel,
+            })}\n${JSON.stringify({
+              type: 'turn.completed',
+              model: returnedModel,
+              usage: { input_tokens: 1, output_tokens: 1 },
+            })}\n`,
+            stderr: '',
+          };
+        },
+      });
+
+      expect(record(result.providerRun, 'test_provider_run_missing')).toMatchObject({
+        adapterRef: 'CodexCliJudgeAdapter',
+        model: returnedModel,
+      });
+      expect(record(result.response, 'test_response_missing')).toMatchObject({
+        verdict: 'insufficient_audit',
+        requestHash: fixture.request.requestHash,
+      });
+      const receipt = record(
+        JSON.parse(
+          readFileSync(
+            path.join(fixture.root, outputDir, 'judge-provider-invocation-receipt.json'),
+            'utf8'
+          )
+        ),
+        'test_judge_invocation_receipt_missing'
+      );
+      expect(record(receipt.transportEvidence, 'test_transport_evidence_missing')).toMatchObject({
+        schemaVersion: 'requirements-contract-cli-judge-execution-receipt/v1',
+        adapterRef: 'CodexCliJudgeAdapter',
+        observedModel: returnedModel,
+        modelObservationSource: 'cli_event',
+        decisionBearingModelEvidence: true,
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('recovers a committed Codex provider invocation with the adapter-owned credential binding', async () => {
+    const fixture = createFixture();
+    const outputRelativePath = path.join('runtime', `codex-judge-${randomUUID()}`);
+    const outputPath = path.join(fixture.root, outputRelativePath);
+    const binRoot = path.join(fixture.root, 'bin');
+    const codexEntry =
+      process.platform === 'win32'
+        ? path.join(
+            binRoot,
+            'node_modules',
+            '@openai',
+            'codex',
+            'bin',
+            'codex.js'
+          )
+        : path.join(binRoot, 'codex');
+    const returnedModel = `observed-model-${randomUUID()}`;
+    const providerRequestId = randomUUID();
+    const pathEnvironmentKey =
+      Object.keys(process.env).find((key) => key.toLowerCase() === 'path') ?? 'PATH';
+    const previousPath = process.env[pathEnvironmentKey];
+    let unexpectedProcessExecutions = 0;
+    try {
+      const runtimeBinding = configureFixtureForCodex(fixture);
+      const actionModule = (await import(
+        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
+      )) as {
+        requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
+      };
+      const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
+      expect(command).toBeTypeOf('function');
+      if (!command) return;
+      const assessment = semanticAssessmentFromRequest(fixture.request);
+      const gateDryRun = record(
+        fixture.request.gateDryRun,
+        'test_gate_dry_run_missing'
+      );
+      const fakeCodexSource = [
+        ...(process.platform === 'win32' ? [] : ['#!/usr/bin/env node']),
+        "const fs = require('node:fs');",
+        "const path = require('node:path');",
+        'const args = process.argv.slice(2);',
+        "const outputIndex = args.indexOf('--output-last-message');",
+        'if (outputIndex < 0 || !args[outputIndex + 1]) process.exit(64);',
+        'const outputPath = path.resolve(process.cwd(), args[outputIndex + 1]);',
+        'fs.mkdirSync(path.dirname(outputPath), { recursive: true });',
+        `fs.writeFileSync(outputPath, ${JSON.stringify(
+          `${JSON.stringify({
+            decision: 'inconclusive',
+            findings: [assessment],
+            challengeRequests: [],
+            evidenceRefs: [String(gateDryRun.reportPath)],
+          })}\n`
+        )}, 'utf8');`,
+        `process.stdout.write(${JSON.stringify(
+          `${JSON.stringify({
+            type: 'thread.started',
+            thread_id: providerRequestId,
+            model: returnedModel,
+          })}\n${JSON.stringify({
+            type: 'item.completed',
+            item: {
+              id: `command/${randomUUID()}`,
+              type: 'command_execution',
+              command: `read-evidence-${randomUUID()}`,
+              aggregated_output: `observed/${randomUUID()}`,
+              exit_code: 0,
+              status: 'completed',
+            },
+          })}\n${JSON.stringify({
+            type: 'turn.completed',
+            model: returnedModel,
+            usage: { input_tokens: 1, output_tokens: 1 },
+          })}\n`
+        )});`,
+      ].join('\n');
+      mkdirSync(path.dirname(codexEntry), { recursive: true });
+      if (process.platform === 'win32') {
+        writeFileSync(path.join(binRoot, 'codex.cmd'), '@exit /b 0\r\n', 'utf8');
+      }
+      writeFileSync(codexEntry, fakeCodexSource, 'utf8');
+      if (process.platform !== 'win32') chmodSync(codexEntry, 0o755);
+      process.env[pathEnvironmentKey] = [binRoot, previousPath ?? ''].join(path.delimiter);
+
+      await command({
+        projectRoot: fixture.root,
+        config: fixture.configRelativePath,
+        request: fixture.requestRelativePath,
+        round: Number(fixture.request.roundIndex),
+        outputDir: outputRelativePath,
+      });
+      expect(
+        readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          requestPath: fixture.requestRelativePath,
+          outputDir: outputRelativePath,
+          round: Number(fixture.request.roundIndex),
+          runtimeBinding: {
+            ...runtimeBinding,
+            credentialRevision: 1,
+            credentialEnvironmentVariable: 'BMAD_CODEX_JUDGE_API_KEY',
+          },
+        }).result
+      ).toBeTruthy();
+
+      const result = orchestration.executeCriticalAuditorJudgeAdapter({
+        projectRoot: fixture.root,
+        requestPath: path.join(fixture.root, fixture.requestRelativePath),
+        outputDir: outputPath,
+        roundIndex: Number(fixture.request.roundIndex),
+        expected: {
+          providerId: String(runtimeBinding.providerId),
+          model: runtimeBinding.model === null ? null : String(runtimeBinding.model),
+          transport: String(runtimeBinding.transport),
+          adapterRef: String(runtimeBinding.adapterRef),
+          apiStyle: String(runtimeBinding.apiStyle),
+          configuredBaseUrlHash: String(runtimeBinding.configuredBaseUrlHash),
+          independenceClass: String(runtimeBinding.independenceClass),
+          providerRegistryHash: String(runtimeBinding.providerRegistryHash),
+          providerConfigurationHash: String(runtimeBinding.providerConfigurationHash),
+          requestHash: String(fixture.request.requestHash),
+          sourceDocumentHash: String(fixture.request.sourceDocumentHash),
+          semanticModelHash: String(fixture.request.semanticModelHash),
+          projectionSetHash: String(fixture.request.projectionSetHash),
+        },
+        processExecutor: () => {
+          unexpectedProcessExecutions += 1;
+          throw new Error('test_committed_codex_invocation_was_reexecuted');
+        },
+      });
+
+      expect(unexpectedProcessExecutions).toBe(0);
+      expect(result).toMatchObject({
+        verdict: 'insufficient_audit',
+        independentProviderEvidence: {
+          adapterRef: 'CodexCliJudgeAdapter',
+          model: returnedModel,
+        },
+      });
+      const validateProviderReceipt = (
+        orchestration as unknown as {
+          validateCriticalAuditorProviderInvocationReceipt?: (input: {
+            projectRoot: string;
+            receiptRef: unknown;
+            requestHash: string;
+            sourceDocumentHash: string;
+            sourceBytesHash: string;
+            semanticModelHash: string;
+            projectionSetHash: string;
+            providerRunId: string;
+            expectedProviderBinding: JsonRecord;
+          }) => JsonRecord;
+        }
+      ).validateCriticalAuditorProviderInvocationReceipt;
+      expect(validateProviderReceipt).toBeTypeOf('function');
+      if (!validateProviderReceipt) return;
+      expect(() =>
+        validateProviderReceipt({
+          projectRoot: fixture.root,
+          receiptRef: result.providerInvocationReceiptRef,
+          requestHash: String(fixture.request.requestHash),
+          sourceDocumentHash: String(fixture.request.sourceDocumentHash),
+          sourceBytesHash: String(fixture.request.sourceBytesHash),
+          semanticModelHash: String(fixture.request.semanticModelHash),
+          projectionSetHash: String(fixture.request.projectionSetHash),
+          providerRunId: String(
+            result.independentProviderEvidence?.providerRunId
+          ),
+          expectedProviderBinding: runtimeBinding,
+        })
+      ).not.toThrow();
+      expect(() =>
+        validateProviderReceipt({
+          projectRoot: fixture.root,
+          receiptRef: result.providerInvocationReceiptRef,
+          requestHash: String(fixture.request.requestHash),
+          sourceDocumentHash: String(fixture.request.sourceDocumentHash),
+          sourceBytesHash: String(fixture.request.sourceBytesHash),
+          semanticModelHash: String(fixture.request.semanticModelHash),
+          projectionSetHash: String(fixture.request.projectionSetHash),
+          providerRunId: String(
+            result.independentProviderEvidence?.providerRunId
+          ),
+          expectedProviderBinding: {
+            ...runtimeBinding,
+            configuredBaseUrlHash: sha256Stable({
+              commandBindingNonce: randomUUID(),
+            }),
+          },
+        })
+      ).toThrow('critical_auditor_judge_invocation_receipt_binding_mismatch');
+    } finally {
+      if (previousPath === undefined) delete process.env[pathEnvironmentKey];
+      else process.env[pathEnvironmentKey] = previousPath;
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it.skipIf(process.platform !== 'win32')(
+    'rejects a native Codex committed receipt when its launch executable hash is tampered',
+    async () => {
+      const fixture = createFixture();
+      const outputRelativePath = path.join('runtime', `codex-judge-${randomUUID()}`);
+      const binRoot = path.join(fixture.root, 'bin');
+      const codexEntry = path.join(
+        binRoot,
+        'node_modules',
+        '@openai',
+        'codex',
+        'bin',
+        'codex.js'
+      );
+      const returnedModel = `observed-model-${randomUUID()}`;
+      const providerRequestId = randomUUID();
+      const pathEnvironmentKey =
+        Object.keys(process.env).find((key) => key.toLowerCase() === 'path') ?? 'PATH';
+      const previousPath = process.env[pathEnvironmentKey];
+      try {
+        const runtimeBinding = configureFixtureForCodex(fixture);
+        const assessment = semanticAssessmentFromRequest(fixture.request);
+        const gateDryRun = record(
+          fixture.request.gateDryRun,
+          'test_gate_dry_run_missing'
+        );
+        mkdirSync(path.dirname(codexEntry), { recursive: true });
+        writeFileSync(path.join(binRoot, 'codex.cmd'), '@exit /b 0\r\n', 'utf8');
+        writeFileSync(
+          codexEntry,
+          [
+            "const fs = require('node:fs');",
+            "const path = require('node:path');",
+            'const args = process.argv.slice(2);',
+            "const outputIndex = args.indexOf('--output-last-message');",
+            'if (outputIndex < 0 || !args[outputIndex + 1]) process.exit(64);',
+            'const outputPath = path.resolve(process.cwd(), args[outputIndex + 1]);',
+            'fs.mkdirSync(path.dirname(outputPath), { recursive: true });',
+            `fs.writeFileSync(outputPath, ${JSON.stringify(
+              `${JSON.stringify({
+                decision: 'inconclusive',
+                findings: [assessment],
+                challengeRequests: [],
+                evidenceRefs: [String(gateDryRun.reportPath)],
+              })}\n`
+            )}, 'utf8');`,
+            `process.stdout.write(${JSON.stringify(
+              `${JSON.stringify({
+                type: 'thread.started',
+                thread_id: providerRequestId,
+                model: returnedModel,
+              })}\n${JSON.stringify({
+                type: 'item.completed',
+                item: {
+                  id: `command/${randomUUID()}`,
+                  type: 'command_execution',
+                  command: `read-evidence-${randomUUID()}`,
+                  aggregated_output: `observed/${randomUUID()}`,
+                  exit_code: 0,
+                  status: 'completed',
+                },
+              })}\n${JSON.stringify({
+                type: 'turn.completed',
+                model: returnedModel,
+                usage: { input_tokens: 1, output_tokens: 1 },
+              })}\n`
+            )});`,
+          ].join('\n'),
+          'utf8'
+        );
+        process.env[pathEnvironmentKey] = [binRoot, previousPath ?? ''].join(
+          path.delimiter
+        );
+
+        const actionModule = (await import(
+          /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
+        )) as {
+          requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
+        };
+        const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
+        expect(command).toBeTypeOf('function');
+        if (!command) return;
+        await command({
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          outputDir: outputRelativePath,
+        });
+
+        const outputDir = path.join(fixture.root, outputRelativePath);
+        const recoveryRuntimeBinding = {
+          ...runtimeBinding,
+          credentialRevision: 1,
+          credentialEnvironmentVariable: 'BMAD_CODEX_JUDGE_API_KEY',
+        };
+        expect(
+          readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
+            projectRoot: fixture.root,
+            config: fixture.configRelativePath,
+            requestPath: fixture.requestRelativePath,
+            outputDir: outputRelativePath,
+            round: Number(fixture.request.roundIndex),
+            runtimeBinding: recoveryRuntimeBinding,
+          }).result
+        ).toBeTruthy();
+
+        const bundle = readCommittedBundle(outputDir);
+        const transportEvidence = {
+          ...bundle.transportEvidence,
+          launchCommandHash: sha256Stable({ tampered: randomUUID() }),
+        };
+        rewriteCommittedBundle({
+          outputDir,
+          persisted: {
+            ...bundle.persisted,
+            normalizedProviderResponse: {
+              ...bundle.normalized,
+              transportEvidence,
+            },
+          },
+          receipt: {
+            ...bundle.receipt,
+            transportEvidence,
+            transportEvidenceHash: sha256JsonContent(transportEvidence),
+          },
+          state: bundle.state,
+        });
+
+        expect(() =>
+          readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
+            projectRoot: fixture.root,
+            config: fixture.configRelativePath,
+            requestPath: fixture.requestRelativePath,
+            outputDir: outputRelativePath,
+            round: Number(fixture.request.roundIndex),
+            runtimeBinding: recoveryRuntimeBinding,
+          })
+        ).toThrow('critical_auditor_judge_cli_launch_provenance_mismatch');
+      } finally {
+        if (previousPath === undefined) delete process.env[pathEnvironmentKey];
+        else process.env[pathEnvironmentKey] = previousPath;
+        rmSync(fixture.root, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 50,
+        });
+      }
+    }
+  );
+
   it('derives identity from the request and semantic claims from the configured Judge response', async () => {
     const fixture = createFixture();
     try {
@@ -1198,6 +1827,65 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     }
   });
 
+  it('rejects missing Source Requirement path before invoking the Judge transport', async () => {
+    const fixture = createFixture();
+    let transportCalls = 0;
+    try {
+      const requestPath = path.join(fixture.root, fixture.requestRelativePath);
+      delete fixture.request.sourceDocument;
+      fixture.request.requestHash = sha256Stable({
+        ...fixture.request,
+        requestHash: null,
+      });
+      writeFileSync(requestPath, `${JSON.stringify(fixture.request, null, 2)}\n`, 'utf8');
+
+      const command = await loadCommand();
+      await expect(
+        command({
+          cwd: fixture.root,
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          json: false,
+          fetch: blockingJudgeFetch(() => {
+            transportCalls += 1;
+          }),
+        })
+      ).rejects.toThrow('claude_code_cli_judge_source_document_missing');
+      expect(transportCalls).toBe(0);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('rejects tampered Source Requirement bytes before invoking the Judge transport', async () => {
+    const fixture = createFixture();
+    let transportCalls = 0;
+    try {
+      const sourcePath = path.join(fixture.root, String(fixture.request.sourceDocument));
+      writeFileSync(sourcePath, `${randomUUID()}\n`, 'utf8');
+
+      const command = await loadCommand();
+      await expect(
+        command({
+          cwd: fixture.root,
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          json: false,
+          fetch: blockingJudgeFetch(() => {
+            transportCalls += 1;
+          }),
+        })
+      ).rejects.toThrow('claude_code_cli_judge_source_bytes_hash_mismatch');
+      expect(transportCalls).toBe(0);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
   it('rejects injected transport evidence replayed through the native production entry', async () => {
     const fixture = createFixture();
     const outputRelativePath = path.join('runtime', 'judge-invocation');
@@ -1227,6 +1915,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
 
   it('allows an empty prior-finding disposition when the request has no prior findings', async () => {
     const fixture = createFixture();
+    let invocation: ClaudeCodeCliCommandInvocation | undefined;
     try {
       expect(fixture.request.previousReceipts).toEqual([]);
       expect(
@@ -1239,7 +1928,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         priorFindingsDisposition: [],
         rationale: 'No prior finding or actionable dry-run blocker exists to classify.',
       };
-      const command = await loadCommand();
+      const command = await loadCommand((value) => {
+        invocation = value;
+      });
       const result = await command({
         cwd: fixture.root,
         projectRoot: fixture.root,
@@ -1277,6 +1968,169 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       const response = record(result.response, 'test_response_missing');
       expect(response.verdict).toBe('insufficient_audit');
       expect(response.priorFindingsDisposition).toEqual([]);
+      const transportSchema = record(
+        JSON.parse(requiredArgument(invocation?.args ?? [], '--json-schema')),
+        'test_cli_structured_output_schema_missing'
+      );
+      const transportProperties = record(
+        transportSchema.properties,
+        'test_cli_schema_properties_missing'
+      );
+      const findings = record(transportProperties.findings, 'test_cli_findings_schema_missing');
+      const findingItems = record(findings.items, 'test_cli_finding_items_schema_missing');
+      const findingProperties = record(
+        findingItems.properties,
+        'test_cli_finding_properties_missing'
+      );
+      const dispositionSchema = record(
+        findingProperties.priorFindingsDisposition,
+        'test_cli_prior_findings_disposition_schema_missing'
+      );
+      expect(dispositionSchema.maxItems).toBe(0);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('requires a prior-finding disposition in the transport schema when prior evidence exists', async () => {
+    const fixture = createFixture();
+    let invocation: ClaudeCodeCliCommandInvocation | undefined;
+    try {
+      fixture.request.previousReceipts = [
+        {
+          receiptHash: sha256Stable({ priorReceiptNonce: randomUUID() }),
+        },
+      ];
+      fixture.request.requestHash = sha256Stable({
+        ...fixture.request,
+        requestHash: null,
+      });
+      writeFileSync(
+        path.join(fixture.root, fixture.requestRelativePath),
+        `${JSON.stringify(fixture.request, null, 2)}\n`,
+        'utf8'
+      );
+      const command = await loadCommand((value) => {
+        invocation = value;
+      });
+      await command({
+        cwd: fixture.root,
+        projectRoot: fixture.root,
+        config: fixture.configRelativePath,
+        request: fixture.requestRelativePath,
+        round: Number(fixture.request.roundIndex),
+        json: false,
+        fetch: fakeJudgeFetch({ includeAssessment: true }),
+      });
+
+      const transportSchema = record(
+        JSON.parse(requiredArgument(invocation?.args ?? [], '--json-schema')),
+        'test_cli_structured_output_schema_missing'
+      );
+      const transportProperties = record(
+        transportSchema.properties,
+        'test_cli_schema_properties_missing'
+      );
+      const findings = record(transportProperties.findings, 'test_cli_findings_schema_missing');
+      const findingItems = record(findings.items, 'test_cli_finding_items_schema_missing');
+      const findingProperties = record(
+        findingItems.properties,
+        'test_cli_finding_properties_missing'
+      );
+      const dispositionSchema = record(
+        findingProperties.priorFindingsDisposition,
+        'test_cli_prior_findings_disposition_schema_missing'
+      );
+      expect(dispositionSchema.minItems).toBe(1);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('requires split_must replacements to retain the source MUST identity exactly once', async () => {
+    const fixture = createFixture();
+    let invocation: ClaudeCodeCliCommandInvocation | undefined;
+    try {
+      const command = await loadCommand((value) => {
+        invocation = value;
+      });
+      await command({
+        cwd: fixture.root,
+        projectRoot: fixture.root,
+        config: fixture.configRelativePath,
+        request: fixture.requestRelativePath,
+        round: Number(fixture.request.roundIndex),
+        json: false,
+        fetch: fakeJudgeFetch({ includeAssessment: true }),
+      });
+      const transportSchema = record(
+        JSON.parse(requiredArgument(invocation?.args ?? [], '--json-schema')),
+        'test_cli_structured_output_schema_missing'
+      );
+      const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
+        transportSchema
+      );
+      const sourceMustRef = String((fixture.request.mustRefs as unknown[])[0]);
+      const replacementId = `${sourceMustRef}-${randomUUID()}`;
+      const assessment = {
+        ...semanticAssessmentFromRequest(fixture.request),
+        verdict: 'new_valid_gap',
+        priorFindingsDisposition: [],
+        validatedGaps: [
+          {
+            id: `gap/${randomUUID()}`,
+            status: 'validated',
+            mustRef: sourceMustRef,
+            title: 'The source requirement needs independently provable projections.',
+            rationale: 'The current requirement combines multiple observable behaviors.',
+            evidenceRefs: [
+              String(
+                record(fixture.request.gateDryRun, 'test_gate_dry_run_missing')
+                  .reportPath
+              ),
+            ],
+            blocking: true,
+            repairActions: [
+              {
+                actionId: `repair/${randomUUID()}`,
+                type: 'split_must',
+                sourceSpan: { startLine: 1, endLine: 1 },
+                sourceText: 'Source requirement text.',
+                targetField: 'implementationConfirmation.must',
+                newValue: {
+                  sourceMustRef,
+                  replacements: [
+                    { id: `${replacementId}-a`, text: 'First replacement behavior.' },
+                    { id: `${replacementId}-b`, text: 'Second replacement behavior.' },
+                  ],
+                },
+                reason: 'Each behavior needs an independent acceptance boundary.',
+                mustRefs: [sourceMustRef],
+                requirementIds: [`requirement/${randomUUID()}`],
+              },
+            ],
+          },
+        ],
+      };
+      const transportResult = {
+        decision: 'block',
+        findings: [assessment],
+        challengeRequests: [],
+        evidenceRefs: [],
+      };
+
+      expect(validate(transportResult)).toBe(false);
+      const splitAction = (
+        (assessment.validatedGaps[0] as JsonRecord).repairActions as JsonRecord[]
+      )[0];
+      splitAction.newValue = {
+        sourceMustRef,
+        replacements: [
+          { id: sourceMustRef, text: 'Retained source behavior.' },
+          { id: replacementId, text: 'Second independently provable behavior.' },
+        ],
+      };
+      expect(validate(transportResult), JSON.stringify(validate.errors, null, 2)).toBe(true);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -1360,6 +2214,301 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       );
       expect(String(transportEvidence.cwd).replace(/\\/gu, '/')).toMatch(
         /\/r\/[a-f0-9]{16}\/s$/u
+      );
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('does not reuse a committed provider generation after host semantic rejection', async () => {
+    const fixture = createFixture();
+    const outputRelativePath = path.join('runtime', 'judge-invocation');
+    let transportCalls = 0;
+    try {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
+        rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation?: (options: {
+          projectRoot: string;
+          request: string;
+          outputDir: string;
+          round: number;
+          semanticIssueCodes: string[];
+        }) => JsonRecord;
+      };
+      const rejectCommitted =
+        actionModule.rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation;
+      expect(typeof rejectCommitted).toBe('function');
+      const command = await loadCommand();
+      const invoke = () =>
+        command({
+          cwd: fixture.root,
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          outputDir: outputRelativePath,
+          json: false,
+          fetch: blockingJudgeFetch(() => {
+            transportCalls += 1;
+          }),
+        });
+
+      const first = await invoke();
+      const outputDir = path.join(fixture.root, outputRelativePath);
+      const firstState = record(
+        JSON.parse(readFileSync(path.join(outputDir, 'judge-provider-invocation-state.json'), 'utf8')),
+        'test_judge_invocation_state_missing'
+      );
+      const firstProviderRunId = String(
+        record(first.providerRun, 'test_provider_run_missing').providerRunId
+      );
+      const rejection = rejectCommitted?.({
+        projectRoot: fixture.root,
+        request: fixture.requestRelativePath,
+        outputDir: outputRelativePath,
+        round: Number(fixture.request.roundIndex),
+        semanticIssueCodes: ['critical_auditor_response_semantic_binding_invalid'],
+      });
+      expect(rejection?.decision).toBe('semantic_rejection_recorded');
+
+      const second = await invoke();
+      const secondProviderRunId = String(
+        record(second.providerRun, 'test_provider_run_missing').providerRunId
+      );
+      expect(transportCalls).toBe(2);
+      expect(secondProviderRunId).not.toBe(firstProviderRunId);
+      const rejectedGenerationDir = path.join(
+        outputDir,
+        'rejected-generations',
+        String(firstState.generationId)
+      );
+      expect(existsSync(path.join(rejectedGenerationDir, 'semantic-rejection.json'))).toBe(true);
+      expect(existsSync(path.join(rejectedGenerationDir, 'judge-provider-invocation-commit.json'))).toBe(
+        true
+      );
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('commits a provider contract block on the second identical semantic rejection', async () => {
+    const fixture = createFixture();
+    const outputRelativePath = path.join('runtime', 'judge-invocation');
+    let transportCalls = 0;
+    try {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
+        rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation?: (options: {
+          projectRoot: string;
+          request: string;
+          outputDir: string;
+          round: number;
+          semanticIssueCodes: string[];
+        }) => JsonRecord;
+      };
+      const rejectCommitted =
+        actionModule.rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation;
+      expect(typeof rejectCommitted).toBe('function');
+      const command = await loadCommand();
+      const invoke = () =>
+        command({
+          cwd: fixture.root,
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          outputDir: outputRelativePath,
+          json: false,
+          fetch: blockingJudgeFetch(() => {
+            transportCalls += 1;
+          }),
+        });
+      const rejectionInput = {
+        projectRoot: fixture.root,
+        request: fixture.requestRelativePath,
+        outputDir: outputRelativePath,
+        round: Number(fixture.request.roundIndex),
+        semanticIssueCodes: [
+          `critical_auditor_response_${randomUUID().replaceAll('-', '_')}`,
+        ],
+      };
+
+      await invoke();
+      const firstRejection = rejectCommitted?.(rejectionInput);
+      expect(firstRejection).toMatchObject({
+        decision: 'semantic_rejection_recorded',
+        retryDecision: 'retry_allowed',
+      });
+      await invoke();
+      const secondRejection = rejectCommitted?.(rejectionInput);
+      expect(secondRejection).toMatchObject({
+        decision: 'provider_contract_blocked',
+        retryDecision: 'provider_contract_blocked',
+      });
+      expect(
+        existsSync(
+          path.join(
+            fixture.root,
+            outputRelativePath,
+            'judge-provider-contract-blocked.json'
+          )
+        )
+      ).toBe(true);
+      await expect(invoke()).rejects.toThrow(
+        'critical_auditor_judge_provider_contract_blocked'
+      );
+      await expect(invoke()).rejects.toThrow(
+        'critical_auditor_judge_provider_contract_blocked'
+      );
+      expect(transportCalls).toBe(2);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('does not let the production host reuse a semantically rejected committed generation', async () => {
+    const fixture = createFixture();
+    const outputRelativePath = path.join('runtime', 'judge-invocation');
+    let processCalls = 0;
+    try {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
+        rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation?: (options: {
+          projectRoot: string;
+          request: string;
+          outputDir: string;
+          round: number;
+          semanticIssueCodes: string[];
+        }) => JsonRecord;
+      };
+      const rejectCommitted =
+        actionModule.rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation;
+      expect(typeof rejectCommitted).toBe('function');
+      const command = await loadCommand();
+      await command({
+        cwd: fixture.root,
+        projectRoot: fixture.root,
+        config: fixture.configRelativePath,
+        request: fixture.requestRelativePath,
+        round: Number(fixture.request.roundIndex),
+        outputDir: outputRelativePath,
+        json: false,
+        fetch: blockingJudgeFetch(() => undefined),
+      });
+      const outputDir = path.join(fixture.root, outputRelativePath);
+      const bundle = readCommittedBundle(outputDir);
+      rewriteNativeStructuredOutputTranscript({
+        root: fixture.root,
+        outputDir,
+        structuredOutputs: [
+          {
+            decision: bundle.normalized.decision,
+            findings: bundle.normalized.findings,
+            challengeRequests: bundle.normalized.challengeRequests,
+            evidenceRefs: bundle.normalized.evidenceRefs,
+          },
+        ],
+      });
+      rejectCommitted?.({
+        projectRoot: fixture.root,
+        request: fixture.requestRelativePath,
+        outputDir: outputRelativePath,
+        round: Number(fixture.request.roundIndex),
+        semanticIssueCodes: [
+          `critical_auditor_response_${randomUUID().replaceAll('-', '_')}`,
+        ],
+      });
+      const executeAdapter = (
+        orchestration as unknown as {
+          executeCriticalAuditorJudgeAdapter?: (input: {
+            projectRoot: string;
+            requestPath: string;
+            outputDir: string;
+            roundIndex: number;
+            expected: Record<string, unknown>;
+            processExecutor: typeof import('node:child_process').spawnSync;
+          }) => unknown;
+        }
+      ).executeCriticalAuditorJudgeAdapter;
+      expect(typeof executeAdapter).toBe('function');
+      const processExecutor = (() => {
+        processCalls += 1;
+        throw new Error('test_expected_semantic_retry_spawn');
+      }) as unknown as typeof import('node:child_process').spawnSync;
+
+      expect(() =>
+        executeAdapter?.({
+          projectRoot: fixture.root,
+          requestPath: fixture.requestRelativePath,
+          outputDir,
+          roundIndex: Number(fixture.request.roundIndex),
+          expected: {
+            ...fixture.runtimeBinding,
+            transactionId: fixture.request.transactionId,
+            auditAttemptId: fixture.request.auditAttemptId,
+            requestHash: fixture.request.requestHash,
+            sourceDocumentHash: fixture.request.sourceDocumentHash,
+            semanticModelHash: fixture.request.semanticModelHash,
+            projectionSetHash: fixture.request.projectionSetHash,
+          },
+          processExecutor,
+        })
+      ).toThrow('test_expected_semantic_retry_spawn');
+      expect(processCalls).toBe(1);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('preserves the provider contract blocked failure code across the production host boundary', () => {
+    const fixture = createFixture();
+    const outputDir = path.join(fixture.root, 'runtime', 'judge-invocation');
+    try {
+      const executeAdapter = (
+        orchestration as unknown as {
+          executeCriticalAuditorJudgeAdapter?: (input: {
+            projectRoot: string;
+            requestPath: string;
+            outputDir: string;
+            roundIndex: number;
+            expected: Record<string, unknown>;
+            processExecutor: typeof import('node:child_process').spawnSync;
+          }) => unknown;
+        }
+      ).executeCriticalAuditorJudgeAdapter;
+      expect(typeof executeAdapter).toBe('function');
+      const semanticIssueFingerprint = sha256JsonContent({
+        issueCode: `critical_auditor_response_${randomUUID().replaceAll('-', '_')}`,
+      });
+      const processExecutor = (() => ({
+        pid: 0,
+        output: [
+          null,
+          '',
+          `critical_auditor_judge_provider_contract_blocked:${semanticIssueFingerprint}\n`,
+        ],
+        stdout: '',
+        stderr: `critical_auditor_judge_provider_contract_blocked:${semanticIssueFingerprint}\n`,
+        status: 1,
+        signal: null,
+      })) as unknown as typeof import('node:child_process').spawnSync;
+
+      expect(() =>
+        executeAdapter?.({
+          projectRoot: fixture.root,
+          requestPath: fixture.requestRelativePath,
+          outputDir,
+          roundIndex: Number(fixture.request.roundIndex),
+          expected: {
+            ...fixture.runtimeBinding,
+            transactionId: fixture.request.transactionId,
+            auditAttemptId: fixture.request.auditAttemptId,
+            requestHash: fixture.request.requestHash,
+            sourceDocumentHash: fixture.request.sourceDocumentHash,
+            semanticModelHash: fixture.request.semanticModelHash,
+            projectionSetHash: fixture.request.projectionSetHash,
+          },
+          processExecutor,
+        })
+      ).toThrow(
+        `critical_auditor_judge_provider_contract_blocked:${semanticIssueFingerprint}`
       );
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
@@ -2182,6 +3331,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           'utf8'
         );
         fixture.request.sourceDocument = sourceDocument;
+        fixture.request.sourceBytesHash = sha256FileContent(sourcePath);
         fixture.request.requestHash = sha256Stable({
           ...fixture.request,
           requestHash: null,
@@ -2384,6 +3534,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       mkdirSync(path.dirname(sourcePath), { recursive: true });
       writeFileSync(sourcePath, '', 'utf8');
       fixture.request.sourceDocument = sourceDocument;
+      fixture.request.sourceBytesHash = sha256FileContent(sourcePath);
       fixture.request.requestHash = sha256Stable({
         ...fixture.request,
         requestHash: null,
@@ -2782,6 +3933,10 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       const snapshotRoot = path.dirname(
         path.resolve(fixture.root, String(bundle.transportEvidence.snapshotManifestPath))
       );
+      const readEvents = nativeReadEventsFromCommittedSnapshot({
+        root: fixture.root,
+        outputDir,
+      });
       const finalOutput = {
         decision: bundle.normalized.decision,
         findings: bundle.normalized.findings,
@@ -2801,6 +3956,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           model: returnedModel,
           permissionMode: 'dontAsk',
         },
+        ...readEvents,
         {
           type: 'assistant',
           message: {

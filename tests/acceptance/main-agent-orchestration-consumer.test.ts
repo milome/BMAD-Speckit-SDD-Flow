@@ -611,6 +611,36 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
+  it('keeps audit finalization bound to the gate-owned commit snapshot', () => {
+    const sourcePath = path.resolve(
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
+    );
+    const source = readFileSync(sourcePath, 'utf8');
+    const start = source.indexOf('function finalizeAuditControlledExecution(');
+    const end = source.indexOf('\nfunction sha256Text(', start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const finalizerSource = source.slice(start, end);
+
+    expect(finalizerSource).toContain('gateCommitBundle');
+    expect(finalizerSource).not.toContain('readJsonIfExists(');
+    expect(finalizerSource).not.toContain('fs.readFileSync(');
+    expect(finalizerSource).not.toContain('fs.existsSync(');
+    expect(finalizerSource).toContain('loadOrCreateAuditControlledFinalizationIntent');
+    expect(finalizerSource.indexOf('loadOrCreateAuditControlledFinalizationIntent')).toBeLessThan(
+      finalizerSource.indexOf('mainAuditReviewGate(')
+    );
+    expect(finalizerSource).toContain('auditControlledTaskReportAlreadyIngested');
+    expect(finalizerSource).toContain('markAuditControlledFinalizationCommitted');
+
+    const runLoopStart = source.indexOf('export function runMainAgentAutomaticLoop(');
+    const dispatchStart = source.indexOf('const instruction = buildMainAgentDispatchInstruction(', runLoopStart);
+    expect(runLoopStart).toBeGreaterThanOrEqual(0);
+    expect(dispatchStart).toBeGreaterThan(runLoopStart);
+    const preDispatchSource = source.slice(runLoopStart, dispatchStart);
+    expect(preDispatchSource).toContain('resumePreparedAuditControlledFinalization');
+  });
+
   it('rejects direct Audit Judge result injection before runtime inspection', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-judge-injection-'));
     let injectedExecutorCalled = false;

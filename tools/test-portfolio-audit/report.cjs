@@ -20,20 +20,22 @@ function finiteDuration(value) {
 }
 
 function priorityRank(row) {
+  if ((row.issueCodes || []).includes('CRITICAL_TARGET_OBSOLESCENCE_CONFLICT')) return 0;
   if (row.criticality === 'critical' && row.oracleEffectiveness === 'ineffective_candidate') {
-    return 0;
+    return 1;
   }
-  if (row.criticality === 'critical' && row.executionMultiplicity === 'duplicate') return 1;
+  if (row.criticality === 'critical' && row.executionMultiplicity === 'duplicate') return 2;
   if (row.parallelSafety === 'safe_candidate' && finiteDuration(row.durationMs) !== undefined) {
-    return 2;
+    return 3;
   }
-  if (row.targetValidity === 'obsolete_candidate') return 3;
-  if (row.executionMultiplicity === 'duplicate') return 4;
-  return 5;
+  if (row.targetValidity === 'obsolete_candidate') return 4;
+  if (row.executionMultiplicity === 'duplicate') return 5;
+  return 6;
 }
 
 function priorityLabel(row) {
   return [
+    'Critical + obsolete target',
     'Critical + ineffective',
     'Critical + duplicate',
     'Safe candidate + duration',
@@ -69,13 +71,18 @@ function count(totals, field) {
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
+function categoryCount(totals, field, value) {
+  const candidate = Number(totals?.[field]?.[value]);
+  return Number.isFinite(candidate) && candidate >= 0 ? candidate : 0;
+}
+
 function renderSummary(artifact, { priorityLimit = 20 } = {}) {
   const boundedLimit = Math.min(
     20,
     Math.max(0, Number.isFinite(Number(priorityLimit)) ? Math.floor(Number(priorityLimit)) : 20)
   );
   const rows = [...(artifact?.tests || [])]
-    .filter((row) => priorityRank(row) < 5)
+    .filter((row) => priorityRank(row) < 6)
     .sort(comparePriorityRows)
     .slice(0, boundedLimit);
   const totals = artifact?.totals || {};
@@ -94,6 +101,19 @@ function renderSummary(artifact, { priorityLimit = 20 } = {}) {
     `- Safe candidates: ${count(totals, 'safeCandidateCount')}`,
     `- Estimated duplicate duration: ${count(totals, 'estimatedDuplicateDurationMs')} ms`,
     `- Estimated parallelizable duration: ${count(totals, 'estimatedParallelizableDurationMs')} ms`,
+    `- Release gate membership: explicit ${categoryCount(
+      totals,
+      'releaseGateMembership',
+      'explicit'
+    )} | inherited ${categoryCount(
+      totals,
+      'releaseGateMembership',
+      'inherited'
+    )} | mixed ${categoryCount(totals, 'releaseGateMembership', 'mixed')} | none ${categoryCount(
+      totals,
+      'releaseGateMembership',
+      'none'
+    )} | unknown ${categoryCount(totals, 'releaseGateMembership', 'unknown')}`,
     '',
     '## Priority Findings',
     '',
