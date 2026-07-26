@@ -50,8 +50,11 @@ function makeReconciliation() {
   const allowedPath = 'packages/example/source.ts';
   const sourceSnapshotHash = hash(Buffer.from('canonical source snapshot', 'utf8'));
   const graphInput = {
-    schemaVersion: 'goal-contract-reconciled-graph-input/v1',
+    schemaVersion: 'goal-contract-reconciled-graph-input/v2',
     sourceSnapshotHash,
+    sourceObligationGraphHash: hash('source-obligation-graph'),
+    methodologyProfileHash: hash('methodology-profile'),
+    semanticModelHash: hash('semantic-model'),
     sourceObligations: [
       {
         id: ids.source,
@@ -203,6 +206,15 @@ describe('goal-contract canonical evidence graph', () => {
       )
     );
     assert.equal(graph.runtimeEvidencePolicy, 'runtime_only');
+    assert.equal(graph.schemaVersion, 'goal-contract-evidence-graph/v2');
+    assert.equal(
+      graph.sourceObligationGraphHash,
+      input.sourceObligationGraphHash
+    );
+    assert.equal(graph.methodologyProfileHash, input.methodologyProfileHash);
+    assert.equal(graph.semanticModelHash, input.semanticModelHash);
+    assert.equal(graph.reconciledGraphHash, reconciliation.graphInputHash);
+    assert.match(graph.traceGraphHash, /^sha256:[0-9a-f]{64}$/u);
     assert.equal(Object.hasOwn(graph, 'observedEvidence'), false);
     assert.match(graph.graphHash, /^sha256:[0-9a-f]{64}$/u);
   });

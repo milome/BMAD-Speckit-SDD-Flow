@@ -3,6 +3,7 @@ const assert = require('node:assert');
 
 const {
   assertNoWeakerResolution,
+  reconcileGoalContractViews,
   reconcileStandaloneViews,
 } = require('../src/utils/goal-contract/view-reconciliation.ts');
 
@@ -58,6 +59,58 @@ function acceptanceEvidenceResult(overrides = {}) {
       inputHash: `sha256:${'a'.repeat(64)}`,
       sessionIdentity: 'acceptance-session',
       persistedViewAuthorityFiles: 0,
+    },
+  };
+}
+
+function sourceBoundInput() {
+  const sourceSnapshot = {
+    aggregateHash: `sha256:${'a'.repeat(64)}`,
+  };
+  const implementation = implementationResult({
+    tasks: [
+      {
+        id: 'G00',
+        sourceIds: ['S-001'],
+        atomicGroupRefs: ['AG-1'],
+      },
+    ],
+    traceSlices: [
+      {
+        id: 'TRACE-001',
+        sourceIds: ['S-001'],
+        goalIds: ['G00'],
+        acceptanceIds: ['AC-08'],
+      },
+    ],
+  });
+  const acceptanceEvidence = acceptanceEvidenceResult({
+    acceptanceItems: [
+      {
+        id: 'AC-08',
+        sourceIds: ['S-001'],
+        goalIds: ['G00'],
+        requiredCommands: ['CMD-04'],
+        expectedEvidenceIds: ['EVD-04'],
+        requiredEvidenceStrength: 'behavior',
+        atomicGroupRefs: ['AG-1'],
+      },
+    ],
+  });
+  return {
+    sourceSnapshot,
+    sourceObligationGraph: {
+      schemaVersion: 'goal-contract-source-obligation-graph/v1',
+      sourceSnapshotHash: sourceSnapshot.aggregateHash,
+      obligations: [{ id: 'S-001', applicabilityState: 'applicable' }],
+    },
+    sourceObligationGraphHash: `sha256:${'b'.repeat(64)}`,
+    methodologyProfileHash: `sha256:${'c'.repeat(64)}`,
+    semanticModelHash: `sha256:${'d'.repeat(64)}`,
+    derivation: {
+      mode: 'structured_fast_path',
+      implementation,
+      acceptanceEvidence,
     },
   };
 }
@@ -127,5 +180,76 @@ describe('goal-contract view reconciliation', () => {
         error.failureClass === 'reconciliation_strength_mismatch' &&
         error.issues[0].issueType === 'strength_mismatch'
     );
+  });
+
+  it('reconciles one source-bound candidate universe and rejects material mutations', () => {
+    const input = sourceBoundInput();
+    const result = reconcileGoalContractViews(input);
+
+    assert.equal(result.graphInput.sourceSnapshotHash, input.sourceSnapshot.aggregateHash);
+    assert.equal(result.graphInput.sourceObligationGraphHash, input.sourceObligationGraphHash);
+    assert.equal(result.graphInput.methodologyProfileHash, input.methodologyProfileHash);
+    assert.equal(result.graphInput.semanticModelHash, input.semanticModelHash);
+    assert.deepEqual(result.graphInput.sourceObligations, input.sourceObligationGraph.obligations);
+    assert.equal(result.metrics.unresolvedMaterialCount, 0);
+
+    const cases = [
+      [
+        'reconciliation_source_obligation_omitted',
+        (candidate) =>
+          candidate.sourceObligationGraph.obligations.push({
+            id: 'S-002',
+            applicabilityState: 'applicable',
+          }),
+      ],
+      [
+        'reconciliation_task_without_source',
+        (candidate) => (candidate.derivation.implementation.view.tasks[0].sourceIds = []),
+      ],
+      [
+        'reconciliation_dependency_conflict',
+        (candidate) => {
+          candidate.derivation.implementation.view.dependencies = [
+            { from: 'G00', to: 'G01' },
+          ];
+          candidate.derivation.acceptanceEvidence.view.acceptanceItems[0].dependencyAssertions =
+            [{ from: 'G01', to: 'G00' }];
+        },
+      ],
+      [
+        'reconciliation_atomic_group_conflict',
+        (candidate) =>
+          (candidate.derivation.acceptanceEvidence.view.acceptanceItems[0].atomicGroupRefs =
+            ['AG-2']),
+      ],
+      [
+        'reconciliation_acceptance_unreachable',
+        (candidate) =>
+          Object.assign(
+            candidate.derivation.acceptanceEvidence.view.acceptanceItems[0],
+            { goalIds: [], requiredCommands: [], expectedEvidenceIds: [] }
+          ),
+      ],
+      [
+        'reconciliation_strength_mismatch',
+        (candidate) =>
+          (candidate.derivation.implementation.view.commandEvidenceStrength['CMD-04'] =
+            'coverage'),
+      ],
+      [
+        'reconciliation_authority_field_forbidden',
+        (candidate) =>
+          (candidate.derivation.implementation.view.tasks[0].partitionId = 'P-1'),
+      ],
+    ];
+    for (const [failureClass, mutate] of cases) {
+      const candidate = structuredClone(input);
+      mutate(candidate);
+      assert.throws(
+        () => reconcileGoalContractViews(candidate),
+        (error) => error.failureClass === failureClass,
+        failureClass
+      );
+    }
   });
 });

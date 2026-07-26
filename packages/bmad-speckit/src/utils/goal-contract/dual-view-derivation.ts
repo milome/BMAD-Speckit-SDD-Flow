@@ -78,6 +78,24 @@ function normalizeRepoPath(value) {
   return String(value || '').replace(/\\/gu, '/');
 }
 
+function canonicalizeSemanticValue(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(canonicalizeSemanticValue)
+      .sort((left, right) =>
+        stableStringify(left).localeCompare(stableStringify(right))
+      );
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalizeSemanticValue(value[key])])
+    );
+  }
+  return value;
+}
+
 function sourcePlanSnapshot(input) {
   if (!input.sourcePath || !Buffer.isBuffer(input.rawBytes)) {
     throw failure('source_snapshot_invalid');
@@ -151,6 +169,79 @@ function buildSourceSnapshot(input) {
   if (input?.sourceType === 'source_plan') return sourcePlanSnapshot(input);
   if (input?.sourceType === 'conversation') return conversationSnapshot(input);
   throw failure('source_snapshot_type_unsupported');
+}
+
+function selectSemanticDerivationMode({
+  sourceSnapshot,
+  sourceObligations,
+  semanticDerivationAllowed,
+}) {
+  if (!sourceSnapshot?.aggregateHash || !Array.isArray(sourceObligations)) {
+    throw failure('source_obligation_graph_invalid');
+  }
+  const requiredKinds = new Set([
+    'declared_execution_task',
+    'acceptance_condition',
+    'verification_command',
+    'evidence_contract',
+  ]);
+  const presentKinds = new Set(
+    sourceObligations
+      .filter((item) => item.applicabilityState === 'applicable')
+      .map((item) => item.kind)
+  );
+  const missingStructuredBindings = [...requiredKinds]
+    .filter((kind) => !presentKinds.has(kind))
+    .sort();
+  if (missingStructuredBindings.length === 0) {
+    return Object.freeze({
+      mode: 'structured_fast_path',
+      sourceSnapshotHash: sourceSnapshot.aggregateHash,
+      semanticProviderCallCount: 0,
+      missingStructuredBindings: [],
+    });
+  }
+  if (!semanticDerivationAllowed) {
+    throw failure('partition_semantics_inconclusive', {
+      missingStructuredBindings,
+      repairHint:
+        'Declare tasks, acceptance, commands and evidence or enable semantic derivation in the frozen policy.',
+    });
+  }
+  return Object.freeze({
+    mode: 'semantic_completion',
+    sourceSnapshotHash: sourceSnapshot.aggregateHash,
+    semanticProviderCallCount: 2,
+    missingStructuredBindings,
+  });
+}
+
+function buildCanonicalSemanticModel({
+  sourceObligationGraphHash,
+  methodologyProfileHash,
+  derivation,
+}) {
+  if (
+    !/^sha256:[0-9a-f]{64}$/u.test(sourceObligationGraphHash || '') ||
+    !/^sha256:[0-9a-f]{64}$/u.test(methodologyProfileHash || '') ||
+    !derivation?.implementation?.view ||
+    !derivation?.acceptanceEvidence?.view
+  ) {
+    throw failure('semantic_model_input_invalid');
+  }
+  const semanticModel = canonicalizeSemanticValue({
+    schemaVersion: 'goal-contract-semantic-model/v1',
+    sourceObligationGraphHash,
+    methodologyProfileHash,
+    implementationView: derivation.implementation.view,
+    acceptanceEvidenceView: derivation.acceptanceEvidence.view,
+  });
+  return deepFreeze({
+    semanticModel,
+    semanticModelHash: sha256(
+      Buffer.from(stableStringify(semanticModel), 'utf8')
+    ),
+  });
 }
 
 function validateImplementationView(view) {
@@ -251,19 +342,49 @@ function assertNoCrossViewInput(request, viewType) {
   }
 }
 
+function semanticRequestBinding(request, roleContract) {
+  const binding = {
+    sourceObligationGraphHash: request?.sourceObligationGraphHash,
+    methodologyProfileHash: request?.methodologyProfileHash,
+    repositoryFactsHash: request?.repositoryFactsHash,
+  };
+  for (const [field, value] of Object.entries(binding)) {
+    if (!/^sha256:[0-9a-f]{64}$/u.test(value || '')) {
+      throw failure('semantic_provider_request_invalid', { field });
+    }
+  }
+  return {
+    ...binding,
+    roleContract,
+    roleContractHash: sha256(Buffer.from(roleContract, 'utf8')),
+  };
+}
+
 function assertViewIsolation(implementationResult, acceptanceEvidenceResult) {
   const implementationReceipt = implementationResult?.receipt;
   const acceptanceReceipt = acceptanceEvidenceResult?.receipt;
+  const implementationSnapshotHash =
+    implementationReceipt?.sourceSnapshotHash || implementationReceipt?.inputHash;
+  const acceptanceSnapshotHash =
+    acceptanceReceipt?.sourceSnapshotHash || acceptanceReceipt?.inputHash;
   const violations = [];
-  if (implementationReceipt?.viewType !== 'implementation') {
+  if (
+    implementationReceipt?.viewType !== 'implementation' &&
+    implementationReceipt?.roleContract !==
+      'goal_contract_implementation_view/v1'
+  ) {
     violations.push('implementation_view_type');
   }
-  if (acceptanceReceipt?.viewType !== 'acceptance_evidence') {
+  if (
+    acceptanceReceipt?.viewType !== 'acceptance_evidence' &&
+    acceptanceReceipt?.roleContract !==
+      'goal_contract_acceptance_evidence_view/v1'
+  ) {
     violations.push('acceptance_evidence_view_type');
   }
   if (
-    !implementationReceipt?.inputHash ||
-    implementationReceipt.inputHash !== acceptanceReceipt?.inputHash
+    !implementationSnapshotHash ||
+    implementationSnapshotHash !== acceptanceSnapshotHash
   ) {
     violations.push('snapshot_hash_mismatch');
   }
@@ -284,7 +405,7 @@ function assertViewIsolation(implementationResult, acceptanceEvidenceResult) {
   }
   return {
     decision: 'pass',
-    snapshotHash: implementationReceipt.inputHash,
+    snapshotHash: implementationSnapshotHash,
     persistedViewAuthorityFiles: 0,
   };
 }
@@ -329,12 +450,16 @@ class StandaloneViewProvider {
     if (!snapshot?.aggregateHash || !Object.isFrozen(snapshot)) {
       throw failure('source_snapshot_not_frozen');
     }
+    const semanticBinding = semanticRequestBinding(
+      request,
+      'goal_contract_implementation_view/v1'
+    );
     const sessionIdentity = this.reserveSessionIdentity('implementation_view');
     const providerInput = deepFreeze({
       snapshot,
       snapshotHash: snapshot.aggregateHash,
       repositoryFacts: structuredClone(repositoryFacts),
-      roleContract: 'implementation_view/v1',
+      ...semanticBinding,
     });
     const rawView = await this.adapter.deriveImplementationView(providerInput);
     const validation = validateImplementationView(rawView);
@@ -351,7 +476,13 @@ class StandaloneViewProvider {
         providerIdentity: String(this.adapter.providerIdentity || 'unknown'),
         sessionIdentity: String(sessionIdentity),
         inputHash: snapshot.aggregateHash,
+        sourceSnapshotHash: snapshot.aggregateHash,
+        ...semanticBinding,
+        requestHash: sha256(
+          Buffer.from(stableStringify(providerInput), 'utf8')
+        ),
         outputHash: sha256(Buffer.from(stableStringify(view), 'utf8')),
+        responseHash: sha256(Buffer.from(stableStringify(view), 'utf8')),
         completedAt: new Date().toISOString(),
         persistedViewAuthorityFiles: 0,
       }),
@@ -372,6 +503,10 @@ class StandaloneViewProvider {
     if (!snapshot?.aggregateHash || !Object.isFrozen(snapshot)) {
       throw failure('source_snapshot_not_frozen');
     }
+    const semanticBinding = semanticRequestBinding(
+      request,
+      'goal_contract_acceptance_evidence_view/v1'
+    );
     const sessionIdentity = this.reserveSessionIdentity(
       'acceptance_evidence_view'
     );
@@ -379,7 +514,7 @@ class StandaloneViewProvider {
       snapshot,
       snapshotHash: snapshot.aggregateHash,
       repositoryFacts: structuredClone(repositoryFacts),
-      roleContract: 'acceptance_evidence_view/v1',
+      ...semanticBinding,
     });
     const rawView =
       await this.adapter.deriveAcceptanceEvidenceView(providerInput);
@@ -397,7 +532,13 @@ class StandaloneViewProvider {
         providerIdentity: String(this.adapter.providerIdentity || 'unknown'),
         sessionIdentity,
         inputHash: snapshot.aggregateHash,
+        sourceSnapshotHash: snapshot.aggregateHash,
+        ...semanticBinding,
+        requestHash: sha256(
+          Buffer.from(stableStringify(providerInput), 'utf8')
+        ),
         outputHash: sha256(Buffer.from(stableStringify(view), 'utf8')),
+        responseHash: sha256(Buffer.from(stableStringify(view), 'utf8')),
         completedAt: new Date().toISOString(),
         persistedViewAuthorityFiles: 0,
       }),
@@ -408,7 +549,9 @@ class StandaloneViewProvider {
 module.exports = {
   StandaloneViewProvider,
   assertViewIsolation,
+  buildCanonicalSemanticModel,
   buildSourceSnapshot,
+  selectSemanticDerivationMode,
   validateAcceptanceEvidenceView,
   validateImplementationView,
 };

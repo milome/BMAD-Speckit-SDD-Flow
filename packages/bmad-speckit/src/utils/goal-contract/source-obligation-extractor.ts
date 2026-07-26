@@ -1,5 +1,5 @@
 const path = require('node:path');
-const { sha256Text } = require(
+const { sha256Text, stableStringify } = require(
   __filename.endsWith('.ts')
     ? '../large-document-writer/receipts.ts'
     : '../large-document-writer/receipts'
@@ -69,6 +69,30 @@ function parseDeclaredId(text) {
   return taskHeadingMatch?.[1] || null;
 }
 
+function classifyDeclaredObligation(text, headingPath, fallbackKind) {
+  const nearestHeading = String(headingPath.at(-1) || '').toLowerCase();
+  if (/^task\s+[a-z][a-z0-9]*(?:-[a-z0-9]+)+\b/u.test(nearestHeading)) {
+    return 'declared_execution_task';
+  }
+  if (/\bacceptance\b/u.test(nearestHeading)) return 'acceptance_condition';
+  if (/\bcommands?\b/u.test(nearestHeading)) return 'verification_command';
+  if (/\bevidence\b|\breceipt\b/u.test(nearestHeading)) {
+    return 'evidence_contract';
+  }
+  if (/\btasks?\b|\bimplementation\b/u.test(nearestHeading)) {
+    return 'declared_execution_task';
+  }
+  const normalizedText = text.toLowerCase();
+  if (/\bacceptance\b/u.test(normalizedText)) return 'acceptance_condition';
+  if (/\bcommands?\b|\brun\b/u.test(normalizedText)) {
+    return 'verification_command';
+  }
+  if (/\bevidence\b|\breceipt\b/u.test(normalizedText)) {
+    return 'evidence_contract';
+  }
+  return fallbackKind;
+}
+
 function extractReferencedIds(text, declaredId) {
   return [
     ...new Set(
@@ -104,12 +128,24 @@ function normalizeDeterministicNormativeLanguage(text) {
     .replace(
       /\boptional(?=\s+`--[^`]+`[^.\n]*(?:otherwise|default))/giu,
       'conditional'
-    );
+  );
+}
+
+function deterministicValidationKind(kind) {
+  return (
+    {
+      declared_execution_task: 'heading_execution_segment',
+      acceptance_condition: 'completion_criteria',
+      verification_command: 'command_block',
+      evidence_contract: 'observability',
+    }[kind] || kind
+  );
 }
 
 function validateStructuredSourceObligations(sourceObligations) {
   const validationObligations = sourceObligations.map((obligation) => ({
     ...obligation,
+    kind: deterministicValidationKind(obligation.kind),
     text: findNonDeterministicPhrase(obligation.text)
       ? normalizeDeterministicNormativeLanguage(obligation.text)
       : obligation.text,
@@ -149,7 +185,9 @@ function makeObligation(index, base, snapshot, legacyIds) {
   return {
     id,
     declaredId: Boolean(declaredId),
-    kind: base.kind,
+    kind: declaredId
+      ? classifyDeclaredObligation(text, base.headingPath, base.kind)
+      : base.kind,
     normativeStrength: normativeStrength(text),
     sourcePlanPath: base.sourcePlanPath,
     sourceSnapshotHash: snapshot.aggregateHash,
@@ -171,6 +209,47 @@ function makeObligation(index, base, snapshot, legacyIds) {
     summary: `sourceRef=${sourceRef}; sourceKind=${base.kind}; sourceTextHash=${textHash}`,
     required: true,
   };
+}
+
+function canonicalSourceObligationGraph({
+  sourceSnapshotHash,
+  sourceObligations,
+}) {
+  if (
+    typeof sourceSnapshotHash !== 'string' ||
+    !Array.isArray(sourceObligations)
+  ) {
+    throw failure('source_obligation_graph_invalid');
+  }
+  return {
+    schemaVersion: 'goal-contract-source-obligation-graph/v1',
+    sourceSnapshotHash,
+    obligations: sourceObligations
+      .map((obligation) => ({
+        id: obligation.id,
+        declaredId: obligation.declaredId,
+        kind: obligation.kind,
+        normativeStrength: obligation.normativeStrength,
+        sourcePlanPath: obligation.sourcePlanPath,
+        lineStart: obligation.lineStart,
+        lineEnd: obligation.lineEnd,
+        headingPath: [...obligation.headingPath],
+        textHash: obligation.textHash,
+        applicabilityState: obligation.applicabilityState,
+        taskRefs: [...obligation.taskRefs].sort(),
+        acceptanceRefs: [...obligation.acceptanceRefs].sort(),
+        commandRefs: [...obligation.commandRefs].sort(),
+        evidenceRefs: [...obligation.evidenceRefs].sort(),
+        dependencyRefs: [...obligation.dependencyRefs].sort(),
+        atomicGroupRefs: [...obligation.atomicGroupRefs].sort(),
+        releaseRelevance: obligation.releaseRelevance,
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id)),
+  };
+}
+
+function hashSourceObligationGraph(graph) {
+  return sha256Text(stableStringify(graph));
 }
 
 function extractSourceObligations(
@@ -331,6 +410,10 @@ function extractSourceObligations(
     throw error;
   }
 
+  const sourceObligationGraph = canonicalSourceObligationGraph({
+    sourceSnapshotHash: snapshot.aggregateHash,
+    sourceObligations,
+  });
   return {
     sourcePlanPath,
     sourceSnapshotHash: snapshot.aggregateHash,
@@ -338,6 +421,10 @@ function extractSourceObligations(
     sourceBytes: snapshot.sourceBytes,
     sourceLines: snapshot.sourceLines,
     sourceObligations,
+    sourceObligationGraph,
+    sourceObligationGraphHash: hashSourceObligationGraph(
+      sourceObligationGraph
+    ),
     diagnostics: {
       obligationCount: sourceObligations.length,
     },
@@ -345,8 +432,10 @@ function extractSourceObligations(
 }
 
 module.exports = {
+  canonicalSourceObligationGraph,
   classifyHeading,
   classifyText,
   extractSourceObligations,
+  hashSourceObligationGraph,
   normalizeLineEndings,
 };

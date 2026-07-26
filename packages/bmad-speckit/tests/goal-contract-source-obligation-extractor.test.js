@@ -4,7 +4,9 @@ const {
   buildSourceSnapshot,
 } = require('../src/utils/goal-contract/dual-view-derivation.ts');
 const {
+  canonicalSourceObligationGraph,
   extractSourceObligations,
+  hashSourceObligationGraph,
 } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 
 const SOURCE_PATH = 'docs/plans/source-plan.md';
@@ -207,5 +209,105 @@ describe('goal-contract source obligation extractor', () => {
     assert.equal(first.id, repeated.id);
     assert.notEqual(first.id, changed.id);
     assert.equal(first.declaredId, false);
+  });
+
+  it('binds a canonical typed source-obligation graph to semantic source changes', () => {
+    const sourceText = [
+      '# Plan',
+      '## Tasks',
+      '### Task PLAN-T01: Create the acceptance compiler',
+      '- [ ] PLAN-T02: Dependencies: PLAN-T01; Atomic group: PLAN-T01.',
+      '## Acceptance Criteria',
+      '- [ ] PLAN-AC01: Acceptance requires PLAN-T02.',
+      '## Required Test Commands',
+      '- [ ] PLAN-CMD01: Run `node --test compiler.test.js`.',
+      '## Completion Evidence Packet',
+      '- [ ] PLAN-EVD01: Evidence receipt produced by PLAN-CMD01.',
+      '## Example',
+      '```json',
+      '{"taskId":"EXAMPLE-T01"}',
+      '```',
+      '',
+    ].join('\n');
+    const extract = (text) =>
+      extractSourceObligations({
+        snapshot: buildSourceSnapshot({
+          sourceType: 'source_plan',
+          sourcePath: 'docs/plans/structured-source.md',
+          rawBytes: Buffer.from(text, 'utf8'),
+        }),
+      });
+    const extracted = extract(sourceText);
+
+    assert.match(extracted.sourceObligationGraphHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(
+      extracted.sourceObligationGraph.schemaVersion,
+      'goal-contract-source-obligation-graph/v1'
+    );
+    assert.deepEqual(
+      new Set(
+        extracted.sourceObligations
+          .filter((item) => item.declaredId)
+          .map((item) => item.kind)
+      ),
+      new Set([
+        'declared_execution_task',
+        'acceptance_condition',
+        'verification_command',
+        'evidence_contract',
+      ])
+    );
+
+    const reordered = extracted.sourceObligations.map((item) => ({
+      ...item,
+      taskRefs: [...item.taskRefs].reverse(),
+      acceptanceRefs: [...item.acceptanceRefs].reverse(),
+      commandRefs: [...item.commandRefs].reverse(),
+      evidenceRefs: [...item.evidenceRefs].reverse(),
+      dependencyRefs: [...item.dependencyRefs].reverse(),
+      atomicGroupRefs: [...item.atomicGroupRefs].reverse(),
+    }));
+    assert.equal(
+      hashSourceObligationGraph(
+        canonicalSourceObligationGraph({
+          sourceSnapshotHash: extracted.sourceSnapshotHash,
+          sourceObligations: reordered,
+        })
+      ),
+      extracted.sourceObligationGraphHash
+    );
+    assert.notEqual(
+      extract(
+        sourceText.replace(
+          'Create the acceptance compiler',
+          'Create the projection compiler'
+        )
+      )
+        .sourceObligationGraphHash,
+      extracted.sourceObligationGraphHash
+    );
+    assert.notEqual(
+      extract(sourceText.replace('Dependencies: PLAN-T01', 'Dependencies: PLAN-AC01'))
+        .sourceObligationGraphHash,
+      extracted.sourceObligationGraphHash
+    );
+    assert.notEqual(
+      extract(sourceText.replace('Atomic group: PLAN-T01', 'Atomic group: PLAN-AC01'))
+        .sourceObligationGraphHash,
+      extracted.sourceObligationGraphHash
+    );
+    assert.ok(
+      extracted.sourceObligations
+        .filter((item) => item.headingPath.includes('Example'))
+        .every(
+          (item) =>
+            ![
+              'declared_execution_task',
+              'acceptance_condition',
+              'verification_command',
+              'evidence_contract',
+            ].includes(item.kind)
+        )
+    );
   });
 });

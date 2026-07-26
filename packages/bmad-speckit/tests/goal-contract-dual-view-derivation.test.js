@@ -6,7 +6,9 @@ const path = require('node:path');
 const {
   StandaloneViewProvider,
   assertViewIsolation,
+  buildCanonicalSemanticModel,
   buildSourceSnapshot,
+  selectSemanticDerivationMode,
   validateAcceptanceEvidenceView,
   validateImplementationView,
 } = require('../src/utils/goal-contract/dual-view-derivation.ts');
@@ -39,6 +41,17 @@ function acceptanceEvidenceView() {
     expectedEvidence: [{ id: 'EVD-01', producer: 'CMD-02' }],
     antiCheatRules: ['fixture-only evidence cannot close acceptance'],
     stopConditions: ['BLOCKED_ENVIRONMENT'],
+  };
+}
+
+function semanticRequest(snapshot, extra = {}) {
+  return {
+    snapshot,
+    sourceObligationGraphHash: `sha256:${'a'.repeat(64)}`,
+    methodologyProfileHash: `sha256:${'b'.repeat(64)}`,
+    repositoryFacts: { state: 'not_provided', facts: [] },
+    repositoryFactsHash: `sha256:${'c'.repeat(64)}`,
+    ...extra,
   };
 }
 
@@ -143,10 +156,11 @@ describe('goal-contract dual-view derivation', () => {
       },
     });
 
-    const result = await provider.deriveImplementationView({
-      snapshot,
-      repositoryFacts: { commitSha: 'a'.repeat(40) },
-    });
+    const result = await provider.deriveImplementationView(
+      semanticRequest(snapshot, {
+        repositoryFacts: { commitSha: 'a'.repeat(40) },
+      })
+    );
 
     assert.equal(result.validation.decision, 'pass');
     assert.deepEqual(result.view, implementationView());
@@ -155,12 +169,25 @@ describe('goal-contract dual-view derivation', () => {
     assert.equal(result.receipt.inputHash, snapshot.aggregateHash);
     assert.match(result.receipt.outputHash, /^sha256:[0-9a-f]{64}$/u);
     assert.deepEqual(Object.keys(providerInput).sort(), [
+      'methodologyProfileHash',
       'repositoryFacts',
+      'repositoryFactsHash',
       'roleContract',
+      'roleContractHash',
       'snapshot',
       'snapshotHash',
+      'sourceObligationGraphHash',
     ]);
-    assert.equal(providerInput.roleContract, 'implementation_view/v1');
+    assert.equal(
+      providerInput.roleContract,
+      'goal_contract_implementation_view/v1'
+    );
+    assert.equal(
+      result.receipt.sourceObligationGraphHash,
+      `sha256:${'a'.repeat(64)}`
+    );
+    assert.equal(result.receipt.methodologyProfileHash, `sha256:${'b'.repeat(64)}`);
+    assert.equal(result.receipt.repositoryFactsHash, `sha256:${'c'.repeat(64)}`);
   });
 
   it('fails closed on incomplete, cross-view, or unavailable provider behavior', async () => {
@@ -183,7 +210,7 @@ describe('goal-contract dual-view derivation', () => {
       }),
     });
     await assert.rejects(
-      () => sharedResponseProvider.deriveImplementationView({ snapshot }),
+      () => sharedResponseProvider.deriveImplementationView(semanticRequest(snapshot)),
       (error) => error.failureClass === 'view_isolation_violation'
     );
 
@@ -191,7 +218,7 @@ describe('goal-contract dual-view derivation', () => {
       providerIdentity: 'provider-a',
     });
     await assert.rejects(
-      () => unavailableProvider.deriveImplementationView({ snapshot }),
+      () => unavailableProvider.deriveImplementationView(semanticRequest(snapshot)),
       (error) => error.failureClass === 'BLOCKED_ENVIRONMENT'
     );
   });
@@ -209,9 +236,11 @@ describe('goal-contract dual-view derivation', () => {
       deriveAcceptanceEvidenceView: async () => acceptanceEvidenceView(),
     });
 
-    const implementation = await provider.deriveImplementationView({ snapshot });
+    const implementation = await provider.deriveImplementationView(
+      semanticRequest(snapshot)
+    );
     const acceptanceEvidence = await provider.deriveAcceptanceEvidenceView({
-      snapshot,
+      ...semanticRequest(snapshot),
     });
     const isolation = assertViewIsolation(implementation, acceptanceEvidence);
 
@@ -227,6 +256,31 @@ describe('goal-contract dual-view derivation', () => {
     );
     assert.equal(isolation.decision, 'pass');
     assert.equal(isolation.persistedViewAuthorityFiles, 0);
+  });
+
+  it('accepts current role-contract transport receipts as isolated views', () => {
+    const sourceSnapshotHash = `sha256:${'d'.repeat(64)}`;
+    const result = assertViewIsolation(
+      {
+        receipt: {
+          roleContract: 'goal_contract_implementation_view/v1',
+          sourceSnapshotHash,
+          sessionIdentity: 'implementation-transport-session',
+          persistedViewAuthorityFiles: 0,
+        },
+      },
+      {
+        receipt: {
+          roleContract: 'goal_contract_acceptance_evidence_view/v1',
+          sourceSnapshotHash,
+          sessionIdentity: 'acceptance-transport-session',
+          persistedViewAuthorityFiles: 0,
+        },
+      }
+    );
+
+    assert.equal(result.decision, 'pass');
+    assert.equal(result.snapshotHash, sourceSnapshotHash);
   });
 
   it('rejects incomplete Acceptance/Evidence Views and cross-view input', async () => {
@@ -248,10 +302,102 @@ describe('goal-contract dual-view derivation', () => {
     await assert.rejects(
       () =>
         provider.deriveAcceptanceEvidenceView({
-          snapshot,
+          ...semanticRequest(snapshot),
           implementationView: implementationView(),
         }),
       (error) => error.failureClass === 'view_isolation_violation'
     );
+  });
+
+  it('selects derivation mode from typed source bindings without provider calls', () => {
+    const snapshot = buildSourceSnapshot({
+      sourceType: 'source_plan',
+      sourcePath: 'docs/plans/structured-source.md',
+      rawBytes: Buffer.from('# Plan\n', 'utf8'),
+    });
+    const complete = [
+      'declared_execution_task',
+      'acceptance_condition',
+      'verification_command',
+      'evidence_contract',
+    ].map((kind) => ({ kind, applicabilityState: 'applicable' }));
+
+    assert.deepEqual(
+      selectSemanticDerivationMode({
+        sourceSnapshot: snapshot,
+        sourceObligations: complete,
+        semanticDerivationAllowed: true,
+        semanticProviderConfigured: true,
+      }),
+      {
+        mode: 'structured_fast_path',
+        sourceSnapshotHash: snapshot.aggregateHash,
+        semanticProviderCallCount: 0,
+        missingStructuredBindings: [],
+      }
+    );
+    assert.equal(
+      selectSemanticDerivationMode({
+        sourceSnapshot: snapshot,
+        sourceObligations: complete.slice(0, 2),
+        semanticDerivationAllowed: true,
+      }).mode,
+      'semantic_completion'
+    );
+    assert.throws(
+      () =>
+        selectSemanticDerivationMode({
+          sourceSnapshot: snapshot,
+          sourceObligations: complete.slice(0, 2),
+          semanticDerivationAllowed: false,
+        }),
+      (error) =>
+        error.failureClass === 'partition_semantics_inconclusive' &&
+        error.missingStructuredBindings.length === 2
+    );
+  });
+
+  it('hashes one canonical semantic model without provider runtime metadata', () => {
+    const derivation = {
+      implementation: {
+        view: implementationView(),
+        receipt: { providerRunId: 'run-a', completedAt: '2026-07-25T00:00:00Z' },
+      },
+      acceptanceEvidence: {
+        view: acceptanceEvidenceView(),
+        receipt: { providerRunId: 'run-b', completedAt: '2026-07-25T00:00:01Z' },
+      },
+    };
+    const input = {
+      sourceObligationGraphHash: `sha256:${'a'.repeat(64)}`,
+      methodologyProfileHash: `sha256:${'b'.repeat(64)}`,
+      derivation,
+    };
+    const first = buildCanonicalSemanticModel(input);
+    const replay = buildCanonicalSemanticModel({
+      ...input,
+      derivation: {
+        implementation: { ...derivation.implementation, receipt: { providerRunId: 'run-c' } },
+        acceptanceEvidence: {
+          ...derivation.acceptanceEvidence,
+          receipt: { providerRunId: 'run-d' },
+        },
+      },
+    });
+    const changed = buildCanonicalSemanticModel({
+      ...input,
+      derivation: {
+        ...derivation,
+        implementation: {
+          ...derivation.implementation,
+          view: { ...implementationView(), closeConditions: ['Changed condition.'] },
+        },
+      },
+    });
+
+    assert.equal(first.semanticModel.schemaVersion, 'goal-contract-semantic-model/v1');
+    assert.match(first.semanticModelHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(replay.semanticModelHash, first.semanticModelHash);
+    assert.notEqual(changed.semanticModelHash, first.semanticModelHash);
   });
 });

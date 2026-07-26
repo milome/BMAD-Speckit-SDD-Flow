@@ -1,7 +1,4 @@
-const {
-  PROJECTION_REGISTRY,
-  stableStringify,
-} = require(
+const { PROJECTION_REGISTRY, stableStringify } = require(
   __filename.endsWith('.ts') ? './evidence-graph.ts' : './evidence-graph'
 );
 
@@ -20,6 +17,16 @@ const projectionIssueCodes = Object.freeze({
   literalDrift: 'trace_binding_literal_drift',
   projectionMissing: 'goal_contract_projection_missing',
   runtimePassForbidden: 'goal_contract_projection_runtime_pass_forbidden',
+  executionSecondTaskUniverse: 'execution_projection_second_task_universe',
+  executionTaskOwnerInvalid: 'execution_projection_task_owner_invalid',
+  executionSliceOutcomeMissing: 'execution_projection_slice_outcome_missing',
+  executionSlicePredicateMissing: 'execution_projection_slice_predicate_missing',
+  executionDependencyInvalid: 'execution_projection_dependency_invalid',
+  executionTaskCycle: 'execution_projection_task_cycle',
+  executionEvidenceProducerMissing: 'execution_projection_evidence_producer_missing',
+  executionEvidenceFreshnessMissing: 'execution_projection_evidence_freshness_missing',
+  executionEvidenceReferenceMissing: 'execution_projection_evidence_reference_missing',
+  executionHelperOutcomeMissing: 'execution_projection_helper_outcome_missing',
 });
 
 const TRACE_COLUMNS = Object.freeze([
@@ -44,9 +51,7 @@ function compareIds(left, right) {
 }
 
 function unique(values) {
-  return [...new Set((values || []).filter(Boolean).map(String))].sort(
-    compareIds
-  );
+  return [...new Set((values || []).filter(Boolean).map(String))].sort(compareIds);
 }
 
 function nodesOf(graph, nodeType) {
@@ -85,9 +90,7 @@ function dependencyIssues(graph) {
   const issues = [];
   const traces = nodesOf(graph, 'trace');
   const traceIds = new Set(traces.map((trace) => trace.id));
-  const dependencyMap = new Map(
-    traces.map((trace) => [trace.id, unique(trace.dependencies)])
-  );
+  const dependencyMap = new Map(traces.map((trace) => [trace.id, unique(trace.dependencies)]));
 
   for (const trace of traces) {
     for (const dependencyId of dependencyMap.get(trace.id)) {
@@ -134,15 +137,9 @@ function validateEvidenceGraph(graph) {
   const evidenceIds = idsOf(graph, 'evidence');
 
   for (const sourceId of sourceIds) {
-    const traceBindings = edgesOf(
-      graph,
-      'source_to_trace',
-      sourceId
-    );
+    const traceBindings = edgesOf(graph, 'source_to_trace', sourceId);
     if (traceBindings.length === 0) {
-      issues.push(
-        issue(projectionIssueCodes.sourceUnmapped, sourceId)
-      );
+      issues.push(issue(projectionIssueCodes.sourceUnmapped, sourceId));
     } else if (traceBindings.length > 1) {
       issues.push(
         issue(projectionIssueCodes.sourceDuplicate, sourceId, {
@@ -154,9 +151,7 @@ function validateEvidenceGraph(graph) {
 
   for (const edge of graph.edges || []) {
     if (
-      ['trace_to_acceptance', 'source_to_acceptance'].includes(
-        edge.edgeType
-      ) &&
+      ['trace_to_acceptance', 'source_to_acceptance'].includes(edge.edgeType) &&
       !acceptanceIds.has(edge.to)
     ) {
       issues.push(
@@ -184,34 +179,22 @@ function validateEvidenceGraph(graph) {
   }
 
   for (const acceptanceId of acceptanceIds) {
-    const evidenceBindings = edgesOf(
-      graph,
-      'acceptance_to_evidence',
-      acceptanceId
-    ).filter((edge) => evidenceIds.has(edge.to));
+    const evidenceBindings = edgesOf(graph, 'acceptance_to_evidence', acceptanceId).filter((edge) =>
+      evidenceIds.has(edge.to)
+    );
     if (evidenceBindings.length === 0) {
-      issues.push(
-        issue(projectionIssueCodes.evidenceUnclosed, acceptanceId)
-      );
+      issues.push(issue(projectionIssueCodes.evidenceUnclosed, acceptanceId));
     }
   }
 
   issues.push(...dependencyIssues(graph));
   for (const trace of nodesOf(graph, 'trace')) {
-    const evidenceOnly =
-      trace.classification === 'evidence_only' || trace.codeBearing === false;
-    if (
-      !evidenceOnly &&
-      edgesOf(graph, 'trace_to_path', trace.id).length === 0
-    ) {
-      issues.push(
-        issue(projectionIssueCodes.allowedPathMissing, trace.id)
-      );
+    const evidenceOnly = trace.classification === 'evidence_only' || trace.codeBearing === false;
+    if (!evidenceOnly && edgesOf(graph, 'trace_to_path', trace.id).length === 0) {
+      issues.push(issue(projectionIssueCodes.allowedPathMissing, trace.id));
     }
     const validCommitPolicy = evidenceOnly
-      ? /noCodeChangeReceipt|evidence[_-]only/iu.test(
-          String(trace.commitPolicy || '')
-        )
+      ? /noCodeChangeReceipt|evidence[_-]only/iu.test(String(trace.commitPolicy || ''))
       : trace.commitPolicy === 'exactly_one_atomic_commit';
     if (!validCommitPolicy) {
       issues.push(
@@ -222,34 +205,20 @@ function validateEvidenceGraph(graph) {
       );
     }
   }
-  if (
-    graph.runtimeEvidencePolicy !== 'runtime_only' ||
-    Object.hasOwn(graph, 'observedEvidence')
-  ) {
-    issues.push(
-      issue(
-        projectionIssueCodes.runtimePassForbidden,
-        'evidence_graph'
-      )
-    );
+  if (graph.runtimeEvidencePolicy !== 'runtime_only' || Object.hasOwn(graph, 'observedEvidence')) {
+    issues.push(issue(projectionIssueCodes.runtimePassForbidden, 'evidence_graph'));
   }
   return result(issues);
 }
 
 function rowReferenceIds(rows, keys) {
   return unique(
-    rows.flatMap((row) =>
-      keys.flatMap((key) =>
-        Array.isArray(row[key]) ? row[key] : []
-      )
-    )
+    rows.flatMap((row) => keys.flatMap((key) => (Array.isArray(row[key]) ? row[key] : [])))
   );
 }
 
 function literalValues(graph, nodeType, ids) {
-  const values = new Map(
-    nodesOf(graph, nodeType).map((node) => [node.id, node.literal])
-  );
+  const values = new Map(nodesOf(graph, nodeType).map((node) => [node.id, node.literal]));
   return unique(ids.map((id) => values.get(id)));
 }
 
@@ -259,37 +228,22 @@ function literalIssue(graph, projection) {
     commands: literalValues(
       graph,
       'command',
-      rowReferenceIds(rows, [
-        'commandIds',
-        'directCommands',
-        'impactedCommands',
-        'producerIds',
-      ])
+      rowReferenceIds(rows, ['commandIds', 'directCommands', 'impactedCommands', 'producerIds'])
     ),
-    paths: literalValues(
-      graph,
-      'path',
-      rowReferenceIds(rows, ['allowedPathIds', 'pathIds'])
-    ),
-    symbols: literalValues(
-      graph,
-      'symbol',
-      rowReferenceIds(rows, ['productionSymbolIds'])
-    ),
+    paths: literalValues(graph, 'path', rowReferenceIds(rows, ['allowedPathIds', 'pathIds'])),
+    symbols: literalValues(graph, 'symbol', rowReferenceIds(rows, ['productionSymbolIds'])),
   };
   for (const kind of Object.keys(expected)) {
     const actual = unique(projection.sharedLiterals?.[kind]);
     if (
       stableStringify(actual) !== stableStringify(expected[kind]) ||
-      expected[kind].some(
-        (literal) => !String(projection.markdown || '').includes(literal)
-      )
+      expected[kind].some((literal) => !String(projection.markdown || '').includes(literal))
     ) {
-      return issue(
-        projectionIssueCodes.literalDrift,
-        projection.projectionId,
-        { literalKind: kind, expected: expected[kind], actual }
-      );
+      return issue(projectionIssueCodes.literalDrift, projection.projectionId, {
+        literalKind: kind,
+        expected: expected[kind],
+        actual,
+      });
     }
   }
   return null;
@@ -309,9 +263,7 @@ function validateTraceRows(graph, projection) {
         );
       }
     }
-    for (const column of TRACE_COLUMNS.filter(
-      (column) => column !== 'dependencies'
-    )) {
+    for (const column of TRACE_COLUMNS.filter((column) => column !== 'dependencies')) {
       const value = row[column];
       if (
         value === undefined ||
@@ -329,25 +281,14 @@ function validateTraceRows(graph, projection) {
     for (const acceptanceId of row.acceptanceIds || []) {
       if (!acceptanceIds.has(acceptanceId)) {
         issues.push(
-          issue(
-            projectionIssueCodes.acceptanceUndefined,
-            row.traceId || 'trace',
-            { acceptanceId }
-          )
+          issue(projectionIssueCodes.acceptanceUndefined, row.traceId || 'trace', { acceptanceId })
         );
       }
     }
-    for (const commandId of [
-      ...(row.directCommands || []),
-      ...(row.impactedCommands || []),
-    ]) {
+    for (const commandId of [...(row.directCommands || []), ...(row.impactedCommands || [])]) {
       if (!commandIds.has(commandId)) {
         issues.push(
-          issue(
-            projectionIssueCodes.commandUndefined,
-            row.traceId || 'trace',
-            { commandId }
-          )
+          issue(projectionIssueCodes.commandUndefined, row.traceId || 'trace', { commandId })
         );
       }
     }
@@ -358,16 +299,11 @@ function validateTraceRows(graph, projection) {
 function validateGoalContractProjections({ graph, projections }) {
   const issues = [];
   const projectionMap = new Map(
-    (projections || []).map((projection) => [
-      projection.projectionId,
-      projection,
-    ])
+    (projections || []).map((projection) => [projection.projectionId, projection])
   );
   for (const definition of PROJECTION_REGISTRY) {
     if (!projectionMap.has(definition.id)) {
-      issues.push(
-        issue(projectionIssueCodes.projectionMissing, definition.id)
-      );
+      issues.push(issue(projectionIssueCodes.projectionMissing, definition.id));
     }
   }
 
@@ -376,31 +312,195 @@ function validateGoalContractProjections({ graph, projections }) {
     issues.push(...validateTraceRows(graph, traceProjection));
   }
   for (const projection of projectionMap.values()) {
-    if (
-      stableStringify(projection.declaredRanges) !==
-      stableStringify(graph.ranges)
-    ) {
-      issues.push(
-        issue(
-          projectionIssueCodes.rangeMismatch,
-          projection.projectionId
-        )
-      );
+    if (stableStringify(projection.declaredRanges) !== stableStringify(graph.ranges)) {
+      issues.push(issue(projectionIssueCodes.rangeMismatch, projection.projectionId));
     }
     const drift = literalIssue(graph, projection);
     if (drift) issues.push(drift);
     if (
       projection.runtimeEvidenceAuthority !== false ||
       projection.evidenceClassification !== 'projection_only' ||
-      /\bObserved(?: Evidence)?:\s*PASS\b/u.test(
-        String(projection.markdown || '')
-      )
+      /\bObserved(?: Evidence)?:\s*PASS\b/u.test(String(projection.markdown || ''))
+    ) {
+      issues.push(issue(projectionIssueCodes.runtimePassForbidden, projection.projectionId));
+    }
+  }
+  return result(issues);
+}
+
+function executionCycleIssues(taskIds, edges) {
+  const issues = [];
+  const outgoing = new Map([...taskIds].map((taskId) => [taskId, []]));
+  for (const edge of edges) {
+    if (outgoing.has(edge.fromTaskId) && taskIds.has(edge.toTaskId)) {
+      outgoing.get(edge.fromTaskId).push(edge.toTaskId);
+    }
+  }
+  const visiting = new Set();
+  const visited = new Set();
+  function visit(taskId, trail) {
+    if (visiting.has(taskId)) {
+      issues.push(
+        issue(projectionIssueCodes.executionTaskCycle, taskId, {
+          dependencyCycle: [...trail, taskId],
+        })
+      );
+      return;
+    }
+    if (visited.has(taskId)) return;
+    visiting.add(taskId);
+    for (const dependentId of unique(outgoing.get(taskId))) {
+      visit(dependentId, [...trail, taskId]);
+    }
+    visiting.delete(taskId);
+    visited.add(taskId);
+  }
+  for (const taskId of [...taskIds].sort(compareIds)) visit(taskId, []);
+  return issues;
+}
+
+function validateExecutionProjection(projection) {
+  const issues = [];
+  const atomicTasks = projection?.atomicTasks || [];
+  const traceSlices = projection?.traceSlices || [];
+  const completionPredicates = projection?.completionPredicates || [];
+  const evidenceContracts = projection?.evidenceContracts || [];
+  const dagNodes = projection?.taskDag?.nodes || [];
+  const dagEdges = projection?.taskDag?.edges || [];
+  const taskIds = new Set(atomicTasks.map((task) => task.taskId));
+  const dagNodeIds = dagNodes.map((node) => node.taskId);
+  const predicateMap = new Map(
+    completionPredicates.map((predicate) => [predicate.predicateId, predicate])
+  );
+  const evidenceMap = new Map(
+    evidenceContracts.map((contract) => [contract.evidenceContractId, contract])
+  );
+  const sliceOwners = new Map([...taskIds].map((taskId) => [taskId, []]));
+
+  for (const slice of traceSlices) {
+    for (const taskId of slice.taskIds || []) {
+      if (sliceOwners.has(taskId)) {
+        sliceOwners.get(taskId).push(slice.sliceId);
+      } else {
+        issues.push(
+          issue(projectionIssueCodes.executionSecondTaskUniverse, slice.sliceId, { taskId })
+        );
+      }
+    }
+    if (!String(slice.observableOutcome || '').trim()) {
+      issues.push(issue(projectionIssueCodes.executionSliceOutcomeMissing, slice.sliceId));
+    }
+    const positivePredicates = (slice.completionPredicateIds || [])
+      .map((predicateId) => predicateMap.get(predicateId))
+      .filter((predicate) => predicate?.positive === true && predicate.sliceId === slice.sliceId);
+    if (positivePredicates.length === 0) {
+      issues.push(issue(projectionIssueCodes.executionSlicePredicateMissing, slice.sliceId));
+    }
+    if (
+      ['evidence_only', 'helper_only'].includes(slice.classification) &&
+      (slice.verificationOnly !== true || unique(slice.sourceIds).length === 0)
+    ) {
+      issues.push(issue(projectionIssueCodes.executionHelperOutcomeMissing, slice.sliceId));
+    }
+  }
+
+  for (const task of atomicTasks) {
+    const owners = unique(sliceOwners.get(task.taskId));
+    if (owners.length !== 1 || task.ownerSliceId !== owners[0]) {
+      issues.push(
+        issue(projectionIssueCodes.executionTaskOwnerInvalid, task.taskId, {
+          declaredOwner: task.ownerSliceId || null,
+          sliceOwners: owners,
+        })
+      );
+    }
+  }
+
+  if (
+    new Set(dagNodeIds).size !== dagNodeIds.length ||
+    stableStringify(unique(dagNodeIds)) !== stableStringify(unique([...taskIds]))
+  ) {
+    issues.push(
+      issue(projectionIssueCodes.executionSecondTaskUniverse, 'taskDag.nodes', {
+        atomicTaskIds: unique([...taskIds]),
+        taskDagNodeIds: unique(dagNodeIds),
+      })
+    );
+  }
+
+  const topologicalIndex = new Map(dagNodes.map((node) => [node.taskId, node.topologicalIndex]));
+  for (const edge of dagEdges) {
+    if (!taskIds.has(edge.fromTaskId) || !taskIds.has(edge.toTaskId)) {
+      issues.push(
+        issue(projectionIssueCodes.executionDependencyInvalid, edge.toTaskId || 'taskDag.edges', {
+          edge,
+          reason: 'unknown_task',
+        })
+      );
+      continue;
+    }
+    const fromIndex = topologicalIndex.get(edge.fromTaskId);
+    const toIndex = topologicalIndex.get(edge.toTaskId);
+    if (
+      edge.fromTaskId === edge.toTaskId ||
+      (Number.isInteger(fromIndex) && Number.isInteger(toIndex) && fromIndex >= toIndex)
     ) {
       issues.push(
-        issue(
-          projectionIssueCodes.runtimePassForbidden,
-          projection.projectionId
-        )
+        issue(projectionIssueCodes.executionDependencyInvalid, edge.toTaskId, {
+          edge,
+          reason: 'future_or_self_dependency',
+        })
+      );
+    }
+  }
+  issues.push(...executionCycleIssues(taskIds, dagEdges));
+
+  for (const predicate of completionPredicates) {
+    for (const evidenceContractId of predicate.evidenceContractIds || []) {
+      if (!evidenceMap.has(evidenceContractId)) {
+        issues.push(
+          issue(projectionIssueCodes.executionEvidenceReferenceMissing, predicate.predicateId, {
+            evidenceContractId,
+          })
+        );
+      }
+    }
+  }
+  for (const contract of evidenceContracts) {
+    const producerTaskIds = unique(contract.producerTaskIds);
+    if (producerTaskIds.length === 0 || producerTaskIds.some((taskId) => !taskIds.has(taskId))) {
+      issues.push(
+        issue(projectionIssueCodes.executionEvidenceProducerMissing, contract.evidenceContractId, {
+          producerTaskIds,
+        })
+      );
+    }
+    if (!String(contract.freshnessRule || '').trim()) {
+      issues.push(
+        issue(projectionIssueCodes.executionEvidenceFreshnessMissing, contract.evidenceContractId)
+      );
+    }
+  }
+
+  for (const join of projection?.integrationJoinGraph?.joins || []) {
+    if (
+      !taskIds.has(join.ownerTaskId) ||
+      (join.inputTaskIds || []).some((taskId) => !taskIds.has(taskId))
+    ) {
+      issues.push(
+        issue(projectionIssueCodes.executionSecondTaskUniverse, join.joinId, {
+          inputTaskIds: unique(join.inputTaskIds),
+          ownerTaskId: join.ownerTaskId,
+        })
+      );
+    }
+  }
+  for (const constraint of projection?.sequenceConstraintBinding?.constraints || []) {
+    if ((constraint.taskIds || []).some((taskId) => !taskIds.has(taskId))) {
+      issues.push(
+        issue(projectionIssueCodes.executionSecondTaskUniverse, constraint.constraintId, {
+          taskIds: unique(constraint.taskIds),
+        })
       );
     }
   }
@@ -410,5 +510,6 @@ function validateGoalContractProjections({ graph, projections }) {
 module.exports = {
   projectionIssueCodes,
   validateEvidenceGraph,
+  validateExecutionProjection,
   validateGoalContractProjections,
 };

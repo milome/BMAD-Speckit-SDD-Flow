@@ -6,6 +6,13 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
+const SOURCE_COMMAND = path.join(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
+const SOURCE_RUNNER = [
+  'const { goalContractCommand } = require(process.argv[1]);',
+  'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
+  '.then((code)=>{process.exitCode=code;})',
+  '.catch((error)=>{console.error(error);process.exitCode=1;});',
+].join('');
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-cli-'));
@@ -14,6 +21,14 @@ function tempRoot() {
 function runCli(args, options = {}) {
   return spawnSync(process.execPath, [BIN, 'goal-contract', ...args], {
     cwd: options.cwd || path.join(__dirname, '..'),
+    encoding: 'utf8',
+    maxBuffer: 20 * 1024 * 1024,
+  });
+}
+
+function runSourceCommand(args) {
+  return spawnSync(process.execPath, ['-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args], {
+    cwd: path.join(__dirname, '..'),
     encoding: 'utf8',
     maxBuffer: 20 * 1024 * 1024,
   });
@@ -40,9 +55,9 @@ function writeSourcePlan(root) {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task 1: Add package CLI',
+      '### Task TASK-CMD: Add package CLI',
       '',
-      '- [ ] Parse `--source`, `--out`, and `--json`.',
+      '- [ ] TASK-CMD: MUST parse `--source`, `--out`, and `--json`.',
       '',
       'Run:',
       '',
@@ -54,9 +69,42 @@ function writeSourcePlan(root) {
       '',
       '- Coverage receipt and generation receipt must exist.',
       '',
+      '## Acceptance Criteria',
+      '',
+      '- [ ] AC-CMD: MUST prove the public command result.',
+      '',
       '## Decision',
       '',
       'This repair blocks release until coverage passes.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return sourcePath;
+}
+
+function writePartitionSourcePlan(root) {
+  const sourcePath = path.join(root, 'partition-source-plan.md');
+  fs.writeFileSync(
+    sourcePath,
+    [
+      '# Partition Source Plan',
+      '',
+      '## Implementation Task Breakdown',
+      '',
+      '- [ ] TASK-PARTITION: MUST compile one execution projection.',
+      '',
+      '## Acceptance Criteria',
+      '',
+      '- [ ] AC-PARTITION: MUST reach the optimizer boundary.',
+      '',
+      '## Completion Evidence Packet',
+      '',
+      '- [ ] EVD-PARTITION: MUST bind the current source roots.',
+      '',
+      '## Required Test Commands',
+      '',
+      '- [ ] CMD-PARTITION: Run `node --version`.',
       '',
     ].join('\n'),
     'utf8'
@@ -90,23 +138,20 @@ describe('bmad-speckit goal-contract command', () => {
     assert.match(goalText, /sourceLines: \d+/u);
     assert.match(goalText, /goalContractProfileVersion: 2\.1\.0/u);
     assert.match(goalText, /entryScenario: standalone_goal_contract/u);
-    assert.match(
-      goalText,
-      /finalArtifactAuthority: standalone_goal_execution_plan_markdown/u
-    );
+    assert.match(goalText, /finalArtifactAuthority: standalone_goal_execution_plan_markdown/u);
     assert.match(goalText, /coverageReceiptPath:/u);
     assert.match(goalText, /generationReceiptPath:/u);
     assert.match(goalText, /unmappedSourceObligations: 0/u);
     assert.match(goalText, /## Source Coverage Matrix/u);
     assert.match(goalText, /\| SRC001 \|/u);
-    assert.match(goalText, /npx --no-install bmad-speckit goal-contract generate --source docs\/plans\/source\.md --out docs\/plans\/goal\.md --json/u);
+    assert.match(
+      goalText,
+      /npx --no-install bmad-speckit goal-contract generate --source docs\/plans\/source\.md --out docs\/plans\/goal\.md --json/u
+    );
     assert.doesNotMatch(goalText, /rg -n -F 'SRC001' -- '.*source-plan\.md'/u);
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
     assert.match(goalText, /sourceTextHash=sha256:[0-9a-f]{64}/u);
-    assert.match(
-      goalText,
-      /standalone Markdown contract is the frozen execution authority/u
-    );
+    assert.match(goalText, /standalone Markdown contract is the frozen execution authority/u);
 
     const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
     const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));
@@ -118,18 +163,16 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(generation.goalContractHash, payload.goalContractHash);
     assert.equal(payload.implementationProofAudit.decision, 'pass');
     assert.equal(generation.implementationProofAudit.decision, 'pass');
-    assert.equal(generation.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations, false);
+    assert.equal(
+      generation.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations,
+      false
+    );
     assert.equal(payload.deterministicPreflight.decision, 'pass');
     assert.equal(payload.deterministicPreflight.auditEpochAllowed, true);
     assert.equal(payload.auditMetrics.auditEpochOpened, false);
-    assert.deepEqual(payload.auditMetrics.sequence, [
-      'deterministic_preflight',
-    ]);
+    assert.deepEqual(payload.auditMetrics.sequence, ['deterministic_preflight']);
     assert.equal(payload.auditProfile.finalDocsReviewRequired, false);
-    assert.deepEqual(
-      generation.deterministicPreflight,
-      payload.deterministicPreflight
-    );
+    assert.deepEqual(generation.deterministicPreflight, payload.deterministicPreflight);
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
   });
 
@@ -171,30 +214,58 @@ describe('bmad-speckit goal-contract command', () => {
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const goalText = fs.readFileSync(out, 'utf8');
-    const commandHeadings = [...goalText.matchAll(/### \d+\. COMMAND (CMD\d{3})/gu)].map((match) => match[1]);
+    const commandHeadings = [...goalText.matchAll(/### \d+\. COMMAND (CMD\d{3})/gu)].map(
+      (match) => match[1]
+    );
 
     assert.equal(commandHeadings.length, 2);
     assert.notEqual(commandHeadings[0], commandHeadings[1]);
-    assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-command\.test\.js/u);
-    assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u);
+    assert.match(
+      goalText,
+      /node --test packages\/bmad-speckit\/tests\/goal-contract-command\.test\.js/u
+    );
+    assert.match(
+      goalText,
+      /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u
+    );
   });
 
   it('returns a stable JSON failure when the source path is missing', () => {
     const root = tempRoot();
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(standaloneGenerateArgs([
-      '--source',
-      path.join(root, 'missing.md'),
-      '--out',
-      out,
-      '--json',
-    ]));
+    const result = runCli(
+      standaloneGenerateArgs(['--source', path.join(root, 'missing.md'), '--out', out, '--json'])
+    );
 
     assert.notEqual(result.status, 0);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.ok, false);
     assert.equal(payload.failureClass, 'source_plan_missing');
+  });
+
+  it('awaits async partition failures and emits exactly one JSON object', () => {
+    const root = tempRoot();
+    const source = writePartitionSourcePlan(root);
+    const out = path.join(root, 'partition-manifest.json');
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    assert.equal(result.stderr, '');
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.failureClass, 'partition_optimizer_not_implemented');
+    assert.equal(result.stdout.trim().startsWith('{'), true);
+    assert.equal(result.stdout.trim().endsWith('}'), true);
+    assert.equal(fs.existsSync(out), false);
   });
 
   it('fails closed before writing a contract with non-portable PowerShell Git revisions', () => {
@@ -234,9 +305,7 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.deterministicPreflight.decision, 'block');
     assert.equal(payload.deterministicPreflight.auditEpochAllowed, false);
     assert.ok(
-      payload.deterministicPreflight.issues.some(
-        (issue) => issue.checkId === 'command_portability'
-      )
+      payload.deterministicPreflight.issues.some((issue) => issue.checkId === 'command_portability')
     );
     assert.equal(fs.existsSync(out), false);
   });

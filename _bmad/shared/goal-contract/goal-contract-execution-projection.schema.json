@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad.local/schemas/goal-contract-execution-projection.schema.json",
+  "title": "Goal Contract Execution Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceSnapshotHash",
+    "sourceObligationGraphHash",
+    "methodologyProfileHash",
+    "semanticModelHash",
+    "traceGraphHash",
+    "reconciledGraphHash",
+    "sequenceApplicabilityReceiptHash",
+    "sequenceConstraintBinding",
+    "executionEpics",
+    "traceSlices",
+    "atomicTasks",
+    "completionPredicates",
+    "evidenceContracts",
+    "productionEntryIndex",
+    "fileScopeIndex",
+    "taskDag",
+    "integrationJoinGraph",
+    "executionProjectionHash",
+    "taskDagHash",
+    "integrationJoinGraphHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "goal-contract-execution-projection/v1" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "sourceObligationGraphHash": { "$ref": "#/$defs/hash" },
+    "methodologyProfileHash": { "$ref": "#/$defs/hash" },
+    "semanticModelHash": { "$ref": "#/$defs/hash" },
+    "traceGraphHash": { "$ref": "#/$defs/hash" },
+    "reconciledGraphHash": { "$ref": "#/$defs/hash" },
+    "sequenceApplicabilityReceiptHash": { "$ref": "#/$defs/hash" },
+    "sequenceConstraintBinding": { "$ref": "#/$defs/sequenceBinding" },
+    "executionEpics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/epic" }
+    },
+    "traceSlices": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/slice" }
+    },
+    "atomicTasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/task" }
+    },
+    "completionPredicates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/predicate" }
+    },
+    "evidenceContracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "productionEntryIndex": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/productionEntry" }
+    },
+    "fileScopeIndex": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fileScope" }
+    },
+    "taskDag": { "$ref": "#/$defs/taskDag" },
+    "integrationJoinGraph": { "$ref": "#/$defs/integrationJoinGraph" },
+    "executionProjectionHash": { "$ref": "#/$defs/hash" },
+    "taskDagHash": { "$ref": "#/$defs/hash" },
+    "integrationJoinGraphHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "idArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "epic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["epicId", "title", "sourceIds", "taskIds", "traceSliceIds"],
+      "properties": {
+        "epicId": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "sourceIds": { "$ref": "#/$defs/idArray" },
+        "taskIds": { "$ref": "#/$defs/idArray" },
+        "traceSliceIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "slice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sliceId",
+        "sourceIds",
+        "taskIds",
+        "observableOutcome",
+        "completionPredicateIds",
+        "evidenceContractIds",
+        "sequenceConstraintIds",
+        "classification",
+        "verificationOnly"
+      ],
+      "properties": {
+        "sliceId": { "$ref": "#/$defs/id" },
+        "sourceIds": { "$ref": "#/$defs/idArray" },
+        "taskIds": { "$ref": "#/$defs/idArray" },
+        "observableOutcome": { "type": "string", "minLength": 1 },
+        "completionPredicateIds": { "$ref": "#/$defs/idArray" },
+        "evidenceContractIds": { "$ref": "#/$defs/idArray" },
+        "sequenceConstraintIds": { "$ref": "#/$defs/idArray" },
+        "classification": {
+          "enum": ["code_bearing", "evidence_only", "helper_only"]
+        },
+        "verificationOnly": { "type": "boolean" }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "title",
+        "sourceIds",
+        "ownerSliceId",
+        "dependencyIds",
+        "sequenceConstraintIds"
+      ],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "sourceIds": { "$ref": "#/$defs/idArray" },
+        "ownerSliceId": { "$ref": "#/$defs/id" },
+        "dependencyIds": { "$ref": "#/$defs/idArray" },
+        "sequenceConstraintIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predicateId",
+        "sliceId",
+        "sourceIds",
+        "statement",
+        "positive",
+        "evidenceContractIds"
+      ],
+      "properties": {
+        "predicateId": { "$ref": "#/$defs/id" },
+        "sliceId": { "$ref": "#/$defs/id" },
+        "sourceIds": { "$ref": "#/$defs/idArray" },
+        "statement": { "type": "string", "minLength": 1 },
+        "positive": { "type": "boolean" },
+        "evidenceContractIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceContractId",
+        "producerTaskIds",
+        "admissibleTypes",
+        "freshnessRule"
+      ],
+      "properties": {
+        "evidenceContractId": { "$ref": "#/$defs/id" },
+        "producerTaskIds": {
+          "allOf": [{ "$ref": "#/$defs/idArray" }, { "minItems": 1 }]
+        },
+        "admissibleTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "freshnessRule": { "type": "string", "minLength": 1 }
+      }
+    },
+    "productionEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productionEntryId", "literal", "taskIds"],
+      "properties": {
+        "productionEntryId": { "$ref": "#/$defs/id" },
+        "literal": { "type": "string", "minLength": 1 },
+        "taskIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "fileScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileScopeId", "path", "taskIds"],
+      "properties": {
+        "fileScopeId": { "$ref": "#/$defs/id" },
+        "path": { "type": "string", "minLength": 1 },
+        "taskIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["constraintId", "constraintType", "taskIds", "semantic"],
+      "properties": {
+        "constraintId": { "$ref": "#/$defs/id" },
+        "constraintType": { "$ref": "#/$defs/id" },
+        "taskIds": { "$ref": "#/$defs/idArray" },
+        "semantic": { "type": "object" }
+      }
+    },
+    "sequenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicabilityDecision",
+        "applicabilityReceiptHash",
+        "sequenceContractHash",
+        "semanticConstraintHash",
+        "constraints"
+      ],
+      "properties": {
+        "applicabilityDecision": {
+          "enum": ["required", "not_applicable_with_proof"]
+        },
+        "applicabilityReceiptHash": { "$ref": "#/$defs/hash" },
+        "sequenceContractHash": {
+          "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+        },
+        "semanticConstraintHash": { "$ref": "#/$defs/hash" },
+        "constraints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/constraint" }
+        }
+      }
+    },
+    "dagNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskId", "ownerSliceId", "topologicalIndex"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/id" },
+        "ownerSliceId": { "$ref": "#/$defs/id" },
+        "topologicalIndex": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "dagEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fromTaskId", "toTaskId", "reason", "joinId"],
+      "properties": {
+        "fromTaskId": { "$ref": "#/$defs/id" },
+        "toTaskId": { "$ref": "#/$defs/id" },
+        "reason": { "$ref": "#/$defs/id" },
+        "joinId": {
+          "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        }
+      }
+    },
+    "taskDag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/dagNode" } },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/dagEdge" } }
+      }
+    },
+    "join": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["joinId", "inputTaskIds", "ownerTaskId", "interfaceId"],
+      "properties": {
+        "joinId": { "$ref": "#/$defs/id" },
+        "inputTaskIds": {
+          "allOf": [{ "$ref": "#/$defs/idArray" }, { "minItems": 1 }]
+        },
+        "ownerTaskId": { "$ref": "#/$defs/id" },
+        "interfaceId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "integrationJoinGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["joins"],
+      "properties": {
+        "joins": { "type": "array", "items": { "$ref": "#/$defs/join" } }
+      }
+    }
+  }
+}

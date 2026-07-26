@@ -1,58 +1,56 @@
 const { createHash } = require('node:crypto');
 
-const PROJECTION_REGISTRY = Object.freeze([
-  {
-    id: 'projection.trace_slices',
-    key: 'traceSlices',
-    sectionTitle: 'Trace Slice Tracking Matrix',
-    semanticRole: 'execution_order',
-  },
-  {
-    id: 'projection.strict_acceptance',
-    key: 'strictAcceptance',
-    sectionTitle: 'Strict Acceptance Checklist',
-    semanticRole: 'executor_completion_checklist',
-  },
-  {
-    id: 'projection.acceptance_traceability',
-    key: 'acceptanceTraceability',
-    sectionTitle: 'Acceptance Traceability Matrix',
-    semanticRole: 'acceptance_implementation_evidence_join',
-  },
-  {
-    id: 'projection.source_coverage',
-    key: 'sourceCoverage',
-    sectionTitle: 'Source Coverage Matrix',
-    semanticRole: 'source_obligation_completeness',
-  },
-  {
-    id: 'projection.manual_scenarios',
-    key: 'manualScenarios',
-    sectionTitle: 'Manual Verification Scenarios',
-    semanticRole: 'human_observable_real_entry_behavior',
-  },
-  {
-    id: 'projection.completion_evidence',
-    key: 'completionEvidence',
-    sectionTitle: 'Completion Evidence Packet',
-    semanticRole: 'expected_observed_evidence_closure',
-  },
-  {
-    id: 'projection.stop_conditions',
-    key: 'stopConditions',
-    sectionTitle: 'Stop Conditions',
-    semanticRole: 'terminal_decision_failure_classification',
-  },
-].map((projection) =>
-  Object.freeze({ ...projection, runtimeEvidenceAuthority: false })
-));
+export type GoalContractEvidenceGraphModule = never;
+
+const PROJECTION_REGISTRY = Object.freeze(
+  [
+    {
+      id: 'projection.trace_slices',
+      key: 'traceSlices',
+      sectionTitle: 'Trace Slice Tracking Matrix',
+      semanticRole: 'execution_order',
+    },
+    {
+      id: 'projection.strict_acceptance',
+      key: 'strictAcceptance',
+      sectionTitle: 'Strict Acceptance Checklist',
+      semanticRole: 'executor_completion_checklist',
+    },
+    {
+      id: 'projection.acceptance_traceability',
+      key: 'acceptanceTraceability',
+      sectionTitle: 'Acceptance Traceability Matrix',
+      semanticRole: 'acceptance_implementation_evidence_join',
+    },
+    {
+      id: 'projection.source_coverage',
+      key: 'sourceCoverage',
+      sectionTitle: 'Source Coverage Matrix',
+      semanticRole: 'source_obligation_completeness',
+    },
+    {
+      id: 'projection.manual_scenarios',
+      key: 'manualScenarios',
+      sectionTitle: 'Manual Verification Scenarios',
+      semanticRole: 'human_observable_real_entry_behavior',
+    },
+    {
+      id: 'projection.completion_evidence',
+      key: 'completionEvidence',
+      sectionTitle: 'Completion Evidence Packet',
+      semanticRole: 'expected_observed_evidence_closure',
+    },
+    {
+      id: 'projection.stop_conditions',
+      key: 'stopConditions',
+      sectionTitle: 'Stop Conditions',
+      semanticRole: 'terminal_decision_failure_classification',
+    },
+  ].map((projection) => Object.freeze({ ...projection, runtimeEvidenceAuthority: false }))
+);
 
 const NODE_PROJECTIONS = Object.freeze({
-  source: [
-    'projection.trace_slices',
-    'projection.source_coverage',
-    'projection.stop_conditions',
-  ],
+  source: ['projection.trace_slices', 'projection.source_coverage', 'projection.stop_conditions'],
   goal: [
     'projection.trace_slices',
     'projection.strict_acceptance',
@@ -95,10 +93,7 @@ const NODE_PROJECTIONS = Object.freeze({
     'projection.acceptance_traceability',
     'projection.manual_scenarios',
   ],
-  path: [
-    'projection.trace_slices',
-    'projection.source_coverage',
-  ],
+  path: ['projection.trace_slices', 'projection.source_coverage'],
 });
 
 function stableStringify(value) {
@@ -126,9 +121,7 @@ function compareIds(left, right) {
 }
 
 function uniqueSorted(values) {
-  return [...new Set((values || []).filter(Boolean).map(String))].sort(
-    compareIds
-  );
+  return [...new Set((values || []).filter(Boolean).map(String))].sort(compareIds);
 }
 
 function asArray(value) {
@@ -136,7 +129,7 @@ function asArray(value) {
   return Array.isArray(value) ? value : [value];
 }
 
-function asRecord(value, fallbackId) {
+function asRecord(value, fallbackId = undefined) {
   if (typeof value === 'string') return { id: value };
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { id: fallbackId };
@@ -191,15 +184,9 @@ function normalizeNode(nodeType, record) {
 
 function mergeNode(existing, incoming) {
   const merged = { ...existing, ...incoming };
-  for (const key of new Set([
-    ...Object.keys(existing),
-    ...Object.keys(incoming),
-  ])) {
+  for (const key of new Set([...Object.keys(existing), ...Object.keys(incoming)])) {
     if (Array.isArray(existing[key]) || Array.isArray(incoming[key])) {
-      merged[key] = uniqueSorted([
-        ...asArray(existing[key]),
-        ...asArray(incoming[key]),
-      ]);
+      merged[key] = uniqueSorted([...asArray(existing[key]), ...asArray(incoming[key])]);
     }
   }
   return merged;
@@ -210,9 +197,7 @@ function buildRanges(nodes) {
     Object.keys(NODE_PROJECTIONS)
       .sort(compareIds)
       .map((nodeType) => {
-        const ids = nodes
-          .filter((node) => node.nodeType === nodeType)
-          .map((node) => node.id);
+        const ids = nodes.filter((node) => node.nodeType === nodeType).map((node) => node.id);
         return [
           nodeType,
           {
@@ -225,11 +210,21 @@ function buildRanges(nodes) {
   );
 }
 
+function hashNormalizedTraceSubgraph({ nodes, edges }) {
+  const normalized = {
+    nodes: nodes.map(({ projectionIds: _projectionIds, ...node }) => node),
+    edges: edges.map(({ id: _id, projectionIds: _projectionIds, ...edge }) => edge),
+  };
+  return sha256(Buffer.from(stableStringify(normalized), 'utf8'));
+}
+
 function buildEvidenceGraph(reconciliation) {
   if (
     reconciliation?.metrics?.reconciliationCount !== 1 ||
-    reconciliation?.graphInput?.schemaVersion !==
-      'goal-contract-reconciled-graph-input/v1'
+    ![
+      'goal-contract-reconciled-graph-input/v1',
+      'goal-contract-reconciled-graph-input/v2',
+    ].includes(reconciliation?.graphInput?.schemaVersion)
   ) {
     throw failure('evidence_graph_requires_single_reconciliation');
   }
@@ -237,16 +232,11 @@ function buildEvidenceGraph(reconciliation) {
   const nodeMap = new Map();
   const edgeMap = new Map();
 
-  function addNode(nodeType, value, fallbackId) {
+  function addNode(nodeType, value, fallbackId = undefined) {
     const record = asRecord(value, fallbackId);
     const normalized = normalizeNode(nodeType, record);
     const key = `${nodeType}:${normalized.id}`;
-    nodeMap.set(
-      key,
-      nodeMap.has(key)
-        ? mergeNode(nodeMap.get(key), normalized)
-        : normalized
-    );
+    nodeMap.set(key, nodeMap.has(key) ? mergeNode(nodeMap.get(key), normalized) : normalized);
     return normalized.id;
   }
 
@@ -268,10 +258,7 @@ function buildEvidenceGraph(reconciliation) {
       projectionIds:
         projectionIds.length > 0
           ? projectionIds
-          : uniqueSorted([
-              ...(fromNode?.projectionIds || []),
-              ...(toNode?.projectionIds || []),
-            ]),
+          : uniqueSorted([...(fromNode?.projectionIds || []), ...(toNode?.projectionIds || [])]),
     });
   }
 
@@ -308,8 +295,7 @@ function buildEvidenceGraph(reconciliation) {
       const record = asRecord(command);
       const id = requiredId(record, 'command');
       const productionEntryPoint =
-        record.productionEntryPoint ||
-        (input.productionEntryPoints || []).length === 1
+        record.productionEntryPoint || (input.productionEntryPoints || []).length === 1
           ? record.productionEntryPoint || input.productionEntryPoints[0]
           : null;
       const requiredFields = {
@@ -321,9 +307,7 @@ function buildEvidenceGraph(reconciliation) {
         freshnessRule: record.freshnessRule,
       };
       const missingFields = Object.entries(requiredFields)
-        .filter(([, value]) =>
-          Array.isArray(value) ? value.length === 0 : !value
-        )
+        .filter(([, value]) => (Array.isArray(value) ? value.length === 0 : !value))
         .map(([field]) => field);
       if (missingFields.length > 0) {
         throw failure('evidence_graph_command_literal_incomplete', {
@@ -365,9 +349,7 @@ function buildEvidenceGraph(reconciliation) {
     const stopConditionIds = uniqueSorted(record.stopConditionIds);
     const traceCommandIds = commandReferences(record);
     const traceSymbolIds = asArray(record.productionSymbols).map((symbol) =>
-      typeof symbol === 'string'
-        ? stableIdentity('SYMBOL', symbol)
-        : requiredId(symbol, 'symbol')
+      typeof symbol === 'string' ? stableIdentity('SYMBOL', symbol) : requiredId(symbol, 'symbol')
     );
     const tracePathIds = asArray(record.allowedPaths).map((allowedPath) =>
       typeof allowedPath === 'string'
@@ -465,10 +447,7 @@ function buildEvidenceGraph(reconciliation) {
   }
 
   for (const [index, scenario] of (input.manualScenarios || []).entries()) {
-    const record = asRecord(
-      scenario,
-      `MV-${String(index + 1).padStart(3, '0')}`
-    );
+    const record = asRecord(scenario, `MV-${String(index + 1).padStart(3, '0')}`);
     for (const commandId of asArray(record.commandIds)) {
       addEdge('manual_to_command', record.id, commandId);
     }
@@ -482,9 +461,7 @@ function buildEvidenceGraph(reconciliation) {
           : requiredId(entryPoint, 'symbol');
       addNode(
         'symbol',
-        typeof entryPoint === 'string'
-          ? { id: symbolId, literal: entryPoint }
-          : entryPoint
+        typeof entryPoint === 'string' ? { id: symbolId, literal: entryPoint } : entryPoint
       );
       addEdge('manual_to_symbol', record.id, symbolId);
     }
@@ -499,10 +476,7 @@ function buildEvidenceGraph(reconciliation) {
       return normalized;
     })
     .sort((left, right) =>
-      compareIds(
-        `${left.nodeType}:${left.id}`,
-        `${right.nodeType}:${right.id}`
-      )
+      compareIds(`${left.nodeType}:${left.id}`, `${right.nodeType}:${right.id}`)
     );
   const edges = [...edgeMap.values()]
     .sort((left, right) =>
@@ -516,11 +490,16 @@ function buildEvidenceGraph(reconciliation) {
       ...edge,
     }));
   const graph = {
-    schemaVersion: 'goal-contract-evidence-graph/v1',
+    schemaVersion: 'goal-contract-evidence-graph/v2',
     sourceSnapshotHash: input.sourceSnapshotHash,
+    sourceObligationGraphHash: input.sourceObligationGraphHash || null,
+    methodologyProfileHash: input.methodologyProfileHash || null,
+    semanticModelHash: input.semanticModelHash || null,
+    reconciledGraphHash:
+      reconciliation.graphInputHash || sha256(Buffer.from(stableStringify(input), 'utf8')),
     graphInputHash:
-      reconciliation.graphInputHash ||
-      sha256(Buffer.from(stableStringify(input), 'utf8')),
+      reconciliation.graphInputHash || sha256(Buffer.from(stableStringify(input), 'utf8')),
+    traceGraphHash: hashNormalizedTraceSubgraph({ nodes, edges }),
     runtimeEvidencePolicy: 'runtime_only',
     projectionRegistry: PROJECTION_REGISTRY.map((projection) => ({
       ...projection,
@@ -538,5 +517,6 @@ function buildEvidenceGraph(reconciliation) {
 module.exports = {
   PROJECTION_REGISTRY,
   buildEvidenceGraph,
+  hashNormalizedTraceSubgraph,
   stableStringify,
 };

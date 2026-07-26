@@ -1,39 +1,39 @@
-const {
-  buildSourceCoverageMatrix,
-  validateSourceCoverage,
-} = require(
-  __filename.endsWith('.ts')
-    ? './source-coverage-matrix.ts'
-    : './source-coverage-matrix'
+const { buildSourceCoverageMatrix, validateSourceCoverage } = require(
+  __filename.endsWith('.ts') ? './source-coverage-matrix.ts' : './source-coverage-matrix'
 );
-const {
-  resolveEntryProfileOverlay,
-  validateEntryProfile,
-} = require(
+const { resolveEntryProfileOverlay, validateEntryProfile } = require(
   __filename.endsWith('.ts') ? './entry-scenarios.ts' : './entry-scenarios'
 );
-const {
-  projectEvidenceDimensions,
-} = require(
-  __filename.endsWith('.ts')
-    ? './evidence-projections.ts'
-    : './evidence-projections'
+const { projectEvidenceDimensions } = require(
+  __filename.endsWith('.ts') ? './evidence-projections.ts' : './evidence-projections'
 );
+
+export type GoalContractSlotDataBuilderModule = never;
+
+type GoalContractBuilderError = Error & {
+  code?: string;
+  implementationProofAudit?: unknown;
+  coverageAudit?: unknown;
+  failureClass?: string;
+  invalidFields?: string[];
+};
 
 function repoPath(filePath) {
   return String(filePath).replace(/\\/g, '/');
 }
 
 function makeRegistries(obligations) {
-  const commandObligations = obligations.filter((obligation) => obligation.kind === 'command_block');
+  const commandObligations = obligations.filter(
+    (obligation) => obligation.kind === 'command_block'
+  );
   const sourceObligations = obligations.map((obligation, index) => {
     const number = String(index + 1).padStart(3, '0');
-    const commandIndex = obligation.kind === 'command_block'
-      ? index
-      : obligations.indexOf(commandObligations[0]);
-    const commandRef = commandObligations.length === 0
-      ? `CMD${number}`
-      : `CMD${String(commandIndex + 1).padStart(3, '0')}`;
+    const commandIndex =
+      obligation.kind === 'command_block' ? index : obligations.indexOf(commandObligations[0]);
+    const commandRef =
+      commandObligations.length === 0
+        ? `CMD${number}`
+        : `CMD${String(commandIndex + 1).padStart(3, '0')}`;
     return {
       ...obligation,
       goalTaskRefs: [`G${number}`],
@@ -53,7 +53,9 @@ function makeRegistries(obligations) {
 
 function isCodeObligation(obligation) {
   const text = `${obligation.headingPath?.join(' ') || ''} ${obligation.text || ''} ${obligation.summary || ''}`;
-  return /packages\/|_bmad\/|tests\/|\.js|\.ts|script|CLI|command|seam|receipt|safeWriteText|copyFileAtomic/u.test(text);
+  return /packages\/|_bmad\/|tests\/|\.js|\.ts|script|CLI|command|seam|receipt|safeWriteText|copyFileAtomic/u.test(
+    text
+  );
 }
 
 function commandTextFromFence(text) {
@@ -65,11 +67,15 @@ function commandTextFromFence(text) {
 }
 
 function implementationProofAudit(sourceObligations) {
-  const commandBlocks = sourceObligations.filter((obligation) => obligation.kind === 'command_block');
+  const commandBlocks = sourceObligations.filter(
+    (obligation) => obligation.kind === 'command_block'
+  );
   const codeObligations = sourceObligations.filter(isCodeObligation);
   const blockingReasons = [];
   if (codeObligations.length > 0 && commandBlocks.length === 0) {
-    blockingReasons.push('code obligations require behavior, static seam, receipt field, or CLI output commands');
+    blockingReasons.push(
+      'code obligations require behavior, static seam, receipt field, or CLI output commands'
+    );
   }
   return {
     decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
@@ -149,7 +155,10 @@ function buildImplementationTasks(sourceObligations) {
 
 function buildAcceptance(sourceObligations) {
   return sourceObligations
-    .map((obligation) => `- [ ] ${obligation.acceptanceRefs[0]}: ${obligation.id} MUST map to ${obligation.goalTaskRefs[0]}, ${obligation.commandRefs[0]}, and ${obligation.evidenceRefs[0]}. Evidence MUST come from ${obligation.commandRefs[0]}.`)
+    .map(
+      (obligation) =>
+        `- [ ] ${obligation.acceptanceRefs[0]}: ${obligation.id} MUST map to ${obligation.goalTaskRefs[0]}, ${obligation.commandRefs[0]}, and ${obligation.evidenceRefs[0]}. Evidence MUST come from ${obligation.commandRefs[0]}.`
+    )
     .join('\n');
 }
 
@@ -157,33 +166,40 @@ function buildTrace(sourceObligations) {
   return [
     '| Acceptance ID | Task IDs | Evidence command and artifact | Pass condition |',
     '| --- | --- | --- | --- |',
-    ...sourceObligations.map((obligation) => `| ${obligation.acceptanceRefs[0]} | ${obligation.goalTaskRefs[0]} | ${obligation.commandRefs[0]}; ${obligation.evidenceRefs[0]} | ${obligation.id} has task, acceptance, command, and evidence mappings. |`),
+    ...sourceObligations.map(
+      (obligation) =>
+        `| ${obligation.acceptanceRefs[0]} | ${obligation.goalTaskRefs[0]} | ${obligation.commandRefs[0]}; ${obligation.evidenceRefs[0]} | ${obligation.id} has task, acceptance, command, and evidence mappings. |`
+    ),
   ].join('\n');
 }
 
 function buildCommands(sourceObligations, coverageReceiptPath) {
-  const commandObligations = sourceObligations.filter((obligation) => obligation.kind === 'command_block');
+  const commandObligations = sourceObligations.filter(
+    (obligation) => obligation.kind === 'command_block'
+  );
   const commandsToRender = commandObligations.length > 0 ? commandObligations : sourceObligations;
   return commandsToRender
-    .map((obligation, index) => [
-      `### ${index + 1}. COMMAND ${obligation.commandRefs[0]}`,
-      '',
-      '```powershell',
-      obligation.kind === 'command_block'
-        ? commandTextFromFence(obligation.text)
-        : `pwsh.exe -NoLogo -NoProfile -Command "& { node -e \\"const fs=require('fs'); const receipt=JSON.parse(fs.readFileSync('${repoPath(coverageReceiptPath)}','utf8')); if (!receipt.sourceObligations.some((item)=>item.id==='${obligation.id}')) process.exit(1);\\" }"`,
-      '```',
-      '',
-      obligation.kind === 'command_block'
-        ? 'Expected pass condition: Command exits `0` and proves the source plan command block behavior.'
-        : `Expected pass condition: Command exits \`0\` and proves ${obligation.id} remains source-covered without serving as code implementation proof.`,
-    ].join('\n'))
+    .map((obligation, index) =>
+      [
+        `### ${index + 1}. COMMAND ${obligation.commandRefs[0]}`,
+        '',
+        '```powershell',
+        obligation.kind === 'command_block'
+          ? commandTextFromFence(obligation.text)
+          : `pwsh.exe -NoLogo -NoProfile -Command "& { node -e \\"const fs=require('fs'); const receipt=JSON.parse(fs.readFileSync('${repoPath(coverageReceiptPath)}','utf8')); if (!receipt.sourceObligations.some((item)=>item.id==='${obligation.id}')) process.exit(1);\\" }"`,
+        '```',
+        '',
+        obligation.kind === 'command_block'
+          ? 'Expected pass condition: Command exits `0` and proves the source plan command block behavior.'
+          : `Expected pass condition: Command exits \`0\` and proves ${obligation.id} remains source-covered without serving as code implementation proof.`,
+      ].join('\n')
+    )
     .join('\n\n');
 }
 
 function buildProjectionSlotData(evidenceGraph) {
   const projections = projectEvidenceDimensions(evidenceGraph);
-  const projectionById = new Map(
+  const projectionById = new Map<string, (typeof projections)[number]>(
     projections.map((projection) => [projection.projectionId, projection])
   );
   function markdown(projectionId) {
@@ -192,9 +208,7 @@ function buildProjectionSlotData(evidenceGraph) {
   return {
     traceSliceTrackingMatrix: markdown('projection.trace_slices'),
     strictAcceptanceChecklist: markdown('projection.strict_acceptance'),
-    acceptanceTraceabilityMatrix: markdown(
-      'projection.acceptance_traceability'
-    ),
+    acceptanceTraceabilityMatrix: markdown('projection.acceptance_traceability'),
     sourceCoverageMatrix: markdown('projection.source_coverage'),
     manualVerificationScenarios: markdown('projection.manual_scenarios'),
     completionEvidencePacket: markdown('projection.completion_evidence'),
@@ -202,9 +216,7 @@ function buildProjectionSlotData(evidenceGraph) {
     projectionReceipt: {
       schemaVersion: 'goal-contract-projection-receipt/v1',
       graphHash: evidenceGraph.graphHash,
-      projectionIds: projections.map(
-        (projection) => projection.projectionId
-      ),
+      projectionIds: projections.map((projection) => projection.projectionId),
       requiredSectionCount: projections.length,
       runtimeEvidenceAuthority: false,
     },
@@ -234,24 +246,27 @@ function buildExpectedEvidenceFreezeSlot(registry) {
   ].join('\n');
 }
 
-function buildSlotData({ source, profile, outPath, coverageReceiptPath, generationReceiptPath, evidenceGraph = null, expectedEvidenceRegistry = null, generatedAt = new Date().toISOString() }) {
-  const entryProfileValidation = validateEntryProfile(
-    profile,
-    'standalone_goal_contract'
-  );
+function buildSlotData({
+  source,
+  profile,
+  outPath,
+  coverageReceiptPath,
+  generationReceiptPath,
+  evidenceGraph = null,
+  expectedEvidenceRegistry = null,
+  generatedAt = new Date().toISOString(),
+}) {
+  const entryProfileValidation = validateEntryProfile(profile, 'standalone_goal_contract');
   if (entryProfileValidation.decision !== 'pass') {
     const error = new Error(entryProfileValidation.failureClass);
     Object.assign(error, entryProfileValidation);
     throw error;
   }
-  const entryProfile = resolveEntryProfileOverlay(
-    profile,
-    'standalone_goal_contract'
-  );
+  const entryProfile = resolveEntryProfileOverlay(profile, 'standalone_goal_contract');
   const registries = makeRegistries(source.sourceObligations);
   const proofAudit = implementationProofAudit(registries.sourceObligations);
   if (proofAudit.decision !== 'pass') {
-    const error = new Error('implementation_proof_missing');
+    const error = new Error('implementation_proof_missing') as GoalContractBuilderError;
     error.code = 'implementation_proof_missing';
     error.implementationProofAudit = proofAudit;
     throw error;
@@ -261,16 +276,14 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
     registries,
   });
   if (coverageAudit.decision !== 'pass') {
-    const error = new Error('source_coverage_unmapped');
+    const error = new Error('source_coverage_unmapped') as GoalContractBuilderError;
     error.code = 'source_coverage_unmapped';
     error.coverageAudit = coverageAudit;
     throw error;
   }
   const lastTaskId = registries.tasks.at(-1);
   const lastAcceptanceId = registries.acceptance.at(-1);
-  const projectionSlots = evidenceGraph
-    ? buildProjectionSlotData(evidenceGraph)
-    : null;
+  const projectionSlots = evidenceGraph ? buildProjectionSlotData(evidenceGraph) : null;
   const slotData = {
     frontMatter: frontMatter({
       profile,
@@ -307,14 +320,11 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
     ].join('\n'),
     implementationTasks: buildImplementationTasks(registries.sourceObligations),
     traceSliceTrackingMatrix:
-      projectionSlots?.traceSliceTrackingMatrix ||
-      buildTrace(registries.sourceObligations),
+      projectionSlots?.traceSliceTrackingMatrix || buildTrace(registries.sourceObligations),
     strictAcceptanceChecklist:
-      projectionSlots?.strictAcceptanceChecklist ||
-      buildAcceptance(registries.sourceObligations),
+      projectionSlots?.strictAcceptanceChecklist || buildAcceptance(registries.sourceObligations),
     acceptanceTraceabilityMatrix:
-      projectionSlots?.acceptanceTraceabilityMatrix ||
-      buildTrace(registries.sourceObligations),
+      projectionSlots?.acceptanceTraceabilityMatrix || buildTrace(registries.sourceObligations),
     sourceCoverageMatrix:
       projectionSlots?.sourceCoverageMatrix ||
       buildSourceCoverageMatrix({
@@ -333,9 +343,7 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
         `- \`generationReceiptPath\`: \`${repoPath(generationReceiptPath)}\`.`,
         '- `residualRisks`: `none` only when all required commands pass.',
       ].join('\n'),
-    expectedEvidenceFreeze: buildExpectedEvidenceFreezeSlot(
-      expectedEvidenceRegistry
-    ),
+    expectedEvidenceFreeze: buildExpectedEvidenceFreezeSlot(expectedEvidenceRegistry),
     stopConditions:
       projectionSlots?.stopConditions ||
       [
@@ -355,8 +363,116 @@ function buildSlotData({ source, profile, outPath, coverageReceiptPath, generati
   };
 }
 
+function assertValidatedPartitionSelection(selection) {
+  const requiredArrays = [
+    'primarySourceObligations',
+    'atomicTasks',
+    'completionPredicates',
+    'evidenceContracts',
+    'inheritedConstraints',
+  ];
+  const invalidFields = requiredArrays.filter((field) => !Array.isArray(selection?.[field]));
+  if (
+    invalidFields.length > 0 ||
+    selection.primarySourceObligations.length === 0 ||
+    selection.atomicTasks.length === 0 ||
+    selection.completionPredicates.length === 0 ||
+    selection.evidenceContracts.length === 0
+  ) {
+    const error = new Error('partition_selection_invalid') as GoalContractBuilderError;
+    error.failureClass = 'partition_selection_invalid';
+    error.invalidFields = invalidFields;
+    throw error;
+  }
+  const sourceIds = new Set(selection.primarySourceObligations.map((source) => source.id));
+  const taskIds = selection.atomicTasks.map((task) => task.taskId);
+  const predicateIds = selection.completionPredicates.map((predicate) => predicate.predicateId);
+  const evidenceIds = selection.evidenceContracts.map((evidence) => evidence.evidenceContractId);
+  if (
+    new Set(taskIds).size !== taskIds.length ||
+    new Set(predicateIds).size !== predicateIds.length ||
+    new Set(evidenceIds).size !== evidenceIds.length ||
+    selection.atomicTasks.some(
+      (task) =>
+        !task.taskId ||
+        !Array.isArray(task.sourceIds) ||
+        task.sourceIds.some((sourceId) => !sourceIds.has(sourceId))
+    )
+  ) {
+    const error = new Error('partition_selection_invalid') as GoalContractBuilderError;
+    error.failureClass = 'partition_selection_invalid';
+    throw error;
+  }
+}
+
+function buildPartitionSlotData({ source, profile, selection }) {
+  assertValidatedPartitionSelection(selection);
+  const implementationTasks = selection.atomicTasks
+    .map((task) =>
+      [
+        `### ${task.taskId} ${task.title}`,
+        '',
+        `- Source obligations: ${task.sourceIds.map((id) => `\`${id}\``).join(', ')}.`,
+        `- Dependencies: ${
+          (task.dependencyIds || []).map((id) => `\`${id}\``).join(', ') || 'none'
+        }.`,
+      ].join('\n')
+    )
+    .join('\n\n');
+  const strictAcceptanceChecklist = selection.completionPredicates
+    .map((predicate) => `- [ ] **${predicate.predicateId}:** ${predicate.statement}`)
+    .join('\n');
+  const completionEvidencePacket = selection.evidenceContracts
+    .map(
+      (contract) =>
+        `- \`${contract.evidenceContractId}\`: producers=${contract.producerTaskIds.join(
+          ', '
+        )}; freshness=${contract.freshnessRule}.`
+    )
+    .join('\n');
+  const sourceRows = selection.primarySourceObligations
+    .map(
+      (item) =>
+        `| ${item.id} | ${String(item.summary || item.text || item.id).replace(/\|/gu, '\\|')} |`
+    )
+    .join('\n');
+  const inheritedConstraints =
+    selection.inheritedConstraints.length === 0
+      ? '- None.'
+      : selection.inheritedConstraints
+          .map(
+            (constraint) =>
+              `- \`${constraint.constraintId}\`: inherited from the validated Execution Projection.`
+          )
+          .join('\n');
+  return {
+    slotData: {
+      implementationTasks,
+      strictAcceptanceChecklist,
+      sourceCoverageMatrix: [
+        '| Source ID | Selected obligation |',
+        '| --- | --- |',
+        sourceRows,
+      ].join('\n'),
+      completionEvidencePacket,
+      domainAddenda: ['### Inherited partition constraints', '', inheritedConstraints].join('\n'),
+    },
+    selectionReceipt: {
+      schemaVersion: 'goal-contract-partition-slot-selection-receipt/v1',
+      sourcePlanHash: source?.sourcePlanHash || null,
+      profileVersion: profile?.profileVersion || null,
+      primarySourceObligationCount: selection.primarySourceObligations.length,
+      atomicTaskCount: selection.atomicTasks.length,
+      completionPredicateCount: selection.completionPredicates.length,
+      evidenceContractCount: selection.evidenceContracts.length,
+      inheritedConstraintCount: selection.inheritedConstraints.length,
+    },
+  };
+}
+
 module.exports = {
   buildExpectedEvidenceFreezeSlot,
+  buildPartitionSlotData,
   buildProjectionSlotData,
   buildSlotData,
   implementationProofAudit,

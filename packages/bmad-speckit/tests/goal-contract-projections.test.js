@@ -4,9 +4,7 @@ const path = require('node:path');
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 
-const {
-  buildEvidenceGraph,
-} = require('../src/utils/goal-contract/evidence-graph.ts');
+const { buildEvidenceGraph } = require('../src/utils/goal-contract/evidence-graph.ts');
 const {
   projectAcceptanceTraceability,
   projectCompletionEvidence,
@@ -19,11 +17,10 @@ const {
 const {
   projectionIssueCodes,
   validateEvidenceGraph,
+  validateExecutionProjection,
   validateGoalContractProjections,
 } = require('../src/utils/goal-contract/projection-validator.ts');
-const {
-  buildProjectionSlotData,
-} = require('../src/utils/goal-contract/slot-data-builder.ts');
+const { buildProjectionSlotData } = require('../src/utils/goal-contract/slot-data-builder.ts');
 const {
   renderGoalContract,
 } = require('../../../_bmad/shared/goal-contract/scripts/render-goal-contract.js');
@@ -166,9 +163,7 @@ describe('goal-contract evidence projections', () => {
   it('renders seven distinct semantic dimensions from one graph', () => {
     const graph = makeGraph();
     const projections = makeProjections(graph);
-    const commandLiteral = graph.nodes.find(
-      (node) => node.nodeType === 'command'
-    ).literal;
+    const commandLiteral = graph.nodes.find((node) => node.nodeType === 'command').literal;
 
     assert.equal(projections.length, graph.projectionRegistry.length);
     assert.equal(
@@ -182,16 +177,13 @@ describe('goal-contract evidence projections', () => {
     assert.ok(
       projections.every(
         (projection) =>
-          projection.runtimeEvidenceAuthority === false &&
-          projection.markdown.trim().length > 0
+          projection.runtimeEvidenceAuthority === false && projection.markdown.trim().length > 0
       )
     );
     assert.ok(
       projections
         .filter((projection) => projection.sharedLiterals.commands.length > 0)
-        .every((projection) =>
-          projection.sharedLiterals.commands.includes(commandLiteral)
-        )
+        .every((projection) => projection.sharedLiterals.commands.includes(commandLiteral))
     );
     assert.ok(
       projections.every(
@@ -204,24 +196,12 @@ describe('goal-contract evidence projections', () => {
     const graph = makeGraph();
     const root = path.resolve(__dirname, '..', '..', '..');
     const templateText = fs.readFileSync(
-      path.join(
-        root,
-        '_bmad',
-        'shared',
-        'goal-contract',
-        'goal-execution-contract-template.md'
-      ),
+      path.join(root, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md'),
       'utf8'
     );
     const profile = JSON.parse(
       fs.readFileSync(
-        path.join(
-          root,
-          '_bmad',
-          'shared',
-          'goal-contract',
-          'goal-contract-profile.json'
-        ),
+        path.join(root, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
         'utf8'
       )
     );
@@ -250,10 +230,7 @@ describe('goal-contract evidence projections', () => {
     });
 
     for (const projection of graph.projectionRegistry) {
-      assert.match(
-        rendered.document,
-        new RegExp(`^## ${projection.sectionTitle}$`, 'mu')
-      );
+      assert.match(rendered.document, new RegExp(`^## ${projection.sectionTitle}$`, 'mu'));
     }
     assert.equal(projectionSlots.projectionReceipt.requiredSectionCount, 7);
     assert.equal(projectionSlots.projectionReceipt.runtimeEvidenceAuthority, false);
@@ -269,15 +246,12 @@ describe('goal-contract evidence projections', () => {
       runtimeEvidenceAuthority: false,
       issues: [],
     });
-    assert.deepEqual(
-      validateGoalContractProjections({ graph, projections }),
-      {
-        decision: 'pass',
-        evidenceClassification: 'projection_only',
-        runtimeEvidenceAuthority: false,
-        issues: [],
-      }
-    );
+    assert.deepEqual(validateGoalContractProjections({ graph, projections }), {
+      decision: 'pass',
+      evidenceClassification: 'projection_only',
+      runtimeEvidenceAuthority: false,
+      issues: [],
+    });
   });
 
   it('returns exact typed blockers for malformed graph and projection fixtures', () => {
@@ -285,26 +259,20 @@ describe('goal-contract evidence projections', () => {
       {
         expected: projectionIssueCodes.sourceDuplicate,
         mutate(graph) {
-          const edge = graph.edges.find(
-            (candidate) => candidate.edgeType === 'source_to_trace'
-          );
+          const edge = graph.edges.find((candidate) => candidate.edgeType === 'source_to_trace');
           graph.edges.push({ ...edge, id: `${edge.id}-duplicate` });
         },
       },
       {
         expected: projectionIssueCodes.sourceUnmapped,
         mutate(graph) {
-          graph.edges = graph.edges.filter(
-            (edge) => edge.edgeType !== 'source_to_trace'
-          );
+          graph.edges = graph.edges.filter((edge) => edge.edgeType !== 'source_to_trace');
         },
       },
       {
         expected: projectionIssueCodes.evidenceUnclosed,
         mutate(graph) {
-          graph.edges = graph.edges.filter(
-            (edge) => edge.edgeType !== 'acceptance_to_evidence'
-          );
+          graph.edges = graph.edges.filter((edge) => edge.edgeType !== 'acceptance_to_evidence');
         },
       },
       {
@@ -317,9 +285,7 @@ describe('goal-contract evidence projections', () => {
       {
         expected: projectionIssueCodes.allowedPathMissing,
         mutate(graph) {
-          graph.edges = graph.edges.filter(
-            (edge) => edge.edgeType !== 'trace_to_path'
-          );
+          graph.edges = graph.edges.filter((edge) => edge.edgeType !== 'trace_to_path');
         },
       },
       {
@@ -347,8 +313,7 @@ describe('goal-contract evidence projections', () => {
         expected: projectionIssueCodes.columnMissing,
         mutate({ projections }) {
           const row = projections.find(
-            (projection) =>
-              projection.projectionId === 'projection.trace_slices'
+            (projection) => projection.projectionId === 'projection.trace_slices'
           ).rows[0];
           delete row.closeCondition;
         },
@@ -357,8 +322,7 @@ describe('goal-contract evidence projections', () => {
         expected: projectionIssueCodes.fieldEmpty,
         mutate({ projections }) {
           const row = projections.find(
-            (projection) =>
-              projection.projectionId === 'projection.trace_slices'
+            (projection) => projection.projectionId === 'projection.trace_slices'
           ).rows[0];
           row.allowedPathIds = [];
         },
@@ -367,15 +331,10 @@ describe('goal-contract evidence projections', () => {
         expected: projectionIssueCodes.acceptanceUndefined,
         mutate({ graph, projections }) {
           const row = projections.find(
-            (projection) =>
-              projection.projectionId === 'projection.trace_slices'
+            (projection) => projection.projectionId === 'projection.trace_slices'
           ).rows[0];
           row.acceptanceIds = [
-            makeId(
-              'AC',
-              graph.nodes.filter((node) => node.nodeType === 'acceptance')
-                .length + 1
-            ),
+            makeId('AC', graph.nodes.filter((node) => node.nodeType === 'acceptance').length + 1),
           ];
         },
       },
@@ -383,15 +342,10 @@ describe('goal-contract evidence projections', () => {
         expected: projectionIssueCodes.commandUndefined,
         mutate({ graph, projections }) {
           const row = projections.find(
-            (projection) =>
-              projection.projectionId === 'projection.trace_slices'
+            (projection) => projection.projectionId === 'projection.trace_slices'
           ).rows[0];
           row.directCommands = [
-            makeId(
-              'CMD',
-              graph.nodes.filter((node) => node.nodeType === 'command').length +
-                1
-            ),
+            makeId('CMD', graph.nodes.filter((node) => node.nodeType === 'command').length + 1),
           ];
         },
       },
@@ -399,8 +353,7 @@ describe('goal-contract evidence projections', () => {
         expected: projectionIssueCodes.rangeMismatch,
         mutate({ projections }) {
           const projection = projections.find(
-            (candidate) =>
-              candidate.projectionId === 'projection.trace_slices'
+            (candidate) => candidate.projectionId === 'projection.trace_slices'
           );
           projection.declaredRanges.trace.count += 1;
         },
@@ -427,5 +380,97 @@ describe('goal-contract evidence projections', () => {
         `${testCase.expected} was not emitted`
       );
     }
+  });
+
+  it('rejects a Task DAG node outside the execution projection task universe', () => {
+    const projection = {
+      atomicTasks: [{ taskId: 'task-one', ownerSliceId: 'slice-one' }],
+      traceSlices: [
+        {
+          sliceId: 'slice-one',
+          taskIds: ['task-one'],
+          observableOutcome: 'One task completes.',
+          completionPredicateIds: ['predicate-one'],
+        },
+      ],
+      completionPredicates: [
+        {
+          predicateId: 'predicate-one',
+          positive: true,
+          evidenceContractIds: ['evidence-one'],
+        },
+      ],
+      evidenceContracts: [
+        {
+          evidenceContractId: 'evidence-one',
+          producerTaskIds: ['task-one'],
+          freshnessRule: 'current source roots',
+        },
+      ],
+      taskDag: {
+        nodes: [{ taskId: 'task-one' }, { taskId: 'task-extra' }],
+        edges: [],
+      },
+      integrationJoinGraph: { joins: [] },
+    };
+
+    const validation = validateExecutionProjection(projection);
+    assert.equal(validation.decision, 'block');
+    assert.ok(
+      validation.issues.some(
+        (issue) => issue.code === projectionIssueCodes.executionSecondTaskUniverse
+      )
+    );
+  });
+
+  it('rejects a helper-only Slice without source-authorized verification outcome', () => {
+    const projection = {
+      atomicTasks: [{ taskId: 'task-one', ownerSliceId: 'slice-one' }],
+      traceSlices: [
+        {
+          sliceId: 'slice-one',
+          sourceIds: [],
+          taskIds: ['task-one'],
+          observableOutcome: 'A helper check completes.',
+          completionPredicateIds: ['predicate-one'],
+          classification: 'helper_only',
+          verificationOnly: true,
+        },
+      ],
+      completionPredicates: [
+        {
+          predicateId: 'predicate-one',
+          sliceId: 'slice-one',
+          positive: true,
+          evidenceContractIds: ['evidence-one'],
+        },
+      ],
+      evidenceContracts: [
+        {
+          evidenceContractId: 'evidence-one',
+          producerTaskIds: ['task-one'],
+          freshnessRule: 'current source roots',
+        },
+      ],
+      taskDag: {
+        nodes: [
+          {
+            taskId: 'task-one',
+            ownerSliceId: 'slice-one',
+            topologicalIndex: 0,
+          },
+        ],
+        edges: [],
+      },
+      integrationJoinGraph: { joins: [] },
+    };
+
+    const validation = validateExecutionProjection(projection);
+    assert.equal(validation.decision, 'block');
+    assert.ok(
+      validation.issues.some(
+        (issue) => issue.code === projectionIssueCodes.executionHelperOutcomeMissing
+      )
+    );
   });
 });
