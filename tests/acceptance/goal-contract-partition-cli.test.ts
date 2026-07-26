@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -68,7 +69,7 @@ afterEach(() => {
 });
 
 describe('goal-contract partition public source CLI', () => {
-  it('reaches the P03 boundary without publishing a manifest', () => {
+  it('promotes one manifest after coverage and selection receipts pass', () => {
     const { out, source } = fixture();
     const result = runPublicSourceCli([
       'partition',
@@ -81,15 +82,16 @@ describe('goal-contract partition public source CLI', () => {
       '--json',
     ]);
 
-    expect(result.status).toBe(1);
+    expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
     const payload = JSON.parse(result.stdout);
-    expect(payload.failureClass).toBe('partition_selection_not_implemented');
-    expect(payload.semanticDerivationMode).toBe('structured_fast_path');
-    expect(payload.semanticProviderCallCount).toBe(0);
-    expect(payload.executionProjectionHash).toMatch(/^sha256:[0-9a-f]{64}$/u);
-    expect(payload.taskDagHash).toMatch(/^sha256:[0-9a-f]{64}$/u);
-    expect(payload.integrationJoinGraphHash).toMatch(/^sha256:[0-9a-f]{64}$/u);
-    expect(fs.existsSync(out)).toBe(false);
+    expect(payload.ok).toBe(true);
+    expect(payload.globalCoverageDecision).toBe('pass');
+    expect(payload.selectionReceiptCount).toBe(payload.partitionCount);
+    expect(fs.existsSync(out)).toBe(true);
+    const manifestBytes = fs.readFileSync(out);
+    expect(payload.partitionManifestHash).toBe(
+      `sha256:${createHash('sha256').update(manifestBytes).digest('hex')}`
+    );
   });
 });

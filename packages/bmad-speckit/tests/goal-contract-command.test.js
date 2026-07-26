@@ -244,7 +244,7 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.failureClass, 'source_plan_missing');
   });
 
-  it('awaits async partition failures and emits exactly one JSON object', () => {
+  it('awaits async partition promotion and emits exactly one JSON object', () => {
     const root = tempRoot();
     const source = writePartitionSourcePlan(root);
     const out = path.join(root, 'partition-manifest.json');
@@ -259,13 +259,15 @@ describe('bmad-speckit goal-contract command', () => {
       '--json',
     ]);
 
-    assert.equal(result.status, 1, result.stderr || result.stdout);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(result.stderr, '');
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
+    assert.equal(payload.ok, true);
+    assert.equal(payload.globalCoverageDecision, 'pass');
+    assert.equal(payload.selectionReceiptCount, payload.partitionCount);
     assert.equal(result.stdout.trim().startsWith('{'), true);
     assert.equal(result.stdout.trim().endsWith('}'), true);
-    assert.equal(fs.existsSync(out), false);
+    assert.equal(fs.existsSync(out), true);
   });
 
   it('fails closed before writing a contract with non-portable PowerShell Git revisions', () => {

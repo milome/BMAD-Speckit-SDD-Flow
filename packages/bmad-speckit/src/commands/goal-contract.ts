@@ -7,7 +7,17 @@ export type GoalContractCommandModule = never;
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
 const SOURCE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
-const PARTITION_ASSET_ROOT = __filename.endsWith('.ts') ? SOURCE_ROOT : PACKAGE_ROOT;
+const PARTITION_ASSET_ROOT = fs.existsSync(
+  path.join(
+    PACKAGE_ROOT,
+    '_bmad',
+    'shared',
+    'goal-contract',
+    'goal-contract-partition-methodology-profile.json'
+  )
+)
+  ? PACKAGE_ROOT
+  : SOURCE_ROOT;
 
 function firstExistingPath(candidates) {
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
@@ -20,7 +30,18 @@ function loadDistModule(relativePath) {
 function loadPartitionModule(relativePath) {
   const sourceBase = path.join(PACKAGE_ROOT, 'src', relativePath);
   const distBase = path.join(PACKAGE_ROOT, 'dist', relativePath);
-  const candidates = __filename.endsWith('.ts')
+  const sourceRepositoryMode =
+    !fs.existsSync(
+      path.join(
+        PACKAGE_ROOT,
+        '_bmad',
+        'shared',
+        'goal-contract',
+        'goal-contract-partition-methodology-profile.json'
+      )
+    ) && fs.existsSync(`${sourceBase}.ts`);
+  const candidates =
+    __filename.endsWith('.ts') || sourceRepositoryMode
     ? [
         `${sourceBase}.ts`,
         path.join(sourceBase, 'index.ts'),
@@ -45,7 +66,7 @@ function loadWholeSourceDependencies() {
   const { resolveEntryScenario, validateEntryAuthority } = loadDistModule(
     'utils/goal-contract/entry-scenarios'
   );
-  const { defaultReceiptPaths, writeCoverageReceipt, writeGenerationReceipt } = loadDistModule(
+  const { defaultReceiptPaths, writeCoverageReceipt, writeGenerationReceipt } = loadPartitionModule(
     'utils/goal-contract/goal-contract-receipts'
   );
   const { resolveAuditProfile, runStandaloneDeterministicPreflight } = loadDistModule(
@@ -212,7 +233,7 @@ function assertPartitionGenerationArgsComplete(args) {
   }
 }
 
-function generate(args) {
+function generateWholeSource(args) {
   assertPartitionGenerationArgsComplete(args);
   const {
     buildSlotData,
@@ -417,6 +438,409 @@ function generate(args) {
   return generationReceipt;
 }
 
+function resolvePartitionReceiptPath(receiptsDir, receiptPath) {
+  if (
+    typeof receiptPath !== 'string' ||
+    receiptPath.length === 0 ||
+    path.isAbsolute(receiptPath) ||
+    receiptPath.includes('\\') ||
+    receiptPath.split('/').includes('..')
+  ) {
+    throw partitionFailure('partition_receipt_path_invalid', { receiptPath });
+  }
+  const root = path.resolve(receiptsDir);
+  const resolved = path.resolve(root, receiptPath);
+  const relative = path.relative(root, resolved);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw partitionFailure('partition_receipt_path_invalid', { receiptPath });
+  }
+  return resolved;
+}
+
+function selectedCommandRecords(graphInput, commandIds) {
+  const records = new Map<string, any>();
+  for (const command of Object.values(graphInput.commands || {}).flat()) {
+    const record = command as Record<string, any>;
+    const commandId = record?.commandId || record?.id;
+    if (commandId && !records.has(commandId)) records.set(commandId, command);
+  }
+  return commandIds.map((commandId) => {
+    const command = records.get(commandId);
+    if (!command) {
+      throw partitionFailure('partition_selection_command_unknown', { commandId });
+    }
+    return Object.freeze({ ...structuredClone(command), commandId });
+  });
+}
+
+function enrichSelectedScope({ selectedScope, reconciliation }) {
+  const sourceIds = new Set(
+    selectedScope.selectionReceipt.selectedPrimarySourceObligationIds
+  );
+  const primarySourceObligations = (reconciliation.graphInput.sourceObligations || [])
+    .filter((source) => sourceIds.has(source.id))
+    .map((source) => structuredClone(source));
+  if (primarySourceObligations.length !== sourceIds.size) {
+    throw partitionFailure('partition_selection_source_obligation_unknown', {
+      expected: sourceIds.size,
+      actual: primarySourceObligations.length,
+    });
+  }
+  return Object.freeze({
+    ...selectedScope,
+    primarySourceObligations,
+    commands: selectedCommandRecords(
+      reconciliation.graphInput,
+      selectedScope.selectionReceipt.selectedCommandIds
+    ),
+  });
+}
+
+async function generatePartitionBound(args) {
+  const {
+    defaultReceiptPaths,
+    writePartitionChildCoverageReceipt,
+    writePartitionChildGenerationReceipt,
+  } = loadPartitionModule('utils/goal-contract/goal-contract-receipts');
+  const {
+    readValidatedPartitionReceipt,
+  } = loadPartitionModule('utils/goal-contract/partition-receipts');
+  const {
+    buildGlobalPartitionCoverageReceipt,
+    selectPartitionScope,
+  } = loadPartitionModule('utils/goal-contract/partition-selector');
+  const { buildPartitionSlotData } = loadPartitionModule(
+    'utils/goal-contract/slot-data-builder'
+  );
+  const {
+    resolveEntryScenario,
+    validateEntryAuthority,
+  } = loadPartitionModule('utils/goal-contract/entry-scenarios');
+  const {
+    resolveAuditProfile,
+    runStandaloneDeterministicPreflight,
+  } = loadPartitionModule('utils/goal-contract/standalone-audit-controller');
+  const { safeWriteText, sha256File } = loadWholeSourceDependencies();
+
+  const entry = resolveEntryScenario(takeAll(args, '--entry'));
+  if (entry.entryScenario !== 'standalone_goal_contract') {
+    throw Object.assign(new Error('entry_route_mismatch'), {
+      failureClass: 'entry_route_mismatch',
+      entryScenario: entry.entryScenario,
+      expectedEntryScenario: 'standalone_goal_contract',
+    });
+  }
+  const sourcePath = take(args, '--source');
+  const outPath = take(args, '--out');
+  const entryAuthority = validateEntryAuthority({
+    entryScenario: entry.entryScenario,
+    sourceAuthority: sourcePath ? entry.sourceAuthority : null,
+    requestedOutputs: outPath ? [path.basename(outPath)] : [],
+  });
+  if (entryAuthority.decision !== 'pass') {
+    throw Object.assign(new Error(entryAuthority.failureClass), entryAuthority);
+  }
+
+  const manifestPath = path.resolve(take(args, '--partition-manifest'));
+  const partitionId = take(args, '--partition-id');
+  const resolvedOut = path.resolve(outPath);
+  const receiptsDir = path.resolve(
+    take(
+      args,
+      '--receipts-dir',
+      path.join(path.dirname(manifestPath), '.goal-contract-receipts')
+    )
+  );
+  const receiptPaths = defaultReceiptPaths(resolvedOut);
+  const coverageReceiptPath = path.resolve(
+    take(args, '--coverage-receipt', receiptPaths.coverageReceiptPath)
+  );
+  const generationReceiptPath = path.resolve(
+    take(args, '--generation-receipt', receiptPaths.generationReceiptPath)
+  );
+
+  const authority = await compilePartitionAuthority(args);
+  let activeManifestBytes;
+  try {
+    activeManifestBytes = fs.readFileSync(manifestPath, 'utf8');
+  } catch {
+    throw partitionFailure('partition_manifest_missing', {
+      partitionManifestPath: normalize(manifestPath),
+    });
+  }
+  if (activeManifestBytes !== authority.compiled.partitionManifestBytes) {
+    throw partitionFailure('partition_manifest_stale_or_tampered', {
+      partitionManifestPath: normalize(manifestPath),
+    });
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse(activeManifestBytes);
+  } catch {
+    throw partitionFailure('partition_manifest_invalid_json');
+  }
+
+  const selected = selectPartitionScope({
+    executionProjection: authority.projection,
+    partitionManifest: manifest,
+    partitionId,
+  });
+  const selectedScope = enrichSelectedScope({
+    selectedScope: selected,
+    reconciliation: authority.reconciliation,
+  });
+  const partition = selectedScope.partition;
+  const globalCoverageReceiptPath = resolvePartitionReceiptPath(
+    receiptsDir,
+    manifest.globalCoverageReceiptPath
+  );
+  const selectionReceiptPath = resolvePartitionReceiptPath(
+    receiptsDir,
+    partition.selectionReceiptPath
+  );
+  const globalCoverageReceipt = readValidatedPartitionReceipt(
+    globalCoverageReceiptPath,
+    'goal-contract-partition-global-coverage-receipt/v1'
+  );
+  const selectionReceipt = readValidatedPartitionReceipt(
+    selectionReceiptPath,
+    'goal-contract-partition-selection-receipt/v1'
+  );
+  const expectedGlobalCoverage = buildGlobalPartitionCoverageReceipt({
+    executionProjection: authority.projection,
+    candidateManifest: manifest,
+  });
+  if (stableStringify(globalCoverageReceipt) !== stableStringify(expectedGlobalCoverage)) {
+    throw partitionFailure('partition_global_coverage_receipt_stale');
+  }
+  if (
+    stableStringify(selectionReceipt) !==
+    stableStringify(selectedScope.selectionReceipt)
+  ) {
+    throw partitionFailure('partition_selection_receipt_stale', { partitionId });
+  }
+
+  const profilePath = firstExistingPath([
+    path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
+    path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
+  ]);
+  const templatePath = firstExistingPath([
+    path.join(
+      SOURCE_ROOT,
+      '_bmad',
+      'shared',
+      'goal-contract',
+      'goal-execution-contract-template.md'
+    ),
+    path.join(
+      PACKAGE_ROOT,
+      '_bmad',
+      'shared',
+      'goal-contract',
+      'goal-execution-contract-template.md'
+    ),
+  ]);
+  const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+  const templateText = fs.readFileSync(templatePath, 'utf8');
+  const globalCoverageReceiptHash = sha256File(globalCoverageReceiptPath);
+  const selectionReceiptHash = sha256File(selectionReceiptPath);
+  const bindings = {
+    partitionManifestPath: normalize(manifestPath),
+    partitionManifestHash: authority.compiled.partitionManifestHash,
+    partitionAnalysisReceiptHash: manifest.partitionAnalysisReceiptHash,
+    partitionSetHash: manifest.partitionSetHash,
+    selectionReceiptPath: normalize(selectionReceiptPath),
+    selectionReceiptHash,
+    selectionSetHash: partition.selectionSetHash,
+    globalCoverageReceiptPath: normalize(globalCoverageReceiptPath),
+    globalCoverageReceiptHash,
+    sourceSnapshotHash: manifest.sourceSnapshotHash,
+    methodologyProfileHash: manifest.methodologyProfileHash,
+    methodologyProfileArtifactHash:
+      authority.methodology.methodologyProfileArtifactHash,
+    executionProjectionHash: manifest.executionProjectionHash,
+    taskDagHash: manifest.taskDagHash,
+    partitionPolicyHash: manifest.partitionPolicyHash,
+    partitionPolicyArtifactHash:
+      authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+  };
+  const source = {
+    sourcePlanPath: manifest.masterSourcePath,
+    sourcePlanHash: manifest.masterSourceHash,
+    sourceBytes: authority.snapshot.sourceBytes,
+    sourceLines: authority.snapshot.sourceLines,
+  };
+  const {
+    slotData,
+    registries,
+    coverageAudit,
+    implementationProofAudit,
+  } = buildPartitionSlotData({
+    source,
+    profile,
+    selectedScope,
+    receiptPaths: {
+      outPath: normalize(resolvedOut),
+      coverageReceiptPath: normalize(coverageReceiptPath),
+      generationReceiptPath: normalize(generationReceiptPath),
+    },
+    bindings,
+  });
+  const { renderGoalContract } = loadRenderer();
+  const rendered = renderGoalContract({
+    templateText,
+    profile,
+    slotData,
+    validateHashes: true,
+    generationMode: 'partition_selected_scope',
+  });
+  const { auditCommandPortability } = loadCommandPortabilityChecker();
+  const commandPortabilityAudit = auditCommandPortability({
+    content: rendered.document,
+    targetPath: resolvedOut,
+    shell: 'pwsh',
+  });
+  const preflightStartedAt = new Date().toISOString();
+  const deterministicPreflight = runStandaloneDeterministicPreflight({
+    checks: [
+      {
+        id: 'renderer_structure',
+        run: () => {
+          const issues = rendererIssues(rendered.audit);
+          return {
+            decision: issues.length === 0 ? 'pass' : 'block',
+            issues,
+          };
+        },
+      },
+      {
+        id: 'partition_selected_coverage',
+        run: () => ({
+          decision:
+            coverageAudit.decision === 'pass' &&
+            implementationProofAudit.decision === 'pass'
+              ? 'pass'
+              : 'block',
+          issues: [],
+        }),
+      },
+      {
+        id: 'command_portability',
+        run: () => ({
+          decision: commandPortabilityAudit.status === 'PASS' ? 'pass' : 'block',
+          issues: (commandPortabilityAudit.issues || []).map((item) => ({
+            code: item.code || 'command_not_portable',
+            location: item.location || item.line || item.command || normalize(resolvedOut),
+          })),
+        }),
+      },
+    ],
+    startedAt: preflightStartedAt,
+    completedAt: new Date().toISOString(),
+  });
+  if (deterministicPreflight.decision !== 'pass') {
+    throw partitionFailure(
+      commandPortabilityAudit.status === 'PASS'
+        ? 'deterministic_preflight_failed'
+        : 'command_portability_failed',
+      {
+        rendererAudit: rendered.audit,
+        commandPortabilityAudit,
+        deterministicPreflight,
+      }
+    );
+  }
+
+  const writeReceipt = safeWriteText(resolvedOut, rendered.document, {
+    mode: fs.existsSync(resolvedOut) ? 'replace' : 'create',
+  });
+  const goalContractHash = sha256File(resolvedOut);
+  const coverage = writePartitionChildCoverageReceipt({
+    targetPath: coverageReceiptPath,
+    partitionId,
+    partitionManifestHash: authority.compiled.partitionManifestHash,
+    selectionReceiptHash,
+    globalCoverageReceiptHash,
+    selectedPrimaryObligationIds:
+      selectionReceipt.selectedPrimarySourceObligationIds,
+    inheritedConstraintIds: selectionReceipt.inheritedConstraintIds,
+    excludedObligationIds: uniqueStrings([
+      ...selectionReceipt.excludedSourceObligationIds,
+      ...selectionReceipt.excludedTraceSliceIds,
+      ...selectionReceipt.excludedAtomicTaskIds,
+      ...selectionReceipt.excludedAcceptanceIds,
+      ...selectionReceipt.excludedCommandIds,
+      ...selectionReceipt.excludedEvidenceContractIds,
+    ]),
+    unmappedSelectedObligations: coverageAudit.unmappedSourceObligations,
+    orphanGeneratedTaskIds: registries.tasks.filter(
+      (taskId) => !selectionReceipt.selectedPrimaryAtomicTaskIds.includes(taskId)
+    ),
+    orphanGeneratedAcceptanceIds: registries.acceptance.filter(
+      (acceptanceId) => !selectionReceipt.selectedAcceptanceIds.includes(acceptanceId)
+    ),
+  });
+  if (coverage.payload.decision !== 'pass') {
+    throw partitionFailure('partition_child_coverage_blocked', {
+      blockingReasons: coverage.payload.blockingReasons,
+    });
+  }
+  const generation = writePartitionChildGenerationReceipt({
+    targetPath: generationReceiptPath,
+    masterSourcePath: manifest.masterSourcePath,
+    masterSourceHash: manifest.masterSourceHash,
+    sourceSnapshotHash: manifest.sourceSnapshotHash,
+    methodologyProfileHash: manifest.methodologyProfileHash,
+    methodologyProfileArtifactHash:
+      authority.methodology.methodologyProfileArtifactHash,
+    executionProjectionHash: manifest.executionProjectionHash,
+    taskDagHash: manifest.taskDagHash,
+    partitionPolicyHash: manifest.partitionPolicyHash,
+    partitionPolicyArtifactHash:
+      authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+    partitionManifestPath: normalize(manifestPath),
+    partitionManifestHash: authority.compiled.partitionManifestHash,
+    partitionAnalysisReceiptHash: manifest.partitionAnalysisReceiptHash,
+    partitionSetHash: manifest.partitionSetHash,
+    partitionId,
+    partitionRole: partition.partitionRole,
+    selectionReceiptPath: normalize(selectionReceiptPath),
+    selectionReceiptHash,
+    selectionSetHash: partition.selectionSetHash,
+    globalCoverageReceiptPath: normalize(globalCoverageReceiptPath),
+    globalCoverageReceiptHash,
+    goalContractPath: normalize(resolvedOut),
+    goalContractHash,
+    coverageReceiptPath: normalize(coverageReceiptPath),
+    coverageReceiptHash: coverage.receiptHash,
+    selectedAtomicTaskCount: selectedScope.primaryAtomicTasks.length,
+    inheritedConstraintCount: selectedScope.inheritedConstraints.length,
+    rendererAudit: rendered.audit,
+    deterministicPreflight,
+    commandPortabilityAudit,
+    writeReceipt,
+  });
+  if (generation.payload.decision !== 'pass') {
+    throw partitionFailure('partition_child_generation_blocked', {
+      blockingReasons: generation.payload.blockingReasons,
+    });
+  }
+  return Object.freeze({
+    ok: true,
+    ...generation.payload,
+    generationReceiptPath: normalize(generation.path),
+    auditProfile: resolveAuditProfile(entry.entryScenario),
+  });
+}
+
+async function generate(args) {
+  assertPartitionGenerationArgsComplete(args);
+  if (has(args, '--partition-manifest') && has(args, '--partition-id')) {
+    return generatePartitionBound(args);
+  }
+  return generateWholeSource(args);
+}
+
 function assertNoForbiddenPartitionAuthorityArgs(args) {
   const forbiddenPolicyFlags = [
     '--partition-policy-hash',
@@ -439,6 +863,10 @@ function assertNoForbiddenPartitionAuthorityArgs(args) {
     '--selected-candidate',
     '--decision',
     '--selection-receipt',
+    '--global-coverage',
+    '--global-coverage-decision',
+    '--selection-decision',
+    '--selection-receipts',
   ];
   const forbidden = forbiddenFlags.filter((flag) =>
     args.some((arg) => arg === flag || arg.startsWith(`${flag}=`))
@@ -821,7 +1249,7 @@ function resolveSequenceConstraintBranch({ applicability, args, validateSequence
   });
 }
 
-async function partition(args): Promise<never> {
+async function compilePartitionAuthority(args) {
   assertNoForbiddenPartitionAuthorityArgs(args);
   const {
     assertNoForbiddenPartitionAuthorityArgs: assertNoForbiddenSemanticAuthorityArgs,
@@ -861,7 +1289,7 @@ async function partition(args): Promise<never> {
   const { optimizePartitions } = loadPartitionModule(
     'utils/goal-contract/partition-optimizer'
   );
-  const { compilePartitionManifest, stagePartitionSolution } = loadPartitionModule(
+  const { compilePartitionManifest } = loadPartitionModule(
     'utils/goal-contract/partition-manifest'
   );
   const { loadRepositoryFacts } = loadPartitionModule('utils/goal-contract/repository-facts');
@@ -1033,6 +1461,36 @@ async function partition(args): Promise<never> {
     componentGraph,
     optimization,
   });
+  return Object.freeze({
+    boundaryContext,
+    snapshot,
+    methodology,
+    extracted,
+    reconciliation,
+    projection,
+    optimizerPolicyBinding,
+    componentGraph,
+    optimization,
+    compiled,
+  });
+}
+
+async function partition(args) {
+  const authority = await compilePartitionAuthority(args);
+  const {
+    projection,
+    compiled,
+  } = authority;
+  const { stagePartitionSolution } = loadPartitionModule(
+    'utils/goal-contract/partition-manifest'
+  );
+  const {
+    buildGlobalPartitionCoverageReceipt,
+    selectPartitionScope,
+  } = loadPartitionModule('utils/goal-contract/partition-selector');
+  const { finalizePartitionRun } = loadPartitionModule(
+    'utils/goal-contract/partition-receipts'
+  );
   const requestedOut = take(args, '--out');
   if (!requestedOut) {
     throw partitionFailure('partition_output_missing');
@@ -1047,23 +1505,43 @@ async function partition(args): Promise<never> {
     receiptsDir,
     activeManifestPath: requestedOut,
   });
-  throw partitionFailure('partition_selection_not_implemented', {
-    ...boundaryContext,
-    partitionPolicyHash: optimizerPolicyBinding.partitionPolicyHash,
-    partitionPolicyArtifactHash: optimizerPolicyBinding.partitionPolicyArtifactHash,
-    policyPath: optimizerPolicyBinding.policyPath,
-    policyBytes: optimizerPolicyBinding.policyBytes,
-    executionProjectionHash: projection.executionProjectionHash,
-    taskDagHash: projection.taskDagHash,
-    integrationJoinGraphHash: projection.integrationJoinGraphHash,
-    partitionRunId: staged.partitionRunId,
-    partitionAnalysisReceiptPath: staged.analysisReceiptPath,
-    partitionAnalysisReceiptHash: staged.analysisReceiptHash,
-    stagedManifestPath: staged.manifestPath,
-    partitionManifestHash: staged.partitionManifestHash,
-    partitionCount: staged.manifest.partitionCount,
-    selectedCandidateId: optimization.selectedCandidateId,
-    activeManifestWritten: false,
+  const globalCoverage = buildGlobalPartitionCoverageReceipt({
+    executionProjection: projection,
+    candidateManifest: staged.manifest,
+  });
+  if (globalCoverage.decision !== 'pass') {
+    throw partitionFailure('partition_global_coverage_blocked', {
+      blockingReasons: globalCoverage.blockingReasons,
+    });
+  }
+  const selections = staged.manifest.partitions.map(
+    (candidatePartition) =>
+      selectPartitionScope({
+        executionProjection: projection,
+        partitionManifest: staged.manifest,
+        partitionId: candidatePartition.partitionId,
+      }).selectionReceipt
+  );
+  const finalized = finalizePartitionRun({
+    staged,
+    receiptsDir,
+    globalCoverage,
+    selections,
+    activeManifestPath: requestedOut,
+  });
+  if (finalized.activeManifestHash !== staged.partitionManifestHash) {
+    throw partitionFailure('partition_manifest_changed_during_finalization');
+  }
+  return Object.freeze({
+    ok: true,
+    schemaVersion: 'goal-contract-partition-command-receipt/v1',
+    runId: finalized.runId,
+    partitionManifestPath: finalized.activeManifestPath,
+    partitionManifestHash: finalized.activeManifestHash,
+    partitionCount: finalized.manifest.partitionCount,
+    partitionSetHash: finalized.manifest.partitionSetHash,
+    globalCoverageDecision: globalCoverage.decision,
+    selectionReceiptCount: selections.length,
   });
 }
 
@@ -1073,8 +1551,35 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
   const json = has(args, '--json') || _opts.json;
   try {
     if (subcommand === 'release-gate') {
-      const { goalContractReleaseGateCommand } = loadDistModule('utils/goal-contract/release-gate');
-      return await goalContractReleaseGateCommand(_opts, args);
+      const {
+        goalContractReleaseGateCommand,
+        parseGoalContractBinding,
+      } = loadPartitionModule('utils/goal-contract/release-gate');
+      const goalPath = take(args, '--goal');
+      const binding = parseGoalContractBinding(goalPath);
+      let partitionAuthority = null;
+      if (binding.mode === 'partition') {
+        const authorityArgs = [
+          '--entry',
+          binding.fields.entryScenario || 'standalone_goal_contract',
+          '--source',
+          take(args, '--source') || binding.fields.masterSourcePath,
+        ];
+        for (const flag of [
+          '--sequence-constraints',
+          '--repository-facts',
+          '--policy',
+        ]) {
+          const value = take(args, flag);
+          if (value) authorityArgs.push(flag, value);
+        }
+        partitionAuthority = await compilePartitionAuthority(
+          authorityArgs
+        );
+      }
+      return await goalContractReleaseGateCommand(_opts, args, {
+        partitionAuthority,
+      });
     }
     if (!['generate', 'partition'].includes(subcommand)) {
       throw Object.assign(
@@ -1086,7 +1591,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
         }
       );
     }
-    const result = subcommand === 'partition' ? await partition(args) : generate(args);
+    const result = subcommand === 'partition' ? await partition(args) : await generate(args);
     if (json) emitJson(result);
     else if (result?.goalContractPath) {
       process.stdout.write(`${result.goalContractPath}\n`);

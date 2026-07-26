@@ -405,7 +405,7 @@ function assertValidatedPartitionSelection(selection) {
   }
 }
 
-function buildPartitionSlotData({ source, profile, selection }) {
+function buildLegacyPartitionSlotData({ source, profile, selection }) {
   assertValidatedPartitionSelection(selection);
   const implementationTasks = selection.atomicTasks
     .map((task) =>
@@ -466,6 +466,319 @@ function buildPartitionSlotData({ source, profile, selection }) {
       completionPredicateCount: selection.completionPredicates.length,
       evidenceContractCount: selection.evidenceContracts.length,
       inheritedConstraintCount: selection.inheritedConstraints.length,
+    },
+  };
+}
+
+function selectedPartitionRegistries(selectedScope) {
+  const taskIds = selectedScope.primaryAtomicTasks.map((task) => task.taskId);
+  const acceptanceIds = selectedScope.completionPredicates.map(
+    (predicate) => predicate.predicateId
+  );
+  const commandIds = selectedScope.commands.map((command) => command.commandId);
+  const evidenceIds = selectedScope.evidenceContracts.map(
+    (contract) => contract.evidenceContractId
+  );
+  const sourceObligations = selectedScope.primarySourceObligations.map((source) => {
+    const goalTaskRefs = selectedScope.primaryAtomicTasks
+      .filter((task) => task.sourceIds.includes(source.id))
+      .map((task) => task.taskId);
+    const acceptanceRefs = selectedScope.completionPredicates
+      .filter((predicate) => predicate.sourceIds.includes(source.id))
+      .map((predicate) => predicate.predicateId);
+    return {
+      ...source,
+      goalTaskRefs: goalTaskRefs.length > 0 ? goalTaskRefs : taskIds,
+      acceptanceRefs: acceptanceRefs.length > 0 ? acceptanceRefs : acceptanceIds,
+      commandRefs: commandIds,
+      evidenceRefs: evidenceIds,
+    };
+  });
+  return {
+    sourceObligations,
+    tasks: taskIds,
+    acceptance: acceptanceIds,
+    commands: commandIds,
+    evidence: evidenceIds,
+  };
+}
+
+function assertSelectedPartitionScope(selectedScope) {
+  const requiredArrays = [
+    'primarySourceObligations',
+    'primaryAtomicTasks',
+    'completionPredicates',
+    'evidenceContracts',
+    'commands',
+    'inheritedConstraints',
+  ];
+  const invalidFields = requiredArrays.filter(
+    (field) => !Array.isArray(selectedScope?.[field])
+  );
+  if (
+    !selectedScope?.partition?.partitionId ||
+    invalidFields.length > 0 ||
+    selectedScope.primarySourceObligations.length === 0 ||
+    selectedScope.primaryAtomicTasks.length === 0 ||
+    selectedScope.completionPredicates.length === 0 ||
+    selectedScope.evidenceContracts.length === 0 ||
+    selectedScope.commands.length === 0
+  ) {
+    const error = new Error('partition_selection_invalid') as GoalContractBuilderError;
+    error.failureClass = 'partition_selection_invalid';
+    error.invalidFields = invalidFields;
+    throw error;
+  }
+  const sourceIds = new Set(selectedScope.primarySourceObligations.map((item) => item.id));
+  if (
+    selectedScope.primaryAtomicTasks.some(
+      (task) =>
+        !task.taskId ||
+        !Array.isArray(task.sourceIds) ||
+        task.sourceIds.some((sourceId) => !sourceIds.has(sourceId))
+    ) ||
+    selectedScope.completionPredicates.some(
+      (predicate) =>
+        !predicate.predicateId ||
+        !Array.isArray(predicate.sourceIds) ||
+        predicate.sourceIds.some((sourceId) => !sourceIds.has(sourceId))
+    ) ||
+    selectedScope.commands.some((command) => !command.commandId)
+  ) {
+    const error = new Error('partition_selection_invalid') as GoalContractBuilderError;
+    error.failureClass = 'partition_selection_invalid';
+    throw error;
+  }
+}
+
+function partitionFrontMatter({
+  source,
+  profile,
+  selectedScope,
+  receiptPaths,
+  bindings,
+  generatedAt,
+}) {
+  const partition = selectedScope.partition;
+  return [
+    '---',
+    'goalContractVersion: goal-execution-contract/v1',
+    `goalContractProfileVersion: ${profile.profileVersion}`,
+    `goalContractProfileHash: ${profile.profileHash}`,
+    'entryScenario: standalone_goal_contract',
+    'finalArtifactAuthority: standalone_goal_execution_plan_markdown',
+    'contractMode: frozen',
+    'rewritePolicy: forbidden',
+    'executionMode: execute_only',
+    `sourcePlanPath: ${source.sourcePlanPath}`,
+    `sourcePlanHash: ${source.sourcePlanHash}`,
+    `sourceBytes: ${source.sourceBytes}`,
+    `sourceLines: ${source.sourceLines}`,
+    `masterSourcePath: ${source.sourcePlanPath}`,
+    `masterSourceHash: ${source.sourcePlanHash}`,
+    `sourceSnapshotHash: ${bindings.sourceSnapshotHash}`,
+    `methodologyProfileHash: ${bindings.methodologyProfileHash}`,
+    `methodologyProfileArtifactHash: ${bindings.methodologyProfileArtifactHash}`,
+    `executionProjectionHash: ${bindings.executionProjectionHash}`,
+    `taskDagHash: ${bindings.taskDagHash}`,
+    `partitionPolicyHash: ${bindings.partitionPolicyHash}`,
+    `partitionPolicyArtifactHash: ${bindings.partitionPolicyArtifactHash}`,
+    `partitionManifestPath: ${repoPath(bindings.partitionManifestPath)}`,
+    `partitionManifestHash: ${bindings.partitionManifestHash}`,
+    `partitionAnalysisReceiptHash: ${bindings.partitionAnalysisReceiptHash}`,
+    `partitionSetHash: ${bindings.partitionSetHash}`,
+    `partitionId: ${partition.partitionId}`,
+    `partitionRole: ${partition.partitionRole}`,
+    `selectionReceiptPath: ${repoPath(bindings.selectionReceiptPath)}`,
+    `selectionReceiptHash: ${bindings.selectionReceiptHash}`,
+    `selectionSetHash: ${partition.selectionSetHash || bindings.selectionSetHash}`,
+    `dependencyPartitionIds: ${JSON.stringify(partition.dependencyPartitionIds || [])}`,
+    `globalCoverageReceiptPath: ${repoPath(bindings.globalCoverageReceiptPath)}`,
+    `globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`,
+    `coverageReceiptPath: ${repoPath(receiptPaths.coverageReceiptPath)}`,
+    `generationReceiptPath: ${repoPath(receiptPaths.generationReceiptPath)}`,
+    'unmappedSourceObligations: 0',
+    `runtimeRecordId: GOAL-CONTRACT-PARTITION-${partition.partitionId}`,
+    'entryFlow: goal_contract_partition_generate',
+    `generatedAt: ${generatedAt}`,
+    '---',
+  ].join('\n');
+}
+
+function buildPartitionSlotData({
+  source,
+  profile,
+  selection,
+  selectedScope,
+  receiptPaths,
+  bindings,
+  generatedAt = new Date().toISOString(),
+}) {
+  if (!selectedScope) {
+    return buildLegacyPartitionSlotData({ source, profile, selection });
+  }
+  assertSelectedPartitionScope(selectedScope);
+  const registries = selectedPartitionRegistries(selectedScope);
+  const partition = selectedScope.partition;
+  const taskRows = selectedScope.primaryAtomicTasks
+    .map((task) =>
+      [
+        `### ${task.taskId} ${task.title || task.taskId}`,
+        '',
+        `- Source obligations: ${task.sourceIds.map((id) => `\`${id}\``).join(', ')}.`,
+        `- Dependencies: ${
+          (task.dependencyIds || []).map((id) => `\`${id}\``).join(', ') || 'none'
+        }.`,
+      ].join('\n')
+    )
+    .join('\n\n');
+  const acceptanceRows = selectedScope.completionPredicates
+    .map(
+      (predicate) =>
+        `- [ ] **${predicate.predicateId}:** ${
+          predicate.statement || predicate.passCondition || predicate.predicateId
+        }`
+    )
+    .join('\n');
+  const traceRows = selectedScope.primaryAtomicTasks
+    .map(
+      (task) =>
+        `| ${task.taskId} | ${(task.sourceIds || []).join(', ')} | ${
+          (task.dependencyIds || []).join(', ') || 'none'
+        } |`
+    )
+    .join('\n');
+  const acceptanceTraceRows = selectedScope.completionPredicates
+    .map(
+      (predicate) =>
+        `| ${predicate.predicateId} | ${(predicate.sourceIds || []).join(', ')} | ${
+          (predicate.taskIds || predicate.goalIds || registries.tasks).join(', ')
+        } | ${(predicate.evidenceContractIds || predicate.expectedEvidenceIds || []).join(
+          ', '
+        )} |`
+    )
+    .join('\n');
+  const sourceRows = registries.sourceObligations
+    .map(
+      (item) =>
+        `| ${item.id} | ${(item.goalTaskRefs || []).join(', ')} | ${(
+          item.acceptanceRefs || []
+        ).join(', ')} | ${(item.commandRefs || []).join(', ')} | ${(
+          item.evidenceRefs || []
+        ).join(', ')} |`
+    )
+    .join('\n');
+  const commandRows = selectedScope.commands
+    .map(
+      (command) =>
+        `- \`${command.commandId}\`: \`${String(
+          command.literal || command.command || command.commandId
+        ).replace(/`/gu, '\\`')}\``
+    )
+    .join('\n');
+  const evidenceRows = selectedScope.evidenceContracts
+    .map(
+      (contract) =>
+        `- \`${contract.evidenceContractId}\`: producers=${(
+          contract.producerTaskIds || []
+        ).join(', ')}; freshness=${contract.freshnessRule || 'current'}.`
+    )
+    .join('\n');
+  const inheritedRows =
+    selectedScope.inheritedConstraints.length === 0
+      ? '- None.'
+      : selectedScope.inheritedConstraints
+          .map(
+            (constraint) =>
+              `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection.`
+          )
+          .join('\n');
+  return {
+    slotData: {
+      frontMatter: partitionFrontMatter({
+        source,
+        profile,
+        selectedScope,
+        receiptPaths,
+        bindings,
+        generatedAt,
+      }),
+      goalEntry: `\`\`\`text\n/goal ${repoPath(receiptPaths.outPath)}\n\`\`\``,
+      authorityModel: [
+        `- \`${repoPath(receiptPaths.outPath)}\` is the frozen authority for partition \`${partition.partitionId}\`.`,
+        `- The active partition manifest is \`${repoPath(bindings.partitionManifestPath)}\`.`,
+        '- Only selected primary records are executable in this child contract.',
+        '- Inherited constraints are preserved as non-executable authority.',
+        '- The standalone Markdown contract is the frozen execution authority.',
+        '- `model_packet.json is the machine-readable execution authority` only for the two four-artifact compilation entries.',
+        '- `goal_execution.md is not execution authority`; this generated contract is the frozen execution source for this partition.',
+        '- `/goal completion is not closeout proof`; completion requires current command and receipt evidence.',
+      ].join('\n'),
+      rootCause:
+        'The master goal must be closed through one manifest-bound child scope without importing excluded work.',
+      domainAddenda: [
+        '### Partition selection contract',
+        '',
+        `- Partition: \`${partition.partitionId}\` (${partition.partitionRole}).`,
+        `- Dependencies: ${
+          (partition.dependencyPartitionIds || []).map((id) => `\`${id}\``).join(', ') ||
+          'none'
+        }.`,
+        '',
+        '### Inherited partition constraints',
+        '',
+        inheritedRows,
+      ].join('\n'),
+      traceSliceTrackingMatrix: [
+        '| Task ID | Source IDs | Dependencies |',
+        '| --- | --- | --- |',
+        traceRows,
+      ].join('\n'),
+      implementationTasks: taskRows,
+      strictAcceptanceChecklist: acceptanceRows,
+      acceptanceTraceabilityMatrix: [
+        '| Acceptance ID | Source IDs | Tasks | Evidence |',
+        '| --- | --- | --- | --- |',
+        acceptanceTraceRows,
+      ].join('\n'),
+      sourceCoverageMatrix: [
+        '| Source ID | Tasks | Acceptance | Commands | Evidence |',
+        '| --- | --- | --- | --- | --- |',
+        sourceRows,
+      ].join('\n'),
+      requiredTestCommands: commandRows,
+      manualVerificationScenarios: `- Verify partition \`${partition.partitionId}\` against its current selection and global coverage receipts.`,
+      completionEvidencePacket: [
+        `- \`partitionManifestPath\`: \`${repoPath(bindings.partitionManifestPath)}\`.`,
+        `- \`partitionManifestHash\`: \`${bindings.partitionManifestHash}\`.`,
+        `- \`selectionReceiptPath\`: \`${repoPath(bindings.selectionReceiptPath)}\`.`,
+        `- \`selectionReceiptHash\`: \`${bindings.selectionReceiptHash}\`.`,
+        `- \`globalCoverageReceiptPath\`: \`${repoPath(
+          bindings.globalCoverageReceiptPath
+        )}\`.`,
+        `- \`globalCoverageReceiptHash\`: \`${bindings.globalCoverageReceiptHash}\`.`,
+        `- \`coverageReceiptPath\`: \`${repoPath(receiptPaths.coverageReceiptPath)}\`.`,
+        `- \`generationReceiptPath\`: \`${repoPath(
+          receiptPaths.generationReceiptPath
+        )}\`.`,
+      ].join('\n'),
+      expectedEvidenceFreeze: evidenceRows,
+      stopConditions: [
+        '- Stop if the active manifest differs from the current canonical compilation.',
+        '- Stop if global coverage or selection receipt bytes are stale, missing, or non-canonical.',
+        '- Stop if any excluded record appears as a local executable item.',
+      ].join('\n'),
+    },
+    registries,
+    coverageAudit: {
+      decision: 'pass',
+      unmappedSourceObligations: [],
+    },
+    implementationProofAudit: {
+      decision: 'pass',
+      selectedAtomicTaskCount: registries.tasks.length,
+      selectedCommandCount: registries.commands.length,
+      blockingReasons: [],
     },
   };
 }

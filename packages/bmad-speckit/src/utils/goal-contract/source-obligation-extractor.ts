@@ -172,7 +172,7 @@ function makeObligation(index, base, snapshot, legacyIds) {
   const text = normalizeLineEndings(base.text).trim();
   const textHash = sha256Text(text);
   const sourceRef = `${base.sourcePlanPath}:${base.lineStart}-${base.lineEnd}`;
-  const declaredId = parseDeclaredId(text);
+  const declaredId = legacyIds ? null : parseDeclaredId(text);
   const referencedIds = extractReferencedIds(text, declaredId);
   const lower = text.toLowerCase();
   const id = declaredId

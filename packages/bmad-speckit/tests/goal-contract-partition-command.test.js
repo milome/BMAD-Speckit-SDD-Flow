@@ -307,7 +307,7 @@ function parsePayload(result) {
 }
 
 describe('bmad-speckit goal-contract partition command', () => {
-  it('stages the selected partition solution at the P04 boundary without writing the active manifest', () => {
+  it('promotes one active manifest only after global coverage and selections pass', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
     const out = path.join(root, 'partition-manifest.json');
@@ -323,44 +323,21 @@ describe('bmad-speckit goal-contract partition command', () => {
       '--json',
     ]);
 
-    assert.notEqual(result.status, 0);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
-    assert.match(payload.sourceSnapshotHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.sourceObligationGraphHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.methodologyProfileHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.partitionPolicyHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.semanticModelHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.traceGraphHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.executionProjectionHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.taskDagHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.integrationJoinGraphHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.equal(payload.semanticDerivationAllowance, true);
-    assert.equal(payload.semanticDerivationMode, 'structured_fast_path');
-    assert.equal(payload.semanticProviderCallCount, 0);
-    assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
-    assert.match(payload.partitionRunId, /^partition-run-[0-9a-f]{64}$/u);
-    assert.match(payload.partitionAnalysisReceiptHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(payload.ok, true);
+    assert.match(payload.runId, /^partition-run-[0-9a-f]{64}$/u);
     assert.match(payload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
     assert.ok(payload.partitionCount >= 1);
-    assert.equal(payload.activeManifestWritten, false);
-    assert.equal(fs.existsSync(payload.partitionAnalysisReceiptPath), true);
-    assert.equal(fs.existsSync(payload.stagedManifestPath), true);
-    const analysisBytes = fs.readFileSync(payload.partitionAnalysisReceiptPath);
-    const manifestBytes = fs.readFileSync(payload.stagedManifestPath);
-    const analysis = JSON.parse(analysisBytes);
-    const manifest = JSON.parse(manifestBytes);
-    assert.equal(hash(analysisBytes), payload.partitionAnalysisReceiptHash);
+    assert.equal(payload.globalCoverageDecision, 'pass');
+    assert.equal(payload.selectionReceiptCount, payload.partitionCount);
+    assert.equal(fs.existsSync(out), true);
+    const manifestBytes = fs.readFileSync(out);
     assert.equal(hash(manifestBytes), payload.partitionManifestHash);
-    assert.equal(analysis.runId, payload.partitionRunId);
-    assert.equal(analysis.validCandidateCount >= 1, true);
-    assert.equal(
-      analysis.candidateCount,
-      analysis.validCandidateCount + analysis.rejectedCandidateSummaries.length
-    );
+    const manifest = JSON.parse(manifestBytes);
     assert.match(manifest.manifestId, /^partition-manifest-[0-9a-f]{64}$/u);
-    assert.equal(manifest.taskDagHash, payload.taskDagHash);
-    assert.equal(fs.existsSync(out), false);
+    assert.equal(manifest.partitionCount, payload.partitionCount);
+    assert.equal(manifest.partitionSetHash, payload.partitionSetHash);
   });
 
   it('rejects an active output path that overlaps the receipts directory', () => {
@@ -386,7 +363,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(fs.existsSync(out), false);
   });
 
-  it('reaches the P02 boundary for canonical-shaped task headings and descriptive dependency prose', () => {
+  it('promotes canonical-shaped task headings and descriptive dependency prose', () => {
     const root = tempRoot();
     const source = writeCanonicalRegressionPlan(root);
     const out = path.join(root, 'partition-manifest.json');
@@ -402,10 +379,10 @@ describe('bmad-speckit goal-contract partition command', () => {
       '--json',
     ]);
 
-    assert.notEqual(result.status, 0);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
-    assert.equal(fs.existsSync(out), false);
+    assert.equal(payload.ok, true);
+    assert.equal(fs.existsSync(out), true);
   });
 
   it('rejects caller-authored partition authority before reading source or writing output', () => {
@@ -536,11 +513,9 @@ describe('bmad-speckit goal-contract partition command', () => {
       }
     );
 
-    assert.notEqual(result.status, 0);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
-    assert.equal(payload.semanticDerivationMode, 'semantic_completion');
-    assert.equal(payload.semanticProviderCallCount, 2);
+    assert.equal(payload.ok, true);
     assert.deepEqual(
       fs.readFileSync(fixture.invocationLog, 'utf8').trim().split(/\r?\n/u).sort(),
       [
@@ -548,7 +523,7 @@ describe('bmad-speckit goal-contract partition command', () => {
         'goal_contract_implementation_view/v1',
       ]
     );
-    assert.equal(fs.existsSync(out), false);
+    assert.equal(fs.existsSync(out), true);
   });
 
   it('ignores caller-controlled provider roots and prewritten trusted envelopes', async () => {
@@ -725,15 +700,12 @@ describe('bmad-speckit goal-contract partition command', () => {
       out,
       '--json',
     ]);
-    assert.notEqual(current.status, 0);
+    assert.equal(current.status, 0, current.stderr || current.stdout);
     const currentPayload = parsePayload(current);
-    assert.equal(
-      currentPayload.failureClass,
-      'partition_selection_not_implemented'
-    );
+    assert.equal(currentPayload.ok, true);
     assert.match(currentPayload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
     assert.ok(currentPayload.partitionCount >= 1);
-    assert.equal(fs.existsSync(out), false);
+    assert.equal(fs.existsSync(out), true);
   });
 
   it('builds partition slots only from a validated canonical selection', () => {
