@@ -262,7 +262,7 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(result.status, 1, result.stderr || result.stdout);
     assert.equal(result.stderr, '');
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.failureClass, 'partition_optimizer_not_implemented');
+    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
     assert.equal(result.stdout.trim().startsWith('{'), true);
     assert.equal(result.stdout.trim().endsWith('}'), true);
     assert.equal(fs.existsSync(out), false);

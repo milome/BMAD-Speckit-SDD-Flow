@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifestId",
+    "partitionRunId",
+    "masterSourcePath",
+    "masterSourceHash",
+    "masterSourceSemanticHash",
+    "sourceSnapshotHash",
+    "sourceObligationGraphHash",
+    "methodologyProfileHash",
+    "reconciledGraphHash",
+    "semanticModelHash",
+    "executionProjectionHash",
+    "taskDagHash",
+    "partitionPolicyHash",
+    "optimizerVersion",
+    "selectedCandidateId",
+    "partitionAnalysisReceiptPath",
+    "partitionAnalysisReceiptHash",
+    "partitionSetHash",
+    "partitionCount",
+    "topologicalOrder",
+    "globalCoverageReceiptPath",
+    "partitions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-manifest/v1"
+    },
+    "manifestId": {
+      "type": "string",
+      "pattern": "^partition-manifest-[0-9a-f]{64}$"
+    },
+    "partitionRunId": {
+      "$ref": "#/$defs/partitionRunId"
+    },
+    "masterSourcePath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "masterSourceHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "masterSourceSemanticHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceSnapshotHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceObligationGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "methodologyProfileHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "reconciledGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "executionProjectionHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "taskDagHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "optimizerVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "selectedCandidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionAnalysisReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionAnalysisReceiptHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "topologicalOrder": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/partitionId"
+      }
+    },
+    "globalCoverageReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/partition"
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "partitionRunId": {
+      "type": "string",
+      "pattern": "^partition-run-[0-9a-f]{64}$"
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 240
+    },
+    "closureMinuteBreakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declaredTaskMinutes",
+        "derivedTaskMinutes",
+        "verificationMinutes",
+        "coordinationMinutes",
+        "totalMinutes"
+      ],
+      "properties": {
+        "declaredTaskMinutes": {
+          "$ref": "#/$defs/minutes"
+        },
+        "derivedTaskMinutes": {
+          "$ref": "#/$defs/minutes"
+        },
+        "verificationMinutes": {
+          "$ref": "#/$defs/minutes"
+        },
+        "coordinationMinutes": {
+          "$ref": "#/$defs/minutes"
+        },
+        "totalMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        }
+      }
+    },
+    "partition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partitionId",
+        "displayOrdinal",
+        "displayTitle",
+        "primaryComponentIds",
+        "primaryTraceSliceIds",
+        "primaryTaskIds",
+        "outcome",
+        "primaryEpicIds",
+        "primarySourceObligationIds",
+        "inheritedConstraintIds",
+        "acceptanceIds",
+        "commandIds",
+        "evidenceContractIds",
+        "completionPredicateIds",
+        "dependencyPartitionIds",
+        "partitionRole",
+        "partitionRoleDerived",
+        "ownedArtifactPaths",
+        "sharedArtifactDependencies",
+        "compatibilityReceiptRequirements",
+        "blockedConditions",
+        "failureClasses",
+        "estimatedClosureCost",
+        "estimatedClosureMinutes",
+        "closureMinuteBreakdown",
+        "primaryWriteScopeOwnerCount",
+        "selectionSetHash",
+        "selectionReceiptPath"
+      ],
+      "properties": {
+        "partitionId": {
+          "$ref": "#/$defs/partitionId"
+        },
+        "displayOrdinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "displayTitle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primaryComponentIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "primaryTraceSliceIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "primaryTaskIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primaryEpicIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "primarySourceObligationIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "inheritedConstraintIds": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "acceptanceIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "commandIds": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "evidenceContractIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "completionPredicateIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "dependencyPartitionIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/partitionId"
+          }
+        },
+        "partitionRole": {
+          "enum": [
+            "implementation",
+            "authority_transition",
+            "integration",
+            "distribution",
+            "final_integration"
+          ]
+        },
+        "partitionRoleDerived": {
+          "const": true
+        },
+        "ownedArtifactPaths": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "sharedArtifactDependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sharedArtifactDependency"
+          }
+        },
+        "compatibilityReceiptRequirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/compatibilityReceiptRequirement"
+          }
+        },
+        "blockedConditions": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "failureClasses": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "estimatedClosureCost": {
+          "$ref": "#/$defs/estimatedClosureCost"
+        },
+        "estimatedClosureMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "closureMinuteBreakdown": {
+          "$ref": "#/$defs/closureMinuteBreakdown"
+        },
+        "primaryWriteScopeOwnerCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectionSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "selectionReceiptPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "estimatedClosureCost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "total",
+        "breakdown"
+      ],
+      "properties": {
+        "unit": {
+          "const": "minutes"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "breakdown": {
+          "$ref": "#/$defs/closureMinuteBreakdown"
+        }
+      }
+    },
+    "sharedArtifactDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "dependencyPartitionIds"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dependencyPartitionIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/partitionId"
+          }
+        }
+      }
+    },
+    "compatibilityReceiptRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactPath",
+        "predecessorPartitionId",
+        "receiptPath"
+      ],
+      "properties": {
+        "artifactPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predecessorPartitionId": {
+          "$ref": "#/$defs/partitionId"
+        },
+        "receiptPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "uniqueStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "nonEmptyUniqueStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

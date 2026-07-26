@@ -307,7 +307,7 @@ function parsePayload(result) {
 }
 
 describe('bmad-speckit goal-contract partition command', () => {
-  it('runs the production partition chain to the declared P02 boundary without writing authority artifacts', () => {
+  it('stages the selected partition solution at the P04 boundary without writing the active manifest', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
     const out = path.join(root, 'partition-manifest.json');
@@ -325,7 +325,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     assert.notEqual(result.status, 0);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_optimizer_not_implemented');
+    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
     assert.match(payload.sourceSnapshotHash, /^sha256:[0-9a-f]{64}$/u);
     assert.match(payload.sourceObligationGraphHash, /^sha256:[0-9a-f]{64}$/u);
     assert.match(payload.methodologyProfileHash, /^sha256:[0-9a-f]{64}$/u);
@@ -339,6 +339,50 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(payload.semanticDerivationMode, 'structured_fast_path');
     assert.equal(payload.semanticProviderCallCount, 0);
     assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
+    assert.match(payload.partitionRunId, /^partition-run-[0-9a-f]{64}$/u);
+    assert.match(payload.partitionAnalysisReceiptHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(payload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.ok(payload.partitionCount >= 1);
+    assert.equal(payload.activeManifestWritten, false);
+    assert.equal(fs.existsSync(payload.partitionAnalysisReceiptPath), true);
+    assert.equal(fs.existsSync(payload.stagedManifestPath), true);
+    const analysisBytes = fs.readFileSync(payload.partitionAnalysisReceiptPath);
+    const manifestBytes = fs.readFileSync(payload.stagedManifestPath);
+    const analysis = JSON.parse(analysisBytes);
+    const manifest = JSON.parse(manifestBytes);
+    assert.equal(hash(analysisBytes), payload.partitionAnalysisReceiptHash);
+    assert.equal(hash(manifestBytes), payload.partitionManifestHash);
+    assert.equal(analysis.runId, payload.partitionRunId);
+    assert.equal(analysis.validCandidateCount >= 1, true);
+    assert.equal(
+      analysis.candidateCount,
+      analysis.validCandidateCount + analysis.rejectedCandidateSummaries.length
+    );
+    assert.match(manifest.manifestId, /^partition-manifest-[0-9a-f]{64}$/u);
+    assert.equal(manifest.taskDagHash, payload.taskDagHash);
+    assert.equal(fs.existsSync(out), false);
+  });
+
+  it('rejects an active output path that overlaps the receipts directory', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const out = path.join(root, 'partition-manifest.json');
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--receipts-dir',
+      out,
+      '--json',
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.equal(parsePayload(result).failureClass, 'partition_output_path_overlap');
     assert.equal(fs.existsSync(out), false);
   });
 
@@ -360,7 +404,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     assert.notEqual(result.status, 0);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_optimizer_not_implemented');
+    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
     assert.equal(fs.existsSync(out), false);
   });
 
@@ -374,7 +418,6 @@ describe('bmad-speckit goal-contract partition command', () => {
       ['--selected-candidate', 'candidate-1'],
       ['--decision', 'accept'],
       ['--selection-receipt', path.join(root, 'selection-receipt.json')],
-      ['--partition-policy-hash', `sha256:${'a'.repeat(64)}`],
     ];
 
     for (const authorityArgs of cases) {
@@ -396,7 +439,40 @@ describe('bmad-speckit goal-contract partition command', () => {
     }
   });
 
-  it('binds an explicit policy path and exact bytes before entering P02', () => {
+  it('rejects caller-authored policy identities and objects before reading source', () => {
+    const root = tempRoot();
+    const missingSource = path.join(root, 'missing-source.md');
+    const out = path.join(root, 'must-not-exist.json');
+    const cases = [
+      ['--partition-policy-hash', `sha256:${'a'.repeat(64)}`],
+      ['--policy-hash', `sha256:${'b'.repeat(64)}`],
+      ['--partition-policy-bytes', '123'],
+      ['--partition-policy-json', '{"schemaVersion":"goal-contract-partition-policy/v1"}'],
+    ];
+
+    for (const authorityArgs of cases) {
+      const result = runSourceCommand([
+        'partition',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        missingSource,
+        '--out',
+        out,
+        '--json',
+        ...authorityArgs,
+      ]);
+
+      assert.notEqual(result.status, 0);
+      assert.equal(
+        parsePayload(result).failureClass,
+        'partition_policy_authority_override_forbidden'
+      );
+      assert.equal(fs.existsSync(out), false);
+    }
+  });
+
+  it('rejects an explicit substitute policy path before entering P02', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
     const out = path.join(root, 'partition-manifest.json');
@@ -427,11 +503,8 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     assert.notEqual(result.status, 0);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_optimizer_not_implemented');
-    assert.equal(payload.policyPath, path.resolve(policyPath).replace(/\\/gu, '/'));
-    assert.equal(payload.policyBytes, fs.readFileSync(policyPath).length);
-    assert.match(payload.partitionPolicyArtifactHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(payload.partitionPolicyHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(payload.failureClass, 'partition_policy_binding_mismatch');
+    assert.deepEqual(payload.mismatchedFields, ['policyPath']);
     assert.equal(fs.existsSync(out), false);
   });
 
@@ -465,7 +538,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     assert.notEqual(result.status, 0);
     const payload = parsePayload(result);
-    assert.equal(payload.failureClass, 'partition_optimizer_not_implemented');
+    assert.equal(payload.failureClass, 'partition_selection_not_implemented');
     assert.equal(payload.semanticDerivationMode, 'semantic_completion');
     assert.equal(payload.semanticProviderCallCount, 2);
     assert.deepEqual(
@@ -653,7 +726,13 @@ describe('bmad-speckit goal-contract partition command', () => {
       '--json',
     ]);
     assert.notEqual(current.status, 0);
-    assert.equal(parsePayload(current).failureClass, 'partition_optimizer_not_implemented');
+    const currentPayload = parsePayload(current);
+    assert.equal(
+      currentPayload.failureClass,
+      'partition_selection_not_implemented'
+    );
+    assert.match(currentPayload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.ok(currentPayload.partitionCount >= 1);
     assert.equal(fs.existsSync(out), false);
   });
 

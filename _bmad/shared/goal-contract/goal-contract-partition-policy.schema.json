@@ -27,21 +27,38 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "maxClosureCostPerPartition",
-        "maxAtomicTasksPerPartition",
+        "targetClosureMinutesPerPartition",
+        "maxClosureMinutesPerPartition",
         "maxPrimaryWriteScopeOwnersPerPartition",
         "maxCrossPartitionDependencies",
         "maxCandidateFrontiers",
         "maxSearchStates"
       ],
       "properties": {
-        "maxClosureCostPerPartition": {
-          "type": "integer",
-          "minimum": 1
+        "targetClosureMinutesPerPartition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            }
+          }
         },
-        "maxAtomicTasksPerPartition": {
+        "maxClosureMinutesPerPartition": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "maximum": 240
         },
         "maxPrimaryWriteScopeOwnersPerPartition": {
           "type": "integer",

@@ -418,14 +418,27 @@ function generate(args) {
 }
 
 function assertNoForbiddenPartitionAuthorityArgs(args) {
+  const forbiddenPolicyFlags = [
+    '--partition-policy-hash',
+    '--policy-hash',
+    '--partition-policy-bytes',
+    '--partition-policy-json',
+  ];
+  const forbiddenPolicy = forbiddenPolicyFlags.filter((flag) =>
+    args.some((arg) => arg === flag || arg.startsWith(`${flag}=`))
+  );
+  if (forbiddenPolicy.length > 0) {
+    throw Object.assign(new Error('partition_policy_authority_override_forbidden'), {
+      failureClass: 'partition_policy_authority_override_forbidden',
+      forbidden: forbiddenPolicy,
+    });
+  }
   const forbiddenFlags = [
     '--partition-count',
     '--task',
     '--selected-candidate',
     '--decision',
     '--selection-receipt',
-    '--partition-policy-hash',
-    '--policy-hash',
   ];
   const forbidden = forbiddenFlags.filter((flag) =>
     args.some((arg) => arg === flag || arg.startsWith(`${flag}=`))
@@ -839,7 +852,18 @@ async function partition(args): Promise<never> {
   const { extractSourceObligations } = loadPartitionModule(
     'utils/goal-contract/source-obligation-extractor'
   );
-  const { loadPartitionPolicy } = loadPartitionModule('utils/goal-contract/partition-policy');
+  const { assertCurrentPartitionPolicyBinding, loadPartitionPolicy } = loadPartitionModule(
+    'utils/goal-contract/partition-policy'
+  );
+  const { buildPartitionComponents } = loadPartitionModule(
+    'utils/goal-contract/partition-components'
+  );
+  const { optimizePartitions } = loadPartitionModule(
+    'utils/goal-contract/partition-optimizer'
+  );
+  const { compilePartitionManifest, stagePartitionSolution } = loadPartitionModule(
+    'utils/goal-contract/partition-manifest'
+  );
   const { loadRepositoryFacts } = loadPartitionModule('utils/goal-contract/repository-facts');
   const { reconcileGoalContractViews } = loadPartitionModule(
     'utils/goal-contract/view-reconciliation'
@@ -942,27 +966,104 @@ async function partition(args): Promise<never> {
     throw error;
   }
   let projection;
+  const projectionAuthority = {
+    sourceSnapshotHash: snapshot.aggregateHash,
+    sourceObligationGraphHash: extracted.sourceObligationGraphHash,
+    methodologyProfileHash: methodology.methodologyProfileHash,
+    semanticModelHash: semantic.semanticModelHash,
+    traceGraphHash: graph.traceGraphHash,
+    reconciledGraph: reconciliation.graphInput,
+    reconciledGraphHash: reconciliation.graphInputHash,
+    sequenceApplicabilityReceipt: applicability,
+    sequenceConstraintInput,
+  };
   try {
-    projection = compileExecutionProjection({
-      sourceSnapshotHash: snapshot.aggregateHash,
-      sourceObligationGraphHash: extracted.sourceObligationGraphHash,
-      methodologyProfileHash: methodology.methodologyProfileHash,
-      semanticModelHash: semantic.semanticModelHash,
-      traceGraphHash: graph.traceGraphHash,
-      reconciledGraph: reconciliation.graphInput,
-      reconciledGraphHash: reconciliation.graphInputHash,
-      sequenceApplicabilityReceipt: applicability,
-      sequenceConstraintInput,
-    });
+    projection = compileExecutionProjection(projectionAuthority);
   } catch (error) {
     Object.assign(error, boundaryContext);
     throw error;
   }
-  throw partitionFailure('partition_optimizer_not_implemented', {
+  let optimizerPolicyBinding;
+  try {
+    optimizerPolicyBinding = assertCurrentPartitionPolicyBinding({
+      policyBinding,
+      sourceSnapshotHash: snapshot.aggregateHash,
+      semanticModelHash: semantic.semanticModelHash,
+      executionProjectionHash: projection.executionProjectionHash,
+    });
+  } catch (error) {
+    Object.assign(error, boundaryContext, {
+      executionProjectionHash: projection.executionProjectionHash,
+      taskDagHash: projection.taskDagHash,
+      integrationJoinGraphHash: projection.integrationJoinGraphHash,
+    });
+    throw error;
+  }
+  const componentGraph = buildPartitionComponents({
+    executionProjection: projection,
+    policy: optimizerPolicyBinding.policy,
+  });
+  const optimization = optimizePartitions({
+    componentGraph,
+    executionProjection: projection,
+    policyBinding: optimizerPolicyBinding,
+    projectionAuthority,
+  });
+  const compiled = compilePartitionManifest({
+    sourceSnapshot: snapshot,
+    sourceObligationGraph: extracted.sourceObligationGraph,
+    sourceObligationGraphHash: extracted.sourceObligationGraphHash,
+    methodologyProfileHash: methodology.methodologyProfileHash,
+    reconciledGraph: reconciliation.graphInput,
+    reconciledGraphHash: reconciliation.graphInputHash,
+    reconciliationReceiptHash: sha256Text(
+      stableStringify({
+        graphInputHash: reconciliation.graphInputHash,
+        issues: reconciliation.issues,
+        metrics: reconciliation.metrics,
+        outputInventory: reconciliation.outputInventory,
+      })
+    ),
+    executionProjection: projection,
+    projectionAuthority,
+    policyBinding: optimizerPolicyBinding,
+    semanticDerivationMode: derivationMode.mode,
+    implementationViewReceipt: derivation.implementation.receipt,
+    acceptanceEvidenceViewReceipt: derivation.acceptanceEvidence.receipt,
+    componentGraph,
+    optimization,
+  });
+  const requestedOut = take(args, '--out');
+  if (!requestedOut) {
+    throw partitionFailure('partition_output_missing');
+  }
+  const receiptsDir = take(
+    args,
+    '--receipts-dir',
+    path.join(path.dirname(path.resolve(requestedOut)), '.goal-contract-receipts')
+  );
+  const staged = stagePartitionSolution({
+    compiled,
+    receiptsDir,
+    activeManifestPath: requestedOut,
+  });
+  throw partitionFailure('partition_selection_not_implemented', {
     ...boundaryContext,
+    partitionPolicyHash: optimizerPolicyBinding.partitionPolicyHash,
+    partitionPolicyArtifactHash: optimizerPolicyBinding.partitionPolicyArtifactHash,
+    policyPath: optimizerPolicyBinding.policyPath,
+    policyBytes: optimizerPolicyBinding.policyBytes,
     executionProjectionHash: projection.executionProjectionHash,
     taskDagHash: projection.taskDagHash,
     integrationJoinGraphHash: projection.integrationJoinGraphHash,
+    partitionRunId: staged.partitionRunId,
+    partitionAnalysisReceiptPath: staged.analysisReceiptPath,
+    partitionAnalysisReceiptHash: staged.analysisReceiptHash,
+    stagedManifestPath: staged.manifestPath,
+    partitionManifestHash: staged.partitionManifestHash,
+    partitionCount: staged.manifest.partitionCount,
+    selectedCandidateId: optimization.selectedCandidateId,
+    activeManifestWritten: false,
   });
 }
 
@@ -1068,6 +1169,39 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
             integrationJoinGraphHash: error.integrationJoinGraphHash,
           }
         : {}),
+      ...(error.partitionRunId ? { partitionRunId: error.partitionRunId } : {}),
+      ...(error.partitionAnalysisReceiptPath
+        ? {
+            partitionAnalysisReceiptPath: error.partitionAnalysisReceiptPath,
+          }
+        : {}),
+      ...(error.partitionAnalysisReceiptHash
+        ? {
+            partitionAnalysisReceiptHash: error.partitionAnalysisReceiptHash,
+          }
+        : {}),
+      ...(error.stagedManifestPath
+        ? { stagedManifestPath: error.stagedManifestPath }
+        : {}),
+      ...(error.partitionManifestHash
+        ? { partitionManifestHash: error.partitionManifestHash }
+        : {}),
+      ...(Number.isInteger(error.partitionCount)
+        ? { partitionCount: error.partitionCount }
+        : {}),
+      ...(error.selectedCandidateId
+        ? { selectedCandidateId: error.selectedCandidateId }
+        : {}),
+      ...(typeof error.activeManifestWritten === 'boolean'
+        ? { activeManifestWritten: error.activeManifestWritten }
+        : {}),
+      ...(error.staleFields ? { staleFields: error.staleFields } : {}),
+      ...(error.mismatchedFields
+        ? { mismatchedFields: error.mismatchedFields }
+        : {}),
+      ...(error.invalidFields ? { invalidFields: error.invalidFields } : {}),
+      ...(error.expected ? { expected: error.expected } : {}),
+      ...(error.actual ? { actual: error.actual } : {}),
     });
     if (json) emitJson(payload);
     else console.error(payload.message);

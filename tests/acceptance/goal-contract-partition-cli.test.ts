@@ -84,7 +84,7 @@ describe('goal-contract partition public source CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toBe('');
     const payload = JSON.parse(result.stdout);
-    expect(payload.failureClass).toBe('partition_optimizer_not_implemented');
+    expect(payload.failureClass).toBe('partition_selection_not_implemented');
     expect(payload.semanticDerivationMode).toBe('structured_fast_path');
     expect(payload.semanticProviderCallCount).toBe(0);
     expect(payload.executionProjectionHash).toMatch(/^sha256:[0-9a-f]{64}$/u);
