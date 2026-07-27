@@ -1409,10 +1409,30 @@ function assertSequencePacketHashes(packet) {
   }
 }
 
-function resolveSequenceConstraintBranch({ applicability, args, validateSequenceConstraintInput }) {
+function resolveSequenceConstraintBranch({
+  applicability,
+  sequenceMode,
+  args,
+  deriveSequenceExecutionState,
+  validateSequenceConstraintInput,
+}) {
   const constraintPath = take(args, '--sequence-constraints', null);
+  if (sequenceMode === 'disabled' && constraintPath) {
+    throw partitionFailure('sequence_constraints_forbidden_when_disabled');
+  }
   let sequenceConstraintInput = null;
   const producerAvailable = Boolean(constraintPath && fs.existsSync(path.resolve(constraintPath)));
+  const sequenceExecutionState = deriveSequenceExecutionState({
+    sequenceMode,
+    sequenceApplicability: applicability.decision,
+    producerAvailable,
+  });
+  if (sequenceMode === 'disabled') {
+    return Object.freeze({
+      sequenceConstraintInput: null,
+      sequenceExecutionState,
+    });
+  }
   if (producerAvailable) {
     try {
       sequenceConstraintInput = JSON.parse(fs.readFileSync(path.resolve(constraintPath), 'utf8'));
@@ -1423,7 +1443,7 @@ function resolveSequenceConstraintBranch({ applicability, args, validateSequence
     }
     assertSequencePacketHashes(sequenceConstraintInput);
   }
-  return validateSequenceConstraintInput({
+  const validatedInput = validateSequenceConstraintInput({
     applicabilityReceipt: applicability,
     producerAvailable,
     sequenceConstraintInput,
@@ -1431,6 +1451,10 @@ function resolveSequenceConstraintBranch({ applicability, args, validateSequence
     currentSemanticModelHash: applicability.semanticModelHash,
     currentTraceGraphHash: applicability.traceGraphHash,
     currentPolicyVersion: applicability.policyVersion,
+  });
+  return Object.freeze({
+    sequenceConstraintInput: validatedInput,
+    sequenceExecutionState,
   });
 }
 
@@ -1492,6 +1516,13 @@ async function compilePartitionAuthority(args) {
   );
   const { deriveSequenceArchitectureFacts } = loadPartitionModule(
     'utils/goal-contract/sequence-applicability-adapter'
+  );
+  const {
+    deriveSequenceExecutionState,
+    resolveSequenceMode,
+  } = loadPartitionModule('utils/goal-contract/sequence-mode');
+  const sequenceMode = resolveSequenceMode(
+    take(args, '--sequence-mode', 'auto')
   );
   const { compileExecutionProjection } = loadPartitionModule(
     'utils/goal-contract/execution-projection'
@@ -1600,13 +1631,16 @@ async function compilePartitionAuthority(args) {
     sequenceApplicability: applicability.decision,
     sequenceApplicabilityReceipt: applicability,
   };
-  let sequenceConstraintInput;
+  let sequenceBranch;
   try {
-    sequenceConstraintInput = resolveSequenceConstraintBranch({
+    sequenceBranch = resolveSequenceConstraintBranch({
       applicability,
+      sequenceMode,
       args,
+      deriveSequenceExecutionState,
       validateSequenceConstraintInput,
     });
+    Object.assign(boundaryContext, sequenceBranch.sequenceExecutionState);
   } catch (error) {
     let persistedBoundary = {};
     if (error.failureClass === 'sequence_closure_required_unavailable') {
@@ -1648,7 +1682,8 @@ async function compilePartitionAuthority(args) {
     reconciledGraph: reconciliation.graphInput,
     reconciledGraphHash: reconciliation.graphInputHash,
     sequenceApplicabilityReceipt: applicability,
-    sequenceConstraintInput,
+    sequenceConstraintInput: sequenceBranch.sequenceConstraintInput,
+    sequenceExecutionState: sequenceBranch.sequenceExecutionState,
   };
   try {
     projection = compileExecutionProjection(projectionAuthority);
@@ -1787,7 +1822,13 @@ async function partition(args) {
     partitionSetHash: finalized.manifest.partitionSetHash,
     globalCoverageDecision: globalCoverage.decision,
     selectionReceiptCount: selections.length,
+    sequenceMode: authority.boundaryContext.sequenceMode,
     sequenceApplicability: authority.boundaryContext.sequenceApplicability,
+    sequenceCoverage: authority.boundaryContext.sequenceCoverage,
+    sequenceClosureStatus:
+      authority.boundaryContext.sequenceClosureStatus,
+    childContractAuthority:
+      authority.boundaryContext.childContractAuthority,
     sequenceApplicabilityReceipt:
       authority.boundaryContext.sequenceApplicabilityReceipt,
     semanticDerivationMode: authority.boundaryContext.semanticDerivationMode,
@@ -1817,6 +1858,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
           take(args, '--source') || binding.fields.masterSourcePath,
         ];
         for (const flag of [
+          '--sequence-mode',
           '--sequence-constraints',
           '--repository-facts',
           '--policy',
@@ -1835,7 +1877,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
     if (!['generate', 'partition'].includes(subcommand)) {
       throw Object.assign(
         new Error(
-          'Usage: bmad-speckit goal-contract <generate|partition> --entry standalone_goal_contract --source <plan.md> --out <artifact> --json'
+          'Usage: bmad-speckit goal-contract <generate|partition> --entry standalone_goal_contract --source <plan.md> --out <artifact> [--sequence-mode auto|required|disabled] --json'
         ),
         {
           failureClass: 'invalid_subcommand',
@@ -1904,9 +1946,29 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
             semanticProviderCallCount: error.semanticProviderCallCount,
           }
         : {}),
+      ...(error.sequenceMode
+        ? {
+            sequenceMode: error.sequenceMode,
+          }
+        : {}),
       ...(error.sequenceApplicability
         ? {
             sequenceApplicability: error.sequenceApplicability,
+          }
+        : {}),
+      ...(error.sequenceCoverage
+        ? {
+            sequenceCoverage: error.sequenceCoverage,
+          }
+        : {}),
+      ...(error.sequenceClosureStatus
+        ? {
+            sequenceClosureStatus: error.sequenceClosureStatus,
+          }
+        : {}),
+      ...(error.childContractAuthority
+        ? {
+            childContractAuthority: error.childContractAuthority,
           }
         : {}),
       ...(error.sequenceApplicabilityReceipt

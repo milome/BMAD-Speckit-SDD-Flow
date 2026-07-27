@@ -585,8 +585,59 @@ describe('bmad-speckit goal-contract partition command', () => {
         payload.sequenceApplicability,
         'not_applicable_with_proof'
       );
+      assert.equal(payload.sequenceMode, 'auto');
+      assert.equal(payload.sequenceCoverage, 'not_applicable');
+      assert.equal(payload.sequenceClosureStatus, 'not_required');
+      assert.equal(payload.childContractAuthority, 'full');
       assert.match(payload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
       assert.equal(fs.existsSync(out), true);
+    }
+  });
+
+  it('routes disabled mode and rejects invalid mode inputs', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const disabled = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--sequence-mode',
+      'disabled',
+      '--out',
+      path.join(root, 'disabled.json'),
+      '--json',
+    ]);
+    const disabledPayload = parsePayload(disabled);
+
+    assert.equal(disabled.status, 0, disabled.stderr || disabled.stdout);
+    assert.equal(disabledPayload.sequenceMode, 'disabled');
+    assert.equal(disabledPayload.sequenceCoverage, 'not_applicable');
+    assert.equal(disabledPayload.sequenceClosureStatus, 'not_required');
+    assert.equal(disabledPayload.childContractAuthority, 'full');
+
+    for (const [extraArgs, failureClass] of [
+      [
+        ['--sequence-mode', 'disabled', '--sequence-constraints', source],
+        'sequence_constraints_forbidden_when_disabled',
+      ],
+      [['--sequence-mode', 'skip'], 'sequence_mode_invalid'],
+    ]) {
+      const result = runSourceCommand([
+        'partition',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        ...extraArgs,
+        '--out',
+        path.join(root, `${failureClass}.json`),
+        '--json',
+      ]);
+
+      assert.notEqual(result.status, 0);
+      assert.equal(parsePayload(result).failureClass, failureClass);
     }
   });
 
