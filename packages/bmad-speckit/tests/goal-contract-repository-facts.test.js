@@ -1,4 +1,4 @@
-const { afterEach, describe, it } = require('node:test');
+const { after, afterEach, before, describe, it } = require('node:test');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -9,7 +9,9 @@ const {
   loadRepositoryFacts,
 } = require('../src/utils/goal-contract/repository-facts.ts');
 
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const tempRoots = [];
+let previousCwd;
 const sha256 = (value) =>
   `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
 
@@ -41,10 +43,19 @@ function validPacket() {
   };
 }
 
+before(() => {
+  previousCwd = process.cwd();
+  process.chdir(REPO_ROOT);
+});
+
 afterEach(() => {
   for (const root of tempRoots.splice(0)) {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+after(() => {
+  process.chdir(previousCwd);
 });
 
 describe('goal-contract repository facts', () => {

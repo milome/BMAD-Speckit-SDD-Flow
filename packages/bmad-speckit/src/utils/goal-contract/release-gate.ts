@@ -1,7 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {
-  normalizePath,
   sha256File,
   stableStringify,
 } = require(
@@ -87,7 +86,7 @@ function parseGoalContractBinding(goalPath) {
       fields: {},
     });
   }
-  const fields: Record<string, any> = {};
+  const fields: Record<string, unknown> = {};
   for (let index = start + 1; index < lines.length; index += 1) {
     if (lines[index] === '---') break;
     const separator = lines[index].indexOf(':');
@@ -970,7 +969,7 @@ function evaluateGoalContractRelease(input) {
 function goalContractReleaseGateCommand(
   _opts: { json?: boolean } = {},
   forwardedArgs: string[] = [],
-  context: { partitionAuthority?: any } = {}
+  context: { partitionAuthority?: unknown } = {}
 ) {
   const args = [...forwardedArgs];
   const goal = take(args, '--goal');

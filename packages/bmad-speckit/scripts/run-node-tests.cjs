@@ -1,4 +1,5 @@
 const { existsSync, readdirSync } = require('node:fs');
+const { availableParallelism } = require('node:os');
 const { basename, isAbsolute, join, relative, resolve } = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -57,8 +58,10 @@ const stateMutatingTestNames = new Set([
   'main-agent-build-dist.test.js',
   'main-agent-dist-no-redundant-assets.test.js',
   'main-agent-full-orchestration-no-regression.test.js',
+  'main-agent-runtime-hash-installed-parity.test.js',
   'pack-bmad-mirror.test.js',
 ]);
+const stableTestConcurrency = Math.max(1, Math.min(4, availableParallelism()));
 let testFiles = [];
 
 try {
@@ -116,7 +119,9 @@ function isStateMutatingTest(testFile) {
 const stableTestFiles = testFiles.filter((testFile) => !isStateMutatingTest(testFile));
 const stateMutatingTestFiles = testFiles.filter(isStateMutatingTest);
 
-let status = runTestFiles(stableTestFiles);
+let status = runTestFiles(stableTestFiles, [
+  `--test-concurrency=${stableTestConcurrency}`,
+]);
 if (status === 0) {
   status = runTestFiles(stateMutatingTestFiles, ['--test-concurrency=1']);
 }
