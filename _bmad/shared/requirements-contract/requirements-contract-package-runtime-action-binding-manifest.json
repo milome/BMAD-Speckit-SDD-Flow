@@ -310,11 +310,11 @@
       "actionId": "requirements-contract-critical-auditor-judge-adapter",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts",
-        "hash": "sha256:fc6022263c5feea626619b05c3f1702682e67d7c4882bf64acfbd78baa81f72f"
+        "hash": "sha256:090f6087d368b886cd1294af98355ffd4d5b8a6379e5e2a49807d6cefae051db"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-        "hash": "sha256:e5ea0174369c89fd2a2abff8a222fc49705415f092dd4617ceffecf2be3ce4c1"
+        "hash": "sha256:cb60a30fd9b3478dea92f8e1f69648b302ab3acb20d686573a528c0d68fb4529"
       },
       "semanticGate": {
         "gateId": "requirements-contract-critical-auditor-judge-adapter:semantic-gate",
@@ -361,12 +361,12 @@
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-        "hash": "sha256:e5ea0174369c89fd2a2abff8a222fc49705415f092dd4617ceffecf2be3ce4c1"
+        "hash": "sha256:cb60a30fd9b3478dea92f8e1f69648b302ab3acb20d686573a528c0d68fb4529"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-          "hash": "sha256:e5ea0174369c89fd2a2abff8a222fc49705415f092dd4617ceffecf2be3ce4c1"
+          "hash": "sha256:cb60a30fd9b3478dea92f8e1f69648b302ab3acb20d686573a528c0d68fb4529"
         }
       ],
       "runtimeRefs": [

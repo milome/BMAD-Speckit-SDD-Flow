@@ -4287,7 +4287,18 @@ export async function mainRequirementsContractCriticalAuditorJudgeAdapter(
   }
 }
 
-if (require.main === module) {
+export function isDirectRequirementsContractCriticalAuditorJudgeAdapterCli(
+  entry: string | undefined
+): boolean {
+  return /(^|[\\/])requirements-contract-critical-auditor-judge-adapter(\.[cm]?js|\.ts)?$/iu.test(
+    entry ?? ''
+  );
+}
+
+if (
+  require.main === module &&
+  isDirectRequirementsContractCriticalAuditorJudgeAdapterCli(process.argv[1])
+) {
   void mainRequirementsContractCriticalAuditorJudgeAdapter().then((exitCode) => {
     process.exitCode = exitCode;
   });

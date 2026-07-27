@@ -951,6 +951,50 @@ describe('main-agent dist build', () => {
     assert.doesNotMatch(compiled, /`\$\{sourceBase\}\.ts`/u);
   });
 
+  it('publishes Sequence mode runtime without legacy prose matching', () => {
+    const requiredRuntimePaths = [
+      path.join(
+        PACKAGE_DIST_ROOT,
+        'utils',
+        'goal-contract',
+        'sequence-mode.js'
+      ),
+      path.join(
+        PACKAGE_DIST_ROOT,
+        'utils',
+        'goal-contract',
+        'sequence-applicability-adapter.js'
+      ),
+    ];
+    for (const runtimePath of requiredRuntimePaths) {
+      assert.equal(
+        fs.existsSync(runtimePath),
+        true,
+        `missing Sequence runtime: ${runtimePath}`
+      );
+    }
+
+    const compiledCommand = fs.readFileSync(
+      path.join(PACKAGE_DIST_ROOT, 'commands', 'goal-contract.js'),
+      'utf8'
+    );
+    assert.match(compiledCommand, /--sequence-mode/u);
+
+    const legacyMatcherOffenders = collectFiles(PACKAGE_DIST_ROOT)
+      .filter((filePath) => filePath.endsWith('.js'))
+      .filter((filePath) => {
+        const text = fs.readFileSync(filePath, 'utf8');
+        return (
+          text.includes('cross[- ]participant') ||
+          text.includes('sequence applicability is unresolved.')
+        );
+      })
+      .map((filePath) =>
+        path.relative(PACKAGE_DIST_ROOT, filePath).replace(/\\/g, '/')
+      );
+    assert.deepEqual(legacyMatcherOffenders, []);
+  });
+
   it('records partition package assets without adding them to dist', () => {
     execFileSync(process.execPath, [BUILD_SCRIPT], {
       cwd: PACKAGE_ROOT,
