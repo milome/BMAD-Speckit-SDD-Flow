@@ -76,6 +76,68 @@ function makeInput(overrides = {}) {
   };
 }
 
+function notApplicableSequenceState(sequenceMode) {
+  return {
+    sequenceMode,
+    sequenceApplicability: 'not_applicable_with_proof',
+    sequenceCoverage: 'not_applicable',
+    sequenceClosureStatus: 'not_required',
+    childContractAuthority: 'full',
+    shouldResolveProducer: false,
+  };
+}
+
+function permutationGraph(reverse) {
+  const graph = makeGraph();
+  graph.dependencies = [
+    { from: 'task-join', to: 'task-alpha' },
+    { from: 'task-join', to: 'task-beta' },
+  ];
+  if (!reverse) return graph;
+
+  for (const field of [
+    'sourceObligations',
+    'tasks',
+    'traceSlices',
+    'dependencies',
+    'acceptanceItems',
+    'expectedEvidence',
+    'productionEntryPoints',
+  ]) {
+    graph[field].reverse();
+  }
+  for (const task of graph.tasks) {
+    task.sourceIds.reverse();
+  }
+  for (const slice of graph.traceSlices) {
+    for (const field of [
+      'goalIds',
+      'sourceIds',
+      'acceptanceIds',
+      'evidenceIds',
+      'productionSymbols',
+      'allowedPaths',
+    ]) {
+      slice[field].reverse();
+    }
+  }
+  for (const acceptance of graph.acceptanceItems) {
+    for (const field of [
+      'traceIds',
+      'goalIds',
+      'sourceIds',
+      'expectedEvidenceIds',
+    ]) {
+      acceptance[field].reverse();
+    }
+  }
+  for (const evidence of graph.expectedEvidence) {
+    evidence.producerTaskIds.reverse();
+    evidence.admissibleTypes.reverse();
+  }
+  return graph;
+}
+
 function requiredSequenceInput() {
   return {
     ...ROOTS,
@@ -120,6 +182,32 @@ describe('goal-contract Execution Projection', () => {
     for (const sourceId of ['source-alpha', 'source-beta']) {
       assert.ok(projection.traceSlices.some((slice) => slice.sourceIds.includes(sourceId)));
       assert.ok(projection.completionPredicates.some((item) => item.sourceIds.includes(sourceId)));
+    }
+  });
+
+  it('is byte-stable under graph, task and slice permutation for every mode', () => {
+    for (const sequenceMode of ['auto', 'required', 'disabled']) {
+      const overrides = {
+        sequenceApplicabilityReceipt: {
+          decision: 'not_applicable_with_proof',
+          receiptHash: hash('permutation-applicability'),
+        },
+        sequenceExecutionState: notApplicableSequenceState(sequenceMode),
+      };
+      const canonical = compileExecutionProjection(
+        makeInput({
+          ...overrides,
+          reconciledGraph: permutationGraph(false),
+        })
+      );
+      const permuted = compileExecutionProjection(
+        makeInput({
+          ...overrides,
+          reconciledGraph: permutationGraph(true),
+        })
+      );
+
+      assert.equal(JSON.stringify(permuted), JSON.stringify(canonical));
     }
   });
 

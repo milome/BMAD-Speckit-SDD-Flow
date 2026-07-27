@@ -641,6 +641,86 @@ describe('bmad-speckit goal-contract partition command', () => {
     }
   });
 
+  it('does not misclassify the real judge-role plan as Sequence-required', () => {
+    const root = tempRoot();
+    const source = path.join(
+      REPO_ROOT,
+      'docs',
+      'plans',
+      '2026-07-25-judge-role-separation-implementation-task-list.md'
+    );
+    const out = path.join(root, 'judge-role-manifest.json');
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--sequence-mode',
+      'auto',
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.notEqual(result.status, 0);
+    assert.equal(
+      payload.failureClass,
+      'partition_atomic_component_exceeds_policy'
+    );
+    assert.equal(payload.sequenceMode, 'auto');
+    assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
+    assert.equal(payload.sequenceCoverage, 'not_applicable');
+    assert.equal(payload.sequenceClosureStatus, 'not_required');
+    assert.equal(payload.childContractAuthority, 'full');
+    assert.equal(
+      fs.existsSync(path.join(root, '.goal-contract-receipts', 'sequence-runs')),
+      false
+    );
+  });
+
+  it('changes authority identity by mode without changing equivalent topology', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const runs = {};
+    for (const mode of ['auto', 'disabled']) {
+      const modeRoot = path.join(root, mode);
+      fs.mkdirSync(modeRoot);
+      const out = path.join(modeRoot, 'manifest.json');
+      const result = runSourceCommand([
+        'partition',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        '--sequence-mode',
+        mode,
+        '--out',
+        out,
+        '--json',
+      ]);
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const payload = parsePayload(result);
+      const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+      assert.equal(payload.executionProjectionHash, manifest.executionProjectionHash);
+      runs[mode] = { payload, manifest };
+    }
+
+    assert.notEqual(
+      runs.auto.payload.executionProjectionHash,
+      runs.disabled.payload.executionProjectionHash
+    );
+    assert.notEqual(
+      runs.auto.payload.partitionManifestHash,
+      runs.disabled.payload.partitionManifestHash
+    );
+    assert.equal(
+      runs.auto.payload.partitionCount,
+      runs.disabled.payload.partitionCount
+    );
+  });
+
   it('builds partition slots only from a validated canonical selection', () => {
     const result = buildPartitionSlotData({
       source: { sourcePlanHash: hash('source') },

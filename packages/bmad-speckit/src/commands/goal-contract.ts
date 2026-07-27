@@ -1745,40 +1745,52 @@ async function compilePartitionAuthority(args) {
     });
     throw error;
   }
-  const componentGraph = buildPartitionComponents({
-    executionProjection: projection,
-    policy: optimizerPolicyBinding.policy,
-  });
-  const optimization = optimizePartitions({
-    componentGraph,
-    executionProjection: projection,
-    policyBinding: optimizerPolicyBinding,
-    projectionAuthority,
-  });
-  const compiled = compilePartitionManifest({
-    sourceSnapshot: snapshot,
-    sourceObligationGraph: extracted.sourceObligationGraph,
-    sourceObligationGraphHash: extracted.sourceObligationGraphHash,
-    methodologyProfileHash: methodology.methodologyProfileHash,
-    reconciledGraph: reconciliation.graphInput,
-    reconciledGraphHash: reconciliation.graphInputHash,
-    reconciliationReceiptHash: sha256Text(
-      stableStringify({
-        graphInputHash: reconciliation.graphInputHash,
-        issues: reconciliation.issues,
-        metrics: reconciliation.metrics,
-        outputInventory: reconciliation.outputInventory,
-      })
-    ),
-    executionProjection: projection,
-    projectionAuthority,
-    policyBinding: optimizerPolicyBinding,
-    semanticDerivationMode: derivationMode.mode,
-    implementationViewReceipt: derivation.implementation.receipt,
-    acceptanceEvidenceViewReceipt: derivation.acceptanceEvidence.receipt,
-    componentGraph,
-    optimization,
-  });
+  let componentGraph;
+  let optimization;
+  let compiled;
+  try {
+    componentGraph = buildPartitionComponents({
+      executionProjection: projection,
+      policy: optimizerPolicyBinding.policy,
+    });
+    optimization = optimizePartitions({
+      componentGraph,
+      executionProjection: projection,
+      policyBinding: optimizerPolicyBinding,
+      projectionAuthority,
+    });
+    compiled = compilePartitionManifest({
+      sourceSnapshot: snapshot,
+      sourceObligationGraph: extracted.sourceObligationGraph,
+      sourceObligationGraphHash: extracted.sourceObligationGraphHash,
+      methodologyProfileHash: methodology.methodologyProfileHash,
+      reconciledGraph: reconciliation.graphInput,
+      reconciledGraphHash: reconciliation.graphInputHash,
+      reconciliationReceiptHash: sha256Text(
+        stableStringify({
+          graphInputHash: reconciliation.graphInputHash,
+          issues: reconciliation.issues,
+          metrics: reconciliation.metrics,
+          outputInventory: reconciliation.outputInventory,
+        })
+      ),
+      executionProjection: projection,
+      projectionAuthority,
+      policyBinding: optimizerPolicyBinding,
+      semanticDerivationMode: derivationMode.mode,
+      implementationViewReceipt: derivation.implementation.receipt,
+      acceptanceEvidenceViewReceipt: derivation.acceptanceEvidence.receipt,
+      componentGraph,
+      optimization,
+    });
+  } catch (error) {
+    Object.assign(error, boundaryContext, {
+      executionProjectionHash: projection.executionProjectionHash,
+      taskDagHash: projection.taskDagHash,
+      integrationJoinGraphHash: projection.integrationJoinGraphHash,
+    });
+    throw error;
+  }
   return Object.freeze({
     boundaryContext,
     snapshot,
@@ -1856,6 +1868,7 @@ async function partition(args) {
     runId: finalized.runId,
     partitionManifestPath: finalized.activeManifestPath,
     partitionManifestHash: finalized.activeManifestHash,
+    executionProjectionHash: projection.executionProjectionHash,
     partitionCount: finalized.manifest.partitionCount,
     partitionSetHash: finalized.manifest.partitionSetHash,
     globalCoverageDecision: globalCoverage.decision,

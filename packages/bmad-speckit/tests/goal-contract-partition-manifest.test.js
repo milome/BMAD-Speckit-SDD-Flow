@@ -594,6 +594,226 @@ function disabledRequiredInput() {
   return current;
 }
 
+function permutationAuthority(sequenceMode, reverse) {
+  const graph = {
+    schemaVersion: 'goal-contract-reconciled-graph-input/v2',
+    sourceObligations: [
+      {
+        id: 'source-a',
+        applicabilityState: 'applicable',
+        summary: 'Source A',
+      },
+      {
+        id: 'source-b',
+        applicabilityState: 'applicable',
+        summary: 'Source B',
+      },
+    ],
+    tasks: [
+      {
+        id: 'task-a',
+        title: 'Task A',
+        sourceIds: ['source-a'],
+      },
+      {
+        id: 'task-b',
+        title: 'Task B',
+        sourceIds: ['source-b', 'source-a'],
+      },
+    ],
+    traceSlices: [
+      {
+        id: 'slice-a',
+        goalIds: ['task-a'],
+        sourceIds: ['source-a'],
+        acceptanceIds: ['acceptance-a'],
+        evidenceIds: ['evidence-a'],
+        productionSymbols: ['entry-a'],
+        allowedPaths: ['src/a.ts'],
+        closeCondition: 'A closes.',
+      },
+      {
+        id: 'slice-b',
+        goalIds: ['task-b'],
+        sourceIds: ['source-b', 'source-a'],
+        acceptanceIds: ['acceptance-b'],
+        evidenceIds: ['evidence-b'],
+        productionSymbols: ['entry-b'],
+        allowedPaths: ['src/b.ts'],
+        closeCondition: 'B closes.',
+      },
+    ],
+    dependencies: [
+      { from: 'task-b', to: 'task-a' },
+    ],
+    acceptanceItems: [
+      {
+        id: 'acceptance-a',
+        traceIds: ['slice-a'],
+        goalIds: ['task-a'],
+        sourceIds: ['source-a'],
+        passCondition: 'A passes.',
+        expectedEvidenceIds: ['evidence-a'],
+      },
+      {
+        id: 'acceptance-b',
+        traceIds: ['slice-b'],
+        goalIds: ['task-b'],
+        sourceIds: ['source-b', 'source-a'],
+        passCondition: 'B passes.',
+        expectedEvidenceIds: ['evidence-b'],
+      },
+    ],
+    expectedEvidence: [
+      {
+        id: 'evidence-a',
+        producerTaskIds: ['task-a'],
+        admissibleTypes: ['behavior'],
+        freshnessRule: 'current',
+      },
+      {
+        id: 'evidence-b',
+        producerTaskIds: ['task-b'],
+        admissibleTypes: ['behavior'],
+        freshnessRule: 'current',
+      },
+    ],
+    productionEntryPoints: ['entry-a', 'entry-b'],
+  };
+  if (reverse) {
+    for (const field of [
+      'sourceObligations',
+      'tasks',
+      'traceSlices',
+      'dependencies',
+      'acceptanceItems',
+      'expectedEvidence',
+      'productionEntryPoints',
+    ]) {
+      graph[field].reverse();
+    }
+    for (const task of graph.tasks) task.sourceIds.reverse();
+    for (const slice of graph.traceSlices) {
+      for (const field of [
+        'goalIds',
+        'sourceIds',
+        'acceptanceIds',
+        'evidenceIds',
+        'productionSymbols',
+        'allowedPaths',
+      ]) {
+        slice[field].reverse();
+      }
+    }
+    for (const acceptance of graph.acceptanceItems) {
+      for (const field of [
+        'traceIds',
+        'goalIds',
+        'sourceIds',
+        'expectedEvidenceIds',
+      ]) {
+        acceptance[field].reverse();
+      }
+    }
+    for (const evidence of graph.expectedEvidence) {
+      evidence.producerTaskIds.reverse();
+      evidence.admissibleTypes.reverse();
+    }
+  }
+  const sourceObligationGraph = {
+    obligations: [...graph.sourceObligations]
+      .map(({ id, applicabilityState }) => ({ id, applicabilityState }))
+      .sort((left, right) => left.id.localeCompare(right.id)),
+  };
+  return {
+    sourceObligationGraph,
+    projectionAuthority: {
+      sourceSnapshotHash: SOURCE_HASH,
+      sourceObligationGraphHash:
+        hashSourceObligationGraph(sourceObligationGraph),
+      methodologyProfileHash: hash('permutation-methodology'),
+      semanticModelHash: hash('permutation-semantic'),
+      traceGraphHash: hash('permutation-trace'),
+      reconciledGraph: graph,
+      sequenceApplicabilityReceipt: {
+        decision: 'not_applicable_with_proof',
+        receiptHash: hash('permutation-applicability'),
+      },
+      sequenceConstraintInput: null,
+      sequenceExecutionState: {
+        sequenceMode,
+        sequenceApplicability: 'not_applicable_with_proof',
+        sequenceCoverage: 'not_applicable',
+        sequenceClosureStatus: 'not_required',
+        childContractAuthority: 'full',
+        shouldResolveProducer: false,
+      },
+    },
+  };
+}
+
+function compilePermutationManifest(sequenceMode, reverse) {
+  const {
+    sourceObligationGraph,
+    projectionAuthority,
+  } = permutationAuthority(sequenceMode, reverse);
+  const executionProjection =
+    compileExecutionProjection(projectionAuthority);
+  const reconciledGraph = {
+    schemaVersion: projectionAuthority.reconciledGraph.schemaVersion,
+    executionEpics: executionProjection.executionEpics,
+    traceSlices: executionProjection.traceSlices,
+    atomicTasks: executionProjection.atomicTasks,
+    completionPredicates: executionProjection.completionPredicates,
+    evidenceContracts: executionProjection.evidenceContracts,
+  };
+  const reconciledGraphHash = hash(stableStringify(reconciledGraph));
+  assert.equal(
+    reconciledGraphHash,
+    executionProjection.reconciledGraphHash
+  );
+  const policy = structuredClone(PARTITION_POLICY);
+  const policyBinding = {
+    policy,
+    partitionPolicyHash: hash(stableStringify(policy)),
+    sourceSnapshotHash: SOURCE_HASH,
+    semanticModelHash: executionProjection.semanticModelHash,
+    executionProjectionHash: executionProjection.executionProjectionHash,
+  };
+  const componentGraph = buildPartitionComponents({
+    executionProjection,
+    policy,
+  });
+  const optimization = optimizePartitions({
+    componentGraph,
+    executionProjection,
+    policyBinding,
+    projectionAuthority,
+  });
+  return compilePartitionManifest({
+    sourceSnapshot: {
+      sourcePath: 'docs/permutation-source.md',
+      aggregateHash: SOURCE_HASH,
+      exactByteHash: SOURCE_HASH,
+      sourcePlanSemanticHash: SOURCE_SEMANTIC_HASH,
+    },
+    sourceObligationGraph,
+    sourceObligationGraphHash:
+      projectionAuthority.sourceObligationGraphHash,
+    methodologyProfileHash:
+      projectionAuthority.methodologyProfileHash,
+    reconciledGraph,
+    reconciledGraphHash,
+    reconciliationReceiptHash: hash('permutation-reconciliation'),
+    executionProjection,
+    projectionAuthority,
+    policyBinding,
+    semanticDerivationMode: 'structured_fast_path',
+    componentGraph,
+    optimization,
+  });
+}
+
 describe('goal-contract partition manifest', () => {
   it('derives shared ownership and compatibility obligations through the production chain', () => {
     const authority = input();
@@ -958,6 +1178,22 @@ describe('goal-contract partition manifest', () => {
         error.failureClass ===
         'partition_manifest_sequence_authority_invalid'
     );
+  });
+
+  it('is byte-stable under projection input permutation for every mode', () => {
+    for (const sequenceMode of ['auto', 'required', 'disabled']) {
+      const canonical = compilePermutationManifest(sequenceMode, false);
+      const permuted = compilePermutationManifest(sequenceMode, true);
+
+      assert.equal(
+        permuted.partitionManifestBytes,
+        canonical.partitionManifestBytes
+      );
+      assert.equal(
+        permuted.partitionManifestHash,
+        canonical.partitionManifestHash
+      );
+    }
   });
 
   it('rejects execution projection payload drift during manifest compilation', () => {

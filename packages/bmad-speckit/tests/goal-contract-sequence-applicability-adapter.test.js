@@ -85,13 +85,32 @@ describe('goal-contract structured Sequence applicability adapter', () => {
   });
 
   it('is byte-stable under node and evidence permutation', () => {
+    const signals = {
+      branchCoverage: false,
+      boundedRetry: false,
+      compensation: false,
+      crossParticipantInteraction: false,
+      integrationFanIn: false,
+      interfaceBoundary: true,
+      observableOrdering: false,
+      stateTransition: false,
+      temporalConstraint: false,
+    };
     const left = deriveSequenceArchitectureFacts({
       schemaVersion: 'goal-contract-evidence-graph/v2',
       nodes: [
         { id: 'SRC-002', nodeType: 'source' },
         { id: 'SRC-001', nodeType: 'source' },
       ],
-      edges: [],
+      edges: [
+        { fromNodeId: 'SRC-002', toNodeId: 'SRC-001' },
+        { fromNodeId: 'SRC-001', toNodeId: 'SRC-002' },
+      ],
+      sequenceApplicabilityFacts: {
+        coverage: 'complete',
+        evidenceRefs: ['SEQ-FACT-02', 'SEQ-FACT-01'],
+        signals,
+      },
     });
     const right = deriveSequenceArchitectureFacts({
       schemaVersion: 'goal-contract-evidence-graph/v2',
@@ -99,9 +118,19 @@ describe('goal-contract structured Sequence applicability adapter', () => {
         { id: 'SRC-001', nodeType: 'source' },
         { id: 'SRC-002', nodeType: 'source' },
       ],
-      edges: [],
+      edges: [
+        { fromNodeId: 'SRC-001', toNodeId: 'SRC-002' },
+        { fromNodeId: 'SRC-002', toNodeId: 'SRC-001' },
+      ],
+      sequenceApplicabilityFacts: {
+        coverage: 'complete',
+        evidenceRefs: ['SEQ-FACT-01', 'SEQ-FACT-02'],
+        signals,
+      },
     });
 
     assert.deepEqual(left, right);
+    assert.equal(JSON.stringify(left), JSON.stringify(right));
+    assert.deepEqual(left.evidenceRefs, ['SEQ-FACT-01', 'SEQ-FACT-02']);
   });
 });

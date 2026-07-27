@@ -103,11 +103,12 @@ const CORPUS = [
   ],
 ];
 
-function runLane(kind, source, root) {
+function runLane(kind, source, root, sequenceMode = 'auto') {
   const out = path.join(root, 'partition-manifest.json');
   const receipts = path.join(root, 'receipts');
   const common = [
     'partition', '--entry', 'standalone_goal_contract', '--source', source,
+    '--sequence-mode', sequenceMode,
     '--out', out, '--receipts-dir', receipts, '--json',
   ];
   const argv = kind === 'source'
@@ -136,10 +137,15 @@ function runLane(kind, source, root) {
   return {
     outcome: 'pass',
     partitionManifestHash: payload.partitionManifestHash,
+    executionProjectionHash: payload.executionProjectionHash,
     partitionSetHash: payload.partitionSetHash,
     partitionCount: payload.partitionCount,
     partitionIds: manifest.topologicalOrder,
+    sequenceMode: payload.sequenceMode,
     sequenceApplicability: payload.sequenceApplicability,
+    sequenceCoverage: payload.sequenceCoverage,
+    sequenceClosureStatus: payload.sequenceClosureStatus,
+    childContractAuthority: payload.childContractAuthority,
     semanticProviderCallCount: payload.semanticProviderCallCount,
   };
 }
@@ -160,9 +166,53 @@ describe('goal-contract partition source/dist runtime parity', () => {
           failureClass: 'partition_atomic_component_exceeds_policy',
         });
       } else {
+        assert.equal(sourceSemantic.sequenceMode, 'auto');
         assert.equal(sourceSemantic.sequenceApplicability, 'not_applicable_with_proof');
+        assert.equal(sourceSemantic.sequenceCoverage, 'not_applicable');
+        assert.equal(sourceSemantic.sequenceClosureStatus, 'not_required');
+        assert.equal(sourceSemantic.childContractAuthority, 'full');
         assert.equal(sourceSemantic.semanticProviderCallCount, 0);
       }
     });
   }
+
+  it('keeps mode-sensitive authority identity equal across source and dist', () => {
+    const caseRoot = path.join(ROOT, 'mode-identity');
+    fs.mkdirSync(caseRoot, { recursive: true });
+    const source = path.join(caseRoot, 'source.md');
+    fs.writeFileSync(source, CORPUS[0][1], 'utf8');
+    const runs = {};
+
+    for (const mode of ['auto', 'disabled']) {
+      const sourceSemantic = runLane(
+        'source',
+        source,
+        path.join(caseRoot, 'source', mode),
+        mode
+      );
+      const distSemantic = runLane(
+        'dist',
+        source,
+        path.join(caseRoot, 'dist', mode),
+        mode
+      );
+      assert.deepEqual(distSemantic, sourceSemantic);
+      runs[mode] = sourceSemantic;
+    }
+
+    assert.notEqual(
+      runs.auto.executionProjectionHash,
+      runs.disabled.executionProjectionHash
+    );
+    assert.notEqual(
+      runs.auto.partitionManifestHash,
+      runs.disabled.partitionManifestHash
+    );
+    assert.equal(runs.auto.partitionCount, runs.disabled.partitionCount);
+    assert.equal(runs.disabled.sequenceMode, 'disabled');
+    assert.equal(runs.disabled.sequenceApplicability, 'not_applicable_with_proof');
+    assert.equal(runs.disabled.sequenceCoverage, 'not_applicable');
+    assert.equal(runs.disabled.sequenceClosureStatus, 'not_required');
+    assert.equal(runs.disabled.childContractAuthority, 'full');
+  });
 });
