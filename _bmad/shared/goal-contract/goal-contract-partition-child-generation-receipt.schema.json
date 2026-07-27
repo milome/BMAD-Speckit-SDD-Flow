@@ -48,6 +48,27 @@
     "methodologyProfileArtifactHash": { "$ref": "#/$defs/hash" },
     "executionProjectionHash": { "$ref": "#/$defs/hash" },
     "taskDagHash": { "$ref": "#/$defs/hash" },
+    "sequenceMode": {
+      "enum": ["auto", "required", "disabled"]
+    },
+    "sequenceApplicability": {
+      "enum": ["required", "not_applicable_with_proof", "unresolved"]
+    },
+    "sequenceCoverage": {
+      "enum": ["complete", "not_applicable", "excluded", "unresolved"]
+    },
+    "sequenceClosureStatus": {
+      "enum": [
+        "compiled",
+        "not_required",
+        "not_requested",
+        "unavailable",
+        "unresolved"
+      ]
+    },
+    "childContractAuthority": {
+      "enum": ["full", "core_only"]
+    },
     "partitionPolicyHash": { "$ref": "#/$defs/hash" },
     "partitionPolicyArtifactHash": { "$ref": "#/$defs/hash" },
     "partitionManifestPath": { "$ref": "#/$defs/path" },

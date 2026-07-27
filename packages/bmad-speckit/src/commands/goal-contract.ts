@@ -638,6 +638,11 @@ async function generatePartitionBound(args) {
       authority.methodology.methodologyProfileArtifactHash,
     executionProjectionHash: manifest.executionProjectionHash,
     taskDagHash: manifest.taskDagHash,
+    sequenceMode: manifest.sequenceMode,
+    sequenceApplicability: manifest.sequenceApplicability,
+    sequenceCoverage: manifest.sequenceCoverage,
+    sequenceClosureStatus: manifest.sequenceClosureStatus,
+    childContractAuthority: manifest.childContractAuthority,
     partitionPolicyHash: manifest.partitionPolicyHash,
     partitionPolicyArtifactHash:
       authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
@@ -672,6 +677,26 @@ async function generatePartitionBound(args) {
     validateHashes: true,
     generationMode: 'partition_selected_scope',
   });
+  const sequenceStateFields = [
+    'sequenceMode',
+    'sequenceApplicability',
+    'sequenceCoverage',
+    'sequenceClosureStatus',
+    'childContractAuthority',
+  ];
+  for (const field of sequenceStateFields) {
+    if (
+      bindings[field] !== manifest[field] ||
+      !new RegExp(`^${field}: ${manifest[field]}$`, 'mu').test(
+        rendered.document
+      )
+    ) {
+      throw partitionFailure(
+        'partition_child_generation_sequence_state_mismatch',
+        { field }
+      );
+    }
+  }
   const { auditCommandPortability } = loadCommandPortabilityChecker();
   const commandPortabilityAudit = auditCommandPortability({
     content: rendered.document,
@@ -773,6 +798,11 @@ async function generatePartitionBound(args) {
       authority.methodology.methodologyProfileArtifactHash,
     executionProjectionHash: manifest.executionProjectionHash,
     taskDagHash: manifest.taskDagHash,
+    sequenceMode: manifest.sequenceMode,
+    sequenceApplicability: manifest.sequenceApplicability,
+    sequenceCoverage: manifest.sequenceCoverage,
+    sequenceClosureStatus: manifest.sequenceClosureStatus,
+    childContractAuthority: manifest.childContractAuthority,
     partitionPolicyHash: manifest.partitionPolicyHash,
     partitionPolicyArtifactHash:
       authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
@@ -798,6 +828,14 @@ async function generatePartitionBound(args) {
     commandPortabilityAudit,
     writeReceipt,
   });
+  for (const field of sequenceStateFields) {
+    if (generation.payload[field] !== manifest[field]) {
+      throw partitionFailure(
+        'partition_child_generation_sequence_state_mismatch',
+        { field }
+      );
+    }
+  }
   if (generation.payload.decision !== 'pass') {
     throw partitionFailure('partition_child_generation_blocked', {
       blockingReasons: generation.payload.blockingReasons,

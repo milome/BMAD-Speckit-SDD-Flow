@@ -106,6 +106,11 @@ function writePartitionChildGenerationReceipt({
   methodologyProfileArtifactHash,
   executionProjectionHash,
   taskDagHash,
+  sequenceMode,
+  sequenceApplicability,
+  sequenceCoverage,
+  sequenceClosureStatus,
+  childContractAuthority,
   partitionPolicyHash,
   partitionPolicyArtifactHash,
   partitionManifestPath,
@@ -130,6 +135,19 @@ function writePartitionChildGenerationReceipt({
   commandPortabilityAudit,
   writeReceipt,
 }) {
+  for (const [field, value] of Object.entries({
+    sequenceMode,
+    sequenceApplicability,
+    sequenceCoverage,
+    sequenceClosureStatus,
+    childContractAuthority,
+  })) {
+    if (typeof value !== 'string' || value.length === 0) {
+      throw failure('partition_child_generation_sequence_state_missing', {
+        field,
+      });
+    }
+  }
   const blockingReasons = [];
   if (
     rendererAudit?.requiredSlotsPassed !== true ||
@@ -162,6 +180,11 @@ function writePartitionChildGenerationReceipt({
       methodologyProfileArtifactHash,
       executionProjectionHash,
       taskDagHash,
+      sequenceMode,
+      sequenceApplicability,
+      sequenceCoverage,
+      sequenceClosureStatus,
+      childContractAuthority,
       partitionPolicyHash,
       partitionPolicyArtifactHash,
       partitionManifestPath,

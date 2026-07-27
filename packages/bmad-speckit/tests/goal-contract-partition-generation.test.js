@@ -9,6 +9,9 @@ const { describe, it } = require('node:test');
 const {
   buildPartitionSlotData,
 } = require('../src/utils/goal-contract/slot-data-builder.ts');
+const {
+  writePartitionChildGenerationReceipt,
+} = require('../src/utils/goal-contract/goal-contract-receipts.ts');
 
 const SOURCE_COMMAND = path.resolve(
   __dirname,
@@ -83,6 +86,9 @@ describe('partition-bound goal contract generation', () => {
     assert.equal(receipt.inheritedConstraintCount, partition.inheritedConstraintIds.length);
     assert.ok(fs.existsSync(receipt.coverageReceiptPath));
     assert.ok(fs.existsSync(receipt.generationReceiptPath));
+    const generationReceipt = JSON.parse(
+      fs.readFileSync(receipt.generationReceiptPath, 'utf8')
+    );
     const text = fs.readFileSync(child, 'utf8');
     for (const field of [
       'masterSourcePath', 'masterSourceHash', 'sourceSnapshotHash',
@@ -94,6 +100,32 @@ describe('partition-bound goal contract generation', () => {
       'selectionReceiptHash', 'selectionSetHash', 'dependencyPartitionIds',
       'globalCoverageReceiptPath', 'globalCoverageReceiptHash',
     ]) assert.match(text, new RegExp(`^${field}:`, 'mu'));
+    for (const field of [
+      'sequenceMode',
+      'sequenceApplicability',
+      'sequenceCoverage',
+      'sequenceClosureStatus',
+      'childContractAuthority',
+    ]) {
+      assert.equal(receipt[field], run.manifest[field]);
+      assert.equal(generationReceipt[field], run.manifest[field]);
+      assert.match(
+        text,
+        new RegExp(`^${field}: ${run.manifest[field]}$`, 'mu')
+      );
+    }
+    assert.throws(
+      () =>
+        writePartitionChildGenerationReceipt({
+          ...generationReceipt,
+          targetPath: path.join(root, 'missing-sequence-state.json'),
+          sequenceMode: undefined,
+        }),
+      (error) =>
+        error.failureClass ===
+          'partition_child_generation_sequence_state_missing' &&
+        error.field === 'sequenceMode'
+    );
   });
 
   it('renders only selected executable records and isolates inherited constraints', () => {
@@ -133,6 +165,11 @@ describe('partition-bound goal contract generation', () => {
         partitionPolicyHash: hash('policy'),
         partitionPolicyArtifactHash: hash('policy-artifact'),
         partitionAnalysisReceiptHash: hash('analysis'),
+        sequenceMode: 'disabled',
+        sequenceApplicability: 'required',
+        sequenceCoverage: 'excluded',
+        sequenceClosureStatus: 'not_requested',
+        childContractAuthority: 'core_only',
       },
     });
     const rendered = JSON.stringify(result.slotData);
@@ -142,6 +179,15 @@ describe('partition-bound goal contract generation', () => {
     assert.match(rendered, /constraint-selected/u);
     assert.match(rendered, /non-executable/u);
     assert.doesNotMatch(rendered, /task-excluded|acceptance-excluded|command-excluded/u);
+    for (const line of [
+      'sequenceMode: disabled',
+      'sequenceApplicability: required',
+      'sequenceCoverage: excluded',
+      'sequenceClosureStatus: not_requested',
+      'childContractAuthority: core_only',
+    ]) {
+      assert.match(result.slotData.frontMatter, new RegExp(`^${line}$`, 'mu'));
+    }
   });
 
   it('rejects a stale or tampered active manifest before rendering', () => {
