@@ -237,6 +237,65 @@ describe('strict partition receipts', () => {
     }
   });
 
+  it('reads new Sequence execution state and defaults legacy mode to auto', () => {
+    const root = tempRoot();
+    const decidedReceipt = decideSequenceApplicability({
+      sourceSnapshotHash: `sha256:${'a'.repeat(64)}`,
+      semanticModelHash: `sha256:${'b'.repeat(64)}`,
+      traceGraphHash: `sha256:${'c'.repeat(64)}`,
+      architectureFacts: {
+        interfaceBoundary: true,
+        evidenceRefs: ['SOURCE-1'],
+      },
+      policyVersion: '1.0.0',
+    });
+    const legacySemanticPayload = { ...decidedReceipt };
+    delete legacySemanticPayload.receiptHash;
+    const legacyReceipt = {
+      ...legacySemanticPayload,
+      receiptHash: hash(stableStringify(legacySemanticPayload)),
+    };
+    const currentSemanticPayload = {
+      ...legacySemanticPayload,
+      sequenceMode: 'disabled',
+      sequenceApplicability: 'required',
+      sequenceCoverage: 'excluded',
+      sequenceClosureStatus: 'not_requested',
+      childContractAuthority: 'core_only',
+    };
+    const currentReceipt = {
+      ...currentSemanticPayload,
+      receiptHash: hash(stableStringify(currentSemanticPayload)),
+    };
+    const currentPath = path.join(root, 'current-sequence.json');
+    writeValidatedPartitionReceipt({
+      schemaId: currentReceipt.schemaVersion,
+      targetPath: currentPath,
+      payload: currentReceipt,
+    });
+    assert.deepEqual(
+      readValidatedPartitionReceipt(
+        currentPath,
+        'goal-contract-sequence-applicability-receipt/v1'
+      ),
+      currentReceipt
+    );
+
+    const legacyPath = path.join(root, 'legacy-sequence.json');
+    writeValidatedPartitionReceipt({
+      schemaId: legacyReceipt.schemaVersion,
+      targetPath: legacyPath,
+      payload: legacyReceipt,
+    });
+    assert.equal(
+      readValidatedPartitionReceipt(
+        legacyPath,
+        'goal-contract-sequence-applicability-receipt/v1'
+      ).sequenceMode,
+      'auto'
+    );
+  });
+
   it('fails closed instead of resolving package assets from a consumer bait root', () => {
     const root = tempRoot();
     const packageRoot = path.join(
@@ -309,7 +368,7 @@ describe('strict partition receipts', () => {
         written.path,
         'goal-contract-sequence-applicability-receipt/v1'
       ),
-      payload
+      { sequenceMode: 'auto', ...payload }
     );
     assert.equal(
       derivePartitionCapabilityState({

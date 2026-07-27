@@ -934,6 +934,10 @@ function readValidatedPartitionReceipt(targetPath, expectedSchemaId = null) {
         });
       }
     }
+    return Object.freeze({
+      sequenceMode: 'auto',
+      ...canonical,
+    });
   }
   return canonical;
 }

@@ -44,6 +44,27 @@
     "childCoverageReceiptHash": { "$ref": "#/$defs/hash" },
     "childGenerationReceiptHash": { "$ref": "#/$defs/hash" },
     "goalContractHash": { "$ref": "#/$defs/hash" },
+    "sequenceMode": {
+      "enum": ["auto", "required", "disabled"]
+    },
+    "sequenceApplicability": {
+      "enum": ["required", "not_applicable_with_proof", "unresolved"]
+    },
+    "sequenceCoverage": {
+      "enum": ["complete", "not_applicable", "excluded", "unresolved"]
+    },
+    "sequenceClosureStatus": {
+      "enum": [
+        "compiled",
+        "not_required",
+        "not_requested",
+        "unavailable",
+        "unresolved"
+      ]
+    },
+    "childContractAuthority": {
+      "enum": ["full", "core_only"]
+    },
     "predecessorCompletionReceiptHashes": { "$ref": "#/$defs/hashes" },
     "compatibilityReceiptHashes": { "$ref": "#/$defs/hashes" },
     "componentDecisions": {
@@ -61,7 +82,12 @@
   "allOf": [
     {
       "if": { "properties": { "decision": { "const": "pass" } } },
-      "then": { "properties": { "blockingReasons": { "maxItems": 0 } } }
+      "then": {
+        "properties": {
+          "childContractAuthority": { "const": "full" },
+          "blockingReasons": { "maxItems": 0 }
+        }
+      }
     },
     {
       "if": { "properties": { "decision": { "const": "blocked" } } },
