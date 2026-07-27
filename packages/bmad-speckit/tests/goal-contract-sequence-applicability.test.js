@@ -5,6 +5,9 @@ const {
   decideSequenceApplicability,
   validateSequenceConstraintInput,
 } = require('../src/utils/goal-contract/sequence-applicability.ts');
+const {
+  deriveSequenceArchitectureFacts,
+} = require('../src/utils/goal-contract/sequence-applicability-adapter.ts');
 
 const HASHES = {
   sourceSnapshotHash: `sha256:${'a'.repeat(64)}`,
@@ -81,6 +84,36 @@ describe('goal-contract Sequence applicability', () => {
       'required:interfaceBoundary',
     ]);
     assert.equal(first.receiptHash, second.receiptHash);
+  });
+
+  it('ignores all legacy Sequence keywords in v2 source prose', () => {
+    const architectureFacts = deriveSequenceArchitectureFacts({
+      schemaVersion: 'goal-contract-evidence-graph/v2',
+      nodes: [
+        {
+          id: 'SRC-001',
+          nodeType: 'source',
+          exactText: [
+            'cross-participant',
+            'interface boundary',
+            'observable ordering',
+            'state transition',
+            'branch coverage',
+            'bounded retry',
+            'compensation constraint',
+            'temporal constraint',
+            'integration fan-in',
+          ].join(' '),
+        },
+      ],
+      edges: [],
+    });
+    const receipt = decide(architectureFacts);
+
+    assert.equal(receipt.decision, 'not_applicable_with_proof');
+    assert.deepEqual(receipt.reasonCodes, [
+      'not_applicable:all_required_signals_false',
+    ]);
   });
 
   it('fails closed when required constraints have no canonical producer', () => {

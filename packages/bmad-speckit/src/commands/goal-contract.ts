@@ -1370,41 +1370,17 @@ function currentRepositoryTreeHash() {
   }
 }
 
-function buildApplicabilityInput({ snapshot, graph, methodology }) {
-  const sourceText = snapshot.segments
-    .map((segment) => segment.content)
-    .join('\n')
-    .toLowerCase();
-  const unresolved = /sequence applicability is unresolved\./u.test(sourceText);
-  const signalPatterns = {
-    crossParticipantInteraction: /\bcross[- ]participant\b|\bmultiple participants?\b/u,
-    interfaceBoundary: /\binterface (?:boundary|contract)\b/u,
-    observableOrdering: /\bobservable order(?:ing)?\b/u,
-    stateTransition: /\bstate transition\b/u,
-    branchCoverage: /\bbranch (?:coverage|constraint)\b/u,
-    boundedRetry: /\bbounded retry\b/u,
-    compensation: /\bcompensation constraint\b|\bcompensating action\b/u,
-    temporalConstraint: /\btemporal constraint\b|\btime ordering\b/u,
-    integrationFanIn: /\bintegration fan[- ]in\b|\bintegration join\b/u,
-  };
-  const architectureFacts: Record<string, boolean | string[]> = unresolved
-    ? {}
-    : (Object.fromEntries(
-        Object.entries(signalPatterns).map(([signal, pattern]) => [
-          signal,
-          pattern.test(sourceText),
-        ])
-      ) as Record<string, boolean | string[]>);
-  if (!unresolved) {
-    architectureFacts.evidenceRefs = uniqueStrings(
-      (graph.nodes || []).filter((node) => node.nodeType === 'source').map((node) => node.id)
-    );
-  }
+function buildApplicabilityInput({
+  snapshot,
+  graph,
+  methodology,
+  deriveSequenceArchitectureFacts,
+}) {
   return {
     sourceSnapshotHash: snapshot.aggregateHash,
     semanticModelHash: graph.semanticModelHash,
     traceGraphHash: graph.traceGraphHash,
-    architectureFacts,
+    architectureFacts: deriveSequenceArchitectureFacts(graph),
     policyVersion: methodology.profile.profileVersion,
   };
 }
@@ -1514,6 +1490,9 @@ async function compilePartitionAuthority(args) {
   const { decideSequenceApplicability, validateSequenceConstraintInput } = loadPartitionModule(
     'utils/goal-contract/sequence-applicability'
   );
+  const { deriveSequenceArchitectureFacts } = loadPartitionModule(
+    'utils/goal-contract/sequence-applicability-adapter'
+  );
   const { compileExecutionProjection } = loadPartitionModule(
     'utils/goal-contract/execution-projection'
   );
@@ -1598,7 +1577,12 @@ async function compilePartitionAuthority(args) {
   });
   const graph = buildEvidenceGraph(reconciliation);
   const applicability = decideSequenceApplicability(
-    buildApplicabilityInput({ snapshot, graph, methodology })
+    buildApplicabilityInput({
+      snapshot,
+      graph,
+      methodology,
+      deriveSequenceArchitectureFacts,
+    })
   );
   const boundaryContext = {
     sourceSnapshotHash: snapshot.aggregateHash,

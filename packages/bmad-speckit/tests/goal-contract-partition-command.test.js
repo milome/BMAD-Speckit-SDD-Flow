@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { createHash, randomUUID } = require('node:crypto');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -158,15 +158,6 @@ function hash(value) {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
 
-function stableStringify(value) {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  return `{${Object.keys(value)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
-    .join(',')}}`;
-}
-
 function writeProviderFixture(root) {
   const providerRoot = path.join(root, 'provider-root');
   const directory = path.join(providerRoot, '_bmad', 'shared', 'goal-contract');
@@ -279,25 +270,6 @@ function semanticRequestForSource(sourcePath) {
     repositoryFacts,
     repositoryFactsHash: repositoryFacts.repositoryFactsHash,
   };
-}
-
-function writeSequencePacket(root, roots, mutate = null) {
-  const packet = {
-    schemaVersion: 'goal-contract-sequence-constraint-input/v1',
-    ...roots,
-    sequenceContract: { version: '1.0.0', rules: ['bounded retry'] },
-    interfaceContractSet: {
-      interfaces: [{ interfaceId: 'retry-interface', version: '1.0.0' }],
-    },
-    sequenceClosureBundle: { retryConstraints: [] },
-  };
-  packet.sequenceContractHash = hash(stableStringify(packet.sequenceContract));
-  packet.interfaceContractSetHash = hash(stableStringify(packet.interfaceContractSet));
-  packet.sequenceClosureBundleHash = hash(stableStringify(packet.sequenceClosureBundle));
-  if (mutate) mutate(packet);
-  const packetPath = path.join(root, `sequence-${randomUUID()}.json`);
-  fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
-  return packetPath;
 }
 
 function parsePayload(result) {
@@ -582,130 +554,40 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(fs.existsSync(out), false);
   });
 
-  it('fails required and unresolved Sequence branches before projection authority', () => {
-    const root = tempRoot();
-    const source = writeSourcePlan(root);
-    fs.appendFileSync(
-      source,
-      '\n## Sequence Requirements\n\nThe workflow MUST use bounded retry.\n',
-      'utf8'
-    );
-    const out = path.join(root, 'partition-manifest.json');
-    const required = runSourceCommand([
-      'partition',
-      '--entry',
-      'standalone_goal_contract',
-      '--source',
-      source,
-      '--out',
-      out,
-      '--json',
-    ]);
-    const requiredPayload = parsePayload(required);
-
-    assert.notEqual(required.status, 0);
-    assert.equal(requiredPayload.failureClass, 'sequence_closure_required_unavailable');
-    assert.equal(requiredPayload.sequenceApplicability, 'required');
-    assert.equal(Object.hasOwn(requiredPayload, 'executionProjectionHash'), false);
-
-    const unresolvedSource = writeSourcePlan(root);
-    fs.appendFileSync(
-      unresolvedSource,
-      '\n## Sequence Requirements\n\nSequence applicability is unresolved.\n',
-      'utf8'
-    );
-    const unresolved = runSourceCommand([
-      'partition',
-      '--entry',
-      'standalone_goal_contract',
-      '--source',
-      unresolvedSource,
-      '--out',
-      out,
-      '--json',
-    ]);
-    assert.notEqual(unresolved.status, 0);
-    assert.equal(parsePayload(unresolved).failureClass, 'sequence_applicability_unresolved');
-    assert.equal(fs.existsSync(out), false);
-  });
-
-  it('rejects stale and second-universe Sequence packets, then accepts a current packet', () => {
-    const root = tempRoot();
-    const source = writeSourcePlan(root);
-    fs.appendFileSync(
-      source,
-      '\n## Sequence Requirements\n\nThe workflow MUST use bounded retry.\n',
-      'utf8'
-    );
-    const out = path.join(root, 'partition-manifest.json');
-    const baseline = runSourceCommand([
-      'partition',
-      '--entry',
-      'standalone_goal_contract',
-      '--source',
-      source,
-      '--out',
-      out,
-      '--json',
-    ]);
-    const roots = parsePayload(baseline);
-    const identity = {
-      sourceSnapshotHash: roots.sourceSnapshotHash,
-      semanticModelHash: roots.semanticModelHash,
-      traceGraphHash: roots.traceGraphHash,
-    };
-    const cases = [
-      [
-        writeSequencePacket(root, identity, (packet) => {
-          packet.sequenceContract.rules.push('tampered');
-        }),
-        'sequence_constraint_hash_mismatch',
-      ],
-      [
-        writeSequencePacket(root, identity, (packet) => {
-          packet.sequenceClosureBundle.taskDag = [];
-          packet.sequenceClosureBundleHash = hash(stableStringify(packet.sequenceClosureBundle));
-        }),
-        'sequence_second_task_universe_forbidden',
-      ],
-    ];
-
-    for (const [packetPath, failureClass] of cases) {
+  it('does not infer Sequence applicability from source prose', () => {
+    for (const prose of [
+      'The workflow MUST use bounded retry.',
+      'Sequence applicability is unresolved.',
+    ]) {
+      const root = tempRoot();
+      const source = writeSourcePlan(root);
+      fs.appendFileSync(
+        source,
+        `\n## Sequence Requirements\n\n${prose}\n`,
+        'utf8'
+      );
+      const out = path.join(root, 'partition-manifest.json');
       const result = runSourceCommand([
         'partition',
         '--entry',
         'standalone_goal_contract',
         '--source',
         source,
-        '--sequence-constraints',
-        packetPath,
         '--out',
         out,
         '--json',
       ]);
-      assert.notEqual(result.status, 0);
-      assert.equal(parsePayload(result).failureClass, failureClass);
-      assert.equal(fs.existsSync(out), false);
-    }
+      const payload = parsePayload(result);
 
-    const current = runSourceCommand([
-      'partition',
-      '--entry',
-      'standalone_goal_contract',
-      '--source',
-      source,
-      '--sequence-constraints',
-      writeSequencePacket(root, identity),
-      '--out',
-      out,
-      '--json',
-    ]);
-    assert.equal(current.status, 0, current.stderr || current.stdout);
-    const currentPayload = parsePayload(current);
-    assert.equal(currentPayload.ok, true);
-    assert.match(currentPayload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.ok(currentPayload.partitionCount >= 1);
-    assert.equal(fs.existsSync(out), true);
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      assert.equal(payload.ok, true);
+      assert.equal(
+        payload.sequenceApplicability,
+        'not_applicable_with_proof'
+      );
+      assert.match(payload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
+      assert.equal(fs.existsSync(out), true);
+    }
   });
 
   it('builds partition slots only from a validated canonical selection', () => {

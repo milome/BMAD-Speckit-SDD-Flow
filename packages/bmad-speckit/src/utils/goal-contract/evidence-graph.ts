@@ -489,6 +489,10 @@ function buildEvidenceGraph(reconciliation) {
       id: `EDGE-${String(index + 1).padStart(4, '0')}`,
       ...edge,
     }));
+  const sequenceApplicabilityFacts =
+    input.sequenceApplicabilityFacts === undefined
+      ? undefined
+      : structuredClone(input.sequenceApplicabilityFacts);
   const graph = {
     schemaVersion: 'goal-contract-evidence-graph/v2',
     sourceSnapshotHash: input.sourceSnapshotHash,
@@ -501,6 +505,9 @@ function buildEvidenceGraph(reconciliation) {
       reconciliation.graphInputHash || sha256(Buffer.from(stableStringify(input), 'utf8')),
     traceGraphHash: hashNormalizedTraceSubgraph({ nodes, edges }),
     runtimeEvidencePolicy: 'runtime_only',
+    ...(sequenceApplicabilityFacts
+      ? { sequenceApplicabilityFacts }
+      : {}),
     projectionRegistry: PROJECTION_REGISTRY.map((projection) => ({
       ...projection,
     })),

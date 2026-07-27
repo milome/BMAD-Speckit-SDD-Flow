@@ -234,4 +234,29 @@ describe('goal-contract canonical evidence graph', () => {
       buildEvidenceGraph(second)
     );
   });
+
+  it('copies optional typed Sequence applicability facts into the graph', () => {
+    const reconciliation = makeReconciliation();
+    const facts = {
+      coverage: 'complete',
+      evidenceRefs: ['SEQ-FACT-01'],
+      signals: {
+        branchCoverage: false,
+        boundedRetry: false,
+        compensation: false,
+        crossParticipantInteraction: false,
+        integrationFanIn: false,
+        interfaceBoundary: true,
+        observableOrdering: false,
+        stateTransition: false,
+        temporalConstraint: false,
+      },
+    };
+    reconciliation.graphInput.sequenceApplicabilityFacts = facts;
+
+    const graph = buildEvidenceGraph(reconciliation);
+
+    assert.deepEqual(graph.sequenceApplicabilityFacts, facts);
+    assert.notEqual(graph.sequenceApplicabilityFacts, facts);
+  });
 });
