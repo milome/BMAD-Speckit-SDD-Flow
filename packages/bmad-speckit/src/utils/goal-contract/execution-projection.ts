@@ -8,6 +8,9 @@ const { stableStringify } = require(
 const { validateExecutionProjection } = require(
   __filename.endsWith('.ts') ? './projection-validator.ts' : './projection-validator'
 );
+const { deriveSequenceExecutionState } = require(
+  __filename.endsWith('.ts') ? './sequence-mode.ts' : './sequence-mode'
+);
 
 export type GoalContractExecutionProjectionModule = never;
 
@@ -316,14 +319,42 @@ function normalizedEvidenceContracts(graph, predicates, slices, taskMap) {
 function normalizeSequence({ input, tasks, slices }) {
   const receipt = input.sequenceApplicabilityReceipt || {};
   requireHash(receipt.receiptHash, 'sequenceApplicabilityReceipt.receiptHash');
-  if (!['required', 'not_applicable_with_proof'].includes(receipt.decision)) {
+  const sequenceInput = input.sequenceConstraintInput;
+  const executionState =
+    input.sequenceExecutionState ||
+    deriveSequenceExecutionState({
+      sequenceMode: receipt.sequenceMode || 'auto',
+      sequenceApplicability: receipt.decision,
+      producerAvailable: Boolean(sequenceInput),
+    });
+  if (
+    ![
+      'required',
+      'not_applicable_with_proof',
+      'unresolved',
+    ].includes(receipt.decision)
+  ) {
     throw failure('execution_projection_sequence_applicability_invalid', {
       decision: receipt.decision || null,
     });
   }
-  const sequenceInput = input.sequenceConstraintInput;
-  if (receipt.decision === 'required' && !sequenceInput) {
+  if (
+    receipt.decision === 'unresolved' &&
+    executionState.sequenceMode !== 'disabled'
+  ) {
+    throw failure('execution_projection_sequence_applicability_invalid', {
+      decision: receipt.decision,
+    });
+  }
+  if (
+    executionState.sequenceMode !== 'disabled' &&
+    receipt.decision === 'required' &&
+    !sequenceInput
+  ) {
     throw failure('execution_projection_sequence_constraints_missing');
+  }
+  if (executionState.sequenceMode === 'disabled' && sequenceInput) {
+    throw failure('execution_projection_sequence_constraints_unexpected');
   }
   if (receipt.decision === 'not_applicable_with_proof' && sequenceInput) {
     throw failure('execution_projection_sequence_constraints_unexpected');
@@ -427,8 +458,12 @@ function normalizeSequence({ input, tasks, slices }) {
   const normalizedJoins = joins.sort((left, right) => compareIds(left.joinId, right.joinId));
   return {
     binding: {
+      sequenceMode: executionState.sequenceMode,
       applicabilityDecision: receipt.decision,
       applicabilityReceiptHash: receipt.receiptHash,
+      sequenceCoverage: executionState.sequenceCoverage,
+      sequenceClosureStatus: executionState.sequenceClosureStatus,
+      childContractAuthority: executionState.childContractAuthority,
       sequenceContractHash: sequenceInput
         ? requireHash(sequenceInput.sequenceContractHash, 'sequenceContractHash')
         : null,

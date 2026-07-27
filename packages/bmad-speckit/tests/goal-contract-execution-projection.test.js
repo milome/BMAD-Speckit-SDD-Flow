@@ -159,6 +159,73 @@ describe('goal-contract Execution Projection', () => {
     );
   });
 
+  it('binds disabled Sequence state without manufacturing closure authority', () => {
+    for (const [decision, sequenceCoverage] of [
+      ['required', 'excluded'],
+      ['unresolved', 'unresolved'],
+    ]) {
+      const projection = compileExecutionProjection(
+        makeInput({
+          sequenceApplicabilityReceipt: {
+            decision,
+            receiptHash: hash(`disabled-${decision}`),
+          },
+          sequenceExecutionState: {
+            sequenceMode: 'disabled',
+            sequenceApplicability: decision,
+            sequenceCoverage,
+            sequenceClosureStatus: 'not_requested',
+            childContractAuthority: 'core_only',
+            shouldResolveProducer: false,
+          },
+        })
+      );
+
+      assert.equal(
+        projection.sequenceConstraintBinding.sequenceMode,
+        'disabled'
+      );
+      assert.equal(
+        projection.sequenceConstraintBinding.childContractAuthority,
+        'core_only'
+      );
+      assert.deepEqual(
+        projection.sequenceConstraintBinding.constraints,
+        []
+      );
+      assert.deepEqual(projection.integrationJoinGraph.joins, []);
+      assert.equal(
+        projection.sequenceConstraintBinding.sequenceContractHash,
+        null
+      );
+    }
+  });
+
+  it('still requires Sequence constraints for auto required authority', () => {
+    assert.throws(
+      () =>
+        compileExecutionProjection(
+          makeInput({
+            sequenceApplicabilityReceipt: {
+              decision: 'required',
+              receiptHash: hash('auto-required'),
+            },
+            sequenceExecutionState: {
+              sequenceMode: 'auto',
+              sequenceApplicability: 'required',
+              sequenceCoverage: 'complete',
+              sequenceClosureStatus: 'unavailable',
+              childContractAuthority: 'full',
+              shouldResolveProducer: true,
+            },
+          })
+        ),
+      (error) =>
+        error.failureClass ===
+        'execution_projection_sequence_constraints_missing'
+    );
+  });
+
   it('fails closed for unknown dependencies, cycles and unresolved ownership', () => {
     const cases = [
       [

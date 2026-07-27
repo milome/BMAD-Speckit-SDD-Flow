@@ -27,6 +27,12 @@ const projectionIssueCodes = Object.freeze({
   executionEvidenceFreshnessMissing: 'execution_projection_evidence_freshness_missing',
   executionEvidenceReferenceMissing: 'execution_projection_evidence_reference_missing',
   executionHelperOutcomeMissing: 'execution_projection_helper_outcome_missing',
+  executionSequenceDisabledBindingInvalid:
+    'projection_sequence_disabled_binding_invalid',
+  executionSequenceDisabledAuthorityInvalid:
+    'projection_sequence_disabled_authority_invalid',
+  executionSequenceFullCoverageInvalid:
+    'projection_sequence_full_coverage_invalid',
 });
 
 const TRACE_COLUMNS = Object.freeze([
@@ -503,6 +509,44 @@ function validateExecutionProjection(projection) {
         })
       );
     }
+  }
+  const binding = projection?.sequenceConstraintBinding || {};
+  if (binding.sequenceMode === 'disabled') {
+    if (
+      binding.sequenceContractHash !== null ||
+      (binding.constraints || []).length !== 0 ||
+      (projection?.integrationJoinGraph?.joins || []).length !== 0
+    ) {
+      issues.push(
+        issue(
+          projectionIssueCodes.executionSequenceDisabledBindingInvalid,
+          'sequenceConstraintBinding'
+        )
+      );
+    }
+    if (
+      binding.applicabilityDecision !==
+        'not_applicable_with_proof' &&
+      binding.childContractAuthority !== 'core_only'
+    ) {
+      issues.push(
+        issue(
+          projectionIssueCodes.executionSequenceDisabledAuthorityInvalid,
+          'sequenceConstraintBinding'
+        )
+      );
+    }
+  }
+  if (
+    binding.childContractAuthority === 'full' &&
+    ['excluded', 'unresolved'].includes(binding.sequenceCoverage)
+  ) {
+    issues.push(
+      issue(
+        projectionIssueCodes.executionSequenceFullCoverageInvalid,
+        'sequenceConstraintBinding'
+      )
+    );
   }
   return result(issues);
 }

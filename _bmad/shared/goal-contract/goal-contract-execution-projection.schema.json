@@ -257,10 +257,37 @@
         "constraints"
       ],
       "properties": {
+        "sequenceMode": {
+          "enum": ["auto", "required", "disabled"]
+        },
         "applicabilityDecision": {
-          "enum": ["required", "not_applicable_with_proof"]
+          "enum": [
+            "required",
+            "not_applicable_with_proof",
+            "unresolved"
+          ]
         },
         "applicabilityReceiptHash": { "$ref": "#/$defs/hash" },
+        "sequenceCoverage": {
+          "enum": [
+            "complete",
+            "not_applicable",
+            "excluded",
+            "unresolved"
+          ]
+        },
+        "sequenceClosureStatus": {
+          "enum": [
+            "compiled",
+            "not_required",
+            "not_requested",
+            "unavailable",
+            "unresolved"
+          ]
+        },
+        "childContractAuthority": {
+          "enum": ["full", "core_only"]
+        },
         "sequenceContractHash": {
           "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
         },
