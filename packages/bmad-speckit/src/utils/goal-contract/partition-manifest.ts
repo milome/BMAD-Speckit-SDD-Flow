@@ -831,10 +831,61 @@ function validateCanonicalOptimizationReceipt(
   return canonicalOptimization;
 }
 
+const SEQUENCE_STATE_FIELDS = Object.freeze([
+  'sequenceMode',
+  'sequenceApplicability',
+  'sequenceCoverage',
+  'sequenceClosureStatus',
+  'childContractAuthority',
+]);
+
+function manifestSequenceState(executionProjection) {
+  const binding = executionProjection?.sequenceConstraintBinding || {};
+  const applicabilityDecision =
+    binding.applicabilityDecision || 'not_applicable_with_proof';
+  return Object.freeze({
+    sequenceMode: binding.sequenceMode || 'auto',
+    sequenceApplicability: applicabilityDecision,
+    sequenceCoverage:
+      binding.sequenceCoverage ||
+      (applicabilityDecision === 'not_applicable_with_proof'
+        ? 'not_applicable'
+        : 'complete'),
+    sequenceClosureStatus:
+      binding.sequenceClosureStatus ||
+      (binding.sequenceContractHash ? 'compiled' : 'not_required'),
+    childContractAuthority: binding.childContractAuthority || 'full',
+  });
+}
+
+function validateManifestSequenceState(manifest, expectedState = null) {
+  if (
+    manifest.childContractAuthority === 'full' &&
+    ['excluded', 'unresolved'].includes(manifest.sequenceCoverage)
+  ) {
+    throw failure('partition_manifest_sequence_authority_invalid');
+  }
+  if (
+    manifest.sequenceMode === 'disabled' &&
+    manifest.sequenceClosureStatus === 'compiled'
+  ) {
+    throw failure('partition_manifest_sequence_status_invalid');
+  }
+  if (
+    expectedState &&
+    SEQUENCE_STATE_FIELDS.some(
+      (field) => manifest[field] !== expectedState[field]
+    )
+  ) {
+    throw failure('partition_manifest_sequence_state_mismatch');
+  }
+}
+
 function compilePartitionManifest(input) {
   assertManifestInputAuthorityBindings(input);
   const canonicalOptimization = deriveCanonicalOptimization(input);
   const dependencyState = validateOptimizationDependencies(input);
+  const sequenceState = manifestSequenceState(input.executionProjection);
   const partitionRunId = `partition-run-${sha256Text(
     stableStringify({
       sourceSnapshotHash: input.sourceSnapshot.aggregateHash,
@@ -973,6 +1024,7 @@ function compilePartitionManifest(input) {
     methodologyProfileHash: input.methodologyProfileHash,
     reconciledGraphHash: input.reconciledGraphHash,
     semanticModelHash: input.executionProjection.semanticModelHash,
+    ...sequenceState,
     executionProjectionHash:
       input.executionProjection.executionProjectionHash,
     taskDagHash: input.executionProjection.taskDagHash,
@@ -988,6 +1040,7 @@ function compilePartitionManifest(input) {
     globalCoverageReceiptPath: receiptPaths.globalCoverageReceiptPath,
     partitions,
   };
+  validateManifestSequenceState(manifest, sequenceState);
   validateSchema(
     'goal-contract-partition-manifest.schema.json',
     manifest,
@@ -1003,6 +1056,7 @@ function compilePartitionManifest(input) {
     manifest,
     partitionManifestBytes,
     partitionManifestHash: sha256Text(partitionManifestBytes),
+    sequenceState,
   };
   validatePartitionManifest(compiled);
   return Object.freeze(compiled);
@@ -1121,6 +1175,10 @@ function validateManifestDependencySemantics(manifest) {
 }
 
 function validatePartitionManifest(compiled) {
+  validateManifestSequenceState(
+    compiled.manifest,
+    compiled.sequenceState || null
+  );
   validateSchema(
     'goal-contract-partition-analysis-receipt.schema.json',
     compiled.analysisReceipt,

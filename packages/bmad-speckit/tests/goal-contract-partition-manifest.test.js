@@ -550,6 +550,50 @@ function inputWithMultipleCandidates() {
   return current;
 }
 
+function disabledRequiredInput() {
+  const current = input();
+  const projection = current.executionProjection;
+  projection.sequenceConstraintBinding = {
+    sequenceMode: 'disabled',
+    applicabilityDecision: 'required',
+    applicabilityReceiptHash: hash('disabled-required'),
+    sequenceCoverage: 'excluded',
+    sequenceClosureStatus: 'not_requested',
+    childContractAuthority: 'core_only',
+    sequenceContractHash: null,
+    semanticConstraintHash: hash(
+      stableStringify({ constraints: [], joins: [] })
+    ),
+    constraints: [],
+  };
+  projection.integrationJoinGraph = { joins: [] };
+  projection.taskDag.edges = [];
+  for (const task of projection.atomicTasks) {
+    task.dependencyIds = [];
+    task.sequenceConstraintIds = [];
+  }
+  for (const slice of projection.traceSlices) {
+    slice.sequenceConstraintIds = [];
+  }
+  sealExecutionProjection(projection);
+  current.policyBinding.executionProjectionHash =
+    projection.executionProjectionHash;
+  current.componentGraph = structuredClone(
+    buildPartitionComponents({
+      executionProjection: projection,
+      policy: current.policyBinding.policy,
+    })
+  );
+  current.optimization = structuredClone(
+    optimizePartitions({
+      componentGraph: current.componentGraph,
+      executionProjection: projection,
+      policyBinding: current.policyBinding,
+    })
+  );
+  return current;
+}
+
 describe('goal-contract partition manifest', () => {
   it('derives shared ownership and compatibility obligations through the production chain', () => {
     const authority = input();
@@ -888,6 +932,32 @@ describe('goal-contract partition manifest', () => {
       hash(compiled.analysisReceiptBytes)
     );
     assert.equal(validatePartitionManifest(compiled).decision, 'pass');
+  });
+
+  it('binds disabled Sequence authority and rejects authority tampering', () => {
+    const compiled = compilePartitionManifest(disabledRequiredInput());
+    const manifest = compiled.manifest;
+
+    assert.equal(manifest.sequenceMode, 'disabled');
+    assert.equal(manifest.sequenceApplicability, 'required');
+    assert.equal(manifest.sequenceCoverage, 'excluded');
+    assert.equal(manifest.sequenceClosureStatus, 'not_requested');
+    assert.equal(manifest.childContractAuthority, 'core_only');
+    assert.equal(
+      manifest.partitions.every(
+        (partition) => partition.inheritedConstraintIds.length === 0
+      ),
+      true
+    );
+
+    const tampered = structuredClone(compiled);
+    tampered.manifest.childContractAuthority = 'full';
+    assert.throws(
+      () => validatePartitionManifest(tampered),
+      (error) =>
+        error.failureClass ===
+        'partition_manifest_sequence_authority_invalid'
+    );
   });
 
   it('rejects execution projection payload drift during manifest compilation', () => {
