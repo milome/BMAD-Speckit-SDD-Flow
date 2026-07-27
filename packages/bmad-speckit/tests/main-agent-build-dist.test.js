@@ -1,12 +1,57 @@
-const { describe, it } = require('node:test');
+const { after, before, describe, it } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+let packageTestSession;
+
+function acquirePackageTestSessionLock(packageRoot) {
+  const lockDir = path.join(
+    packageRoot,
+    'node_modules',
+    '.package-test-session.lock'
+  );
+  fs.mkdirSync(path.dirname(lockDir), { recursive: true });
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 900_000) {
+    try {
+      fs.mkdirSync(lockDir);
+      return {
+        release() {
+          fs.rmSync(lockDir, { recursive: true, force: true });
+        },
+      };
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (
+        fs.existsSync(lockDir) &&
+        Date.now() - fs.statSync(lockDir).mtimeMs > 7_200_000
+      ) {
+        fs.rmSync(lockDir, { recursive: true, force: true });
+        continue;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+    }
+  }
+  throw new Error(`timed out acquiring package test session lock: ${lockDir}`);
+}
+
+before(
+  () => {
+    packageTestSession = acquirePackageTestSessionLock(PACKAGE_ROOT);
+  },
+  { timeout: 900_000 }
+);
+
+after(() => {
+  packageTestSession?.release();
+});
+
 const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.cjs');
 const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
 const CLI_PATH = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
@@ -55,7 +100,26 @@ const EXPECTED_PACKAGE_RUNTIME_TYPESCRIPT_FILES = [
   'actions/native-goal-command.ts',
   'actions/native-goal-invoker.ts',
 ];
+const PARTITION_PACKAGE_ASSETS = [
+  'shared/goal-contract/goal-contract-partition-methodology-profile.json',
+  'shared/goal-contract/goal-contract-partition-methodology-profile.schema.json',
+  'shared/goal-contract/goal-contract-sequence-applicability-receipt.schema.json',
+  'shared/goal-contract/goal-contract-semantic-provider-registry.json',
+  'shared/goal-contract/goal-contract-semantic-provider-registry.schema.json',
+  'shared/goal-contract/goal-contract-execution-projection.schema.json',
+  'shared/goal-contract/goal-contract-partition-policy.json',
+  'shared/goal-contract/goal-contract-partition-policy.schema.json',
+  'shared/goal-contract/goal-contract-partition-manifest.schema.json',
+  'shared/goal-contract/goal-contract-partition-analysis-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-global-coverage-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-selection-receipt.schema.json',
+  'shared/goal-contract/goal-contract-dependency-compatibility-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-child-coverage-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-child-generation-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-release-gate-receipt.schema.json',
+];
 const EXPECTED_PACKAGE_RUNTIME_ASSETS = [
+  ...PARTITION_PACKAGE_ASSETS.map((relativePath) => `_bmad/${relativePath}`),
   '_bmad/runtime/hooks/deferred-gap-governance.cjs',
   '_bmad/core/agents/code-reviewer/base-prompt.md',
   '_bmad/core/agents/code-reviewer/metadata.json',
@@ -844,6 +908,250 @@ describe('main-agent dist build', () => {
     assert.equal(profile.schemaVersion, 'critical-auditor-profile/v1');
   });
 
+  it('declares every partition package asset exactly once', () => {
+    const buildSource = fs.readFileSync(BUILD_SCRIPT, 'utf8');
+    const requiredFilesBlock = buildSource.match(
+      /const packageBmadRequiredFiles = \[([\s\S]*?)\n\];/u
+    )?.[1];
+    assert.ok(requiredFilesBlock, 'packageBmadRequiredFiles declaration is missing');
+
+    for (const relativePath of PARTITION_PACKAGE_ASSETS) {
+      assert.equal(
+        requiredFilesBlock.split(relativePath).length - 1,
+        1,
+        `partition package asset must be declared exactly once: ${relativePath}`
+      );
+    }
+  });
+
+  it('fails closed when the repository _bmad source set cannot be enumerated', () => {
+    const buildSource = fs.readFileSync(BUILD_SCRIPT, 'utf8');
+    assert.match(
+      buildSource,
+      /repository _bmad source enumeration failed/u
+    );
+    assert.doesNotMatch(
+      buildSource,
+      /sourceFiles === null[\s\S]*?fs\.cpSync\(repoBmadRoot,\s*packageBmadRoot/u
+    );
+  });
+
+  it('keeps the compiled goal-contract command on package dist modules', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: PACKAGE_ROOT,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    const compiled = fs.readFileSync(
+      path.join(PACKAGE_DIST_ROOT, 'commands', 'goal-contract.js'),
+      'utf8'
+    );
+    assert.doesNotMatch(compiled, /sourceRepositoryMode/u);
+    assert.match(compiled, /const PARTITION_ASSET_ROOT = PACKAGE_ROOT;/u);
+    assert.doesNotMatch(compiled, /`\$\{sourceBase\}\.ts`/u);
+  });
+
+  it('records partition package assets without adding them to dist', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: PACKAGE_ROOT,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+
+    const buildAuthority = JSON.parse(
+      fs.readFileSync(RUNTIME_BUILD_AUTHORITY_RECEIPT, 'utf8')
+    );
+    assert.equal(
+      buildAuthority.packageAssetCount,
+      buildAuthority.packageAssetEntries.length
+    );
+    assert.deepEqual(
+      buildAuthority.packageAssetEntries.map((entry) => entry.target),
+      [...buildAuthority.packageAssetEntries]
+        .map((entry) => entry.target)
+        .sort((left, right) => left.localeCompare(right))
+    );
+    assert.equal(
+      buildAuthority.packageAssetSetHash,
+      `sha256:${createHash('sha256')
+        .update(JSON.stringify(buildAuthority.packageAssetEntries))
+        .digest('hex')}`
+    );
+
+    const entries = new Map(
+      buildAuthority.packageAssetEntries.map((entry) => [entry.target, entry])
+    );
+    for (const relativePath of PARTITION_PACKAGE_ASSETS) {
+      const target = `_bmad/${relativePath}`;
+      const entry = entries.get(target);
+      assert.deepEqual(entry, {
+        source: target,
+        target,
+        sourceHash: createHash('sha256')
+          .update(fs.readFileSync(path.join(REPO_ROOT, target)))
+          .digest('hex'),
+        targetHash: createHash('sha256')
+          .update(fs.readFileSync(path.join(PACKAGE_ROOT, target)))
+          .digest('hex'),
+        owner: 'package-root-_bmad',
+      });
+      assert.equal(
+        fs.existsSync(path.join(PACKAGE_DIST_ROOT, relativePath)),
+        false,
+        `partition package asset must not be duplicated under dist: ${relativePath}`
+      );
+      assert.equal(
+        fs.existsSync(path.join(DIST_ROOT, 'source-authority', '_bmad', relativePath)),
+        false,
+        `partition package asset must not be nested under source-authority dist: ${relativePath}`
+      );
+    }
+
+    const runtimeManifest = JSON.parse(fs.readFileSync(RUNTIME_ASSET_MANIFEST, 'utf8'));
+    assert.equal(
+      runtimeManifest.entries.every((entry) => entry.target.startsWith('dist/')),
+      true,
+      'dist runtime manifest must not own package-root _bmad assets'
+    );
+    for (const forbiddenPath of [
+      path.join(PACKAGE_DIST_ROOT, '_bmad'),
+      path.join(DIST_ROOT, 'source-authority', '_bmad'),
+      path.join(DIST_ROOT, 'source-authority', 'packages'),
+      path.join(DIST_ROOT, 'source-authority', 'tests'),
+    ]) {
+      assert.equal(
+        fs.existsSync(forbiddenPath),
+        false,
+        `forbidden dist path exists: ${forbiddenPath}`
+      );
+    }
+  });
+
+  it('binds the compiled execution projection schema to package-root _bmad', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: PACKAGE_ROOT,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    const compiled = fs.readFileSync(
+      path.join(
+        PACKAGE_DIST_ROOT,
+        'utils',
+        'goal-contract',
+        'execution-projection.js'
+      ),
+      'utf8'
+    );
+
+    assert.match(
+      compiled,
+      /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u
+    );
+    assert.doesNotMatch(
+      compiled,
+      /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u
+    );
+  });
+
+  it('fails closed when source changes without rebuilding dist', () => {
+    execFileSync(process.execPath, [BUILD_SCRIPT], {
+      cwd: PACKAGE_ROOT,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-stale-dist-'));
+    try {
+      const cloneRoot = path.join(root, 'packages', 'bmad-speckit');
+      fs.mkdirSync(cloneRoot, { recursive: true });
+      for (const relativePath of [
+        'package.json',
+        'bin',
+        'dist',
+        '_bmad',
+        path.join('node_modules', '@bmad-speckit'),
+        'scripts',
+        'src',
+      ]) {
+        fs.cpSync(
+          path.join(PACKAGE_ROOT, relativePath),
+          path.join(cloneRoot, relativePath),
+          { recursive: true }
+        );
+      }
+      fs.copyFileSync(
+        path.join(REPO_ROOT, 'package-lock.json'),
+        path.join(root, 'package-lock.json')
+      );
+      const runtimeAuthority = require(
+        path.join(
+          cloneRoot,
+          'dist',
+          'main-agent',
+          'source-authority',
+          'scripts',
+          'requirements-contract-runtime-build-authority.js'
+        )
+      );
+      const receipt = JSON.parse(
+        fs.readFileSync(
+          path.join(
+            cloneRoot,
+            'dist',
+            'main-agent',
+            'runtime-build-authority-receipt.json'
+          ),
+          'utf8'
+        )
+      );
+      const baseReceipt = Object.fromEntries(
+        [
+          'schemaVersion',
+          'hashDomainRegistry',
+          'sourceInputManifestHash',
+          'buildScriptHash',
+          'dependencyLockHash',
+          'runtimeAssetManifestHash',
+          'distRuntimeHash',
+          'packageRuntimeHash',
+          'decision',
+          'distBuildHash',
+        ].map((key) => [key, receipt[key]])
+      );
+      const input = {
+        receipt: baseReceipt,
+        packageRoot: cloneRoot,
+        runtimeAssetManifestPath: path.join(
+          cloneRoot,
+          'dist',
+          'main-agent',
+          'runtime-asset-manifest.json'
+        ),
+        buildScriptPath: path.join(cloneRoot, 'scripts', 'build-main-agent-dist.cjs'),
+        dependencyLockPath: path.join(root, 'package-lock.json'),
+      };
+      assert.doesNotThrow(() => runtimeAuthority.assertRuntimeBuildAuthorityCurrent(input));
+      fs.appendFileSync(
+        path.join(cloneRoot, 'src', 'commands', 'goal-contract.ts'),
+        '\n// stale-dist-probe\n',
+        'utf8'
+      );
+      assert.throws(
+        () => {
+          try {
+            runtimeAuthority.assertRuntimeBuildAuthorityCurrent(input);
+          } catch {
+            throw Object.assign(new Error('goal_contract_dist_stale'), {
+              failureClass: 'goal_contract_dist_stale',
+            });
+          }
+        },
+        (error) => error.failureClass === 'goal_contract_dist_stale'
+      );
+    } finally {
+      fs.rmSync(root, { force: true, recursive: true });
+    }
+  });
+
   it('does not mirror generated consumer fixtures into source-authority dist', () => {
     execFileSync(process.execPath, [BUILD_SCRIPT], {
       cwd: PACKAGE_ROOT,
@@ -879,36 +1187,38 @@ describe('main-agent dist build', () => {
   });
 
   it('excludes ignored repository _bmad artifacts from the package runtime owner', () => {
-    execFileSync(process.execPath, [BUILD_SCRIPT], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-    const ignoredSourcePaths = execFileSync(
-      'git',
-      [
-        'ls-files',
-        '-z',
-        '--others',
-        '--ignored',
-        '--exclude-standard',
-        '--',
-        '_bmad',
-      ],
-      {
+    const ignoredSourcePath = path.join(
+      REPO_ROOT,
+      '_bmad',
+      'skills',
+      'bmads-auto',
+      `.package-runtime-owner-ignore-${process.pid}.sentinel`
+    );
+    const repositoryRelativePath = path
+      .relative(REPO_ROOT, ignoredSourcePath)
+      .replace(/\\/gu, '/');
+    const packageRelativePath = path.relative(
+      path.join(REPO_ROOT, '_bmad'),
+      ignoredSourcePath
+    );
+    fs.mkdirSync(path.dirname(ignoredSourcePath), { recursive: true });
+    fs.writeFileSync(ignoredSourcePath, 'ignored package runtime sentinel\n', 'utf8');
+    try {
+      execFileSync('git', ['check-ignore', '-q', '--', repositoryRelativePath], {
+        cwd: REPO_ROOT,
+        stdio: 'ignore',
+      });
+      execFileSync(process.execPath, [BUILD_SCRIPT], {
         cwd: REPO_ROOT,
         encoding: 'utf8',
-      }
-    )
-      .split('\0')
-      .filter(Boolean);
-
-    for (const ignoredSourcePath of ignoredSourcePaths) {
-      const packageRelativePath = path.relative('_bmad', ignoredSourcePath);
+      });
       assert.equal(
         fs.existsSync(path.join(PACKAGE_ROOT, '_bmad', packageRelativePath)),
         false,
-        `ignored repository artifact leaked into package runtime: ${ignoredSourcePath}`
+        `ignored repository artifact leaked into package runtime: ${repositoryRelativePath}`
       );
+    } finally {
+      fs.rmSync(ignoredSourcePath, { force: true });
     }
   });
 

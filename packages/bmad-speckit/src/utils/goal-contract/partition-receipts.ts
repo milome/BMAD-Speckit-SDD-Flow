@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
+const Ajv = require('ajv');
 const Ajv2020 = require('ajv/dist/2020');
 const {
   normalizePath,
@@ -33,6 +34,7 @@ const { validatePartitionManifest } = require(
 export type GoalContractPartitionReceiptsModule = never;
 
 const RECEIPT_SCHEMA_IDS = new Set([
+  'goal-contract-sequence-applicability-receipt/v1',
   'goal-contract-partition-global-coverage-receipt/v1',
   'goal-contract-partition-selection-receipt/v1',
   'goal-contract-dependency-compatibility-receipt/v1',
@@ -59,6 +61,302 @@ function assertStringArray(value, failureClass) {
     throw failure(failureClass);
   }
   return [...value].sort();
+}
+
+function isStrictlyWithin(root, target) {
+  const relative = path.relative(path.resolve(root), path.resolve(target));
+  return (
+    relative !== '' &&
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  );
+}
+
+function readRuntimeBuildAuthorityEvidence({
+  packageRoot,
+  runtimeBuildAuthorityReceiptPath,
+}) {
+  if (
+    typeof packageRoot !== 'string' ||
+    typeof runtimeBuildAuthorityReceiptPath !== 'string'
+  ) {
+    throw failure('partition_capability_evidence_paths_missing');
+  }
+  const resolvedPackageRoot = path.resolve(packageRoot);
+  const expectedReceiptPath = path.join(
+    resolvedPackageRoot,
+    'dist',
+    'main-agent',
+    'runtime-build-authority-receipt.json'
+  );
+  if (
+    path.resolve(runtimeBuildAuthorityReceiptPath) !== expectedReceiptPath ||
+    !fs.existsSync(expectedReceiptPath)
+  ) {
+    throw failure('partition_capability_runtime_build_receipt_missing');
+  }
+  let receipt;
+  try {
+    receipt = JSON.parse(fs.readFileSync(expectedReceiptPath, 'utf8'));
+  } catch {
+    throw failure('partition_capability_runtime_build_receipt_invalid');
+  }
+  const entries = receipt?.packageAssetEntries;
+  if (
+    receipt?.schemaVersion !== 'bmad-speckit-runtime-build-authority/v1' ||
+    receipt?.decision !== 'pass' ||
+    !Array.isArray(entries) ||
+    entries.length === 0 ||
+    receipt.packageAssetCount !== entries.length ||
+    receipt.packageAssetSetHash !== sha256Text(JSON.stringify(entries))
+  ) {
+    throw failure('partition_capability_runtime_build_receipt_invalid');
+  }
+  const targets = entries.map((entry) => entry?.target);
+  if (
+    targets.some((target) => typeof target !== 'string') ||
+    new Set(targets).size !== targets.length ||
+    JSON.stringify(targets) !==
+      JSON.stringify([...targets].sort((left, right) => left.localeCompare(right)))
+  ) {
+    throw failure('partition_capability_package_asset_set_invalid');
+  }
+  for (const entry of entries) {
+    const targetPath = path.resolve(resolvedPackageRoot, entry.target);
+    if (
+      entry.owner !== 'package-root-_bmad' ||
+      entry.source !== entry.target ||
+      !entry.target.startsWith('_bmad/') ||
+      !isStrictlyWithin(resolvedPackageRoot, targetPath) ||
+      !/^[a-f0-9]{64}$/u.test(entry.sourceHash || '') ||
+      entry.sourceHash !== entry.targetHash ||
+      !fs.existsSync(targetPath) ||
+      !fs.statSync(targetPath).isFile() ||
+      createHash('sha256').update(fs.readFileSync(targetPath)).digest('hex') !==
+        entry.targetHash
+    ) {
+      throw failure('partition_capability_package_asset_entry_invalid', {
+        target: entry?.target,
+      });
+    }
+  }
+  return Object.freeze(receipt);
+}
+
+function derivePartitionCapabilityState(evidence) {
+  if (
+    !evidence ||
+    typeof evidence !== 'object' ||
+    typeof evidence.packageRoot !== 'string' ||
+    typeof evidence.runtimeBuildAuthorityReceiptPath !== 'string' ||
+    !Array.isArray(evidence.selfHostingApplicabilityReceiptPaths)
+  ) {
+    throw failure('partition_capability_evidence_paths_missing');
+  }
+  readRuntimeBuildAuthorityEvidence(evidence);
+  const receiptPaths = evidence.selfHostingApplicabilityReceiptPaths;
+  if (
+    receiptPaths.length !== 2 ||
+    receiptPaths.some((receiptPath) => typeof receiptPath !== 'string') ||
+    new Set(receiptPaths.map((receiptPath) => path.resolve(receiptPath))).size !==
+      receiptPaths.length
+  ) {
+    throw failure('partition_capability_self_hosting_evidence_invalid');
+  }
+  const receipts = receiptPaths.map((receiptPath) =>
+    readValidatedPartitionReceipt(
+      receiptPath,
+      'goal-contract-sequence-applicability-receipt/v1'
+    )
+  );
+  if (
+    new Set(receipts.map((receipt) => receipt.sourceSnapshotHash)).size !==
+    receipts.length
+  ) {
+    throw failure('partition_capability_self_hosting_source_reused');
+  }
+  for (const receipt of receipts) {
+    if (receipt.decision === 'unresolved') {
+      throw failure('partition_capability_sequence_applicability_unresolved');
+    }
+    if (
+      receipt.decision === 'required' &&
+      (receipt.producerAvailability !== 'unavailable' ||
+        receipt.failureClass !== 'sequence_closure_required_unavailable' ||
+        !Array.isArray(receipt.blockingReasons) ||
+        !receipt.blockingReasons.includes(
+          'canonical_sequence_closure_producer_unavailable'
+        ))
+    ) {
+      throw failure('partition_capability_required_boundary_invalid');
+    }
+  }
+  return receipts.some((receipt) => receipt.decision === 'required')
+    ? 'Sequence-Required Capability Pending'
+    : 'Partition Core Verified';
+}
+
+function assertCurrentPartitionRuntimeEpoch({
+  runRoot,
+  startedAt,
+  artifacts,
+}) {
+  if (
+    typeof runRoot !== 'string' ||
+    !Number.isFinite(startedAt) ||
+    startedAt <= 0 ||
+    !Array.isArray(artifacts) ||
+    artifacts.length === 0
+  ) {
+    throw failure('partition_runtime_epoch_input_invalid');
+  }
+  const resolvedRunRoot = path.resolve(runRoot);
+  return Object.freeze(
+    artifacts.map((artifact) => {
+      if (
+        !artifact ||
+        typeof artifact.path !== 'string' ||
+        !['file', 'directory'].includes(artifact.type)
+      ) {
+        throw failure('partition_runtime_epoch_artifact_invalid');
+      }
+      const artifactPath = path.resolve(artifact.path);
+      if (!isStrictlyWithin(resolvedRunRoot, artifactPath)) {
+        throw failure('partition_runtime_epoch_artifact_outside_root', {
+          artifactPath,
+        });
+      }
+      if (!fs.existsSync(artifactPath)) {
+        throw failure('partition_runtime_epoch_artifact_missing', {
+          artifactPath,
+        });
+      }
+      const stat = fs.statSync(artifactPath);
+      if (
+        (artifact.type === 'file' && !stat.isFile()) ||
+        (artifact.type === 'directory' && !stat.isDirectory())
+      ) {
+        throw failure('partition_runtime_epoch_artifact_type_invalid', {
+          artifactPath,
+        });
+      }
+      if (stat.mtimeMs < startedAt) {
+        throw failure('partition_runtime_epoch_artifact_stale', {
+          artifactPath,
+        });
+      }
+      if (artifact.type === 'directory') {
+        if (typeof artifact.freshnessMarker !== 'string') {
+          throw failure('partition_runtime_epoch_marker_missing', {
+            artifactPath,
+          });
+        }
+        const markerPath = path.resolve(
+          artifactPath,
+          artifact.freshnessMarker
+        );
+        if (
+          !isStrictlyWithin(artifactPath, markerPath) ||
+          !fs.existsSync(markerPath) ||
+          !fs.statSync(markerPath).isFile()
+        ) {
+          throw failure('partition_runtime_epoch_marker_invalid', {
+            artifactPath,
+          });
+        }
+        if (fs.statSync(markerPath).mtimeMs < startedAt) {
+          throw failure('partition_runtime_epoch_marker_stale', {
+            artifactPath,
+            markerPath,
+          });
+        }
+      }
+      if (
+        artifact.expectedHash !== undefined &&
+        (artifact.type !== 'file' ||
+          createHash('sha256')
+            .update(fs.readFileSync(artifactPath))
+            .digest('hex') !==
+            String(artifact.expectedHash).replace(/^sha256:/u, ''))
+      ) {
+        throw failure('partition_runtime_epoch_artifact_hash_mismatch', {
+          artifactPath,
+        });
+      }
+      return Object.freeze({
+        path: normalizePath(artifactPath),
+        type: artifact.type,
+      });
+    })
+  );
+}
+
+function buildUnavailableSequenceApplicabilityReceipt({
+  applicabilityReceipt,
+  methodologyProfileHash,
+}) {
+  if (applicabilityReceipt?.decision !== 'required') {
+    throw failure('sequence_unavailable_receipt_decision_invalid');
+  }
+  const semanticPayload = {
+    ...applicabilityReceipt,
+    methodologyProfileHash,
+    producerAvailability: 'unavailable',
+    failureClass: 'sequence_closure_required_unavailable',
+    freshnessRoot: sha256Text(
+      stableStringify({
+        sourceSnapshotHash: applicabilityReceipt.sourceSnapshotHash,
+        semanticModelHash: applicabilityReceipt.semanticModelHash,
+        traceGraphHash: applicabilityReceipt.traceGraphHash,
+        methodologyProfileHash,
+        policyVersion: applicabilityReceipt.policyVersion,
+      })
+    ),
+    reasonCodes: [
+      ...new Set([
+        ...(applicabilityReceipt.reasonCodes || []),
+        'producer:canonical_sequence_closure_unavailable',
+      ]),
+    ].sort(),
+    blockingReasons: ['canonical_sequence_closure_producer_unavailable'],
+  };
+  delete semanticPayload.receiptHash;
+  return Object.freeze({
+    ...semanticPayload,
+    receiptHash: sha256Text(stableStringify(semanticPayload)),
+  });
+}
+
+function writeSequenceApplicabilityBoundaryReceipt({
+  applicabilityReceipt,
+  methodologyProfileHash,
+  receiptsDir,
+}) {
+  if (typeof receiptsDir !== 'string' || receiptsDir.length === 0) {
+    throw failure('sequence_unavailable_receipt_root_missing');
+  }
+  const payload = buildUnavailableSequenceApplicabilityReceipt({
+    applicabilityReceipt,
+    methodologyProfileHash,
+  });
+  const runId = `sequence-run-${payload.freshnessRoot.slice('sha256:'.length)}`;
+  const targetPath = path.join(
+    path.resolve(receiptsDir),
+    'sequence-runs',
+    runId,
+    'sequence-applicability.receipt.json'
+  );
+  return Object.freeze({
+    runId,
+    freshnessRoot: payload.freshnessRoot,
+    ...writeImmutableReceipt({
+      schemaId: payload.schemaVersion,
+      targetPath,
+      payload,
+      writeReceipt: writeValidatedPartitionReceipt,
+    }),
+  });
 }
 
 function readPredecessorCompletionReceipt(input) {
@@ -443,11 +741,12 @@ function resolveAssetRoot({
   const packageRoot = filename.endsWith('.ts')
     ? path.resolve(dirname, '..', '..', '..', '..', '..')
     : path.resolve(dirname, '..', '..', '..');
-  return fs.existsSync(
-    path.join(packageRoot, '_bmad', 'shared', 'goal-contract')
-  )
-    ? packageRoot
-    : path.resolve(packageRoot, '..', '..');
+  if (
+    fs.existsSync(path.join(packageRoot, '_bmad', 'shared', 'goal-contract'))
+  ) {
+    return packageRoot;
+  }
+  throw failure('partition_package_asset_root_missing', { packageRoot });
 }
 
 const SCHEMA_ROOT = path.join(
@@ -468,9 +767,10 @@ function schemaValidator(schemaId) {
   if (!validators.has(schemaId)) {
     const schemaPath = path.join(SCHEMA_ROOT, schemaFileName(schemaId));
     const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+    const Validator = /draft-07/iu.test(schema.$schema || '') ? Ajv : Ajv2020;
     validators.set(
       schemaId,
-      new Ajv2020({ allErrors: true, strict: false }).compile(schema)
+      new Validator({ allErrors: true, strict: false }).compile(schema)
     );
   }
   return validators.get(schemaId);
@@ -604,6 +904,37 @@ function readValidatedPartitionReceipt(targetPath, expectedSchemaId = null) {
   const schemaId = expectedSchemaId || payload.schemaVersion;
   const canonical = canonicalizeForSchema(schemaId, payload);
   assertCanonicalReceiptBytes(targetPath, canonical);
+  if (schemaId === 'goal-contract-sequence-applicability-receipt/v1') {
+    const semanticPayload = structuredClone(canonical);
+    delete semanticPayload.receiptHash;
+    const expectedReceiptHash = sha256Text(stableStringify(semanticPayload));
+    if (canonical.receiptHash !== expectedReceiptHash) {
+      throw failure('sequence_applicability_receipt_hash_mismatch', {
+        actualReceiptHash: canonical.receiptHash,
+        expectedReceiptHash,
+      });
+    }
+    if (
+      canonical.decision === 'required' &&
+      canonical.producerAvailability === 'unavailable'
+    ) {
+      const expectedFreshnessRoot = sha256Text(
+        stableStringify({
+          sourceSnapshotHash: canonical.sourceSnapshotHash,
+          semanticModelHash: canonical.semanticModelHash,
+          traceGraphHash: canonical.traceGraphHash,
+          methodologyProfileHash: canonical.methodologyProfileHash,
+          policyVersion: canonical.policyVersion,
+        })
+      );
+      if (canonical.freshnessRoot !== expectedFreshnessRoot) {
+        throw failure('sequence_applicability_receipt_freshness_mismatch', {
+          actualFreshnessRoot: canonical.freshnessRoot,
+          expectedFreshnessRoot,
+        });
+      }
+    }
+  }
   return canonical;
 }
 
@@ -920,12 +1251,16 @@ function finalizePartitionRun({
 }
 
 module.exports = {
+  assertCurrentPartitionRuntimeEpoch,
   buildDependencyCompatibilityReceipt,
+  buildUnavailableSequenceApplicabilityReceipt,
   canonicalizeForSchema,
+  derivePartitionCapabilityState,
   finalizePartitionRun,
   readValidatedPartitionReceipt,
   resolveAssetRoot,
   validateDependencyCompatibilityReceipt,
+  writeSequenceApplicabilityBoundaryReceipt,
   writeDependencyCompatibilityReceipt,
   writeValidatedPartitionReceipt,
 };

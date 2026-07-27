@@ -18,6 +18,8 @@ const FORBIDDEN_SEQUENCE_FIELDS = new Set([
   'taskDag',
   'partitionCount',
   'partitions',
+  'atomicImplementationTaskList',
+  'implementationTaskDag',
 ]);
 const RECEIPT_FIELDS = new Set([
   'blockingReasons',
@@ -137,11 +139,11 @@ function decideSequenceApplicability({
   });
 }
 
-function findForbiddenFields(value, found = []) {
+function findForbiddenSequenceFields(value, found = []) {
   if (!value || typeof value !== 'object') return found;
   for (const [key, child] of Object.entries(value)) {
     if (FORBIDDEN_SEQUENCE_FIELDS.has(key)) found.push(key);
-    findForbiddenFields(child, found);
+    findForbiddenSequenceFields(child, found);
   }
   return [...new Set(found)].sort();
 }
@@ -327,7 +329,7 @@ function validateSequenceConstraintInput({
   if (!sequenceConstraintInput) {
     throw failure('sequence_closure_required_unavailable');
   }
-  const forbiddenFields = findForbiddenFields(sequenceConstraintInput);
+  const forbiddenFields = findForbiddenSequenceFields(sequenceConstraintInput);
   if (forbiddenFields.length > 0) {
     throw failure('sequence_second_task_universe_forbidden', {
       forbiddenFields,
@@ -356,5 +358,6 @@ function validateSequenceConstraintInput({
 module.exports = {
   REQUIRED_SIGNALS,
   decideSequenceApplicability,
+  findForbiddenSequenceFields,
   validateSequenceConstraintInput,
 };

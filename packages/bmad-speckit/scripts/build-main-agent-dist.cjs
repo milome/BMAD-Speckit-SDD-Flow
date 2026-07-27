@@ -16,6 +16,15 @@ const packageDistRoot = path.join(packageRoot, 'dist');
 const distRoot = path.join(packageDistRoot, 'main-agent');
 const repoBmadRoot = path.join(repoRoot, '_bmad');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
+const packageBuildLockDir = path.join(
+  packageRoot,
+  'node_modules',
+  '.pack-session.lock'
+);
+const packageBuildLockTimeoutMs = Number.parseInt(
+  process.env.BMAD_PACK_SESSION_LOCK_TIMEOUT_MS || '180000',
+  10
+);
 const runtimeManifestPath = path.join(distRoot, 'runtime-asset-manifest.json');
 const runtimeBuildAuthorityReceiptPath = path.join(
   distRoot,
@@ -42,6 +51,22 @@ const packageBmadRequiredFiles = [
   'shared/contract-execution-manifest/build-contract-execution-manifest.js',
   'shared/critical-auditor-profile/load-critical-auditor-profile.js',
   'shared/goal-contract/goal-contract-profile.json',
+  'shared/goal-contract/goal-contract-partition-methodology-profile.json',
+  'shared/goal-contract/goal-contract-partition-methodology-profile.schema.json',
+  'shared/goal-contract/goal-contract-sequence-applicability-receipt.schema.json',
+  'shared/goal-contract/goal-contract-semantic-provider-registry.json',
+  'shared/goal-contract/goal-contract-semantic-provider-registry.schema.json',
+  'shared/goal-contract/goal-contract-execution-projection.schema.json',
+  'shared/goal-contract/goal-contract-partition-policy.json',
+  'shared/goal-contract/goal-contract-partition-policy.schema.json',
+  'shared/goal-contract/goal-contract-partition-manifest.schema.json',
+  'shared/goal-contract/goal-contract-partition-analysis-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-global-coverage-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-selection-receipt.schema.json',
+  'shared/goal-contract/goal-contract-dependency-compatibility-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-child-coverage-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-child-generation-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-release-gate-receipt.schema.json',
   'shared/requirements-contract/markdown-source-parser.js',
   'skills/requirements-contract-authoring/SKILL.md',
   'skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js',
@@ -106,7 +131,10 @@ function repositoryBmadSourceFiles() {
       maxBuffer: 16 * 1024 * 1024,
     }
   );
-  if (result.error || result.status !== 0) return null;
+  if (result.error || result.status !== 0) {
+    const detail = result.error?.message || result.stderr || `exit ${result.status}`;
+    throw new Error(`repository _bmad source enumeration failed: ${detail}`);
+  }
   const prefix = '_bmad/';
   const files = [
     ...new Set(
@@ -136,16 +164,12 @@ function ensurePackageBmadOwner() {
   }
   removeTree(packageBmadRoot);
   const sourceFiles = repositoryBmadSourceFiles();
-  if (sourceFiles === null) {
-    fs.cpSync(repoBmadRoot, packageBmadRoot, { recursive: true, force: true });
-  } else {
-    fs.mkdirSync(packageBmadRoot, { recursive: true });
-    for (const relativePath of sourceFiles) {
-      const source = path.join(repoBmadRoot, relativePath);
-      const target = path.join(packageBmadRoot, relativePath);
-      copyFile(source, target);
-      fs.chmodSync(target, fs.statSync(source).mode);
-    }
+  fs.mkdirSync(packageBmadRoot, { recursive: true });
+  for (const relativePath of sourceFiles) {
+    const source = path.join(repoBmadRoot, relativePath);
+    const target = path.join(packageBmadRoot, relativePath);
+    copyFile(source, target);
+    fs.chmodSync(target, fs.statSync(source).mode);
   }
   for (const relativePath of packageBmadRequiredFiles) {
     const source = path.join(repoBmadRoot, relativePath);
@@ -170,6 +194,70 @@ function removeTree(target) {
     maxRetries: 20,
     retryDelay: 100,
   });
+}
+
+function readBuildLockOwner(lockDir) {
+  const ownerPath = path.join(lockDir, 'owner.json');
+  if (!fs.existsSync(ownerPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(ownerPath, 'utf8'));
+  } catch {
+    return { unreadable: true };
+  }
+}
+
+function isBuildLockOwnerActive(owner) {
+  if (!owner || owner.unreadable) return true;
+  const timeoutMs =
+    Number.isFinite(packageBuildLockTimeoutMs) && packageBuildLockTimeoutMs > 0
+      ? packageBuildLockTimeoutMs
+      : 180000;
+  if (owner.packSession === true) {
+    const acquiredAt = Date.parse(String(owner.acquiredAt || ''));
+    return Number.isFinite(acquiredAt) && Date.now() - acquiredAt < timeoutMs;
+  }
+  const pid = Number(owner.pid);
+  if (!Number.isInteger(pid) || pid <= 0) return true;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code !== 'ESRCH';
+  }
+}
+
+function acquirePackageBuildLock(lockDir) {
+  fs.mkdirSync(path.dirname(lockDir), { recursive: true });
+  const timeoutMs =
+    Number.isFinite(packageBuildLockTimeoutMs) && packageBuildLockTimeoutMs > 0
+      ? packageBuildLockTimeoutMs
+      : 180000;
+  const startedAt = Date.now();
+  const owner = {
+    pid: process.pid,
+    acquiredAt: new Date().toISOString(),
+    packSession: false,
+  };
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      fs.mkdirSync(lockDir);
+      fs.writeFileSync(
+        path.join(lockDir, 'owner.json'),
+        `${JSON.stringify(owner, null, 2)}\n`,
+        'utf8'
+      );
+      return;
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      const currentOwner = readBuildLockOwner(lockDir);
+      if (!isBuildLockOwnerActive(currentOwner)) {
+        removeTree(lockDir);
+        continue;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+    }
+  }
+  throw new Error(`timed out acquiring package build lock: ${lockDir}`);
 }
 
 function runSourceAuthorityTemplateLint() {
@@ -317,6 +405,72 @@ function rewriteRepoRootRuntimeAssetRequest(request, relativePath) {
   const currentFileDir = path.dirname(path.join(distRoot, relativePath));
   const rewritten = portable(path.relative(currentFileDir, target));
   return rewritten.startsWith('.') ? rewritten : `./${rewritten}`;
+}
+
+function rewritePackageRuntimeRequest(request) {
+  const normalized = portable(request);
+  if (!normalized.startsWith('.')) return request;
+  if (/\.source\.(?:ts|tsx)$/u.test(normalized)) {
+    return normalized.replace(/\.source\.(?:ts|tsx)$/u, '.js');
+  }
+  if (/\.(?:ts|tsx)$/u.test(normalized)) {
+    return normalized.replace(/\.(?:ts|tsx)$/u, '.js');
+  }
+  if (/\.cts$/u.test(normalized)) return normalized.replace(/\.cts$/u, '.cjs');
+  if (/\.mts$/u.test(normalized)) return normalized.replace(/\.mts$/u, '.mjs');
+  return request;
+}
+
+function rewriteGoalContractCompiledRuntime(text, relativePath) {
+  if (portable(relativePath) !== 'commands/goal-contract.ts') return text;
+  const startMarker = '/* goal-contract-source-runtime:start */';
+  const endMarker = '/* goal-contract-source-runtime:end */';
+  const startIndex = text.indexOf(startMarker);
+  const endIndex = text.indexOf(endMarker);
+  if (startIndex < 0 || endIndex < startIndex) {
+    throw new Error('goal-contract runtime mode markers missing');
+  }
+  const replacement = [
+    'const SOURCE_ROOT = PACKAGE_ROOT;',
+    'const PARTITION_ASSET_ROOT = PACKAGE_ROOT;',
+    'function loadDistModule(relativePath) {',
+    "    return require(path.join(PACKAGE_ROOT, 'dist', relativePath));",
+    '}',
+    'function loadPartitionModule(relativePath) {',
+    '    return loadDistModule(relativePath);',
+    '}',
+  ].join('\n');
+  return `${text.slice(0, startIndex)}${replacement}${text.slice(
+    endIndex + endMarker.length
+  )}`;
+}
+
+function rewritePackageRuntimeImports(text, relativePath) {
+  const rewrittenImports = text
+    .replace(/(require\(\s*['"])([^'"]+)(['"]\s*\))/gu, (_match, start, request, end) =>
+      `${start}${rewritePackageRuntimeRequest(request)}${end}`
+    )
+    .replace(/(from\s+['"])([^'"]+)(['"])/gu, (_match, start, request, end) =>
+      `${start}${rewritePackageRuntimeRequest(request)}${end}`
+    );
+  const rewritten = rewriteGoalContractCompiledRuntime(
+    rewrittenImports,
+    relativePath
+  );
+  if (portable(relativePath) !== 'utils/goal-contract/execution-projection.ts') {
+    return rewritten;
+  }
+  const repositoryRootExpression =
+    "path.resolve(__dirname, '..', '..', '..', '..', '..')";
+  const packageRootExpression = "path.resolve(__dirname, '..', '..', '..')";
+  const occurrenceCount =
+    rewritten.split(repositoryRootExpression).length - 1;
+  if (occurrenceCount !== 1) {
+    throw new Error(
+      `execution projection asset root rewrite mismatch: ${occurrenceCount}`
+    );
+  }
+  return rewritten.replace(repositoryRootExpression, packageRootExpression);
 }
 
 function rewriteSourceAuthorityRuntimeImports(text, relativePath) {
@@ -570,12 +724,29 @@ function writeRuntimeBuildAuthorityReceipt() {
     'scripts',
     'requirements-contract-runtime-build-authority.js'
   ));
-  const receipt = authority.createRuntimeBuildAuthorityReceipt({
-    packageRoot,
-    runtimeAssetManifestPath: runtimeManifestPath,
-    buildScriptPath: __filename,
-    dependencyLockPath: path.join(repoRoot, 'package-lock.json'),
-  });
+  const packageAssetEntries = packageBmadRequiredFiles
+    .map((relativePath) => ({
+      source: `_bmad/${portable(relativePath)}`,
+      target: `_bmad/${portable(relativePath)}`,
+      sourceHash: sha256File(path.join(repoBmadRoot, relativePath)),
+      targetHash: sha256File(path.join(packageBmadRoot, relativePath)),
+      owner: 'package-root-_bmad',
+    }))
+    .sort((left, right) => left.target.localeCompare(right.target));
+  const packageAssetSetHash = `sha256:${createHash('sha256')
+    .update(JSON.stringify(packageAssetEntries))
+    .digest('hex')}`;
+  const receipt = {
+    ...authority.createRuntimeBuildAuthorityReceipt({
+      packageRoot,
+      runtimeAssetManifestPath: runtimeManifestPath,
+      buildScriptPath: __filename,
+      dependencyLockPath: path.join(repoRoot, 'package-lock.json'),
+    }),
+    packageAssetCount: packageAssetEntries.length,
+    packageAssetSetHash,
+    packageAssetEntries,
+  };
   fs.writeFileSync(
     runtimeBuildAuthorityReceiptPath,
     `${JSON.stringify(receipt, null, 2)}\n`,
@@ -609,76 +780,84 @@ function duplicateHashGroupCount() {
   return [...groups.values()].filter((files) => files.length > 1).length;
 }
 
-ensurePackageBmadOwner();
-runSourceAuthorityTemplateLint();
-removeTree(packageDistRoot);
+acquirePackageBuildLock(packageBuildLockDir);
+try {
+  ensurePackageBmadOwner();
+  runSourceAuthorityTemplateLint();
+  removeTree(packageDistRoot);
 
-const packageTypeScriptFiles = collectPackageTypeScriptFiles();
-const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles();
-const staticRuntimeFiles = collectStaticRuntimeFiles();
-const declaredAssets = sourceAuthorityAssetManifest();
+  const packageTypeScriptFiles = collectPackageTypeScriptFiles();
+  const sourceAuthorityTypeScriptFiles = collectSourceAuthorityTypeScriptFiles();
+  const staticRuntimeFiles = collectStaticRuntimeFiles();
+  const declaredAssets = sourceAuthorityAssetManifest();
 
-for (const relativePath of packageTypeScriptFiles) {
-  const source = path.join(packageSourceRoot, relativePath);
-  const target = path.join(packageDistRoot, packageRuntimeDistRelativePath(relativePath));
-  compileTypeScriptFile({
-    source,
-    target,
-    relativePath,
-    purpose: 'package-runtime-compiled-module',
-    consumer: 'bmad-speckit-cli',
+  for (const relativePath of packageTypeScriptFiles) {
+    const source = path.join(packageSourceRoot, relativePath);
+    const target = path.join(packageDistRoot, packageRuntimeDistRelativePath(relativePath));
+    compileTypeScriptFile({
+      source,
+      target,
+      relativePath,
+      rewrite: (output) => rewritePackageRuntimeImports(output, relativePath),
+      purpose: 'package-runtime-compiled-module',
+      consumer: 'bmad-speckit-cli',
+    });
+  }
+
+  for (const relativePath of staticRuntimeFiles) copyStaticRuntimeFile(relativePath);
+
+  for (const relativePath of sourceAuthorityTypeScriptFiles) {
+    const source = path.join(sourceRoot, relativePath);
+    const distRelativePath = sourceAuthorityDistRelativePath(relativePath);
+    const target = path.join(distRoot, distRelativePath);
+    compileTypeScriptFile({
+      source,
+      target,
+      relativePath,
+      rewrite: (output) => rewriteSourceAuthorityRuntimeImports(output, distRelativePath),
+      purpose: 'source-authority-compiled-module',
+      consumer: 'main-agent-source-authority',
+    });
+  }
+
+  for (const asset of declaredAssets) copyDeclaredAsset(asset);
+
+  const actionBindingManifestModule = require(path.join(
+    distRoot,
+    'source-authority',
+    'scripts',
+    'requirements-contract-package-runtime-action-binding-manifest.js'
+  ));
+  actionBindingManifestModule.publishPackageRuntimeActionBindingManifest(repoRoot);
+  publishRequirementsContractDerivedRegistries();
+  const bundledRuntimeSync = require(path.join(
+    distRoot,
+    'source-authority',
+    'scripts',
+    'requirements-contract-bundled-runtime-sync.js'
+  )).syncBundledWorkspaceRuntime({
+    repoRoot,
+    packageRoot,
   });
+
+  writeRuntimeManifest();
+  const buildAuthorityReceipt = writeRuntimeBuildAuthorityReceipt();
+  const forbiddenPathHits = assertNoForbiddenDistPaths();
+  assertManifestOwnsDist();
+  const outputFiles = filesBelow(packageDistRoot).length;
+  const duplicateHashGroups = duplicateHashGroupCount();
+
+  process.stdout.write(
+    `built main-agent dist outputFiles=${outputFiles} manifestFiles=${runtimeManifestEntries.length} ` +
+    `forbiddenPathHits=${forbiddenPathHits} duplicateHashGroups=${duplicateHashGroups} ` +
+      `packageTs=${packageTypeScriptFiles.length} sourceAuthorityTs=${sourceAuthorityTypeScriptFiles.length} ` +
+      `staticRuntime=${staticRuntimeFiles.length} declaredAssets=${declaredAssets.length} ` +
+      `packageAssetCount=${buildAuthorityReceipt.packageAssetCount} ` +
+      `packageAssetSetHash=${buildAuthorityReceipt.packageAssetSetHash} ` +
+      `bundledRuntimePackages=${bundledRuntimeSync.packageCount} ` +
+      `bundledRuntimeFiles=${bundledRuntimeSync.fileCount} ` +
+      `distBuildHash=${buildAuthorityReceipt.distBuildHash}\n`
+  );
+} finally {
+  removeTree(packageBuildLockDir);
 }
-
-for (const relativePath of staticRuntimeFiles) copyStaticRuntimeFile(relativePath);
-
-for (const relativePath of sourceAuthorityTypeScriptFiles) {
-  const source = path.join(sourceRoot, relativePath);
-  const distRelativePath = sourceAuthorityDistRelativePath(relativePath);
-  const target = path.join(distRoot, distRelativePath);
-  compileTypeScriptFile({
-    source,
-    target,
-    relativePath,
-    rewrite: (output) => rewriteSourceAuthorityRuntimeImports(output, distRelativePath),
-    purpose: 'source-authority-compiled-module',
-    consumer: 'main-agent-source-authority',
-  });
-}
-
-for (const asset of declaredAssets) copyDeclaredAsset(asset);
-
-const actionBindingManifestModule = require(path.join(
-  distRoot,
-  'source-authority',
-  'scripts',
-  'requirements-contract-package-runtime-action-binding-manifest.js'
-));
-actionBindingManifestModule.publishPackageRuntimeActionBindingManifest(repoRoot);
-publishRequirementsContractDerivedRegistries();
-const bundledRuntimeSync = require(path.join(
-  distRoot,
-  'source-authority',
-  'scripts',
-  'requirements-contract-bundled-runtime-sync.js'
-)).syncBundledWorkspaceRuntime({
-  repoRoot,
-  packageRoot,
-});
-
-writeRuntimeManifest();
-const buildAuthorityReceipt = writeRuntimeBuildAuthorityReceipt();
-const forbiddenPathHits = assertNoForbiddenDistPaths();
-assertManifestOwnsDist();
-const outputFiles = filesBelow(packageDistRoot).length;
-const duplicateHashGroups = duplicateHashGroupCount();
-
-process.stdout.write(
-  `built main-agent dist outputFiles=${outputFiles} manifestFiles=${runtimeManifestEntries.length} ` +
-  `forbiddenPathHits=${forbiddenPathHits} duplicateHashGroups=${duplicateHashGroups} ` +
-    `packageTs=${packageTypeScriptFiles.length} sourceAuthorityTs=${sourceAuthorityTypeScriptFiles.length} ` +
-    `staticRuntime=${staticRuntimeFiles.length} declaredAssets=${declaredAssets.length} ` +
-    `bundledRuntimePackages=${bundledRuntimeSync.packageCount} ` +
-    `bundledRuntimeFiles=${bundledRuntimeSync.fileCount} ` +
-    `distBuildHash=${buildAuthorityReceipt.distBuildHash}\n`
-);

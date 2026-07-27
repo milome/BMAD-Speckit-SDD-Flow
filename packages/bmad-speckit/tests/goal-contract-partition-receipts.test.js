@@ -8,10 +8,21 @@ const { spawnSync } = require('node:child_process');
 
 const { partition } = require('../src/commands/goal-contract.ts');
 const {
+  assertCurrentPartitionRuntimeEpoch,
+  buildUnavailableSequenceApplicabilityReceipt,
+  derivePartitionCapabilityState,
   finalizePartitionRun,
   readValidatedPartitionReceipt,
+  resolveAssetRoot,
+  writeSequenceApplicabilityBoundaryReceipt,
   writeValidatedPartitionReceipt,
 } = require('../src/utils/goal-contract/partition-receipts.ts');
+const {
+  stableStringify,
+} = require('../src/utils/large-document-writer/receipts.ts');
+const {
+  decideSequenceApplicability,
+} = require('../src/utils/goal-contract/sequence-applicability.ts');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const SCHEMA_ROOT = path.join(REPO_ROOT, '_bmad', 'shared', 'goal-contract');
@@ -41,6 +52,45 @@ const hash = (value) =>
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'partition-receipts-'));
+}
+
+function writeRuntimeBuildEvidence(root) {
+  const packageRoot = path.join(root, 'package');
+  const assetRelativePath =
+    '_bmad/shared/goal-contract/goal-contract-partition-policy.json';
+  const assetPath = path.join(packageRoot, assetRelativePath);
+  fs.mkdirSync(path.dirname(assetPath), { recursive: true });
+  fs.writeFileSync(assetPath, '{"policyVersion":"test"}\n', 'utf8');
+  const assetHash = createHash('sha256')
+    .update(fs.readFileSync(assetPath))
+    .digest('hex');
+  const packageAssetEntries = [
+    {
+      source: assetRelativePath,
+      target: assetRelativePath,
+      sourceHash: assetHash,
+      targetHash: assetHash,
+      owner: 'package-root-_bmad',
+    },
+  ];
+  const receipt = {
+    schemaVersion: 'bmad-speckit-runtime-build-authority/v1',
+    decision: 'pass',
+    packageAssetCount: packageAssetEntries.length,
+    packageAssetSetHash: `sha256:${createHash('sha256')
+      .update(JSON.stringify(packageAssetEntries))
+      .digest('hex')}`,
+    packageAssetEntries,
+  };
+  const receiptPath = path.join(
+    packageRoot,
+    'dist',
+    'main-agent',
+    'runtime-build-authority-receipt.json'
+  );
+  fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
+  fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  return { packageRoot, receiptPath };
 }
 
 function writeSource(root) {
@@ -185,6 +235,176 @@ describe('strict partition receipts', () => {
       assert.ok(schema.required.includes('decision'));
       assert.ok(schema.required.includes('blockingReasons'));
     }
+  });
+
+  it('fails closed instead of resolving package assets from a consumer bait root', () => {
+    const root = tempRoot();
+    const packageRoot = path.join(
+      root,
+      'consumer',
+      'node_modules',
+      'bmad-speckit'
+    );
+    const dirname = path.join(packageRoot, 'dist', 'utils', 'goal-contract');
+    fs.mkdirSync(
+      path.join(root, 'consumer', '_bmad', 'shared', 'goal-contract'),
+      { recursive: true }
+    );
+
+    assert.throws(
+      () =>
+        resolveAssetRoot({
+          filename: path.join(dirname, 'partition-receipts.js'),
+          dirname,
+        }),
+      (error) => error.failureClass === 'partition_package_asset_root_missing'
+    );
+  });
+
+  it('persists required-unavailable Sequence evidence and derives capability state from paths', () => {
+    const root = tempRoot();
+    const runtimeBuild = writeRuntimeBuildEvidence(root);
+    const applicabilityReceipt = decideSequenceApplicability({
+      sourceSnapshotHash: `sha256:${'a'.repeat(64)}`,
+      semanticModelHash: `sha256:${'b'.repeat(64)}`,
+      traceGraphHash: `sha256:${'c'.repeat(64)}`,
+      architectureFacts: {
+        interfaceBoundary: true,
+        evidenceRefs: ['SOURCE-1'],
+      },
+      policyVersion: '1.0.0',
+    });
+    const methodologyProfileHash = `sha256:${'d'.repeat(64)}`;
+    const payload = buildUnavailableSequenceApplicabilityReceipt({
+      applicabilityReceipt,
+      methodologyProfileHash,
+    });
+    assert.equal(payload.decision, 'required');
+    assert.equal(payload.producerAvailability, 'unavailable');
+    assert.equal(payload.failureClass, 'sequence_closure_required_unavailable');
+    assert.deepEqual(payload.blockingReasons, [
+      'canonical_sequence_closure_producer_unavailable',
+    ]);
+    const written = writeSequenceApplicabilityBoundaryReceipt({
+      applicabilityReceipt,
+      methodologyProfileHash,
+      receiptsDir: path.join(root, 'receipts'),
+    });
+    const secondWritten = writeSequenceApplicabilityBoundaryReceipt({
+      applicabilityReceipt: decideSequenceApplicability({
+        sourceSnapshotHash: `sha256:${'e'.repeat(64)}`,
+        semanticModelHash: `sha256:${'f'.repeat(64)}`,
+        traceGraphHash: `sha256:${'1'.repeat(64)}`,
+        architectureFacts: {
+          interfaceBoundary: true,
+          evidenceRefs: ['SOURCE-2'],
+        },
+        policyVersion: '1.0.0',
+      }),
+      methodologyProfileHash,
+      receiptsDir: path.join(root, 'second-receipts'),
+    });
+    assert.deepEqual(
+      readValidatedPartitionReceipt(
+        written.path,
+        'goal-contract-sequence-applicability-receipt/v1'
+      ),
+      payload
+    );
+    assert.equal(
+      derivePartitionCapabilityState({
+        packageRoot: runtimeBuild.packageRoot,
+        runtimeBuildAuthorityReceiptPath: runtimeBuild.receiptPath,
+        selfHostingApplicabilityReceiptPaths: [
+          written.path,
+          secondWritten.path,
+        ],
+      }),
+      'Sequence-Required Capability Pending'
+    );
+    assert.throws(
+      () =>
+        derivePartitionCapabilityState({
+          p01ThroughP04Current: true,
+          p05aCoreCurrent: true,
+          currentMasterPlanApplicability: 'required',
+          p05bCurrent: false,
+      }),
+      (error) => error.failureClass === 'partition_capability_evidence_paths_missing'
+    );
+
+    const hashTampered = JSON.parse(fs.readFileSync(written.path, 'utf8'));
+    hashTampered.receiptHash = `sha256:${'0'.repeat(64)}`;
+    fs.writeFileSync(written.path, stableStringify(hashTampered), 'utf8');
+    assert.throws(
+      () =>
+        readValidatedPartitionReceipt(
+          written.path,
+          'goal-contract-sequence-applicability-receipt/v1'
+        ),
+      (error) =>
+        error.failureClass === 'sequence_applicability_receipt_hash_mismatch'
+    );
+
+    const freshnessTampered = JSON.parse(
+      fs.readFileSync(secondWritten.path, 'utf8')
+    );
+    freshnessTampered.freshnessRoot = hash('stale-freshness-root');
+    delete freshnessTampered.receiptHash;
+    freshnessTampered.receiptHash = hash(stableStringify(freshnessTampered));
+    fs.writeFileSync(
+      secondWritten.path,
+      stableStringify(freshnessTampered),
+      'utf8'
+    );
+    assert.throws(
+      () =>
+        readValidatedPartitionReceipt(
+          secondWritten.path,
+          'goal-contract-sequence-applicability-receipt/v1'
+        ),
+      (error) =>
+        error.failureClass ===
+        'sequence_applicability_receipt_freshness_mismatch'
+    );
+  });
+
+  it('rejects a current directory with a stale runtime epoch marker', () => {
+    const root = tempRoot();
+    const installedRoot = path.join(root, 'consumer', 'node_modules', 'package');
+    const marker = path.join(
+      installedRoot,
+      'dist',
+      'main-agent',
+      'runtime-build-authority-receipt.json'
+    );
+    fs.mkdirSync(path.dirname(marker), { recursive: true });
+    fs.writeFileSync(marker, '{}\n', 'utf8');
+    const startedAt = Date.now();
+    fs.utimesSync(marker, new Date(startedAt - 10_000), new Date(startedAt - 10_000));
+    fs.utimesSync(
+      installedRoot,
+      new Date(startedAt + 1_000),
+      new Date(startedAt + 1_000)
+    );
+
+    assert.throws(
+      () =>
+        assertCurrentPartitionRuntimeEpoch({
+          runRoot: root,
+          startedAt,
+          artifacts: [
+            {
+              path: installedRoot,
+              type: 'directory',
+              freshnessMarker:
+                'dist/main-agent/runtime-build-authority-receipt.json',
+            },
+          ],
+        }),
+      (error) =>
+        error.failureClass === 'partition_runtime_epoch_marker_stale'
+    );
   });
 
   it('writes canonical self-hashed receipts and rejects caller-authored authority', () => {

@@ -1,12 +1,58 @@
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const test = require('node:test');
+const { after, before, test } = require('node:test');
+const {
+  assertCurrentPartitionRuntimeEpoch,
+} = require('../src/utils/goal-contract/partition-receipts.ts');
 
 const packageRoot = path.resolve(__dirname, '..');
-const buildScript = path.join(packageRoot, 'scripts', 'build-main-agent-dist.cjs');
+let packageTestSession;
+
+function acquirePackageTestSessionLock(root) {
+  const lockDir = path.join(
+    root,
+    'node_modules',
+    '.package-test-session.lock'
+  );
+  fs.mkdirSync(path.dirname(lockDir), { recursive: true });
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 900_000) {
+    try {
+      fs.mkdirSync(lockDir);
+      return {
+        release() {
+          fs.rmSync(lockDir, { recursive: true, force: true });
+        },
+      };
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (
+        fs.existsSync(lockDir) &&
+        Date.now() - fs.statSync(lockDir).mtimeMs > 7_200_000
+      ) {
+        fs.rmSync(lockDir, { recursive: true, force: true });
+        continue;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+    }
+  }
+  throw new Error(`timed out acquiring package test session lock: ${lockDir}`);
+}
+
+before(
+  () => {
+    packageTestSession = acquirePackageTestSessionLock(packageRoot);
+  },
+  { timeout: 900_000 }
+);
+
+after(() => {
+  packageTestSession?.release();
+});
 
 function run(command, args, options = {}) {
   return spawnSync(command, args, {
@@ -40,15 +86,21 @@ function expectSuccess(result, label) {
 }
 
 function parsePackedPackage(stdout) {
-  const parsed = JSON.parse(stdout);
+  const jsonStart = stdout.indexOf('[');
+  assert.ok(jsonStart >= 0, `npm pack output missing JSON payload: ${stdout}`);
+  const parsed = JSON.parse(stdout.slice(jsonStart));
   assert.equal(Array.isArray(parsed), true);
   assert.equal(parsed.length, 1);
   return parsed[0];
 }
 
+function waitForNextEpoch() {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+}
+
 test(
   'binds clean dist build to fresh packed and installed runtime hashes',
-  { timeout: 300_000 },
+  { timeout: 600_000 },
   () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'main-agent-runtime-parity-'));
     const packRoot = path.join(tempRoot, 'pack');
@@ -72,27 +124,22 @@ test(
     };
 
     try {
-      expectSuccess(
-        run(process.execPath, [buildScript], { cwd: packageRoot }),
-        'clean main-agent dist build failed'
-      );
-      const buildAuthority = JSON.parse(
-        fs.readFileSync(
-          path.join(packageRoot, 'dist/main-agent/runtime-build-authority-receipt.json'),
-          'utf8'
-        )
-      );
-
+      const packStartedAt = Date.now();
       const pack = parsePackedPackage(
         expectSuccess(
           runNpm(
-            ['pack', '--ignore-scripts', '--json', '--pack-destination', packRoot],
-            { cwd: packageRoot, env: npmEnv }
+            ['pack', packageRoot, '--json', '--pack-destination', packRoot],
+            { cwd: packRoot, env: npmEnv, timeout: 300_000 }
           ),
           'fresh package pack failed'
         ).stdout
       );
       const tarballPath = path.join(packRoot, pack.filename);
+      assert.ok(fs.statSync(tarballPath).mtimeMs >= packStartedAt, 'packed tarball is stale');
+      const tarballHash = createHash('sha256')
+        .update(fs.readFileSync(tarballPath))
+        .digest('hex');
+      assert.match(tarballHash, /^[a-f0-9]{64}$/u);
       const packedPaths = pack.files.map((entry) => String(entry.path).replace(/\\/gu, '/'));
       assert.equal(
         packedPaths.some(
@@ -130,8 +177,17 @@ test(
         'fresh package extraction failed'
       );
       const packedPackageRoot = path.join(extractedRoot, 'package');
+      const buildAuthority = JSON.parse(
+        fs.readFileSync(
+          path.join(
+            packedPackageRoot,
+            'dist/main-agent/runtime-build-authority-receipt.json'
+          ),
+          'utf8'
+        )
+      );
       const runtimeIndexModule = require(path.join(
-        packageRoot,
+        packedPackageRoot,
         'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
       ));
       const packedRuntimeHash = runtimeIndexModule.packageRuntimeHashFor(packedPackageRoot);
@@ -142,7 +198,6 @@ test(
         runNpm(
           [
             'install',
-            '--ignore-scripts',
             '--no-audit',
             '--no-fund',
             '--no-package-lock',
@@ -156,6 +211,8 @@ test(
       );
       const installedRoot = path.join(consumerRoot, 'node_modules', 'bmad-speckit');
       assert.equal(fs.lstatSync(installedRoot).isSymbolicLink(), false);
+      assert.equal(fs.existsSync(path.join(installedRoot, 'src')), false);
+      assert.equal(fs.existsSync(path.join(installedRoot, 'tests')), false);
       const installedRuntimeIndexModule = require(path.join(
         installedRoot,
         'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
@@ -166,6 +223,13 @@ test(
         installedRuntimeIndexModule.createPackageRuntimeIndex(installedRoot).length;
 
       assert.match(buildAuthority.distBuildHash, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(buildAuthority.packageAssetSetHash, /^sha256:[a-f0-9]{64}$/u);
+      assert.equal(
+        buildAuthority.packageAssetSetHash,
+        `sha256:${createHash('sha256')
+          .update(JSON.stringify(buildAuthority.packageAssetEntries))
+          .digest('hex')}`
+      );
       assert.equal(buildAuthority.packageRuntimeHash, packedRuntimeHash);
       assert.equal(packedRuntimeHash, installedRuntimeHash);
       assert.equal(packedRuntimeFileCount, installedRuntimeFileCount);
@@ -183,6 +247,13 @@ test(
       assert.doesNotThrow(() =>
         require(path.join(installedRoot, 'dist/main-agent/index.js'))
       );
+      const installedGoalContract = require(path.join(
+        installedRoot,
+        'dist',
+        'commands',
+        'goal-contract.js'
+      ));
+      assert.equal(typeof installedGoalContract.partition, 'function');
       const classifier = require(path.join(
         installedRoot,
         'dist/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.js'
@@ -200,6 +271,106 @@ test(
         fs.existsSync(path.join(installedRoot, 'dist/main-agent/source-authority/_bmad')),
         false
       );
+      for (const entry of buildAuthority.packageAssetEntries) {
+        assert.equal(
+          createHash('sha256')
+            .update(fs.readFileSync(path.join(installedRoot, entry.target)))
+            .digest('hex'),
+          entry.targetHash,
+          `installed package asset drifted: ${entry.target}`
+        );
+      }
+      waitForNextEpoch();
+      const nextRoot = path.join(tempRoot, 'next-epoch');
+      const nextPackRoot = path.join(nextRoot, 'pack');
+      const nextConsumerRoot = path.join(nextRoot, 'consumer');
+      fs.mkdirSync(nextPackRoot, { recursive: true });
+      fs.mkdirSync(nextConsumerRoot, { recursive: true });
+      fs.writeFileSync(
+        path.join(nextConsumerRoot, 'package.json'),
+        `${JSON.stringify({
+          name: 'main-agent-runtime-parity-consumer-next',
+          version: '1.0.0',
+          private: true,
+        })}\n`,
+        'utf8'
+      );
+      const nextStartedAt = Date.now();
+      const nextPack = parsePackedPackage(
+        expectSuccess(
+          runNpm(
+            ['pack', packageRoot, '--json', '--pack-destination', nextPackRoot],
+            { cwd: nextPackRoot, env: npmEnv, timeout: 300_000 }
+          ),
+          'next package pack failed'
+        ).stdout
+      );
+      const nextTarballPath = path.join(nextPackRoot, nextPack.filename);
+      expectSuccess(
+        runNpm(
+          [
+            'install',
+            '--no-audit',
+            '--no-fund',
+            '--no-package-lock',
+            '--no-save',
+            '--install-links=false',
+            nextTarballPath,
+          ],
+          { cwd: nextConsumerRoot, env: npmEnv }
+        ),
+        'next package install failed'
+      );
+      const nextInstalledRoot = path.join(
+        nextConsumerRoot,
+        'node_modules',
+        'bmad-speckit'
+      );
+      const nextTarballHash = createHash('sha256')
+        .update(fs.readFileSync(nextTarballPath))
+        .digest('hex');
+      assert.doesNotThrow(() =>
+        assertCurrentPartitionRuntimeEpoch({
+          runRoot: nextRoot,
+          startedAt: nextStartedAt,
+          artifacts: [
+            {
+              path: nextTarballPath,
+              type: 'file',
+              expectedHash: nextTarballHash,
+            },
+            {
+              path: nextInstalledRoot,
+              type: 'directory',
+              freshnessMarker:
+                'dist/main-agent/runtime-build-authority-receipt.json',
+            },
+          ],
+        })
+      );
+      for (const stalePath of [tarballPath, installedRoot]) {
+        assert.throws(
+          () =>
+            assertCurrentPartitionRuntimeEpoch({
+              runRoot: nextRoot,
+              startedAt: nextStartedAt,
+              artifacts: [
+                {
+                  path: stalePath,
+                  type: fs.statSync(stalePath).isDirectory()
+                    ? 'directory'
+                    : 'file',
+                  freshnessMarker: fs.statSync(stalePath).isDirectory()
+                    ? 'dist/main-agent/runtime-build-authority-receipt.json'
+                    : undefined,
+                },
+              ],
+            }),
+          (error) =>
+            error.failureClass ===
+            'partition_runtime_epoch_artifact_outside_root'
+        );
+      }
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

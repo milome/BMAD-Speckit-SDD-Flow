@@ -314,6 +314,104 @@ const REQUIRED_AMEND13_ASSETS = [
     'projectRequirementsContractTerminalCloseout',
   ],
 ] as const;
+const REQUIRED_PARTITION_ASSETS = [
+  {
+    assetId: 'goal_contract_partition_methodology_profile',
+    version: 'partition-methodology-profile/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-methodology-profile.json',
+    assetKind: 'profile',
+  },
+  {
+    assetId: 'goal_contract_partition_methodology_profile_schema',
+    version: 'partition-methodology-profile/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-methodology-profile.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_sequence_applicability_receipt_schema',
+    version: 'goal-contract-sequence-applicability-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-sequence-applicability-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_semantic_provider_registry',
+    version: 'goal-contract-semantic-provider-registry/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-semantic-provider-registry.json',
+    assetKind: 'registry',
+  },
+  {
+    assetId: 'goal_contract_semantic_provider_registry_schema',
+    version: 'goal-contract-semantic-provider-registry/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-semantic-provider-registry.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_execution_projection_schema',
+    version: 'goal-contract-execution-projection/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-execution-projection.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_policy',
+    version: 'goal-contract-partition-policy/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-policy.json',
+    assetKind: 'profile',
+  },
+  {
+    assetId: 'goal_contract_partition_policy_schema',
+    version: 'goal-contract-partition-policy/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-policy.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_manifest_schema',
+    version: 'goal-contract-partition-manifest/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-manifest.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_analysis_receipt_schema',
+    version: 'goal-contract-partition-analysis-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-analysis-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_global_coverage_receipt_schema',
+    version: 'goal-contract-partition-global-coverage-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-global-coverage-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_selection_receipt_schema',
+    version: 'goal-contract-partition-selection-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-selection-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_dependency_compatibility_receipt_schema',
+    version: 'goal-contract-dependency-compatibility-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-dependency-compatibility-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_child_coverage_receipt_schema',
+    version: 'goal-contract-partition-child-coverage-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-child-coverage-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_child_generation_receipt_schema',
+    version: 'goal-contract-partition-child-generation-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-child-generation-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_release_gate_receipt_schema',
+    version: 'goal-contract-partition-release-gate-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-release-gate-receipt.schema.json',
+    assetKind: 'schema',
+  },
+] as const;
 
 function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
@@ -414,5 +512,22 @@ describe('requirements contract canonical assets manifest', () => {
       'projectRequirementsContractTerminalCloseout',
       'renderRequirementsContractTerminalCloseout',
     ]);
+  });
+
+  it('registers every partition runtime authority asset with current bytes', () => {
+    expect(existsSync(MANIFEST_PATH), 'canonical assets manifest is missing').toBe(true);
+    if (!existsSync(MANIFEST_PATH)) return;
+
+    const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as CanonicalAssetsManifest;
+    const assets = new Map(manifest.assets.map((asset) => [asset.assetId, asset]));
+
+    for (const expected of REQUIRED_PARTITION_ASSETS) {
+      expect(assets.get(expected.assetId)).toMatchObject({
+        ...expected,
+        role: expected.assetId,
+        authorityClass: 'deterministic_contract',
+        sha256: fileHash(path.resolve(ROOT, expected.path)),
+      });
+    }
   });
 });

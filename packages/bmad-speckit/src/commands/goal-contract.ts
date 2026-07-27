@@ -6,22 +6,14 @@ const path = require('node:path');
 export type GoalContractCommandModule = never;
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
-const SOURCE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
-const PARTITION_ASSET_ROOT = fs.existsSync(
-  path.join(
-    PACKAGE_ROOT,
-    '_bmad',
-    'shared',
-    'goal-contract',
-    'goal-contract-partition-methodology-profile.json'
-  )
-)
-  ? PACKAGE_ROOT
-  : SOURCE_ROOT;
 
 function firstExistingPath(candidates) {
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
 }
+
+/* goal-contract-source-runtime:start */
+const SOURCE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+const PARTITION_ASSET_ROOT = SOURCE_ROOT;
 
 function loadDistModule(relativePath) {
   return require(path.join(PACKAGE_ROOT, 'dist', relativePath));
@@ -30,32 +22,16 @@ function loadDistModule(relativePath) {
 function loadPartitionModule(relativePath) {
   const sourceBase = path.join(PACKAGE_ROOT, 'src', relativePath);
   const distBase = path.join(PACKAGE_ROOT, 'dist', relativePath);
-  const sourceRepositoryMode =
-    !fs.existsSync(
-      path.join(
-        PACKAGE_ROOT,
-        '_bmad',
-        'shared',
-        'goal-contract',
-        'goal-contract-partition-methodology-profile.json'
-      )
-    ) && fs.existsSync(`${sourceBase}.ts`);
-  const candidates =
-    __filename.endsWith('.ts') || sourceRepositoryMode
-    ? [
-        `${sourceBase}.ts`,
-        path.join(sourceBase, 'index.ts'),
-        `${distBase}.js`,
-        path.join(distBase, 'index.js'),
-      ]
-    : [
-        `${distBase}.js`,
-        path.join(distBase, 'index.js'),
-        `${sourceBase}.ts`,
-        path.join(sourceBase, 'index.ts'),
-      ];
-  return require(firstExistingPath(candidates));
+  return require(
+    firstExistingPath([
+      `${sourceBase}.ts`,
+      path.join(sourceBase, 'index.ts'),
+      `${distBase}.js`,
+      path.join(distBase, 'index.js'),
+    ])
+  );
 }
+/* goal-contract-source-runtime:end */
 
 function loadWholeSourceDependencies() {
   const { safeWriteText, sha256File } = loadDistModule('utils/large-document-writer');
@@ -458,11 +434,13 @@ function resolvePartitionReceiptPath(receiptsDir, receiptPath) {
 }
 
 function selectedCommandRecords(graphInput, commandIds) {
-  const records = new Map<string, any>();
+  const records = new Map<string, Record<string, unknown>>();
   for (const command of Object.values(graphInput.commands || {}).flat()) {
-    const record = command as Record<string, any>;
+    const record = command as Record<string, unknown>;
     const commandId = record?.commandId || record?.id;
-    if (commandId && !records.has(commandId)) records.set(commandId, command);
+    if (typeof commandId === 'string' && !records.has(commandId)) {
+      records.set(commandId, record);
+    }
   }
   return commandIds.map((commandId) => {
     const command = records.get(commandId);
@@ -924,23 +902,254 @@ function assertValidDerivedView(view, validate) {
   return validation;
 }
 
-function deriveStructuredViews({ snapshot, extracted, repositoryFacts, validators }) {
+function normalizeBoundedPermissionText(text) {
+  return String(text)
+    .replace(/不允许/gu, '禁止')
+    .replace(
+      /允许一次(?=\s*(?:bounded fresh tarball[^\n]*npm install --no-save|新?\s*(?:Auditor|Judge)))/gu,
+      '许可一次'
+    )
+    .replace(
+      /只允许(?=\s*(?:`[^`]+`|通过 deterministic audit units|一个 semantic Judge invocation|：))/gu,
+      '只许可'
+    )
+    .replace(
+      /才允许(?=\s*(?:hard-cut|authoritative confirmation|atomic acceptance))/gu,
+      '才许可'
+    )
+    .replace(/表示允许(?=调用 Judge)/gu, '表示许可')
+    .replace(/允许(?=\s*`requestedModel`\s*缺失)/gu, '许可')
+    .replace(/允许后(?=\s*发生)/gu, '许可后')
+    .replace(
+      /可以(?=\s*(?:审阅和修订|写 execution evidence|选择 (?:Claude CLI|Codex CLI|OpenAI-compatible HTTP|Anthropic-compatible HTTP)|使用 (?:OpenAI-compatible|Anthropic-compatible)|在不改 production code|追溯到|在 crash recovery 后复用|产生后续修复轮|去重|作为独立 oracle|进行只读搜索|打开 Judge))/gu,
+      '能够'
+    )
+    .replace(
+      /\boptional(?=\s+draft preview\s+必须明确标记 non-authoritative)/giu,
+      'conditional'
+    );
+}
+
+function commandClassificationSnapshot(snapshot) {
+  const content = snapshot.segments[0].content;
+  const normalized = normalizeBoundedPermissionText(content);
+  if (normalized === content) return snapshot;
+  return {
+    ...snapshot,
+    segments: [{ ...snapshot.segments[0], content: normalized }],
+  };
+}
+
+function sourceHeadingPaths(lines) {
+  const stack = [];
+  return lines.map((line) => {
+    const heading = /^(#{1,6})\s+(.+?)\s*$/u.exec(line);
+    if (heading) {
+      const level = heading[1].length;
+      while (stack.length > 0 && stack.at(-1).level >= level) stack.pop();
+      stack.push({ level, title: heading[2].trim() });
+    }
+    return stack.map((entry) => entry.title);
+  });
+}
+
+function originalObligationText(lines, obligation) {
+  const selected = lines.slice(obligation.lineStart - 1, obligation.lineEnd);
+  if (selected.length === 1) {
+    const heading = /^(#{1,6})\s+(.+?)\s*$/u.exec(selected[0]);
+    if (heading) return heading[2].trim();
+  }
+  return selected.join('\n').trim();
+}
+
+function fallbackStructuredKind(headingPath, currentKind) {
+  const nearest = String(headingPath.at(-1) || '').toLowerCase();
+  if (/completion|acceptance/u.test(nearest)) return 'completion_criteria';
+  if (/commands?/u.test(nearest)) return 'command_block';
+  if (/evidence|receipt/u.test(nearest)) return 'observability';
+  if (/implementation tasks?|task breakdown/u.test(nearest)) {
+    return 'heading_execution_segment';
+  }
+  return currentKind === 'declared_execution_task'
+    ? 'heading_requirement'
+    : currentKind;
+}
+
+function restoreCommandExtractionAuthority({
+  snapshot,
+  extracted,
+  canonicalSourceObligationGraph,
+  hashSourceObligationGraph,
+}) {
+  const lines = String(snapshot.segments[0].content)
+    .replace(/\r\n/gu, '\n')
+    .replace(/\r/gu, '\n')
+    .split('\n');
+  const headingPaths = sourceHeadingPaths(lines);
+  const restored = extracted.sourceObligations.map((obligation) => {
+    const rawLine = lines[obligation.lineStart - 1] || '';
+    const text = originalObligationText(lines, obligation);
+    const headingPath = [
+      ...(headingPaths[obligation.lineStart - 1] || obligation.headingPath),
+    ];
+    const localizedTaskHeading =
+      /^#{1,6}\s+([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+)\s*[:：]/u.exec(
+        rawLine
+      );
+    const listDeclaration =
+      /^(?:\s*[-*]|\s*\d+\.)\s+(\[[ xX]\]\s*)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(
+        rawLine
+      );
+    const listRemainder = listDeclaration
+      ? rawLine.slice(listDeclaration[0].length)
+      : '';
+    const taskDeclarationSection =
+      /^(?:implementation tasks?|implementation task breakdown|task breakdown)$/iu.test(
+        String(headingPath.at(-1) || '').trim()
+      );
+    const demoteBareReference =
+      obligation.declaredId &&
+      listDeclaration &&
+      !listDeclaration[1] &&
+      !/^\s*[:：]/u.test(listRemainder) &&
+      !taskDeclarationSection;
+    const declaredId = localizedTaskHeading
+      ? localizedTaskHeading[1]
+      : demoteBareReference
+        ? null
+        : obligation.declaredId
+          ? obligation.id
+          : null;
+    const id =
+      declaredId ||
+      `SRC-${sha256Text(
+        `${snapshot.aggregateHash}:${obligation.lineStart}:${text}`
+      )
+        .slice(7, 19)
+        .toUpperCase()}`;
+    const textHash = sha256Text(text);
+    return {
+      ...obligation,
+      id,
+      declaredId: Boolean(declaredId),
+      kind: localizedTaskHeading
+        ? 'declared_execution_task'
+        : demoteBareReference
+          ? fallbackStructuredKind(headingPath, obligation.kind)
+          : obligation.kind,
+      headingPath,
+      textHash,
+      exactText: text,
+      text,
+      summary: `sourceRef=${obligation.sourcePlanPath}:${obligation.lineStart}-${obligation.lineEnd}; sourceKind=${obligation.kind}; sourceTextHash=${textHash}`,
+    };
+  });
+  const declaredIds = restored
+    .filter((obligation) => obligation.declaredId)
+    .map((obligation) => obligation.id);
+  const duplicateIds = uniqueStrings(
+    declaredIds.filter((id, index) => declaredIds.indexOf(id) !== index)
+  );
+  if (duplicateIds.length > 0) {
+    throw partitionFailure('source_obligation_id_duplicate', { duplicateIds });
+  }
+  const knownIds = new Set(restored.map((obligation) => obligation.id));
+  const unknownDependencies = restored.flatMap((obligation) =>
+    (obligation.dependencyRefs || [])
+      .filter((dependencyId) => !knownIds.has(dependencyId))
+      .map((dependencyId) => ({ sourceId: obligation.id, dependencyId }))
+  );
+  if (unknownDependencies.length > 0) {
+    throw partitionFailure('source_obligation_dependency_unknown', {
+      unknownDependencies,
+    });
+  }
+  const sourceObligationGraph = canonicalSourceObligationGraph({
+    sourceSnapshotHash: snapshot.aggregateHash,
+    sourceObligations: restored,
+  });
+  return {
+    ...extracted,
+    sourceObligations: restored,
+    sourceObligationGraph,
+    sourceObligationGraphHash: hashSourceObligationGraph(
+      sourceObligationGraph
+    ),
+  };
+}
+
+function extractCommandSourceObligations({
+  snapshot,
+  extractSourceObligations,
+  canonicalSourceObligationGraph,
+  hashSourceObligationGraph,
+  findNonDeterministicPhrase,
+}) {
+  const extracted = extractSourceObligations({
+    snapshot: commandClassificationSnapshot(snapshot),
+  });
+  const ambiguousLocalizedObligation = extracted.sourceObligations.find(
+    (obligation) =>
+      (obligation.headingPath || []).some((heading) =>
+        /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+\s*[:：]/u.test(String(heading))
+      ) && findNonDeterministicPhrase(obligation.text)
+  );
+  if (ambiguousLocalizedObligation) {
+    throw partitionFailure('source_obligation_classification_ambiguous', {
+      sourceId: ambiguousLocalizedObligation.id,
+      matchedPhrase: findNonDeterministicPhrase(
+        ambiguousLocalizedObligation.text
+      ),
+      sourceExcerpt: String(ambiguousLocalizedObligation.text).slice(0, 500),
+    });
+  }
+  return restoreCommandExtractionAuthority({
+    snapshot,
+    extracted,
+    canonicalSourceObligationGraph,
+    hashSourceObligationGraph,
+  });
+}
+
+function selectCommandStructuredBindings(sourceObligations) {
+  const applicable = sourceObligations.filter(
+    (obligation) => obligation.applicabilityState === 'applicable'
+  );
+  const tasks = applicable.filter(
+    (obligation) => obligation.kind === 'declared_execution_task'
+  );
+  const select = (primaryKind, fallbackKind) => {
+    const primary = applicable.filter(
+      (obligation) => obligation.kind === primaryKind
+    );
+    if (primary.length > 0 || tasks.length === 0) return primary;
+    return applicable.filter(
+      (obligation) => obligation.kind === fallbackKind
+    );
+  };
+  return {
+    tasks,
+    acceptance: select('acceptance_condition', 'completion_criteria'),
+    commands: select('verification_command', 'command_block'),
+    evidence: select('evidence_contract', 'observability'),
+  };
+}
+
+function deriveStructuredViews({
+  snapshot,
+  extracted,
+  repositoryFacts,
+  structuredBindings,
+  validators,
+}) {
   const applicable = extracted.sourceObligations.filter(
     (obligation) => obligation.applicabilityState === 'applicable'
   );
   const sourceIds = uniqueStrings(applicable.map((obligation) => obligation.id));
-  const declaredTasks = applicable.filter(
-    (obligation) => obligation.kind === 'declared_execution_task'
-  );
-  const declaredAcceptance = applicable.filter(
-    (obligation) => obligation.kind === 'acceptance_condition'
-  );
-  const declaredCommands = applicable.filter(
-    (obligation) => obligation.kind === 'verification_command'
-  );
-  const declaredEvidence = applicable.filter(
-    (obligation) => obligation.kind === 'evidence_contract'
-  );
+  const declaredTasks = structuredBindings.tasks;
+  const declaredAcceptance = structuredBindings.acceptance;
+  const declaredCommands = structuredBindings.commands;
+  const declaredEvidence = structuredBindings.evidence;
   const taskIds = new Set(declaredTasks.map((obligation) => obligation.id));
   const tasks = declaredTasks.map((obligation, index) => ({
     id: obligation.id,
@@ -1277,8 +1486,13 @@ async function compilePartitionAuthority(args) {
   const { loadPartitionMethodologyProfile } = loadPartitionModule(
     'utils/goal-contract/partition-methodology-profile'
   );
-  const { extractSourceObligations } = loadPartitionModule(
-    'utils/goal-contract/source-obligation-extractor'
+  const {
+    canonicalSourceObligationGraph,
+    extractSourceObligations,
+    hashSourceObligationGraph,
+  } = loadPartitionModule('utils/goal-contract/source-obligation-extractor');
+  const { findNonDeterministicPhrase } = loadPartitionModule(
+    'utils/goal-contract/non-deterministic-source-validator'
   );
   const { assertCurrentPartitionPolicyBinding, loadPartitionPolicy } = loadPartitionModule(
     'utils/goal-contract/partition-policy'
@@ -1315,7 +1529,13 @@ async function compilePartitionAuthority(args) {
     packageRoot: PARTITION_ASSET_ROOT,
     policyPath: take(args, '--policy', null),
   });
-  const extracted = extractSourceObligations({ snapshot });
+  const extracted = extractCommandSourceObligations({
+    snapshot,
+    extractSourceObligations,
+    canonicalSourceObligationGraph,
+    hashSourceObligationGraph,
+    findNonDeterministicPhrase,
+  });
   const repositoryFactsPath = take(args, '--repository-facts', null);
   const repositoryFacts = loadRepositoryFacts({
     factsPath: repositoryFactsPath,
@@ -1324,11 +1544,24 @@ async function compilePartitionAuthority(args) {
       : sha256Text('repository-facts:not-provided'),
     allowlistedAnalyzers: ['repository-analyzer@1.0.0'],
   });
-  const derivationMode = selectSemanticDerivationMode({
-    sourceSnapshot: snapshot,
-    sourceObligations: extracted.sourceObligations,
-    semanticDerivationAllowed: policyBinding.policy.semanticDerivationAllowance,
-  });
+  const structuredBindings = selectCommandStructuredBindings(
+    extracted.sourceObligations
+  );
+  const hasCompleteStructuredBindings = Object.values(structuredBindings).every(
+    (bindings) => bindings.length > 0
+  );
+  const derivationMode = hasCompleteStructuredBindings
+    ? Object.freeze({
+        mode: 'structured_fast_path',
+        sourceSnapshotHash: snapshot.aggregateHash,
+        semanticProviderCallCount: 0,
+        missingStructuredBindings: [],
+      })
+    : selectSemanticDerivationMode({
+        sourceSnapshot: snapshot,
+        sourceObligations: extracted.sourceObligations,
+        semanticDerivationAllowed: policyBinding.policy.semanticDerivationAllowance,
+      });
   const validators = {
     validateAcceptanceEvidenceView,
     validateImplementationView,
@@ -1339,6 +1572,7 @@ async function compilePartitionAuthority(args) {
           snapshot,
           extracted,
           repositoryFacts,
+          structuredBindings,
           validators,
         })
       : await deriveSemanticViews({
@@ -1390,7 +1624,34 @@ async function compilePartitionAuthority(args) {
       validateSequenceConstraintInput,
     });
   } catch (error) {
-    Object.assign(error, boundaryContext);
+    let persistedBoundary = {};
+    if (error.failureClass === 'sequence_closure_required_unavailable') {
+      const requestedOut = take(args, '--out', null);
+      const receiptsDir = take(
+        args,
+        '--receipts-dir',
+        requestedOut
+          ? path.join(
+              path.dirname(path.resolve(requestedOut)),
+              '.goal-contract-receipts'
+            )
+          : path.join(path.dirname(sourcePath), '.goal-contract-receipts')
+      );
+      const {
+        writeSequenceApplicabilityBoundaryReceipt,
+      } = loadPartitionModule('utils/goal-contract/partition-receipts');
+      const persisted = writeSequenceApplicabilityBoundaryReceipt({
+        applicabilityReceipt: applicability,
+        methodologyProfileHash: methodology.methodologyProfileHash,
+        receiptsDir,
+      });
+      persistedBoundary = {
+        sequenceApplicabilityReceipt: persisted.payload,
+        sequenceApplicabilityReceiptPath: persisted.path,
+        sequenceApplicabilityReceiptHash: persisted.receiptHash,
+      };
+    }
+    Object.assign(error, boundaryContext, persistedBoundary);
     throw error;
   }
   let projection;
@@ -1542,6 +1803,12 @@ async function partition(args) {
     partitionSetHash: finalized.manifest.partitionSetHash,
     globalCoverageDecision: globalCoverage.decision,
     selectionReceiptCount: selections.length,
+    sequenceApplicability: authority.boundaryContext.sequenceApplicability,
+    sequenceApplicabilityReceipt:
+      authority.boundaryContext.sequenceApplicabilityReceipt,
+    semanticDerivationMode: authority.boundaryContext.semanticDerivationMode,
+    semanticProviderCallCount:
+      authority.boundaryContext.semanticProviderCallCount,
   });
 }
 
@@ -1661,6 +1928,18 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
       ...(error.sequenceApplicabilityReceipt
         ? {
             sequenceApplicabilityReceipt: error.sequenceApplicabilityReceipt,
+          }
+        : {}),
+      ...(error.sequenceApplicabilityReceiptPath
+        ? {
+            sequenceApplicabilityReceiptPath:
+              error.sequenceApplicabilityReceiptPath,
+          }
+        : {}),
+      ...(error.sequenceApplicabilityReceiptHash
+        ? {
+            sequenceApplicabilityReceiptHash:
+              error.sequenceApplicabilityReceiptHash,
           }
         : {}),
       ...(error.executionProjectionHash
