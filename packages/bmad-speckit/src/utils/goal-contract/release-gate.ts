@@ -430,6 +430,77 @@ function validateCompatibilityRequirements({
   };
 }
 
+const PARTITION_SEQUENCE_STATE_FIELDS = Object.freeze([
+  'sequenceMode',
+  'sequenceApplicability',
+  'sequenceCoverage',
+  'sequenceClosureStatus',
+  'childContractAuthority',
+]);
+
+function evaluatePartitionSequenceRelease({
+  binding = {},
+  childGeneration = {},
+  currentManifest = {},
+  projectionBinding = {},
+}) {
+  const blockingReasons = [];
+  const expectedSequenceState = {
+    sequenceMode: currentManifest?.sequenceMode || 'auto',
+    sequenceApplicability:
+      currentManifest?.sequenceApplicability || 'unresolved',
+    sequenceCoverage:
+      currentManifest?.sequenceCoverage || 'unresolved',
+    sequenceClosureStatus:
+      currentManifest?.sequenceClosureStatus || 'unresolved',
+    childContractAuthority:
+      currentManifest?.childContractAuthority || 'core_only',
+  };
+  const projectionState = {
+    sequenceMode: projectionBinding?.sequenceMode,
+    sequenceApplicability:
+      projectionBinding?.applicabilityDecision,
+    sequenceCoverage: projectionBinding?.sequenceCoverage,
+    sequenceClosureStatus:
+      projectionBinding?.sequenceClosureStatus,
+    childContractAuthority:
+      projectionBinding?.childContractAuthority,
+  };
+  if (
+    PARTITION_SEQUENCE_STATE_FIELDS.some(
+      (field) =>
+        binding?.[field] !== expectedSequenceState[field] ||
+        childGeneration?.[field] !== expectedSequenceState[field] ||
+        projectionState[field] !== expectedSequenceState[field]
+    )
+  ) {
+    blockingReasons.push('partition_sequence_state_not_current');
+  }
+  if (expectedSequenceState.childContractAuthority !== 'full') {
+    blockingReasons.push(
+      expectedSequenceState.sequenceApplicability === 'unresolved'
+        ? 'partition_sequence_applicability_unresolved'
+        : 'partition_sequence_coverage_excluded'
+    );
+  }
+  if (
+    expectedSequenceState.sequenceApplicability === 'required' &&
+    expectedSequenceState.sequenceCoverage === 'complete' &&
+    expectedSequenceState.sequenceClosureStatus !== 'compiled'
+  ) {
+    blockingReasons.push('partition_sequence_closure_not_compiled');
+  }
+  const canonicalBlockingReasons = unique(blockingReasons);
+  return Object.freeze({
+    ...expectedSequenceState,
+    decision:
+      canonicalBlockingReasons.length === 0 ? 'pass' : 'blocked',
+    componentDecision:
+      canonicalBlockingReasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons: canonicalBlockingReasons,
+  });
+}
+
 function evaluatePartitionRelease(input) {
   const blockingReasons = [];
   const binding = input.binding.fields;
@@ -440,6 +511,7 @@ function evaluatePartitionRelease(input) {
     policy: 'pass',
     projection: 'pass',
     manifest: 'pass',
+    sequence: 'pass',
     globalCoverage: 'pass',
     selection: 'pass',
     childCoverage: 'pass',
@@ -785,6 +857,15 @@ function evaluatePartitionRelease(input) {
   if (expectedSelection) {
     currentChildRecords(goalText, expectedSelection, blockingReasons);
   }
+  const sequenceRelease = evaluatePartitionSequenceRelease({
+    binding,
+    childGeneration,
+    currentManifest,
+    projectionBinding:
+      authority?.projection?.sequenceConstraintBinding || {},
+  });
+  blockingReasons.push(...sequenceRelease.blockingReasons);
+  componentDecisions.sequence = sequenceRelease.componentDecision;
 
   let dependencyHashes = {
     predecessorCompletionReceiptHashes: [],
@@ -851,6 +932,14 @@ function evaluatePartitionRelease(input) {
       childCoverageReceiptHash: childCoverageHash,
       childGenerationReceiptHash: childGenerationHash,
       goalContractHash,
+      sequenceMode: sequenceRelease.sequenceMode,
+      sequenceApplicability:
+        sequenceRelease.sequenceApplicability,
+      sequenceCoverage: sequenceRelease.sequenceCoverage,
+      sequenceClosureStatus:
+        sequenceRelease.sequenceClosureStatus,
+      childContractAuthority:
+        sequenceRelease.childContractAuthority,
       predecessorCompletionReceiptHashes:
         dependencyHashes.predecessorCompletionReceiptHashes,
       compatibilityReceiptHashes:
@@ -914,6 +1003,7 @@ function goalContractReleaseGateCommand(
 module.exports = {
   checkGoalContractReleaseGate,
   evaluateGoalContractRelease,
+  evaluatePartitionSequenceRelease,
   goalContractReleaseGateCommand,
   parseGoalContractBinding,
 };

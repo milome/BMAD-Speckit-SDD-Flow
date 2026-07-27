@@ -4,6 +4,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const {
+  evaluatePartitionSequenceRelease,
+} = require('../src/utils/goal-contract/release-gate.ts');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
 const SOURCE_COMMAND = path.join(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
@@ -37,6 +40,78 @@ function runSourceCommand(args) {
 function standaloneGenerateArgs(args) {
   return ['generate', '--entry', 'standalone_goal_contract', ...args];
 }
+
+describe('partition Sequence release authority', () => {
+  it('blocks core-only authority while allowing complete or inapplicable coverage', () => {
+    const cases = [
+      {
+        state: {
+          sequenceMode: 'disabled',
+          sequenceApplicability: 'not_applicable_with_proof',
+          sequenceCoverage: 'not_applicable',
+          sequenceClosureStatus: 'not_required',
+          childContractAuthority: 'full',
+        },
+        expectedDecision: 'pass',
+      },
+      {
+        state: {
+          sequenceMode: 'disabled',
+          sequenceApplicability: 'required',
+          sequenceCoverage: 'excluded',
+          sequenceClosureStatus: 'not_requested',
+          childContractAuthority: 'core_only',
+        },
+        expectedDecision: 'blocked',
+        expectedReason: 'partition_sequence_coverage_excluded',
+      },
+      {
+        state: {
+          sequenceMode: 'disabled',
+          sequenceApplicability: 'unresolved',
+          sequenceCoverage: 'unresolved',
+          sequenceClosureStatus: 'not_requested',
+          childContractAuthority: 'core_only',
+        },
+        expectedDecision: 'blocked',
+        expectedReason: 'partition_sequence_applicability_unresolved',
+      },
+      {
+        state: {
+          sequenceMode: 'auto',
+          sequenceApplicability: 'required',
+          sequenceCoverage: 'complete',
+          sequenceClosureStatus: 'compiled',
+          childContractAuthority: 'full',
+        },
+        expectedDecision: 'pass',
+      },
+    ];
+
+    for (const { state, expectedDecision, expectedReason } of cases) {
+      const result = evaluatePartitionSequenceRelease({
+        binding: state,
+        childGeneration: state,
+        currentManifest: state,
+        projectionBinding: {
+          sequenceMode: state.sequenceMode,
+          applicabilityDecision: state.sequenceApplicability,
+          sequenceCoverage: state.sequenceCoverage,
+          sequenceClosureStatus: state.sequenceClosureStatus,
+          childContractAuthority: state.childContractAuthority,
+        },
+      });
+
+      assert.equal(result.decision, expectedDecision);
+      assert.equal(result.componentDecision, expectedDecision);
+      if (expectedReason) {
+        assert.ok(result.blockingReasons.includes(expectedReason));
+      } else {
+        assert.deepEqual(result.blockingReasons, []);
+      }
+    }
+  });
+});
 
 function writeSourcePlan(root) {
   const sourcePath = path.join(root, 'source-plan.md');

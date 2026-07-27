@@ -126,6 +126,31 @@ describe('partition-bound goal contract generation', () => {
           'partition_child_generation_sequence_state_missing' &&
         error.field === 'sequenceMode'
     );
+
+    const release = runSourceCommand([
+      'release-gate',
+      '--goal', child,
+      '--source', run.source,
+      '--coverage', receipt.coverageReceiptPath,
+      '--generation', receipt.generationReceiptPath,
+      '--partition-manifest', run.activeManifestPath,
+      '--partition-id', partition.partitionId,
+      '--receipts-dir', run.receiptsDir,
+      '--json',
+    ]);
+    assert.equal(release.status, 0, release.stderr || release.stdout);
+    const releaseReceipt = JSON.parse(release.stdout);
+    assert.equal(releaseReceipt.decision, 'pass');
+    assert.equal(releaseReceipt.componentDecisions.sequence, 'pass');
+    for (const field of [
+      'sequenceMode',
+      'sequenceApplicability',
+      'sequenceCoverage',
+      'sequenceClosureStatus',
+      'childContractAuthority',
+    ]) {
+      assert.equal(releaseReceipt[field], run.manifest[field]);
+    }
   });
 
   it('renders only selected executable records and isolates inherited constraints', () => {
