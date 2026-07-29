@@ -30,6 +30,11 @@ const partitionManifestModulePath = __filename.endsWith('.ts')
 const { validatePartitionManifest } = require(
   partitionManifestModulePath
 );
+const { hashSequenceApplicabilityPayload } = require(
+  __filename.endsWith('.ts')
+    ? './sequence-applicability.ts'
+    : './sequence-applicability'
+);
 
 export type GoalContractPartitionReceiptsModule = never;
 
@@ -41,6 +46,7 @@ const RECEIPT_SCHEMA_IDS = new Set([
   'goal-contract-partition-child-coverage-receipt/v1',
   'goal-contract-partition-child-generation-receipt/v1',
   'goal-contract-partition-release-gate-receipt/v1',
+  'goal-contract-authority-supersession-receipt/v1',
 ]);
 const validators = new Map();
 
@@ -61,6 +67,97 @@ function assertStringArray(value, failureClass) {
     throw failure(failureClass);
   }
   return [...value].sort();
+}
+
+function createPendingChildCompilationReceipt({
+  partitionPlan,
+  childProjectionInput,
+  displayOrdinal,
+  childContractPath,
+  childContractBytes,
+}) {
+  if (
+    !partitionPlan ||
+    !childProjectionInput ||
+    !Number.isInteger(displayOrdinal) ||
+    displayOrdinal < 1 ||
+    typeof childContractPath !== 'string' ||
+    childContractPath.length === 0 ||
+    (!Buffer.isBuffer(childContractBytes) &&
+      typeof childContractBytes !== 'string')
+  ) {
+    throw failure('partition_child_compilation_input_invalid');
+  }
+  const expectedPartitionId =
+    partitionPlan.topologicalOrder?.[displayOrdinal - 1];
+  if (
+    expectedPartitionId !== childProjectionInput.partitionId ||
+    stableStringify(
+      partitionPlan.childProjectionInputs?.[displayOrdinal - 1]
+    ) !== stableStringify(childProjectionInput)
+  ) {
+    throw failure('partition_child_projection_mismatch');
+  }
+  const bytes = Buffer.isBuffer(childContractBytes)
+    ? childContractBytes
+    : Buffer.from(childContractBytes, 'utf8');
+  const compatibilityRequirementCount = (
+    partitionPlan.ownerConsumerRecords || []
+  ).filter((record) =>
+    (record.consumerPartitionIds || []).includes(
+      childProjectionInput.partitionId
+    )
+  ).length;
+  const payload = {
+    schemaVersion:
+      'goal-contract-pending-child-compilation-receipt/v1',
+    membershipStatus: 'pending',
+    displayOrdinal,
+    partitionId: childProjectionInput.partitionId,
+    childContractPath: String(childContractPath).replace(/\\/gu, '/'),
+    childContractHash: `sha256:${createHash('sha256')
+      .update(bytes)
+      .digest('hex')}`,
+    partitionPlanHash: partitionPlan.partitionPlanHash,
+    partitionSetHash: partitionPlan.partitionSetHash,
+    selectionHash: childProjectionInput.selectionHash,
+    goalContractHash: partitionPlan.goalContractHash,
+    sourceCompositionPolicyHash:
+      partitionPlan.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash:
+      partitionPlan.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash:
+      partitionPlan.sourceAuthorityBundleHash,
+    subordinateCoverageReceiptHashes: [
+      ...(childProjectionInput.subordinateCoverageReceiptHashes || []),
+    ],
+    namespacedObligations: structuredClone(
+      childProjectionInput.namespacedObligations || []
+    ),
+    namespaceRefs: [...(childProjectionInput.namespaceRefs || [])],
+    sourceArtifactRefs: [
+      ...(childProjectionInput.sourceArtifactRefs || []),
+    ],
+    specSpanRefs: [...(childProjectionInput.specSpanRefs || [])],
+    obligationRefs: [
+      ...(childProjectionInput.primarySourceObligationIds || []),
+      ...(childProjectionInput.namespacedObligations || []).map(
+        ({ declaredSourceId }) => declaredSourceId
+      ),
+    ].sort(),
+    governedPaths: [
+      ...(childProjectionInput.ownedArtifactPaths || []),
+    ],
+    dependencyPartitionIds: [
+      ...(childProjectionInput.dependencyPartitionIds || []),
+    ],
+    compatibilityRequirementCount,
+  };
+  return Object.freeze({
+    ...payload,
+    receiptHash: sha256Text(stableStringify(payload)),
+    childContractBytes: bytes.toString('utf8'),
+  });
 }
 
 function isStrictlyWithin(root, target) {
@@ -180,8 +277,11 @@ function derivePartitionCapabilityState(evidence) {
     if (receipt.decision === 'unresolved') {
       throw failure('partition_capability_sequence_applicability_unresolved');
     }
+    const sequenceRequired =
+      receipt.decision === 'required' ||
+      receipt.sequenceMode === 'required';
     if (
-      receipt.decision === 'required' &&
+      sequenceRequired &&
       (receipt.producerAvailability !== 'unavailable' ||
         receipt.failureClass !== 'sequence_closure_required_unavailable' ||
         !Array.isArray(receipt.blockingReasons) ||
@@ -192,7 +292,11 @@ function derivePartitionCapabilityState(evidence) {
       throw failure('partition_capability_required_boundary_invalid');
     }
   }
-  return receipts.some((receipt) => receipt.decision === 'required')
+  return receipts.some(
+    (receipt) =>
+      receipt.decision === 'required' ||
+      receipt.sequenceMode === 'required'
+  )
     ? 'Sequence-Required Capability Pending'
     : 'Partition Core Verified';
 }
@@ -295,13 +399,18 @@ function assertCurrentPartitionRuntimeEpoch({
 function buildUnavailableSequenceApplicabilityReceipt({
   applicabilityReceipt,
   methodologyProfileHash,
+  sequenceMode = 'auto',
 }) {
-  if (applicabilityReceipt?.decision !== 'required') {
+  if (
+    applicabilityReceipt?.decision !== 'required' &&
+    sequenceMode !== 'required'
+  ) {
     throw failure('sequence_unavailable_receipt_decision_invalid');
   }
   const semanticPayload = {
     ...applicabilityReceipt,
     methodologyProfileHash,
+    sequenceMode,
     producerAvailability: 'unavailable',
     failureClass: 'sequence_closure_required_unavailable',
     freshnessRoot: sha256Text(
@@ -311,6 +420,7 @@ function buildUnavailableSequenceApplicabilityReceipt({
         traceGraphHash: applicabilityReceipt.traceGraphHash,
         methodologyProfileHash,
         policyVersion: applicabilityReceipt.policyVersion,
+        sequenceMode,
       })
     ),
     reasonCodes: [
@@ -324,7 +434,61 @@ function buildUnavailableSequenceApplicabilityReceipt({
   delete semanticPayload.receiptHash;
   return Object.freeze({
     ...semanticPayload,
-    receiptHash: sha256Text(stableStringify(semanticPayload)),
+    receiptHash:
+      hashSequenceApplicabilityPayload(semanticPayload),
+  });
+}
+
+function writeSequenceApplicabilityReceipt({
+  applicabilityReceipt,
+  receiptsDir,
+}) {
+  if (
+    typeof receiptsDir !== 'string' ||
+    receiptsDir.length === 0 ||
+    !/^sha256:[0-9a-f]{64}$/u.test(
+      applicabilityReceipt?.receiptHash || ''
+    )
+  ) {
+    throw failure('sequence_applicability_receipt_root_missing');
+  }
+  const runId = `sequence-run-${applicabilityReceipt.receiptHash.slice(
+    'sha256:'.length
+  )}`;
+  const targetPath = path.join(
+    path.resolve(receiptsDir),
+    'sequence-runs',
+    runId,
+    'sequence-applicability.receipt.json'
+  );
+  const schemaId = applicabilityReceipt.schemaVersion;
+  const canonical = canonicalizeForSchema(schemaId, applicabilityReceipt);
+  if (fs.existsSync(targetPath)) {
+    const current = readValidatedPartitionReceipt(targetPath, schemaId);
+    const comparable = {
+      sequenceMode: 'auto',
+      ...canonical,
+    };
+    if (stableStringify(current) !== stableStringify(comparable)) {
+      throw failure('partition_run_identity_collision', {
+        targetPath: normalizePath(targetPath),
+      });
+    }
+    return Object.freeze({
+      runId,
+      path: normalizePath(targetPath),
+      receiptHash: sha256File(targetPath),
+      payload: canonical,
+    });
+  }
+  return Object.freeze({
+    runId,
+    ...writeImmutableReceipt({
+      schemaId,
+      targetPath,
+      payload: canonical,
+      writeReceipt: writeValidatedPartitionReceipt,
+    }),
   });
 }
 
@@ -332,6 +496,7 @@ function writeSequenceApplicabilityBoundaryReceipt({
   applicabilityReceipt,
   methodologyProfileHash,
   receiptsDir,
+  sequenceMode = 'auto',
 }) {
   if (typeof receiptsDir !== 'string' || receiptsDir.length === 0) {
     throw failure('sequence_unavailable_receipt_root_missing');
@@ -339,6 +504,7 @@ function writeSequenceApplicabilityBoundaryReceipt({
   const payload = buildUnavailableSequenceApplicabilityReceipt({
     applicabilityReceipt,
     methodologyProfileHash,
+    sequenceMode,
   });
   const runId = `sequence-run-${payload.freshnessRoot.slice('sha256:'.length)}`;
   const targetPath = path.join(
@@ -442,11 +608,16 @@ function validatePredecessorCompletionBinding(input) {
   ) {
     throw failure('compatibility_predecessor_partition_mismatch');
   }
-  if (declared.masterSourceHash !== input.masterSourceHash) {
-    throw failure('compatibility_predecessor_source_mismatch');
-  }
-  if (declared.sourceSnapshotHash !== input.sourceSnapshotHash) {
-    throw failure('compatibility_predecessor_snapshot_mismatch');
+  const modernSubcontractClosure =
+    declared.schemaVersion ===
+    'goal-contract-subcontract-closure-receipt/v1';
+  if (!modernSubcontractClosure) {
+    if (declared.masterSourceHash !== input.masterSourceHash) {
+      throw failure('compatibility_predecessor_source_mismatch');
+    }
+    if (declared.sourceSnapshotHash !== input.sourceSnapshotHash) {
+      throw failure('compatibility_predecessor_snapshot_mismatch');
+    }
   }
   if (declared.partitionManifestHash !== input.partitionManifestHash) {
     throw failure('compatibility_predecessor_manifest_mismatch');
@@ -463,10 +634,48 @@ function validatePredecessorCompletionBinding(input) {
   const observedPredecessorArtifactHash = sha256File(
     input.predecessorArtifactPath
   );
+  let declaredPredecessorArtifactHash =
+    declared.artifactHashes?.[input.sharedArtifactPath];
+  let predecessorCompletionReceiptHash = sha256File(
+    input.predecessorCompletionReceiptPath
+  );
+  if (modernSubcontractClosure) {
+    const evidence = input.predecessorSubcontractEvidence;
+    if (
+      !evidence ||
+      typeof evidence !== 'object' ||
+      evidence.schemaVersion !== 'goal-contract-subcontract-evidence/v1' ||
+      evidence.evidenceHash !== declared.subcontractEvidenceHash ||
+      evidence.partitionId !== declared.partitionId ||
+      evidence.partitionManifestHash !== declared.partitionManifestHash ||
+      evidence.decision !== 'pass' ||
+      !Array.isArray(evidence.governedFileManifest)
+    ) {
+      throw failure('compatibility_predecessor_evidence_invalid');
+    }
+    const normalizedSharedArtifactPath =
+      String(input.sharedArtifactPath).replace(/\\/gu, '/');
+    const governedRecords = evidence.governedFileManifest.filter(
+      (record) =>
+        record?.path === normalizedSharedArtifactPath &&
+        record?.existsAfter === true
+    );
+    if (governedRecords.length !== 1) {
+      throw failure('compatibility_predecessor_evidence_invalid');
+    }
+    declaredPredecessorArtifactHash =
+      governedRecords[0].sourceHashAfter;
+    if (
+      typeof declared.receiptHash !== 'string' ||
+      !/^sha256:[0-9a-f]{64}$/u.test(declared.receiptHash)
+    ) {
+      throw failure('compatibility_predecessor_completion_receipt_invalid');
+    }
+    predecessorCompletionReceiptHash = declared.receiptHash;
+  }
   if (
     input.predecessorArtifactHash !== observedPredecessorArtifactHash ||
-    declared.artifactHashes?.[input.sharedArtifactPath] !==
-      observedPredecessorArtifactHash
+    declaredPredecessorArtifactHash !== observedPredecessorArtifactHash
   ) {
     throw failure('compatibility_predecessor_artifact_hash_mismatch');
   }
@@ -482,9 +691,7 @@ function validatePredecessorCompletionBinding(input) {
   }
   return Object.freeze({
     predecessorArtifactHash: observedPredecessorArtifactHash,
-    predecessorCompletionReceiptHash: sha256File(
-      input.predecessorCompletionReceiptPath
-    ),
+    predecessorCompletionReceiptHash,
     currentArtifactHash: sha256File(input.currentArtifactPath),
   });
 }
@@ -907,7 +1114,8 @@ function readValidatedPartitionReceipt(targetPath, expectedSchemaId = null) {
   if (schemaId === 'goal-contract-sequence-applicability-receipt/v1') {
     const semanticPayload = structuredClone(canonical);
     delete semanticPayload.receiptHash;
-    const expectedReceiptHash = sha256Text(stableStringify(semanticPayload));
+    const expectedReceiptHash =
+      hashSequenceApplicabilityPayload(semanticPayload);
     if (canonical.receiptHash !== expectedReceiptHash) {
       throw failure('sequence_applicability_receipt_hash_mismatch', {
         actualReceiptHash: canonical.receiptHash,
@@ -915,7 +1123,8 @@ function readValidatedPartitionReceipt(targetPath, expectedSchemaId = null) {
       });
     }
     if (
-      canonical.decision === 'required' &&
+      (canonical.decision === 'required' ||
+        canonical.sequenceMode === 'required') &&
       canonical.producerAvailability === 'unavailable'
     ) {
       const expectedFreshnessRoot = sha256Text(
@@ -925,6 +1134,7 @@ function readValidatedPartitionReceipt(targetPath, expectedSchemaId = null) {
           traceGraphHash: canonical.traceGraphHash,
           methodologyProfileHash: canonical.methodologyProfileHash,
           policyVersion: canonical.policyVersion,
+          sequenceMode: canonical.sequenceMode || 'auto',
         })
       );
       if (canonical.freshnessRoot !== expectedFreshnessRoot) {
@@ -1259,11 +1469,13 @@ module.exports = {
   buildDependencyCompatibilityReceipt,
   buildUnavailableSequenceApplicabilityReceipt,
   canonicalizeForSchema,
+  createPendingChildCompilationReceipt,
   derivePartitionCapabilityState,
   finalizePartitionRun,
   readValidatedPartitionReceipt,
   resolveAssetRoot,
   validateDependencyCompatibilityReceipt,
+  writeSequenceApplicabilityReceipt,
   writeSequenceApplicabilityBoundaryReceipt,
   writeDependencyCompatibilityReceipt,
   writeValidatedPartitionReceipt,

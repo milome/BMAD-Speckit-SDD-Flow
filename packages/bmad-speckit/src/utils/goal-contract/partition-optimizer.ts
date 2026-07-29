@@ -558,15 +558,39 @@ function aggregateMinuteBreakdown(components) {
   return Object.freeze(breakdown);
 }
 
-function deriveRole(componentIds, componentGraph) {
+function deriveRole(componentIds, componentGraph, effectiveDependencies) {
   const finalOwners = new Set(
     (componentGraph.integrationFanInOwnership || []).map(
       (ownership) => ownership.ownerComponentId
     )
   );
-  return componentIds.some((componentId) => finalOwners.has(componentId))
-    ? 'final_integration'
-    : 'implementation';
+  if (componentIds.some((componentId) => finalOwners.has(componentId))) {
+    return 'final_integration';
+  }
+  const componentIdSet = new Set(componentIds);
+  const components = (componentGraph.components || []).filter((component) =>
+    componentIdSet.has(component.componentId)
+  );
+  const verificationOnly =
+    components.length > 0 &&
+    components.every(
+      (component) =>
+        component.verificationOnly === true &&
+        (component.fileScopeIds || []).length === 0
+    );
+  if (!verificationOnly) return 'implementation';
+  const incoming = (effectiveDependencies || []).some(
+    (edge) =>
+      componentIdSet.has(edge.toComponentId) &&
+      !componentIdSet.has(edge.fromComponentId)
+  );
+  const outgoing = (effectiveDependencies || []).some(
+    (edge) =>
+      componentIdSet.has(edge.fromComponentId) &&
+      !componentIdSet.has(edge.toComponentId)
+  );
+  if (!incoming) return 'implementation';
+  return outgoing ? 'integration' : 'final_integration';
 }
 
 function buildCandidate({
@@ -593,7 +617,11 @@ function buildCandidate({
     const estimatedClosureMinutes = sum(
       components.map((component) => component.estimatedClosureMinutes)
     );
-    const partitionRole = deriveRole(componentIds, componentGraph);
+    const partitionRole = deriveRole(
+      componentIds,
+      componentGraph,
+      effectiveDependencies
+    );
     return {
       componentIds,
       components,
@@ -673,6 +701,7 @@ function deriveCandidateMembershipState({
   candidate,
   componentGraph,
   executionProjection,
+  effectiveDependencies,
 }) {
   const components = componentGraph.components || [];
   const componentById = new Map(
@@ -809,7 +838,11 @@ function deriveCandidateMembershipState({
       primaryTaskIds: unique(
         partitionComponents.flatMap((component) => component.atomicTaskIds || [])
       ),
-      partitionRole: deriveRole(primaryComponentIds, componentGraph),
+      partitionRole: deriveRole(
+        primaryComponentIds,
+        componentGraph,
+        effectiveDependencies
+      ),
       partitionRoleDerived: true,
       estimatedClosureMinutes: sum(
         partitionComponents.map(
@@ -839,13 +872,9 @@ function validatePartitionCandidate({
       candidate,
       componentGraph,
       executionProjection,
+      effectiveDependencies,
     });
   const maximum = policy.limits.maxClosureMinutesPerPartition;
-  const validFinalOwners = new Set(
-    (componentGraph.integrationFanInOwnership || []).map(
-      (ownership) => ownership.ownerComponentId
-    )
-  );
   for (const partition of candidate.partitions || []) {
     if (partition.estimatedClosureMinutes > maximum) {
       throw failure('partition_no_valid_solution', {
@@ -864,9 +893,12 @@ function validatePartitionCandidate({
       });
     }
     if (partition.partitionRole === 'final_integration') {
-      const justified = (partition.primaryComponentIds || []).some(
-        (componentId) => validFinalOwners.has(componentId)
-      );
+      const justified =
+        deriveRole(
+          partition.primaryComponentIds || [],
+          componentGraph,
+          effectiveDependencies
+        ) === 'final_integration';
       if (!justified) {
         throw failure('partition_final_integration_not_required', {
           partitionId: partition.partitionId,
@@ -1011,12 +1043,18 @@ function validatePartitionCandidate({
         candidate.crossPartitionDependencyCount,
     });
   }
+  const maximumPartitionDependencyCount = Math.max(
+    0,
+    ...expectedDependencyIndexes.map((dependencies) => dependencies.size)
+  );
   if (
-    expectedCrossPartitionDependencyCount >
+    maximumPartitionDependencyCount >
     policy.limits.maxCrossPartitionDependencies
   ) {
     throw failure('partition_no_valid_solution', {
       reason: 'cross_partition_dependency_limit_exceeded',
+      maximumPartitionDependencyCount,
+      maximum: policy.limits.maxCrossPartitionDependencies,
     });
   }
   const metrics = deriveCandidateMetrics(
@@ -1251,6 +1289,13 @@ function enumerateNextClosedGroups({
   componentGraph,
   effectiveDependencies,
   maximumClosureMinutes,
+  maximumGroups = 256,
+  targetClosureMinutes = {
+    min: maximumClosureMinutes,
+    max: maximumClosureMinutes,
+  },
+  maximumWriteScopes = Number.MAX_SAFE_INTEGER,
+  enumerationStats = null,
 }) {
   const assigned = new Set(assignedComponentIds);
   const orderedIds: string[] = componentGraph.topologicalOrder;
@@ -1272,39 +1317,123 @@ function enumerateNextClosedGroups({
       )
   );
   if (!anchor) return [];
-  const groups = [];
+  const finiteMaximumGroups =
+    Number.isInteger(maximumGroups) && maximumGroups > 0
+      ? maximumGroups
+      : 256;
+  let states = [{ selected: new Set<string>(), closureMinutes: 0 }];
 
-  function visit(index, selected, closureMinutes) {
-    if (index === orderedIds.length) {
-      if (selected.has(anchor)) {
-        groups.push(orderedIds.filter((componentId) => selected.has(componentId)));
-      }
-      return;
-    }
-    const componentId = orderedIds[index];
-    if (assigned.has(componentId)) {
-      visit(index + 1, selected, closureMinutes);
-      return;
-    }
-    if (componentId !== anchor) {
-      visit(index + 1, selected, closureMinutes);
-    }
+  for (const componentId of orderedIds) {
+    if (assigned.has(componentId)) continue;
+    const nextStates = [];
     const component = components.get(componentId)!;
-    const nextMinutes = closureMinutes + component.estimatedClosureMinutes;
-    const dependenciesClosed = [...predecessors.get(componentId)!].every(
-      (dependencyId) => assigned.has(dependencyId) || selected.has(dependencyId)
+    for (const state of states) {
+      if (componentId !== anchor) nextStates.push(state);
+      const nextMinutes =
+        state.closureMinutes + component.estimatedClosureMinutes;
+      const dependenciesClosed = [...predecessors.get(componentId)!].every(
+        (dependencyId) =>
+          assigned.has(dependencyId) || state.selected.has(dependencyId)
+      );
+      if (dependenciesClosed && nextMinutes <= maximumClosureMinutes) {
+        nextStates.push({
+          selected: new Set([...state.selected, componentId]),
+          closureMinutes: nextMinutes,
+        });
+      }
+    }
+    const uniqueStates = new Map();
+    for (const state of nextStates) {
+      uniqueStates.set(componentSetKey(state.selected), state);
+    }
+    states = [...uniqueStates.values()].sort((left, right) =>
+      compareClosedGroups(
+        orderedIds.filter((candidateId) => left.selected.has(candidateId)),
+        orderedIds.filter((candidateId) => right.selected.has(candidateId)),
+        components,
+        effectiveDependencies,
+        targetClosureMinutes,
+        maximumWriteScopes
+      )
     );
-    if (dependenciesClosed && nextMinutes <= maximumClosureMinutes) {
-      const nextSelected = new Set(selected);
-      nextSelected.add(componentId);
-      visit(index + 1, nextSelected, nextMinutes);
+    if (states.length > finiteMaximumGroups) {
+      if (enumerationStats) {
+        enumerationStats.groupBeamPrunedCount +=
+          states.length - finiteMaximumGroups;
+      }
+      states = states.slice(0, finiteMaximumGroups);
     }
   }
-
-  visit(0, new Set(), 0);
-  return groups.sort((left, right) =>
-    stableStringify(left).localeCompare(stableStringify(right))
+  return states
+    .filter((state) => state.selected.has(anchor))
+    .map((state) =>
+      orderedIds.filter((componentId) => state.selected.has(componentId))
+    )
+    .sort((left, right) =>
+      compareClosedGroups(
+        left,
+        right,
+        components,
+        effectiveDependencies,
+        targetClosureMinutes,
+        maximumWriteScopes
+      )
   );
+}
+
+function componentSetKey(componentIds) {
+  return stableStringify([...componentIds].sort());
+}
+
+function compareClosedGroups(
+  left,
+  right,
+  componentById,
+  effectiveDependencies,
+  target,
+  maximumWriteScopes
+) {
+  const minutes = (group) =>
+    sum(group.map((componentId) => componentById.get(componentId).estimatedClosureMinutes));
+  const writeScopeCount = (group) =>
+    unique(
+      group.flatMap(
+        (componentId) => componentById.get(componentId).fileScopeIds || []
+      )
+    ).length;
+  const internalDependencyCount = (group) => {
+    const componentIds = new Set(group);
+    return effectiveDependencies.filter(
+      (edge) =>
+        componentIds.has(edge.fromComponentId) &&
+        componentIds.has(edge.toComponentId)
+    ).length;
+  };
+  const distance = (value) => {
+    if (value < target.min) return target.min - value;
+    if (value > target.max) return value - target.max;
+    return 0;
+  };
+  const leftMinutes = minutes(left);
+  const rightMinutes = minutes(right);
+  const keys = [
+    [
+      Math.max(0, writeScopeCount(left) - maximumWriteScopes),
+      Math.max(0, writeScopeCount(right) - maximumWriteScopes),
+    ],
+    [
+      -internalDependencyCount(left),
+      -internalDependencyCount(right),
+    ],
+    [distance(leftMinutes), distance(rightMinutes)],
+    [-leftMinutes, -rightMinutes],
+    [stableStringify(left), stableStringify(right)],
+  ];
+  for (const [leftValue, rightValue] of keys) {
+    if (leftValue < rightValue) return -1;
+    if (leftValue > rightValue) return 1;
+  }
+  return 0;
 }
 
 function compareCandidates(left, right) {
@@ -1360,18 +1489,86 @@ function optimizePartitions({
   const validCandidates = [];
   const rejectedCandidateSummaries = [];
   let candidateCount = 0;
-  let frontierCount = 0;
   let searchStates = 0;
+  let prunedPrefixCount = 0;
+  let hardRejectedGroupCount = 0;
+  const frontiers = new Map();
+  const boundedSearch = orderedComponents.length > 8;
+  const maximumCandidateResults = boundedSearch
+    ? Math.max(
+        1,
+        Math.floor(
+          policy.limits.maxSearchStates /
+            policy.limits.maxCandidateFrontiers
+        )
+      )
+    : Number.MAX_SAFE_INTEGER;
+  const maximumGroupsPerFrontier = boundedSearch
+    ? Math.max(
+        1,
+        Math.floor(
+          policy.limits.maxSearchStates /
+            policy.limits.maxCandidateFrontiers
+        )
+      )
+    : policy.limits.maxCandidateFrontiers;
+  const minimumSearchStates = orderedComponents.length + 1;
+  if (policy.limits.maxSearchStates < minimumSearchStates) {
+    throw failure('partition_policy_unsatisfied', {
+      reason: 'search_state_limit_exceeded',
+      searchStates: minimumSearchStates,
+      maximum: policy.limits.maxSearchStates,
+    });
+  }
+  const maxPrefixesPerFrontier = Math.max(
+    1,
+    Math.floor(
+      policy.limits.maxSearchStates /
+        policy.limits.maxCandidateFrontiers
+    )
+  );
+  const prefixKeysByFrontier = new Map();
+  const nextGroupsByFrontier = new Map();
+  const enumerationStats = {
+    groupBeamPrunedCount: 0,
+  };
+  let boundedCandidateLimitReached = false;
+
+  function registerFrontier(assignedComponentIds) {
+    const frontierKey = componentSetKey(assignedComponentIds);
+    if (frontiers.has(frontierKey)) return frontierKey;
+    const frontierCount = frontiers.size + 1;
+    if (frontierCount > policy.limits.maxCandidateFrontiers) {
+      throw failure('partition_policy_unsatisfied', {
+        reason: 'candidate_frontier_limit_exceeded',
+        frontierCount,
+        maximum: policy.limits.maxCandidateFrontiers,
+      });
+    }
+    frontiers.set(frontierKey, new Set(assignedComponentIds));
+    return frontierKey;
+  }
 
   function visit(assignedComponentIds, groups) {
-    searchStates += 1;
-    if (searchStates > policy.limits.maxSearchStates) {
+    if (boundedCandidateLimitReached) return;
+    const frontierKey = registerFrontier(assignedComponentIds);
+    const prefixKey = stableStringify(groups);
+    const prefixKeys = prefixKeysByFrontier.get(frontierKey) || new Set();
+    if (prefixKeys.has(prefixKey)) return;
+    if (prefixKeys.size >= maxPrefixesPerFrontier) {
+      prunedPrefixCount += 1;
+      return;
+    }
+    prefixKeys.add(prefixKey);
+    prefixKeysByFrontier.set(frontierKey, prefixKeys);
+    if (searchStates >= policy.limits.maxSearchStates) {
       throw failure('partition_policy_unsatisfied', {
         reason: 'search_state_limit_exceeded',
-        searchStates,
+        searchStates: searchStates + 1,
         maximum: policy.limits.maxSearchStates,
       });
     }
+    searchStates += 1;
     if (assignedComponentIds.size === orderedComponents.length) {
       candidateCount += 1;
       const baseCandidate = buildCandidate({
@@ -1430,24 +1627,52 @@ function optimizePartitions({
           })
         );
       }
+      if (boundedSearch && candidateCount >= maximumCandidateResults) {
+        boundedCandidateLimitReached = true;
+      }
       return;
     }
 
-    const nextGroups = enumerateNextClosedGroups({
-      assignedComponentIds,
-      componentGraph,
-      effectiveDependencies,
-      maximumClosureMinutes: maximum,
-    });
+    let nextGroups = nextGroupsByFrontier.get(frontierKey);
+    if (!nextGroups) {
+      const enumeratedGroups = enumerateNextClosedGroups({
+        assignedComponentIds,
+        componentGraph,
+        effectiveDependencies,
+        maximumClosureMinutes: maximum,
+        maximumGroups: maximumGroupsPerFrontier,
+        targetClosureMinutes:
+          policy.limits.targetClosureMinutesPerPartition,
+        maximumWriteScopes:
+          policy.limits.maxPrimaryWriteScopeOwnersPerPartition,
+        enumerationStats,
+      });
+      nextGroups = enumeratedGroups
+        .filter(
+          (group) =>
+            unique(
+              group.flatMap(
+                (componentId) =>
+                  componentById.get(componentId).fileScopeIds || []
+              )
+            ).length <=
+            policy.limits.maxPrimaryWriteScopeOwnersPerPartition
+        )
+        .sort((left, right) =>
+          compareClosedGroups(
+            left,
+            right,
+            componentById,
+            effectiveDependencies,
+            policy.limits.targetClosureMinutesPerPartition,
+            policy.limits.maxPrimaryWriteScopeOwnersPerPartition
+          )
+        );
+      hardRejectedGroupCount += enumeratedGroups.length - nextGroups.length;
+      nextGroupsByFrontier.set(frontierKey, nextGroups);
+    }
     for (const nextGroup of nextGroups) {
-      frontierCount += 1;
-      if (frontierCount > policy.limits.maxCandidateFrontiers) {
-        throw failure('partition_policy_unsatisfied', {
-          reason: 'candidate_frontier_limit_exceeded',
-          frontierCount,
-          maximum: policy.limits.maxCandidateFrontiers,
-        });
-      }
+      if (boundedCandidateLimitReached) break;
       visit(
         new Set([...assignedComponentIds, ...nextGroup]),
         [...groups, nextGroup]
@@ -1456,7 +1681,25 @@ function optimizePartitions({
   }
 
   visit(new Set(), []);
+  const frontierCount = frontiers.size;
   if (validCandidates.length === 0) {
+    const searchBudgetExhausted =
+      prunedPrefixCount > 0 ||
+      enumerationStats.groupBeamPrunedCount > 0 ||
+      boundedCandidateLimitReached;
+    if (searchBudgetExhausted) {
+      throw failure('partition_policy_unsatisfied', {
+        reason: 'search_budget_exhausted',
+        searchStates,
+        frontierCount,
+        candidateCount,
+        prunedPrefixCount,
+        boundedCandidateLimitReached,
+        groupBeamPrunedCount: enumerationStats.groupBeamPrunedCount,
+        maximumSearchStates: policy.limits.maxSearchStates,
+        maximumCandidateFrontiers: policy.limits.maxCandidateFrontiers,
+      });
+    }
     throw failure('partition_no_valid_solution', {
       candidateCount,
       rejectedCandidateSummaries,
@@ -1501,6 +1744,15 @@ function optimizePartitions({
       rejectedCandidateCount: rejectedCandidateSummaries.length,
       maxSearchStates: policy.limits.maxSearchStates,
       maxCandidateFrontiers: policy.limits.maxCandidateFrontiers,
+      maxPrefixesPerFrontier,
+      prunedPrefixCount,
+      hardRejectedGroupCount,
+      boundedSearch,
+      boundedCandidateLimitReached,
+      maximumCandidateResults,
+      maximumGroupsPerFrontier,
+      groupBeamPrunedCount:
+        enumerationStats.groupBeamPrunedCount,
     }),
   });
 }

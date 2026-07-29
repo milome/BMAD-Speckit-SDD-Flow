@@ -1,0 +1,476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad.local/schemas/goal-contract-partition-plan.schema.json",
+  "title": "Goal Contract Partition Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceCompositionMode",
+    "sourceCompositionPolicyHash",
+    "orderedSourceSnapshotSetHash",
+    "orderedSourceBindings",
+    "sourceAuthorityBundleHash",
+    "canonicalIntentSemanticHash",
+    "canonicalIntentBundleHash",
+    "specSpanRegistryHash",
+    "intentAuthorityAttestationHash",
+    "subordinateCoverageReceiptHashes",
+    "goalContractSemanticHash",
+    "goalContractHash",
+    "methodologyProfileHash",
+    "executionProjectionHash",
+    "taskDagHash",
+    "integrationJoinGraphHash",
+    "partitionPolicyHash",
+    "optimizerVersion",
+    "selectedCandidateId",
+    "sequenceMode",
+    "sequenceApplicability",
+    "sequenceCoverage",
+    "sequenceClosureStatus",
+    "childContractAuthority",
+    "namespaceOwnership",
+    "subordinateTaskMappings",
+    "partitionCandidates",
+    "topologicalOrder",
+    "partitions",
+    "selections",
+    "coverageObligations",
+    "dependencyEdges",
+    "ownerConsumerRecords",
+    "childProjectionInputs",
+    "partitionSetHash",
+    "partitionPlanHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-plan/v1"
+    },
+    "sourceCompositionMode": {
+      "enum": ["single_source", "composite_required"]
+    },
+    "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+    "orderedSourceSnapshotSetHash": { "$ref": "#/$defs/hash" },
+    "orderedSourceBindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sourceBinding" }
+    },
+    "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+    "canonicalIntentSemanticHash": { "$ref": "#/$defs/hash" },
+    "canonicalIntentBundleHash": { "$ref": "#/$defs/hash" },
+    "specSpanRegistryHash": { "$ref": "#/$defs/hash" },
+    "intentAuthorityAttestationHash": { "$ref": "#/$defs/hash" },
+    "subordinateCoverageReceiptHashes": {
+      "$ref": "#/$defs/hashArray"
+    },
+    "goalContractSemanticHash": { "$ref": "#/$defs/hash" },
+    "goalContractHash": { "$ref": "#/$defs/hash" },
+    "methodologyProfileHash": { "$ref": "#/$defs/hash" },
+    "executionProjectionHash": { "$ref": "#/$defs/hash" },
+    "taskDagHash": { "$ref": "#/$defs/hash" },
+    "integrationJoinGraphHash": { "$ref": "#/$defs/hash" },
+    "partitionPolicyHash": { "$ref": "#/$defs/hash" },
+    "optimizerVersion": { "$ref": "#/$defs/id" },
+    "selectedCandidateId": { "$ref": "#/$defs/id" },
+    "sequenceMode": {
+      "enum": ["auto", "required", "disabled"]
+    },
+    "sequenceApplicability": {
+      "enum": ["required", "not_applicable_with_proof", "unresolved"]
+    },
+    "sequenceCoverage": {
+      "enum": ["complete", "not_applicable", "excluded", "unresolved"]
+    },
+    "sequenceClosureStatus": {
+      "enum": [
+        "compiled",
+        "not_required",
+        "not_requested",
+        "unavailable",
+        "unresolved"
+      ]
+    },
+    "childContractAuthority": {
+      "enum": ["full", "core_only"]
+    },
+    "namespaceOwnership": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/namespaceOwnership" }
+    },
+    "subordinateTaskMappings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/subordinateTaskMapping" }
+    },
+    "partitionCandidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "topologicalOrder": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "partitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/partition" }
+    },
+    "selections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/selection" }
+    },
+    "coverageObligations": {
+      "$ref": "#/$defs/coverage"
+    },
+    "dependencyEdges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependencyEdge" }
+    },
+    "ownerConsumerRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ownerConsumer" }
+    },
+    "childProjectionInputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/childProjection" }
+    },
+    "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "partitionPlanHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hashArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "idArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 240
+    },
+    "closureMinuteBreakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declaredTaskMinutes",
+        "derivedTaskMinutes",
+        "verificationMinutes",
+        "coordinationMinutes",
+        "totalMinutes"
+      ],
+      "properties": {
+        "declaredTaskMinutes": { "$ref": "#/$defs/minutes" },
+        "derivedTaskMinutes": { "$ref": "#/$defs/minutes" },
+        "verificationMinutes": { "$ref": "#/$defs/minutes" },
+        "coordinationMinutes": { "$ref": "#/$defs/minutes" },
+        "totalMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        }
+      }
+    },
+    "estimatedClosureCost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "total", "breakdown"],
+      "properties": {
+        "unit": { "const": "minutes" },
+        "total": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "breakdown": {
+          "$ref": "#/$defs/closureMinuteBreakdown"
+        }
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceOrder",
+        "sourceArtifactId",
+        "sourceRole",
+        "namespace",
+        "sourceSnapshotHash"
+      ],
+      "properties": {
+        "sourceOrder": { "type": "integer", "minimum": 0 },
+        "sourceArtifactId": { "$ref": "#/$defs/id" },
+        "sourceRole": {
+          "enum": [
+            "primary_implementation_authority",
+            "subordinate_component_specification"
+          ]
+        },
+        "namespace": { "$ref": "#/$defs/id" },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "namespaceOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "sourceArtifactId",
+        "sourceRole",
+        "sourceSnapshotHash",
+        "parentTaskRefs"
+      ],
+      "properties": {
+        "namespace": { "$ref": "#/$defs/id" },
+        "sourceArtifactId": { "$ref": "#/$defs/id" },
+        "sourceRole": {
+          "enum": [
+            "primary_implementation_authority",
+            "subordinate_component_specification"
+          ]
+        },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "parentTaskRefs": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "subordinateTaskMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "sourceArtifactId",
+        "parentTaskRefs",
+        "declaredSourceIds",
+        "coverageReceiptHash",
+        "partitionId"
+      ],
+      "properties": {
+        "namespace": { "$ref": "#/$defs/id" },
+        "sourceArtifactId": { "$ref": "#/$defs/id" },
+        "parentTaskRefs": { "$ref": "#/$defs/idArray" },
+        "declaredSourceIds": { "$ref": "#/$defs/idArray" },
+        "coverageReceiptHash": { "$ref": "#/$defs/hash" },
+        "partitionId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "selected",
+        "partitionCount",
+        "partitionIds",
+        "score"
+      ],
+      "properties": {
+        "candidateId": { "$ref": "#/$defs/id" },
+        "selected": { "type": "boolean" },
+        "partitionCount": { "type": "integer", "minimum": 1 },
+        "partitionIds": { "$ref": "#/$defs/idArray" },
+        "score": { "type": "number" }
+      }
+    },
+    "partition": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "partitionId",
+        "primaryComponentIds",
+        "primaryTraceSliceIds",
+        "primaryTaskIds",
+        "outcome",
+        "primaryEpicIds",
+        "inheritedConstraintIds",
+        "acceptanceIds",
+        "commandIds",
+        "dependencyPartitionIds",
+        "partitionRole",
+        "blockedConditions",
+        "failureClasses",
+        "estimatedClosureCost"
+      ],
+      "properties": {
+        "partitionId": { "$ref": "#/$defs/id" },
+        "primaryComponentIds": { "$ref": "#/$defs/idArray" },
+        "primaryTraceSliceIds": { "$ref": "#/$defs/idArray" },
+        "primaryTaskIds": { "$ref": "#/$defs/idArray" },
+        "outcome": { "type": "string", "minLength": 1 },
+        "primaryEpicIds": { "$ref": "#/$defs/idArray" },
+        "inheritedConstraintIds": { "$ref": "#/$defs/idArray" },
+        "acceptanceIds": { "$ref": "#/$defs/idArray" },
+        "commandIds": { "$ref": "#/$defs/idArray" },
+        "dependencyPartitionIds": { "$ref": "#/$defs/idArray" },
+        "partitionRole": { "$ref": "#/$defs/id" },
+        "blockedConditions": { "$ref": "#/$defs/idArray" },
+        "failureClasses": { "$ref": "#/$defs/idArray" },
+        "estimatedClosureCost": {
+          "$ref": "#/$defs/estimatedClosureCost"
+        }
+      }
+    },
+    "namespacedObligation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intentRecordId",
+        "declaredSourceId",
+        "semanticOwnershipKey",
+        "namespace",
+        "sourceArtifactId",
+        "sourceSnapshotHash",
+        "sourceRole",
+        "parentTaskRefs",
+        "specSpanRefs"
+      ],
+      "properties": {
+        "intentRecordId": { "$ref": "#/$defs/id" },
+        "declaredSourceId": { "$ref": "#/$defs/id" },
+        "semanticOwnershipKey": { "$ref": "#/$defs/hash" },
+        "namespace": { "$ref": "#/$defs/id" },
+        "sourceArtifactId": { "$ref": "#/$defs/id" },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "sourceRole": {
+          "const": "subordinate_component_specification"
+        },
+        "parentTaskRefs": { "$ref": "#/$defs/idArray" },
+        "specSpanRefs": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "partitionId",
+        "sourceCompositionPolicyHash",
+        "primaryComponentIds",
+        "primaryTraceSliceIds",
+        "primaryTaskIds",
+        "dependencyPartitionIds",
+        "primarySourceObligationIds",
+        "completionPredicateIds",
+        "evidenceContractIds",
+        "ownedArtifactPaths",
+        "namespacedObligations",
+        "namespaceRefs",
+        "sourceArtifactRefs",
+        "specSpanRefs",
+        "subordinateCoverageReceiptHashes",
+        "selectionHash"
+      ],
+      "properties": {
+        "partitionId": { "$ref": "#/$defs/id" },
+        "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+        "primaryComponentIds": { "$ref": "#/$defs/idArray" },
+        "primaryTraceSliceIds": { "$ref": "#/$defs/idArray" },
+        "primaryTaskIds": { "$ref": "#/$defs/idArray" },
+        "dependencyPartitionIds": { "$ref": "#/$defs/idArray" },
+        "primarySourceObligationIds": { "$ref": "#/$defs/idArray" },
+        "completionPredicateIds": { "$ref": "#/$defs/idArray" },
+        "evidenceContractIds": { "$ref": "#/$defs/idArray" },
+        "ownedArtifactPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "namespacedObligations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/namespacedObligation" }
+        },
+        "namespaceRefs": { "$ref": "#/$defs/idArray" },
+        "sourceArtifactRefs": { "$ref": "#/$defs/idArray" },
+        "specSpanRefs": { "$ref": "#/$defs/idArray" },
+        "subordinateCoverageReceiptHashes": {
+          "$ref": "#/$defs/hashArray"
+        },
+        "selectionHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceObligationIds",
+        "traceSliceIds",
+        "atomicTaskIds",
+        "completionPredicateIds",
+        "commandIds",
+        "evidenceContractIds",
+        "subordinateDeclaredSourceIds"
+      ],
+      "properties": {
+        "sourceObligationIds": { "$ref": "#/$defs/idArray" },
+        "traceSliceIds": { "$ref": "#/$defs/idArray" },
+        "atomicTaskIds": { "$ref": "#/$defs/idArray" },
+        "completionPredicateIds": { "$ref": "#/$defs/idArray" },
+        "commandIds": { "$ref": "#/$defs/idArray" },
+        "evidenceContractIds": { "$ref": "#/$defs/idArray" },
+        "subordinateDeclaredSourceIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "dependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fromPartitionId", "toPartitionId"],
+      "properties": {
+        "fromPartitionId": { "$ref": "#/$defs/id" },
+        "toPartitionId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "ownerConsumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactPath",
+        "ownerPartitionId",
+        "consumerPartitionIds"
+      ],
+      "properties": {
+        "artifactPath": { "type": "string", "minLength": 1 },
+        "ownerPartitionId": { "$ref": "#/$defs/id" },
+        "consumerPartitionIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "childProjection": {
+      "allOf": [
+        { "$ref": "#/$defs/selection" },
+        {
+          "type": "object",
+          "required": [
+            "goalContractHash",
+            "orderedSourceSnapshotSetHash",
+            "sourceAuthorityBundleHash",
+            "partitionSetHash"
+          ],
+          "properties": {
+            "goalContractHash": { "$ref": "#/$defs/hash" },
+            "orderedSourceSnapshotSetHash": { "$ref": "#/$defs/hash" },
+            "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+            "partitionSetHash": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    }
+  }
+}

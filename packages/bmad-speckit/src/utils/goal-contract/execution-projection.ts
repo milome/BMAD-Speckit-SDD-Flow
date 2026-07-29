@@ -91,6 +91,232 @@ function requireHash(value, field) {
   return value;
 }
 
+function legacyAuthorityBindings(input) {
+  const sourceSnapshotHash = requireHash(
+    input?.sourceSnapshotHash,
+    'sourceSnapshotHash'
+  );
+  const sourceObligationGraphHash = requireHash(
+    input?.sourceObligationGraphHash,
+    'sourceObligationGraphHash'
+  );
+  const semanticModelHash = requireHash(
+    input?.semanticModelHash,
+    'semanticModelHash'
+  );
+  const sourceArtifactId = `legacy-source-${sourceSnapshotHash.slice(7, 23)}`;
+  const namespace = `LEGACY_${sourceSnapshotHash
+    .slice(7, 23)
+    .toUpperCase()}`;
+  const sourceCompositionPolicyHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-source-composition/v1',
+    mode: 'single_source',
+    sourceSnapshotHash,
+  });
+  const orderedSourceSnapshotSetHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-source-snapshot-set/v1',
+    sourceSnapshotHash,
+    sourceArtifactId,
+  });
+  const sourceAuthorityBundleHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-source-authority/v1',
+    sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash,
+    sourceArtifactId,
+    namespace,
+  });
+  const canonicalIntentSemanticHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-canonical-intent/v1',
+    sourceObligationGraphHash,
+    semanticModelHash,
+  });
+  const canonicalIntentBundleHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-canonical-intent-bundle/v1',
+    canonicalIntentSemanticHash,
+    sourceAuthorityBundleHash,
+  });
+  const specSpanRegistryHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-spec-span-registry/v1',
+    sourceObligationGraphHash,
+  });
+  const intentAuthorityAttestationHash = hashValue({
+    schemaVersion: 'goal-contract-legacy-intent-attestation/v1',
+    canonicalIntentBundleHash,
+    sourceSnapshotHash,
+  });
+  return {
+    sourceCompositionMode: 'single_source',
+    sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash,
+    orderedSourceBindings: [
+      {
+        sourceOrder: 0,
+        sourceArtifactId,
+        sourceRole: 'primary_implementation_authority',
+        namespace,
+        sourceSnapshotHash,
+      },
+    ],
+    sourceAuthorityBundleHash,
+    canonicalIntentSemanticHash,
+    canonicalIntentBundleHash,
+    specSpanRegistryHash,
+    intentAuthorityAttestationHash,
+    subordinateCoverageReceiptHashes: [],
+    goalContractSemanticHash: semanticModelHash,
+    goalContractHash: hashValue({
+      schemaVersion: 'goal-contract-legacy-parent-authority/v1',
+      semanticModelHash,
+      intentAuthorityAttestationHash,
+      sourceAuthorityBundleHash,
+    }),
+  };
+}
+
+function normalizeAuthorityBindings(input) {
+  const authorityFields = [
+    'sourceCompositionMode',
+    'sourceCompositionPolicyHash',
+    'orderedSourceSnapshotSetHash',
+    'orderedSourceBindings',
+    'sourceAuthorityBundleHash',
+    'canonicalIntentSemanticHash',
+    'canonicalIntentBundleHash',
+    'specSpanRegistryHash',
+    'intentAuthorityAttestationHash',
+    'subordinateCoverageReceiptHashes',
+    'goalContractSemanticHash',
+    'goalContractHash',
+  ];
+  const suppliedAuthorityFieldCount = authorityFields.filter((field) =>
+    Object.hasOwn(input || {}, field)
+  ).length;
+  if (suppliedAuthorityFieldCount === 0) {
+    return legacyAuthorityBindings(input);
+  }
+  if (suppliedAuthorityFieldCount !== authorityFields.length) {
+    throw failure('source_composition_policy_mismatch', {
+      missingAuthorityFields: authorityFields.filter(
+        (field) => !Object.hasOwn(input || {}, field)
+      ),
+    });
+  }
+  const sourceCompositionMode = String(input.sourceCompositionMode || '');
+  if (!['single_source', 'composite_required'].includes(sourceCompositionMode)) {
+    throw failure('source_composition_policy_mismatch', {
+      sourceCompositionMode,
+    });
+  }
+  for (const field of [
+    'sourceCompositionPolicyHash',
+    'orderedSourceSnapshotSetHash',
+    'sourceAuthorityBundleHash',
+    'canonicalIntentSemanticHash',
+    'canonicalIntentBundleHash',
+    'specSpanRegistryHash',
+    'intentAuthorityAttestationHash',
+    'goalContractSemanticHash',
+    'goalContractHash',
+  ]) {
+    requireHash(input?.[field], field);
+  }
+  const sourceBindings = asArray(input.orderedSourceBindings).map((binding) => {
+    if (!binding || typeof binding !== 'object') {
+      throw failure('execution_projection_source_binding_invalid');
+    }
+    const sourceOrder = Number(binding.sourceOrder);
+    const sourceArtifactId = String(binding.sourceArtifactId || '');
+    const sourceRole = String(binding.sourceRole || '');
+    const namespace = String(binding.namespace || '');
+    if (
+      !Number.isInteger(sourceOrder) ||
+      sourceOrder < 0 ||
+      !ID_PATTERN.test(sourceArtifactId) ||
+      !ID_PATTERN.test(namespace) ||
+      ![
+        'primary_implementation_authority',
+        'subordinate_component_specification',
+      ].includes(sourceRole)
+    ) {
+      throw failure('execution_projection_source_binding_invalid', {
+        sourceArtifactId,
+        sourceOrder,
+      });
+    }
+    return {
+      sourceOrder,
+      sourceArtifactId,
+      sourceRole,
+      namespace,
+      sourceSnapshotHash: requireHash(
+        binding.sourceSnapshotHash,
+        `orderedSourceBindings.${sourceArtifactId}.sourceSnapshotHash`
+      ),
+    };
+  });
+  sourceBindings.sort(
+    (left, right) =>
+      left.sourceOrder - right.sourceOrder ||
+      compareIds(left.sourceArtifactId, right.sourceArtifactId)
+  );
+  if (
+    sourceBindings.length === 0 ||
+    sourceBindings.some(
+      (binding, index) => binding.sourceOrder !== index
+    ) ||
+    new Set(sourceBindings.map(({ sourceArtifactId }) => sourceArtifactId))
+      .size !== sourceBindings.length ||
+    new Set(sourceBindings.map(({ namespace }) => namespace)).size !==
+      sourceBindings.length
+  ) {
+    throw failure('execution_projection_source_binding_invalid');
+  }
+  if (
+    (sourceCompositionMode === 'single_source' &&
+      sourceBindings.length !== 1) ||
+    (sourceCompositionMode === 'composite_required' &&
+      sourceBindings.length < 2)
+  ) {
+    throw failure(
+      sourceCompositionMode === 'single_source'
+        ? 'source_composition_downgrade_rejected'
+        : 'source_composition_policy_mismatch'
+    );
+  }
+  const subordinateCoverageReceiptHashes = unique(
+    input.subordinateCoverageReceiptHashes
+  );
+  for (const [index, receiptHash] of subordinateCoverageReceiptHashes.entries()) {
+    requireHash(
+      receiptHash,
+      `subordinateCoverageReceiptHashes.${index}`
+    );
+  }
+  if (
+    (sourceCompositionMode === 'single_source' &&
+      subordinateCoverageReceiptHashes.length > 0) ||
+    (sourceCompositionMode === 'composite_required' &&
+      subordinateCoverageReceiptHashes.length === 0)
+  ) {
+    throw failure('source_composition_policy_mismatch');
+  }
+  return {
+    sourceCompositionMode,
+    sourceCompositionPolicyHash: input.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash: input.orderedSourceSnapshotSetHash,
+    orderedSourceBindings: sourceBindings,
+    sourceAuthorityBundleHash: input.sourceAuthorityBundleHash,
+    canonicalIntentSemanticHash: input.canonicalIntentSemanticHash,
+    canonicalIntentBundleHash: input.canonicalIntentBundleHash,
+    specSpanRegistryHash: input.specSpanRegistryHash,
+    intentAuthorityAttestationHash:
+      input.intentAuthorityAttestationHash,
+    subordinateCoverageReceiptHashes,
+    goalContractSemanticHash: input.goalContractSemanticHash,
+    goalContractHash: input.goalContractHash,
+  };
+}
+
 function deriveId(explicitId, prefix, semanticPayload) {
   const normalized = String(explicitId || '').trim();
   if (normalized) {
@@ -131,6 +357,7 @@ function normalizedTasks(graph) {
       title: String(task.title || task.summary || taskId),
       sourceIds,
       dependencyIds: unique(task.dependencies || task.dependencyIds),
+      atomicGroupRefs: unique(task.atomicGroupRefs),
       sequenceConstraintIds: [],
     };
   });
@@ -340,23 +567,22 @@ function normalizeSequence({ input, tasks, slices }) {
   }
   if (
     receipt.decision === 'unresolved' &&
-    executionState.sequenceMode !== 'disabled'
+    executionState.sequenceMode === 'auto'
   ) {
     throw failure('execution_projection_sequence_applicability_invalid', {
       decision: receipt.decision,
     });
   }
   if (
-    executionState.sequenceMode !== 'disabled' &&
-    receipt.decision === 'required' &&
+    executionState.shouldResolveProducer === true &&
     !sequenceInput
   ) {
     throw failure('execution_projection_sequence_constraints_missing');
   }
-  if (executionState.sequenceMode === 'disabled' && sequenceInput) {
-    throw failure('execution_projection_sequence_constraints_unexpected');
-  }
-  if (receipt.decision === 'not_applicable_with_proof' && sequenceInput) {
+  if (
+    executionState.shouldResolveProducer !== true &&
+    sequenceInput
+  ) {
     throw failure('execution_projection_sequence_constraints_unexpected');
   }
   if (sequenceInput) {
@@ -653,6 +879,7 @@ function compileExecutionProjection(input) {
   if (!graph || typeof graph !== 'object') {
     throw failure('execution_projection_reconciled_graph_missing');
   }
+  const authorityBindings = normalizeAuthorityBindings(input);
   const tasks = normalizedTasks(graph);
   const taskMap = new Map<string, (typeof tasks)[number]>(tasks.map((task) => [task.taskId, task]));
   const slices = normalizedSlices(graph, taskMap);
@@ -705,6 +932,7 @@ function compileExecutionProjection(input) {
   const integrationJoinGraphHash = hashValue(integrationJoinGraph);
   const semanticProjection = {
     schemaVersion: 'goal-contract-execution-projection/v1',
+    ...authorityBindings,
     sourceSnapshotHash: input.sourceSnapshotHash,
     sourceObligationGraphHash: input.sourceObligationGraphHash,
     methodologyProfileHash: input.methodologyProfileHash,

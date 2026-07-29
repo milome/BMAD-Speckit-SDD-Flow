@@ -178,9 +178,9 @@ function writeProviderFixture(root) {
     script,
     String.raw`
 const fs=require('node:fs');let raw='';process.stdin.on('data',c=>raw+=c);process.stdin.on('end',()=>{const q=JSON.parse(raw);fs.appendFileSync(${JSON.stringify(invocationLog)},q.roleContract+'\n','utf8');
-const sourceIds=q.sourceObligationGraph.obligations.map(o=>o.id);const command={id:'semantic-command',literal:'node --version',expectedExitBehavior:'exits zero',productionEntryPoint:'goalContractCommand',evidenceType:'behavior',provenanceFields:['argv','cwd','exitCode'],freshnessRule:'current source roots'};
-const implementation={tasks:[{id:'semantic-task',title:'Semantic task',sourceIds}],traceSlices:[{id:'semantic-slice',goalIds:['semantic-task'],sourceIds,acceptanceIds:['semantic-acceptance'],evidenceIds:['semantic-evidence'],productionSymbols:['goalContractCommand'],allowedPaths:['packages/bmad-speckit/src/commands/goal-contract.ts'],directCommands:['semantic-command'],impactedCommands:['semantic-command'],dependencies:[],commitPolicy:'exactly_one_atomic_commit',closeCondition:'Semantic task is observable.'}],productionSymbols:['goalContractCommand'],allowedPaths:['packages/bmad-speckit/src/commands/goal-contract.ts'],commands:{direct:[command],impacted:[command],integration:[command],regression:[command]},dependencies:[],commitPolicy:'exactly_one_atomic_commit',closeConditions:['Semantic task is observable.'],synchronizationObligations:['package-source'],commandEvidenceStrength:{'semantic-command':'behavior'}};
-const acceptance={acceptanceItems:[{id:'semantic-acceptance',sourceIds,goalIds:['semantic-task'],traceIds:['semantic-slice'],requiredCommands:['semantic-command'],expectedEvidenceIds:['semantic-evidence'],requiredEvidenceStrength:'behavior',passCondition:'Semantic completion passes.'}],negativeControls:['Missing semantics block.'],productionEntryPoints:['goalContractCommand'],manualScenarios:['Run the public command.'],expectedEvidence:[{id:'semantic-evidence',sourceIds,producer:'semantic-command',admissibleTypes:['behavior'],freshnessRule:'current source roots'}],antiCheatRules:['No fixture authority.'],stopConditions:['Semantic conflict blocks.']};
+const sourceRecords=q.sourceObligationGraph.obligations;const sourceIds=sourceRecords.map(o=>o.id);const sourceRecord=sourceRecords[0];const crypto=require('node:crypto');const literal='node --version';const commandTextHash='sha256:'+crypto.createHash('sha256').update(literal).digest('hex');const commandId='command-'+crypto.createHash('sha256').update(sourceRecord.id+'\0'+literal).digest('hex').slice(0,16);const command={id:commandId,literal,commandTextHash,workingDirectory:'.',shell:'host_shell',runtime:'node',sourceBinding:{sourcePlanPath:sourceRecord.sourcePlanPath,lineStart:sourceRecord.lineStart,lineEnd:sourceRecord.lineEnd,textHash:sourceRecord.textHash,specSpanRefs:sourceRecord.specSpanRefs||[]},expectedExitBehavior:'exits zero',productionEntryPoint:'goalContractCommand',evidenceType:'behavior',provenanceFields:['argv','cwd','exitCode'],freshnessRule:'current source roots'};
+const implementation={tasks:[{id:'semantic-task',title:'Semantic task',sourceIds}],traceSlices:[{id:'semantic-slice',goalIds:['semantic-task'],sourceIds,acceptanceIds:['semantic-acceptance'],evidenceIds:['semantic-evidence'],productionSymbols:['goalContractCommand'],allowedPaths:['packages/bmad-speckit/src/commands/goal-contract.ts'],directCommands:[commandId],impactedCommands:[commandId],dependencies:[],commitPolicy:'exactly_one_atomic_commit',closeCondition:'Semantic task is observable.'}],productionSymbols:['goalContractCommand'],allowedPaths:['packages/bmad-speckit/src/commands/goal-contract.ts'],commands:{direct:[command],impacted:[command],integration:[command],regression:[command]},dependencies:[],commitPolicy:'exactly_one_atomic_commit',closeConditions:['Semantic task is observable.'],synchronizationObligations:['package-source'],commandEvidenceStrength:{[commandId]:'behavior'}};
+const acceptance={acceptanceItems:[{id:'semantic-acceptance',sourceIds,goalIds:['semantic-task'],traceIds:['semantic-slice'],requiredCommands:[commandId],expectedEvidenceIds:['semantic-evidence'],requiredEvidenceStrength:'behavior',passCondition:'Semantic completion passes.'}],negativeControls:['Missing semantics block.'],productionEntryPoints:['goalContractCommand'],manualScenarios:['Run the public command.'],expectedEvidence:[{id:'semantic-evidence',sourceIds,producer:commandId,admissibleTypes:['behavior'],freshnessRule:'current source roots'}],antiCheatRules:['No fixture authority.'],stopConditions:['Semantic conflict blocks.']};
 const result=q.roleContract.includes('implementation')?implementation:acceptance;process.stdout.write(JSON.stringify({roleContract:q.roleContract,requestHash:'sha256:'+require('node:crypto').createHash('sha256').update(raw).digest('hex'),sessionIdentity:q.roleContract,result,providerIdentity:'local-process',modelIdentity:'fixture'}));});`,
     'utf8'
   );
@@ -299,11 +299,31 @@ describe('bmad-speckit goal-contract partition command', () => {
     const payload = parsePayload(result);
     assert.equal(payload.ok, true);
     assert.match(payload.runId, /^partition-run-[0-9a-f]{64}$/u);
+    assert.match(payload.partitionPlanHash, /^sha256:[0-9a-f]{64}$/u);
     assert.match(payload.partitionManifestHash, /^sha256:[0-9a-f]{64}$/u);
     assert.ok(payload.partitionCount >= 1);
     assert.equal(payload.globalCoverageDecision, 'pass');
     assert.equal(payload.selectionReceiptCount, payload.partitionCount);
     assert.equal(fs.existsSync(out), true);
+    assert.equal(fs.existsSync(payload.partitionPlanPath), true);
+    const partitionPlanBytes = fs.readFileSync(payload.partitionPlanPath);
+    assert.equal(
+      hash(partitionPlanBytes),
+      payload.partitionPlanDocumentHash
+    );
+    const partitionPlan = JSON.parse(partitionPlanBytes);
+    assert.equal(
+      partitionPlan.partitionSetHash,
+      payload.partitionPlanPartitionSetHash
+    );
+    assert.equal(
+      partitionPlan.sourceCompositionPolicyHash,
+      payload.sourceCompositionPolicyHash
+    );
+    assert.doesNotMatch(
+      partitionPlanBytes.toString('utf8'),
+      /childContractHash|partitionManifestHash/u
+    );
     const manifestBytes = fs.readFileSync(out);
     assert.equal(hash(manifestBytes), payload.partitionManifestHash);
     const manifest = JSON.parse(manifestBytes);
@@ -355,6 +375,439 @@ describe('bmad-speckit goal-contract partition command', () => {
     const payload = parsePayload(result);
     assert.equal(payload.ok, true);
     assert.equal(fs.existsSync(out), true);
+  });
+
+  it('splits structured source tasks that exceed the write-scope owner limit', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'wide-source-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    fs.writeFileSync(
+      source,
+      [
+        '# Wide Structured Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task PLAN-T01: Update the governed runtime surface',
+        '',
+        ...Array.from(
+          { length: 10 },
+          (_, index) => `- Modify: \`src/runtime/file-${index + 1}.ts\``
+        ),
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- [ ] AC-001: MUST preserve deterministic runtime behavior.',
+        '',
+        '## Completion Evidence Packet',
+        '',
+        '- [ ] EVD-001: MUST bind the current source snapshot.',
+        '',
+        '## Required Test Commands',
+        '',
+        '- [ ] CMD-001: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.ok(
+      manifest.partitions.flatMap((partition) => partition.primaryTaskIds)
+        .length > 1
+    );
+    assert.equal(
+      manifest.partitions.every(
+        (partition) => partition.primaryWriteScopeOwnerCount <= 8
+      ),
+      true
+    );
+    assert.equal(
+      manifest.partitions.every((partition) =>
+        partition.commandIds.includes('CMD-001')
+      ),
+      true
+    );
+  });
+
+  it('binds block-style task write paths into the execution projection', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'block-write-scope-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    fs.writeFileSync(
+      source,
+      [
+        '# Block Write Scope Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task PLAN-T01: Update the first runtime surface',
+        '',
+        '**Create or modify:**',
+        '',
+        '- `src/runtime/first.ts`',
+        '- `tests/runtime/first.test.ts`',
+        '',
+        '### Task PLAN-T02: Update the second runtime surface',
+        '',
+        '**Modify:**',
+        '',
+        '- `src/runtime/second.ts`',
+        '',
+        '**Dependencies:** PLAN-T01',
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- [ ] AC-001: MUST preserve deterministic runtime behavior.',
+        '',
+        '## Completion Evidence Packet',
+        '',
+        '- [ ] EVD-001: MUST bind the current source snapshot.',
+        '',
+        '## Required Test Commands',
+        '',
+        '- [ ] CMD-001: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.equal(
+      manifest.partitions.reduce(
+        (total, partition) =>
+          total + partition.primaryWriteScopeOwnerCount,
+        0
+      ),
+      3
+    );
+    const firstPartitionIndex = manifest.partitions.findIndex((partition) =>
+      partition.primaryTaskIds.includes('PLAN-T01')
+    );
+    const secondPartitionIndex = manifest.partitions.findIndex((partition) =>
+      partition.primaryTaskIds.includes('PLAN-T02')
+    );
+    assert.ok(firstPartitionIndex >= 0);
+    assert.ok(secondPartitionIndex >= firstPartitionIndex);
+  });
+
+  it('derives an inspect-only terminal task as final integration', () => {
+    const root = tempRoot();
+    const source = path.join(
+      REPO_ROOT,
+      'docs',
+      'plans',
+      '2026-07-28-canonical-intent-control-plane-kernel-implementation-plan.md'
+    );
+    const out = path.join(root, 'partition-manifest.json');
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    const integrationPartitions = manifest.partitions.filter(
+      (partition) =>
+        partition.ownedArtifactPaths.length === 0 &&
+        partition.dependencyPartitionIds.length > 0
+    );
+    assert.equal(integrationPartitions.length, 1);
+    const [integrationPartition] = integrationPartitions;
+    assert.equal(integrationPartition.partitionRole, 'final_integration');
+    assert.equal(
+      manifest.topologicalOrder.at(-1),
+      integrationPartition.partitionId
+    );
+  });
+
+  it('rejects an unmarked task path list instead of silently dropping write scope', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'unmarked-write-scope-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    fs.writeFileSync(
+      source,
+      [
+        '# Unmarked Write Scope Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task PLAN-T01: Update the runtime surface',
+        '',
+        '- `src/runtime/entry.ts`',
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- [ ] AC-001: MUST preserve deterministic runtime behavior.',
+        '',
+        '## Completion Evidence Packet',
+        '',
+        '- [ ] EVD-001: MUST bind the current source snapshot.',
+        '',
+        '## Required Test Commands',
+        '',
+        '- [ ] CMD-001: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.notEqual(result.status, 0);
+    assert.equal(
+      payload.failureClass,
+      'source_obligation_write_scope_unbound'
+    );
+    assert.equal(fs.existsSync(out), false);
+  });
+
+  it('binds escaped fenced commands declared at trace-slice scope', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'escaped-command-fence-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    fs.writeFileSync(
+      source,
+      [
+        '# Escaped Command Fence Plan',
+        '',
+        '## Trace Slice PLAN: Runtime',
+        '',
+        '### PLAN-T01: Update the runtime',
+        '',
+        '**Modify:**',
+        '',
+        '- `src/runtime/entry.ts`',
+        '',
+        '### PLAN Required Tests',
+        '',
+        '\\`\\`\\`powershell',
+        'node --version',
+        '\\`\\`\\`',
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- [ ] AC-001: MUST preserve deterministic runtime behavior.',
+        '',
+        '## Completion Evidence Packet',
+        '',
+        '- [ ] EVD-001: MUST bind the current source snapshot.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.equal(
+      manifest.partitions.every(
+        (partition) => partition.commandIds.length > 0
+      ),
+      true
+    );
+  });
+
+  it('preserves suffixed task dependencies in the projected partition DAG', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'suffixed-task-dependency-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    const firstTaskPaths = Array.from(
+      { length: 8 },
+      (_, index) => `- \`src/runtime/first-${index + 1}.ts\``
+    );
+    const secondTaskPaths = Array.from(
+      { length: 8 },
+      (_, index) => `- \`src/runtime/second-${index + 1}.ts\``
+    );
+    fs.writeFileSync(
+      source,
+      [
+        '# Suffixed Task Dependency Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task PLAN-T01A: Publish the first runtime surface',
+        '',
+        '**Modify:**',
+        '',
+        ...firstTaskPaths,
+        '',
+        '### Task PLAN-T02: Publish the dependent runtime surface',
+        '',
+        '**Modify:**',
+        '',
+        ...secondTaskPaths,
+        '',
+        '**Dependencies:** PLAN-T01A',
+        '',
+        '### PLAN Required Tests',
+        '',
+        '```powershell',
+        'node --version',
+        '```',
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- [ ] AC-001: MUST preserve deterministic runtime behavior.',
+        '',
+        '## Completion Evidence Packet',
+        '',
+        '- [ ] EVD-001: MUST bind the current source snapshot.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    const firstPartition = manifest.partitions.find((partition) =>
+      partition.primaryTaskIds.includes('PLAN-T01A')
+    );
+    const secondPartition = manifest.partitions.find((partition) =>
+      partition.primaryTaskIds.includes('PLAN-T02')
+    );
+    assert.ok(firstPartition);
+    assert.ok(secondPartition);
+    assert.deepEqual(secondPartition.dependencyPartitionIds, [
+      firstPartition.partitionId,
+    ]);
+  });
+
+  it('projects an unscoped command to every structured task partition', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'global-command-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    const taskPaths = (prefix) =>
+      Array.from(
+        { length: 8 },
+        (_, index) => `- \`src/runtime/${prefix}-${index + 1}.ts\``
+      );
+    fs.writeFileSync(
+      source,
+      [
+        '# Global Command Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task PLAN-T01: Publish the first runtime surface',
+        '',
+        '**Modify:**',
+        '',
+        ...taskPaths('first'),
+        '',
+        '### Task PLAN-T02: Publish the second runtime surface',
+        '',
+        '**Modify:**',
+        '',
+        ...taskPaths('second'),
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- [ ] AC-001: MUST preserve deterministic runtime behavior.',
+        '',
+        '## Completion Evidence Packet',
+        '',
+        '- [ ] EVD-001: MUST bind the current source snapshot.',
+        '',
+        '## Required Test Commands',
+        '',
+        '- [ ] CMD-001: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.ok(manifest.partitions.length > 1);
+    assert.equal(
+      manifest.partitions.every((partition) =>
+        partition.commandIds.includes('CMD-001')
+      ),
+      true
+    );
   });
 
   it('rejects caller-authored partition authority before reading source or writing output', () => {
@@ -613,9 +1066,9 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     assert.equal(disabled.status, 0, disabled.stderr || disabled.stdout);
     assert.equal(disabledPayload.sequenceMode, 'disabled');
-    assert.equal(disabledPayload.sequenceCoverage, 'not_applicable');
-    assert.equal(disabledPayload.sequenceClosureStatus, 'not_required');
-    assert.equal(disabledPayload.childContractAuthority, 'full');
+    assert.equal(disabledPayload.sequenceCoverage, 'excluded');
+    assert.equal(disabledPayload.sequenceClosureStatus, 'not_requested');
+    assert.equal(disabledPayload.childContractAuthority, 'core_only');
 
     for (const [extraArgs, failureClass] of [
       [
@@ -641,6 +1094,41 @@ describe('bmad-speckit goal-contract partition command', () => {
     }
   });
 
+  it('fails required mode before projection when the producer is unavailable', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const out = path.join(root, 'required.json');
+    const receiptsDir = path.join(root, 'receipts');
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--sequence-mode',
+      'required',
+      '--receipts-dir',
+      receiptsDir,
+      '--out',
+      out,
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.notEqual(result.status, 0);
+    assert.equal(
+      payload.failureClass,
+      'sequence_closure_required_unavailable'
+    );
+    assert.equal(payload.sequenceMode, 'required');
+    assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
+    assert.equal(fs.existsSync(out), false);
+    assert.equal(
+      fs.existsSync(payload.sequenceApplicabilityReceiptPath),
+      true
+    );
+  });
+
   it('does not misclassify the real judge-role plan as Sequence-required', () => {
     const root = tempRoot();
     const source = path.join(
@@ -664,19 +1152,24 @@ describe('bmad-speckit goal-contract partition command', () => {
     ]);
     const payload = parsePayload(result);
 
-    assert.notEqual(result.status, 0);
-    assert.equal(
-      payload.failureClass,
-      'partition_atomic_component_exceeds_policy'
-    );
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    assert.equal(payload.ok, true);
     assert.equal(payload.sequenceMode, 'auto');
     assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
     assert.equal(payload.sequenceCoverage, 'not_applicable');
     assert.equal(payload.sequenceClosureStatus, 'not_required');
     assert.equal(payload.childContractAuthority, 'full');
-    assert.equal(
-      fs.existsSync(path.join(root, '.goal-contract-receipts', 'sequence-runs')),
-      false
+    assert.ok(payload.partitionCount > 1);
+    assert.equal(fs.existsSync(out), true);
+    assert.equal(fs.existsSync(payload.sequenceApplicabilityReceiptPath), true);
+    assert.deepEqual(
+      JSON.parse(
+        fs.readFileSync(
+          payload.sequenceApplicabilityReceiptPath,
+          'utf8'
+        )
+      ),
+      payload.sequenceApplicabilityReceipt
     );
   });
 

@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceKind",
+    "sourceType",
+    "snapshotId",
+    "sourceArtifactId",
+    "sourceRole",
+    "namespace",
+    "sourceOrder",
+    "pathOrSegmentId",
+    "encoding",
+    "newlineStyle",
+    "sourceSnapshotHash",
+    "aggregateHash",
+    "exactByteHash",
+    "normalizedTextHash",
+    "sourceBytes",
+    "sourceLines",
+    "frozenBytesBase64",
+    "sourcePath",
+    "sourceId",
+    "sourcePlanSemanticHash",
+    "segments",
+    "lineIndex",
+    "compilerProvenanceHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-source-snapshot/v1"
+    },
+    "sourceKind": {
+      "enum": ["source_plan", "conversation_segment", "confirmed_block"]
+    },
+    "sourceType": {
+      "enum": ["source_plan", "conversation_segment", "confirmed_block"]
+    },
+    "snapshotId": {
+      "type": "string",
+      "pattern": "^source-snapshot-[0-9a-f]{64}$"
+    },
+    "sourceArtifactId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRole": {
+      "enum": [
+        "primary_implementation_authority",
+        "subordinate_component_specification"
+      ]
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_-]*$"
+    },
+    "sourceOrder": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pathOrSegmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "encoding": {
+      "const": "utf8"
+    },
+    "newlineStyle": {
+      "enum": ["none", "lf", "crlf", "cr", "mixed"]
+    },
+    "sourceSnapshotHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "aggregateHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "exactByteHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "normalizedTextHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceBytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceLines": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "frozenBytesBase64": {
+      "type": "string",
+      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+    },
+    "sourcePath": {
+      "type": ["string", "null"]
+    },
+    "sourceId": {
+      "type": ["string", "null"]
+    },
+    "sourcePlanSemanticHash": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "segments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/segment"
+      }
+    },
+    "lineIndex": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    },
+    "compilerProvenanceHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "segmentId",
+        "segmentOrder",
+        "role",
+        "content",
+        "contentHash",
+        "normalizedTextHash",
+        "boundary"
+      ],
+      "properties": {
+        "segmentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "segmentOrder": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "role": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "normalizedTextHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["byteStart", "byteEnd", "lineStart", "lineEnd"],
+          "anyOf": [
+            {
+              "required": ["pathOrSegmentId"]
+            },
+            {
+              "required": ["sourcePath"]
+            }
+          ],
+          "properties": {
+            "pathOrSegmentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sourcePath": {
+              "type": "string",
+              "minLength": 1
+            },
+            "byteStart": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byteEnd": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "lineStart": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lineEnd": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lineNumber",
+        "startByte",
+        "contentEndByte",
+        "endByteExclusive",
+        "newline"
+      ],
+      "properties": {
+        "lineNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "startByte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentEndByte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endByteExclusive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "newline": {
+          "enum": ["", "\n", "\r\n", "\r"]
+        }
+      }
+    }
+  }
+}

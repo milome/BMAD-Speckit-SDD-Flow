@@ -32,31 +32,21 @@ function deriveSequenceExecutionState({
       sequenceApplicability,
     });
   }
-  if (sequenceApplicability === 'unresolved' && mode !== 'disabled') {
+  if (sequenceApplicability === 'unresolved' && mode === 'auto') {
     throw failure('sequence_applicability_unresolved');
   }
   if (mode === 'disabled') {
     return Object.freeze({
       sequenceMode: mode,
       sequenceApplicability,
-      sequenceCoverage:
-        sequenceApplicability === 'not_applicable_with_proof'
-          ? 'not_applicable'
-          : sequenceApplicability === 'required'
-            ? 'excluded'
-            : 'unresolved',
-      sequenceClosureStatus:
-        sequenceApplicability === 'not_applicable_with_proof'
-          ? 'not_required'
-          : 'not_requested',
-      childContractAuthority:
-        sequenceApplicability === 'not_applicable_with_proof'
-          ? 'full'
-          : 'core_only',
+      sequenceCoverage: 'excluded',
+      sequenceClosureStatus: 'not_requested',
+      childContractAuthority: 'core_only',
       shouldResolveProducer: false,
     });
   }
-  const required = sequenceApplicability === 'required';
+  const required =
+    mode === 'required' || sequenceApplicability === 'required';
   return Object.freeze({
     sequenceMode: mode,
     sequenceApplicability,

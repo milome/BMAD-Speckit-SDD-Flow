@@ -72,6 +72,7 @@ function makeProjection({
       dependencyIds: edges
         .filter((edge) => edge.toTaskId === taskId)
         .map((edge) => edge.fromTaskId),
+      atomicGroupRefs: slice.atomicGroupRefs || [],
       estimatedClosureMinutes: slice.taskMinutes?.[taskId] ?? 30,
       sequenceConstraintIds: constraints
         .filter((constraint) => constraint.taskIds.includes(taskId))
@@ -239,7 +240,7 @@ describe('goal-contract partition components', () => {
     );
   });
 
-  it('collapses every declared must-link source', () => {
+  it('collapses only explicit atomic must-link authority', () => {
     const cases = [
       [
         'crash_safe_transaction',
@@ -254,63 +255,11 @@ describe('goal-contract partition components', () => {
         },
       ],
       [
-        'public_action_registry',
-        (projection) => {
-          projection.productionEntryIndex.push({
-            productionEntryId: 'entry-public-action',
-            literal: 'goalContractCommand',
-            taskIds: ['task-a', 'task-b'],
-          });
-        },
-      ],
-      [
-        'schema_migration',
-        (projection) => {
-          projection.fileScopeIndex.push({
-            fileScopeId: 'file-shared-schema',
-            path: '_bmad/shared/example.schema.json',
-            taskIds: ['task-a', 'task-b'],
-          });
-        },
-      ],
-      [
-        'receipt_schema_producer',
-        (projection) => {
-          projection.evidenceContracts = [
-            {
-              evidenceContractId: 'receipt-current',
-              producerTaskIds: ['task-a'],
-              admissibleTypes: ['receipt'],
-              freshnessRule: 'current source roots',
-            },
-          ];
-          for (const slice of projection.traceSlices) {
-            slice.evidenceContractIds = ['receipt-current'];
-          }
-          for (const predicate of projection.completionPredicates) {
-            predicate.evidenceContractIds = ['receipt-current'];
-          }
-        },
-      ],
-      [
-        'controlled_writer_callers',
-        (projection) => {
-          projection.productionEntryIndex.push({
-            productionEntryId: 'entry-controlled-writer',
-            literal: 'stagePartitionSolution controlled writer',
-            taskIds: ['task-a', 'task-b'],
-          });
-        },
-      ],
-      [
         'source_atomic_co_change',
         (projection) => {
-          projection.sequenceConstraintBinding.constraints.push({
-            constraintId: 'constraint-co-change',
-            constraintType: 'atomic_co_change',
-            taskIds: ['task-a', 'task-b'],
-            semantic: { groupId: 'co-change-alpha' },
-          });
+          for (const task of projection.atomicTasks) {
+            task.atomicGroupRefs = ['atomic-source-group'];
+          }
         },
       ],
     ];
@@ -329,6 +278,46 @@ describe('goal-contract partition components', () => {
         reasonCode
       );
     }
+  });
+
+  it('keeps shared references decomposable and delegates them to ownership', () => {
+    const executionProjection = twoSliceProjection();
+    executionProjection.productionEntryIndex.push({
+      productionEntryId: 'entry-public-action',
+      literal: 'goalContractCommand',
+      taskIds: ['task-a', 'task-b'],
+    });
+    executionProjection.fileScopeIndex.push({
+      fileScopeId: 'file-shared-schema',
+      path: '_bmad/shared/example.schema.json',
+      taskIds: ['task-a', 'task-b'],
+    });
+    executionProjection.evidenceContracts = [
+      {
+        evidenceContractId: 'receipt-current',
+        producerTaskIds: ['task-a'],
+        admissibleTypes: ['receipt'],
+        freshnessRule: 'current source roots',
+      },
+    ];
+    for (const slice of executionProjection.traceSlices) {
+      slice.evidenceContractIds = ['receipt-current'];
+    }
+    for (const predicate of executionProjection.completionPredicates) {
+      predicate.evidenceContractIds = ['receipt-current'];
+    }
+
+    const result = buildPartitionComponents({
+      executionProjection,
+      policy: makePolicy(),
+    });
+
+    assert.equal(result.components.length, 2);
+    assert.equal(result.sharedArtifactOwnership.length, 1);
+    assert.equal(
+      result.sharedArtifactOwnership[0].participatingComponentIds.length,
+      2
+    );
   });
 
   it('keeps all tasks in one non-decomposable Trace Slice', () => {

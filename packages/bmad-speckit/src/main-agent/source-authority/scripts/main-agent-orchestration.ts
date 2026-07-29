@@ -85,6 +85,19 @@ import {
   type CriticalAuditorIndependentProviderExpectation,
   validateCriticalAuditorIndependentProviderEvidence,
 } from './requirements-contract-critical-auditor-independence';
+
+type CriticalAuditorProviderBindingExpectation = Pick<
+  CriticalAuditorJudgeRuntimeBinding,
+  | 'providerId'
+  | 'model'
+  | 'transport'
+  | 'adapterRef'
+  | 'apiStyle'
+  | 'configuredBaseUrlHash'
+  | 'independenceClass'
+  | 'providerRegistryHash'
+  | 'providerConfigurationHash'
+>;
 import {
   readCommittedRequirementsContractCriticalAuditorJudgeInvocation,
   reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation,
@@ -6145,7 +6158,7 @@ export function validateCriticalAuditorProviderInvocationReceipt(input: {
   semanticModelHash: string;
   projectionSetHash: string;
   providerRunId: string;
-  expectedProviderBinding: CriticalAuditorJudgeRuntimeBinding;
+  expectedProviderBinding: CriticalAuditorProviderBindingExpectation;
 }): Record<string, unknown> {
   const receiptRef = recordObject(input.receiptRef);
   const receiptPathValue = normalizeText(receiptRef.path);
@@ -23808,6 +23821,7 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
   const required = {
     providerId: normalizeText(binding.providerId),
     transport: normalizeText(binding.transport),
+    adapterRef: normalizeText(binding.adapterRef),
     apiStyle: normalizeText(binding.apiStyle),
     configuredBaseUrlHash: normalizeText(binding.configuredBaseUrlHash),
     independenceClass: normalizeText(binding.independenceClass),
@@ -23842,6 +23856,7 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
       providerId: required.providerId,
       model: configuredModel ?? null,
       transport: required.transport,
+      adapterRef: required.adapterRef,
       apiStyle: required.apiStyle,
       configuredBaseUrlHash: required.configuredBaseUrlHash,
       independenceClass: required.independenceClass,

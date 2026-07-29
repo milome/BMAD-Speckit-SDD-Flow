@@ -9,11 +9,13 @@ const { spawnSync } = require('node:child_process');
 const { partition } = require('../src/commands/goal-contract.ts');
 const {
   assertCurrentPartitionRuntimeEpoch,
+  buildDependencyCompatibilityReceipt,
   buildUnavailableSequenceApplicabilityReceipt,
   derivePartitionCapabilityState,
   finalizePartitionRun,
   readValidatedPartitionReceipt,
   resolveAssetRoot,
+  writeSequenceApplicabilityReceipt,
   writeSequenceApplicabilityBoundaryReceipt,
   writeValidatedPartitionReceipt,
 } = require('../src/utils/goal-contract/partition-receipts.ts');
@@ -22,6 +24,7 @@ const {
 } = require('../src/utils/large-document-writer/receipts.ts');
 const {
   decideSequenceApplicability,
+  hashSequenceApplicabilityPayload,
 } = require('../src/utils/goal-contract/sequence-applicability.ts');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -224,6 +227,95 @@ function passReceipts(staged) {
 }
 
 describe('strict partition receipts', () => {
+  it('builds compatibility evidence from a modern subcontract closure and evidence pair', () => {
+    const root = tempRoot();
+    const sharedArtifactPath = 'src/shared.ts';
+    const artifactPath = path.join(root, sharedArtifactPath);
+    fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
+    fs.writeFileSync(artifactPath, 'export const shared = true;\n', 'utf8');
+    const artifactHash = hash(fs.readFileSync(artifactPath));
+    const predecessorPartitionId = `partition-${'1'.repeat(64)}`;
+    const dependentPartitionId = `partition-${'2'.repeat(64)}`;
+    const partitionManifestHash = hash('partition-manifest');
+    const subcontractEvidence = {
+      schemaVersion: 'goal-contract-subcontract-evidence/v1',
+      partitionId: predecessorPartitionId,
+      partitionManifestHash,
+      governedFileManifest: [
+        {
+          path: sharedArtifactPath,
+          sourceHashAfter: artifactHash,
+          existsAfter: true,
+        },
+      ],
+      decision: 'pass',
+      evidenceHash: hash('subcontract-evidence'),
+    };
+    const predecessorClosure = {
+      schemaVersion: 'goal-contract-subcontract-closure-receipt/v1',
+      partitionId: predecessorPartitionId,
+      partitionManifestHash,
+      subcontractEvidenceHash: subcontractEvidence.evidenceHash,
+      decision: 'pass',
+      receiptHash: hash('subcontract-closure'),
+    };
+    const predecessorCompletionReceiptPath = path.join(
+      root,
+      'predecessor-closure.json'
+    );
+    fs.writeFileSync(
+      predecessorCompletionReceiptPath,
+      `${JSON.stringify(predecessorClosure, null, 2)}\n`,
+      'utf8'
+    );
+
+    const receipt = buildDependencyCompatibilityReceipt({
+      predecessorPartition: {
+        partitionId: predecessorPartitionId,
+        ownedArtifactPaths: [sharedArtifactPath],
+      },
+      dependentPartition: {
+        partitionId: dependentPartitionId,
+        dependencyPartitionIds: [predecessorPartitionId],
+        compatibilityReceiptRequirements: [
+          {
+            artifactPath: sharedArtifactPath,
+            predecessorPartitionId,
+            receiptPath: 'compatibility/shared.receipt.json',
+          },
+        ],
+      },
+      sharedArtifactPath,
+      predecessorCompletionReceipt: predecessorClosure,
+      predecessorCompletionReceiptPath,
+      predecessorSubcontractEvidence: subcontractEvidence,
+      predecessorArtifactPath: artifactPath,
+      predecessorArtifactHash: artifactHash,
+      currentArtifactPath: artifactPath,
+      masterSourceHash: hash('master-source'),
+      sourceSnapshotHash: hash('source-snapshot'),
+      partitionManifestHash,
+      compatibilityDomain: 'runtime_contract',
+      preservedAcceptanceIds: ['acceptance-shared'],
+      invalidatedAcceptanceIds: [],
+      compatibilityCommands: [
+        {
+          commandId: `command-${artifactHash.slice(7, 23)}`,
+          argv: [process.execPath, '--version'],
+        },
+      ],
+      cwd: root,
+    });
+
+    assert.equal(
+      receipt.predecessorCompletionReceiptHash,
+      predecessorClosure.receiptHash
+    );
+    assert.equal(receipt.predecessorArtifactHash, artifactHash);
+    assert.equal(receipt.currentArtifactHash, artifactHash);
+    assert.equal(receipt.decision, 'pass');
+  });
+
   it('publishes six closed JSON Schema 2020-12 receipt contracts', () => {
     for (const id of SCHEMA_IDS) {
       const schema = JSON.parse(
@@ -253,7 +345,8 @@ describe('strict partition receipts', () => {
     delete legacySemanticPayload.receiptHash;
     const legacyReceipt = {
       ...legacySemanticPayload,
-      receiptHash: hash(stableStringify(legacySemanticPayload)),
+      receiptHash:
+        hashSequenceApplicabilityPayload(legacySemanticPayload),
     };
     const currentSemanticPayload = {
       ...legacySemanticPayload,
@@ -265,7 +358,8 @@ describe('strict partition receipts', () => {
     };
     const currentReceipt = {
       ...currentSemanticPayload,
-      receiptHash: hash(stableStringify(currentSemanticPayload)),
+      receiptHash:
+        hashSequenceApplicabilityPayload(currentSemanticPayload),
     };
     const currentPath = path.join(root, 'current-sequence.json');
     writeValidatedPartitionReceipt({
@@ -363,6 +457,37 @@ describe('strict partition receipts', () => {
       methodologyProfileHash,
       receiptsDir: path.join(root, 'second-receipts'),
     });
+    const forcedApplicabilityReceipt = decideSequenceApplicability({
+      sourceSnapshotHash: `sha256:${'2'.repeat(64)}`,
+      semanticModelHash: `sha256:${'3'.repeat(64)}`,
+      traceGraphHash: `sha256:${'4'.repeat(64)}`,
+      architectureFacts: {
+        crossParticipantInteraction: false,
+        interfaceBoundary: false,
+        observableOrdering: false,
+        stateTransition: false,
+        branchCoverage: false,
+        boundedRetry: false,
+        compensation: false,
+        temporalConstraint: false,
+        integrationFanIn: false,
+        evidenceRefs: ['SOURCE-3'],
+      },
+      policyVersion: '1.0.0',
+    });
+    const forcedPayload = buildUnavailableSequenceApplicabilityReceipt({
+      applicabilityReceipt: forcedApplicabilityReceipt,
+      methodologyProfileHash,
+      sequenceMode: 'required',
+    });
+    assert.equal(forcedPayload.decision, 'not_applicable_with_proof');
+    assert.equal(forcedPayload.sequenceMode, 'required');
+    const forcedWritten = writeSequenceApplicabilityBoundaryReceipt({
+      applicabilityReceipt: forcedApplicabilityReceipt,
+      methodologyProfileHash,
+      receiptsDir: path.join(root, 'forced-receipts'),
+      sequenceMode: 'required',
+    });
     assert.deepEqual(
       readValidatedPartitionReceipt(
         written.path,
@@ -375,7 +500,7 @@ describe('strict partition receipts', () => {
         packageRoot: runtimeBuild.packageRoot,
         runtimeBuildAuthorityReceiptPath: runtimeBuild.receiptPath,
         selfHostingApplicabilityReceiptPaths: [
-          written.path,
+          forcedWritten.path,
           secondWritten.path,
         ],
       }),
@@ -410,7 +535,8 @@ describe('strict partition receipts', () => {
     );
     freshnessTampered.freshnessRoot = hash('stale-freshness-root');
     delete freshnessTampered.receiptHash;
-    freshnessTampered.receiptHash = hash(stableStringify(freshnessTampered));
+    freshnessTampered.receiptHash =
+      hashSequenceApplicabilityPayload(freshnessTampered);
     fs.writeFileSync(
       secondWritten.path,
       stableStringify(freshnessTampered),
@@ -425,6 +551,47 @@ describe('strict partition receipts', () => {
       (error) =>
         error.failureClass ===
         'sequence_applicability_receipt_freshness_mismatch'
+    );
+  });
+
+  it('persists successful Sequence applicability evidence immutably', () => {
+    const root = tempRoot();
+    const applicabilityReceipt = decideSequenceApplicability({
+      sourceSnapshotHash: `sha256:${'5'.repeat(64)}`,
+      semanticModelHash: `sha256:${'6'.repeat(64)}`,
+      traceGraphHash: `sha256:${'7'.repeat(64)}`,
+      architectureFacts: {
+        crossParticipantInteraction: false,
+        interfaceBoundary: false,
+        observableOrdering: false,
+        stateTransition: false,
+        branchCoverage: false,
+        boundedRetry: false,
+        compensation: false,
+        temporalConstraint: false,
+        integrationFanIn: false,
+        evidenceRefs: ['SOURCE-4'],
+      },
+      policyVersion: '1.0.0',
+    });
+    const written = writeSequenceApplicabilityReceipt({
+      applicabilityReceipt,
+      receiptsDir: path.join(root, 'receipts'),
+    });
+
+    assert.deepEqual(
+      readValidatedPartitionReceipt(
+        written.path,
+        'goal-contract-sequence-applicability-receipt/v1'
+      ),
+      { sequenceMode: 'auto', ...applicabilityReceipt }
+    );
+    assert.deepEqual(
+      writeSequenceApplicabilityReceipt({
+        applicabilityReceipt,
+        receiptsDir: path.join(root, 'receipts'),
+      }),
+      written
     );
   });
 

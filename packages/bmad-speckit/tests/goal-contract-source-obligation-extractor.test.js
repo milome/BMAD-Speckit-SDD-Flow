@@ -94,6 +94,25 @@ describe('goal-contract source obligation extractor', () => {
     assert.equal(obligation.normativeStrength, 'must');
     assert.equal(obligation.sourceSnapshotHash, snapshot.aggregateHash);
     assert.equal(obligation.sourcePlanHash, snapshot.aggregateHash);
+    assert.equal(obligation.sourceArtifactId, snapshot.sourceArtifactId);
+    assert.equal(obligation.sourceRole, snapshot.sourceRole);
+    assert.equal(obligation.namespace, snapshot.namespace);
+    assert.equal(obligation.sourceOrder, snapshot.sourceOrder);
+    assert.ok(Number.isInteger(obligation.startByte));
+    assert.ok(obligation.endByteExclusive > obligation.startByte);
+    assert.match(obligation.exactTextHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(obligation.normalizedTextHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.equal(obligation.specSpanRefs.length, 1);
+    assert.match(obligation.specSpanRefs[0], /^spec-span-[0-9a-f]{64}$/u);
+    assert.equal(obligation.specSpanRegistryHash, result.specSpanRegistryHash);
+    assert.equal(
+      result.specSpanRegistry.specSpans.length,
+      result.sourceObligations.length
+    );
+    assert.equal(
+      result.specSpanRegistryHash,
+      result.specSpanRegistry.specSpanRegistryHash
+    );
     assert.equal(obligation.exactText, '- [ ] PLAN-T01: Preserve exact bytes.');
     assert.deepEqual(obligation.headingPath, ['Plan', 'Implementation Tasks']);
   });
@@ -132,6 +151,39 @@ describe('goal-contract source obligation extractor', () => {
     assert.deepEqual(dependentTask.dependencyRefs, ['P04-T04']);
   });
 
+  it('captures explicit localized dependency declarations', () => {
+    const sourceText = [
+      '# Plan',
+      '',
+      '## Tasks',
+      '',
+      '### C00-T01：建立前置门禁',
+      '',
+      '### J01-T01：实现受治理入口',
+      '',
+      '**依赖：** C00-T01。',
+      '',
+    ].join('\n');
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/source.md',
+        rawBytes: Buffer.from(sourceText, 'utf8'),
+      }),
+    });
+    const dependency = result.sourceObligations.find(
+      (item) => item.exactText === '**依赖：** C00-T01。'
+    );
+
+    assert.ok(dependency);
+    assert.deepEqual(dependency.dependencyRefs, []);
+    assert.deepEqual(dependency.headingPath, [
+      'Plan',
+      'Tasks',
+      'J01-T01：实现受治理入口',
+    ]);
+  });
+
   it('accepts deterministic permissions and explicit optional argument fallbacks', () => {
     const sourceText = [
       '# Dynamic Compiler Implementation Plan',
@@ -167,6 +219,39 @@ describe('goal-contract source obligation extractor', () => {
 
     assert.equal(preamble.kind, 'heading_requirement');
     assert.ok(result.sourceObligations.some((item) => item.id === 'P01-T01'));
+  });
+
+  it('does not promote opaque identifier sentence endings into ordered-list obligations', () => {
+    const opaqueId = `STEP${String(5).padStart(2, '0')}`;
+    const prose =
+      `The matrix may create a bounded bootstrap set ending at ${opaqueId}. ` +
+      `${opaqueId} is not evidence that production inputs use a fixed count.`;
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/opaque-identifier-prose.md',
+        rawBytes: Buffer.from(
+          [
+            '# Plan',
+            '',
+            '## Bootstrap Rule',
+            '',
+            prose,
+            '',
+            '- MUST preserve deterministic bootstrap ownership.',
+            '',
+          ].join('\n'),
+          'utf8'
+        ),
+      }),
+    });
+
+    assert.equal(
+      result.sourceObligations.some(
+        (obligation) => obligation.exactText === prose
+      ),
+      false
+    );
   });
 
   it('fails closed on duplicate IDs, unknown dependencies, and ambiguous execution prose', () => {
@@ -212,17 +297,24 @@ describe('goal-contract source obligation extractor', () => {
   });
 
   it('binds a canonical typed source-obligation graph to semantic source changes', () => {
+    const declaredIds = {
+      task: 'FIXTURE-T01',
+      dependentTask: 'FIXTURE-T02',
+      acceptance: 'FIXTURE-AC01',
+      command: 'FIXTURE-CMD01',
+      evidence: 'FIXTURE-EVD01',
+    };
     const sourceText = [
       '# Plan',
       '## Tasks',
-      '### Task PLAN-T01: Create the acceptance compiler',
-      '- [ ] PLAN-T02: Dependencies: PLAN-T01; Atomic group: PLAN-T01.',
+      `### Task ${declaredIds.task}: Create the acceptance compiler`,
+      `- [ ] ${declaredIds.dependentTask}: Dependencies: ${declaredIds.task}; Atomic group: ${declaredIds.task}.`,
       '## Acceptance Criteria',
-      '- [ ] PLAN-AC01: Acceptance requires PLAN-T02.',
+      `- [ ] ${declaredIds.acceptance}: Acceptance requires ${declaredIds.dependentTask}.`,
       '## Required Test Commands',
-      '- [ ] PLAN-CMD01: Run `node --test compiler.test.js`.',
+      `- [ ] ${declaredIds.command}: Run \`node --test compiler.test.js\`.`,
       '## Completion Evidence Packet',
-      '- [ ] PLAN-EVD01: Evidence receipt produced by PLAN-CMD01.',
+      `- [ ] ${declaredIds.evidence}: Evidence receipt produced by ${declaredIds.command}.`,
       '## Example',
       '```json',
       '{"taskId":"EXAMPLE-T01"}',
@@ -287,12 +379,22 @@ describe('goal-contract source obligation extractor', () => {
       extracted.sourceObligationGraphHash
     );
     assert.notEqual(
-      extract(sourceText.replace('Dependencies: PLAN-T01', 'Dependencies: PLAN-AC01'))
+      extract(
+        sourceText.replace(
+          `Dependencies: ${declaredIds.task}`,
+          `Dependencies: ${declaredIds.acceptance}`
+        )
+      )
         .sourceObligationGraphHash,
       extracted.sourceObligationGraphHash
     );
     assert.notEqual(
-      extract(sourceText.replace('Atomic group: PLAN-T01', 'Atomic group: PLAN-AC01'))
+      extract(
+        sourceText.replace(
+          `Atomic group: ${declaredIds.task}`,
+          `Atomic group: ${declaredIds.acceptance}`
+        )
+      )
         .sourceObligationGraphHash,
       extracted.sourceObligationGraphHash
     );

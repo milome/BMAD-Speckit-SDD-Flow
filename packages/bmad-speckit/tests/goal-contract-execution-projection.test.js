@@ -16,6 +16,35 @@ const ROOTS = Object.freeze({
   semanticModelHash: hash('semantic'),
   traceGraphHash: hash('trace'),
 });
+const AUTHORITY_ROOTS = Object.freeze({
+  sourceCompositionMode: 'composite_required',
+  sourceCompositionPolicyHash: hash('source-composition-policy'),
+  orderedSourceSnapshotSetHash: hash('ordered-source-snapshot-set'),
+  orderedSourceBindings: [
+    {
+      sourceOrder: 0,
+      sourceArtifactId: 'primary-authority',
+      sourceRole: 'primary_implementation_authority',
+      namespace: 'PRIMARY',
+      sourceSnapshotHash: hash('primary-source'),
+    },
+    {
+      sourceOrder: 1,
+      sourceArtifactId: 'subordinate-authority',
+      sourceRole: 'subordinate_component_specification',
+      namespace: 'COMPONENT',
+      sourceSnapshotHash: hash('subordinate-source'),
+    },
+  ],
+  sourceAuthorityBundleHash: hash('source-authority-bundle'),
+  canonicalIntentSemanticHash: hash('canonical-intent-semantics'),
+  canonicalIntentBundleHash: hash('canonical-intent-bundle'),
+  specSpanRegistryHash: hash('spec-span-registry'),
+  intentAuthorityAttestationHash: hash('intent-authority-attestation'),
+  subordinateCoverageReceiptHashes: [hash('subordinate-coverage')],
+  goalContractSemanticHash: hash('goal-contract-semantics'),
+  goalContractHash: hash('goal-contract'),
+});
 
 function makeGraph() {
   const ids = ['alpha', 'beta', 'join'];
@@ -66,6 +95,7 @@ function makeGraph() {
 function makeInput(overrides = {}) {
   return {
     ...ROOTS,
+    ...AUTHORITY_ROOTS,
     reconciledGraph: makeGraph(),
     sequenceApplicabilityReceipt: {
       decision: 'not_applicable_with_proof',
@@ -161,6 +191,26 @@ function requiredSequenceInput() {
 }
 
 describe('goal-contract Execution Projection', () => {
+  it('binds the complete canonical source and parent Goal authority', () => {
+    const projection = compileExecutionProjection(makeInput());
+
+    for (const [field, expected] of Object.entries(AUTHORITY_ROOTS)) {
+      assert.deepEqual(projection[field], expected, field);
+    }
+    assert.deepEqual(
+      projection.orderedSourceBindings.map(
+        ({ sourceOrder, sourceArtifactId }) => ({
+          sourceOrder,
+          sourceArtifactId,
+        })
+      ),
+      [
+        { sourceOrder: 0, sourceArtifactId: 'primary-authority' },
+        { sourceOrder: 1, sourceArtifactId: 'subordinate-authority' },
+      ]
+    );
+  });
+
   it('compiles one deterministic task universe with complete source coverage', () => {
     const projection = compileExecutionProjection(makeInput());
     assert.equal(projection.schemaVersion, 'goal-contract-execution-projection/v1');

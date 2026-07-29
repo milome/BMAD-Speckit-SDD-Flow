@@ -597,6 +597,41 @@ describe('goal-contract partition optimizer', () => {
     }
   });
 
+  it('derives a terminal verification-only zero-write partition as final integration', () => {
+    const implementation = makeComponent('implementation');
+    const verification = makeComponent('verification', {
+      fileScopeIds: [],
+      productionEntryIds: [],
+      verificationOnly: true,
+    });
+    const graph = makeGraph({
+      components: [implementation, verification],
+      edges: [['implementation', 'verification']],
+    });
+    const executionProjection = makeExecutionProjection(
+      graph,
+      'terminal-verification-only'
+    );
+    const result = optimizePartitions({
+      componentGraph: graph,
+      executionProjection,
+      policyBinding: policyBindingFor(executionProjection, (policy) => {
+        policy.limits.maxClosureMinutesPerPartition = 30;
+        policy.limits.targetClosureMinutesPerPartition = {
+          min: 30,
+          max: 30,
+        };
+      }),
+    });
+    const verificationPartition = result.partitions.find((partition) =>
+      partition.primaryTaskIds.includes('task-verification')
+    );
+
+    assert.equal(verificationPartition.partitionRole, 'final_integration');
+    assert.equal(verificationPartition.primaryWriteScopeOwnerCount, 0);
+    assert.equal(verificationPartition.dependencyPartitionIds.length, 1);
+  });
+
   it('rejects split atomic components and duplicate primary owners', () => {
     const splitGraph = makeGraph({ ids: ['a', 'b'] });
     const splitProjection = makeExecutionProjection(splitGraph, 'split');
@@ -703,7 +738,7 @@ describe('goal-contract partition optimizer', () => {
     );
   });
 
-  it('records rejected candidates and bounds all candidate frontiers', () => {
+  it('prunes hard-invalid prefixes and bounds all candidate frontiers', () => {
     const graph = makeGraph({
       components: [
         makeComponent('a', {
@@ -722,17 +757,10 @@ describe('goal-contract partition optimizer', () => {
       policyBinding: policyBindingFor(executionProjection),
     });
 
-    assert.equal(result.searchReceipt.candidateCount, 2);
+    assert.equal(result.searchReceipt.candidateCount, 1);
     assert.equal(result.searchReceipt.validCandidateCount, 1);
-    assert.equal(result.rejectedCandidateSummaries.length, 1);
-    assert.equal(
-      result.rejectedCandidateSummaries[0].failureClass,
-      'partition_no_valid_solution'
-    );
-    assert.equal(
-      result.rejectedCandidateSummaries[0].reason,
-      'primary_write_scope_owner_limit_exceeded'
-    );
+    assert.equal(result.rejectedCandidateSummaries.length, 0);
+    assert.equal(result.searchReceipt.hardRejectedGroupCount, 1);
 
     assert.throws(
       () =>
@@ -747,6 +775,157 @@ describe('goal-contract partition optimizer', () => {
         error.failureClass === 'partition_policy_unsatisfied' &&
         error.reason === 'candidate_frontier_limit_exceeded'
     );
+  });
+
+  it('counts unique DAG frontiers instead of repeated partition histories', () => {
+    const graph = makeGraph({
+      ids: ['a', 'b', 'c', 'd'],
+      edges: [
+        ['a', 'b'],
+        ['b', 'c'],
+        ['c', 'd'],
+      ],
+    });
+    const executionProjection = makeExecutionProjection(
+      graph,
+      'unique-frontier-count'
+    );
+    const result = optimizePartitions({
+      componentGraph: graph,
+      executionProjection,
+      policyBinding: policyBindingFor(executionProjection, (policy) => {
+        policy.limits.maxCandidateFrontiers = 5;
+        policy.limits.maxClosureMinutesPerPartition = 120;
+        policy.limits.targetClosureMinutesPerPartition = {
+          min: 60,
+          max: 120,
+        };
+      }),
+    });
+
+    assert.equal(result.decision, 'selected');
+    assert.equal(result.searchReceipt.frontierCount, 5);
+  });
+
+  it('bounds search for fifty-one independent components without pre-enumerating every frontier', () => {
+    const ids = Array.from(
+      { length: 51 },
+      (_, index) => `wide-${String(index + 1).padStart(2, '0')}`
+    );
+    const graph = makeGraph({ ids });
+    const executionProjection = makeExecutionProjection(
+      graph,
+      'bounded-wide-frontier'
+    );
+    const result = optimizePartitions({
+      componentGraph: graph,
+      executionProjection,
+      policyBinding: policyBindingFor(executionProjection),
+    });
+
+    assert.equal(result.decision, 'selected');
+    assert.equal(result.partitions.flatMap(
+      (partition) => partition.primaryComponentIds
+    ).length, ids.length);
+    assert.ok(result.searchReceipt.frontierCount <= 256);
+    assert.ok(result.searchReceipt.searchStates <= 4096);
+  });
+
+  it('reports bounded search exhaustion instead of claiming a complete no-solution proof', () => {
+    const ids = Array.from(
+      { length: 9 },
+      (_, index) => `budget-${String(index + 1).padStart(2, '0')}`
+    );
+    const ordered = ids
+      .map((id) => ({ id, component: makeComponent(id) }))
+      .sort((left, right) =>
+        left.component.componentId.localeCompare(right.component.componentId)
+      );
+    ordered.at(-1).component.estimatedClosureMinutes = 60;
+    ordered.at(-1).component.closureMinuteBreakdown = {
+      declaredTaskMinutes: 60,
+      derivedTaskMinutes: 0,
+      verificationMinutes: 0,
+      coordinationMinutes: 0,
+      totalMinutes: 60,
+    };
+    const graph = makeGraph({
+      ids: ordered.map((entry) => entry.id),
+      components: ordered.map((entry) => entry.component),
+      edges: [
+        [ordered[0].id, ordered[1].id],
+        ...ordered
+          .slice(0, -1)
+          .map((entry) => [entry.id, ordered.at(-1).id]),
+      ],
+    });
+    const executionProjection = makeExecutionProjection(
+      graph,
+      'search-budget-exhaustion'
+    );
+
+    let caught = null;
+    let unexpectedResult = null;
+    try {
+      unexpectedResult = optimizePartitions({
+          componentGraph: graph,
+          executionProjection,
+          policyBinding: policyBindingFor(executionProjection, (policy) => {
+            policy.limits.maxClosureMinutesPerPartition = 60;
+            policy.limits.targetClosureMinutesPerPartition = {
+              min: 60,
+              max: 60,
+            };
+            policy.limits.maxCrossPartitionDependencies = 1;
+            policy.limits.maxSearchStates = 10;
+            policy.limits.maxCandidateFrontiers = 10;
+          }),
+        });
+    } catch (error) {
+      caught = error;
+    }
+    assert.ok(
+      caught,
+      stableStringify({
+        partitions: unexpectedResult?.partitions.map((partition) => ({
+          primaryComponentIds: partition.primaryComponentIds,
+          dependencyPartitionIds: partition.dependencyPartitionIds,
+        })),
+        searchReceipt: unexpectedResult?.searchReceipt,
+      })
+    );
+    assert.equal(caught.failureClass, 'partition_policy_unsatisfied');
+    assert.equal(caught.reason, 'search_budget_exhausted');
+  });
+
+  it('limits cross-partition dependency fan-in per partition, not manifest total', () => {
+    const ids = Array.from({ length: 34 }, (_, index) => `chain-${index + 1}`);
+    const graph = makeGraph({
+      ids,
+      edges: ids.slice(1).map((id, index) => [ids[index], id]),
+    });
+    const executionProjection = makeExecutionProjection(
+      graph,
+      'per-partition-dependency-limit'
+    );
+    const result = optimizePartitions({
+      componentGraph: graph,
+      executionProjection,
+      policyBinding: policyBindingFor(executionProjection, (policy) => {
+        policy.limits.maxClosureMinutesPerPartition = 30;
+        policy.limits.targetClosureMinutesPerPartition = {
+          min: 30,
+          max: 30,
+        };
+        policy.limits.maxCrossPartitionDependencies = 1;
+      }),
+    });
+
+    assert.equal(result.partitionCount, 34);
+    assert.equal(result.partitions.slice(1).every(
+      (partition) => partition.dependencyPartitionIds.length === 1
+    ), true);
+    assert.equal(result.candidates[0].crossPartitionDependencyCount, 33);
   });
 
   it('searches dependency-closed DAG frontiers beyond contiguous topological segments', () => {
@@ -1229,6 +1408,9 @@ describe('goal-contract partition optimizer', () => {
     };
     for (const component of graph.components) {
       component.productionEntryIds = ['entry-shared'];
+    }
+    for (const task of executionProjection.atomicTasks) {
+      task.atomicGroupRefs = ['atomic-source-group'];
     }
     sealExecutionProjection(executionProjection);
     graph.executionProjectionHash = executionProjection.executionProjectionHash;

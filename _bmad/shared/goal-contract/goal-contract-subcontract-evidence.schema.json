@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignActivationHash",
+    "activationReceiptHash",
+    "leaseReceiptHash",
+    "attemptId",
+    "partitionId",
+    "partitionManifestHash",
+    "partitionPlanHash",
+    "childContractHash",
+    "sourceCompositionPolicyHash",
+    "sourceAuthorityBundleHash",
+    "subordinateCoverageReceiptHashes",
+    "closureScopeMode",
+    "taskEvidenceRecords",
+    "governedFileManifest",
+    "governedFileManifestHash",
+    "dependencyClosureRecords",
+    "dependencyClosureHash",
+    "productionReachabilityRecords",
+    "productionReachabilityReceiptHash",
+    "integrationVerificationRecords",
+    "integrationVerificationReceiptHash",
+    "evidenceCategoryRecords",
+    "orderedVerificationEvidenceHashes",
+    "subcontractModelAuditCount",
+    "reviewerInvocationCount",
+    "auditorInvocationCount",
+    "judgeSemanticAttemptCount",
+    "compiledAt",
+    "decision",
+    "evidenceHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "goal-contract-subcontract-evidence/v1" },
+    "campaignId": { "type": "string", "pattern": "^goal-campaign-[0-9a-f]{64}$" },
+    "campaignActivationHash": { "$ref": "#/$defs/hash" },
+    "activationReceiptHash": { "$ref": "#/$defs/hash" },
+    "leaseReceiptHash": { "$ref": "#/$defs/hash" },
+    "attemptId": { "type": "string", "minLength": 1 },
+    "partitionId": { "$ref": "#/$defs/partitionId" },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "partitionPlanHash": { "$ref": "#/$defs/hash" },
+    "childContractHash": { "$ref": "#/$defs/hash" },
+    "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+    "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+    "subordinateCoverageReceiptHashes": { "$ref": "#/$defs/hashes" },
+    "closureScopeMode": {
+      "enum": ["governed_files", "integration_only"]
+    },
+    "taskEvidenceRecords": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/taskEvidence" }
+    },
+    "governedFileManifest": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/governedFile" }
+    },
+    "governedFileManifestHash": { "$ref": "#/$defs/hash" },
+    "dependencyClosureRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependencyClosure" }
+    },
+    "dependencyClosureHash": { "$ref": "#/$defs/hash" },
+    "productionReachabilityRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/reachability" }
+    },
+    "productionReachabilityReceiptHash": { "$ref": "#/$defs/hash" },
+    "integrationVerificationRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/integrationVerification" }
+    },
+    "integrationVerificationReceiptHash": { "$ref": "#/$defs/hash" },
+    "evidenceCategoryRecords": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/category" }
+    },
+    "orderedVerificationEvidenceHashes": { "$ref": "#/$defs/hashes" },
+    "subcontractModelAuditCount": { "const": 0 },
+    "reviewerInvocationCount": { "const": 0 },
+    "auditorInvocationCount": { "const": 0 },
+    "judgeSemanticAttemptCount": { "const": 0 },
+    "compiledAt": { "$ref": "#/$defs/timestamp" },
+    "decision": { "const": "pass" },
+    "evidenceHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "closureScopeMode": { "const": "governed_files" }
+        }
+      },
+      "then": {
+        "properties": {
+          "governedFileManifest": { "minItems": 1 },
+          "productionReachabilityRecords": { "minItems": 1 },
+          "integrationVerificationRecords": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "closureScopeMode": { "const": "integration_only" }
+        }
+      },
+      "then": {
+        "properties": {
+          "governedFileManifest": { "maxItems": 0 },
+          "productionReachabilityRecords": { "maxItems": 0 },
+          "integrationVerificationRecords": { "minItems": 1 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "hashes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    },
+    "taskEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "obligationRefs",
+        "specSpanRefs",
+        "governedPaths",
+        "sourceHashBefore",
+        "sourceHashAfter",
+        "exactCommand",
+        "workingDirectory",
+        "startedAt",
+        "endedAt",
+        "exitCode",
+        "logPath",
+        "logHash",
+        "taskEvidenceHash"
+      ],
+      "properties": {
+        "taskId": { "type": "string", "minLength": 1 },
+        "obligationRefs": { "$ref": "#/$defs/ids" },
+        "specSpanRefs": { "$ref": "#/$defs/ids" },
+        "governedPaths": { "$ref": "#/$defs/paths" },
+        "sourceHashBefore": { "$ref": "#/$defs/hash" },
+        "sourceHashAfter": { "$ref": "#/$defs/hash" },
+        "exactCommand": { "type": "string", "minLength": 1 },
+        "workingDirectory": { "type": "string", "minLength": 1 },
+        "startedAt": { "$ref": "#/$defs/timestamp" },
+        "endedAt": { "$ref": "#/$defs/timestamp" },
+        "exitCode": { "const": 0 },
+        "logPath": { "type": "string", "minLength": 1 },
+        "logHash": { "$ref": "#/$defs/hash" },
+        "taskEvidenceHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "governedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "classifications",
+        "sourceHashBefore",
+        "sourceHashAfter",
+        "existsAfter"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "classifications": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "created",
+              "modified",
+              "renamed",
+              "deleted",
+              "generated",
+              "tested",
+              "packaged",
+              "consumed"
+            ]
+          }
+        },
+        "sourceHashBefore": { "$ref": "#/$defs/hash" },
+        "sourceHashAfter": { "$ref": "#/$defs/hash" },
+        "existsAfter": { "type": "boolean" }
+      }
+    },
+    "dependencyClosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partitionId",
+        "closureReceiptHash",
+        "artifactHashes",
+        "compatibilityReceiptHashes"
+      ],
+      "properties": {
+        "partitionId": { "$ref": "#/$defs/partitionId" },
+        "closureReceiptHash": { "$ref": "#/$defs/hash" },
+        "artifactHashes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/hash" }
+        },
+        "compatibilityReceiptHashes": { "$ref": "#/$defs/hashes" }
+      }
+    },
+    "reachability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicEntry",
+        "entryKind",
+        "changedImplementationSymbols",
+        "reachableSymbols",
+        "traversedPaths",
+        "decision"
+      ],
+      "properties": {
+        "publicEntry": { "type": "string", "minLength": 1 },
+        "entryKind": { "const": "production" },
+        "changedImplementationSymbols": { "$ref": "#/$defs/ids" },
+        "reachableSymbols": { "$ref": "#/$defs/ids" },
+        "traversedPaths": { "$ref": "#/$defs/paths" },
+        "decision": { "const": "pass" }
+      }
+    },
+    "integrationVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verificationTarget",
+        "coveredDependencyPartitionIds",
+        "taskEvidenceRefs",
+        "decision",
+        "integrationVerificationHash"
+      ],
+      "properties": {
+        "verificationTarget": { "const": "partition_dependencies" },
+        "coveredDependencyPartitionIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/partitionId" }
+        },
+        "taskEvidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "decision": { "const": "pass" },
+        "integrationVerificationHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "applicability",
+        "decision",
+        "evidenceHash"
+      ],
+      "properties": {
+        "category": { "type": "string", "minLength": 1 },
+        "applicability": {
+          "enum": ["applicable", "not_applicable_with_proof"]
+        },
+        "decision": { "enum": ["pass", "not_applicable"] },
+        "evidenceHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

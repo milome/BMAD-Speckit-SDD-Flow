@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignActivationHash",
+    "activationReceiptHash",
+    "attemptId",
+    "partitionId",
+    "partitionManifestHash",
+    "partitionSetHash",
+    "sourceCompositionPolicyHash",
+    "sourceAuthorityBundleHash",
+    "partitionPlanHash",
+    "childContractHash",
+    "selectionHash",
+    "closureScopeMode",
+    "predecessorClosureReceiptHashes",
+    "leaseOrdinal",
+    "authorizationCount",
+    "modelInvocationCount",
+    "issuedAt",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-subcontract-execution-lease/v1"
+    },
+    "campaignId": {
+      "type": "string",
+      "pattern": "^goal-campaign-[0-9a-f]{64}$"
+    },
+    "campaignActivationHash": { "$ref": "#/$defs/hash" },
+    "activationReceiptHash": { "$ref": "#/$defs/hash" },
+    "attemptId": { "type": "string", "minLength": 1 },
+    "partitionId": { "$ref": "#/$defs/partitionId" },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+    "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+    "partitionPlanHash": { "$ref": "#/$defs/hash" },
+    "childContractHash": { "$ref": "#/$defs/hash" },
+    "selectionHash": { "$ref": "#/$defs/hash" },
+    "closureScopeMode": {
+      "enum": ["governed_files", "integration_only"]
+    },
+    "predecessorClosureReceiptHashes": { "$ref": "#/$defs/hashes" },
+    "leaseOrdinal": { "type": "integer", "minimum": 1 },
+    "authorizationCount": { "const": 1 },
+    "modelInvocationCount": { "const": 0 },
+    "issuedAt": { "$ref": "#/$defs/timestamp" },
+    "decision": { "const": "pass" },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hashes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    }
+  }
+}

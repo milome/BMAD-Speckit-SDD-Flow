@@ -67,7 +67,7 @@ function activeRun(root) {
 }
 
 describe('partition-bound goal contract generation', () => {
-  it('binds one current selected partition and writes strict child receipts', () => {
+  it('binds one selected partition but requires final membership before release', () => {
     const root = tempRoot();
     const run = activeRun(root);
     const partition = run.manifest.partitions[0];
@@ -138,9 +138,14 @@ describe('partition-bound goal contract generation', () => {
       '--receipts-dir', run.receiptsDir,
       '--json',
     ]);
-    assert.equal(release.status, 0, release.stderr || release.stdout);
+    assert.equal(release.status, 1, release.stderr || release.stdout);
     const releaseReceipt = JSON.parse(release.stdout);
-    assert.equal(releaseReceipt.decision, 'pass');
+    assert.equal(releaseReceipt.decision, 'blocked');
+    assert.ok(
+      releaseReceipt.blockingReasons.includes(
+        'partition_final_manifest_required'
+      )
+    );
     assert.equal(releaseReceipt.componentDecisions.sequence, 'pass');
     for (const field of [
       'sequenceMode',
@@ -213,6 +218,139 @@ describe('partition-bound goal contract generation', () => {
     ]) {
       assert.match(result.slotData.frontMatter, new RegExp(`^${line}$`, 'mu'));
     }
+  });
+
+  it('binds a partition plan without embedding a final manifest hash', () => {
+    const partitionId = `partition-${'b'.repeat(64)}`;
+    const result = buildPartitionSlotData({
+      source: {
+        sourcePlanPath: 'source.md',
+        sourcePlanHash: hash('source'),
+        sourceBytes: 1,
+        sourceLines: 1,
+      },
+      profile: {
+        profileVersion: '1.0.0',
+        profileHash: hash('profile'),
+      },
+      selectedScope: {
+        partition: {
+          partitionId,
+          partitionRole: 'implementation',
+          dependencyPartitionIds: [],
+        },
+        primarySourceObligations: [
+          { id: 'source-selected', summary: 'Selected.' },
+        ],
+        primaryAtomicTasks: [
+          {
+            taskId: 'task-selected',
+            title: 'Selected task',
+            sourceIds: ['source-selected'],
+            dependencyIds: [],
+          },
+        ],
+        completionPredicates: [
+          {
+            predicateId: 'acceptance-selected',
+            statement: 'Selected passes.',
+            sourceIds: ['source-selected'],
+            evidenceContractIds: ['evidence-selected'],
+          },
+        ],
+        evidenceContracts: [
+          {
+            evidenceContractId: 'evidence-selected',
+            producerTaskIds: ['task-selected'],
+            freshnessRule: 'current',
+          },
+        ],
+        commands: [
+          {
+            commandId: 'command-selected',
+            literal: 'node --version',
+          },
+        ],
+        inheritedConstraints: [],
+        excludedAtomicTaskIds: [],
+        excludedAcceptanceIds: [],
+        excludedCommandIds: [],
+        namespacedObligations: [
+          {
+            declaredSourceId: 'SUB-REQ-01',
+            namespace: 'SUB',
+            sourceArtifactId: 'subordinate-component',
+            specSpanRefs: ['span-subordinate'],
+          },
+        ],
+      },
+      receiptPaths: {
+        outPath: 'child.md',
+        coverageReceiptPath: 'child.coverage.json',
+        generationReceiptPath: 'child.generation.json',
+      },
+      bindings: {
+        partitionPlanHash: hash('partition-plan'),
+        sourceCompositionPolicyHash: hash('composition-policy'),
+        goalContractHash: hash('parent-goal'),
+        partitionSetHash: hash('partition-set'),
+        selectionSetHash: hash('selection'),
+        orderedSourceSnapshotSetHash: hash('ordered-sources'),
+        sourceAuthorityBundleHash: hash('source-authority'),
+        subordinateCoverageReceiptHashes: [hash('subordinate-coverage')],
+        sourceSnapshotHash: hash('snapshot'),
+        methodologyProfileHash: hash('methodology'),
+        methodologyProfileArtifactHash: hash('methodology-artifact'),
+        executionProjectionHash: hash('projection'),
+        taskDagHash: hash('dag'),
+        partitionPolicyHash: hash('partition-policy'),
+        partitionPolicyArtifactHash: hash('partition-policy-artifact'),
+        partitionAnalysisReceiptHash: hash('analysis'),
+        sequenceMode: 'disabled',
+        sequenceApplicability: 'not_applicable_with_proof',
+        sequenceCoverage: 'excluded',
+        sequenceClosureStatus: 'not_requested',
+        childContractAuthority: 'core_only',
+      },
+    });
+    const frontMatter = result.slotData.frontMatter;
+    for (const field of [
+      'partitionPlanHash',
+      'sourceCompositionPolicyHash',
+      'goalContractHash',
+      'orderedSourceSnapshotSetHash',
+      'sourceAuthorityBundleHash',
+      'subordinateCoverageReceiptHashes',
+      'obligationRefs',
+      'namespaceRefs',
+      'sourceArtifactRefs',
+      'specSpanRefs',
+      'governedPaths',
+    ]) {
+      assert.match(frontMatter, new RegExp(`^${field}:`, 'mu'));
+    }
+    assert.doesNotMatch(frontMatter, /^partitionManifestHash:/mu);
+    assert.doesNotMatch(frontMatter, /^partitionManifestPath:/mu);
+    assert.doesNotMatch(frontMatter, /\bundefined\b/u);
+
+    const completionEvidence =
+      result.slotData.completionEvidencePacket;
+    for (const field of [
+      'partitionPlanHash',
+      'sourceCompositionPolicyHash',
+      'sourceAuthorityBundleHash',
+      'partitionSetHash',
+      'selectionSetHash',
+      'coverageReceiptPath',
+      'generationReceiptPath',
+    ]) {
+      assert.ok(completionEvidence.includes(`\`${field}\``));
+    }
+    assert.doesNotMatch(
+      completionEvidence,
+      /partitionManifestHash|selectionReceiptHash|globalCoverageReceiptHash/u
+    );
+    assert.doesNotMatch(completionEvidence, /\bundefined\b/u);
   });
 
   it('rejects a stale or tampered active manifest before rendering', () => {

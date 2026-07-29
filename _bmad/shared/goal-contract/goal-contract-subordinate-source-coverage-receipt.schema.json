@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-subordinate-source-coverage-receipt/v1",
+  "title": "Goal Contract Subordinate Source Coverage Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceArtifactId",
+    "namespace",
+    "parentTaskRefs",
+    "requiredRequirementIds",
+    "coveredRequirementIds",
+    "requiredTaskIds",
+    "coveredTaskIds",
+    "specSpanRefs",
+    "unmappedRequirementCount",
+    "unmappedTaskCount",
+    "scopeEscapeCount",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-subordinate-source-coverage-receipt/v1"
+    },
+    "sourceArtifactId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "namespace": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parentTaskRefs": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "requiredRequirementIds": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "coveredRequirementIds": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "requiredTaskIds": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "coveredTaskIds": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "specSpanRefs": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "unmappedRequirementCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unmappedTaskCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scopeEscapeCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

@@ -86,6 +86,10 @@ function sha256Text(value) {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
 
+function hashSequenceApplicabilityPayload(payload) {
+  return sha256Text(stableStringify(payload));
+}
+
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) deepFreeze(child);
@@ -135,7 +139,7 @@ function decideSequenceApplicability({
   };
   return deepFreeze({
     ...semanticPayload,
-    receiptHash: sha256Text(stableStringify(semanticPayload)),
+    receiptHash: hashSequenceApplicabilityPayload(semanticPayload),
   });
 }
 
@@ -245,7 +249,8 @@ function validateApplicabilityReceiptHash(applicabilityReceipt) {
       ([field]) => field !== 'receiptHash'
     )
   );
-  const expectedReceiptHash = sha256Text(stableStringify(semanticPayload));
+  const expectedReceiptHash =
+    hashSequenceApplicabilityPayload(semanticPayload);
   if (applicabilityReceipt.receiptHash !== expectedReceiptHash) {
     throw failure('sequence_applicability_receipt_hash_mismatch', {
       actualReceiptHash: applicabilityReceipt.receiptHash,
@@ -359,5 +364,6 @@ module.exports = {
   REQUIRED_SIGNALS,
   decideSequenceApplicability,
   findForbiddenSequenceFields,
+  hashSequenceApplicabilityPayload,
   validateSequenceConstraintInput,
 };

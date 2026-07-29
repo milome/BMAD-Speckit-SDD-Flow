@@ -163,7 +163,7 @@ describe('goal-contract partition source/dist runtime parity', () => {
       if (name === 'oversized') {
         assert.deepEqual(sourceSemantic, {
           outcome: 'blocked',
-          failureClass: 'partition_atomic_component_exceeds_policy',
+          failureClass: 'partition_global_coverage_blocked',
         });
       } else {
         assert.equal(sourceSemantic.sequenceMode, 'auto');
@@ -211,8 +211,8 @@ describe('goal-contract partition source/dist runtime parity', () => {
     assert.equal(runs.auto.partitionCount, runs.disabled.partitionCount);
     assert.equal(runs.disabled.sequenceMode, 'disabled');
     assert.equal(runs.disabled.sequenceApplicability, 'not_applicable_with_proof');
-    assert.equal(runs.disabled.sequenceCoverage, 'not_applicable');
-    assert.equal(runs.disabled.sequenceClosureStatus, 'not_required');
-    assert.equal(runs.disabled.childContractAuthority, 'full');
+    assert.equal(runs.disabled.sequenceCoverage, 'excluded');
+    assert.equal(runs.disabled.sequenceClosureStatus, 'not_requested');
+    assert.equal(runs.disabled.childContractAuthority, 'core_only');
   });
 });

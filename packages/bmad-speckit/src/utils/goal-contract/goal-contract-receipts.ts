@@ -53,8 +53,7 @@ function uniqueStrings(values = []) {
   return [...new Set(values.filter(Boolean).map(String))].sort();
 }
 
-function writePartitionChildCoverageReceipt({
-  targetPath,
+function buildPartitionChildCoverageReceipt({
   partitionId,
   partitionManifestHash,
   selectionReceiptHash,
@@ -76,29 +75,37 @@ function writePartitionChildCoverageReceipt({
       ? ['partition_child_generated_acceptance_orphaned']
       : []),
   ];
-  return writeValidatedPartitionReceipt({
-    schemaId: 'goal-contract-partition-child-coverage-receipt/v1',
-    targetPath,
-    payload: {
-      schemaVersion: 'goal-contract-partition-child-coverage-receipt/v1',
-      partitionId,
-      partitionManifestHash,
-      selectionReceiptHash,
-      globalCoverageReceiptHash,
-      selectedPrimaryObligationIds: uniqueStrings(selectedPrimaryObligationIds),
-      inheritedConstraintIds: uniqueStrings(inheritedConstraintIds),
-      excludedObligationIds: uniqueStrings(excludedObligationIds),
-      unmappedSelectedObligations: unmapped,
-      orphanGeneratedTaskIds: orphanTasks,
-      orphanGeneratedAcceptanceIds: orphanAcceptance,
-      decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
-      blockingReasons,
-    },
+  return Object.freeze({
+    schemaVersion: 'goal-contract-partition-child-coverage-receipt/v1',
+    partitionId,
+    partitionManifestHash,
+    selectionReceiptHash,
+    globalCoverageReceiptHash,
+    selectedPrimaryObligationIds: uniqueStrings(
+      selectedPrimaryObligationIds
+    ),
+    inheritedConstraintIds: uniqueStrings(inheritedConstraintIds),
+    excludedObligationIds: uniqueStrings(excludedObligationIds),
+    unmappedSelectedObligations: unmapped,
+    orphanGeneratedTaskIds: orphanTasks,
+    orphanGeneratedAcceptanceIds: orphanAcceptance,
+    decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons,
   });
 }
 
-function writePartitionChildGenerationReceipt({
+function writePartitionChildCoverageReceipt({
   targetPath,
+  ...input
+}) {
+  return writeValidatedPartitionReceipt({
+    schemaId: 'goal-contract-partition-child-coverage-receipt/v1',
+    targetPath,
+    payload: buildPartitionChildCoverageReceipt(input),
+  });
+}
+
+function buildPartitionChildGenerationReceipt({
   masterSourcePath,
   masterSourceHash,
   sourceSnapshotHash,
@@ -168,53 +175,62 @@ function writePartitionChildGenerationReceipt({
   if (writeReceipt?.finalHash !== goalContractHash) {
     blockingReasons.push('partition_child_safe_write_hash_mismatch');
   }
+  return Object.freeze({
+    schemaVersion: 'goal-contract-partition-child-generation-receipt/v1',
+    masterSourcePath,
+    masterSourceHash,
+    sourceSnapshotHash,
+    methodologyProfileHash,
+    methodologyProfileArtifactHash,
+    executionProjectionHash,
+    taskDagHash,
+    sequenceMode,
+    sequenceApplicability,
+    sequenceCoverage,
+    sequenceClosureStatus,
+    childContractAuthority,
+    partitionPolicyHash,
+    partitionPolicyArtifactHash,
+    partitionManifestPath,
+    partitionManifestHash,
+    partitionAnalysisReceiptHash,
+    partitionSetHash,
+    partitionId,
+    partitionRole,
+    selectionReceiptPath,
+    selectionReceiptHash,
+    selectionSetHash,
+    globalCoverageReceiptPath,
+    globalCoverageReceiptHash,
+    goalContractPath,
+    goalContractHash,
+    coverageReceiptPath,
+    coverageReceiptHash,
+    selectedAtomicTaskCount,
+    inheritedConstraintCount,
+    rendererAudit,
+    deterministicPreflight,
+    commandPortabilityAudit,
+    writeReceipt,
+    decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons,
+  });
+}
+
+function writePartitionChildGenerationReceipt({
+  targetPath,
+  ...input
+}) {
   return writeValidatedPartitionReceipt({
     schemaId: 'goal-contract-partition-child-generation-receipt/v1',
     targetPath,
-    payload: {
-      schemaVersion: 'goal-contract-partition-child-generation-receipt/v1',
-      masterSourcePath,
-      masterSourceHash,
-      sourceSnapshotHash,
-      methodologyProfileHash,
-      methodologyProfileArtifactHash,
-      executionProjectionHash,
-      taskDagHash,
-      sequenceMode,
-      sequenceApplicability,
-      sequenceCoverage,
-      sequenceClosureStatus,
-      childContractAuthority,
-      partitionPolicyHash,
-      partitionPolicyArtifactHash,
-      partitionManifestPath,
-      partitionManifestHash,
-      partitionAnalysisReceiptHash,
-      partitionSetHash,
-      partitionId,
-      partitionRole,
-      selectionReceiptPath,
-      selectionReceiptHash,
-      selectionSetHash,
-      globalCoverageReceiptPath,
-      globalCoverageReceiptHash,
-      goalContractPath,
-      goalContractHash,
-      coverageReceiptPath,
-      coverageReceiptHash,
-      selectedAtomicTaskCount,
-      inheritedConstraintCount,
-      rendererAudit,
-      deterministicPreflight,
-      commandPortabilityAudit,
-      writeReceipt,
-      decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
-      blockingReasons,
-    },
+    payload: buildPartitionChildGenerationReceipt(input),
   });
 }
 
 module.exports = {
+  buildPartitionChildCoverageReceipt,
+  buildPartitionChildGenerationReceipt,
   defaultReceiptPaths,
   fileHashIfExists,
   writePartitionChildCoverageReceipt,

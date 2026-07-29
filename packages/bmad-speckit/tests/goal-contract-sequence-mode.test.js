@@ -23,12 +23,14 @@ describe('goal-contract sequence mode', () => {
       ['auto', 'not_applicable_with_proof', false, 'not_applicable', 'not_required', 'full', false],
       ['auto', 'required', true, 'complete', 'compiled', 'full', true],
       ['auto', 'required', false, 'complete', 'unavailable', 'full', true],
-      ['required', 'not_applicable_with_proof', false, 'not_applicable', 'not_required', 'full', false],
+      ['required', 'not_applicable_with_proof', true, 'complete', 'compiled', 'full', true],
+      ['required', 'not_applicable_with_proof', false, 'complete', 'unavailable', 'full', true],
       ['required', 'required', true, 'complete', 'compiled', 'full', true],
       ['required', 'required', false, 'complete', 'unavailable', 'full', true],
-      ['disabled', 'not_applicable_with_proof', false, 'not_applicable', 'not_required', 'full', false],
+      ['required', 'unresolved', false, 'complete', 'unavailable', 'full', true],
+      ['disabled', 'not_applicable_with_proof', false, 'excluded', 'not_requested', 'core_only', false],
       ['disabled', 'required', false, 'excluded', 'not_requested', 'core_only', false],
-      ['disabled', 'unresolved', false, 'unresolved', 'not_requested', 'core_only', false],
+      ['disabled', 'unresolved', false, 'excluded', 'not_requested', 'core_only', false],
     ];
 
     for (const [
@@ -58,17 +60,15 @@ describe('goal-contract sequence mode', () => {
     }
   });
 
-  it('fails closed for unresolved auto and required modes', () => {
-    for (const sequenceMode of ['auto', 'required']) {
-      assert.throws(
-        () =>
-          deriveSequenceExecutionState({
-            sequenceMode,
-            sequenceApplicability: 'unresolved',
-            producerAvailable: false,
-          }),
-        (error) => error.failureClass === 'sequence_applicability_unresolved'
-      );
-    }
+  it('fails closed for unresolved auto mode', () => {
+    assert.throws(
+      () =>
+        deriveSequenceExecutionState({
+          sequenceMode: 'auto',
+          sequenceApplicability: 'unresolved',
+          producerAvailable: false,
+        }),
+      (error) => error.failureClass === 'sequence_applicability_unresolved'
+    );
   });
 });

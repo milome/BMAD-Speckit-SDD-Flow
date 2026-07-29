@@ -71,8 +71,11 @@ function ownershipInventory(partitions, field) {
 function dependencyFindings(manifest, executionProjection) {
   const reasons = [];
   const unresolvedDependencies = [];
-  const partitions: any[] = manifest.partitions || [];
-  const partitionById = new Map<string, any>(
+  // The final manifest schema validates these records before selection checks run.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type ManifestPartition = Record<string, any>;
+  const partitions: ManifestPartition[] = manifest.partitions || [];
+  const partitionById = new Map<string, ManifestPartition>(
     partitions.map((partition) => [partition.partitionId, partition])
   );
   const order = manifest.topologicalOrder || [];
@@ -163,7 +166,7 @@ function sharedArtifactFindings(manifest, dependencyState) {
       owners.get(artifactPath).push(partition.partitionId);
     }
   }
-  for (const [artifactPath, partitionIds] of owners.entries()) {
+  for (const [, partitionIds] of owners.entries()) {
     if (partitionIds.length > 1) reasons.push('shared_artifact_duplicate_owner');
   }
   for (const partition of manifest.partitions || []) {
@@ -317,6 +320,181 @@ function buildGlobalPartitionCoverageReceipt({
     unresolvedDependencies: dependency.unresolvedDependencies,
     unownedSharedArtifacts: shared.unownedSharedArtifacts,
     finalIntegrationPartitionIds: integration.partitionIds,
+    decision: reasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons: reasons,
+  });
+}
+
+function partitionPlanDependencyFindings(partitionPlan, candidateManifest) {
+  const blockingReasons = [];
+  const unresolvedDependencies = [];
+  const order = candidateManifest.topologicalOrder || [];
+  const index = new Map(
+    order.map((partitionId, position) => [partitionId, position])
+  );
+  const actualEdges = [];
+  for (const partition of candidateManifest.partitions || []) {
+    for (const dependencyPartitionId of
+      partition.dependencyPartitionIds || []) {
+      if (
+        !index.has(dependencyPartitionId) ||
+        (index.get(dependencyPartitionId) ?? Number.MAX_SAFE_INTEGER) >=
+          (index.get(partition.partitionId) ?? -1)
+      ) {
+        blockingReasons.push('partition_dependency_future');
+        unresolvedDependencies.push(
+          `${partition.partitionId}->${dependencyPartitionId}`
+        );
+      }
+      actualEdges.push({
+        fromPartitionId: dependencyPartitionId,
+        toPartitionId: partition.partitionId,
+      });
+    }
+  }
+  const canonicalEdges = (edges) =>
+    [...edges].sort((left, right) =>
+      stableStringify(left).localeCompare(stableStringify(right))
+    );
+  if (
+    stableStringify(canonicalEdges(actualEdges)) !==
+    stableStringify(canonicalEdges(partitionPlan.dependencyEdges || []))
+  ) {
+    blockingReasons.push('partition_dependency_edge_mismatch');
+  }
+  return {
+    blockingReasons: unique(blockingReasons),
+    unresolvedDependencies: unique(unresolvedDependencies),
+    index,
+  };
+}
+
+function buildPartitionPlanGlobalCoverageReceipt({
+  partitionPlan,
+  candidateManifest,
+}) {
+  const expectedSources = unique(
+    partitionPlan.coverageObligations?.sourceObligationIds || []
+  );
+  const expectedSlices = unique(
+    partitionPlan.coverageObligations?.traceSliceIds || []
+  );
+  const expectedTasks = unique(
+    partitionPlan.coverageObligations?.atomicTaskIds || []
+  );
+  const partitions = candidateManifest.partitions || [];
+  const sourceOwnership = ownershipInventory(
+    partitions,
+    'primarySourceObligationIds'
+  );
+  const sliceOwnership = ownershipInventory(
+    partitions,
+    'primaryTraceSliceIds'
+  );
+  const taskOwnership = ownershipInventory(partitions, 'primaryTaskIds');
+  const unmappedSourceObligations = difference(
+    expectedSources,
+    sourceOwnership.uniqueValues
+  );
+  const unmappedTraceSlices = difference(
+    expectedSlices,
+    sliceOwnership.uniqueValues
+  );
+  const unmappedAtomicTasks = difference(
+    expectedTasks,
+    taskOwnership.uniqueValues
+  );
+  const blockingReasons = [];
+  if (candidateManifest.partitionPlanHash !== partitionPlan.partitionPlanHash) {
+    blockingReasons.push('partition_plan_hash_mismatch');
+  }
+  if (
+    candidateManifest.partitionSetHash !== partitionPlan.partitionSetHash ||
+    stableStringify(candidateManifest.topologicalOrder || []) !==
+      stableStringify(partitionPlan.topologicalOrder || [])
+  ) {
+    blockingReasons.push('partition_set_mismatch');
+  }
+  for (const [missing, duplicate, unknown, expected, ownership] of [
+    [
+      'unmapped_source_obligation',
+      'duplicate_primary_source_obligation',
+      'unknown_primary_source_obligation',
+      expectedSources,
+      sourceOwnership,
+    ],
+    [
+      'unmapped_trace_slice',
+      'duplicate_primary_trace_slice',
+      'unknown_primary_trace_slice',
+      expectedSlices,
+      sliceOwnership,
+    ],
+    [
+      'unmapped_atomic_task',
+      'duplicate_primary_atomic_task',
+      'unknown_primary_atomic_task',
+      expectedTasks,
+      taskOwnership,
+    ],
+  ]) {
+    if (difference(expected, ownership.uniqueValues).length > 0) {
+      blockingReasons.push(missing);
+    }
+    if (ownership.duplicates.length > 0) {
+      blockingReasons.push(duplicate);
+    }
+    if (difference(ownership.uniqueValues, expected).length > 0) {
+      blockingReasons.push(unknown);
+    }
+  }
+  const dependency = partitionPlanDependencyFindings(
+    partitionPlan,
+    candidateManifest
+  );
+  const shared = sharedArtifactFindings(candidateManifest, dependency);
+  blockingReasons.push(
+    ...dependency.blockingReasons,
+    ...shared.blockingReasons
+  );
+  const planRoles = new Map(
+    (partitionPlan.partitions || []).map((partition) => [
+      partition.partitionId,
+      partition.partitionRole,
+    ])
+  );
+  if (
+    partitions.some(
+      (partition) =>
+        planRoles.get(partition.partitionId) !== partition.partitionRole
+    )
+  ) {
+    blockingReasons.push('partition_role_mismatch');
+  }
+  const reasons = unique(blockingReasons);
+  return Object.freeze({
+    schemaVersion:
+      'goal-contract-partition-global-coverage-receipt/v1',
+    masterSourceHash: candidateManifest.masterSourceHash,
+    sourceSnapshotHash: candidateManifest.sourceSnapshotHash,
+    methodologyProfileHash: candidateManifest.methodologyProfileHash,
+    executionProjectionHash: candidateManifest.executionProjectionHash,
+    partitionManifestHash: manifestHash(candidateManifest),
+    partitionIds: unique(candidateManifest.topologicalOrder || []),
+    unmappedSourceObligations,
+    duplicatePrimarySourceObligations: sourceOwnership.duplicates,
+    unmappedTraceSlices,
+    duplicatePrimaryTraceSlices: sliceOwnership.duplicates,
+    unmappedAtomicTasks,
+    duplicatePrimaryAtomicTasks: taskOwnership.duplicates,
+    unresolvedDependencies: dependency.unresolvedDependencies,
+    unownedSharedArtifacts: shared.unownedSharedArtifacts,
+    finalIntegrationPartitionIds: partitions
+      .filter(
+        (partition) => partition.partitionRole === 'final_integration'
+      )
+      .map((partition) => partition.partitionId)
+      .sort(),
     decision: reasons.length === 0 ? 'pass' : 'blocked',
     blockingReasons: reasons,
   });
@@ -481,7 +659,117 @@ function selectPartitionScope({
   });
 }
 
+function buildPartitionPlanSelectionReceipt({
+  partitionPlan,
+  partitionManifest,
+  partitionId,
+}) {
+  const partition = (partitionManifest.partitions || []).find(
+    (item) => item.partitionId === partitionId
+  );
+  const planPartition = (partitionPlan.partitions || []).find(
+    (item) => item.partitionId === partitionId
+  );
+  const selection = (partitionPlan.selections || []).find(
+    (item) => item.partitionId === partitionId
+  );
+  if (!partition || !planPartition || !selection) {
+    throw failure('partition_id_unknown', { partitionId });
+  }
+  if (
+    partitionManifest.partitionPlanHash !==
+      partitionPlan.partitionPlanHash ||
+    partitionManifest.partitionSetHash !==
+      partitionPlan.partitionSetHash ||
+    partition.selectionSetHash !== selection.selectionHash
+  ) {
+    throw failure('partition_selection_authority_mismatch', {
+      partitionId,
+    });
+  }
+  for (const field of [
+    'primarySourceObligationIds',
+    'primaryTraceSliceIds',
+    'primaryTaskIds',
+    'completionPredicateIds',
+    'commandIds',
+    'evidenceContractIds',
+    'inheritedConstraintIds',
+    'dependencyPartitionIds',
+  ]) {
+    if (
+      stableStringify(partition[field] || []) !==
+      stableStringify(planPartition[field] || [])
+    ) {
+      throw failure('partition_selection_authority_mismatch', {
+        partitionId,
+        field,
+      });
+    }
+  }
+  const coverage = partitionPlan.coverageObligations || {};
+  return Object.freeze({
+    schemaVersion: 'goal-contract-partition-selection-receipt/v1',
+    masterSourceHash: partitionManifest.masterSourceHash,
+    sourceSnapshotHash: partitionManifest.sourceSnapshotHash,
+    methodologyProfileHash: partitionManifest.methodologyProfileHash,
+    executionProjectionHash: partitionManifest.executionProjectionHash,
+    partitionPolicyHash: partitionManifest.partitionPolicyHash,
+    partitionManifestHash: manifestHash(partitionManifest),
+    partitionSetHash: partitionManifest.partitionSetHash,
+    partitionId,
+    partitionRole: partition.partitionRole,
+    selectionSetHash: partition.selectionSetHash,
+    selectedPrimarySourceObligationIds: unique(
+      partition.primarySourceObligationIds
+    ),
+    selectedPrimaryTraceSliceIds: unique(
+      partition.primaryTraceSliceIds
+    ),
+    selectedPrimaryAtomicTaskIds: unique(partition.primaryTaskIds),
+    selectedAcceptanceIds: unique(
+      partition.completionPredicateIds || partition.acceptanceIds
+    ),
+    selectedCommandIds: unique(partition.commandIds),
+    selectedEvidenceContractIds: unique(
+      partition.evidenceContractIds
+    ),
+    inheritedConstraintIds: unique(
+      partition.inheritedConstraintIds
+    ),
+    excludedSourceObligationIds: difference(
+      coverage.sourceObligationIds || [],
+      partition.primarySourceObligationIds || []
+    ),
+    excludedTraceSliceIds: difference(
+      coverage.traceSliceIds || [],
+      partition.primaryTraceSliceIds || []
+    ),
+    excludedAtomicTaskIds: difference(
+      coverage.atomicTaskIds || [],
+      partition.primaryTaskIds || []
+    ),
+    excludedAcceptanceIds: difference(
+      coverage.completionPredicateIds || [],
+      partition.completionPredicateIds || partition.acceptanceIds || []
+    ),
+    excludedCommandIds: difference(
+      coverage.commandIds || [],
+      partition.commandIds || []
+    ),
+    excludedEvidenceContractIds: difference(
+      coverage.evidenceContractIds || [],
+      partition.evidenceContractIds || []
+    ),
+    dependencyPartitionIds: unique(partition.dependencyPartitionIds),
+    decision: 'pass',
+    blockingReasons: [],
+  });
+}
+
 module.exports = {
   buildGlobalPartitionCoverageReceipt,
+  buildPartitionPlanGlobalCoverageReceipt,
+  buildPartitionPlanSelectionReceipt,
   selectPartitionScope,
 };

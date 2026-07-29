@@ -93,6 +93,7 @@ function implementationProofAudit(sourceObligations) {
 }
 
 function frontMatter(metadata) {
+  const authorityBindings = metadata.authorityBindings || {};
   return [
     '---',
     'goalContractVersion: goal-execution-contract/v1',
@@ -110,7 +111,19 @@ function frontMatter(metadata) {
     `coverageReceiptPath: ${repoPath(metadata.coverageReceiptPath)}`,
     `generationReceiptPath: ${repoPath(metadata.generationReceiptPath)}`,
     'unmappedSourceObligations: 0',
-    `runtimeRecordId: GOAL-CONTRACT-GENERATE-${Date.now()}`,
+    ...[
+      'sourceCompositionPolicyHash',
+      'orderedSourceSnapshotSetHash',
+      'sourceAuthorityBundleHash',
+      'canonicalIntentSemanticHash',
+      'canonicalIntentBundleHash',
+      'authorityAttestationHash',
+      'goalContractSemanticHash',
+      'goalContractHash',
+    ]
+      .filter((field) => authorityBindings[field])
+      .map((field) => `${field}: ${authorityBindings[field]}`),
+    `runtimeRecordId: ${metadata.runtimeRecordId}`,
     'entryFlow: goal_contract_generate',
     `taskRange: G001-${metadata.lastTaskId}`,
     `acceptanceRange: ACC001-${metadata.lastAcceptanceId}`,
@@ -129,6 +142,15 @@ function buildImplementationTasks(sourceObligations) {
       const taskId = obligation.goalTaskRefs[0];
       const commandId = obligation.commandRefs[0];
       const acceptanceId = obligation.acceptanceRefs[0];
+      const provenance = obligation.canonicalIntentRecordId
+        ? [
+            `- Canonical intent: \`${obligation.canonicalIntentRecordId}\`.`,
+            `- Declared source ID: \`${obligation.declaredSourceId || 'none'}\`.`,
+            `- Source authority: \`${obligation.sourceArtifactId}\` in namespace \`${obligation.namespace}\`.`,
+            `- Parent task refs: \`${(obligation.parentTaskRefs || []).join(', ') || 'none'}\`.`,
+            `- SpecSpan refs: \`${(obligation.specSpanRefs || []).join(', ')}\`.`,
+          ]
+        : [];
       return [
         `### ${taskId} Implement source obligation ${obligation.id}`,
         '',
@@ -140,6 +162,7 @@ function buildImplementationTasks(sourceObligations) {
         '**Steps:**',
         `- Implement ${obligation.id} using sourceRef=${obligation.sourcePlanPath}:${obligation.lineStart}-${obligation.lineEnd} and sourceTextHash=${obligation.textHash}.`,
         `- Keep generated semantic rows linked to ${obligation.id}, ${taskId}, ${acceptanceId}, ${commandId}, and ${obligation.evidenceRefs[0]}.`,
+        ...provenance,
         '',
         '**Validation:**',
         `- COMMAND ${commandId} MUST prove ${obligation.id} remains mapped to ${taskId} and ${acceptanceId}.`,
@@ -157,7 +180,11 @@ function buildAcceptance(sourceObligations) {
   return sourceObligations
     .map(
       (obligation) =>
-        `- [ ] ${obligation.acceptanceRefs[0]}: ${obligation.id} MUST map to ${obligation.goalTaskRefs[0]}, ${obligation.commandRefs[0]}, and ${obligation.evidenceRefs[0]}. Evidence MUST come from ${obligation.commandRefs[0]}.`
+        `- [ ] ${obligation.acceptanceRefs[0]}: ${obligation.id} MUST map to ${obligation.goalTaskRefs[0]}, ${obligation.commandRefs[0]}, and ${obligation.evidenceRefs[0]}. Evidence MUST come from ${obligation.commandRefs[0]}.${
+          obligation.canonicalIntentRecordId
+            ? ` Provenance MUST preserve intent=${obligation.canonicalIntentRecordId}; source=${obligation.sourceArtifactId}; namespace=${obligation.namespace}; parentTaskRefs=${(obligation.parentTaskRefs || []).join(',') || 'none'}; specSpanRefs=${obligation.specSpanRefs.join(',')}.`
+            : ''
+        }`
     )
     .join('\n');
 }
@@ -168,7 +195,30 @@ function buildTrace(sourceObligations) {
     '| --- | --- | --- | --- |',
     ...sourceObligations.map(
       (obligation) =>
-        `| ${obligation.acceptanceRefs[0]} | ${obligation.goalTaskRefs[0]} | ${obligation.commandRefs[0]}; ${obligation.evidenceRefs[0]} | ${obligation.id} has task, acceptance, command, and evidence mappings. |`
+        `| ${obligation.acceptanceRefs[0]} | ${obligation.goalTaskRefs[0]} | ${obligation.commandRefs[0]}; ${obligation.evidenceRefs[0]} | ${obligation.id} has task, acceptance, command, and evidence mappings.${
+          obligation.canonicalIntentRecordId
+            ? ` intent=${obligation.canonicalIntentRecordId}; source=${obligation.sourceArtifactId}; namespace=${obligation.namespace}; specSpanRefs=${obligation.specSpanRefs.join(',')}.`
+            : ''
+        } |`
+    ),
+  ].join('\n');
+}
+
+function buildCanonicalSourceCoverageMatrix(sourceObligations) {
+  return [
+    '| Source ID | Intent Record | Declared ID | Source Artifact | Namespace | SpecSpan Refs | Parent Tasks | Goal Tasks | Acceptance | Commands | Evidence |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...sourceObligations.map(
+      (obligation) =>
+        `| ${obligation.id} | ${obligation.canonicalIntentRecordId} | ${
+          obligation.declaredSourceId || 'none'
+        } | ${obligation.sourceArtifactId} | ${obligation.namespace} | ${obligation.specSpanRefs.join(
+          ', '
+        )} | ${(obligation.parentTaskRefs || []).join(', ') || 'none'} | ${
+          obligation.goalTaskRefs[0]
+        } | ${obligation.acceptanceRefs[0]} | ${
+          obligation.commandRefs[0]
+        } | ${obligation.evidenceRefs[0]} |`
     ),
   ].join('\n');
 }
@@ -255,6 +305,8 @@ function buildSlotData({
   evidenceGraph = null,
   expectedEvidenceRegistry = null,
   generatedAt = new Date().toISOString(),
+  runtimeRecordId = `GOAL-CONTRACT-GENERATE-${Date.now()}`,
+  authorityBindings = null,
 }) {
   const entryProfileValidation = validateEntryProfile(profile, 'standalone_goal_contract');
   if (entryProfileValidation.decision !== 'pass') {
@@ -294,6 +346,8 @@ function buildSlotData({
       lastTaskId,
       lastAcceptanceId,
       generatedAt,
+      runtimeRecordId,
+      authorityBindings,
     }),
     goalEntry: `\`\`\`text\n/goal ${repoPath(outPath)}\n\`\`\``,
     authorityModel: [
@@ -327,9 +381,15 @@ function buildSlotData({
       projectionSlots?.acceptanceTraceabilityMatrix || buildTrace(registries.sourceObligations),
     sourceCoverageMatrix:
       projectionSlots?.sourceCoverageMatrix ||
-      buildSourceCoverageMatrix({
-        sourceObligations: registries.sourceObligations,
-      }),
+      (registries.sourceObligations.some(
+        ({ canonicalIntentRecordId }) => canonicalIntentRecordId
+      )
+        ? buildCanonicalSourceCoverageMatrix(
+            registries.sourceObligations
+          )
+        : buildSourceCoverageMatrix({
+            sourceObligations: registries.sourceObligations,
+          })),
     requiredTestCommands: buildCommands(registries.sourceObligations, coverageReceiptPath),
     manualVerificationScenarios:
       projectionSlots?.manualVerificationScenarios ||
@@ -339,6 +399,11 @@ function buildSlotData({
       [
         `- \`sourcePlanPath\`: \`${source.sourcePlanPath}\`.`,
         `- \`sourcePlanHash\`: \`${source.sourcePlanHash}\`.`,
+        ...(authorityBindings
+          ? Object.entries(authorityBindings).map(
+              ([field, value]) => `- \`${field}\`: \`${value}\`.`
+            )
+          : []),
         `- \`coverageReceiptPath\`: \`${repoPath(coverageReceiptPath)}\`.`,
         `- \`generationReceiptPath\`: \`${repoPath(generationReceiptPath)}\`.`,
         '- `residualRisks`: `none` only when all required commands pass.',
@@ -560,6 +625,99 @@ function partitionFrontMatter({
   generatedAt,
 }) {
   const partition = selectedScope.partition;
+  const planBound = Boolean(bindings.partitionPlanHash);
+  const namespacedObligations =
+    bindings.namespacedObligations ||
+    selectedScope.namespacedObligations ||
+    partition.namespacedObligations ||
+    [];
+  const uniqueStrings = (values) =>
+    [...new Set((values || []).filter(Boolean).map(String))].sort();
+  const obligationRefs = uniqueStrings(
+    bindings.obligationRefs || [
+      ...(selectedScope.primarySourceObligations || []).map(
+        ({ id }) => id
+      ),
+      ...namespacedObligations.map(
+        ({ declaredSourceId }) => declaredSourceId
+      ),
+    ]
+  );
+  const namespaceRefs = uniqueStrings(
+    bindings.namespaceRefs ||
+      namespacedObligations.map(({ namespace }) => namespace)
+  );
+  const sourceArtifactRefs = uniqueStrings(
+    bindings.sourceArtifactRefs ||
+      namespacedObligations.map(
+        ({ sourceArtifactId }) => sourceArtifactId
+      )
+  );
+  const specSpanRefs = uniqueStrings(
+    bindings.specSpanRefs ||
+      namespacedObligations.flatMap(
+        ({ specSpanRefs: refs }) => refs || []
+      )
+  );
+  const governedPaths = uniqueStrings(
+    bindings.governedPaths || partition.ownedArtifactPaths || []
+  );
+  const finalAuthorityLines = planBound
+    ? [
+        `sourceCompositionPolicyHash: ${bindings.sourceCompositionPolicyHash}`,
+        `partitionPlanHash: ${bindings.partitionPlanHash}`,
+        `goalContractHash: ${bindings.goalContractHash}`,
+        `orderedSourceSnapshotSetHash: ${bindings.orderedSourceSnapshotSetHash}`,
+        `sourceAuthorityBundleHash: ${bindings.sourceAuthorityBundleHash}`,
+        `subordinateCoverageReceiptHashes: ${JSON.stringify(
+          bindings.subordinateCoverageReceiptHashes || []
+        )}`,
+        ...(bindings.displayOrdinal
+          ? [`displayOrdinal: ${bindings.displayOrdinal}`]
+          : []),
+        `obligationRefs: ${JSON.stringify(obligationRefs)}`,
+        `namespaceRefs: ${JSON.stringify(namespaceRefs)}`,
+        `sourceArtifactRefs: ${JSON.stringify(sourceArtifactRefs)}`,
+        `specSpanRefs: ${JSON.stringify(specSpanRefs)}`,
+        `governedPaths: ${JSON.stringify(governedPaths)}`,
+      ]
+    : [
+        `partitionManifestPath: ${repoPath(bindings.partitionManifestPath)}`,
+        `partitionManifestHash: ${bindings.partitionManifestHash}`,
+      ];
+  const selectionAuthorityLines = planBound
+    ? [
+        ...(bindings.selectionReceiptPath
+          ? [
+              `selectionReceiptPath: ${repoPath(
+                bindings.selectionReceiptPath
+              )}`,
+            ]
+          : []),
+        ...(bindings.selectionReceiptHash
+          ? [`selectionReceiptHash: ${bindings.selectionReceiptHash}`]
+          : []),
+        ...(bindings.globalCoverageReceiptPath
+          ? [
+              `globalCoverageReceiptPath: ${repoPath(
+                bindings.globalCoverageReceiptPath
+              )}`,
+            ]
+          : []),
+        ...(bindings.globalCoverageReceiptHash
+          ? [
+              `globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`,
+            ]
+          : []),
+      ]
+    : [
+        `selectionReceiptPath: ${repoPath(bindings.selectionReceiptPath)}`,
+        `selectionReceiptHash: ${bindings.selectionReceiptHash}`,
+        `globalCoverageReceiptPath: ${repoPath(
+          bindings.globalCoverageReceiptPath
+        )}`,
+        `globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`,
+      ];
   return [
     '---',
     'goalContractVersion: goal-execution-contract/v1',
@@ -588,18 +746,14 @@ function partitionFrontMatter({
     `childContractAuthority: ${bindings.childContractAuthority}`,
     `partitionPolicyHash: ${bindings.partitionPolicyHash}`,
     `partitionPolicyArtifactHash: ${bindings.partitionPolicyArtifactHash}`,
-    `partitionManifestPath: ${repoPath(bindings.partitionManifestPath)}`,
-    `partitionManifestHash: ${bindings.partitionManifestHash}`,
+    ...finalAuthorityLines,
     `partitionAnalysisReceiptHash: ${bindings.partitionAnalysisReceiptHash}`,
     `partitionSetHash: ${bindings.partitionSetHash}`,
     `partitionId: ${partition.partitionId}`,
     `partitionRole: ${partition.partitionRole}`,
-    `selectionReceiptPath: ${repoPath(bindings.selectionReceiptPath)}`,
-    `selectionReceiptHash: ${bindings.selectionReceiptHash}`,
     `selectionSetHash: ${partition.selectionSetHash || bindings.selectionSetHash}`,
     `dependencyPartitionIds: ${JSON.stringify(partition.dependencyPartitionIds || [])}`,
-    `globalCoverageReceiptPath: ${repoPath(bindings.globalCoverageReceiptPath)}`,
-    `globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`,
+    ...selectionAuthorityLines,
     `coverageReceiptPath: ${repoPath(receiptPaths.coverageReceiptPath)}`,
     `generationReceiptPath: ${repoPath(receiptPaths.generationReceiptPath)}`,
     'unmappedSourceObligations: 0',
@@ -698,6 +852,36 @@ function buildPartitionSlotData({
               `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection.`
           )
           .join('\n');
+  const completionEvidencePacket = bindings.partitionPlanHash
+    ? [
+        `- \`partitionPlanHash\`: \`${bindings.partitionPlanHash}\`.`,
+        `- \`sourceCompositionPolicyHash\`: \`${bindings.sourceCompositionPolicyHash}\`.`,
+        `- \`sourceAuthorityBundleHash\`: \`${bindings.sourceAuthorityBundleHash}\`.`,
+        `- \`partitionSetHash\`: \`${bindings.partitionSetHash}\`.`,
+        `- \`selectionSetHash\`: \`${
+          partition.selectionSetHash || bindings.selectionSetHash
+        }\`.`,
+        `- \`coverageReceiptPath\`: \`${repoPath(
+          receiptPaths.coverageReceiptPath
+        )}\`.`,
+        `- \`generationReceiptPath\`: \`${repoPath(
+          receiptPaths.generationReceiptPath
+        )}\`.`,
+      ]
+    : [
+        `- \`partitionManifestPath\`: \`${repoPath(bindings.partitionManifestPath)}\`.`,
+        `- \`partitionManifestHash\`: \`${bindings.partitionManifestHash}\`.`,
+        `- \`selectionReceiptPath\`: \`${repoPath(bindings.selectionReceiptPath)}\`.`,
+        `- \`selectionReceiptHash\`: \`${bindings.selectionReceiptHash}\`.`,
+        `- \`globalCoverageReceiptPath\`: \`${repoPath(
+          bindings.globalCoverageReceiptPath
+        )}\`.`,
+        `- \`globalCoverageReceiptHash\`: \`${bindings.globalCoverageReceiptHash}\`.`,
+        `- \`coverageReceiptPath\`: \`${repoPath(receiptPaths.coverageReceiptPath)}\`.`,
+        `- \`generationReceiptPath\`: \`${repoPath(
+          receiptPaths.generationReceiptPath
+        )}\`.`,
+      ];
   return {
     slotData: {
       frontMatter: partitionFrontMatter({
@@ -711,7 +895,13 @@ function buildPartitionSlotData({
       goalEntry: `\`\`\`text\n/goal ${repoPath(receiptPaths.outPath)}\n\`\`\``,
       authorityModel: [
         `- \`${repoPath(receiptPaths.outPath)}\` is the frozen authority for partition \`${partition.partitionId}\`.`,
-        `- The active partition manifest is \`${repoPath(bindings.partitionManifestPath)}\`.`,
+        ...(bindings.partitionPlanHash
+          ? [
+              `- The active partition plan hash is \`${bindings.partitionPlanHash}\`; the final manifest is resolved only through package-owned finalization.`,
+            ]
+          : [
+              `- The active partition manifest is \`${repoPath(bindings.partitionManifestPath)}\`.`,
+            ]),
         '- Only selected primary records are executable in this child contract.',
         '- Inherited constraints are preserved as non-executable authority.',
         '- The standalone Markdown contract is the frozen execution authority.',
@@ -753,20 +943,7 @@ function buildPartitionSlotData({
       ].join('\n'),
       requiredTestCommands: commandRows,
       manualVerificationScenarios: `- Verify partition \`${partition.partitionId}\` against its current selection and global coverage receipts.`,
-      completionEvidencePacket: [
-        `- \`partitionManifestPath\`: \`${repoPath(bindings.partitionManifestPath)}\`.`,
-        `- \`partitionManifestHash\`: \`${bindings.partitionManifestHash}\`.`,
-        `- \`selectionReceiptPath\`: \`${repoPath(bindings.selectionReceiptPath)}\`.`,
-        `- \`selectionReceiptHash\`: \`${bindings.selectionReceiptHash}\`.`,
-        `- \`globalCoverageReceiptPath\`: \`${repoPath(
-          bindings.globalCoverageReceiptPath
-        )}\`.`,
-        `- \`globalCoverageReceiptHash\`: \`${bindings.globalCoverageReceiptHash}\`.`,
-        `- \`coverageReceiptPath\`: \`${repoPath(receiptPaths.coverageReceiptPath)}\`.`,
-        `- \`generationReceiptPath\`: \`${repoPath(
-          receiptPaths.generationReceiptPath
-        )}\`.`,
-      ].join('\n'),
+      completionEvidencePacket: completionEvidencePacket.join('\n'),
       expectedEvidenceFreeze: evidenceRows,
       stopConditions: [
         '- Stop if the active manifest differs from the current canonical compilation.',

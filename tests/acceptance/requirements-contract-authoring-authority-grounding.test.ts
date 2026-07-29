@@ -201,7 +201,6 @@ describe('requirements contract authoring authority grounding', () => {
       const descriptor = createMinimalConsumerRequirementDescriptor(
         'legacy-authority-boundary'
       );
-      const recordId = `REQ-${descriptor.seedHash.slice(-12).toUpperCase()}`;
       const provenancePath = `docs/plans/upstream-${descriptor.seedHash.slice(-12)}.md`;
       const source = writeText(
         root,

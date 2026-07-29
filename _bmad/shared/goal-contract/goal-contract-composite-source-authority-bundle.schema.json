@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-composite-source-authority-bundle/v1",
+  "title": "Goal Contract Composite Source Authority Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceCompositionPolicyHash",
+    "orderedSourceSnapshotSetHash",
+    "primarySource",
+    "subordinateSources",
+    "namespaceOwnership",
+    "conflictPolicy",
+    "subordinateCoverage",
+    "sourceAuthorityBundleHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-composite-source-authority-bundle/v1"
+    },
+    "sourceCompositionPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "orderedSourceSnapshotSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "primarySource": {
+      "$ref": "#/$defs/sourceDescriptor"
+    },
+    "subordinateSources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceDescriptor"
+      }
+    },
+    "namespaceOwnership": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/namespaceOwnership"
+      }
+    },
+    "conflictPolicy": {
+      "const": "fail_closed"
+    },
+    "subordinateCoverage": {
+      "type": "object"
+    },
+    "sourceAuthorityBundleHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "sourceDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "namespace",
+        "sourceArtifactId",
+        "sourceSnapshotHash",
+        "pathOrSegmentId",
+        "sourceOrder",
+        "ownedSemanticDomains",
+        "parentTaskRefs",
+        "requiredRequirementIds",
+        "requiredTaskIds"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "primary_implementation_authority",
+            "subordinate_component_specification"
+          ]
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSnapshotHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "pathOrSegmentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceOrder": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ownedSemanticDomains": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "parentTaskRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requiredRequirementIds": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requiredTaskIds": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "namespaceOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "sourceArtifactId",
+        "sourceRole",
+        "ownedSemanticDomains"
+      ],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRole": {
+          "enum": [
+            "primary_implementation_authority",
+            "subordinate_component_specification"
+          ]
+        },
+        "ownedSemanticDomains": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    }
+  }
+}

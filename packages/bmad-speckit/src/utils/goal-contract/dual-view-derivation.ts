@@ -1,4 +1,11 @@
 const { createHash } = require('node:crypto');
+const {
+  compileSourceSnapshot,
+} = require(
+  __filename.endsWith('.ts')
+    ? './control-plane/source-snapshot.ts'
+    : './control-plane/source-snapshot'
+);
 
 export type GoalContractDualViewDerivationModule = never;
 
@@ -96,78 +103,75 @@ function canonicalizeSemanticValue(value) {
   return value;
 }
 
-function sourcePlanSnapshot(input) {
-  if (!input.sourcePath || !Buffer.isBuffer(input.rawBytes)) {
-    throw failure('source_snapshot_invalid');
-  }
-  const content = input.rawBytes.toString('utf8');
-  const contentHash = sha256(input.rawBytes);
-  const sourcePath = normalizeRepoPath(input.sourcePath);
-  const sourceLines = normalizeLineEndings(content).split('\n').length;
-  return deepFreeze({
-    schemaVersion: 'goal-contract-source-snapshot/v1',
-    sourceType: 'source_plan',
-    snapshotId: `source-plan:${contentHash}`,
-    sourcePath,
-    aggregateHash: contentHash,
-    exactByteHash: contentHash,
-    sourceBytes: input.rawBytes.length,
-    sourceLines,
-    sourcePlanSemanticHash: input.sourcePlanSemanticHash || null,
-    segments: [
-      {
-        segmentId: 'SEG-001',
-        role: 'source_plan',
-        content,
-        contentHash,
-        boundary: {
-          sourcePath,
-          byteStart: 0,
-          byteEnd: input.rawBytes.length,
-          lineStart: 1,
-          lineEnd: sourceLines,
-        },
-      },
-    ],
-  });
-}
-
-function conversationSnapshot(input) {
-  if (!input.sourceId || !Array.isArray(input.segments) || input.segments.length === 0) {
-    throw failure('source_snapshot_invalid');
-  }
-  const segments = input.segments.map((segment, index) => {
-    const content = normalizeLineEndings(segment.content);
-    return {
-      segmentId: `SEG-${String(index + 1).padStart(3, '0')}`,
-      role: String(segment.role || ''),
-      content,
-      contentHash: sha256(Buffer.from(content, 'utf8')),
-      boundary: structuredClone(segment.boundary || {}),
-    };
-  });
-  const aggregateHash = sha256(
-    Buffer.from(
-      stableStringify({
-        sourceId: input.sourceId,
-        segments,
-      }),
-      'utf8'
-    )
-  );
-  return deepFreeze({
-    schemaVersion: 'goal-contract-source-snapshot/v1',
-    sourceType: 'conversation',
-    snapshotId: `conversation:${input.sourceId}:${aggregateHash}`,
-    sourceId: input.sourceId,
-    aggregateHash,
-    segments,
-  });
-}
-
 function buildSourceSnapshot(input) {
-  if (input?.sourceType === 'source_plan') return sourcePlanSnapshot(input);
-  if (input?.sourceType === 'conversation') return conversationSnapshot(input);
+  if (input?.sourceType === 'source_plan') {
+    const sourcePath = normalizeRepoPath(input.sourcePath);
+    const snapshot = compileSourceSnapshot({
+      sourceKind: 'source_plan',
+      sourceArtifactId: input.sourceArtifactId || sourcePath,
+      sourceRole: input.sourceRole || 'primary_implementation_authority',
+      namespace: input.namespace || 'PRIMARY',
+      sourceOrder: input.sourceOrder ?? 0,
+      pathOrSegmentId: sourcePath,
+      rawBytes: input.rawBytes,
+      sourcePlanSemanticHash: input.sourcePlanSemanticHash,
+    });
+    return snapshot;
+  }
+  if (input?.sourceType === 'conversation') {
+    if (
+      !input.sourceId ||
+      !Array.isArray(input.segments) ||
+      input.segments.length === 0
+    ) {
+      throw failure('source_snapshot_invalid');
+    }
+    const normalizedSegments = input.segments.map((segment, index) => ({
+      segmentId: `SEG-${String(index + 1).padStart(3, '0')}`,
+      segmentOrder: index,
+      role: String(segment.role || ''),
+      content: normalizeLineEndings(segment.content),
+      boundary: structuredClone(segment.boundary || {}),
+    }));
+    const snapshot = compileSourceSnapshot({
+      sourceKind: 'conversation_segment',
+      sourceArtifactId: input.sourceArtifactId || input.sourceId,
+      sourceRole: input.sourceRole || 'primary_implementation_authority',
+      namespace: input.namespace || 'PRIMARY',
+      sourceOrder: input.sourceOrder ?? 0,
+      pathOrSegmentId: input.sourceId,
+      segments: normalizedSegments.map((segment) => ({
+        segmentId: segment.segmentId,
+        segmentOrder: segment.segmentOrder,
+        role: segment.role,
+        rawBytes: Buffer.from(segment.content, 'utf8'),
+      })),
+    });
+    const segments = normalizedSegments.map((segment) => ({
+      segmentId: segment.segmentId,
+      role: segment.role,
+      content: segment.content,
+      contentHash: sha256(Buffer.from(segment.content, 'utf8')),
+      boundary: segment.boundary,
+    }));
+    const aggregateHash = sha256(
+      Buffer.from(
+        stableStringify({
+          sourceId: input.sourceId,
+          segments,
+        }),
+        'utf8'
+      )
+    );
+    return deepFreeze({
+      ...snapshot,
+      sourceType: 'conversation',
+      snapshotId: `conversation:${input.sourceId}:${aggregateHash}`,
+      sourceId: input.sourceId,
+      aggregateHash,
+      segments,
+    });
+  }
   throw failure('source_snapshot_type_unsupported');
 }
 
@@ -410,16 +414,30 @@ function assertViewIsolation(implementationResult, acceptanceEvidenceResult) {
   };
 }
 
+type StandaloneViewAdapter = {
+  createSessionIdentity?: (role: string) => unknown;
+  deriveImplementationView?: (input: unknown) => unknown | Promise<unknown>;
+  deriveAcceptanceEvidenceView?: (
+    input: unknown
+  ) => unknown | Promise<unknown>;
+  providerIdentity?: unknown;
+};
+
 class StandaloneViewProvider {
-  adapter: Record<string, any>;
+  adapter: StandaloneViewAdapter;
   sessionIdentities: Set<unknown>;
 
-  constructor(adapter: Record<string, any> = {}) {
+  constructor(adapter: StandaloneViewAdapter = {}) {
     this.adapter = adapter;
     this.sessionIdentities = new Set();
   }
 
   reserveSessionIdentity(role) {
+    if (typeof this.adapter.createSessionIdentity !== 'function') {
+      throw failure('BLOCKED_ENVIRONMENT', {
+        unavailableCapability: 'isolated_provider_session',
+      });
+    }
     const sessionIdentity = this.adapter.createSessionIdentity(role);
     if (!sessionIdentity) {
       throw failure('BLOCKED_ENVIRONMENT', {

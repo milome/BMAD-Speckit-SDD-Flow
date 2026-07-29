@@ -270,49 +270,26 @@ function constraintReason(constraint) {
 
 function deriveMustLinkRelations(executionProjection, taskMap) {
   const relations = [];
+  const tasksByAtomicGroup = new Map();
+  for (const task of executionProjection.atomicTasks || []) {
+    for (const atomicGroupRef of task.atomicGroupRefs || []) {
+      const taskIds = tasksByAtomicGroup.get(atomicGroupRef) || [];
+      taskIds.push(task.taskId);
+      tasksByAtomicGroup.set(atomicGroupRef, taskIds);
+    }
+  }
+  for (const taskIds of tasksByAtomicGroup.values()) {
+    const relation = relationForTasks(
+      taskIds,
+      'source_atomic_co_change',
+      taskMap
+    );
+    if (relation) relations.push(relation);
+  }
   for (const constraint of executionProjection.sequenceConstraintBinding?.constraints || []) {
     const reasonCode = constraintReason(constraint);
     if (!reasonCode) continue;
     const relation = relationForTasks(constraint.taskIds || [], reasonCode, taskMap);
-    if (relation) relations.push(relation);
-  }
-  for (const entry of executionProjection.productionEntryIndex || []) {
-    const reasonCode = /writer|write|promote|stage|atomic/iu.test(entry.literal || '')
-      ? 'controlled_writer_callers'
-      : 'public_action_registry';
-    const relation = relationForTasks(entry.taskIds || [], reasonCode, taskMap);
-    if (relation) relations.push(relation);
-  }
-  for (const fileScope of executionProjection.fileScopeIndex || []) {
-    if (!/\.schema\.json$/iu.test(fileScope.path || '')) continue;
-    const relation = relationForTasks(
-      fileScope.taskIds || [],
-      'schema_migration',
-      taskMap
-    );
-    if (relation) relations.push(relation);
-  }
-  const slicesByEvidence = new Map();
-  for (const slice of executionProjection.traceSlices) {
-    for (const evidenceContractId of slice.evidenceContractIds || []) {
-      const values = slicesByEvidence.get(evidenceContractId) || [];
-      values.push(...(slice.taskIds || []));
-      slicesByEvidence.set(evidenceContractId, values);
-    }
-  }
-  for (const contract of executionProjection.evidenceContracts || []) {
-    const receiptBound =
-      /receipt/iu.test(contract.evidenceContractId || '') ||
-      (contract.admissibleTypes || []).some((type) => /receipt/iu.test(type));
-    if (!receiptBound) continue;
-    const relation = relationForTasks(
-      [
-        ...(contract.producerTaskIds || []),
-        ...(slicesByEvidence.get(contract.evidenceContractId) || []),
-      ],
-      'receipt_schema_producer',
-      taskMap
-    );
     if (relation) relations.push(relation);
   }
   return relations.sort((left, right) =>

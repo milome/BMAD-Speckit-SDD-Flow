@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "orderedSourceSnapshotSetHash",
+    "sourceSnapshots",
+    "specSpans",
+    "specSpanRegistryHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-spec-span-registry/v1"
+    },
+    "orderedSourceSnapshotSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceSnapshots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object"
+      }
+    },
+    "specSpans": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/specSpan"
+      }
+    },
+    "specSpanRegistryHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "specSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "specSpanId",
+        "sourceArtifactId",
+        "sourceSnapshotHash",
+        "sourceRole",
+        "namespace",
+        "sourceOrder",
+        "startByte",
+        "endByteExclusive",
+        "startLine",
+        "startColumn",
+        "endLine",
+        "endColumn",
+        "exactTextHash",
+        "normalizedTextHash",
+        "headingPath",
+        "sourceObligationIds",
+        "compilerProvenanceHash"
+      ],
+      "properties": {
+        "specSpanId": {
+          "type": "string",
+          "pattern": "^spec-span-[0-9a-f]{64}$"
+        },
+        "sourceArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSnapshotHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceRole": {
+          "enum": [
+            "primary_implementation_authority",
+            "subordinate_component_specification"
+          ]
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]*$"
+        },
+        "sourceOrder": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "startByte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endByteExclusive": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exactTextHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "normalizedTextHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "headingPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceObligationIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "compilerProvenanceHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -7,6 +8,15 @@ const { spawnSync } = require('node:child_process');
 const {
   evaluatePartitionSequenceRelease,
 } = require('../src/utils/goal-contract/release-gate.ts');
+const {
+  hashControlPlaneValue,
+} = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
+const {
+  compileTypedCommandRecord,
+  currentPartitionCompilerIdentityHash,
+  partitionCompilerIdentityAssetPaths,
+  selectCommandStructuredBindings,
+} = require('../src/commands/goal-contract.ts');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
 const SOURCE_COMMAND = path.join(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
@@ -16,6 +26,8 @@ const SOURCE_RUNNER = [
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
+const hash = (value) =>
+  `sha256:${createHash('sha256').update(value).digest('hex')}`;
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-cli-'));
@@ -41,8 +53,158 @@ function standaloneGenerateArgs(args) {
   return ['generate', '--entry', 'standalone_goal_contract', ...args];
 }
 
+describe('partition compiler identity', () => {
+  it('binds every byte-producing and authority-validating supersession asset', () => {
+    const assetPaths = partitionCompilerIdentityAssetPaths();
+    const normalized = assetPaths.map((assetPath) =>
+      path.relative(path.join(__dirname, '..', '..', '..'), assetPath)
+        .replace(/\\/gu, '/')
+    );
+    for (const requiredPath of [
+      'packages/bmad-speckit/src/utils/goal-contract/control-plane/authority-supersession.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/control-plane/campaign-activation.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/control-plane/campaign-closure.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/control-plane/campaign-receipt-store.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/control-plane/subcontract-closure.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/control-plane/subcontract-evidence.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/goal-contract-receipts.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/partition-receipts.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/partition-selector.ts',
+      'packages/bmad-speckit/src/utils/goal-contract/release-gate.ts',
+      '_bmad/shared/goal-contract/scripts/render-goal-contract.js',
+      '_bmad/shared/goal-contract/scripts/check-contract-command-portability.js',
+      '_bmad/shared/goal-contract/goal-contract-campaign-activation-receipt.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-campaign-closure-receipt.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-profile.json',
+      '_bmad/shared/goal-contract/goal-contract-partition-release-gate-receipt.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-subcontract-closure-receipt.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-subcontract-evidence.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-subcontract-execution-lease.schema.json',
+      '_bmad/shared/goal-contract/goal-execution-contract-template.md',
+      '_bmad/shared/goal-contract/goal-contract-partition-plan.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-execution-projection.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-partition-manifest.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-authority-supersession-receipt.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-source-grounded-coverage-receipt.schema.json',
+    ]) {
+      assert.ok(
+        normalized.includes(requiredPath),
+        `compiler identity is missing ${requiredPath}`
+      );
+    }
+    assert.equal(
+      currentPartitionCompilerIdentityHash(),
+      hashControlPlaneValue(
+        assetPaths
+          .map((assetPath) => ({
+            path: path.resolve(assetPath).replace(/\\/gu, '/'),
+            sha256: hash(fs.readFileSync(assetPath)),
+          }))
+          .sort((left, right) => left.path.localeCompare(right.path))
+      )
+    );
+  });
+
+  it('resolves compiler identity assets from the built runtime', () => {
+    const builtCommand = require('../dist/commands/goal-contract.js');
+    const assetPaths = builtCommand.partitionCompilerIdentityAssetPaths();
+
+    assert.ok(assetPaths.length > 0);
+    assert.ok(assetPaths.every((assetPath) => fs.existsSync(assetPath)));
+    assert.match(
+      builtCommand.currentPartitionCompilerIdentityHash(),
+      /^sha256:[0-9a-f]{64}$/u
+    );
+  });
+});
+
+describe('typed command classification', () => {
+  const obligation = (overrides) => ({
+    id: 'SRC-TEST',
+    kind: 'command_block',
+    declaredId: false,
+    applicabilityState: 'applicable',
+    exactText: 'not executable',
+    sourcePlanPath: 'docs/plans/source.md',
+    lineStart: 10,
+    lineEnd: 10,
+    textHash: hash('not executable'),
+    specSpanRefs: [],
+    ...overrides,
+  });
+
+  it('uses explicit command authority without merging heuristic blocks', () => {
+    const declaredCommandId = 'FIXTURE-CMD17';
+    const declared = obligation({
+      id: declaredCommandId,
+      kind: 'verification_command',
+      declaredId: true,
+      exactText: `- [ ] ${declaredCommandId}: Run \`node --test compiler.test.js\`.`,
+    });
+    const selected = selectCommandStructuredBindings([
+      declared,
+      obligation({
+        id: 'SRC-YAML',
+        exactText: '```yaml\nmode: composite_required\n```',
+      }),
+      obligation({
+        id: 'SRC-PATH',
+        exactText: '`packages/example.test.js`',
+      }),
+    ]);
+
+    assert.deepEqual(
+      selected.commands.map(({ id }) => id),
+      [declared.id]
+    );
+    assert.deepEqual(compileTypedCommandRecord(declared), {
+      id: declared.id,
+      literal: 'node --test compiler.test.js',
+      commandTextHash: hash('node --test compiler.test.js'),
+      workingDirectory: '.',
+      shell: 'host_shell',
+      runtime: 'node',
+      sourceBinding: {
+        sourcePlanPath: 'docs/plans/source.md',
+        lineStart: 10,
+        lineEnd: 10,
+        textHash: hash('not executable'),
+        specSpanRefs: [],
+      },
+    });
+  });
+
+  it('accepts only executable shell fences when no explicit registry exists', () => {
+    const selected = selectCommandStructuredBindings([
+      obligation({
+        id: 'SRC-POWERSHELL',
+        exactText: '```powershell\nnode --test compiler.test.js\n```',
+        lineStart: 20,
+        lineEnd: 22,
+      }),
+      obligation({
+        id: 'SRC-YAML',
+        exactText: '```yaml\nmode: composite_required\n```',
+      }),
+      obligation({
+        id: 'SRC-SCALAR',
+        exactText: '`$LASTEXITCODE`',
+      }),
+    ]);
+
+    assert.deepEqual(
+      selected.commands.map(({ id }) => id),
+      ['SRC-POWERSHELL']
+    );
+    assert.equal(
+      compileTypedCommandRecord(selected.commands[0]).shell,
+      'powershell'
+    );
+  });
+});
+
 describe('partition Sequence release authority', () => {
-  it('blocks core-only authority while allowing complete or inapplicable coverage', () => {
+  it('allows explicit disabled core-only authority while blocking unresolved active modes', () => {
     const cases = [
       {
         state: {
@@ -62,12 +224,11 @@ describe('partition Sequence release authority', () => {
           sequenceClosureStatus: 'not_requested',
           childContractAuthority: 'core_only',
         },
-        expectedDecision: 'blocked',
-        expectedReason: 'partition_sequence_coverage_excluded',
+        expectedDecision: 'pass',
       },
       {
         state: {
-          sequenceMode: 'disabled',
+          sequenceMode: 'auto',
           sequenceApplicability: 'unresolved',
           sequenceCoverage: 'unresolved',
           sequenceClosureStatus: 'not_requested',
@@ -130,7 +291,7 @@ function writeSourcePlan(root) {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task TASK-CMD: Add package CLI',
+      '### Add package CLI',
       '',
       '- [ ] TASK-CMD: MUST parse `--source`, `--out`, and `--json`.',
       '',
@@ -188,6 +349,198 @@ function writePartitionSourcePlan(root) {
 }
 
 describe('bmad-speckit goal-contract command', () => {
+  it('atomically supersedes a legacy partition authority with current v2 children', () => {
+    const root = tempRoot();
+    const source = writePartitionSourcePlan(root);
+    const oldManifestPath = path.join(root, 'legacy-manifest.json');
+    const partitionResult = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      oldManifestPath,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ]);
+    assert.equal(
+      partitionResult.status,
+      0,
+      partitionResult.stderr || partitionResult.stdout
+    );
+    const oldManifest = JSON.parse(
+      fs.readFileSync(oldManifestPath, 'utf8')
+    );
+    const children = oldManifest.partitions.map((partition, index) => {
+      const outputPath = path.join(
+        root,
+        'legacy-children',
+        `p${index + 1}-goal-execution-plan.md`
+      );
+      const generated = runSourceCommand([
+        'generate',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        '--partition-manifest',
+        oldManifestPath,
+        '--partition-id',
+        partition.partitionId,
+        '--out',
+        outputPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ]);
+      assert.equal(
+        generated.status,
+        0,
+        generated.stderr || generated.stdout
+      );
+      const outputHash = hash(fs.readFileSync(outputPath));
+      return {
+        ordinal: index + 1,
+        partitionId: partition.partitionId,
+        primaryTaskIds: partition.primaryTaskIds,
+        outputPath,
+        outputHash,
+        goalContractHash: outputHash,
+        decision: 'pass',
+      };
+    });
+    oldManifest.partitions[0].commandIds = [];
+    fs.writeFileSync(
+      oldManifestPath,
+      `${JSON.stringify(oldManifest, null, 2)}\n`,
+      'utf8'
+    );
+    const oldManifestHash = hash(fs.readFileSync(oldManifestPath));
+    const childrenSummaryPath = path.join(
+      root,
+      'children-summary.json'
+    );
+    fs.writeFileSync(
+      childrenSummaryPath,
+      `${JSON.stringify(
+        {
+          schemaVersion:
+            'goal-contract-partition-children-summary/v1',
+          ok: true,
+          expectedCount: children.length,
+          generatedCount: children.length,
+          sourceHash: hash(fs.readFileSync(source)),
+          manifestPath: oldManifestPath,
+          manifestHash: oldManifestHash,
+          partitionSetHash: oldManifest.partitionSetHash,
+          failures: [],
+          children,
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+    const oldChildHashes = children.map(({ outputPath }) =>
+      hash(fs.readFileSync(outputPath))
+    );
+    const authorityRoot = path.join(root, 'authority-v2');
+    const superseded = runSourceCommand([
+      'supersede-authority',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--superseded-parent-hash',
+      hash(fs.readFileSync(source)),
+      '--superseded-manifest',
+      oldManifestPath,
+      '--superseded-manifest-hash',
+      oldManifestHash,
+      '--superseded-partition-set-hash',
+      oldManifest.partitionSetHash,
+      '--children-summary',
+      childrenSummaryPath,
+      '--children-summary-hash',
+      hash(fs.readFileSync(childrenSummaryPath)),
+      '--attempt-id',
+      'bootstrap-supersession-test',
+      '--supersession-mode',
+      'source_grounded_hard_cut',
+      '--out-root',
+      authorityRoot,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ]);
+    assert.equal(
+      superseded.status,
+      0,
+      superseded.stderr || superseded.stdout
+    );
+    const payload = JSON.parse(superseded.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.partitionCount, children.length);
+    assert.equal(payload.atomicPromotion, true);
+    assert.equal(
+      payload.supersessionMode,
+      'source_grounded_hard_cut'
+    );
+    assert.equal(payload.activationMode, 'successor_only');
+    assert.equal(
+      payload.supersededDisposition,
+      'superseded_non_executable'
+    );
+    assert.equal(
+      fs.existsSync(
+        path.join(
+          authorityRoot,
+          'receipts',
+          'source-grounded-coverage.receipt.json'
+        )
+      ),
+      true
+    );
+    assert.equal(
+      hash(fs.readFileSync(oldManifestPath)),
+      oldManifestHash
+    );
+    assert.deepEqual(
+      children.map(({ outputPath }) =>
+        hash(fs.readFileSync(outputPath))
+      ),
+      oldChildHashes
+    );
+    const finalManifest = JSON.parse(
+      fs.readFileSync(payload.partitionManifestPath, 'utf8')
+    );
+    assert.equal(
+      finalManifest.schemaVersion,
+      'goal-contract-partition-manifest/v2'
+    );
+    assert.equal(finalManifest.partitionCount, children.length);
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          authorityRoot,
+          'authority-supersession.receipt.json'
+        )
+      )
+    );
+    for (const partition of finalManifest.partitions) {
+      const childPath = path.join(
+        authorityRoot,
+        partition.childContractPath
+      );
+      const text = fs.readFileSync(childPath, 'utf8');
+      assert.match(text, /^partitionPlanHash: sha256:/mu);
+      assert.doesNotMatch(text, /^partitionManifestHash:/mu);
+      assert.doesNotMatch(text, /\bundefined\b/u);
+    }
+  });
+
   it('generates a source-covered goal contract with coverage and generation receipts', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
@@ -249,6 +602,78 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.auditProfile.finalDocsReviewRequired, false);
     assert.deepEqual(generation.deterministicPreflight, payload.deterministicPreflight);
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
+  });
+
+  it('keeps standalone compilation byte-identical and authority-derived', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const out = path.join(root, 'deterministic-goal-execution-plan.md');
+    const args = standaloneGenerateArgs([
+      '--source',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+
+    const firstResult = runSourceCommand(args);
+    assert.equal(
+      firstResult.status,
+      0,
+      firstResult.stderr || firstResult.stdout
+    );
+    const firstPayload = JSON.parse(firstResult.stdout);
+    const firstBytes = fs.readFileSync(out);
+
+    const secondResult = runSourceCommand(args);
+    assert.equal(
+      secondResult.status,
+      0,
+      secondResult.stderr || secondResult.stdout
+    );
+    const secondPayload = JSON.parse(secondResult.stdout);
+    const secondBytes = fs.readFileSync(out);
+
+    assert.equal(Buffer.compare(firstBytes, secondBytes), 0);
+    for (const field of [
+      'goalContractSemanticHash',
+      'goalContractHash',
+      'goalContractDocumentHash',
+      'sourceCompositionPolicyHash',
+      'orderedSourceSnapshotSetHash',
+      'sourceAuthorityBundleHash',
+      'canonicalIntentSemanticHash',
+      'canonicalIntentBundleHash',
+      'authorityAttestationHash',
+      'compilePolicyHash',
+      'compilerIdentityHash',
+    ]) {
+      assert.match(firstPayload[field], /^sha256:[0-9a-f]{64}$/u);
+      assert.equal(firstPayload[field], secondPayload[field]);
+    }
+    assert.equal(
+      firstPayload.runtimeRecordId,
+      `GOAL-CONTRACT-${firstPayload.goalContractHash.slice(7)}`
+    );
+    assert.equal(firstPayload.runtimeRecordId, secondPayload.runtimeRecordId);
+    assert.equal(firstPayload.sourceCompositionMode, 'single_source');
+    assert.deepEqual(firstPayload.subordinateSourceCoverageReceiptHashes, []);
+    assert.match(
+      firstBytes.toString('utf8'),
+      /generatedAt: 1970-01-01T00:00:00\.000Z/u
+    );
+    assert.match(
+      firstBytes.toString('utf8'),
+      new RegExp(`runtimeRecordId: ${firstPayload.runtimeRecordId}`, 'u')
+    );
+    assert.doesNotMatch(
+      firstBytes.toString('utf8'),
+      new RegExp(firstPayload.compilationReceipt.compiledAt, 'u')
+    );
+    assert.equal(
+      firstPayload.compilationReceipt.goalContractDocumentHash,
+      firstPayload.goalContractDocumentHash
+    );
   });
 
   it('assigns each command block its own command reference', () => {

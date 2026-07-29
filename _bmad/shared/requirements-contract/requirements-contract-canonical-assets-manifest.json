@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-canonical-assets-manifest/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
-    "hash": "sha256:6111dcc3344fa0a83b76868c720266b2c6ecc8dd1f4adeb69c81c9af27e723ae"
+    "hash": "sha256:500c674b49bacbca5f6e2e0492fa858e12e9ee9714e6833b9616650172e8935c"
   },
-  "manifestHash": "sha256:62a2d5ebbde6166aad2b39422df3d1c6d215282f4f8d0e9c6fb50b4a006c593c",
+  "manifestHash": "sha256:d2db869567f6fef49ed452f8be817c462a2d024f3581d9f489b81ec7adc00db4",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -58,7 +58,7 @@
       "role": "consumer_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:5e82bfa9f7148c457a2e272cf760f24391d7093200b08e4227c05e8b7b931ea9"
+      "sha256": "sha256:c4bedc32a16afa4e57ad0e7e906f7277d5cb215307b3e3a15901416e9d10e744"
     },
     {
       "assetId": "discovery_envelope_template",
@@ -270,7 +270,7 @@
       "role": "goal_contract_execution_projection_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:981eaabe2f15694731519229e1511ddff0bd1b22bb8b8f9e3732125ed5ef7b37"
+      "sha256": "sha256:670a4c671ac0f7aff3122ee76dcf15d5a3ab5d8b7576304be347f7ba09888749"
     },
     {
       "assetId": "goal_contract_partition_policy",
@@ -297,7 +297,7 @@
       "role": "goal_contract_partition_manifest_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:24e359e9b94fea50049b8e3a8f6d280dc978b4990515b9ec968eef770e939b81"
+      "sha256": "sha256:cf224b2b5508ffcef3dfb0cf56a240c85b5bcdcf84ea442c98081f2d04ed4255"
     },
     {
       "assetId": "goal_contract_partition_analysis_receipt_schema",
@@ -354,13 +354,85 @@
       "sha256": "sha256:9ea25f58859cd2e7aefc86301b9fcd717f1303ff8613c97f55ebef4e71096a02"
     },
     {
+      "assetId": "goal_contract_partition_plan_schema",
+      "version": "goal-contract-partition-plan/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-plan.schema.json",
+      "role": "goal_contract_partition_plan_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:63e9f710658043ea9001ec62c1d822b14ac106af866f64222cbd34317496e2ec"
+    },
+    {
+      "assetId": "goal_contract_authority_supersession_receipt_schema",
+      "version": "goal-contract-authority-supersession-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-authority-supersession-receipt.schema.json",
+      "role": "goal_contract_authority_supersession_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:f11d7e31a57f6801763e71750a198c375f063242e611a746ed67be58a3160ce3"
+    },
+    {
+      "assetId": "goal_contract_source_grounded_coverage_receipt_schema",
+      "version": "goal-contract-source-grounded-coverage-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-source-grounded-coverage-receipt.schema.json",
+      "role": "goal_contract_source_grounded_coverage_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:f0a8ff040455e0d69fa74013e5d467ac46b5a774941e7a473a6595bf93291b25"
+    },
+    {
       "assetId": "goal_contract_partition_release_gate_receipt_schema",
       "version": "goal-contract-partition-release-gate-receipt/v1",
       "path": "_bmad/shared/goal-contract/goal-contract-partition-release-gate-receipt.schema.json",
       "role": "goal_contract_partition_release_gate_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:5bc3f57a91e76e1590f8269f879d0503e481942496eb51e4ecb80643b13b7321"
+      "sha256": "sha256:5bb0381addc100ae8052910a642c227cd7e315c2dfb9a71d617e7f864d2c524b"
+    },
+    {
+      "assetId": "goal_contract_campaign_activation_receipt_schema",
+      "version": "goal-contract-campaign-activation-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-campaign-activation-receipt.schema.json",
+      "role": "goal_contract_campaign_activation_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:b5afb80913a50c44808ca37389dc060bcfcc1fcb7b2e658f229626475e70cbd6"
+    },
+    {
+      "assetId": "goal_contract_subcontract_execution_lease_schema",
+      "version": "goal-contract-subcontract-execution-lease/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-subcontract-execution-lease.schema.json",
+      "role": "goal_contract_subcontract_execution_lease_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fd671759f780f9e97f6bf30268567c991e91826d668720f90da95fef530935c2"
+    },
+    {
+      "assetId": "goal_contract_subcontract_evidence_schema",
+      "version": "goal-contract-subcontract-evidence/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-subcontract-evidence.schema.json",
+      "role": "goal_contract_subcontract_evidence_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:08c6b91ae7b2f137622d961f6aadd025aeaed314c9f36b0cf8c34002f5a8b59f"
+    },
+    {
+      "assetId": "goal_contract_subcontract_closure_receipt_schema",
+      "version": "goal-contract-subcontract-closure-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-subcontract-closure-receipt.schema.json",
+      "role": "goal_contract_subcontract_closure_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:b6319d997c34c75f55f4be4a363b8279ed4e53d786c45018e55f827a8bfe861e"
+    },
+    {
+      "assetId": "goal_contract_campaign_closure_receipt_schema",
+      "version": "goal-contract-campaign-closure-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-campaign-closure-receipt.schema.json",
+      "role": "goal_contract_campaign_closure_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:a3c695274609646cc5bccb23b990cdd24e98f7b8e7f1de4c3c0fafafd73bc948"
     },
     {
       "assetId": "closeout_packet_schema",

@@ -20,7 +20,7 @@ function run(command: string, args: string[], cwd: string, timeout = 300_000) {
   });
 }
 
-function runNpm(args: string[], cwd: string, env: NodeJS.ProcessEnv) {
+function runNpm(args: string[], cwd: string, _env: NodeJS.ProcessEnv) {
   return process.platform === 'win32'
     ? run(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'call', 'npm.cmd', ...args], cwd)
     : run('npm', args, cwd);
@@ -35,7 +35,132 @@ function parsePack(stdout: string) {
   };
 }
 
-function partition(cli: string, source: string, root: string) {
+function runKernelProbe(kernelPath: string, cwd: string) {
+  const script = [
+    "const path = require('node:path');",
+    'const kernelPath = process.argv[1];',
+    'const kernelRoot = path.dirname(kernelPath);',
+    'const kernel = require(kernelPath);',
+    "const { hashControlPlaneValue } = require(path.join(kernelRoot, 'canonical-hash.js'));",
+    "const { compileOrderedSourceSnapshotSet } = require(path.join(kernelRoot, 'source-snapshot.js'));",
+    "const seed = { namespace: 'COMPONENT', artifact: 'component-spec', parent: 'parent-task' };",
+    "const requiredRequirementIds = [`${seed.namespace}-C${String(1).padStart(2, '0')}`];",
+    "const requiredTaskIds = [`${seed.namespace}-T${String(1).padStart(2, '0')}`];",
+    'const binding = {',
+    "role: 'subordinate_component_specification',",
+    'namespace: seed.namespace,',
+    'sourceArtifactId: seed.artifact,',
+    'parentTaskRefs: [seed.parent],',
+    'requiredRequirementIds,',
+    'requiredTaskIds,',
+    '};',
+    'const requiredSubordinateBindings = [binding];',
+    'const authoritySourceId = `${seed.artifact}-authority`;',
+    'const authorityRecord = {',
+    "authorityKind: 'deterministic_source_authority_adapter',",
+    'authoritySourceId,',
+    "declaredMode: 'composite_required',",
+    'requiredSubordinateBindings,',
+    'declaredRequiredBindingsHash: hashControlPlaneValue(requiredSubordinateBindings),',
+    'authorityEvidenceHash: hashControlPlaneValue({',
+    'authoritySourceId,',
+    "mode: 'composite_required',",
+    'requiredSubordinateBindings,',
+    '}),',
+    '};',
+    'const policy = kernel.compileSourceCompositionPolicy({ authorityRecord });',
+    'const snapshots = compileOrderedSourceSnapshotSet({ sources: [',
+    '{',
+    "sourceKind: 'source_plan',",
+    "sourceArtifactId: 'primary-plan',",
+    "sourceRole: 'primary_implementation_authority',",
+    "namespace: 'PRIMARY',",
+    'sourceOrder: 0,',
+    "pathOrSegmentId: 'docs/primary.md',",
+    "rawBytes: Buffer.from(`# PRIMARY\\n- ${seed.parent}\\n`, 'utf8'),",
+    '},',
+    '{',
+    "sourceKind: 'source_plan',",
+    'sourceArtifactId: seed.artifact,',
+    'sourceRole: binding.role,',
+    'namespace: seed.namespace,',
+    'sourceOrder: 1,',
+    "pathOrSegmentId: 'docs/component.md',",
+    "rawBytes: Buffer.from(`# ${seed.namespace}\\n- ${requiredRequirementIds[0]}\\n- ${requiredTaskIds[0]}\\n`, 'utf8'),",
+    '},',
+    '] });',
+    'const bundle = kernel.compileCompositeSourceAuthorityBundle({',
+    'sourceCompositionPolicy: policy,',
+    'orderedSourceSnapshotSet: snapshots,',
+    'primarySource: {',
+    "role: 'primary_implementation_authority',",
+    "namespace: 'PRIMARY',",
+    "sourceArtifactId: 'primary-plan',",
+    "ownedSemanticDomains: ['campaign'],",
+    'parentTaskRefs: [],',
+    '},',
+    'subordinateSources: [{',
+    '...binding,',
+    "ownedSemanticDomains: ['component'],",
+    '}],',
+    '});',
+    'process.stdout.write(JSON.stringify({',
+    'functions: Object.keys(kernel).filter((name) => typeof kernel[name] === "function").sort(),',
+    'sourceCompositionPolicyHash: policy.sourceCompositionPolicyHash,',
+    'sourceAuthorityBundleHash: bundle.sourceAuthorityBundleHash,',
+    'subordinateCoverage: bundle.subordinateCoverage,',
+    '}));',
+  ].join('');
+  const result = run(process.execPath, ['-e', script, kernelPath], cwd);
+  expect(result.status, result.stderr || result.stdout).toBe(0);
+  return JSON.parse(result.stdout);
+}
+
+function writeReleaseGateFixture(root: string) {
+  const source = path.join(root, 'release-source.md');
+  const goal = path.join(root, 'release-goal.md');
+  const coverage = path.join(root, 'release-coverage.json');
+  const generation = path.join(root, 'release-generation.json');
+  fs.writeFileSync(source, '# Source\n', 'utf8');
+  fs.writeFileSync(goal, '# Goal\n', 'utf8');
+  const sourcePlanHash = createHash('sha256')
+    .update(fs.readFileSync(source))
+    .digest('hex');
+  const goalContractHash = createHash('sha256')
+    .update(fs.readFileSync(goal))
+    .digest('hex');
+  fs.writeFileSync(
+    coverage,
+    `${JSON.stringify({
+      sourcePlanHash: `sha256:${sourcePlanHash}`,
+      goalContractHash: `sha256:${goalContractHash}`,
+      unmappedSourceObligations: [],
+      orphanGeneratedRefs: [],
+      blockingReasons: [],
+      decision: 'pass',
+    })}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(
+    generation,
+    `${JSON.stringify({
+      ok: true,
+      sourcePlanHash: `sha256:${sourcePlanHash}`,
+      goalContractHash: `sha256:${goalContractHash}`,
+      unmappedSourceObligations: 0,
+      coverageReceiptPath: coverage,
+    })}\n`,
+    'utf8'
+  );
+  return { source, goal, coverage, generation };
+}
+
+function partition(
+  cli: string,
+  source: string,
+  root: string,
+  sequenceMode = 'auto'
+) {
   const out = path.join(root, 'partition-manifest.json');
   const receipts = path.join(root, 'receipts');
   fs.mkdirSync(root, { recursive: true });
@@ -53,6 +178,8 @@ function partition(cli: string, source: string, root: string) {
       out,
       '--receipts-dir',
       receipts,
+      '--sequence-mode',
+      sequenceMode,
       '--json',
     ],
     root
@@ -238,6 +365,27 @@ describe('goal-contract partition installed runtime', () => {
     expect(fs.existsSync(path.join(installedRoot, 'src'))).toBe(false);
     expect(fs.existsSync(path.join(installedRoot, 'dist', '_bmad'))).toBe(false);
 
+    const repoKernelPath = path.join(
+      packageRoot,
+      'dist',
+      'utils',
+      'goal-contract',
+      'control-plane',
+      'index.js'
+    );
+    const installedKernelPath = path.join(
+      installedRoot,
+      'dist',
+      'utils',
+      'goal-contract',
+      'control-plane',
+      'index.js'
+    );
+    expect(fs.existsSync(installedKernelPath)).toBe(true);
+    expect(runKernelProbe(installedKernelPath, consumerRoot)).toEqual(
+      runKernelProbe(repoKernelPath, packageRoot)
+    );
+
     const simpleSource = writeSimpleSource(root);
     const repoResult = partition(repoCli, simpleSource, path.join(root, 'repo'));
     const installedResult = partition(installedCli, simpleSource, path.join(root, 'installed'));
@@ -255,7 +403,7 @@ describe('goal-contract partition installed runtime', () => {
 
     const decisions: string[] = [];
     const selfHostingApplicabilityReceiptPaths: string[] = [];
-    for (const [name, source] of [
+    for (const [name, source, sequenceMode] of [
       [
         'dynamic-master',
         path.join(
@@ -265,6 +413,7 @@ describe('goal-contract partition installed runtime', () => {
           'plans',
           '2026-07-25-dynamic-goal-contract-partition-compiler-implementation-plan.md'
         ),
+        'required',
       ],
       [
         'judge-role-separation',
@@ -274,9 +423,15 @@ describe('goal-contract partition installed runtime', () => {
           'plans',
           '2026-07-25-judge-role-separation-implementation-task-list.md'
         ),
+        'auto',
       ],
     ] as const) {
-      const selfHost = partition(installedCli, source, path.join(root, name));
+      const selfHost = partition(
+        installedCli,
+        source,
+        path.join(root, name),
+        sequenceMode
+      );
       decisions.push(selfHost.payload.sequenceApplicability);
       if (selfHost.result.status === 0) {
         expect(selfHost.payload.sequenceApplicability).toBe('not_applicable_with_proof');
@@ -291,7 +446,8 @@ describe('goal-contract partition installed runtime', () => {
         );
         expect(receipt).toMatchObject({
           schemaVersion: 'goal-contract-sequence-applicability-receipt/v1',
-          decision: 'required',
+          decision: 'not_applicable_with_proof',
+          sequenceMode: 'required',
           producerAvailability: 'unavailable',
           failureClass: 'sequence_closure_required_unavailable',
           blockingReasons: ['canonical_sequence_closure_producer_unavailable'],
@@ -307,6 +463,55 @@ describe('goal-contract partition installed runtime', () => {
       selfHostingApplicabilityReceiptPaths.push(
         selfHost.payload.sequenceApplicabilityReceiptPath
       );
+    }
+
+    const releaseFixture = writeReleaseGateFixture(root);
+    const blockedReleaseArgs = [
+      'goal-contract',
+      'release-gate',
+      '--source',
+      path.join(root, 'missing-release-source.md'),
+      '--goal',
+      path.join(root, 'missing-release-goal.md'),
+      '--coverage',
+      releaseFixture.coverage,
+      '--generation',
+      releaseFixture.generation,
+      '--json',
+    ];
+    const installedBlockedRelease = run(
+      process.execPath,
+      [installedCli, ...blockedReleaseArgs],
+      consumerRoot
+    );
+    expect(
+      installedBlockedRelease.status,
+      installedBlockedRelease.stderr || installedBlockedRelease.stdout
+    ).toBe(1);
+    expect(JSON.parse(installedBlockedRelease.stdout)).toMatchObject({
+      ok: false,
+      decision: 'blocked',
+    });
+    if (process.platform === 'win32') {
+      const quote = (value: string) => `'${value.replace(/'/gu, "''")}'`;
+      const invocation = [
+        '&',
+        quote(process.execPath),
+        quote(installedCli),
+        ...blockedReleaseArgs.map(quote),
+      ].join(' ');
+      const wrapper = run(
+        'pwsh.exe',
+        [
+          '-NoLogo',
+          '-NoProfile',
+          '-Command',
+          `& { ${invocation}; $status = $LASTEXITCODE; exit $status }`,
+        ],
+        consumerRoot
+      );
+      expect(wrapper.status, wrapper.stderr || wrapper.stdout).toBe(1);
+      expect(JSON.parse(wrapper.stdout).decision).toBe('blocked');
     }
 
     const buildReceipt = path.join(
@@ -334,11 +539,11 @@ describe('goal-contract partition installed runtime', () => {
       consumerRoot
     );
     expect(capability.status, capability.stderr || capability.stdout).toBe(0);
-    expect(capability.stdout).toBe(
-      decisions.includes('required')
-        ? 'Sequence-Required Capability Pending'
-        : 'Partition Core Verified'
-    );
+    expect(decisions).toEqual([
+      'not_applicable_with_proof',
+      'not_applicable_with_proof',
+    ]);
+    expect(capability.stdout).toBe('Sequence-Required Capability Pending');
     expect(createHash('sha256').update(fs.readFileSync(buildReceipt)).digest('hex')).toMatch(
       /^[a-f0-9]{64}$/u
     );
