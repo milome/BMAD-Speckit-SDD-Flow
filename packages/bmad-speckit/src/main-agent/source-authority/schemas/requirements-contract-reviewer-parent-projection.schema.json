@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-reviewer-parent-projection.schema.json",
+  "title": "Requirements Contract Reviewer Parent Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "actorClass",
+    "reviewerProfileId",
+    "campaignId",
+    "scopeSnapshotPath",
+    "scopeSnapshotHash",
+    "implementationByteManifestHash",
+    "evidenceManifestHash",
+    "allowedEvidenceRefs",
+    "mandatoryCoverageUnits",
+    "semanticPromptHash",
+    "promptTemplateHash",
+    "resultSchemaHash",
+    "policyHash",
+    "hostId",
+    "nativeAgentIdentity",
+    "componentByteHash",
+    "resolvedReviewerModelId",
+    "resolvedReviewerProviderFamily",
+    "readonlyMode",
+    "invocationOrdinal",
+    "reviewerAttemptKey",
+    "expectedReceiptIdentityHash",
+    "projectionHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-reviewer-parent-projection/v1"
+    },
+    "actorClass": { "const": "bounded_code_reviewer" },
+    "reviewerProfileId": { "$ref": "#/$defs/text" },
+    "campaignId": { "$ref": "#/$defs/text" },
+    "scopeSnapshotPath": { "$ref": "#/$defs/text" },
+    "scopeSnapshotHash": { "$ref": "#/$defs/hash" },
+    "implementationByteManifestHash": { "$ref": "#/$defs/hash" },
+    "evidenceManifestHash": { "$ref": "#/$defs/hash" },
+    "allowedEvidenceRefs": { "$ref": "#/$defs/stringSet" },
+    "mandatoryCoverageUnits": { "$ref": "#/$defs/stringSet" },
+    "semanticPromptHash": { "$ref": "#/$defs/hash" },
+    "promptTemplateHash": { "$ref": "#/$defs/hash" },
+    "resultSchemaHash": { "$ref": "#/$defs/hash" },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "hostId": { "enum": ["claude", "cursor", "codex"] },
+    "nativeAgentIdentity": { "const": "code-reviewer" },
+    "componentByteHash": { "$ref": "#/$defs/hash" },
+    "resolvedReviewerModelId": { "$ref": "#/$defs/text" },
+    "resolvedReviewerProviderFamily": { "$ref": "#/$defs/text" },
+    "readonlyMode": { "$ref": "#/$defs/text" },
+    "invocationOrdinal": { "const": 1 },
+    "reviewerAttemptKey": { "$ref": "#/$defs/hash" },
+    "expectedReceiptIdentityHash": { "$ref": "#/$defs/hash" },
+    "projectionHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/text" }
+    }
+  }
+}
