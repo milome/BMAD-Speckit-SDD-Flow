@@ -15,21 +15,15 @@ const SOURCE_RUNNER = [
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
-const {
-  buildSourceSnapshot,
-} = require('../src/utils/goal-contract/dual-view-derivation.ts');
+const { buildSourceSnapshot } = require('../src/utils/goal-contract/dual-view-derivation.ts');
 const {
   loadPartitionMethodologyProfile,
 } = require('../src/utils/goal-contract/partition-methodology-profile.ts');
-const {
-  loadRepositoryFacts,
-} = require('../src/utils/goal-contract/repository-facts.ts');
+const { loadRepositoryFacts } = require('../src/utils/goal-contract/repository-facts.ts');
 const {
   createGoalContractSemanticProvider,
 } = require('../src/utils/goal-contract/semantic-provider-registry.ts');
-const {
-  buildPartitionSlotData,
-} = require('../src/utils/goal-contract/slot-data-builder.ts');
+const { buildPartitionSlotData } = require('../src/utils/goal-contract/slot-data-builder.ts');
 const {
   extractSourceObligations,
 } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
@@ -222,10 +216,7 @@ function writeSourcePackageFixture(root) {
   const fixture = writeProviderFixture(root);
   const packageRoot = path.join(providerRoot, 'packages', 'bmad-speckit');
   fs.mkdirSync(path.join(packageRoot, 'src', 'commands'), { recursive: true });
-  fs.copyFileSync(
-    SOURCE_COMMAND,
-    path.join(packageRoot, 'src', 'commands', 'goal-contract.ts')
-  );
+  fs.copyFileSync(SOURCE_COMMAND, path.join(packageRoot, 'src', 'commands', 'goal-contract.ts'));
   fs.cpSync(
     path.join(PACKAGE_ROOT, 'src', 'utils', 'goal-contract'),
     path.join(packageRoot, 'src', 'utils', 'goal-contract'),
@@ -307,19 +298,10 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(fs.existsSync(out), true);
     assert.equal(fs.existsSync(payload.partitionPlanPath), true);
     const partitionPlanBytes = fs.readFileSync(payload.partitionPlanPath);
-    assert.equal(
-      hash(partitionPlanBytes),
-      payload.partitionPlanDocumentHash
-    );
+    assert.equal(hash(partitionPlanBytes), payload.partitionPlanDocumentHash);
     const partitionPlan = JSON.parse(partitionPlanBytes);
-    assert.equal(
-      partitionPlan.partitionSetHash,
-      payload.partitionPlanPartitionSetHash
-    );
-    assert.equal(
-      partitionPlan.sourceCompositionPolicyHash,
-      payload.sourceCompositionPolicyHash
-    );
+    assert.equal(partitionPlan.partitionSetHash, payload.partitionPlanPartitionSetHash);
+    assert.equal(partitionPlan.sourceCompositionPolicyHash, payload.sourceCompositionPolicyHash);
     assert.doesNotMatch(
       partitionPlanBytes.toString('utf8'),
       /childContractHash|partitionManifestHash/u
@@ -377,6 +359,65 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(fs.existsSync(out), true);
   });
 
+  it('partitions only explicit Task headings when AC EVD and CMD records are nested', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'nested-typed-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    fs.writeFileSync(
+      source,
+      [
+        '# Nested Typed Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task J01-T01: Implement actor authority',
+        '',
+        '- Modify: `src/runtime/actor.ts`',
+        '- AC-J01-T01-01: Actor authority is deterministic.',
+        '- EVD-J01-T01-01: Actor authority receipt.',
+        '- CMD-J01-T01-01: Run `node --version`.',
+        '- J01-J05 exported symbols remain reachable.',
+        '',
+        '### Task J02-T01: Implement judge transport',
+        '',
+        '- Modify: `src/runtime/judge.ts`',
+        '- AC-J02-T01-01: Judge transport is deterministic.',
+        '- EVD-J02-T01-01: Judge transport receipt.',
+        '- CMD-J02-T01-01: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.deepEqual(manifest.partitions.flatMap((partition) => partition.primaryTaskIds).sort(), [
+      'J01-T01',
+      'J02-T01',
+    ]);
+    assert.equal(manifest.partitionCount <= 2, true);
+    assert.equal(
+      manifest.partitions.some((partition) =>
+        partition.primaryTaskIds.some((taskId) => /^(?:AC|EVD|CMD)-/u.test(taskId))
+      ),
+      false
+    );
+  });
+
   it('splits structured source tasks that exceed the write-scope owner limit', () => {
     const root = tempRoot();
     const source = path.join(root, 'wide-source-plan.md');
@@ -425,21 +466,60 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     assert.equal(result.status, 0, payload.failureClass || result.stderr);
     const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
-    assert.ok(
-      manifest.partitions.flatMap((partition) => partition.primaryTaskIds)
-        .length > 1
-    );
+    assert.ok(manifest.partitions.flatMap((partition) => partition.primaryTaskIds).length > 1);
     assert.equal(
-      manifest.partitions.every(
-        (partition) => partition.primaryWriteScopeOwnerCount <= 8
-      ),
+      manifest.partitions.every((partition) => partition.primaryWriteScopeOwnerCount <= 8),
       true
     );
     assert.equal(
-      manifest.partitions.every((partition) =>
-        partition.commandIds.includes('CMD-001')
-      ),
+      manifest.partitions.every((partition) => partition.commandIds.includes('CMD-001')),
       true
+    );
+  });
+
+  it('preserves a wide task when its split rule declares one atomic owner', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'atomic-wide-source-plan.md');
+    const out = path.join(root, 'partition-manifest.json');
+    fs.writeFileSync(
+      source,
+      [
+        '# Atomic Wide Structured Plan',
+        '',
+        '## Implementation Task Breakdown',
+        '',
+        '### Task PLAN-T01: Update one atomic runtime authority',
+        '',
+        '- Target modification paths:',
+        ...Array.from({ length: 10 }, (_, index) => `  - \`src/runtime/file-${index + 1}.ts\``),
+        '- Split rule: all runtime files remain one atomic authority owner.',
+        '- AC-PLAN-T01-01: Runtime authority remains deterministic.',
+        '- EVD-PLAN-T01-01: Runtime authority receipt.',
+        '- CMD-PLAN-T01-01: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand([
+      'partition',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--out',
+      out,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ]);
+    const payload = parsePayload(result);
+
+    assert.equal(result.status, 0, payload.failureClass || result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.deepEqual(
+      manifest.partitions.flatMap((partition) => partition.primaryTaskIds),
+      ['PLAN-T01']
     );
   });
 
@@ -501,8 +581,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
     assert.equal(
       manifest.partitions.reduce(
-        (total, partition) =>
-          total + partition.primaryWriteScopeOwnerCount,
+        (total, partition) => total + partition.primaryWriteScopeOwnerCount,
         0
       ),
       3
@@ -545,16 +624,12 @@ describe('bmad-speckit goal-contract partition command', () => {
     const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
     const integrationPartitions = manifest.partitions.filter(
       (partition) =>
-        partition.ownedArtifactPaths.length === 0 &&
-        partition.dependencyPartitionIds.length > 0
+        partition.ownedArtifactPaths.length === 0 && partition.dependencyPartitionIds.length > 0
     );
     assert.equal(integrationPartitions.length, 1);
     const [integrationPartition] = integrationPartitions;
     assert.equal(integrationPartition.partitionRole, 'final_integration');
-    assert.equal(
-      manifest.topologicalOrder.at(-1),
-      integrationPartition.partitionId
-    );
+    assert.equal(manifest.topologicalOrder.at(-1), integrationPartition.partitionId);
   });
 
   it('rejects an unmarked task path list instead of silently dropping write scope', () => {
@@ -601,10 +676,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     const payload = parsePayload(result);
 
     assert.notEqual(result.status, 0);
-    assert.equal(
-      payload.failureClass,
-      'source_obligation_write_scope_unbound'
-    );
+    assert.equal(payload.failureClass, 'source_obligation_write_scope_unbound');
     assert.equal(fs.existsSync(out), false);
   });
 
@@ -658,9 +730,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(result.status, 0, payload.failureClass || result.stderr);
     const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
     assert.equal(
-      manifest.partitions.every(
-        (partition) => partition.commandIds.length > 0
-      ),
+      manifest.partitions.every((partition) => partition.commandIds.length > 0),
       true
     );
   });
@@ -696,7 +766,7 @@ describe('bmad-speckit goal-contract partition command', () => {
         '',
         ...secondTaskPaths,
         '',
-        '**Dependencies:** PLAN-T01A',
+        '- Dependencies: PLAN-T01A.',
         '',
         '### PLAN Required Tests',
         '',
@@ -738,9 +808,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     );
     assert.ok(firstPartition);
     assert.ok(secondPartition);
-    assert.deepEqual(secondPartition.dependencyPartitionIds, [
-      firstPartition.partitionId,
-    ]);
+    assert.deepEqual(secondPartition.dependencyPartitionIds, [firstPartition.partitionId]);
   });
 
   it('projects an unscoped command to every structured task partition', () => {
@@ -748,10 +816,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     const source = path.join(root, 'global-command-plan.md');
     const out = path.join(root, 'partition-manifest.json');
     const taskPaths = (prefix) =>
-      Array.from(
-        { length: 8 },
-        (_, index) => `- \`src/runtime/${prefix}-${index + 1}.ts\``
-      );
+      Array.from({ length: 8 }, (_, index) => `- \`src/runtime/${prefix}-${index + 1}.ts\``);
     fs.writeFileSync(
       source,
       [
@@ -803,9 +868,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     const manifest = JSON.parse(fs.readFileSync(out, 'utf8'));
     assert.ok(manifest.partitions.length > 1);
     assert.equal(
-      manifest.partitions.every((partition) =>
-        partition.commandIds.includes('CMD-001')
-      ),
+      manifest.partitions.every((partition) => partition.commandIds.includes('CMD-001')),
       true
     );
   });
@@ -941,13 +1004,10 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const payload = parsePayload(result);
     assert.equal(payload.ok, true);
-    assert.deepEqual(
-      fs.readFileSync(fixture.invocationLog, 'utf8').trim().split(/\r?\n/u).sort(),
-      [
-        'goal_contract_acceptance_evidence_view/v1',
-        'goal_contract_implementation_view/v1',
-      ]
-    );
+    assert.deepEqual(fs.readFileSync(fixture.invocationLog, 'utf8').trim().split(/\r?\n/u).sort(), [
+      'goal_contract_acceptance_evidence_view/v1',
+      'goal_contract_implementation_view/v1',
+    ]);
     assert.equal(fs.existsSync(out), true);
   });
 
@@ -1014,11 +1074,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     ]) {
       const root = tempRoot();
       const source = writeSourcePlan(root);
-      fs.appendFileSync(
-        source,
-        `\n## Sequence Requirements\n\n${prose}\n`,
-        'utf8'
-      );
+      fs.appendFileSync(source, `\n## Sequence Requirements\n\n${prose}\n`, 'utf8');
       const out = path.join(root, 'partition-manifest.json');
       const result = runSourceCommand([
         'partition',
@@ -1034,10 +1090,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
       assert.equal(result.status, 0, result.stderr || result.stdout);
       assert.equal(payload.ok, true);
-      assert.equal(
-        payload.sequenceApplicability,
-        'not_applicable_with_proof'
-      );
+      assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
       assert.equal(payload.sequenceMode, 'auto');
       assert.equal(payload.sequenceCoverage, 'not_applicable');
       assert.equal(payload.sequenceClosureStatus, 'not_required');
@@ -1116,17 +1169,11 @@ describe('bmad-speckit goal-contract partition command', () => {
     const payload = parsePayload(result);
 
     assert.notEqual(result.status, 0);
-    assert.equal(
-      payload.failureClass,
-      'sequence_closure_required_unavailable'
-    );
+    assert.equal(payload.failureClass, 'sequence_closure_required_unavailable');
     assert.equal(payload.sequenceMode, 'required');
     assert.equal(payload.sequenceApplicability, 'not_applicable_with_proof');
     assert.equal(fs.existsSync(out), false);
-    assert.equal(
-      fs.existsSync(payload.sequenceApplicabilityReceiptPath),
-      true
-    );
+    assert.equal(fs.existsSync(payload.sequenceApplicabilityReceiptPath), true);
   });
 
   it('does not misclassify the real judge-role plan as Sequence-required', () => {
@@ -1163,12 +1210,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(fs.existsSync(out), true);
     assert.equal(fs.existsSync(payload.sequenceApplicabilityReceiptPath), true);
     assert.deepEqual(
-      JSON.parse(
-        fs.readFileSync(
-          payload.sequenceApplicabilityReceiptPath,
-          'utf8'
-        )
-      ),
+      JSON.parse(fs.readFileSync(payload.sequenceApplicabilityReceiptPath, 'utf8')),
       payload.sequenceApplicabilityReceipt
     );
   });
@@ -1208,10 +1250,7 @@ describe('bmad-speckit goal-contract partition command', () => {
       runs.auto.payload.partitionManifestHash,
       runs.disabled.payload.partitionManifestHash
     );
-    assert.equal(
-      runs.auto.payload.partitionCount,
-      runs.disabled.payload.partitionCount
-    );
+    assert.equal(runs.auto.payload.partitionCount, runs.disabled.payload.partitionCount);
   });
 
   it('builds partition slots only from a validated canonical selection', () => {

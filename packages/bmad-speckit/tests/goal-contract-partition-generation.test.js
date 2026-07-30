@@ -6,28 +6,19 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { describe, it } = require('node:test');
 
-const {
-  buildPartitionSlotData,
-} = require('../src/utils/goal-contract/slot-data-builder.ts');
+const { buildPartitionSlotData } = require('../src/utils/goal-contract/slot-data-builder.ts');
 const {
   writePartitionChildGenerationReceipt,
 } = require('../src/utils/goal-contract/goal-contract-receipts.ts');
 
-const SOURCE_COMMAND = path.resolve(
-  __dirname,
-  '..',
-  'src',
-  'commands',
-  'goal-contract.ts'
-);
+const SOURCE_COMMAND = path.resolve(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
   'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
-const hash = (value) =>
-  `sha256:${createHash('sha256').update(value).digest('hex')}`;
+const hash = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'partition-generation-'));
@@ -44,11 +35,11 @@ function writeSource(root) {
 }
 
 function runSourceCommand(args) {
-  return spawnSync(
-    process.execPath,
-    ['-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args],
-    { cwd: path.dirname(SOURCE_COMMAND), encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }
-  );
+  return spawnSync(process.execPath, ['-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args], {
+    cwd: path.dirname(SOURCE_COMMAND),
+    encoding: 'utf8',
+    maxBuffer: 20 * 1024 * 1024,
+  });
 }
 
 function activeRun(root) {
@@ -56,8 +47,14 @@ function activeRun(root) {
   const activeManifestPath = path.join(root, 'active-manifest.json');
   const receiptsDir = path.join(root, '.goal-contract-receipts');
   const compile = runSourceCommand([
-    'partition', '--entry', 'standalone_goal_contract',
-    '--source', source, '--out', activeManifestPath, '--json',
+    'partition',
+    '--entry',
+    'standalone_goal_contract',
+    '--source',
+    source,
+    '--out',
+    activeManifestPath,
+    '--json',
   ]);
   assert.equal(compile.status, 0, compile.stderr || compile.stdout);
   const receipt = JSON.parse(compile.stdout);
@@ -73,11 +70,18 @@ describe('partition-bound goal contract generation', () => {
     const partition = run.manifest.partitions[0];
     const child = path.join(root, 'child-goal-execution-plan.md');
     const result = runSourceCommand([
-      'generate', '--entry', 'standalone_goal_contract',
-      '--source', run.source,
-      '--partition-manifest', run.activeManifestPath,
-      '--partition-id', partition.partitionId,
-      '--out', child, '--json',
+      'generate',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      run.source,
+      '--partition-manifest',
+      run.activeManifestPath,
+      '--partition-id',
+      partition.partitionId,
+      '--out',
+      child,
+      '--json',
     ]);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const receipt = JSON.parse(result.stdout);
@@ -86,20 +90,32 @@ describe('partition-bound goal contract generation', () => {
     assert.equal(receipt.inheritedConstraintCount, partition.inheritedConstraintIds.length);
     assert.ok(fs.existsSync(receipt.coverageReceiptPath));
     assert.ok(fs.existsSync(receipt.generationReceiptPath));
-    const generationReceipt = JSON.parse(
-      fs.readFileSync(receipt.generationReceiptPath, 'utf8')
-    );
+    const generationReceipt = JSON.parse(fs.readFileSync(receipt.generationReceiptPath, 'utf8'));
     const text = fs.readFileSync(child, 'utf8');
     for (const field of [
-      'masterSourcePath', 'masterSourceHash', 'sourceSnapshotHash',
-      'methodologyProfileHash', 'methodologyProfileArtifactHash',
-      'executionProjectionHash', 'taskDagHash', 'partitionPolicyHash',
-      'partitionPolicyArtifactHash', 'partitionManifestPath',
-      'partitionManifestHash', 'partitionAnalysisReceiptHash',
-      'partitionSetHash', 'partitionId', 'partitionRole', 'selectionReceiptPath',
-      'selectionReceiptHash', 'selectionSetHash', 'dependencyPartitionIds',
-      'globalCoverageReceiptPath', 'globalCoverageReceiptHash',
-    ]) assert.match(text, new RegExp(`^${field}:`, 'mu'));
+      'masterSourcePath',
+      'masterSourceHash',
+      'sourceSnapshotHash',
+      'methodologyProfileHash',
+      'methodologyProfileArtifactHash',
+      'executionProjectionHash',
+      'taskDagHash',
+      'partitionPolicyHash',
+      'partitionPolicyArtifactHash',
+      'partitionManifestPath',
+      'partitionManifestHash',
+      'partitionAnalysisReceiptHash',
+      'partitionSetHash',
+      'partitionId',
+      'partitionRole',
+      'selectionReceiptPath',
+      'selectionReceiptHash',
+      'selectionSetHash',
+      'dependencyPartitionIds',
+      'globalCoverageReceiptPath',
+      'globalCoverageReceiptHash',
+    ])
+      assert.match(text, new RegExp(`^${field}:`, 'mu'));
     for (const field of [
       'sequenceMode',
       'sequenceApplicability',
@@ -109,10 +125,7 @@ describe('partition-bound goal contract generation', () => {
     ]) {
       assert.equal(receipt[field], run.manifest[field]);
       assert.equal(generationReceipt[field], run.manifest[field]);
-      assert.match(
-        text,
-        new RegExp(`^${field}: ${run.manifest[field]}$`, 'mu')
-      );
+      assert.match(text, new RegExp(`^${field}: ${run.manifest[field]}$`, 'mu'));
     }
     assert.throws(
       () =>
@@ -122,30 +135,32 @@ describe('partition-bound goal contract generation', () => {
           sequenceMode: undefined,
         }),
       (error) =>
-        error.failureClass ===
-          'partition_child_generation_sequence_state_missing' &&
+        error.failureClass === 'partition_child_generation_sequence_state_missing' &&
         error.field === 'sequenceMode'
     );
 
     const release = runSourceCommand([
       'release-gate',
-      '--goal', child,
-      '--source', run.source,
-      '--coverage', receipt.coverageReceiptPath,
-      '--generation', receipt.generationReceiptPath,
-      '--partition-manifest', run.activeManifestPath,
-      '--partition-id', partition.partitionId,
-      '--receipts-dir', run.receiptsDir,
+      '--goal',
+      child,
+      '--source',
+      run.source,
+      '--coverage',
+      receipt.coverageReceiptPath,
+      '--generation',
+      receipt.generationReceiptPath,
+      '--partition-manifest',
+      run.activeManifestPath,
+      '--partition-id',
+      partition.partitionId,
+      '--receipts-dir',
+      run.receiptsDir,
       '--json',
     ]);
     assert.equal(release.status, 1, release.stderr || release.stdout);
     const releaseReceipt = JSON.parse(release.stdout);
     assert.equal(releaseReceipt.decision, 'blocked');
-    assert.ok(
-      releaseReceipt.blockingReasons.includes(
-        'partition_final_manifest_required'
-      )
-    );
+    assert.ok(releaseReceipt.blockingReasons.includes('partition_final_manifest_required'));
     assert.equal(releaseReceipt.componentDecisions.sequence, 'pass');
     for (const field of [
       'sequenceMode',
@@ -160,14 +175,43 @@ describe('partition-bound goal contract generation', () => {
 
   it('renders only selected executable records and isolates inherited constraints', () => {
     const result = buildPartitionSlotData({
-      source: { sourcePlanPath: 'source.md', sourcePlanHash: hash('source'), sourceBytes: 1, sourceLines: 1 },
+      source: {
+        sourcePlanPath: 'source.md',
+        sourcePlanHash: hash('source'),
+        sourceBytes: 1,
+        sourceLines: 1,
+      },
       profile: { profileVersion: '1.0.0', profileHash: hash('profile') },
       selectedScope: {
-        partition: { partitionId: `partition-${'a'.repeat(64)}`, partitionRole: 'implementation', dependencyPartitionIds: [] },
+        partition: {
+          partitionId: `partition-${'a'.repeat(64)}`,
+          partitionRole: 'implementation',
+          dependencyPartitionIds: [],
+        },
         primarySourceObligations: [{ id: 'source-selected', summary: 'Selected.' }],
-        primaryAtomicTasks: [{ taskId: 'task-selected', title: 'Selected task', sourceIds: ['source-selected'], dependencyIds: [] }],
-        completionPredicates: [{ predicateId: 'acceptance-selected', statement: 'Selected passes.', sourceIds: ['source-selected'], evidenceContractIds: ['evidence-selected'] }],
-        evidenceContracts: [{ evidenceContractId: 'evidence-selected', producerTaskIds: ['task-selected'], freshnessRule: 'current' }],
+        primaryAtomicTasks: [
+          {
+            taskId: 'task-selected',
+            title: 'Selected task',
+            sourceIds: ['source-selected'],
+            dependencyIds: [],
+          },
+        ],
+        completionPredicates: [
+          {
+            predicateId: 'acceptance-selected',
+            statement: 'Selected passes.',
+            sourceIds: ['source-selected'],
+            evidenceContractIds: ['evidence-selected'],
+          },
+        ],
+        evidenceContracts: [
+          {
+            evidenceContractId: 'evidence-selected',
+            producerTaskIds: ['task-selected'],
+            freshnessRule: 'current',
+          },
+        ],
         commands: [{ commandId: 'command-selected', literal: 'node --version' }],
         inheritedConstraints: [{ constraintId: 'constraint-selected', executable: false }],
         excludedAtomicTaskIds: ['task-excluded'],
@@ -240,7 +284,11 @@ describe('partition-bound goal contract generation', () => {
           dependencyPartitionIds: [],
         },
         primarySourceObligations: [
-          { id: 'source-selected', summary: 'Selected.' },
+          {
+            id: 'source-selected',
+            summary: 'Selected.',
+            specSpanRefs: ['span-primary'],
+          },
         ],
         primaryAtomicTasks: [
           {
@@ -329,12 +377,13 @@ describe('partition-bound goal contract generation', () => {
     ]) {
       assert.match(frontMatter, new RegExp(`^${field}:`, 'mu'));
     }
+    assert.match(frontMatter, /specSpanRefs: \["span-primary","span-subordinate"\]/u);
     assert.doesNotMatch(frontMatter, /^partitionManifestHash:/mu);
     assert.doesNotMatch(frontMatter, /^partitionManifestPath:/mu);
     assert.doesNotMatch(frontMatter, /\bundefined\b/u);
+    assert.match(result.slotData.sourceCoverageMatrix, /span-primary/u);
 
-    const completionEvidence =
-      result.slotData.completionEvidencePacket;
+    const completionEvidence = result.slotData.completionEvidencePacket;
     for (const field of [
       'partitionPlanHash',
       'sourceCompositionPolicyHash',
@@ -361,11 +410,18 @@ describe('partition-bound goal contract generation', () => {
     fs.writeFileSync(run.activeManifestPath, `${JSON.stringify(tampered)}\n`, 'utf8');
     const child = path.join(root, 'must-not-exist-goal-execution-plan.md');
     const result = runSourceCommand([
-      'generate', '--entry', 'standalone_goal_contract',
-      '--source', run.source,
-      '--partition-manifest', run.activeManifestPath,
-      '--partition-id', run.manifest.partitions[0].partitionId,
-      '--out', child, '--json',
+      'generate',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      run.source,
+      '--partition-manifest',
+      run.activeManifestPath,
+      '--partition-id',
+      run.manifest.partitions[0].partitionId,
+      '--out',
+      child,
+      '--json',
     ]);
     assert.notEqual(result.status, 0);
     assert.equal(fs.existsSync(child), false);

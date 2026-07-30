@@ -17,9 +17,7 @@ const {
 const {
   loadPartitionMethodologyProfile,
 } = require('../src/utils/goal-contract/partition-methodology-profile.ts');
-const {
-  loadPartitionPolicy,
-} = require('../src/utils/goal-contract/partition-policy.ts');
+const { loadPartitionPolicy } = require('../src/utils/goal-contract/partition-policy.ts');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const PROFILE_PATH = path.join(
@@ -50,8 +48,7 @@ const PARTITION_POLICY_SCHEMA_PATH = path.join(
   'goal-contract',
   'goal-contract-partition-policy.schema.json'
 );
-const sha256 = (bytes) =>
-  `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
 function sourceLines(fixture, binding) {
   const parentTaskRef = binding.parentTaskRefs[0];
@@ -59,10 +56,9 @@ function sourceLines(fixture, binding) {
     `# ${fixture.primaryNamespace}`,
     `## ${parentTaskRef}`,
     `- PRIMARY-REQ: MUST preserve ${fixture.primarySourceArtifactId}.`,
-    `- ${[
-      binding.requiredRequirementIds[0],
-      binding.requiredTaskIds[0],
-    ].join(' and ')} MUST remain governed by ${parentTaskRef}.`,
+    `- ${[binding.requiredRequirementIds[0], binding.requiredTaskIds[0]].join(
+      ' and '
+    )} MUST remain governed by ${parentTaskRef}.`,
     '- PRIMARY-BOUNDARY: MUST NOT expand subordinate ownership.',
     '## Completion Evidence',
     '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
@@ -72,27 +68,22 @@ function sourceLines(fixture, binding) {
 function subordinateLines(binding) {
   return [
     `# ${binding.namespace}`,
-    ...binding.requiredRequirementIds.map((id) => `- ${id}`),
-    ...binding.requiredTaskIds.map((id) => `- ${id}`),
+    ...binding.requiredRequirementIds.map(
+      (id) => `- ${id}: MUST preserve ${id} ownership in ${binding.namespace}.`
+    ),
+    ...binding.requiredTaskIds.map((id) => `- ${id}: MUST preserve ${id} component scope.`),
   ];
 }
 
 function boundedPartitionPolicy() {
-  const root = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'canonical-control-plane-policy-')
-  );
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-control-plane-policy-'));
   const targetRoot = path.join(root, '_bmad', 'shared', 'goal-contract');
   fs.mkdirSync(targetRoot, { recursive: true });
   fs.copyFileSync(
     PARTITION_POLICY_SCHEMA_PATH,
-    path.join(
-      targetRoot,
-      path.basename(PARTITION_POLICY_SCHEMA_PATH)
-    )
+    path.join(targetRoot, path.basename(PARTITION_POLICY_SCHEMA_PATH))
   );
-  const policy = JSON.parse(
-    fs.readFileSync(PARTITION_POLICY_PATH, 'utf8')
-  );
+  const policy = JSON.parse(fs.readFileSync(PARTITION_POLICY_PATH, 'utf8'));
   policy.limits.maxPrimaryWriteScopeOwnersPerPartition = 1;
   fs.writeFileSync(
     path.join(targetRoot, path.basename(PARTITION_POLICY_PATH)),
@@ -121,9 +112,7 @@ function compileRequest() {
         namespace: fixture.primaryNamespace,
         sourceOrder: 0,
         pathOrSegmentId: 'docs/plans/primary-authority.md',
-        rawBytes: Buffer.from(
-          `${sourceLines(fixture, binding).join('\n')}\n`
-        ),
+        rawBytes: Buffer.from(`${sourceLines(fixture, binding).join('\n')}\n`),
       },
       {
         sourceKind: 'source_plan',
@@ -132,9 +121,7 @@ function compileRequest() {
         namespace: binding.namespace,
         sourceOrder: 1,
         pathOrSegmentId: 'docs/plans/subordinate-component.md',
-        rawBytes: Buffer.from(
-          `${subordinateLines(binding).join('\n')}\n`
-        ),
+        rawBytes: Buffer.from(`${subordinateLines(binding).join('\n')}\n`),
       },
     ],
     primarySource: {
@@ -152,8 +139,7 @@ function compileRequest() {
     ],
     authorityBasis: {
       kind: 'direct_source_declaration',
-      declaringUserAuthorityIdentity:
-        'user:canonical-control-plane-test',
+      declaringUserAuthorityIdentity: 'user:canonical-control-plane-test',
       entryScenario: 'standalone_goal_contract',
     },
     goalContractPolicyRequest: {
@@ -161,10 +147,8 @@ function compileRequest() {
       generationMode: 'source_plan_strict',
       sourcePlanPath: 'docs/plans/primary-authority.md',
       outPath: 'docs/plans/canonical-control-plane-parent.md',
-      coverageReceiptPath:
-        'docs/plans/.canonical-control-plane.coverage.json',
-      generationReceiptPath:
-        'docs/plans/.canonical-control-plane.generation.json',
+      coverageReceiptPath: 'docs/plans/.canonical-control-plane.coverage.json',
+      generationReceiptPath: 'docs/plans/.canonical-control-plane.generation.json',
       profileBytesHash: sha256(contractProfileBytes),
       templateBytesHash: sha256(templateBytes),
     },
@@ -175,9 +159,7 @@ function compileRequest() {
         packageRoot: REPO_ROOT,
       }),
       partitionPolicyBinding: boundedPartitionPolicy(),
-      reconciledGraph: reconciledGraphFixture(
-        binding.parentTaskRefs[0]
-      ),
+      reconciledGraph: reconciledGraphFixture(binding.parentTaskRefs[0]),
       reconciliationReceiptHash: hashControlPlaneValue({
         reconciliation: 'current',
       }),
@@ -197,11 +179,7 @@ function compileRequest() {
         shouldResolveProducer: false,
       },
     },
-    renderChildContract({
-      partitionPlan,
-      childProjectionInput,
-      displayOrdinal,
-    }) {
+    renderChildContract({ partitionPlan, childProjectionInput, displayOrdinal }) {
       const obligationRefs = [
         ...childProjectionInput.primarySourceObligationIds,
         ...childProjectionInput.namespacedObligations.map(
@@ -228,18 +206,10 @@ function compileRequest() {
             `partitionId: ${childProjectionInput.partitionId}`,
             `displayOrdinal: ${displayOrdinal}`,
             `obligationRefs: ${JSON.stringify(obligationRefs)}`,
-            `namespaceRefs: ${JSON.stringify(
-              childProjectionInput.namespaceRefs
-            )}`,
-            `sourceArtifactRefs: ${JSON.stringify(
-              childProjectionInput.sourceArtifactRefs
-            )}`,
-            `specSpanRefs: ${JSON.stringify(
-              childProjectionInput.specSpanRefs
-            )}`,
-            `governedPaths: ${JSON.stringify(
-              childProjectionInput.ownedArtifactPaths
-            )}`,
+            `namespaceRefs: ${JSON.stringify(childProjectionInput.namespaceRefs)}`,
+            `sourceArtifactRefs: ${JSON.stringify(childProjectionInput.sourceArtifactRefs)}`,
+            `specSpanRefs: ${JSON.stringify(childProjectionInput.specSpanRefs)}`,
+            `governedPaths: ${JSON.stringify(childProjectionInput.ownedArtifactPaths)}`,
             '---',
             '',
             `# ${childProjectionInput.partitionId}`,
@@ -283,31 +253,16 @@ describe('canonical control-plane facade', () => {
   });
 
   it('compiles the full composite execution authority without activation', () => {
-    const {
-      compileExecutionBundle,
-    } = require('../src/utils/goal-contract/control-plane/index.ts');
+    const { compileExecutionBundle } = require('../src/utils/goal-contract/control-plane/index.ts');
     const request = compileRequest();
     const bundle = compileExecutionBundle(request);
 
+    assert.equal(bundle.schemaVersion, 'goal-contract-execution-authority-bundle/v1');
+    assert.equal(bundle.sourceCompositionPolicy.mode, 'composite_required');
+    assert.equal(bundle.canonicalIntentBundle.authorityState, 'authoritative');
+    assert.equal(bundle.partitionBundle.partitionPlan.sequenceMode, 'disabled');
     assert.equal(
-      bundle.schemaVersion,
-      'goal-contract-execution-authority-bundle/v1'
-    );
-    assert.equal(
-      bundle.sourceCompositionPolicy.mode,
-      'composite_required'
-    );
-    assert.equal(
-      bundle.canonicalIntentBundle.authorityState,
-      'authoritative'
-    );
-    assert.equal(
-      bundle.partitionBundle.partitionPlan.sequenceMode,
-      'disabled'
-    );
-    assert.equal(
-      bundle.executionProjectionBundle.partitionManifest
-        .manifestAuthorityMode,
+      bundle.executionProjectionBundle.partitionManifest.manifestAuthorityMode,
       'final_child_membership'
     );
     assert.equal(
@@ -315,9 +270,7 @@ describe('canonical control-plane facade', () => {
       bundle.partitionBundle.partitionPlan.topologicalOrder.length
     );
     assert.ok(
-      Object.keys(bundle.schemaArtifactHashes).every((name) =>
-        name.endsWith('.schema.json')
-      )
+      Object.keys(bundle.schemaArtifactHashes).every((name) => name.endsWith('.schema.json'))
     );
     assert.equal(Object.hasOwn(bundle, 'campaignActivationReceipt'), false);
     assert.equal(Object.hasOwn(bundle, 'subcontractExecutionLease'), false);
@@ -326,10 +279,7 @@ describe('canonical control-plane facade', () => {
 
   it('does not duplicate compiler or lifecycle formulas in the facade', () => {
     const source = fs.readFileSync(
-      path.resolve(
-        __dirname,
-        '../src/utils/goal-contract/control-plane/index.ts'
-      ),
+      path.resolve(__dirname, '../src/utils/goal-contract/control-plane/index.ts'),
       'utf8'
     );
     assert.doesNotMatch(

@@ -32,24 +32,20 @@ function binding(overrides = {}) {
 
 function rehashCanonicalBundle(bundle) {
   const rehashed = structuredClone(bundle);
-  rehashed.sourceObligationGraphHash = hashControlPlaneValue(
-    rehashed.sourceObligationGraph
-  );
+  rehashed.sourceObligationGraphHash = hashControlPlaneValue(rehashed.sourceObligationGraph);
   rehashed.canonicalIntentSemanticHash = hashControlPlaneValue({
     schemaVersion: 'goal-contract-canonical-intent-semantics/v1',
     sourceCompositionPolicyHash: rehashed.sourceCompositionPolicyHash,
     orderedSourceSnapshotSetHash: rehashed.orderedSourceSnapshotSetHash,
     sourceAuthorityBundleHash: rehashed.sourceAuthorityBundleHash,
     canonicalIntentIR: rehashed.canonicalIntentIR,
-    specSpanRegistryHash:
-      rehashed.specSpanRegistry.specSpanRegistryHash,
+    specSpanRegistryHash: rehashed.specSpanRegistry.specSpanRegistryHash,
     sourceObligationGraphHash: rehashed.sourceObligationGraphHash,
     subordinateCoverage: rehashed.subordinateCoverage,
   });
   const bundlePayload = { ...rehashed };
   delete bundlePayload.canonicalIntentBundleHash;
-  rehashed.canonicalIntentBundleHash =
-    hashControlPlaneValue(bundlePayload);
+  rehashed.canonicalIntentBundleHash = hashControlPlaneValue(bundlePayload);
   return rehashed;
 }
 
@@ -75,7 +71,7 @@ function buildInputs({
   const subordinateLines = [
     ...requiredSubordinateBinding.requiredRequirementIds,
     ...requiredSubordinateBinding.requiredTaskIds,
-  ].map((id) => `- ${id}`);
+  ].map((id) => `- ${id}: MUST preserve ${id}.`);
   const primaryReferences = [
     requiredSubordinateBinding.parentTaskRefs[0],
     requiredSubordinateBinding.requiredRequirementIds[0],
@@ -98,40 +94,36 @@ function buildInputs({
     '- Applicability: core-only when sequence mode is disabled.',
   ];
   const sources = [
-      {
-        sourceKind: 'source_plan',
-        sourceArtifactId: fixture.primarySourceArtifactId,
-        sourceRole: 'primary_implementation_authority',
-        namespace: fixture.primaryNamespace,
-        sourceOrder: 0,
-        pathOrSegmentId: windowsPaths
-          ? 'docs\\plans\\judge-role-separation.md'
-          : 'docs/plans/judge-role-separation.md',
-        rawBytes: Buffer.from(
-          `${primaryLines.join('\n')}\n`,
-          'utf8'
-        ),
-      },
-      {
-        sourceKind: 'source_plan',
-        sourceArtifactId: requiredSubordinateBinding.sourceArtifactId,
-        sourceRole: requiredSubordinateBinding.role,
-        namespace: requiredSubordinateBinding.namespace,
-        sourceOrder: 1,
-        pathOrSegmentId:
-          subordinatePathOrSegmentId ??
-          (windowsPaths
-            ? 'docs\\plans\\bounded-code-reviewer.md'
-            : 'docs/plans/bounded-code-reviewer.md'),
-        rawBytes: Buffer.from(
-          `# ${fixture.namespace}\n${[
-            ...subordinateLines,
-            ...subordinateAdditionalLines,
-          ].join('\n')}\n`,
-          'utf8'
-        ),
-      },
-    ];
+    {
+      sourceKind: 'source_plan',
+      sourceArtifactId: fixture.primarySourceArtifactId,
+      sourceRole: 'primary_implementation_authority',
+      namespace: fixture.primaryNamespace,
+      sourceOrder: 0,
+      pathOrSegmentId: windowsPaths
+        ? 'docs\\plans\\judge-role-separation.md'
+        : 'docs/plans/judge-role-separation.md',
+      rawBytes: Buffer.from(`${primaryLines.join('\n')}\n`, 'utf8'),
+    },
+    {
+      sourceKind: 'source_plan',
+      sourceArtifactId: requiredSubordinateBinding.sourceArtifactId,
+      sourceRole: requiredSubordinateBinding.role,
+      namespace: requiredSubordinateBinding.namespace,
+      sourceOrder: 1,
+      pathOrSegmentId:
+        subordinatePathOrSegmentId ??
+        (windowsPaths
+          ? 'docs\\plans\\bounded-code-reviewer.md'
+          : 'docs/plans/bounded-code-reviewer.md'),
+      rawBytes: Buffer.from(
+        `# ${fixture.namespace}\n${[...subordinateLines, ...subordinateAdditionalLines].join(
+          '\n'
+        )}\n`,
+        'utf8'
+      ),
+    },
+  ];
   const orderedSourceSnapshotSet = compileOrderedSourceSnapshotSet({
     sources: reverseSources ? [...sources].reverse() : sources,
   });
@@ -186,11 +178,7 @@ function buildAmbiguousCrossSourceInputs() {
     },
   ];
   const policy = compileSourceCompositionPolicy({
-    authorityRecord: authorityRecord(
-      'composite_required',
-      bindings,
-      hashControlPlaneValue
-    ),
+    authorityRecord: authorityRecord('composite_required', bindings, hashControlPlaneValue),
   });
   const orderedSourceSnapshotSet = compileOrderedSourceSnapshotSet({
     sources: [
@@ -281,8 +269,7 @@ describe('goal-contract canonical intent compiler', () => {
         canonicalIntentSemanticHash: candidate.canonicalIntentSemanticHash,
         specSpanRegistryHash: candidate.specSpanRegistry.specSpanRegistryHash,
       },
-      compositeSourceAuthorityBundle:
-        input.compositeSourceAuthorityBundle,
+      compositeSourceAuthorityBundle: input.compositeSourceAuthorityBundle,
       authorityBasis: {
         kind: 'direct_source_declaration',
         sourceDeclarationHash: 'sha256:' + '1'.repeat(64),
@@ -300,10 +287,7 @@ describe('goal-contract canonical intent compiler', () => {
 
     assert.equal(authoritative.canonicalIntentIR.length > 0, true);
     assert.equal(authoritative.sourceObligationGraph.obligations.length > 0, true);
-    assert.equal(
-      authoritative.canonicalIntentSemanticHash,
-      candidate.canonicalIntentSemanticHash
-    );
+    assert.equal(authoritative.canonicalIntentSemanticHash, candidate.canonicalIntentSemanticHash);
     assert.equal(
       authoritative.specSpanRegistry.specSpanRegistryHash,
       authoritative.sourceObligationGraph.specSpanRegistryHash
@@ -314,8 +298,7 @@ describe('goal-contract canonical intent compiler', () => {
         compileCanonicalIntent({
           sourceCompositionPolicy: input.policy,
           orderedSourceSnapshotSet: input.orderedSourceSnapshotSet,
-          compositeSourceAuthorityBundle:
-            input.compositeSourceAuthorityBundle,
+          compositeSourceAuthorityBundle: input.compositeSourceAuthorityBundle,
           intentAuthorityEnvelope,
           authorityState: 'candidate_only',
         }),
@@ -327,8 +310,7 @@ describe('goal-contract canonical intent compiler', () => {
     );
     assert.ok(
       authoritative.compilerIdentity.schemaArtifactHashes.some(
-        ({ schemaName }) =>
-          schemaName === 'goal-contract-canonical-intent-bundle.schema.json'
+        ({ schemaName }) => schemaName === 'goal-contract-canonical-intent-bundle.schema.json'
       )
     );
     assert.ok(
@@ -345,10 +327,7 @@ describe('goal-contract canonical intent compiler', () => {
         (record) => record.specSpanRefs.length > 0
       )
     );
-    assert.deepEqual(
-      verifyCanonicalIntentBundle(authoritative),
-      authoritative
-    );
+    assert.deepEqual(verifyCanonicalIntentBundle(authoritative), authoritative);
   });
 
   it('classifies deterministic records and keeps parent references non-owning', () => {
@@ -374,28 +353,41 @@ describe('goal-contract canonical intent compiler', () => {
     }
 
     const fixture = readFixtureMetadata();
-    for (const targetId of [
-      fixture.requirementIds[0],
-      fixture.taskIds[0],
-    ]) {
+    for (const targetId of [fixture.requirementIds[0], fixture.taskIds[0]]) {
       const references = result.canonicalIntentIR.filter(
         (record) =>
-          record.ownership === 'cross_source_reference' &&
-          record.referenceTargetId === targetId
+          record.ownership === 'cross_source_reference' && record.referenceTargetId === targetId
       );
       const owners = result.canonicalIntentIR.filter(
-        (record) =>
-          record.ownership === 'owned_obligation' &&
-          record.declaredSourceId === targetId
+        (record) => record.ownership === 'owned_obligation' && record.declaredSourceId === targetId
       );
       assert.equal(references.length, 1);
       assert.equal(owners.length, 1);
       assert.equal(references[0].sourceRole, 'primary_implementation_authority');
-      assert.equal(
-        owners[0].sourceRole,
-        'subordinate_component_specification'
-      );
+      assert.equal(owners[0].sourceRole, 'subordinate_component_specification');
     }
+  });
+
+  it('retains repeated structural quote spans as non-owning context', () => {
+    const input = buildInputs({
+      primaryAdditionalLines: ['>', '>'],
+    });
+    const result = compileCanonicalIntent({
+      sourceCompositionPolicy: input.policy,
+      orderedSourceSnapshotSet: input.orderedSourceSnapshotSet,
+      compositeSourceAuthorityBundle: input.compositeSourceAuthorityBundle,
+      authorityState: 'candidate_only',
+    });
+    const contextRecords = result.canonicalIntentIR.filter(
+      (record) => record.classification === 'context'
+    );
+
+    assert.equal(contextRecords.length, 2);
+    assert.equal(
+      contextRecords.every((record) => record.specSpanRefs.length === 1),
+      true
+    );
+    assert.equal(new Set(contextRecords.flatMap((record) => record.specSpanRefs)).size, 2);
   });
 
   it('rejects duplicate and conflicting typed semantic ownership', () => {
@@ -411,8 +403,7 @@ describe('goal-contract canonical intent compiler', () => {
         compileCanonicalIntent({
           sourceCompositionPolicy: duplicate.policy,
           orderedSourceSnapshotSet: duplicate.orderedSourceSnapshotSet,
-          compositeSourceAuthorityBundle:
-            duplicate.compositeSourceAuthorityBundle,
+          compositeSourceAuthorityBundle: duplicate.compositeSourceAuthorityBundle,
           authorityState: 'candidate_only',
         }),
       (error) => error.failureClass === 'source_semantic_duplication'
@@ -429,8 +420,7 @@ describe('goal-contract canonical intent compiler', () => {
         compileCanonicalIntent({
           sourceCompositionPolicy: conflict.policy,
           orderedSourceSnapshotSet: conflict.orderedSourceSnapshotSet,
-          compositeSourceAuthorityBundle:
-            conflict.compositeSourceAuthorityBundle,
+          compositeSourceAuthorityBundle: conflict.compositeSourceAuthorityBundle,
           authorityState: 'candidate_only',
         }),
       (error) => error.failureClass === 'source_authority_conflict'
@@ -445,8 +435,7 @@ describe('goal-contract canonical intent compiler', () => {
         compileCanonicalIntent({
           sourceCompositionPolicy: input.policy,
           orderedSourceSnapshotSet: input.orderedSourceSnapshotSet,
-          compositeSourceAuthorityBundle:
-            input.compositeSourceAuthorityBundle,
+          compositeSourceAuthorityBundle: input.compositeSourceAuthorityBundle,
           authorityState: 'candidate_only',
         }),
       (error) => error.failureClass === 'cross_source_reference_ambiguous'
@@ -466,33 +455,23 @@ describe('goal-contract canonical intent compiler', () => {
     const second = compileCanonicalIntent({
       sourceCompositionPolicy: reorderedInput.policy,
       orderedSourceSnapshotSet: reorderedInput.orderedSourceSnapshotSet,
-      compositeSourceAuthorityBundle:
-        reorderedInput.compositeSourceAuthorityBundle,
+      compositeSourceAuthorityBundle: reorderedInput.compositeSourceAuthorityBundle,
       authorityState: 'candidate_only',
     });
     const windowsPath = compileCanonicalIntent({
       sourceCompositionPolicy: windowsPathInput.policy,
-      orderedSourceSnapshotSet:
-        windowsPathInput.orderedSourceSnapshotSet,
-      compositeSourceAuthorityBundle:
-        windowsPathInput.compositeSourceAuthorityBundle,
+      orderedSourceSnapshotSet: windowsPathInput.orderedSourceSnapshotSet,
+      compositeSourceAuthorityBundle: windowsPathInput.compositeSourceAuthorityBundle,
       authorityState: 'candidate_only',
     });
-    assert.equal(
-      first.canonicalIntentSemanticHash,
-      second.canonicalIntentSemanticHash
-    );
-    assert.equal(
-      first.canonicalIntentSemanticHash,
-      windowsPath.canonicalIntentSemanticHash
-    );
+    assert.equal(first.canonicalIntentSemanticHash, second.canonicalIntentSemanticHash);
+    assert.equal(first.canonicalIntentSemanticHash, windowsPath.canonicalIntentSemanticHash);
     assert.throws(
       () =>
         compileCanonicalIntent({
           sourceCompositionPolicy: input.policy,
           orderedSourceSnapshotSet: input.orderedSourceSnapshotSet,
-          compositeSourceAuthorityBundle:
-            input.compositeSourceAuthorityBundle,
+          compositeSourceAuthorityBundle: input.compositeSourceAuthorityBundle,
           authorityState: 'authoritative',
           projectionObligations: [{ id: 'PROJECTION-ONLY' }],
         }),
@@ -536,20 +515,16 @@ describe('goal-contract canonical intent compiler', () => {
     const baselineCandidate = compileCanonicalIntent({
       sourceCompositionPolicy: baseline.policy,
       orderedSourceSnapshotSet: baseline.orderedSourceSnapshotSet,
-      compositeSourceAuthorityBundle:
-        baseline.compositeSourceAuthorityBundle,
+      compositeSourceAuthorityBundle: baseline.compositeSourceAuthorityBundle,
       authorityState: 'candidate_only',
     });
     const baselineEnvelope = compileIntentAuthorityEnvelope({
       subject: {
         ...baseline.subject,
-        canonicalIntentSemanticHash:
-          baselineCandidate.canonicalIntentSemanticHash,
-        specSpanRegistryHash:
-          baselineCandidate.specSpanRegistry.specSpanRegistryHash,
+        canonicalIntentSemanticHash: baselineCandidate.canonicalIntentSemanticHash,
+        specSpanRegistryHash: baselineCandidate.specSpanRegistry.specSpanRegistryHash,
       },
-      compositeSourceAuthorityBundle:
-        baseline.compositeSourceAuthorityBundle,
+      compositeSourceAuthorityBundle: baseline.compositeSourceAuthorityBundle,
       authorityBasis: {
         kind: 'direct_source_declaration',
         sourceDeclarationHash: 'sha256:' + '1'.repeat(64),
@@ -561,16 +536,13 @@ describe('goal-contract canonical intent compiler', () => {
       {
         name: 'path',
         options: {
-          subordinatePathOrSegmentId:
-            'docs/plans/rebound-component-specification.md',
+          subordinatePathOrSegmentId: 'docs/plans/rebound-component-specification.md',
         },
       },
       {
         name: 'bytes',
         options: {
-          subordinateAdditionalLines: [
-            '- MUST preserve the rebound source bytes.',
-          ],
+          subordinateAdditionalLines: ['- MUST preserve the rebound source bytes.'],
         },
       },
       {
@@ -592,20 +564,14 @@ describe('goal-contract canonical intent compiler', () => {
       {
         name: 'ownership',
         options: {
-          subordinateOwnedSemanticDomains: [
-            'Reviewer prompt',
-            'Rebound semantic domain',
-          ],
+          subordinateOwnedSemanticDomains: ['Reviewer prompt', 'Rebound semantic domain'],
         },
       },
       {
         name: 'parent task binding',
         options: {
           bindingOverrides: {
-            parentTaskRefs: [
-              ...fixture.parentTaskRefs,
-              'REBOUND-PARENT-TASK',
-            ],
+            parentTaskRefs: [...fixture.parentTaskRefs, 'REBOUND-PARENT-TASK'],
           },
         },
       },
@@ -613,10 +579,7 @@ describe('goal-contract canonical intent compiler', () => {
         name: 'required requirement IDs',
         options: {
           bindingOverrides: {
-            requiredRequirementIds: [
-              ...fixture.requirementIds,
-              'REBOUND-REQUIREMENT',
-            ],
+            requiredRequirementIds: [...fixture.requirementIds, 'REBOUND-REQUIREMENT'],
           },
         },
       },
@@ -635,8 +598,7 @@ describe('goal-contract canonical intent compiler', () => {
       const changedCandidate = compileCanonicalIntent({
         sourceCompositionPolicy: changed.policy,
         orderedSourceSnapshotSet: changed.orderedSourceSnapshotSet,
-        compositeSourceAuthorityBundle:
-          changed.compositeSourceAuthorityBundle,
+        compositeSourceAuthorityBundle: changed.compositeSourceAuthorityBundle,
         authorityState: 'candidate_only',
       });
       assert.notEqual(
@@ -661,10 +623,8 @@ describe('goal-contract canonical intent compiler', () => {
         () =>
           compileCanonicalIntent({
             sourceCompositionPolicy: changed.policy,
-            orderedSourceSnapshotSet:
-              changed.orderedSourceSnapshotSet,
-            compositeSourceAuthorityBundle:
-              changed.compositeSourceAuthorityBundle,
+            orderedSourceSnapshotSet: changed.orderedSourceSnapshotSet,
+            compositeSourceAuthorityBundle: changed.compositeSourceAuthorityBundle,
             intentAuthorityEnvelope: baselineEnvelope,
             authorityState: 'authoritative',
           }),
@@ -688,9 +648,7 @@ describe('goal-contract canonical intent compiler', () => {
 
     assert.throws(
       () => verifyCanonicalIntentBundle(rehashCanonicalBundle(tampered)),
-      (error) =>
-        error.failureClass ===
-        'source_obligation_graph_projection_mismatch'
+      (error) => error.failureClass === 'source_obligation_graph_projection_mismatch'
     );
   });
 });

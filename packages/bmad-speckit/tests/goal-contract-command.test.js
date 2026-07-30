@@ -5,9 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const {
-  evaluatePartitionSequenceRelease,
-} = require('../src/utils/goal-contract/release-gate.ts');
+const { evaluatePartitionSequenceRelease } = require('../src/utils/goal-contract/release-gate.ts');
 const {
   hashControlPlaneValue,
 } = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
@@ -17,6 +15,7 @@ const {
   partitionCompilerIdentityAssetPaths,
   selectCommandStructuredBindings,
 } = require('../src/commands/goal-contract.ts');
+const { makeRegistries } = require('../src/utils/goal-contract/slot-data-builder.ts');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
 const SOURCE_COMMAND = path.join(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
@@ -26,8 +25,7 @@ const SOURCE_RUNNER = [
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
-const hash = (value) =>
-  `sha256:${createHash('sha256').update(value).digest('hex')}`;
+const hash = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-cli-'));
@@ -57,8 +55,7 @@ describe('partition compiler identity', () => {
   it('binds every byte-producing and authority-validating supersession asset', () => {
     const assetPaths = partitionCompilerIdentityAssetPaths();
     const normalized = assetPaths.map((assetPath) =>
-      path.relative(path.join(__dirname, '..', '..', '..'), assetPath)
-        .replace(/\\/gu, '/')
+      path.relative(path.join(__dirname, '..', '..', '..'), assetPath).replace(/\\/gu, '/')
     );
     for (const requiredPath of [
       'packages/bmad-speckit/src/utils/goal-contract/control-plane/authority-supersession.ts',
@@ -87,10 +84,7 @@ describe('partition compiler identity', () => {
       '_bmad/shared/goal-contract/goal-contract-authority-supersession-receipt.schema.json',
       '_bmad/shared/goal-contract/goal-contract-source-grounded-coverage-receipt.schema.json',
     ]) {
-      assert.ok(
-        normalized.includes(requiredPath),
-        `compiler identity is missing ${requiredPath}`
-      );
+      assert.ok(normalized.includes(requiredPath), `compiler identity is missing ${requiredPath}`);
     }
     assert.equal(
       currentPartitionCompilerIdentityHash(),
@@ -111,10 +105,7 @@ describe('partition compiler identity', () => {
 
     assert.ok(assetPaths.length > 0);
     assert.ok(assetPaths.every((assetPath) => fs.existsSync(assetPath)));
-    assert.match(
-      builtCommand.currentPartitionCompilerIdentityHash(),
-      /^sha256:[0-9a-f]{64}$/u
-    );
+    assert.match(builtCommand.currentPartitionCompilerIdentityHash(), /^sha256:[0-9a-f]{64}$/u);
   });
 });
 
@@ -196,9 +187,91 @@ describe('typed command classification', () => {
       selected.commands.map(({ id }) => id),
       ['SRC-POWERSHELL']
     );
+    assert.equal(compileTypedCommandRecord(selected.commands[0]).shell, 'powershell');
+  });
+});
+
+describe('typed goal registry projection', () => {
+  it('keeps legacy checklist task records on the legacy projection path', () => {
+    const sourceObligations = [
+      {
+        id: 'SRC001',
+        kind: 'declared_execution_task',
+        declaredSourceId: 'PRIMARY-TASK',
+        headingPath: ['Primary Authority', 'PRIMARY-TASK'],
+        exactText: '- PRIMARY-TASK: MUST preserve canonical source authority.',
+        text: '- PRIMARY-TASK: MUST preserve canonical source authority.',
+      },
+      {
+        id: 'SRC002',
+        kind: 'completion_criteria',
+        declaredSourceId: 'PRIMARY-EVIDENCE',
+        headingPath: ['Primary Authority', 'Completion Evidence'],
+        exactText: '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
+        text: '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
+      },
+    ];
+
+    const registries = makeRegistries(sourceObligations);
+
+    assert.equal(registries.projectionMode, 'legacy');
+    assert.deepEqual(registries.tasks, ['G001', 'G002']);
+    assert.deepEqual(registries.acceptance, ['ACC001', 'ACC002']);
+  });
+
+  it('preserves declared task records without synthesizing one task per obligation', () => {
+    const taskHeading = ['Judge Plan', 'Task J01-T01: Implement actor authority'];
+    const sourceObligations = [
+      {
+        id: 'SRC001',
+        kind: 'declared_execution_task',
+        declaredSourceId: 'J01-T01',
+        headingPath: taskHeading,
+        exactText: 'Task J01-T01: Implement actor authority',
+        text: 'Task J01-T01: Implement actor authority',
+      },
+      {
+        id: 'SRC002',
+        kind: 'heading_requirement',
+        declaredSourceId: null,
+        headingPath: taskHeading,
+        text: '- Preserve actor authority.',
+      },
+      {
+        id: 'SRC003',
+        kind: 'acceptance_condition',
+        declaredSourceId: 'AC-J01-T01-01',
+        headingPath: taskHeading,
+        text: '- AC-J01-T01-01: Actor authority is deterministic.',
+      },
+      {
+        id: 'SRC004',
+        kind: 'evidence_contract',
+        declaredSourceId: 'EVD-J01-T01-01',
+        headingPath: taskHeading,
+        text: '- EVD-J01-T01-01: Actor authority receipt.',
+      },
+      {
+        id: 'SRC005',
+        kind: 'verification_command',
+        declaredSourceId: 'CMD-J01-T01-01',
+        headingPath: taskHeading,
+        text: '- CMD-J01-T01-01: Run `node --version`.',
+      },
+    ];
+
+    const registries = makeRegistries(sourceObligations);
+
+    assert.deepEqual(registries.tasks, ['J01-T01']);
+    assert.deepEqual(registries.acceptance, ['AC-J01-T01-01']);
+    assert.deepEqual(registries.evidence, ['EVD-J01-T01-01']);
+    assert.deepEqual(registries.commands, ['CMD-J01-T01-01']);
     assert.equal(
-      compileTypedCommandRecord(selected.commands[0]).shell,
-      'powershell'
+      registries.sourceObligations.every(
+        (obligation) =>
+          obligation.goalTaskRefs.length === 1 && obligation.goalTaskRefs[0] === 'J01-T01'
+      ),
+      true
     );
   });
 });
@@ -365,20 +438,10 @@ describe('bmad-speckit goal-contract command', () => {
       'disabled',
       '--json',
     ]);
-    assert.equal(
-      partitionResult.status,
-      0,
-      partitionResult.stderr || partitionResult.stdout
-    );
-    const oldManifest = JSON.parse(
-      fs.readFileSync(oldManifestPath, 'utf8')
-    );
+    assert.equal(partitionResult.status, 0, partitionResult.stderr || partitionResult.stdout);
+    const oldManifest = JSON.parse(fs.readFileSync(oldManifestPath, 'utf8'));
     const children = oldManifest.partitions.map((partition, index) => {
-      const outputPath = path.join(
-        root,
-        'legacy-children',
-        `p${index + 1}-goal-execution-plan.md`
-      );
+      const outputPath = path.join(root, 'legacy-children', `p${index + 1}-goal-execution-plan.md`);
       const generated = runSourceCommand([
         'generate',
         '--entry',
@@ -395,11 +458,7 @@ describe('bmad-speckit goal-contract command', () => {
         'disabled',
         '--json',
       ]);
-      assert.equal(
-        generated.status,
-        0,
-        generated.stderr || generated.stdout
-      );
+      assert.equal(generated.status, 0, generated.stderr || generated.stdout);
       const outputHash = hash(fs.readFileSync(outputPath));
       return {
         ordinal: index + 1,
@@ -412,22 +471,14 @@ describe('bmad-speckit goal-contract command', () => {
       };
     });
     oldManifest.partitions[0].commandIds = [];
-    fs.writeFileSync(
-      oldManifestPath,
-      `${JSON.stringify(oldManifest, null, 2)}\n`,
-      'utf8'
-    );
+    fs.writeFileSync(oldManifestPath, `${JSON.stringify(oldManifest, null, 2)}\n`, 'utf8');
     const oldManifestHash = hash(fs.readFileSync(oldManifestPath));
-    const childrenSummaryPath = path.join(
-      root,
-      'children-summary.json'
-    );
+    const childrenSummaryPath = path.join(root, 'children-summary.json');
     fs.writeFileSync(
       childrenSummaryPath,
       `${JSON.stringify(
         {
-          schemaVersion:
-            'goal-contract-partition-children-summary/v1',
+          schemaVersion: 'goal-contract-partition-children-summary/v1',
           ok: true,
           expectedCount: children.length,
           generatedCount: children.length,
@@ -443,9 +494,7 @@ describe('bmad-speckit goal-contract command', () => {
       )}\n`,
       'utf8'
     );
-    const oldChildHashes = children.map(({ outputPath }) =>
-      hash(fs.readFileSync(outputPath))
-    );
+    const oldChildHashes = children.map(({ outputPath }) => hash(fs.readFileSync(outputPath)));
     const authorityRoot = path.join(root, 'authority-v2');
     const superseded = runSourceCommand([
       'supersede-authority',
@@ -475,65 +524,29 @@ describe('bmad-speckit goal-contract command', () => {
       'disabled',
       '--json',
     ]);
-    assert.equal(
-      superseded.status,
-      0,
-      superseded.stderr || superseded.stdout
-    );
+    assert.equal(superseded.status, 0, superseded.stderr || superseded.stdout);
     const payload = JSON.parse(superseded.stdout);
     assert.equal(payload.ok, true);
     assert.equal(payload.partitionCount, children.length);
     assert.equal(payload.atomicPromotion, true);
-    assert.equal(
-      payload.supersessionMode,
-      'source_grounded_hard_cut'
-    );
+    assert.equal(payload.supersessionMode, 'source_grounded_hard_cut');
     assert.equal(payload.activationMode, 'successor_only');
+    assert.equal(payload.supersededDisposition, 'superseded_non_executable');
     assert.equal(
-      payload.supersededDisposition,
-      'superseded_non_executable'
-    );
-    assert.equal(
-      fs.existsSync(
-        path.join(
-          authorityRoot,
-          'receipts',
-          'source-grounded-coverage.receipt.json'
-        )
-      ),
+      fs.existsSync(path.join(authorityRoot, 'receipts', 'source-grounded-coverage.receipt.json')),
       true
     );
-    assert.equal(
-      hash(fs.readFileSync(oldManifestPath)),
-      oldManifestHash
-    );
+    assert.equal(hash(fs.readFileSync(oldManifestPath)), oldManifestHash);
     assert.deepEqual(
-      children.map(({ outputPath }) =>
-        hash(fs.readFileSync(outputPath))
-      ),
+      children.map(({ outputPath }) => hash(fs.readFileSync(outputPath))),
       oldChildHashes
     );
-    const finalManifest = JSON.parse(
-      fs.readFileSync(payload.partitionManifestPath, 'utf8')
-    );
-    assert.equal(
-      finalManifest.schemaVersion,
-      'goal-contract-partition-manifest/v2'
-    );
+    const finalManifest = JSON.parse(fs.readFileSync(payload.partitionManifestPath, 'utf8'));
+    assert.equal(finalManifest.schemaVersion, 'goal-contract-partition-manifest/v2');
     assert.equal(finalManifest.partitionCount, children.length);
-    assert.ok(
-      fs.existsSync(
-        path.join(
-          authorityRoot,
-          'authority-supersession.receipt.json'
-        )
-      )
-    );
+    assert.ok(fs.existsSync(path.join(authorityRoot, 'authority-supersession.receipt.json')));
     for (const partition of finalManifest.partitions) {
-      const childPath = path.join(
-        authorityRoot,
-        partition.childContractPath
-      );
+      const childPath = path.join(authorityRoot, partition.childContractPath);
       const text = fs.readFileSync(childPath, 'utf8');
       assert.match(text, /^partitionPlanHash: sha256:/mu);
       assert.doesNotMatch(text, /^partitionManifestHash:/mu);
@@ -604,33 +617,111 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
   });
 
+  it('generates typed parent projections from explicit structured records', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'structured-goal-source.md');
+    const out = path.join(root, 'structured-goal-execution-plan.md');
+    fs.writeFileSync(
+      source,
+      [
+        '# Structured Goal Source',
+        '',
+        '## Implementation Tasks',
+        '',
+        '### Task J01-T01: Implement actor authority',
+        '',
+        '- Target modification paths:',
+        '  - `src/runtime/actor.ts`',
+        '- Requirements:',
+        '  - Preserve actor authority.',
+        '- AC-J01-T01-01: Actor authority is deterministic.',
+        '- EVD-J01-T01-01: Actor authority receipt.',
+        '- CMD-J01-T01-01: Run `node --version`.',
+        '',
+        '### Task J02-T01: Implement judge transport',
+        '',
+        '- Dependencies: J01-T01.',
+        '- Target modification paths:',
+        '  - `src/runtime/judge.ts`',
+        '- Requirements:',
+        '  - Preserve judge transport.',
+        '- AC-J02-T01-01: Judge transport is deterministic.',
+        '- EVD-J02-T01-01: Judge transport receipt.',
+        '- CMD-J02-T01-01: Run `node --version`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand(
+      standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    const goalText = fs.readFileSync(out, 'utf8');
+    const taskHeadings = [...goalText.matchAll(/^### (J\d{2}-T\d+[A-Z]?)\b/gmu)].map(
+      (match) => match[1]
+    );
+    assert.deepEqual(taskHeadings, ['J01-T01', 'J02-T01']);
+    assert.doesNotMatch(goalText, /^### G\d+/gmu);
+    assert.match(goalText, /^projectionMode: typed$/mu);
+    assert.match(goalText, /^taskRange: J01-T01\.\.J02-T01$/mu);
+    assert.match(goalText, /^acceptanceRange: AC-J01-T01-01\.\.AC-J02-T01-01$/mu);
+
+    const acceptanceSection = goalText
+      .split('## Strict Acceptance Checklist')[1]
+      .split('## Acceptance Traceability Matrix')[0];
+    assert.deepEqual(
+      [...acceptanceSection.matchAll(/^- \[ \] (AC-[A-Z0-9-]+):/gmu)].map((match) => match[1]),
+      ['AC-J01-T01-01', 'AC-J02-T01-01']
+    );
+
+    const traceSection = goalText
+      .split('## Acceptance Traceability Matrix')[1]
+      .split('## Source Coverage Matrix')[0];
+    assert.deepEqual(
+      [...traceSection.matchAll(/^\| (AC-[A-Z0-9-]+) \|/gmu)].map((match) => match[1]),
+      ['AC-J01-T01-01', 'AC-J02-T01-01']
+    );
+
+    const commandSection = goalText
+      .split('## Required Test Commands')[1]
+      .split('## Manual Verification Scenarios')[0];
+    assert.deepEqual(
+      [...commandSection.matchAll(/^### \d+\. COMMAND (CMD-[A-Z0-9-]+)$/gmu)].map(
+        (match) => match[1]
+      ),
+      ['CMD-J01-T01-01', 'CMD-J02-T01-01']
+    );
+    assert.equal([...commandSection.matchAll(/^node --version$/gmu)].length, 2);
+    assert.match(goalText, /EVD-J01-T01-01/u);
+    assert.match(goalText, /EVD-J02-T01-01/u);
+
+    const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
+    const uniqueRefs = (field) =>
+      [
+        ...new Set(coverage.sourceObligations.flatMap((obligation) => obligation[field] || [])),
+      ].sort();
+    assert.deepEqual(uniqueRefs('goalTaskRefs'), ['J01-T01', 'J02-T01']);
+    assert.deepEqual(uniqueRefs('acceptanceRefs'), ['AC-J01-T01-01', 'AC-J02-T01-01']);
+    assert.deepEqual(uniqueRefs('evidenceRefs'), ['EVD-J01-T01-01', 'EVD-J02-T01-01']);
+    assert.deepEqual(uniqueRefs('commandRefs'), ['CMD-J01-T01-01', 'CMD-J02-T01-01']);
+  });
+
   it('keeps standalone compilation byte-identical and authority-derived', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
     const out = path.join(root, 'deterministic-goal-execution-plan.md');
-    const args = standaloneGenerateArgs([
-      '--source',
-      source,
-      '--out',
-      out,
-      '--json',
-    ]);
+    const args = standaloneGenerateArgs(['--source', source, '--out', out, '--json']);
 
     const firstResult = runSourceCommand(args);
-    assert.equal(
-      firstResult.status,
-      0,
-      firstResult.stderr || firstResult.stdout
-    );
+    assert.equal(firstResult.status, 0, firstResult.stderr || firstResult.stdout);
     const firstPayload = JSON.parse(firstResult.stdout);
     const firstBytes = fs.readFileSync(out);
 
     const secondResult = runSourceCommand(args);
-    assert.equal(
-      secondResult.status,
-      0,
-      secondResult.stderr || secondResult.stdout
-    );
+    assert.equal(secondResult.status, 0, secondResult.stderr || secondResult.stdout);
     const secondPayload = JSON.parse(secondResult.stdout);
     const secondBytes = fs.readFileSync(out);
 
@@ -658,10 +749,7 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(firstPayload.runtimeRecordId, secondPayload.runtimeRecordId);
     assert.equal(firstPayload.sourceCompositionMode, 'single_source');
     assert.deepEqual(firstPayload.subordinateSourceCoverageReceiptHashes, []);
-    assert.match(
-      firstBytes.toString('utf8'),
-      /generatedAt: 1970-01-01T00:00:00\.000Z/u
-    );
+    assert.match(firstBytes.toString('utf8'), /generatedAt: 1970-01-01T00:00:00\.000Z/u);
     assert.match(
       firstBytes.toString('utf8'),
       new RegExp(`runtimeRecordId: ${firstPayload.runtimeRecordId}`, 'u')

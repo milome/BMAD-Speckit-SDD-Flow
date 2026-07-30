@@ -50,32 +50,21 @@ function sha256(bytes) {
 function sourceLines(fixture, binding) {
   const parentTaskRef = binding?.parentTaskRefs[0] || 'PRIMARY-TASK';
   const crossSourceRefs = binding
-    ? [
-        binding.requiredRequirementIds[0],
-        binding.requiredTaskIds[0],
-      ]
+    ? [binding.requiredRequirementIds[0], binding.requiredTaskIds[0]]
     : [];
   return [
     `# ${fixture.primaryNamespace}`,
     `## ${parentTaskRef}`,
     `- PRIMARY-REQ: MUST preserve canonical source authority for ${fixture.primarySourceArtifactId}.`,
     ...(crossSourceRefs.length > 0
-      ? [
-          `- ${crossSourceRefs.join(
-            ' and '
-          )} MUST remain governed by ${parentTaskRef}.`,
-        ]
+      ? [`- ${crossSourceRefs.join(' and ')} MUST remain governed by ${parentTaskRef}.`]
       : []),
-    `- PRIMARY-BOUNDARY: MUST NOT expand ${
-      binding?.namespace || 'standalone'
-    } ownership.`,
+    `- PRIMARY-BOUNDARY: MUST NOT expand ${binding?.namespace || 'standalone'} ownership.`,
     '## Deterministic NOT DONE',
     '- Sequence producer remains excluded.',
     '## Completion Evidence',
     '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
-    ...(binding
-      ? ['## Dependencies', `- Dependencies: ${parentTaskRef}.`]
-      : []),
+    ...(binding ? ['## Dependencies', `- Dependencies: ${parentTaskRef}.`] : []),
     '## Applicability',
     '- Applicability: core-only when sequence mode is disabled.',
   ];
@@ -84,8 +73,8 @@ function sourceLines(fixture, binding) {
 function subordinateLines(binding) {
   return [
     `# ${binding.namespace}`,
-    ...binding.requiredRequirementIds.map((id) => `- ${id}`),
-    ...binding.requiredTaskIds.map((id) => `- ${id}`),
+    ...binding.requiredRequirementIds.map((id) => `- ${id}: MUST preserve requirement ${id}.`),
+    ...binding.requiredTaskIds.map((id) => `- ${id}: MUST preserve task ${id}.`),
   ];
 }
 
@@ -119,9 +108,7 @@ function buildCompilerInput({ composite = true } = {}) {
             namespace: binding.namespace,
             sourceOrder: 1,
             pathOrSegmentId: 'docs/plans/subordinate-component.md',
-            rawBytes: Buffer.from(
-              `${subordinateLines(binding).join('\n')}\n`
-            ),
+            rawBytes: Buffer.from(`${subordinateLines(binding).join('\n')}\n`),
           },
         ]
       : []),
@@ -129,29 +116,25 @@ function buildCompilerInput({ composite = true } = {}) {
   const orderedSourceSnapshotSet = compileOrderedSourceSnapshotSet({
     sources,
   });
-  const compositeSourceAuthorityBundle =
-    compileCompositeSourceAuthorityBundle({
-      sourceCompositionPolicy: policy,
-      orderedSourceSnapshotSet,
-      primarySource: {
-        role: 'primary_implementation_authority',
-        namespace: fixture.primaryNamespace,
-        sourceArtifactId: fixture.primarySourceArtifactId,
-        ownedSemanticDomains: ['Goal compilation'],
-        parentTaskRefs: [],
-      },
-      subordinateSources: binding
-        ? [
-            {
-              ...binding,
-              ownedSemanticDomains: [
-                'Reviewer prompt',
-                'native carriers',
-              ],
-            },
-          ]
-        : [],
-    });
+  const compositeSourceAuthorityBundle = compileCompositeSourceAuthorityBundle({
+    sourceCompositionPolicy: policy,
+    orderedSourceSnapshotSet,
+    primarySource: {
+      role: 'primary_implementation_authority',
+      namespace: fixture.primaryNamespace,
+      sourceArtifactId: fixture.primarySourceArtifactId,
+      ownedSemanticDomains: ['Goal compilation'],
+      parentTaskRefs: [],
+    },
+    subordinateSources: binding
+      ? [
+          {
+            ...binding,
+            ownedSemanticDomains: ['Reviewer prompt', 'native carriers'],
+          },
+        ]
+      : [],
+  });
   const candidate = compileCanonicalIntent({
     sourceCompositionPolicy: policy,
     orderedSourceSnapshotSet,
@@ -160,18 +143,14 @@ function buildCompilerInput({ composite = true } = {}) {
   });
   const intentAuthorityEnvelope = compileIntentAuthorityEnvelope({
     subject: {
-      sourceSnapshotHash:
-        orderedSourceSnapshotSet.orderedSourceSnapshotSetHash,
-      canonicalIntentSemanticHash:
-        candidate.canonicalIntentSemanticHash,
-      specSpanRegistryHash:
-        candidate.specSpanRegistry.specSpanRegistryHash,
+      sourceSnapshotHash: orderedSourceSnapshotSet.orderedSourceSnapshotSetHash,
+      canonicalIntentSemanticHash: candidate.canonicalIntentSemanticHash,
+      specSpanRegistryHash: candidate.specSpanRegistry.specSpanRegistryHash,
     },
     compositeSourceAuthorityBundle,
     authorityBasis: {
       kind: 'direct_source_declaration',
-      sourceDeclarationHash:
-        orderedSourceSnapshotSet.sourceSnapshots[0].sourceSnapshotHash,
+      sourceDeclarationHash: orderedSourceSnapshotSet.sourceSnapshots[0].sourceSnapshotHash,
       declaringUserAuthorityIdentity: 'user:goal-contract-compiler-test',
       entryScenario: 'standalone_goal_contract',
     },
@@ -191,8 +170,7 @@ function buildCompilerInput({ composite = true } = {}) {
     sourcePlanPath: sources[0].pathOrSegmentId,
     outPath: 'docs/plans/compiler-test-goal.md',
     coverageReceiptPath: 'docs/plans/.compiler-test-goal.coverage.json',
-    generationReceiptPath:
-      'docs/plans/.compiler-test-goal.generation.json',
+    generationReceiptPath: 'docs/plans/.compiler-test-goal.generation.json',
     profileBytesHash: sha256(contractProfileBytes),
     templateBytesHash: sha256(templateBytes),
   });
@@ -219,10 +197,7 @@ function buildCompilerInput({ composite = true } = {}) {
 describe('pure GoalContractCompiler', () => {
   it('keeps compiler-internal module loading portable across source and dist', () => {
     const compilerSource = fs.readFileSync(
-      path.resolve(
-        __dirname,
-        '../src/utils/goal-contract/control-plane/goal-contract-compiler.ts'
-      ),
+      path.resolve(__dirname, '../src/utils/goal-contract/control-plane/goal-contract-compiler.ts'),
       'utf8'
     );
     const sourceOnlyRequires = [
@@ -241,20 +216,11 @@ describe('pure GoalContractCompiler', () => {
     process.env.TZ = previousTimezone;
 
     assert.equal(first.markdown, second.markdown);
-    assert.equal(
-      first.goalContractSemanticHash,
-      second.goalContractSemanticHash
-    );
+    assert.equal(first.goalContractSemanticHash, second.goalContractSemanticHash);
     assert.equal(first.goalContractHash, second.goalContractHash);
     assert.equal(first.markdownHash, second.markdownHash);
-    assert.equal(
-      first.runtimeRecordId,
-      `GOAL-CONTRACT-${first.goalContractHash.slice(7)}`
-    );
-    assert.match(
-      first.markdown,
-      /generatedAt: 1970-01-01T00:00:00\.000Z/u
-    );
+    assert.equal(first.runtimeRecordId, `GOAL-CONTRACT-${first.goalContractHash.slice(7)}`);
+    assert.match(first.markdown, /generatedAt: 1970-01-01T00:00:00\.000Z/u);
     assert.doesNotMatch(first.markdown, /Date\.now|new Date/u);
 
     const earlyReceipt = createGoalContractCompilationReceipt(first, {
@@ -276,10 +242,7 @@ describe('pure GoalContractCompiler', () => {
       receipt.requiredRequirementIds,
       [...input.binding.requiredRequirementIds].sort()
     );
-    assert.deepEqual(
-      receipt.requiredTaskIds,
-      [...input.binding.requiredTaskIds].sort()
-    );
+    assert.deepEqual(receipt.requiredTaskIds, [...input.binding.requiredTaskIds].sort());
     assert.deepEqual(receipt.missingIds, []);
     assert.deepEqual(receipt.duplicateIds, []);
     assert.deepEqual(receipt.unmappedIds, []);
@@ -287,11 +250,9 @@ describe('pure GoalContractCompiler', () => {
     assert.equal(receipt.sourceAuthorityBundleHash, result.sourceAuthorityBundleHash);
     assert.ok(receipt.sourceSnapshotHash.startsWith('sha256:'));
 
-    const subordinateRecords =
-      result.goalContractSemanticModel.records.filter(
-        ({ sourceArtifactId }) =>
-          sourceArtifactId === input.binding.sourceArtifactId
-      );
+    const subordinateRecords = result.goalContractSemanticModel.records.filter(
+      ({ sourceArtifactId }) => sourceArtifactId === input.binding.sourceArtifactId
+    );
     assert.ok(subordinateRecords.length > 0);
     assert.ok(
       subordinateRecords.every(
@@ -324,22 +285,16 @@ describe('pure GoalContractCompiler', () => {
         () =>
           compileGoalContract({
             ...input,
-            [field]: field.endsWith('Hash')
-              ? `sha256:${'f'.repeat(64)}`
-              : 'pass',
+            [field]: field.endsWith('Hash') ? `sha256:${'f'.repeat(64)}` : 'pass',
           }),
-        (error) =>
-          error.failureClass === 'goal_contract_authority_injection'
+        (error) => error.failureClass === 'goal_contract_authority_injection'
       );
     }
     assert.throws(
       () =>
         compileGoalContract({
           ...input,
-          templateBytes: Buffer.concat([
-            input.templateBytes,
-            Buffer.from('\n'),
-          ]),
+          templateBytes: Buffer.concat([input.templateBytes, Buffer.from('\n')]),
         }),
       (error) => error.failureClass === 'template_bytes_stale'
     );
@@ -347,10 +302,7 @@ describe('pure GoalContractCompiler', () => {
       () =>
         compileGoalContract({
           ...input,
-          contractProfileBytes: Buffer.concat([
-            input.contractProfileBytes,
-            Buffer.from('\n'),
-          ]),
+          contractProfileBytes: Buffer.concat([input.contractProfileBytes, Buffer.from('\n')]),
         }),
       (error) => error.failureClass === 'profile_bytes_stale'
     );
@@ -360,14 +312,27 @@ describe('pure GoalContractCompiler', () => {
           ...input,
           subordinateCoverageReceipts: [],
         }),
-      (error) =>
-        error.failureClass === 'subordinate_coverage_incomplete'
+      (error) => error.failureClass === 'subordinate_coverage_incomplete'
     );
   });
 
   it('keeps single-source compilation valid only with an empty subordinate set', () => {
     const input = buildCompilerInput({ composite: false });
-    const result = compileGoalContract(input);
+    let result;
+    try {
+      result = compileGoalContract(input);
+    } catch (error) {
+      assert.fail(
+        JSON.stringify(
+          {
+            failureClass: error.failureClass || error.code,
+            coverageAudit: error.coverageAudit,
+          },
+          null,
+          2
+        )
+      );
+    }
 
     assert.equal(input.sourceCompositionPolicy.mode, 'single_source');
     assert.deepEqual(result.subordinateSourceCoverageReceipts, []);

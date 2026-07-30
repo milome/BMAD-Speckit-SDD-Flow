@@ -51,8 +51,8 @@ describe('goal-contract implementation proof audit', () => {
 
     assert.notEqual(result.status, 0);
     assert.equal(payload.ok, false);
-    assert.equal(payload.failureClass, 'non_deterministic_source_obligation');
-    assert.match(payload.sourceId, /^SRC\d{3}$/u);
+    assert.equal(payload.failureClass, 'source_obligation_classification_ambiguous');
+    assert.match(payload.sourceId, /^SRC-[A-F0-9]{12}$/u);
     assert.equal(payload.matchedPhrase.toLowerCase(), 'optional');
     assert.ok(Number.isInteger(payload.lineStart));
     assert.ok(Number.isInteger(payload.lineEnd));
@@ -76,8 +76,8 @@ describe('goal-contract implementation proof audit', () => {
 
     assert.notEqual(result.status, 0);
     assert.equal(payload.ok, false);
-    assert.equal(payload.failureClass, 'non_deterministic_source_obligation');
-    assert.match(payload.sourceId, /^SRC\d{3}$/u);
+    assert.equal(payload.failureClass, 'source_obligation_classification_ambiguous');
+    assert.match(payload.sourceId, /^SRC-[A-F0-9]{12}$/u);
     assert.equal(payload.matchedPhrase.toLowerCase(), 'allowed');
     assert.match(payload.sourceExcerpt, /allowed seam/u);
   });
@@ -176,14 +176,20 @@ describe('goal-contract implementation proof audit', () => {
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(payload.ok, true);
     assert.equal(payload.implementationProofAudit.decision, 'pass');
-    assert.equal(payload.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations, false);
+    assert.equal(
+      payload.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations,
+      false
+    );
 
     const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));
     const goalText = fs.readFileSync(out, 'utf8');
 
     assert.equal(generation.implementationProofAudit.decision, 'pass');
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
-    assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u);
+    assert.match(
+      goalText,
+      /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u
+    );
     assert.doesNotMatch(goalText, /\bObserved(?: Evidence)?:\s*PASS\b/u);
     assert.equal(generation.evidenceTerminalState ?? null, null);
   });

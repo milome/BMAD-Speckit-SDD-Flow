@@ -38,9 +38,7 @@ const {
 const {
   loadPartitionMethodologyProfile,
 } = require('../src/utils/goal-contract/partition-methodology-profile.ts');
-const {
-  loadPartitionPolicy,
-} = require('../src/utils/goal-contract/partition-policy.ts');
+const { loadPartitionPolicy } = require('../src/utils/goal-contract/partition-policy.ts');
 const {
   authorityRecord,
   readFixtureMetadata,
@@ -51,11 +49,7 @@ const {
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const ASSET_DIR = path.join('_bmad', 'shared', 'goal-contract');
 const PROFILE_PATH = path.join(REPO_ROOT, ASSET_DIR, 'goal-contract-profile.json');
-const TEMPLATE_PATH = path.join(
-  REPO_ROOT,
-  ASSET_DIR,
-  'goal-execution-contract-template.md'
-);
+const TEMPLATE_PATH = path.join(REPO_ROOT, ASSET_DIR, 'goal-execution-contract-template.md');
 const PARTITION_POLICY_PATH = path.join(
   REPO_ROOT,
   ASSET_DIR,
@@ -87,10 +81,9 @@ function sourceLines(fixture, binding) {
     `# ${fixture.primaryNamespace}`,
     `## ${parentTaskRef}`,
     `- PRIMARY-REQ: MUST preserve ${fixture.primarySourceArtifactId}.`,
-    `- ${[
-      binding.requiredRequirementIds[0],
-      binding.requiredTaskIds[0],
-    ].join(' and ')} MUST remain governed by ${parentTaskRef}.`,
+    `- ${[binding.requiredRequirementIds[0], binding.requiredTaskIds[0]].join(
+      ' and '
+    )} MUST remain governed by ${parentTaskRef}.`,
     '- PRIMARY-BOUNDARY: MUST NOT expand subordinate ownership.',
     '## Completion Evidence',
     '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
@@ -100,8 +93,8 @@ function sourceLines(fixture, binding) {
 function subordinateLines(binding) {
   return [
     `# ${binding.namespace}`,
-    ...binding.requiredRequirementIds.map((id) => `- ${id}`),
-    ...binding.requiredTaskIds.map((id) => `- ${id}`),
+    ...binding.requiredRequirementIds.map((id) => `- ${id}: MUST preserve requirement ${id}.`),
+    ...binding.requiredTaskIds.map((id) => `- ${id}: MUST preserve task ${id}.`),
   ];
 }
 
@@ -109,11 +102,7 @@ function compileParentGoal() {
   const fixture = readFixtureMetadata();
   const binding = subordinateBinding();
   const sourceCompositionPolicy = compileSourceCompositionPolicy({
-    authorityRecord: authorityRecord(
-      'composite_required',
-      [binding],
-      hashControlPlaneValue
-    ),
+    authorityRecord: authorityRecord('composite_required', [binding], hashControlPlaneValue),
   });
   const orderedSourceSnapshotSet = compileOrderedSourceSnapshotSet({
     sources: [
@@ -137,24 +126,23 @@ function compileParentGoal() {
       },
     ],
   });
-  const compositeSourceAuthorityBundle =
-    compileCompositeSourceAuthorityBundle({
-      sourceCompositionPolicy,
-      orderedSourceSnapshotSet,
-      primarySource: {
-        role: 'primary_implementation_authority',
-        namespace: fixture.primaryNamespace,
-        sourceArtifactId: fixture.primarySourceArtifactId,
-        ownedSemanticDomains: ['Goal compilation'],
-        parentTaskRefs: [],
+  const compositeSourceAuthorityBundle = compileCompositeSourceAuthorityBundle({
+    sourceCompositionPolicy,
+    orderedSourceSnapshotSet,
+    primarySource: {
+      role: 'primary_implementation_authority',
+      namespace: fixture.primaryNamespace,
+      sourceArtifactId: fixture.primarySourceArtifactId,
+      ownedSemanticDomains: ['Goal compilation'],
+      parentTaskRefs: [],
+    },
+    subordinateSources: [
+      {
+        ...binding,
+        ownedSemanticDomains: ['Bounded reviewer component'],
       },
-      subordinateSources: [
-        {
-          ...binding,
-          ownedSemanticDomains: ['Bounded reviewer component'],
-        },
-      ],
-    });
+    ],
+  });
   const candidate = compileCanonicalIntent({
     sourceCompositionPolicy,
     orderedSourceSnapshotSet,
@@ -163,19 +151,15 @@ function compileParentGoal() {
   });
   const intentAuthorityEnvelope = compileIntentAuthorityEnvelope({
     subject: {
-      sourceSnapshotHash:
-        orderedSourceSnapshotSet.orderedSourceSnapshotSetHash,
+      sourceSnapshotHash: orderedSourceSnapshotSet.orderedSourceSnapshotSetHash,
       canonicalIntentSemanticHash: candidate.canonicalIntentSemanticHash,
-      specSpanRegistryHash:
-        candidate.specSpanRegistry.specSpanRegistryHash,
+      specSpanRegistryHash: candidate.specSpanRegistry.specSpanRegistryHash,
     },
     compositeSourceAuthorityBundle,
     authorityBasis: {
       kind: 'direct_source_declaration',
-      sourceDeclarationHash:
-        orderedSourceSnapshotSet.sourceSnapshots[0].sourceSnapshotHash,
-      declaringUserAuthorityIdentity:
-        'user:partition-compiler-test',
+      sourceDeclarationHash: orderedSourceSnapshotSet.sourceSnapshots[0].sourceSnapshotHash,
+      declaringUserAuthorityIdentity: 'user:partition-compiler-test',
       entryScenario: 'standalone_goal_contract',
     },
   });
@@ -193,16 +177,13 @@ function compileParentGoal() {
     generationMode: 'source_plan_strict',
     sourcePlanPath: 'docs/plans/primary-authority.md',
     outPath: 'docs/plans/partition-compiler-parent.md',
-    coverageReceiptPath:
-      'docs/plans/.partition-compiler-parent.coverage.json',
-    generationReceiptPath:
-      'docs/plans/.partition-compiler-parent.generation.json',
+    coverageReceiptPath: 'docs/plans/.partition-compiler-parent.coverage.json',
+    generationReceiptPath: 'docs/plans/.partition-compiler-parent.generation.json',
     profileBytesHash: sha256(contractProfileBytes),
     templateBytesHash: sha256(templateBytes),
   });
-  const subordinateCoverageReceipts =
-    compositeSourceAuthorityBundle.subordinateCoverage.receipts ||
-    [compositeSourceAuthorityBundle.subordinateCoverage];
+  const subordinateCoverageReceipts = compositeSourceAuthorityBundle.subordinateCoverage
+    .receipts || [compositeSourceAuthorityBundle.subordinateCoverage];
   const goalContractBundle = compileGoalContract({
     sourceCompositionPolicy,
     compositeSourceAuthorityBundle,
@@ -219,8 +200,7 @@ function compileParentGoal() {
     goalContractBundle,
     orderedSourceSnapshotSet,
     sourceCompositionPolicy,
-    subordinateCoverageReceipts:
-      goalContractBundle.subordinateSourceCoverageReceipts,
+    subordinateCoverageReceipts: goalContractBundle.subordinateSourceCoverageReceipts,
   };
   Object.defineProperty(result, 'binding', {
     value: binding,
@@ -230,18 +210,14 @@ function compileParentGoal() {
 }
 
 function loadBoundedPartitionPolicy() {
-  const root = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'partition-compiler-policy-')
-  );
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'partition-compiler-policy-'));
   const directory = path.join(root, ASSET_DIR);
   fs.mkdirSync(directory, { recursive: true });
   fs.copyFileSync(
     PARTITION_POLICY_SCHEMA_PATH,
     path.join(directory, path.basename(PARTITION_POLICY_SCHEMA_PATH))
   );
-  const policy = JSON.parse(
-    fs.readFileSync(PARTITION_POLICY_PATH, 'utf8')
-  );
+  const policy = JSON.parse(fs.readFileSync(PARTITION_POLICY_PATH, 'utf8'));
   policy.limits.maxPrimaryWriteScopeOwnersPerPartition = 1;
   fs.writeFileSync(
     path.join(directory, path.basename(PARTITION_POLICY_PATH)),
@@ -254,10 +230,7 @@ function loadBoundedPartitionPolicy() {
 function makeInput({ reverse = false } = {}) {
   const parent = compileParentGoal();
   const binding = parent.binding;
-  const reconciledGraph = reconciledGraphFixture(
-    binding.parentTaskRefs[0],
-    { reverse }
-  );
+  const reconciledGraph = reconciledGraphFixture(binding.parentTaskRefs[0], { reverse });
   const input = {
     ...parent,
     methodologyProfile: loadPartitionMethodologyProfile({
@@ -292,16 +265,11 @@ function makeInput({ reverse = false } = {}) {
 }
 
 function expectedSubordinateIds(input) {
-  return [
-    ...input.binding.requiredRequirementIds,
-    ...input.binding.requiredTaskIds,
-  ].sort();
+  return [...input.binding.requiredRequirementIds, ...input.binding.requiredTaskIds].sort();
 }
 
 function parentSelection(plan, parentTaskRef) {
-  return plan.selections.find(({ primaryTaskIds }) =>
-    primaryTaskIds.includes(parentTaskRef)
-  );
+  return plan.selections.find(({ primaryTaskIds }) => primaryTaskIds.includes(parentTaskRef));
 }
 
 describe('pure PartitionCompiler', () => {
@@ -314,20 +282,12 @@ describe('pure PartitionCompiler', () => {
         'partition-8b50',
         'partition-48aa',
       ]),
-      [
-        'partition-3633',
-        'partition-48aa',
-        'partition-5ea5',
-        'partition-8b50',
-      ]
+      ['partition-3633', 'partition-48aa', 'partition-5ea5', 'partition-8b50']
     );
   });
 
   it('registers the PartitionPlan schema as a canonical asset', () => {
-    const ownerSource = fs.readFileSync(
-      CANONICAL_ASSETS_OWNER_PATH,
-      'utf8'
-    );
+    const ownerSource = fs.readFileSync(CANONICAL_ASSETS_OWNER_PATH, 'utf8');
     assert.match(
       ownerSource,
       /assetId: 'goal_contract_partition_plan_schema'[\s\S]*?path: '_bmad\/shared\/goal-contract\/goal-contract-partition-plan\.schema\.json'/u
@@ -336,10 +296,7 @@ describe('pure PartitionCompiler', () => {
 
   it('keeps compiler-internal module loading portable across source and dist', () => {
     const compilerSource = fs.readFileSync(
-      path.resolve(
-        __dirname,
-        '../src/utils/goal-contract/control-plane/partition-compiler.ts'
-      ),
+      path.resolve(__dirname, '../src/utils/goal-contract/control-plane/partition-compiler.ts'),
       'utf8'
     );
     const sourceOnlyRequires = [
@@ -367,18 +324,9 @@ describe('pure PartitionCompiler', () => {
     );
     assert.equal(first.partitionPlan.sequenceMode, 'disabled');
     assert.equal(first.partitionPlan.sequenceCoverage, 'excluded');
-    assert.equal(
-      first.partitionPlan.sequenceClosureStatus,
-      'not_requested'
-    );
-    assert.equal(
-      first.partitionPlan.childContractAuthority,
-      'core_only'
-    );
-    assert.doesNotMatch(
-      first.partitionPlanBytes,
-      /childContractHash|partitionManifestHash/u
-    );
+    assert.equal(first.partitionPlan.sequenceClosureStatus, 'not_requested');
+    assert.equal(first.partitionPlan.childContractAuthority, 'core_only');
+    assert.doesNotMatch(first.partitionPlanBytes, /childContractHash|partitionManifestHash/u);
     assert.ok(first.partitionPlan.topologicalOrder.length >= 2);
     assert.deepEqual(
       first.partitionPlan.coverageObligations.commandIds,
@@ -395,17 +343,37 @@ describe('pure PartitionCompiler', () => {
       first.partitionPlan.selections.every(
         (selection) =>
           selection.sourceCompositionPolicyHash ===
-            first.partitionPlan.sourceCompositionPolicyHash &&
-          selection.selectionHash
+            first.partitionPlan.sourceCompositionPolicyHash && selection.selectionHash
       )
     );
     assert.ok(
       first.partitionPlan.childProjectionInputs.every(
         (projection) =>
           projection.sourceCompositionPolicyHash ===
-            first.partitionPlan.sourceCompositionPolicyHash &&
-          projection.selectionHash
+            first.partitionPlan.sourceCompositionPolicyHash && projection.selectionHash
       )
+    );
+  });
+
+  it('projects primary SpecSpan refs into child selection authority without creating tasks', () => {
+    const input = makeInput();
+    const sourceRecord = input.reconciledGraph.sourceObligations[0];
+    const primarySpan = input.canonicalIntentBundle.specSpanRegistry.specSpans.find(
+      ({ sourceArtifactId }) =>
+        sourceArtifactId === input.compositeSourceAuthorityBundle.primarySource.sourceArtifactId
+    );
+    sourceRecord.specSpanRefs = [primarySpan.specSpanId];
+
+    const { partitionPlan } = compilePartitions(input);
+    const selection = partitionPlan.selections.find(({ primarySourceObligationIds }) =>
+      primarySourceObligationIds.includes(sourceRecord.id)
+    );
+
+    assert.ok(selection);
+    assert.ok(selection.specSpanRefs.includes(primarySpan.specSpanId));
+    assert.equal(
+      partitionPlan.coverageObligations.atomicTaskIds.length,
+      input.reconciledGraph.tasks.length
     );
   });
 
@@ -420,24 +388,19 @@ describe('pure PartitionCompiler', () => {
       slice.integrationCommands = [];
       slice.regressionCommands = [];
     }
-    input.reconciledGraph.traceSlices[0].directCommands = [
-      forgedCommandId,
-    ];
+    input.reconciledGraph.traceSlices[0].directCommands = [forgedCommandId];
 
     assert.throws(
       () => compilePartitions(input),
       (error) =>
-        error.failureClass === 'command_projection_type_leak' &&
-        error.commandId === forgedCommandId
+        error.failureClass === 'command_projection_type_leak' && error.commandId === forgedCommandId
     );
   });
 
   it('rejects typed command records whose executable bytes do not match their hash', () => {
     const input = makeInput();
     const literal = 'node --version';
-    const commandId = `command-${sha256(
-      Buffer.from(literal, 'utf8')
-    ).slice(7, 23)}`;
+    const commandId = `command-${sha256(Buffer.from(literal, 'utf8')).slice(7, 23)}`;
     for (const slice of input.reconciledGraph.traceSlices) {
       slice.directCommands = [];
       slice.impactedCommands = [];
@@ -450,9 +413,7 @@ describe('pure PartitionCompiler', () => {
         {
           id: commandId,
           literal,
-          commandTextHash: sha256(
-            Buffer.from('different executable bytes', 'utf8')
-          ),
+          commandTextHash: sha256(Buffer.from('different executable bytes', 'utf8')),
           workingDirectory: '.',
           shell: 'host_shell',
           runtime: 'node',
@@ -473,8 +434,7 @@ describe('pure PartitionCompiler', () => {
     assert.throws(
       () => compilePartitions(input),
       (error) =>
-        error.failureClass ===
-          'command_projection_command_hash_mismatch' &&
+        error.failureClass === 'command_projection_command_hash_mismatch' &&
         error.commandId === commandId
     );
   });
@@ -489,10 +449,7 @@ describe('pure PartitionCompiler', () => {
       {
         path: 'src/shared.ts',
         ownerComponentId: 'component-owner',
-        participatingComponentIds: [
-          'component-owner',
-          'component-consumer',
-        ],
+        participatingComponentIds: ['component-owner', 'component-consumer'],
       },
     ];
     assert.deepEqual(
@@ -541,10 +498,7 @@ describe('pure PartitionCompiler', () => {
       projectOwnerConsumerRecords(componentGraph, [
         {
           partitionId: 'partition-owner',
-          primaryComponentIds: [
-            'component-owner',
-            'component-local-consumer',
-          ],
+          primaryComponentIds: ['component-owner', 'component-local-consumer'],
         },
         {
           partitionId: 'partition-remote',
@@ -577,16 +531,11 @@ describe('pure PartitionCompiler', () => {
   it('keeps every dynamically declared subordinate obligation in its parent task closure', () => {
     const input = makeInput();
     const { partitionPlan } = compilePartitions(input);
-    const selection = parentSelection(
-      partitionPlan,
-      input.binding.parentTaskRefs[0]
-    );
+    const selection = parentSelection(partitionPlan, input.binding.parentTaskRefs[0]);
 
     assert.ok(selection);
     assert.deepEqual(
-      selection.namespacedObligations.map(({ declaredSourceId }) =>
-        declaredSourceId
-      ),
+      selection.namespacedObligations.map(({ declaredSourceId }) => declaredSourceId),
       expectedSubordinateIds(input)
     );
     assert.ok(
@@ -618,16 +567,13 @@ describe('pure PartitionCompiler', () => {
       (error) => error.failureClass === 'subordinate_coverage_incomplete'
     );
 
-    const missingCommandAuthority = structuredClone(
-      compiled.partitionPlan
-    );
+    const missingCommandAuthority = structuredClone(compiled.partitionPlan);
     delete missingCommandAuthority.coverageObligations.commandIds;
-    const {
-      partitionPlanHash: _ignoredPartitionPlanHash,
-      ...missingCommandAuthoritySemantic
-    } = missingCommandAuthority;
-    missingCommandAuthority.partitionPlanHash =
-      hashControlPlaneValue(missingCommandAuthoritySemantic);
+    const { partitionPlanHash: _ignoredPartitionPlanHash, ...missingCommandAuthoritySemantic } =
+      missingCommandAuthority;
+    missingCommandAuthority.partitionPlanHash = hashControlPlaneValue(
+      missingCommandAuthoritySemantic
+    );
     assert.throws(
       () => verifyPartitionPlan(missingCommandAuthority, input),
       (error) => error.failureClass === 'partition_plan_schema_invalid'
@@ -638,8 +584,7 @@ describe('pure PartitionCompiler', () => {
     const escapedOther = escaped.selections.find(
       ({ partitionId }) => partitionId === other.partitionId
     );
-    escapedOther.namespacedObligations =
-      escapedParent.namespacedObligations;
+    escapedOther.namespacedObligations = escapedParent.namespacedObligations;
     escapedParent.namespacedObligations = [];
     assert.throws(
       () => verifyPartitionPlan(escaped, input),
@@ -647,25 +592,21 @@ describe('pure PartitionCompiler', () => {
     );
 
     const substituted = structuredClone(compiled.partitionPlan);
-    const substitutedRecord = parentSelection(
-      substituted,
-      parentTaskRef
-    ).namespacedObligations[0];
+    const substitutedRecord = parentSelection(substituted, parentTaskRef).namespacedObligations[0];
     substitutedRecord.specSpanRefs = [
       input.canonicalIntentBundle.specSpanRegistry.specSpans.find(
-        ({ sourceArtifactId }) =>
-          sourceArtifactId !== input.binding.sourceArtifactId
+        ({ sourceArtifactId }) => sourceArtifactId !== input.binding.sourceArtifactId
       ).specSpanId,
     ];
     assert.throws(
       () => verifyPartitionPlan(substituted, input),
-      (error) =>
-        error.failureClass === 'cross_source_spec_span_substitution'
+      (error) => error.failureClass === 'cross_source_spec_span_substitution'
     );
 
     const staleReceiptInput = structuredClone(input);
-    staleReceiptInput.subordinateCoverageReceipts[0].receiptHash =
-      hashControlPlaneValue({ stale: true });
+    staleReceiptInput.subordinateCoverageReceipts[0].receiptHash = hashControlPlaneValue({
+      stale: true,
+    });
     assert.throws(
       () => compilePartitions(staleReceiptInput),
       (error) => error.failureClass === 'subordinate_source_stale'
@@ -675,9 +616,7 @@ describe('pure PartitionCompiler', () => {
     downgradedInput.sourceCompositionPolicy.mode = 'single_source';
     assert.throws(
       () => compilePartitions(downgradedInput),
-      (error) =>
-        error.failureClass ===
-        'source_composition_downgrade_rejected'
+      (error) => error.failureClass === 'source_composition_downgrade_rejected'
     );
   });
 

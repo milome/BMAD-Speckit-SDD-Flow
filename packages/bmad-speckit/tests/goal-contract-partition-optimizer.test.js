@@ -9,9 +9,7 @@ const {
   optimizePartitions,
   validatePartitionCandidate,
 } = require('../src/utils/goal-contract/partition-optimizer.ts');
-const {
-  buildPartitionComponents,
-} = require('../src/utils/goal-contract/partition-components.ts');
+const { buildPartitionComponents } = require('../src/utils/goal-contract/partition-components.ts');
 const {
   compileExecutionProjection,
 } = require('../src/utils/goal-contract/execution-projection.ts');
@@ -47,9 +45,7 @@ function sealExecutionProjection(projection) {
     projection.taskDagHash = hash(stableStringify(projection.taskDag));
   }
   if (projection.integrationJoinGraph) {
-    projection.integrationJoinGraphHash = hash(
-      stableStringify(projection.integrationJoinGraph)
-    );
+    projection.integrationJoinGraphHash = hash(stableStringify(projection.integrationJoinGraph));
   }
   const { executionProjectionHash: _ignored, ...semanticProjection } = projection;
   projection.executionProjectionHash = hash(stableStringify(semanticProjection));
@@ -94,18 +90,13 @@ function makeComponent(id, overrides = {}) {
 }
 
 function componentIdFor(graph, alias) {
-  return graph.components.find((component) =>
-    component.traceSliceIds.includes(`slice-${alias}`)
-  )?.componentId;
+  return graph.components.find((component) => component.traceSliceIds.includes(`slice-${alias}`))
+    ?.componentId;
 }
 
 function canonicalTopologicalOrder(components, dependencyEdges) {
-  const indegree = new Map(
-    components.map((component) => [component.componentId, 0])
-  );
-  const outgoing = new Map(
-    components.map((component) => [component.componentId, []])
-  );
+  const indegree = new Map(components.map((component) => [component.componentId, 0]));
+  const outgoing = new Map(components.map((component) => [component.componentId, []]));
   for (const edge of dependencyEdges) {
     indegree.set(edge.toComponentId, indegree.get(edge.toComponentId) + 1);
     outgoing.get(edge.fromComponentId).push(edge.toComponentId);
@@ -118,9 +109,7 @@ function canonicalTopologicalOrder(components, dependencyEdges) {
   while (ready.length > 0) {
     const componentId = ready.shift();
     order.push(componentId);
-    for (const dependentId of [
-      ...new Set(outgoing.get(componentId)),
-    ].sort(compareIds)) {
+    for (const dependentId of [...new Set(outgoing.get(componentId))].sort(compareIds)) {
       indegree.set(dependentId, indegree.get(dependentId) - 1);
       if (indegree.get(dependentId) === 0) {
         ready.push(dependentId);
@@ -133,26 +122,18 @@ function canonicalTopologicalOrder(components, dependencyEdges) {
 
 function synchronizeSharedArtifactOwnership(componentGraph) {
   const componentById = new Map(
-    componentGraph.components.map((component) => [
-      component.componentId,
-      component,
-    ])
+    componentGraph.components.map((component) => [component.componentId, component])
   );
   const ownerships = [...(componentGraph.sharedArtifactOwnership || [])];
   for (const ownership of ownerships) {
     for (const componentId of ownership.participatingComponentIds || []) {
       const component = componentById.get(componentId);
-      if (
-        component &&
-        !component.fileScopeIds.includes(ownership.fileScopeId)
-      ) {
+      if (component && !component.fileScopeIds.includes(ownership.fileScopeId)) {
         component.fileScopeIds.push(ownership.fileScopeId);
       }
     }
   }
-  const ownedScopeIds = new Set(
-    ownerships.map((ownership) => ownership.fileScopeId)
-  );
+  const ownedScopeIds = new Set(ownerships.map((ownership) => ownership.fileScopeId));
   for (const component of componentGraph.components) {
     for (const fileScopeId of component.fileScopeIds) {
       if (ownedScopeIds.has(fileScopeId)) continue;
@@ -166,15 +147,11 @@ function synchronizeSharedArtifactOwnership(componentGraph) {
     }
   }
   const position = new Map(
-    componentGraph.topologicalOrder.map((componentId, index) => [
-      componentId,
-      index,
-    ])
+    componentGraph.topologicalOrder.map((componentId, index) => [componentId, index])
   );
   for (const ownership of ownerships) {
     ownership.participatingComponentIds.sort(
-      (left, right) =>
-        position.get(left) - position.get(right) || compareIds(left, right)
+      (left, right) => position.get(left) - position.get(right) || compareIds(left, right)
     );
   }
   componentGraph.sharedArtifactOwnership = ownerships;
@@ -197,57 +174,50 @@ function makeGraph({
     const alias = String(value).replace(/^component-/u, '');
     return componentIdFor({ components: resolvedComponents }, alias) || value;
   };
-  const resolvedIntegrationFanInOwnership = integrationFanInOwnership.map(
-    (ownership) => ({
-      ...ownership,
-      ownerComponentId: resolveComponentId(ownership.ownerComponentId),
-      inputComponentIds: ownership.inputComponentIds.map(resolveComponentId),
-    })
-  );
-  const resolvedSharedArtifactOwnership = sharedArtifactOwnership?.map(
-    (ownership) => ({
-      ...ownership,
-      ownerComponentId: resolveComponentId(ownership.ownerComponentId),
-      participatingComponentIds:
-        ownership.participatingComponentIds.map(resolveComponentId),
-    })
-  );
-  const dependencyEdges = edges.map(
-    ([from, to, reason = 'implementation_dependency']) => {
-      const fromComponentId = resolveComponentId(from);
-      const toComponentId = resolveComponentId(to);
-      const join =
-        reason === 'integration_join'
-          ? resolvedIntegrationFanInOwnership.find(
-              (ownership) =>
-                ownership.ownerComponentId === toComponentId &&
-                ownership.inputComponentIds.includes(fromComponentId)
-            )
-          : null;
-      const taskEdges = [
-        {
-          fromTaskId: `task-${from}`,
-          toTaskId: `task-${to}`,
-          reason,
-          joinId: join?.joinId || null,
-        },
-      ];
-      return {
-        edgeId: `component-edge-${hash(
-          stableStringify({
-            fromComponentId,
-            toComponentId,
-            reasonCodes: [reason],
-            taskEdges,
-          })
-        ).slice('sha256:'.length, 23)}`,
-        fromComponentId,
-        toComponentId,
-        reasonCodes: [reason],
-        taskEdges,
-      };
-    }
-  );
+  const resolvedIntegrationFanInOwnership = integrationFanInOwnership.map((ownership) => ({
+    ...ownership,
+    ownerComponentId: resolveComponentId(ownership.ownerComponentId),
+    inputComponentIds: ownership.inputComponentIds.map(resolveComponentId),
+  }));
+  const resolvedSharedArtifactOwnership = sharedArtifactOwnership?.map((ownership) => ({
+    ...ownership,
+    ownerComponentId: resolveComponentId(ownership.ownerComponentId),
+    participatingComponentIds: ownership.participatingComponentIds.map(resolveComponentId),
+  }));
+  const dependencyEdges = edges.map(([from, to, reason = 'implementation_dependency']) => {
+    const fromComponentId = resolveComponentId(from);
+    const toComponentId = resolveComponentId(to);
+    const join =
+      reason === 'integration_join'
+        ? resolvedIntegrationFanInOwnership.find(
+            (ownership) =>
+              ownership.ownerComponentId === toComponentId &&
+              ownership.inputComponentIds.includes(fromComponentId)
+          )
+        : null;
+    const taskEdges = [
+      {
+        fromTaskId: `task-${from}`,
+        toTaskId: `task-${to}`,
+        reason,
+        joinId: join?.joinId || null,
+      },
+    ];
+    return {
+      edgeId: `component-edge-${hash(
+        stableStringify({
+          fromComponentId,
+          toComponentId,
+          reasonCodes: [reason],
+          taskEdges,
+        })
+      ).slice('sha256:'.length, 23)}`,
+      fromComponentId,
+      toComponentId,
+      reasonCodes: [reason],
+      taskEdges,
+    };
+  });
   return synchronizeSharedArtifactOwnership({
     schemaVersion: 'goal-contract-partition-components/v1',
     primaryUnitType: 'trace_slice',
@@ -282,9 +252,7 @@ function makeExecutionProjection(componentGraph, suffix = 'current') {
     ),
     atomicTasks: componentGraph.components.flatMap((component) => {
       const taskCount = component.atomicTaskIds.length;
-      const baseMinutes = Math.floor(
-        component.estimatedClosureMinutes / taskCount
-      );
+      const baseMinutes = Math.floor(component.estimatedClosureMinutes / taskCount);
       const remainder = component.estimatedClosureMinutes % taskCount;
       return component.atomicTaskIds.map((taskId, index) => ({
         taskId,
@@ -315,24 +283,21 @@ function makeExecutionProjection(componentGraph, suffix = 'current') {
       path: ownership.path,
       taskIds: ownership.participatingComponentIds.flatMap(
         (componentId) =>
-          componentGraph.components.find(
-            (component) => component.componentId === componentId
-          ).atomicTaskIds
+          componentGraph.components.find((component) => component.componentId === componentId)
+            .atomicTaskIds
       ),
     })),
     taskDag: {
-      nodes: componentGraph.topologicalOrder.flatMap(
-        (componentId, componentIndex) => {
-          const component = componentGraph.components.find(
-            (candidate) => candidate.componentId === componentId
-          );
-          return component.atomicTaskIds.map((taskId, taskIndex) => ({
-            taskId,
-            ownerSliceId: component.traceSliceIds[0],
-            topologicalIndex: componentIndex * 100 + taskIndex,
-          }));
-        }
-      ),
+      nodes: componentGraph.topologicalOrder.flatMap((componentId, componentIndex) => {
+        const component = componentGraph.components.find(
+          (candidate) => candidate.componentId === componentId
+        );
+        return component.atomicTaskIds.map((taskId, taskIndex) => ({
+          taskId,
+          ownerSliceId: component.traceSliceIds[0],
+          topologicalIndex: componentIndex * 100 + taskIndex,
+        }));
+      }),
       edges: componentGraph.dependencyEdges.flatMap((edge) =>
         edge.taskEdges.map((taskEdge) => ({ ...taskEdge }))
       ),
@@ -342,9 +307,8 @@ function makeExecutionProjection(componentGraph, suffix = 'current') {
         joinId: ownership.joinId,
         inputTaskIds: ownership.inputComponentIds.map(
           (componentId) =>
-            componentGraph.components.find(
-              (component) => component.componentId === componentId
-            ).atomicTaskIds[0]
+            componentGraph.components.find((component) => component.componentId === componentId)
+              .atomicTaskIds[0]
         ),
         ownerTaskId: componentGraph.components.find(
           (component) => component.componentId === ownership.ownerComponentId
@@ -354,8 +318,7 @@ function makeExecutionProjection(componentGraph, suffix = 'current') {
     },
   };
   sealExecutionProjection(executionProjection);
-  componentGraph.executionProjectionHash =
-    executionProjection.executionProjectionHash;
+  componentGraph.executionProjectionHash = executionProjection.executionProjectionHash;
   return executionProjection;
 }
 
@@ -367,9 +330,7 @@ function policyBindingFor(executionProjection, mutate = null) {
     path.join(REPO_ROOT, ASSET_DIR, POLICY_SCHEMA_NAME),
     path.join(directory, POLICY_SCHEMA_NAME)
   );
-  const policy = JSON.parse(
-    fs.readFileSync(path.join(REPO_ROOT, ASSET_DIR, POLICY_NAME), 'utf8')
-  );
+  const policy = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, ASSET_DIR, POLICY_NAME), 'utf8'));
   if (mutate) mutate(policy);
   fs.writeFileSync(
     path.join(directory, POLICY_NAME),
@@ -608,10 +569,7 @@ describe('goal-contract partition optimizer', () => {
       components: [implementation, verification],
       edges: [['implementation', 'verification']],
     });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'terminal-verification-only'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'terminal-verification-only');
     const result = optimizePartitions({
       componentGraph: graph,
       executionProjection,
@@ -738,6 +696,35 @@ describe('goal-contract partition optimizer', () => {
     );
   });
 
+  it('allows an over-limit write scope only for a source-declared atomic task', () => {
+    const sourceGraph = makeGraph({
+      components: [
+        makeComponent('atomic', {
+          fileScopeIds: Array.from({ length: 9 }, (_, index) => `file-${index}`),
+        }),
+      ],
+      sharedArtifactOwnership: [],
+    });
+    const executionProjection = makeExecutionProjection(sourceGraph, 'atomic-write-scope');
+    executionProjection.atomicTasks[0].atomicGroupRefs = ['source-declared-atomic-task'];
+    sealExecutionProjection(executionProjection);
+    const policyBinding = policyBindingFor(executionProjection);
+    const componentGraph = buildPartitionComponents({
+      executionProjection,
+      policy: policyBinding.policy,
+    });
+
+    const result = optimizePartitions({
+      componentGraph,
+      executionProjection,
+      policyBinding,
+    });
+
+    assert.equal(result.partitionCount, 1);
+    assert.deepEqual(result.partitions[0].primaryTaskIds, ['task-atomic']);
+    assert.equal(result.partitions[0].primaryWriteScopeOwnerCount, 9);
+  });
+
   it('prunes hard-invalid prefixes and bounds all candidate frontiers', () => {
     const graph = makeGraph({
       components: [
@@ -786,10 +773,7 @@ describe('goal-contract partition optimizer', () => {
         ['c', 'd'],
       ],
     });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'unique-frontier-count'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'unique-frontier-count');
     const result = optimizePartitions({
       componentGraph: graph,
       executionProjection,
@@ -813,10 +797,7 @@ describe('goal-contract partition optimizer', () => {
       (_, index) => `wide-${String(index + 1).padStart(2, '0')}`
     );
     const graph = makeGraph({ ids });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'bounded-wide-frontier'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'bounded-wide-frontier');
     const result = optimizePartitions({
       componentGraph: graph,
       executionProjection,
@@ -824,9 +805,10 @@ describe('goal-contract partition optimizer', () => {
     });
 
     assert.equal(result.decision, 'selected');
-    assert.equal(result.partitions.flatMap(
-      (partition) => partition.primaryComponentIds
-    ).length, ids.length);
+    assert.equal(
+      result.partitions.flatMap((partition) => partition.primaryComponentIds).length,
+      ids.length
+    );
     assert.ok(result.searchReceipt.frontierCount <= 256);
     assert.ok(result.searchReceipt.searchStates <= 4096);
   });
@@ -838,9 +820,7 @@ describe('goal-contract partition optimizer', () => {
     );
     const ordered = ids
       .map((id) => ({ id, component: makeComponent(id) }))
-      .sort((left, right) =>
-        left.component.componentId.localeCompare(right.component.componentId)
-      );
+      .sort((left, right) => left.component.componentId.localeCompare(right.component.componentId));
     ordered.at(-1).component.estimatedClosureMinutes = 60;
     ordered.at(-1).component.closureMinuteBreakdown = {
       declaredTaskMinutes: 60,
@@ -854,33 +834,28 @@ describe('goal-contract partition optimizer', () => {
       components: ordered.map((entry) => entry.component),
       edges: [
         [ordered[0].id, ordered[1].id],
-        ...ordered
-          .slice(0, -1)
-          .map((entry) => [entry.id, ordered.at(-1).id]),
+        ...ordered.slice(0, -1).map((entry) => [entry.id, ordered.at(-1).id]),
       ],
     });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'search-budget-exhaustion'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'search-budget-exhaustion');
 
     let caught = null;
     let unexpectedResult = null;
     try {
       unexpectedResult = optimizePartitions({
-          componentGraph: graph,
-          executionProjection,
-          policyBinding: policyBindingFor(executionProjection, (policy) => {
-            policy.limits.maxClosureMinutesPerPartition = 60;
-            policy.limits.targetClosureMinutesPerPartition = {
-              min: 60,
-              max: 60,
-            };
-            policy.limits.maxCrossPartitionDependencies = 1;
-            policy.limits.maxSearchStates = 10;
-            policy.limits.maxCandidateFrontiers = 10;
-          }),
-        });
+        componentGraph: graph,
+        executionProjection,
+        policyBinding: policyBindingFor(executionProjection, (policy) => {
+          policy.limits.maxClosureMinutesPerPartition = 60;
+          policy.limits.targetClosureMinutesPerPartition = {
+            min: 60,
+            max: 60,
+          };
+          policy.limits.maxCrossPartitionDependencies = 1;
+          policy.limits.maxSearchStates = 10;
+          policy.limits.maxCandidateFrontiers = 10;
+        }),
+      });
     } catch (error) {
       caught = error;
     }
@@ -904,10 +879,7 @@ describe('goal-contract partition optimizer', () => {
       ids,
       edges: ids.slice(1).map((id, index) => [ids[index], id]),
     });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'per-partition-dependency-limit'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'per-partition-dependency-limit');
     const result = optimizePartitions({
       componentGraph: graph,
       executionProjection,
@@ -922,9 +894,12 @@ describe('goal-contract partition optimizer', () => {
     });
 
     assert.equal(result.partitionCount, 34);
-    assert.equal(result.partitions.slice(1).every(
-      (partition) => partition.dependencyPartitionIds.length === 1
-    ), true);
+    assert.equal(
+      result.partitions
+        .slice(1)
+        .every((partition) => partition.dependencyPartitionIds.length === 1),
+      true
+    );
     assert.equal(result.candidates[0].crossPartitionDependencyCount, 33);
   });
 
@@ -953,10 +928,7 @@ describe('goal-contract partition optimizer', () => {
       result.partitions.some(
         (partition) =>
           stableStringify(partition.primaryComponentIds) ===
-          stableStringify([
-            componentIdFor(graph, 'a'),
-            componentIdFor(graph, 'c'),
-          ])
+          stableStringify([componentIdFor(graph, 'a'), componentIdFor(graph, 'c')])
       )
     );
   });
@@ -1014,10 +986,7 @@ describe('goal-contract partition optimizer', () => {
       components: [
         makeComponent('anchor', { fileScopeIds: ['file-anchor'] }),
         makeComponent('owner', {
-          fileScopeIds: Array.from(
-            { length: 7 },
-            (_, index) => `file-owner-${index}`
-          ),
+          fileScopeIds: Array.from({ length: 7 }, (_, index) => `file-owner-${index}`),
         }),
         makeComponent('consumer', { fileScopeIds: ['file-consumer'] }),
       ],
@@ -1065,9 +1034,7 @@ describe('goal-contract partition optimizer', () => {
       false
     );
     if (ownerIndex !== consumerIndex) {
-      assert.ok(
-        consumerPartition.dependencyPartitionIds.includes(ownerPartition.partitionId)
-      );
+      assert.ok(consumerPartition.dependencyPartitionIds.includes(ownerPartition.partitionId));
     }
   });
 
@@ -1083,10 +1050,7 @@ describe('goal-contract partition optimizer', () => {
         },
       ],
     });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'shared-owner-candidate'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'shared-owner-candidate');
     const ownerComponentId = componentIdFor(graph, 'owner');
     const consumerComponentId = componentIdFor(graph, 'consumer');
 
@@ -1242,10 +1206,7 @@ describe('goal-contract partition optimizer', () => {
 
   it('rejects execution projection payload drift against its identity hash', () => {
     const graph = makeGraph({ ids: ['a'] });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'projection-payload-tamper'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'projection-payload-tamper');
     executionProjection.traceSlices[0].observableOutcome = 'Tampered outcome.';
 
     assert.throws(
@@ -1268,10 +1229,7 @@ describe('goal-contract partition optimizer', () => {
     ]) {
       for (const mutation of ['value-only', 'hash-only', 'both', 'invalid-value', 'invalid-hash']) {
         const graph = makeGraph({ ids: ['a'] });
-        const executionProjection = makeExecutionProjection(
-          graph,
-          `${valueField}-${mutation}`
-        );
+        const executionProjection = makeExecutionProjection(graph, `${valueField}-${mutation}`);
         if (mutation === 'value-only' || mutation === 'both') {
           delete executionProjection[valueField];
         }
@@ -1285,8 +1243,7 @@ describe('goal-contract partition optimizer', () => {
           executionProjection[hashField] = 42;
         }
         resealExecutionProjectionIdentity(executionProjection);
-        graph.executionProjectionHash =
-          executionProjection.executionProjectionHash;
+        graph.executionProjectionHash = executionProjection.executionProjectionHash;
 
         assert.throws(
           () =>
@@ -1296,8 +1253,7 @@ describe('goal-contract partition optimizer', () => {
               policyBinding: policyBindingFor(executionProjection),
             }),
           (error) =>
-            error.failureClass ===
-              'partition_policy_compilation_identity_mismatch' &&
+            error.failureClass === 'partition_policy_compilation_identity_mismatch' &&
             error.reason === `${valueField}_authority_invalid`,
           `${valueField}:${mutation}`
         );
@@ -1311,9 +1267,7 @@ describe('goal-contract partition optimizer', () => {
     const executionProjection = clone(canonicalProjection);
     executionProjection.integrationJoinGraph = { joins: [] };
     executionProjection.taskDag.edges = [];
-    executionProjection.atomicTasks.find(
-      (task) => task.taskId === 'task-b'
-    ).dependencyIds = [];
+    executionProjection.atomicTasks.find((task) => task.taskId === 'task-b').dependencyIds = [];
     executionProjection.sequenceConstraintBinding.semanticConstraintHash = hash(
       stableStringify({
         constraints: executionProjection.sequenceConstraintBinding.constraints,
@@ -1359,18 +1313,14 @@ describe('goal-contract partition optimizer', () => {
           policyBinding,
         }),
       (error) =>
-        error.failureClass ===
-          'partition_policy_compilation_identity_mismatch' &&
+        error.failureClass === 'partition_policy_compilation_identity_mismatch' &&
         error.reason === 'execution_projection_authority_missing'
     );
   });
 
   it('rejects component semantic metadata that does not match the projection', () => {
     const graph = makeGraph({ ids: ['a'] });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'component-semantic-tamper'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'component-semantic-tamper');
     graph.components[0].sourceIds = ['source-tampered'];
 
     assert.throws(
@@ -1388,10 +1338,7 @@ describe('goal-contract partition optimizer', () => {
 
   it('rejects component grouping that diverges from canonical must-link replay', () => {
     const graph = makeGraph({ ids: ['a', 'b'] });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'component-grouping-drift'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'component-grouping-drift');
     executionProjection.productionEntryIndex = [
       {
         productionEntryId: 'entry-shared',
@@ -1441,10 +1388,7 @@ describe('goal-contract partition optimizer', () => {
       ids: ['a', 'b'],
       edges: [['a', 'b']],
     });
-    const executionProjection = makeExecutionProjection(
-      sourceGraph,
-      'canonical-identity-tamper'
-    );
+    const executionProjection = makeExecutionProjection(sourceGraph, 'canonical-identity-tamper');
     const policyBinding = policyBindingFor(executionProjection);
     const canonicalGraph = buildPartitionComponents({
       executionProjection,
@@ -1466,17 +1410,16 @@ describe('goal-contract partition optimizer', () => {
       if (ownership.ownerComponentId === originalId) {
         ownership.ownerComponentId = renamedId;
       }
-      ownership.participatingComponentIds =
-        ownership.participatingComponentIds.map((componentId) =>
-          componentId === originalId ? renamedId : componentId
-        );
+      ownership.participatingComponentIds = ownership.participatingComponentIds.map(
+        (componentId) => (componentId === originalId ? renamedId : componentId)
+      );
     }
     for (const ownership of renamed.integrationFanInOwnership) {
       if (ownership.ownerComponentId === originalId) {
         ownership.ownerComponentId = renamedId;
       }
-      ownership.inputComponentIds = ownership.inputComponentIds.map(
-        (componentId) => (componentId === originalId ? renamedId : componentId)
+      ownership.inputComponentIds = ownership.inputComponentIds.map((componentId) =>
+        componentId === originalId ? renamedId : componentId
       );
     }
     assert.throws(
@@ -1508,10 +1451,7 @@ describe('goal-contract partition optimizer', () => {
 
   it('rejects policy bindings for another source or semantic model', () => {
     const graph = makeGraph({ ids: ['a'] });
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'policy-compilation-identity'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'policy-compilation-identity');
     const baseline = policyBindingFor(executionProjection);
 
     for (const field of ['sourceSnapshotHash', 'semanticModelHash']) {
@@ -1525,8 +1465,7 @@ describe('goal-contract partition optimizer', () => {
             policyBinding: changed,
           }),
         (error) =>
-          error.failureClass ===
-            'partition_policy_compilation_identity_mismatch' &&
+          error.failureClass === 'partition_policy_compilation_identity_mismatch' &&
           error.mismatchedFields?.includes(field),
         field
       );
@@ -1536,10 +1475,7 @@ describe('goal-contract partition optimizer', () => {
   it('rejects inconsistent component closure minute breakdowns', () => {
     const graph = makeGraph({ ids: ['a'] });
     graph.components[0].closureMinuteBreakdown.totalMinutes += 1;
-    const executionProjection = makeExecutionProjection(
-      graph,
-      'closure-breakdown-tamper'
-    );
+    const executionProjection = makeExecutionProjection(graph, 'closure-breakdown-tamper');
 
     assert.throws(
       () =>
@@ -1705,13 +1641,12 @@ describe('goal-contract partition optimizer', () => {
       reason: 'implementation_dependency',
       joinId: null,
     });
-    dependencyProjection.atomicTasks.find(
-      (task) => task.taskId === 'task-c'
-    ).dependencyIds.push('task-b');
+    dependencyProjection.atomicTasks
+      .find((task) => task.taskId === 'task-c')
+      .dependencyIds.push('task-b');
     for (const [index, taskId] of ['task-a', 'task-b', 'task-c'].entries()) {
-      dependencyProjection.taskDag.nodes.find(
-        (node) => node.taskId === taskId
-      ).topologicalIndex = index;
+      dependencyProjection.taskDag.nodes.find((node) => node.taskId === taskId).topologicalIndex =
+        index;
     }
     sealExecutionProjection(dependencyProjection);
     const dependencyBinding = policyBindingFor(dependencyProjection);
