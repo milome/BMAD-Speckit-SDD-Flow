@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -744,8 +746,31 @@ describe('target validity analyzer', () => {
     });
 
     expect(sourceIndex.testTargets.get('packages/local/tests/process-bindings.test.ts')).toEqual([
-      'packages/local/src/local-cli.ts',
+      'packages/local/src/local-cli.mjs',
     ]);
+  });
+
+  it('keeps the local package bin executable by Node during runtime probes', () => {
+    const packageRoot = join(TARGET_FIXTURE, 'packages/local');
+    const packageManifest = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')) as {
+      bin: Record<string, string>;
+    };
+    const relativeBinPath = packageManifest.bin['target-validity-cli'];
+
+    expect(relativeBinPath).toMatch(/\.mjs$/u);
+
+    const binPath = join(packageRoot, relativeBinPath);
+    expect(readFileSync(binPath, 'utf8').split(/\r?\n/u, 1)[0]).toBe('#!/usr/bin/env node');
+
+    const execution = spawnSync(process.execPath, [binPath, 'inspect'], {
+      cwd: packageRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+
+    expect(execution.error).toBeUndefined();
+    expect(execution.status).toBe(0);
+    expect(execution.stdout.trim()).toBe('local cli: inspect');
   });
 
   it('resolves direct process targets relative to an explicit static cwd', () => {
