@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-requirements-audit-scope-manifest.schema.json",
+  "title": "Requirements Contract Requirements Audit Scope Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "actorClass",
+    "judgeRole",
+    "purpose",
+    "attemptId",
+    "includedRequirementRefs",
+    "requiredCoverageUnits",
+    "mandatoryDimensions",
+    "requiredVetoItems",
+    "allowedEvidenceRefs",
+    "explicitOutOfScope",
+    "priorFindingLedgerHash",
+    "sourceAuthorityHash",
+    "policyHash",
+    "sourceDocumentHash",
+    "semanticModelHash",
+    "projectionSetHash",
+    "confirmationCandidateHash",
+    "requirementsQualityRulesHash",
+    "priorRequirementsFindingsHash",
+    "kernelImplementationLineage",
+    "scopeManifestHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-requirements-audit-scope-manifest/v1"
+    },
+    "actorClass": { "const": "requirements_critical_auditor_judge" },
+    "judgeRole": { "const": "requirements_critical_auditor" },
+    "purpose": { "$ref": "#/$defs/nonEmptyString" },
+    "attemptId": { "$ref": "#/$defs/nonEmptyString" },
+    "includedRequirementRefs": { "$ref": "#/$defs/stringSet" },
+    "requiredCoverageUnits": { "$ref": "#/$defs/stringSet" },
+    "mandatoryDimensions": { "$ref": "#/$defs/stringSet" },
+    "requiredVetoItems": { "$ref": "#/$defs/stringSet" },
+    "allowedEvidenceRefs": { "$ref": "#/$defs/stringSet" },
+    "explicitOutOfScope": { "$ref": "#/$defs/nonEmptyStringSet" },
+    "priorFindingLedgerHash": { "$ref": "#/$defs/sha256" },
+    "sourceAuthorityHash": { "$ref": "#/$defs/sha256" },
+    "policyHash": { "$ref": "#/$defs/sha256" },
+    "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+    "semanticModelHash": { "$ref": "#/$defs/sha256" },
+    "projectionSetHash": { "$ref": "#/$defs/sha256" },
+    "confirmationCandidateHash": { "$ref": "#/$defs/sha256" },
+    "requirementsQualityRulesHash": { "$ref": "#/$defs/sha256" },
+    "priorRequirementsFindingsHash": { "$ref": "#/$defs/sha256" },
+    "kernelImplementationLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicability", "authorityReason"],
+      "properties": {
+        "applicability": { "const": "not_applicable" },
+        "authorityReason": {
+          "const": "requirements_scope_has_no_kernel_implementation_authority"
+        }
+      }
+    },
+    "scopeManifestHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "nonEmptyStringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    }
+  }
+}
